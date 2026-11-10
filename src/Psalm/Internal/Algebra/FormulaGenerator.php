@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Psalm\Internal\Algebra;
 
+use Override;
 use PhpParser;
 use Psalm\Codebase;
 use Psalm\FileSource;
@@ -18,9 +19,7 @@ use Psalm\Node\Expr\VirtualBooleanNot;
 use Psalm\Storage\Assertion\Truthy;
 
 use function array_diff_key;
-use function array_filter;
 use function array_map;
-use function array_values;
 use function count;
 use function spl_object_id;
 use function strcspn;
@@ -118,17 +117,18 @@ final class FormulaGenerator
                     }
                 }
 
-                $left_clauses = array_values(array_filter(
-                    $left_clauses,
-                    static fn(Clause $clause): bool => !self::testsAnyVarTheRightSideDoesNot(
-                        $clause,
+                // dropping some of the clauses of the left side would make its negation stronger than the truth
+                // (`(A && B) || C` without B is `A || C`, whose negation says more), so either all go or none
+                foreach ($left_clauses as $left_clause) {
+                    if (self::testsAnyVarTheRightSideDoesNot(
+                        $left_clause,
                         $left_tested_var_ids,
                         $right_possibilities,
-                    ),
-                ));
+                    )) {
+                        $left_clauses = [new Clause([], $conditional_object_id, $conditional_object_id, true)];
 
-                if (!$left_clauses) {
-                    $left_clauses = [new Clause([], $conditional_object_id, $conditional_object_id, true)];
+                        break;
+                    }
                 }
 
                 $right_clauses = array_map(
@@ -553,11 +553,31 @@ final class FormulaGenerator
      */
     private static function getAssignedVarIds(PhpParser\Node\Expr $expr, ?string $this_class_name): array
     {
-        $targets = [];
+        $visitor = new class extends PhpParser\NodeVisitorAbstract {
+            /** @var list<PhpParser\Node\Expr> */
+            public array $targets = [];
 
-        (new PhpParser\NodeFinder())->find(
-            $expr,
-            static function (PhpParser\Node $node) use (&$targets): bool {
+            /** @psalm-capabilities read-props|write-this-props|write-refs */
+            #[Override]
+            public function enterNode(PhpParser\Node $node): ?int
+            {
+                // the body of a closure assigns its own variables; only what it takes by reference is the outer's
+                if ($node instanceof PhpParser\Node\Expr\Closure) {
+                    foreach ($node->uses as $use) {
+                        if ($use->byRef) {
+                            $this->targets[] = $use->var;
+                        }
+                    }
+
+                    return PhpParser\NodeVisitor::DONT_TRAVERSE_CHILDREN;
+                }
+
+                if ($node instanceof PhpParser\Node\Expr\ArrowFunction
+                    || $node instanceof PhpParser\Node\Stmt\ClassLike
+                ) {
+                    return PhpParser\NodeVisitor::DONT_TRAVERSE_CHILDREN;
+                }
+
                 if ($node instanceof PhpParser\Node\Expr\Assign
                     || $node instanceof PhpParser\Node\Expr\AssignRef
                     || $node instanceof PhpParser\Node\Expr\AssignOp
@@ -571,17 +591,23 @@ final class FormulaGenerator
                     ) {
                         foreach ($node->var->items as $item) {
                             if ($item !== null) {
-                                $targets[] = $item->value;
+                                $this->targets[] = $item->value;
                             }
                         }
                     } else {
-                        $targets[] = $node->var;
+                        $this->targets[] = $node->var;
                     }
                 }
 
-                return false;
-            },
-        );
+                return null;
+            }
+        };
+
+        $traverser = new PhpParser\NodeTraverser();
+        $traverser->addVisitor($visitor);
+        $traverser->traverse([$expr]);
+
+        $targets = $visitor->targets;
 
         $var_ids = [];
 

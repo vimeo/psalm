@@ -21,6 +21,49 @@ final class ConditionalTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'orWhoseLeftSideIsAConjunctionAndRightSideReassignsAVariableDoesNotParadoxicallyNarrow' => [
+                'code' => '<?php
+                    function fetch(): ?int {
+                        return rand(0, 1) ? 1 : null;
+                    }
+
+                    function check(?int $x, int $y): void {
+                        if (($x === null && $y === 1) || ($x = fetch())) {
+                            return;
+                        }
+
+                        if ($y === 1) {
+                            echo "reachable";
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => ['RiskyTruthyFalsyComparison'],
+            ],
+            'orWhoseRightSideHasAClosureThatAssignsTheVariableKeepsWhatTheLeftOneTested' => [
+                'code' => '<?php
+                    function call(callable $c): bool {
+                        return $c() > 0;
+                    }
+
+                    function arrow(?int $x): int {
+                        if ($x === null || call(fn() => $x = 1)) {
+                            throw new Exception();
+                        }
+
+                        return $x;
+                    }
+
+                    function closure(?int $x): int {
+                        if ($x === null || call(function () { $x = 1; return $x; })) {
+                            throw new Exception();
+                        }
+
+                        return $x;
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
             'orWhoseRightSideReassignsWhatTheLeftOneTestedTheSameWayKeepsTruthiness' => [
                 'code' => '<?php
                     class A {}
@@ -109,19 +152,6 @@ final class ConditionalTest extends TestCase
                     '$b' => 'A',
                 ],
             ],
-            'nonFinalClassCanBeIdenticalToIterable' => [
-                'code' => <<<'PHP'
-                    <?php
-                    class Foo {}
-
-                    function f(Foo $x, iterable $i): bool {
-                        return $x === $i;
-                    }
-                    PHP,
-                'assertions' => [],
-                'ignored_issues' => [],
-                'php_version' => '8.1',
-            ],
             'chainedAssignmentOfAConditionIsFalseWhereTheConditionIsFalse' => [
                 'code' => <<<'PHP'
                     <?php
@@ -145,6 +175,19 @@ final class ConditionalTest extends TestCase
                         if (!$isRoot || $isSimple) {
                             echo "not the root, or simple";
                         }
+                    }
+                    PHP,
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
+            'nonFinalClassCanBeIdenticalToIterable' => [
+                'code' => <<<'PHP'
+                    <?php
+                    class Foo {}
+
+                    function f(Foo $x, iterable $i): bool {
+                        return $x === $i;
                     }
                     PHP,
                 'assertions' => [],
@@ -3925,6 +3968,38 @@ final class ConditionalTest extends TestCase
     public static function providerInvalidCodeParse(): iterable
     {
         return [
+            'orWhoseLeftSideIsAConjunctionAndRightSideReassignsAVariableKeepsTheLeftNullable' => [
+                'code' => '<?php
+                    function fetch(): ?int {
+                        return rand(0, 1) ? 1 : null;
+                    }
+
+                    function check(?int $a, ?int $b): int {
+                        if (($b === null && $a === null) || ($a = fetch()) !== null) {
+                            return 0;
+                        }
+
+                        return $b;
+                    }',
+                'error_message' => 'NullableReturnStatement',
+            ],
+            'orWhoseRightSideHasAClosureThatAssignsTheVariableByReference' => [
+                'code' => '<?php
+                    function call(callable $c): bool {
+                        return $c() > 0;
+                    }
+
+                    function check(?int $x): int {
+                        if ($x === null || call(function () use (&$x) { $x = null; return 1; })) {
+                            throw new Exception();
+                        }
+
+                        return $x;
+                    }',
+                'error_message' => 'NullableReturnStatement',
+                'error_levels' => [],
+                'php_version' => '8.0',
+            ],
             'iterableIsNotInstanceOfAnEnum' => [
                 'code' => <<<'PHP'
                     <?php
