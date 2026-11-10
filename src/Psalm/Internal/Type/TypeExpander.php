@@ -222,6 +222,7 @@ final class TypeExpander
 
                 $extra_types = [];
                 foreach ($return_type->extra_types as $extra_type) {
+                    // a member is not expanded as a generic or its templates (`Iterator` stays `Iterator`)
                     self::expandAtomic(
                         $codebase,
                         $extra_type,
@@ -231,8 +232,8 @@ final class TypeExpander
                         $evaluate_class_constants,
                         $evaluate_conditional_types,
                         $final,
-                        $expand_generic,
-                        $expand_templates,
+                        false,
+                        false,
                         $throw_on_unresolvable_constant,
                     );
 
