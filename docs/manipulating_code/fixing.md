@@ -35,6 +35,13 @@ vendor/bin/psalter --plugin=vendor/vimeo/psalm/examples/plugins/ClassUnqualifier
 
 The above example plugin converts all unnecessarily qualified classnames in your code to shorter aliased versions.
 
+Plugins enabled in `psalm.xml` can also fix the issues they report, when [they declare them](../running_psalm/plugins/authoring_plugins.md#fixing-plugin-issues-with-psalter). With a plugin that declares `UnspecificEqualsAssertion`:
+```bash
+vendor/bin/psalter --list-supported-issues                       # ...,UnnecessaryVarAnnotation,UnspecificEqualsAssertion
+vendor/bin/psalter --issues=UnspecificEqualsAssertion --dry-run  # assertEquals(1, $int) becomes assertSame(1, $int)
+vendor/bin/psalter --issues=all --dry-run                        # the same, along with Psalm's own fixes
+```
+
 ## Supported fixes
 
 This initial release provides support for the following alterations, corresponding to the names of issues Psalm finds.
