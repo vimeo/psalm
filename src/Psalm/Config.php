@@ -56,6 +56,7 @@ use Psalm\Issue\PropertyIssue;
 use Psalm\Issue\VariableIssue;
 use Psalm\Plugin\PluginEntryPointInterface;
 use Psalm\Plugin\PluginFileExtensionsInterface;
+use Psalm\Plugin\PluginFixableIssuesInterface;
 use Psalm\Plugin\PluginInterface;
 use Psalm\Progress\Progress;
 use Psalm\Progress\VoidProgress;
@@ -1852,6 +1853,39 @@ final class Config
         foreach ($socket->getAdditionalFileTypeAnalyzers() as $extension => $className) {
             $this->filetype_analyzers[$extension] = $className;
         }
+    }
+
+    /**
+     * The types of the issues the plugins can fix (see PluginFixableIssuesInterface)
+     *
+     * @internal
+     * @return list<string>
+     */
+    public function getPluginFixableIssueTypes(ProjectAnalyzer $project_analyzer): array
+    {
+        $issue_types = [];
+
+        foreach ($this->plugin_classes as $plugin_class_entry) {
+            $plugin_class_name = $plugin_class_entry['class'];
+            $plugin = $this->loadPlugin($project_analyzer, $plugin_class_name);
+            if (!$plugin instanceof PluginFixableIssuesInterface) {
+                continue;
+            }
+
+            try {
+                foreach ($plugin->getFixableIssues($plugin_class_entry['config']) as $issue_class) {
+                    if (!is_a($issue_class, CodeIssue::class, true)) {
+                        throw new UnexpectedValueException($issue_class . ' is not a ' . CodeIssue::class);
+                    }
+
+                    $issue_types[] = $issue_class::getIssueType();
+                }
+            } catch (Throwable $t) {
+                throw new ConfigException('Failed to get the fixable issues of plugin ' . $plugin_class_name, 0, $t);
+            }
+        }
+
+        return $issue_types;
     }
 
     /**

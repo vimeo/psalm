@@ -226,6 +226,14 @@ final class Codebase
 
     public bool $alter_code = false;
 
+    /**
+     * The issue types Psalter was asked to fix (see shouldFixIssue())
+     *
+     * @internal
+     * @var array<string, bool>
+     */
+    public array $issues_to_fix = [];
+
     public bool $diff_methods = false;
 
     /** whether or not we only checked a part of the codebase */
@@ -956,6 +964,22 @@ final class Codebase
     {
         $this->collect_references = true;
         $this->find_unused_variables = true;
+    }
+
+    /**
+     * Whether Psalter was asked to fix the issues of $issue_type (`--issues=...`, `all` included) and
+     * $suppressed_issues don't suppress them: a plugin that declares them with PluginFixableIssuesInterface adds its
+     * file replacements for them only then.
+     *
+     * @api
+     * @param array<array-key, string> $suppressed_issues
+     * @psalm-mutation-free
+     */
+    public function shouldFixIssue(string $issue_type, array $suppressed_issues = []): bool
+    {
+        return $this->alter_code
+            && isset($this->issues_to_fix[$issue_type])
+            && !$this->config->suppressesIssueType($suppressed_issues, $issue_type);
     }
 
     /**

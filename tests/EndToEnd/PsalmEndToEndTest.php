@@ -32,6 +32,7 @@ use function unlink;
 
 use const DIRECTORY_SEPARATOR;
 use const PHP_BINARY;
+use const PHP_EOL;
 
 /**
  * Tests some of the most important use cases of the psalm and psalter commands, by launching a new
@@ -224,6 +225,50 @@ final class PsalmEndToEndTest extends TestCase
         (new Process([PHP_BINARY, $this->psalter, '--alter', '--issues=MissingPureAnnotation'], self::$tmpDir))->mustRun();
 
         $this->assertStringContainsString('@psalm-pure', (string) file_get_contents(self::$tmpDir . '/src/Slug.php'));
+    }
+
+    public function testPsalterFixesTheIssuesAPluginDeclares(): void
+    {
+        $this->runPsalmInit(1);
+        $psalm_xml = (string) file_get_contents(self::$tmpDir . '/psalm.xml');
+        file_put_contents(self::$tmpDir . '/psalm.xml', str_replace(
+            ['<psalm', '</psalm>'],
+            [
+                '<psalm runTaintAnalysis="false"',
+                '<plugins><pluginClass class="Psalm\Tests\Config\Plugin\FixableIssuePlugin" /></plugins></psalm>',
+            ],
+            $psalm_xml,
+        ));
+        unlink(self::$tmpDir . '/src/FileWithErrors.php');
+        file_put_contents(
+            self::$tmpDir . '/src/functions.php',
+            "<?php\n\nfunction legacy_call(): int\n{\n    return 1;\n}\n\nfunction modern_call(): int\n{\n    return 2;\n}\n",
+        );
+
+        $list = new Process([PHP_BINARY, $this->psalter, '--list-supported-issues'], self::$tmpDir);
+        $list->mustRun();
+        $this->assertStringEndsWith(',UnnecessaryVarAnnotation,LegacyCall' . PHP_EOL, $list->getOutput());
+
+        // twice: the second run reads the cache the first one wrote
+        foreach ([1, 2] as $_) {
+            foreach (['a', 'b', 'c'] as $file) {
+                file_put_contents(
+                    self::$tmpDir . '/src/' . $file . '.php',
+                    "<?php\n\nfunction $file(): int\n{\n    return legacy_call();\n}\n",
+                );
+            }
+
+            (new Process([PHP_BINARY, $this->psalter, '--issues=LegacyCall', '--threads=2'], self::$tmpDir))
+                ->mustRun();
+
+            $this->assertDirectoryExists(self::$tmpDir . '/cache');
+            foreach (['a', 'b', 'c'] as $file) {
+                $this->assertStringContainsString(
+                    'return modern_call();',
+                    (string) file_get_contents(self::$tmpDir . '/src/' . $file . '.php'),
+                );
+            }
+        }
     }
 
     public function testPsalm(): void

@@ -170,7 +170,7 @@ final class Psalter
                     possible, use --issues=all
 
                 --list-supported-issues
-                    Display the list of issues that psalter knows how to fix
+                    Display the list of issues that psalter knows how to fix, those of the configured plugins included
 
                 --find-unused-code
                     Include unused code as a candidate for removal
@@ -294,11 +294,6 @@ final class Psalter
             );
         }
 
-        if (array_key_exists('list-supported-issues', $options)) {
-            echo implode(',', ProjectAnalyzer::getSupportedIssuesToFix()) . PHP_EOL;
-            exit();
-        }
-
         $debug = array_key_exists('debug', $options) || array_key_exists('debug-by-line', $options);
         // CI takes precedence over AI detection: persistent CI logs still want
         // per-phase breadcrumbs for humans reviewing the build.
@@ -330,6 +325,11 @@ final class Psalter
             $scanThreads,
             $progress,
         );
+
+        if (array_key_exists('list-supported-issues', $options)) {
+            echo implode(',', $project_analyzer->getAllIssuesToFix()) . PHP_EOL;
+            exit();
+        }
 
         if (array_key_exists('debug-by-line', $options)) {
             $project_analyzer->debug_lines = true;
