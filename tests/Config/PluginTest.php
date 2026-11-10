@@ -2110,8 +2110,8 @@ final class PluginTest extends DeferredAnalyzerTestCase
      */
     private function analyzeLegacyCalls(string $docblock = ''): array
     {
-        $somefile = (string) getcwd() . '/src/somefile.php';
-        $otherfile = (string) getcwd() . '/src/Psalm/otherfile.php';
+        $somefile = self::$src_dir_path . 'somefile.php';
+        $otherfile = self::$src_dir_path . 'Psalm' . DIRECTORY_SEPARATOR . 'otherfile.php';
 
         $this->addFile(
             $somefile,
