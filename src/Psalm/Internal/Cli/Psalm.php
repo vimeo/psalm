@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace Psalm\Internal\Cli;
 
-use Amp\Parallel\Context\ForkContext;
 use Composer\Autoload\ClassLoader;
 use Fidry\CpuCoreCounter\CpuCoreCounter;
 use Psalm\Config;
@@ -463,8 +462,8 @@ final class Psalm
         if (defined('PHP_WINDOWS_VERSION_MAJOR')) {
             // No support desired for Windows at the moment
             return 1;
-        } elseif (!ForkContext::isSupported()) {
-            // the worker pool forks (see Pool), which needs pcntl and posix
+        } elseif (!extension_loaded('pcntl') || !extension_loaded('posix')) {
+            // the worker pool forks its workers and kills them with posix_kill()
             return 1;
         }
 
