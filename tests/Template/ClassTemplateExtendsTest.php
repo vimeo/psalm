@@ -1632,6 +1632,167 @@ final class ClassTemplateExtendsTest extends TestCase
                         }
                     }',
             ],
+            'composedParentArgumentBindsInheritedProperty' => [
+                'code' => '<?php
+                    /** @template T */
+                    final class Box {}
+
+                    /** @template T */
+                    abstract class Base {
+                        /** @param T $value */
+                        public function __construct(public mixed $value) {}
+                    }
+
+                    /**
+                     * @template TModel of object
+                     * @extends Base<Box<TModel>>
+                     */
+                    final class Composed extends Base {}
+
+                    /**
+                     * @template TModel of object
+                     * @param Composed<TModel> $composed
+                     * @return Box<TModel>
+                     */
+                    function generic(Composed $composed): Box {
+                        return $composed->value;
+                    }
+
+                    /** @return Composed<stdClass> */
+                    function make(): Composed {
+                        throw new RuntimeException();
+                    }
+
+                    $value = make()->value;',
+                'assertions' => [
+                    '$value===' => 'Box<stdClass>',
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'composedParentArgumentBindsInheritedPropertyOfAList' => [
+                'code' => '<?php
+                    /** @template T */
+                    abstract class Base {
+                        /** @var T */
+                        public mixed $value;
+                    }
+
+                    /**
+                     * @template U
+                     * @extends Base<list<U>>
+                     */
+                    abstract class Mid extends Base {}
+
+                    /** @return Mid<DateTime> */
+                    function make(): Mid {
+                        throw new RuntimeException();
+                    }
+
+                    $value = make()->value;',
+                'assertions' => [
+                    '$value===' => 'list<DateTime>',
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'composedParentArgumentBindsInheritedInvokable' => [
+                'code' => '<?php
+                    /** @template T */
+                    final class Box {}
+
+                    /** @template T */
+                    abstract class Base {
+                        /** @param T $value */
+                        public function __invoke(mixed $value): void {}
+
+                        /** @param T $value */
+                        public function set(mixed $value): void {}
+                    }
+
+                    /**
+                     * @template TModel of object
+                     * @extends Base<Box<TModel>>
+                     */
+                    final class Composed extends Base {}
+
+                    /** @param callable(Box<stdClass>): void $callback */
+                    function takesCallback(callable $callback): void {}
+
+                    /** @param Composed<stdClass> $composed */
+                    function f(Composed $composed): void {
+                        takesCallback($composed);
+                        takesCallback($composed(...));
+                        takesCallback(Closure::fromCallable($composed));
+                        takesCallback([$composed, "set"]);
+                        takesCallback($composed->set(...));
+                        takesCallback(Closure::fromCallable([$composed, "__invoke"]));
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'composedParentArgumentBindsInheritedMembersThroughTwoExtends' => [
+                'code' => '<?php
+                    /** @template T */
+                    final class Box {}
+
+                    /** @template T */
+                    abstract class Base {
+                        /** @param T $value */
+                        public function __construct(public mixed $value) {}
+
+                        /** @param T $value */
+                        public function __invoke(mixed $value): void {}
+
+                        /** @return T */
+                        public function get(): mixed {
+                            throw new RuntimeException();
+                        }
+
+                        /** @return T */
+                        public static function make(): mixed {
+                            throw new RuntimeException();
+                        }
+                    }
+
+                    /**
+                     * @template TItem of object
+                     * @extends Base<list<Box<TItem>>>
+                     */
+                    abstract class Middle extends Base {}
+
+                    /**
+                     * @template TModel of object
+                     * @extends Middle<TModel>
+                     */
+                    final class Leaf extends Middle {}
+
+                    /** @param callable(list<Box<stdClass>>): void $callback */
+                    function takesCallback(callable $callback): void {}
+
+                    /** @param Leaf<stdClass> $leaf */
+                    function f(Leaf $leaf): void {
+                        takesCallback($leaf);
+                    }
+
+                    /** @return Leaf<stdClass> */
+                    function make(): Leaf {
+                        throw new RuntimeException();
+                    }
+
+                    $leaf = make();
+                    $value = $leaf->value;
+                    $get = $leaf->get();
+                    $static = $leaf::make();',
+                'assertions' => [
+                    '$value===' => 'list<Box<stdClass>>',
+                    '$get===' => 'list<Box<stdClass>>',
+                    '$static===' => 'list<Box<stdClass>>',
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
             'useGenericParentMethod' => [
                 'code' => '<?php
                     /**
@@ -7623,6 +7784,32 @@ final class ClassTemplateExtendsTest extends TestCase
                     }',
                 'error_message' => 'ImplementedReturnTypeMismatch - src' . DIRECTORY_SEPARATOR . 'somefile.php:15:37'
                     . " - The inherited return type 'class-string<Coll<bool>>' for Base::getType",
+            ],
+            'composedParentArgumentOfAPropertyIsInvariant' => [
+                'code' => '<?php
+                    /** @template T */
+                    final class Box {}
+
+                    /** @template T */
+                    abstract class Base {
+                        /** @param T $value */
+                        public function __construct(public mixed $value) {}
+                    }
+
+                    /**
+                     * @template TModel of object
+                     * @extends Base<Box<TModel>>
+                     */
+                    final class Composed extends Base {}
+
+                    /** @param Box<object> $box */
+                    function takesBox(Box $box): void {}
+
+                    /** @param Composed<stdClass> $composed */
+                    function f(Composed $composed): void {
+                        takesBox($composed->value);
+                    }',
+                'error_message' => 'InvalidArgument - src' . DIRECTORY_SEPARATOR . 'somefile.php:22:34 - Argument 1 of takesBox expects Box<object>, but Box<stdClass> provided',
             ],
         ];
     }

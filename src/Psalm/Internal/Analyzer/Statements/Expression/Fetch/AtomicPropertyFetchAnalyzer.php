@@ -16,6 +16,7 @@ use Psalm\Internal\Analyzer\ClassLikeAnalyzer;
 use Psalm\Internal\Analyzer\InheritedMethodTaints;
 use Psalm\Internal\Analyzer\NamespaceAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\Assignment\InstancePropertyAssignmentAnalyzer;
+use Psalm\Internal\Analyzer\Statements\Expression\Call\ClassTemplateParamCollector;
 use Psalm\Internal\Analyzer\Statements\Expression\Call\Method\MethodCallPurityAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\Call\MethodCallAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\CallAnalyzer;
@@ -986,9 +987,30 @@ final class AtomicPropertyFetchAnalyzer
                 }
             }
 
+            $composed_template_params = null;
+
             foreach ($template_types as $type_name => $_) {
                 if (isset($extended_types[$property_declaring_class_storage->name][$type_name])) {
                     $mapped_type = $extended_types[$property_declaring_class_storage->name][$type_name];
+
+                    // a composed argument (`@extends Base<Box<TModel>>`) is bound like for a method call, which
+                    // applies the object's arguments to it
+                    if (!$mapped_type->hasTemplate() && $mapped_type->getTemplateTypes() !== []) {
+                        $composed_template_params ??= ClassTemplateParamCollector::collect(
+                            $codebase,
+                            $property_declaring_class_storage,
+                            $property_class_storage,
+                            null,
+                            $lhs_type_part,
+                        );
+
+                        if (isset($composed_template_params[$type_name][$property_declaring_class_storage->name])) {
+                            $template_types[$type_name][$property_declaring_class_storage->name]
+                                = $composed_template_params[$type_name][$property_declaring_class_storage->name];
+                        }
+
+                        continue;
+                    }
 
                     foreach ($mapped_type->getAtomicTypes() as $mapped_type_atomic) {
                         if (!$mapped_type_atomic instanceof TTemplateParam) {
