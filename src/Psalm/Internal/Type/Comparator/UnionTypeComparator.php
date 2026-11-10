@@ -501,7 +501,7 @@ final class UnionTypeComparator
                 if ($union_comparison_result) {
                     $remaining_types_coerced = true;
 
-                    if ($some_type_coerced && $input_atomic_types) {
+                    if ($some_type_coerced && $some_to_string_cast && $input_atomic_types) {
                         foreach ($input_atomic_types as $remaining_input_type) {
                             $remaining_comparison_result = new TypeComparisonResult();
                             $remaining_type_contained = self::isContainedBy(
@@ -524,9 +524,9 @@ final class UnionTypeComparator
                         }
                     }
 
-                    if ($some_type_coerced && $remaining_types_coerced) {
+                    if ($some_type_coerced && (!$some_to_string_cast || $remaining_types_coerced)) {
                         $union_comparison_result->type_coerced = true;
-                    } elseif ($some_type_coerced) {
+                    } elseif ($some_type_coerced && $some_to_string_cast) {
                         $union_comparison_result->type_coerced = false;
                     }
 
