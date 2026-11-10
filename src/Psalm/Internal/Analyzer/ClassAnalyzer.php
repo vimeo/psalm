@@ -1079,6 +1079,9 @@ final class ClassAnalyzer extends ClassLikeAnalyzer
                 $property_id = $fq_class_name . '::$' . $property_name;
 
                 $class_context->vars_in_scope[$property_id] = $fleshed_out_type;
+                // `static::$p` is what the property is declared as for this class too, not for the trait that
+                // declares it
+                $class_context->vars_in_scope['static::$' . $property_name] = $fleshed_out_type;
             } else {
                 $class_context->vars_in_scope['$this->' . $property_name] = $fleshed_out_type;
             }
