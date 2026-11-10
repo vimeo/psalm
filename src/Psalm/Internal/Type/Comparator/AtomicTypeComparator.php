@@ -755,13 +755,22 @@ final class AtomicTypeComparator
                             }
                         }
 
+                        $return_type_comparison = new TypeComparisonResult();
                         if ($return_type === null
                             || !UnionTypeComparator::isContainedBy(
                                 $codebase,
                                 $return_type,
                                 new Union([$container_type_part]),
+                                false,
+                                false,
+                                $return_type_comparison,
                             )
                         ) {
+                            if ($atomic_comparison_result) {
+                                $atomic_comparison_result->type_coerced = $return_type_comparison->type_coerced;
+                                $atomic_comparison_result->to_string_cast = true;
+                            }
+
                             return false;
                         }
                     }

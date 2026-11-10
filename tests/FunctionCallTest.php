@@ -3361,6 +3361,23 @@ final class FunctionCallTest extends TestCase
                 'error_levels' => [],
                 'php_version' => '8.1',
             ],
+            'objectToStringReturnCoercesToLowercaseStringParameter' => [
+                'code' => '<?php
+                    final class Text {
+                        public function __toString(): string {
+                            return "text";
+                        }
+                    }
+
+                    /** @param lowercase-string $value */
+                    function acceptsLowercase(string $value): void {}
+
+                    /** @psalm-suppress ImplicitToStringCast */
+                    acceptsLowercase(new Text());',
+                'error_message' => 'ArgumentTypeCoercion',
+                'error_levels' => [],
+                'php_version' => '8.1',
+            ],
             'objectToStringReturnDoesNotMatchLiteralStringParameter' => [
                 'code' => '<?php
                     final class Text {
@@ -3394,6 +3411,23 @@ final class FunctionCallTest extends TestCase
                     /** @psalm-suppress ImplicitToStringCast */
                     acceptsNonEmpty(new EmptyText());',
                 'error_message' => 'InvalidArgument',
+                'error_levels' => [],
+                'php_version' => '8.1',
+            ],
+            'objectToStringReturnCoercesToNonEmptyStringParameter' => [
+                'code' => '<?php
+                    final class Text {
+                        public function __toString(): string {
+                            return "text";
+                        }
+                    }
+
+                    /** @param non-empty-string $value */
+                    function acceptsNonEmpty(string $value): void {}
+
+                    /** @psalm-suppress ImplicitToStringCast */
+                    acceptsNonEmpty(new Text());',
+                'error_message' => 'ArgumentTypeCoercion',
                 'error_levels' => [],
                 'php_version' => '8.1',
             ],
