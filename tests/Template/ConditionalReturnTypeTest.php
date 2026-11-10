@@ -2098,6 +2098,49 @@ final class ConditionalReturnTypeTest extends TestCase
                     }',
                 'ignored_issues' => ['InvalidArgument'],
             ],
+            'paramConditionalOnClosureOfSupertypeParamKeepsMastersResult' => [
+                'code' => '<?php
+                    final class Box {
+                        /**
+                         * @param (callable(static): mixed)|null $callback
+                         * @return ($callback is null ? int : static)
+                         */
+                        public function tap(?callable $callback = null) {
+                            throw new RuntimeException();
+                        }
+                    }
+
+                    $box = new Box();
+                    $object = $box->tap(fn (object $_x): int => 1);
+                    $mixed = $box->tap(fn (mixed $_x): int => 1);',
+                'assertions' => [
+                    '$object===' => 'Box',
+                    '$mixed===' => 'Box',
+                ],
+                'ignored_issues' => ['InvalidArgument'],
+                'php_version' => '8.0',
+            ],
+            'paramConditionalOnClosureOfSupertypeParamInLoopKeepsMastersResult' => [
+                'code' => '<?php
+                    final class Box {
+                        /**
+                         * @param (callable(static): mixed)|null $callback
+                         * @return ($callback is null ? int : static)
+                         */
+                        public function tap(?callable $callback = null) {
+                            throw new RuntimeException();
+                        }
+                    }
+
+                    /** @param list<Box> $boxes */
+                    function tapAll(array $boxes): void {
+                        foreach ($boxes as $box) {
+                            $tapped = $box->tap(fn (object $x): object => $x);
+                            /** @psalm-check-type-exact $tapped = Box */;
+                        }
+                    }',
+                'ignored_issues' => ['InvalidArgument'],
+            ],
         ];
     }
 
