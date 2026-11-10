@@ -34,6 +34,18 @@ final class ThrowAnalyzer
         $context->inside_throw = false;
         $context->has_returned = true;
 
+        // a branch that throws never joins the rest of the try body, but what it assigned can still be seen
+        if ($context->try_scope !== null) {
+            foreach ($context->assigned_var_ids as $var_id => $_) {
+                if (isset($context->vars_in_scope[$var_id])) {
+                    $context->try_scope->parent_nodes[$var_id] = [
+                        ...($context->try_scope->parent_nodes[$var_id] ?? []),
+                        ...$context->vars_in_scope[$var_id]->parent_nodes,
+                    ];
+                }
+            }
+        }
+
         if ($context->finally_scope) {
             foreach ($context->vars_in_scope as $var_id => $type) {
                 if (isset($context->finally_scope->vars_in_scope[$var_id])) {
