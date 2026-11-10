@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Psalm;
 
 use InvalidArgumentException;
+use JsonException;
 use Psalm\Internal\Analyzer\ConstructorExits;
 use Psalm\Internal\Analyzer\Statements\Expression\Fetch\VariableFetchAnalyzer;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
@@ -29,6 +30,7 @@ use function assert;
 use function count;
 use function in_array;
 use function is_int;
+use function json_encode;
 use function preg_match;
 use function preg_quote;
 use function preg_replace;
@@ -38,6 +40,8 @@ use function strcspn;
 use function strpos;
 use function strtolower;
 use function substr;
+
+use const JSON_THROW_ON_ERROR;
 
 /**
  * @api
@@ -950,7 +954,12 @@ final class Context
             $summary[$k] = $v->getId();
         }
 
-        return serialize($summary);
+        try {
+            return json_encode($summary, JSON_THROW_ON_ERROR);
+        } catch (JsonException) {
+            // Serialized arrays start with "a:", which cannot collide with JSON output.
+            return serialize($summary);
+        }
     }
 
     public function defineGlobals(): void
