@@ -609,6 +609,7 @@ final class Config
     public array $php_extensions = [
         "amqp" => null,
         "apcu" => null,
+        "curl" => null,
         "decimal" => null,
         "dom" => null,
         "ds" => null,
@@ -617,9 +618,12 @@ final class Config
         "gmp" => null,
         "ibm_db2" => null,
         "imagick" => null,
+        "intl" => null,
+        "ldap" => null,
         "memcached" => null,
         "mongodb" => null,
         "mysqli" => null,
+        "openssl" => null,
         "pdo" => null,
         "random" => null,
         "rdkafka" => null,
@@ -627,6 +631,7 @@ final class Config
         "simplexml" => null,
         "soap" => null,
         "xdebug" => null,
+        "zip" => null,
         "zstd" => null,
     ];
 
@@ -1611,18 +1616,18 @@ final class Config
                 $issue_handler_children = $issue_handlers->children();
                 if ($issue_handler_children) {
                     foreach ($issue_handler_children as $key => $issue_handler) {
-                        if ($key === 'PluginIssue') {
-                            $custom_class_name = (string)$issue_handler['name'];
-                            /** @var string $key */
-                            $config->issue_handlers[$custom_class_name] = IssueHandler::loadFromXMLElement(
-                                $issue_handler,
-                                $base_dir,
+                        $handled_issue = $key === 'PluginIssue' ? (string) $issue_handler['name'] : $key;
+
+                        $loaded_handler = IssueHandler::loadFromXMLElement($issue_handler, $base_dir);
+
+                        // an issue named twice keeps what both elements say
+                        if (isset($config->issue_handlers[$handled_issue])) {
+                            $config->issue_handlers[$handled_issue]->mergeLater(
+                                $loaded_handler,
+                                isset($issue_handler['errorLevel']),
                             );
                         } else {
-                            $config->issue_handlers[$key] = IssueHandler::loadFromXMLElement(
-                                $issue_handler,
-                                $base_dir,
-                            );
+                            $config->issue_handlers[$handled_issue] = $loaded_handler;
                         }
                     }
                 }
