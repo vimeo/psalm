@@ -63,6 +63,7 @@ use Psalm\Progress\VoidProgress;
 use Psalm\Type\TaintKind;
 use RecursiveDirectoryIterator;
 use RecursiveIteratorIterator;
+use ReflectionClass;
 use RuntimeException;
 use SimpleXMLElement;
 use SplFileInfo;
@@ -96,6 +97,7 @@ use function file_get_contents;
 use function flock;
 use function fopen;
 use function function_exists;
+use function get_debug_type;
 use function get_defined_constants;
 use function get_defined_functions;
 use function getcwd;
@@ -1874,18 +1876,37 @@ final class Config
 
             try {
                 foreach ($plugin->getFixableIssues($plugin_class_entry['config']) as $issue_class) {
-                    if (!is_a($issue_class, CodeIssue::class, true)) {
-                        throw new UnexpectedValueException($issue_class . ' is not a ' . CodeIssue::class);
-                    }
-
-                    $issue_types[] = $issue_class::getIssueType();
+                    $issue_types[] = self::getFixableIssueType($issue_class);
                 }
             } catch (Throwable $t) {
-                throw new ConfigException('Failed to get the fixable issues of plugin ' . $plugin_class_name, 0, $t);
+                throw new ConfigException(
+                    'Failed to get the fixable issues of plugin ' . $plugin_class_name,
+                    1_635_800_583,
+                    $t,
+                );
             }
         }
 
         return $issue_types;
+    }
+
+    /**
+     * @param mixed $issue_class what a plugin declares, which Psalm may not have analysed
+     * @psalm-pure
+     */
+    private static function getFixableIssueType(mixed $issue_class): string
+    {
+        if (!is_string($issue_class)
+            || !is_a($issue_class, CodeIssue::class, true)
+            || (new ReflectionClass($issue_class))->isAbstract()
+        ) {
+            throw new UnexpectedValueException(
+                (is_string($issue_class) ? $issue_class : get_debug_type($issue_class))
+                . ' is not a concrete ' . CodeIssue::class . ' class',
+            );
+        }
+
+        return $issue_class::getIssueType();
     }
 
     /**

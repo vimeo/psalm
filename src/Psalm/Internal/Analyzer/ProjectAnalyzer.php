@@ -1277,8 +1277,8 @@ final class ProjectAnalyzer
     }
 
     /**
-     * The issues the plugins fix (see PluginFixableIssuesInterface) that Psalm doesn't, so that a plugin can't change
-     * what `--issues=all` fixes
+     * The issues the plugins fix (see PluginFixableIssuesInterface), except Psalm's own: they join `--issues=all`,
+     * but a plugin can't pull into it the issues Psalm fixes, nor NAMED_ISSUES_TO_FIX
      *
      * @return list<string>
      */

@@ -28,8 +28,9 @@ final class LegacyCallFixer implements AfterExpressionAnalysisInterface
         }
 
         $source = $event->getStatementsSource();
+        $issue = new LegacyCall('Use modern_call()', new CodeLocation($source, $expr->name));
 
-        if ($event->getCodebase()->shouldFixIssue(LegacyCall::getIssueType(), $source->getSuppressedIssues())) {
+        if ($event->getCodebase()->shouldFixIssue($issue, $source->getSuppressedIssues())) {
             $event->setFileReplacements([
                 new FileManipulation(
                     (int) $expr->name->getAttribute('startFilePos'),
@@ -41,11 +42,7 @@ final class LegacyCallFixer implements AfterExpressionAnalysisInterface
             return null;
         }
 
-        IssueBuffer::maybeAdd(
-            new LegacyCall('Use modern_call()', new CodeLocation($source, $expr->name)),
-            $source->getSuppressedIssues(),
-            true,
-        );
+        IssueBuffer::maybeAdd($issue, $source->getSuppressedIssues(), true);
 
         return null;
     }

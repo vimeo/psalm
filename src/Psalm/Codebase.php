@@ -57,6 +57,7 @@ use Psalm\Internal\Provider\StatementsProvider;
 use Psalm\Internal\Scanner\UnresolvedConstantComponent;
 use Psalm\Internal\Type\Comparator\UnionTypeComparator;
 use Psalm\Internal\TypeVisitor\TypeScanner;
+use Psalm\Issue\CodeIssue;
 use Psalm\Issue\InvalidDocblock;
 use Psalm\Progress\Progress;
 use Psalm\Progress\VoidProgress;
@@ -967,19 +968,21 @@ final class Codebase
     }
 
     /**
-     * Whether Psalter was asked to fix the issues of $issue_type (`--issues=...`, `all` included) and
-     * $suppressed_issues don't suppress them: a plugin that declares them with PluginFixableIssuesInterface adds its
-     * file replacements for them only then.
+     * Whether Psalter was asked to fix $issue (`--issues=...`, `all` included) and neither $suppressed_issues nor the
+     * config's issue handlers suppress it: a plugin that declares its type with PluginFixableIssuesInterface adds its
+     * file replacements for it only then.
      *
      * @api
      * @param array<array-key, string> $suppressed_issues
-     * @psalm-mutation-free
      */
-    public function shouldFixIssue(string $issue_type, array $suppressed_issues = []): bool
+    public function shouldFixIssue(CodeIssue $issue, array $suppressed_issues): bool
     {
+        $issue_type = $issue::getIssueType();
+
         return $this->alter_code
             && isset($this->issues_to_fix[$issue_type])
-            && !$this->config->suppressesIssueType($suppressed_issues, $issue_type);
+            && !$this->config->suppressesIssueType($suppressed_issues, $issue_type)
+            && $this->config->getReportingLevelForIssue($issue) !== Config::REPORT_SUPPRESS;
     }
 
     /**

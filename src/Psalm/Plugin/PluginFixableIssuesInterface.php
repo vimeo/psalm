@@ -18,8 +18,8 @@ use SimpleXMLElement;
 interface PluginFixableIssuesInterface extends PluginInterface
 {
     /**
-     * Only Psalter calls it, before the plugin is invoked (and without invoking it for `--list-supported-issues`),
-     * so the issues can't depend on what the plugin's `__invoke()` does.
+     * Not called on plain analysis runs. Psalter calls it before the plugin's `__invoke()`, and possibly without
+     * invoking the plugin at all (`--list-supported-issues`), so the issues can't depend on what `__invoke()` does.
      *
      * @return list<class-string<CodeIssue>>
      */

@@ -21,6 +21,7 @@ final class FixableIssuePlugin implements PluginEntryPointInterface, PluginFixab
     #[Override]
     public function __invoke(PluginRegistrationSocket $registration, ?SimpleXMLElement $config = null): void
     {
+        // registerHooksFromClass() only accepts loaded classes
         class_exists(LegacyCallFixer::class);
         $registration->registerHooksFromClass(LegacyCallFixer::class);
     }
