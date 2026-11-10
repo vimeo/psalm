@@ -66,6 +66,8 @@ use function array_keys;
 use function array_map;
 use function array_merge;
 use function array_shift;
+use function array_unique;
+use function array_values;
 use function count;
 use function dirname;
 use function end;
@@ -129,11 +131,6 @@ final class ProjectAnalyzer
 
     public bool $show_issues = true;
 
-    /**
-     * @var array<string, bool>
-     */
-    private array $issues_to_fix = [];
-
     public bool $dry_run = false;
 
     public bool $full_run = false;
@@ -193,6 +190,13 @@ final class ProjectAnalyzer
         UnusedProperty::class,
         UnusedVariable::class,
         UnnecessaryVarAnnotation::class,
+    ];
+
+    /** The issues to fix that `--issues=all` leaves out */
+    private const NAMED_ISSUES_TO_FIX = [
+        'MissingImmutableAnnotation', // opt-in by design (#4036), reported only with suggestPurityAnnotations
+        'MissingPureAnnotation', // same as MissingImmutableAnnotation
+        'MissingThrowsDocblock', // reported only with checkForThrowsDocblock (#7918)
     ];
 
     /** Bytes of parsed statements getMethodMutations() may keep per process (not a user setting, for now) */
@@ -1236,15 +1240,14 @@ final class ProjectAnalyzer
     /**
      * @param array<string, bool> $issues
      * @throws UnsupportedIssueToFixException
-     * @psalm-external-mutation-free
      */
     public function setIssuesToFix(array $issues): void
     {
-        $supported_issues_to_fix = static::getSupportedIssuesToFix();
-
-        $supported_issues_to_fix[] = 'MissingImmutableAnnotation';
-        $supported_issues_to_fix[] = 'MissingPureAnnotation';
-        $supported_issues_to_fix[] = 'MissingThrowsDocblock';
+        $supported_issues_to_fix = [
+            ...static::getSupportedIssuesToFix(),
+            ...self::NAMED_ISSUES_TO_FIX,
+            ...$this->getPluginIssuesToFix(),
+        ];
 
         $unsupportedIssues = array_diff(array_keys($issues), $supported_issues_to_fix);
 
@@ -1255,25 +1258,46 @@ final class ProjectAnalyzer
             );
         }
 
-        $this->issues_to_fix = $issues;
+        $this->codebase->issues_to_fix = $issues;
+    }
+
+    public function setAllIssuesToFix(): void
+    {
+        $this->codebase->issues_to_fix = array_fill_keys($this->getAllIssuesToFix(), true);
     }
 
     /**
-     * @psalm-external-mutation-free
+     * The issues `--issues=all` fixes: those of getSupportedIssuesToFix(), then those only the plugins fix
+     *
+     * @return list<string>
      */
-    public function setAllIssuesToFix(): void
+    public function getAllIssuesToFix(): array
     {
-        $keyed_issues = array_fill_keys(static::getSupportedIssuesToFix(), true);
+        return [...static::getSupportedIssuesToFix(), ...$this->getPluginIssuesToFix()];
+    }
 
-        $this->setIssuesToFix($keyed_issues);
+    /**
+     * The issues the plugins fix (see PluginFixableIssuesInterface), except Psalm's own: they join `--issues=all`,
+     * but a plugin can't pull into it the issues Psalm fixes, nor NAMED_ISSUES_TO_FIX
+     *
+     * @return list<string>
+     */
+    private function getPluginIssuesToFix(): array
+    {
+        return array_values(array_unique(array_diff(
+            $this->config->getPluginFixableIssueTypes($this),
+            static::getSupportedIssuesToFix(),
+            self::NAMED_ISSUES_TO_FIX,
+        )));
     }
 
     /**
      * @return array<string, bool>
+     * @psalm-capabilities read-props
      */
     public function getIssuesToFix(): array
     {
-        return $this->issues_to_fix;
+        return $this->codebase->issues_to_fix;
     }
 
     /**
@@ -1286,8 +1310,8 @@ final class ProjectAnalyzer
     {
         return $this->config->suggest_purity_annotations
             || ($this->codebase->alter_code
-                && (isset($this->issues_to_fix['MissingPureAnnotation'])
-                    || isset($this->issues_to_fix['MissingImmutableAnnotation'])));
+                && (isset($this->codebase->issues_to_fix['MissingPureAnnotation'])
+                    || isset($this->codebase->issues_to_fix['MissingImmutableAnnotation'])));
     }
 
     /**
