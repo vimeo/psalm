@@ -185,6 +185,38 @@ final class ClassMoveTest extends DeferredAnalyzerTestCase
                     'Ns\A' => 'Ns\B',
                 ],
             ],
+            'renameClassInDocblockUnionsWithSpacesAroundPipe' => [
+                'input' => '<?php
+                    namespace Ns;
+
+                    class A {}
+
+                    /**
+                     * @param A |null $a the a
+                     * @param A  |  null $b
+                     * @return A
+                     *     |null
+                     */
+                    function foo($a, $b) {
+                        return $a ?? $b;
+                    }',
+                'output' => '<?php
+                    namespace Ns;
+
+                    class B {}
+
+                    /**
+                     * @param B|null $a the a
+                     * @param B|null $b
+                     * @return B|null
+                     */
+                    function foo($a, $b) {
+                        return $a ?? $b;
+                    }',
+                'migrations' => [
+                    'Ns\A' => 'Ns\B',
+                ],
+            ],
             'renameClassWithInstanceMethod' => [
                 'input' => '<?php
                     namespace Ns;
