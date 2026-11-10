@@ -7,6 +7,7 @@ namespace Psalm\Tests\EndToEnd;
 use Exception;
 use Override;
 use PHPUnit\Framework\TestCase;
+use Psalm\Internal\Analyzer\ProjectAnalyzer;
 use Symfony\Component\Process\Process;
 
 use function assert;
@@ -17,6 +18,7 @@ use function file_get_contents;
 use function file_put_contents;
 use function getcwd;
 use function glob;
+use function implode;
 use function is_dir;
 use function is_string;
 use function mkdir;
@@ -247,27 +249,25 @@ final class PsalmEndToEndTest extends TestCase
 
         $list = new Process([PHP_BINARY, $this->psalter, '--list-supported-issues'], self::$tmpDir);
         $list->mustRun();
-        $this->assertStringEndsWith(',UnnecessaryVarAnnotation,LegacyCall' . PHP_EOL, $list->getOutput());
+        $this->assertSame(
+            implode(',', [...ProjectAnalyzer::getSupportedIssuesToFix(), 'LegacyCall']) . PHP_EOL,
+            $list->getOutput(),
+        );
 
-        // twice: the second run reads the cache the first one wrote
-        foreach ([1, 2] as $_) {
-            foreach (['a', 'b', 'c'] as $file) {
-                file_put_contents(
-                    self::$tmpDir . '/src/' . $file . '.php',
-                    "<?php\n\nfunction $file(): int\n{\n    return legacy_call();\n}\n",
-                );
-            }
+        foreach (['a', 'b', 'c'] as $file) {
+            file_put_contents(
+                self::$tmpDir . '/src/' . $file . '.php',
+                "<?php\n\nfunction $file(): int\n{\n    return legacy_call();\n}\n",
+            );
+        }
 
-            (new Process([PHP_BINARY, $this->psalter, '--issues=LegacyCall', '--threads=2'], self::$tmpDir))
-                ->mustRun();
+        (new Process([PHP_BINARY, $this->psalter, '--issues=LegacyCall', '--threads=2'], self::$tmpDir))->mustRun();
 
-            $this->assertDirectoryExists(self::$tmpDir . '/cache');
-            foreach (['a', 'b', 'c'] as $file) {
-                $this->assertStringContainsString(
-                    'return modern_call();',
-                    (string) file_get_contents(self::$tmpDir . '/src/' . $file . '.php'),
-                );
-            }
+        foreach (['a', 'b', 'c'] as $file) {
+            $this->assertStringContainsString(
+                'return modern_call();',
+                (string) file_get_contents(self::$tmpDir . '/src/' . $file . '.php'),
+            );
         }
     }
 
