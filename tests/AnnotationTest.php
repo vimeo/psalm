@@ -184,6 +184,70 @@ final class AnnotationTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'psalmVarOverridesPhpstanVarOnProperty' => [
+                'code' => '<?php
+                    class Foo {}
+
+                    class Bar {
+                        /**
+                         * @phpstan-var Foo<string>|null
+                         * @psalm-var Foo|null
+                         */
+                        private ?Foo $foo = null;
+
+                        public function get(): ?Foo {
+                            return $this->foo;
+                        }
+                    }',
+            ],
+            'psalmVarOverridesVarOnConstant' => [
+                'code' => '<?php
+                    class Foo {}
+
+                    class Bar {
+                        /**
+                         * @var Foo<string>|null
+                         * @psalm-var Foo|null
+                         */
+                        public const ?Foo FOO = null;
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.3',
+            ],
+            'varCommentDropsKnownElementsOfPreviousType' => [
+                'code' => '<?php
+                    function getNullableInt(): ?int {
+                        return random_int(0, 10) > 1 ? null : 1;
+                    }
+
+                    $a = [];
+                    $a["i"] = getNullableInt();
+                    echo json_encode($a);
+                    /** @var array{i: int} $a */;
+                    $v = $a["i"];
+                    echo $v;',
+                'assertions' => [
+                    '$v' => 'int',
+                ],
+            ],
+            'varCommentOfSameTypeKeepsKnownElements' => [
+                'code' => '<?php
+                    class P {
+                        public ?int $n = null;
+                    }
+
+                    function f(P $p): int {
+                        if ($p->n === null) {
+                            return 0;
+                        }
+
+                        /** @var P $p */;
+                        return $p->n;
+                    }',
+                'assertions' => [],
+                'ignored_issues' => ['UnnecessaryVarAnnotation'],
+            ],
             'propertyWithNonAsciiName' => [
                 'code' => '<?php
                     /**
@@ -1796,6 +1860,56 @@ final class AnnotationTest extends TestCase
                     '$_f' => 'A|null',
                 ],
             ],
+            'paramNameWithTrailingSemicolon' => [
+                'code' => '<?php
+                    /**
+                     * @param list<int> $list;
+                     * @return list<int>
+                     */
+                    function foo(array $list): array {
+                        return $list;
+                    }',
+            ],
+            'paramOutNameWithTrailingSemicolon' => [
+                'code' => '<?php
+                    /**
+                     * @param-out non-empty-string $s;
+                     */
+                    function foo(?string &$s): void {
+                        $s = "a";
+                    }
+
+                    foo($a);',
+                'assertions' => [
+                    '$a===' => 'non-empty-string',
+                ],
+            ],
+            'magicPropertyNameWithTrailingSemicolon' => [
+                'code' => '<?php
+                    /**
+                     * @property string $name;
+                     */
+                    final class A {
+                        public function __get(string $name) {
+                            return null;
+                        }
+                    }
+
+                    function foo(A $a): string {
+                        return $a->name;
+                    }',
+            ],
+            'globalNameWithTrailingSemicolon' => [
+                'code' => '<?php
+                    /**
+                     * @global int $foo;
+                     */
+                    function bar(): int {
+                        global $foo;
+
+                        return $foo;
+                    }',
+            ],
         ];
     }
 
@@ -1806,6 +1920,31 @@ final class AnnotationTest extends TestCase
     public static function providerInvalidCodeParse(): iterable
     {
         return [
+            'psalmVarWithTooManyTemplateParamsOnProperty' => [
+                'code' => '<?php
+                    class Foo {}
+
+                    class Bar {
+                        /**
+                         * @var Foo|null
+                         * @psalm-var Foo<string>|null
+                         */
+                        private ?Foo $foo = null;
+                    }',
+                'error_message' => 'TooManyTemplateParams',
+            ],
+            'varWithTooManyTemplateParamsOnConstant' => [
+                'code' => '<?php
+                    class Foo {}
+
+                    class Bar {
+                        /** @var Foo<string>|null */
+                        public const ?Foo FOO = null;
+                    }',
+                'error_message' => 'TooManyTemplateParams',
+                'error_levels' => [],
+                'php_version' => '8.3',
+            ],
             'invalidParamDefaultStillReportedForAnotherFunction' => [
                 'code' => '<?php
                     /**

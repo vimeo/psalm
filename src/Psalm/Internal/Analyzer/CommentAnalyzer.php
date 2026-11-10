@@ -30,6 +30,7 @@ use Psalm\Type\Union;
 use RuntimeException;
 use UnexpectedValueException;
 
+use function array_pop;
 use function count;
 use function is_string;
 use function preg_match;
@@ -80,6 +81,7 @@ final class CommentAnalyzer
     /**
      * @param  array<string, array<string, Union>>|null   $template_type_map
      * @param  array<string, TypeAlias> $type_aliases
+     * @param  bool $last_only only the last type counts, as for a property or constant
      * @return list<VarDocblockComment>
      * @throws DocblockParseException if there was a problem parsing the docblock
      */
@@ -91,6 +93,7 @@ final class CommentAnalyzer
         Aliases $aliases,
         ?array $template_type_map = null,
         ?array $type_aliases = null,
+        bool $last_only = false,
     ): array {
         $var_type_tokens = null;
         $original_type = null;
@@ -217,6 +220,10 @@ final class CommentAnalyzer
             self::decorateVarDocblockComment($codebase, $var_comment, $parsed_docblock);
 
             $var_comments[] = $var_comment;
+        }
+
+        if ($last_only && $var_comments) {
+            return [array_pop($var_comments)];
         }
 
         return $var_comments;
