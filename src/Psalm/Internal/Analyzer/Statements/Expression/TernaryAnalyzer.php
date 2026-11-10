@@ -284,7 +284,11 @@ final class TernaryAnalyzer
 
         //if the same var was assigned in both branches
         foreach ($assign_all as $var_id => $_) {
-            if (isset($if_context->vars_in_scope[$var_id]) && isset($t_else_context->vars_in_scope[$var_id])) {
+            if (isset($if_context->vars_in_scope[$var_id])
+                && isset($t_else_context->vars_in_scope[$var_id])
+                && !(self::keepsOuterMixedType($statements_analyzer, $context, $if_context, $var_id)
+                    && self::keepsOuterMixedType($statements_analyzer, $context, $t_else_context, $var_id))
+            ) {
                 $context->vars_in_scope[$var_id] = Type::combineUnionTypes(
                     $if_context->vars_in_scope[$var_id],
                     $t_else_context->vars_in_scope[$var_id],
@@ -363,8 +367,11 @@ final class TernaryAnalyzer
     ): bool {
         return isset($outer_context->vars_in_scope[$var_id], $branch_context->vars_in_scope[$var_id])
             && $outer_context->vars_in_scope[$var_id]->hasMixed()
-            && !isset($branch_context->assigned_var_ids[$var_id])
-            && !isset($branch_context->possibly_assigned_var_ids[$var_id])
+            // the branch context starts as a copy of the outer one, which can have assigned the variable earlier
+            && ($branch_context->assigned_var_ids[$var_id] ?? null)
+                === ($outer_context->assigned_var_ids[$var_id] ?? null)
+            && isset($branch_context->possibly_assigned_var_ids[$var_id])
+                === isset($outer_context->possibly_assigned_var_ids[$var_id])
             && UnionTypeComparator::isContainedBy(
                 $statements_analyzer->getCodebase(),
                 $branch_context->vars_in_scope[$var_id],
