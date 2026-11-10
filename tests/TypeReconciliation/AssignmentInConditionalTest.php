@@ -21,6 +21,26 @@ final class AssignmentInConditionalTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'assignmentComparedWithTrueIsNarrowedInTheBody' => [
+                'code' => '<?php
+                    function label(): string {
+                        return rand(0, 1) ? "a" : "";
+                    }
+
+                    function check(): int {
+                        $value = new stdClass();
+
+                        if (($value = label()) == true) {
+                            /** @psalm-check-type-exact $value = non-falsy-string */;
+                            return strlen($value);
+                        }
+
+                        return 0;
+                    }',
+                'assertions' => [],
+                'ignored_issues' => ['RiskyTruthyFalsyComparison'],
+                'php_version' => '8.0',
+            ],
             'assignmentInTheRightOperandOfAndInAnIfKeepsTheEarlierType' => [
                 'code' => '<?php
                     function fetch(): ?float {
@@ -596,6 +616,106 @@ final class AssignmentInConditionalTest extends TestCase
                     }',
                 'error_message' => 'PossiblyInvalidArgument',
                 'error_levels' => ['RiskyTruthyFalsyComparison'],
+                'php_version' => '8.0',
+            ],
+            'assignmentInATernaryComparedWithTrueMayBeSkipped' => [
+                'code' => '<?php
+                    function label(): string {
+                        return rand(0, 1) ? "a" : "";
+                    }
+
+                    function check(bool $flag, bool $other): int {
+                        $value = new stdClass();
+
+                        if (($flag ? ($value = label()) : $other) == true) {
+                            return strlen($value);
+                        }
+
+                        return 0;
+                    }',
+                'error_message' => 'PossiblyInvalidArgument',
+                'error_levels' => ['RiskyTruthyFalsyComparison'],
+                'php_version' => '8.0',
+            ],
+            'assignmentInAnAndInsideACastMayBeSkipped' => [
+                'code' => '<?php
+                    function label(): string {
+                        return rand(0, 1) ? "a" : "";
+                    }
+
+                    function check(bool $flag): int {
+                        $value = new stdClass();
+
+                        if ((int) ($flag && ($value = label())) === 1) {
+                            return strlen($value);
+                        }
+
+                        return 0;
+                    }',
+                'error_message' => 'PossiblyInvalidArgument',
+                'error_levels' => ['RiskyTruthyFalsyComparison'],
+                'php_version' => '8.0',
+            ],
+            'assignmentInTheRightOfACoalesceInsideAComparisonMayBeSkipped' => [
+                'code' => '<?php
+                    function label(): string {
+                        return rand(0, 1) ? "a" : "";
+                    }
+
+                    function check(?string $name): int {
+                        $value = new stdClass();
+
+                        if (($name ?? ($value = label())) !== "q") {
+                            return strlen($value);
+                        }
+
+                        return 0;
+                    }',
+                'error_message' => 'PossiblyInvalidArgument',
+                'error_levels' => ['RiskyTruthyFalsyComparison'],
+                'php_version' => '8.0',
+            ],
+            'assignmentInAMatchArmMayBeSkipped' => [
+                'code' => '<?php
+                    function label(): string {
+                        return rand(0, 1) ? "a" : "";
+                    }
+
+                    function check(bool $flag): int {
+                        $value = new stdClass();
+
+                        if (match ($flag) { true => ($value = label()), default => false } !== false) {
+                            return strlen($value);
+                        }
+
+                        return 0;
+                    }',
+                'error_message' => 'PossiblyInvalidArgument',
+                'error_levels' => ['RiskyTruthyFalsyComparison'],
+                'php_version' => '8.0',
+            ],
+            'assignmentInAnArgumentOfANullsafeCallMayBeSkipped' => [
+                'code' => '<?php
+                    final class Reader {
+                        public function read(string $label): ?int {
+                            return null;
+                        }
+                    }
+
+                    function label(): string {
+                        return rand(0, 1) ? "a" : "";
+                    }
+
+                    function check(?Reader $reader): int {
+                        $value = new stdClass();
+
+                        if ($reader?->read($value = label()) !== null) {
+                            return strlen($value);
+                        }
+
+                        return 0;
+                    }',
+                'error_message' => 'PossiblyInvalidArgument',
                 'php_version' => '8.0',
             ],
             'assignmentInTheRightOperandOfAndFollowedByAnOrMayBeNullInTheBody' => [

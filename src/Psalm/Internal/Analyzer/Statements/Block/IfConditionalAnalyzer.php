@@ -33,6 +33,7 @@ use function array_merge;
 use function array_values;
 use function count;
 use function explode;
+use function in_array;
 use function spl_object_id;
 
 /**
@@ -621,11 +622,18 @@ final class IfConditionalAnalyzer
             return [$left_true + $right_true, $left_false + $right_false];
         }
 
+        // any other expression: an assignment in a part it may skip (a nested ternary, `&&`, `??`, `match`, `?->`)
+        // leaves the incoming states possible
         $full_states = [];
+        $unconditional_assignments = self::getAssignmentsInCondition($expr, true);
 
         foreach (self::getAssignmentsInCondition($expr) as $assign) {
             if (ExpressionIdentifier::getExtendedVarId($assign->var, $self, $statements_analyzer) === $var_id) {
                 $full_states['full#' . spl_object_id($assign)] = true;
+
+                if (!in_array($assign, $unconditional_assignments, true)) {
+                    $full_states += $incoming;
+                }
             }
         }
 
@@ -637,13 +645,20 @@ final class IfConditionalAnalyzer
     }
 
     /**
+     * @param bool $only_unconditional leave out assignments in a part of the expression that may not run
      * @return list<PhpParser\Node\Expr\Assign>
      */
-    private static function getAssignmentsInCondition(PhpParser\Node\Expr $cond): array
-    {
-        $visitor = new class extends PhpParser\NodeVisitorAbstract {
+    private static function getAssignmentsInCondition(
+        PhpParser\Node\Expr $cond,
+        bool $only_unconditional = false,
+    ): array {
+        $visitor = new class ($only_unconditional) extends PhpParser\NodeVisitorAbstract {
             /** @var list<PhpParser\Node\Expr\Assign> */
             public array $assignments = [];
+
+            public function __construct(private readonly bool $only_unconditional)
+            {
+            }
 
             /** @psalm-capabilities read-props|write-this-props|write-refs */
             #[Override]
@@ -652,6 +667,22 @@ final class IfConditionalAnalyzer
                 if ($node instanceof PhpParser\Node\Expr\Closure
                     || $node instanceof PhpParser\Node\Expr\ArrowFunction
                     || $node instanceof PhpParser\Node\Stmt\ClassLike
+                ) {
+                    return PhpParser\NodeVisitor::DONT_TRAVERSE_CHILDREN;
+                }
+
+                if ($this->only_unconditional
+                    && ($node instanceof PhpParser\Node\Expr\Ternary
+                        || $node instanceof PhpParser\Node\Expr\BinaryOp\BooleanAnd
+                        || $node instanceof PhpParser\Node\Expr\BinaryOp\BooleanOr
+                        || $node instanceof PhpParser\Node\Expr\BinaryOp\LogicalAnd
+                        || $node instanceof PhpParser\Node\Expr\BinaryOp\LogicalOr
+                        || $node instanceof PhpParser\Node\Expr\BinaryOp\Coalesce
+                        || $node instanceof PhpParser\Node\Expr\AssignOp\Coalesce
+                        || $node instanceof PhpParser\Node\Expr\Match_
+                        || $node instanceof PhpParser\Node\Expr\NullsafePropertyFetch
+                        || $node instanceof PhpParser\Node\Expr\NullsafeMethodCall
+                        || $node instanceof PhpParser\Node\Expr\Isset_)
                 ) {
                     return PhpParser\NodeVisitor::DONT_TRAVERSE_CHILDREN;
                 }
