@@ -21,6 +21,30 @@ final class CastTest extends TestCase
     #[Override]
     public static function providerValidCodeParse(): iterable
     {
+        yield 'castOfAnIntersectionToStringIsWhatTheNarrowestToStringReturns' => [
+            'code' => '<?php
+                interface PlainString {
+                    public function __toString(): string;
+                }
+
+                interface NumericString {
+                    /** @return numeric-string */
+                    public function __toString(): string;
+                }
+
+                /** @var PlainString&NumericString $a */
+                $a = null;
+                $fromPlainFirst = (string) $a;
+
+                /** @var NumericString&PlainString $b */
+                $b = null;
+                $fromNumericFirst = (string) $b;',
+            'assertions' => [
+                '$fromPlainFirst===' => 'numeric-string',
+                '$fromNumericFirst===' => 'numeric-string',
+            ],
+        ];
+
         yield 'castOfFloatLiteralsToIntOnlyFoldsThoseInTheRangeOfAnInt' => [
             'code' => '<?php
                 $tooBig = (int) 1e30;
