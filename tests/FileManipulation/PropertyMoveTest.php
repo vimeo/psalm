@@ -208,6 +208,119 @@ final class PropertyMoveTest extends DeferredAnalyzerTestCase
                     'Ns\A::$foo' => 'Ns\B::$fooBar',
                 ],
             ],
+            'moveStaticPropertyFetchedTwice' => [
+                'input' => '<?php
+                    namespace Ns;
+
+                    class A {
+                        /** @var ?int */
+                        public static $foo;
+                    }
+
+                    class B {
+
+                    }
+
+                    function foo() {
+                        echo A::$foo;
+                        echo A::$foo;
+                    }',
+                'output' => '<?php
+                    namespace Ns;
+
+                    class A {
+
+                    }
+
+                    class B {
+
+
+                        /** @var int|null */
+                        public static $fooBar;
+                    }
+
+                    function foo() {
+                        echo B::$fooBar;
+                        echo B::$fooBar;
+                    }',
+                'migrations' => [
+                    'Ns\A::$foo' => 'Ns\B::$fooBar',
+                ],
+            ],
+            'renameStaticPropertyReadAfterAssignment' => [
+                'input' => '<?php
+                    namespace Ns;
+
+                    class A {
+                        /** @var ?int */
+                        public static $foo;
+                    }
+
+                    function foo() {
+                        A::$foo = 10;
+                        echo A::$foo;
+                    }',
+                'output' => '<?php
+                    namespace Ns;
+
+                    class A {
+                        /** @var ?int */
+                        public static $fooBar;
+                    }
+
+                    function foo() {
+                        A::$fooBar = 10;
+                        echo A::$fooBar;
+                    }',
+                'migrations' => [
+                    'Ns\A::$foo' => 'Ns\A::$fooBar',
+                ],
+            ],
+            'renameStaticPropertyInsideDeclaringAndChildClass' => [
+                'input' => '<?php
+                    namespace Ns;
+
+                    class A {
+                        /** @var ?int */
+                        public static $foo;
+
+                        public static function bar(): void {
+                            echo self::$foo;
+                            echo A::$foo;
+                            echo static::$foo;
+                        }
+                    }
+
+                    class C extends A {
+                        public static function baz(): void {
+                            echo parent::$foo;
+                            echo C::$foo;
+                        }
+                    }',
+                'output' => '<?php
+                    namespace Ns;
+
+                    class A {
+                        /** @var ?int */
+                        public static $fooBar;
+
+                        public static function bar(): void {
+                            echo self::$fooBar;
+                            echo A::$fooBar;
+                            echo static::$fooBar;
+                        }
+                    }
+
+                    class C extends A {
+                        public static function baz(): void {
+                            echo parent::$fooBar;
+                            echo C::$fooBar;
+                        }
+                    }',
+                'migrations' => [
+                    'Ns\A::$foo' => 'Ns\A::$fooBar',
+                ],
+            ],
         ];
     }
 }

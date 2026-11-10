@@ -821,6 +821,54 @@ final class ClassMoveTest extends DeferredAnalyzerTestCase
                     'Foo\Bar' => 'Zoo\Baz',
                 ],
             ],
+            'renameClassKeepsSelfStaticAndParentPropertyFetches' => [
+                'input' => '<?php
+                    namespace Ns;
+
+                    class P {
+                        /** @var ?int */
+                        public static $bar;
+                    }
+
+                    class A extends P {
+                        /** @var ?int */
+                        public static $foo;
+
+                        public static function baz(): void {
+                            self::$foo = 1;
+                            static::$foo = 2;
+                            parent::$bar = 3;
+                            echo self::$foo;
+                            echo static::$foo;
+                            echo parent::$bar;
+                        }
+                    }',
+                'output' => '<?php
+                    namespace Ns;
+
+                    class Q {
+                        /** @var int|null */
+                        public static $bar;
+                    }
+
+                    class B extends Q {
+                        /** @var int|null */
+                        public static $foo;
+
+                        public static function baz(): void {
+                            self::$foo = 1;
+                            static::$foo = 2;
+                            parent::$bar = 3;
+                            echo self::$foo;
+                            echo static::$foo;
+                            echo parent::$bar;
+                        }
+                    }',
+                'migrations' => [
+                    'Ns\A' => 'Ns\B',
+                    'Ns\P' => 'Ns\Q',
+                ],
+            ],
         ];
     }
 }

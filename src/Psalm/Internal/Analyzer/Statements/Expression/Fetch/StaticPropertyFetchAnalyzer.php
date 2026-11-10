@@ -236,9 +236,11 @@ final class StaticPropertyFetchAnalyzer
                     self::handleMigration(
                         $statements_analyzer,
                         $stmt,
+                        $stmt->class,
                         $context,
                         $fq_class_name,
-                        strtolower($declaring_property_class) . '::$' . $prop_name,
+                        $declaring_property_class,
+                        $prop_name,
                     );
                 }
             }
@@ -373,9 +375,11 @@ final class StaticPropertyFetchAnalyzer
             self::handleMigration(
                 $statements_analyzer,
                 $stmt,
+                $stmt->class,
                 $context,
                 $fq_class_name,
-                strtolower($declaring_property_class) . '::$' . $prop_name,
+                $declaring_property_class,
+                $prop_name,
             );
         }
 
@@ -425,60 +429,66 @@ final class StaticPropertyFetchAnalyzer
     }
 
     /**
-     * Queues the class and property move rewrites for a static property fetch (Psalter migrations).
+     * Queues the class and property move rewrites for a static property reference (Psalter migrations).
      */
-    private static function handleMigration(
+    public static function handleMigration(
         StatementsAnalyzer $statements_analyzer,
         PhpParser\Node\Expr\StaticPropertyFetch $stmt,
+        PhpParser\Node\Name $class_name,
         Context $context,
         string $fq_class_name,
-        string $declaring_property_id,
+        string $declaring_property_class,
+        string $prop_name,
     ): void {
         $codebase = $statements_analyzer->getCodebase();
+        $first_part_lc = strtolower($class_name->getFirst());
 
-        $moved_class = $codebase->classlikes->handleClassLikeReferenceInMigration(
-            $codebase,
-            $statements_analyzer,
-            $stmt->class,
-            $fq_class_name,
-            $context,
-        );
-
-        if ($moved_class) {
+        if ($first_part_lc !== 'parent'
+            && $first_part_lc !== 'static'
+            && $codebase->classlikes->handleClassLikeReferenceInMigration(
+                $codebase,
+                $statements_analyzer,
+                $class_name,
+                $fq_class_name,
+                $context,
+                false,
+                $first_part_lc === 'self',
+            )
+        ) {
             return;
         }
 
-        foreach ($codebase->property_transforms as $original_pattern => $transformation) {
-            if ($declaring_property_id !== $original_pattern) {
-                continue;
-            }
+        $declaring_property_id = strtolower($declaring_property_class) . '::$' . $prop_name;
+        $transformation = $codebase->property_transforms[$declaring_property_id] ?? null;
 
-            [$old_declaring_fq_class_name] = explode('::$', $declaring_property_id);
-            [$new_fq_class_name, $new_property_name] = explode('::$', $transformation);
-
-            $file_manipulations = [];
-
-            if (strtolower($new_fq_class_name) !== $old_declaring_fq_class_name) {
-                $file_manipulations[] = new FileManipulation(
-                    (int) $stmt->class->getAttribute('startFilePos'),
-                    (int) $stmt->class->getAttribute('endFilePos') + 1,
-                    Type::getStringFromFQCLN(
-                        $new_fq_class_name,
-                        $statements_analyzer->getNamespace(),
-                        $statements_analyzer->getAliasedClassesFlipped(),
-                        null,
-                    ),
-                );
-            }
-
-            $file_manipulations[] = new FileManipulation(
-                (int) $stmt->name->getAttribute('startFilePos'),
-                (int) $stmt->name->getAttribute('endFilePos') + 1,
-                '$' . $new_property_name,
-            );
-
-            FileManipulationBuffer::add($statements_analyzer->getFilePath(), $file_manipulations);
+        if ($transformation === null) {
+            return;
         }
+
+        [$new_fq_class_name, $new_property_name] = explode('::$', $transformation);
+
+        $file_manipulations = [];
+
+        if (strtolower($new_fq_class_name) !== strtolower($declaring_property_class)) {
+            $file_manipulations[] = new FileManipulation(
+                (int) $class_name->getAttribute('startFilePos'),
+                (int) $class_name->getAttribute('endFilePos') + 1,
+                Type::getStringFromFQCLN(
+                    $new_fq_class_name,
+                    $statements_analyzer->getNamespace(),
+                    $statements_analyzer->getAliasedClassesFlipped(),
+                    null,
+                ),
+            );
+        }
+
+        $file_manipulations[] = new FileManipulation(
+            (int) $stmt->name->getAttribute('startFilePos'),
+            (int) $stmt->name->getAttribute('endFilePos') + 1,
+            '$' . $new_property_name,
+        );
+
+        FileManipulationBuffer::add($statements_analyzer->getFilePath(), $file_manipulations);
     }
 
     private static function analyzeVariableStaticPropertyFetch(
