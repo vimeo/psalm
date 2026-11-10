@@ -87,6 +87,7 @@ use function array_pop;
 use function count;
 use function explode;
 use function in_array;
+use function preg_replace;
 use function reset;
 use function str_ends_with;
 use function strtolower;
@@ -982,9 +983,6 @@ final class InstancePropertyAssignmentAnalyzer
             $statements_analyzer,
         );
 
-        // what the messages call the object: its variable id, or else the code of the expression
-        $lhs_name = $lhs_var_id ?? (new PhpParser\PrettyPrinter\Standard())->prettyPrintExpr($stmt->var);
-
         $var_id = ExpressionIdentifier::getVarId(
             $stmt,
             $statements_analyzer->getFQCLN(),
@@ -1025,7 +1023,7 @@ final class InstancePropertyAssignmentAnalyzer
 
             IssueBuffer::maybeAdd(
                 new MixedPropertyAssignment(
-                    $lhs_name . ' of type mixed cannot be assigned to',
+                    self::getLhsName($lhs_var_id, $stmt->var) . ' of type mixed cannot be assigned to',
                     new CodeLocation($statements_analyzer->getSource(), $stmt->var),
                 ),
                 $statements_analyzer->getSuppressedIssues(),
@@ -1047,7 +1045,7 @@ final class InstancePropertyAssignmentAnalyzer
         if ($lhs_type->isNull()) {
             IssueBuffer::maybeAdd(
                 new NullPropertyAssignment(
-                    $lhs_name . ' of type null cannot be assigned to',
+                    self::getLhsName($lhs_var_id, $stmt->var) . ' of type null cannot be assigned to',
                     new CodeLocation($statements_analyzer->getSource(), $stmt->var),
                 ),
                 $statements_analyzer->getSuppressedIssues(),
@@ -1059,7 +1057,8 @@ final class InstancePropertyAssignmentAnalyzer
         if ($lhs_type->isNullable() && !$lhs_type->ignore_nullable_issues) {
             IssueBuffer::maybeAdd(
                 new PossiblyNullPropertyAssignment(
-                    $lhs_name . ' with possibly null type \'' . $lhs_type . '\' cannot be assigned to',
+                    self::getLhsName($lhs_var_id, $stmt->var)
+                        . ' with possibly null type \'' . $lhs_type . '\' cannot be assigned to',
                     new CodeLocation($statements_analyzer->getSource(), $stmt->var),
                 ),
                 $statements_analyzer->getSuppressedIssues(),
@@ -1128,7 +1127,8 @@ final class InstancePropertyAssignmentAnalyzer
             if (!$has_valid_assignment_type) {
                 IssueBuffer::maybeAdd(
                     new InvalidPropertyAssignment(
-                        $lhs_name . ' with non-object type \'' . $invalid_assignment_type .
+                        self::getLhsName($lhs_var_id, $stmt->var)
+                        . ' with non-object type \'' . $invalid_assignment_type .
                         '\' cannot treated as an object',
                         new CodeLocation($statements_analyzer->getSource(), $stmt->var),
                     ),
@@ -1137,7 +1137,8 @@ final class InstancePropertyAssignmentAnalyzer
             } else {
                 IssueBuffer::maybeAdd(
                     new PossiblyInvalidPropertyAssignment(
-                        $lhs_name . ' with possible non-object type \'' . $invalid_assignment_type .
+                        self::getLhsName($lhs_var_id, $stmt->var)
+                        . ' with possible non-object type \'' . $invalid_assignment_type .
                         '\' cannot treated as an object',
                         new CodeLocation($statements_analyzer->getSource(), $stmt->var),
                     ),
@@ -1164,6 +1165,18 @@ final class InstancePropertyAssignmentAnalyzer
         }
 
         return $assigned_properties;
+    }
+
+    /**
+     * What the messages call the object: its variable id, or else its code on one line
+     */
+    private static function getLhsName(?string $lhs_var_id, PhpParser\Node\Expr $lhs): string
+    {
+        return $lhs_var_id ?? (string) preg_replace(
+            '/\s+/',
+            ' ',
+            (new PhpParser\PrettyPrinter\Standard())->prettyPrintExpr($lhs),
+        );
     }
 
     /**
@@ -1259,13 +1272,19 @@ final class InstancePropertyAssignmentAnalyzer
 
                 $override_property_visibility = $interface_storage->override_property_visibility;
 
-                foreach ($intersection_types as $intersection_type) {
-                    if ($intersection_type instanceof TNamedObject
-                        && $codebase->classExists($intersection_type->value, null, $context)
-                    ) {
-                        $fq_class_name = $intersection_type->value;
-                        $class_exists = true;
-                        break;
+                // of the classes the interface is intersected with, the one that declares the property wins
+                foreach ([true, false] as $declaring_only) {
+                    foreach ($intersection_types as $intersection_type) {
+                        if ($intersection_type instanceof TNamedObject
+                            && $codebase->classExists($intersection_type->value, null, $context)
+                            && (!$declaring_only
+                                || isset($codebase->classlike_storage_provider->get($intersection_type->value)
+                                    ->declaring_property_ids[$prop_name]))
+                        ) {
+                            $fq_class_name = $intersection_type->value;
+                            $class_exists = true;
+                            break 2;
+                        }
                     }
                 }
 
@@ -1599,11 +1618,13 @@ final class InstancePropertyAssignmentAnalyzer
                 );
             }
 
-            if ($context->self && !NamespaceAnalyzer::isWithinAny($context->self, $property_storage->internal)) {
+            $caller_identifier = $statements_analyzer->getFullyQualifiedFunctionMethodOrNamespaceName() ?? '';
+
+            if (!NamespaceAnalyzer::isWithinAny($caller_identifier, $property_storage->internal)) {
                 IssueBuffer::maybeAdd(
                     new InternalProperty(
                         $property_id . ' is internal to ' . InternalClass::listToPhrase($property_storage->internal)
-                            . ' but called from ' . $context->self,
+                            . ' but called from ' . ($caller_identifier ?: 'root namespace'),
                         new CodeLocation($statements_analyzer->getSource(), $stmt),
                         $property_id,
                     ),
