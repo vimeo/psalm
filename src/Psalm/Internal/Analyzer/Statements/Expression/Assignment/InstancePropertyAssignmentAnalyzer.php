@@ -1256,14 +1256,24 @@ final class InstancePropertyAssignmentAnalyzer
 
                 $override_property_visibility = $interface_storage->override_property_visibility;
 
-                // of the classes the interface is intersected with, the one that declares the property wins
+                // of the classes the interface is intersected with, the one that declares the property wins,
+                // then an interface with a matching hook, then any other class
+                $hook_interface = AtomicPropertyFetchAnalyzer::findInterfaceWithPropertyHook(
+                    $codebase,
+                    $lhs_type_part,
+                    $prop_name,
+                    true,
+                );
+
                 foreach ([true, false] as $declaring_only) {
                     foreach ($intersection_types as $intersection_type) {
                         if ($intersection_type instanceof TNamedObject
                             && $codebase->classExists($intersection_type->value, null, $context)
-                            && (!$declaring_only
-                                || isset($codebase->classlike_storage_provider->get($intersection_type->value)
-                                    ->declaring_property_ids[$prop_name]))
+                            && ($declaring_only
+                                ? isset($codebase->classlike_storage_provider->get($intersection_type->value)
+                                    ->declaring_property_ids[$prop_name])
+                                : $hook_interface === null
+                                    || $codebase->classlike_storage_provider->get($intersection_type->value)->final)
                         ) {
                             $fq_class_name = $intersection_type->value;
                             $class_exists = true;
@@ -1272,17 +1282,8 @@ final class InstancePropertyAssignmentAnalyzer
                     }
                 }
 
-                $hook_interface = $class_exists
-                    ? null
-                    : AtomicPropertyFetchAnalyzer::findInterfaceWithPropertyHook(
-                        $codebase,
-                        $lhs_type_part,
-                        $prop_name,
-                        true,
-                    );
-
-                if ($hook_interface !== null) {
-                    $fq_class_name = $hook_interface;
+                if ($hook_interface !== null && !$class_exists) {
+                    $fq_class_name = $hook_interface->value;
                 } elseif (!$class_exists) {
                     if (IssueBuffer::accepts(
                         new NoInterfaceProperties(
@@ -1320,6 +1321,28 @@ final class InstancePropertyAssignmentAnalyzer
             }
         } else {
             $class_exists = true;
+
+            if ($intersection_types !== []
+                && !$codebase->classlike_storage_provider->get($lhs_type_part->value)->final
+                && !$codebase->propertyExists(
+                    $lhs_type_part->value . '::$' . $prop_name,
+                    false,
+                    $statements_analyzer,
+                    $context,
+                )
+            ) {
+                $hook_interface = AtomicPropertyFetchAnalyzer::findInterfaceWithPropertyHook(
+                    $codebase,
+                    $lhs_type_part,
+                    $prop_name,
+                    true,
+                );
+
+                if ($hook_interface !== null) {
+                    $fq_class_name = $hook_interface->value;
+                    $class_exists = false;
+                }
+            }
         }
 
         $property_id = $fq_class_name . '::$' . $prop_name;

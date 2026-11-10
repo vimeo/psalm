@@ -1363,7 +1363,7 @@ final class AtomicPropertyFetchAnalyzer
         StatementsAnalyzer $statements_analyzer,
         Codebase $codebase,
         PhpParser\Node\Expr\PropertyFetch $stmt,
-        TNamedObject $lhs_type_part,
+        TNamedObject &$lhs_type_part,
         string $prop_name,
         array $intersection_types,
         bool &$class_exists,
@@ -1380,7 +1380,8 @@ final class AtomicPropertyFetchAnalyzer
             $intersects_with_enum = false;
             $intersects_with_shape_property = false;
 
-            // of the classes the interface is intersected with, the one that declares the property wins
+            // of the classes the interface is intersected with, the one that declares the property wins,
+            // then an interface with a matching hook, then any other class
             $property_name = $stmt->name instanceof PhpParser\Node\Identifier ? $stmt->name->name : null;
 
             if ($property_name !== null) {
@@ -1390,12 +1391,15 @@ final class AtomicPropertyFetchAnalyzer
                         && isset($codebase->classlike_storage_provider->get($intersection_type->value)
                             ->declaring_property_ids[$property_name])
                     ) {
+                        $lhs_type_part = $intersection_type;
                         $fq_class_name = $intersection_type->value;
                         $class_exists = true;
                         return;
                     }
                 }
             }
+
+            $first_class_type = null;
 
             foreach ($intersection_types as $intersection_type) {
                 if ($intersection_type instanceof TObjectWithProperties
@@ -1408,11 +1412,8 @@ final class AtomicPropertyFetchAnalyzer
                 if ($intersection_type instanceof TNamedObject
                     && $codebase->classExists($intersection_type->value)
                 ) {
-                    $fq_class_name = $intersection_type->value;
-                    $class_exists = true;
-                    return;
-                }
-                if ($intersection_type instanceof TNamedObject
+                    $first_class_type ??= $intersection_type;
+                } elseif ($intersection_type instanceof TNamedObject
                     && (in_array($intersection_type->value, ['UnitEnum', 'BackedEnum'], true)
                         || in_array('UnitEnum', $codebase->getParentInterfaces($intersection_type->value)))
                 ) {
@@ -1420,15 +1421,26 @@ final class AtomicPropertyFetchAnalyzer
                 }
             }
 
+            $hook_interface = $first_class_type !== null
+                && $codebase->classlike_storage_provider->get($first_class_type->value)->final
+                ? null
+                : self::findInterfaceWithPropertyHook($codebase, $lhs_type_part, $prop_name, false);
+
+            if ($hook_interface === null && $first_class_type !== null) {
+                $lhs_type_part = $first_class_type;
+                $fq_class_name = $first_class_type->value;
+                $class_exists = true;
+                return;
+            }
+
             // In PHP Core enum interfaces have properties
             $is_enum_interface = in_array($fq_class_name, ['UnitEnum', 'BackedEnum'], true)
                 || in_array('UnitEnum', $codebase->getParentInterfaces($fq_class_name))
                 || $intersects_with_enum;
 
-            $hook_interface = self::findInterfaceWithPropertyHook($codebase, $lhs_type_part, $prop_name, false);
-
             if ($hook_interface !== null) {
-                $fq_class_name = $hook_interface;
+                $lhs_type_part = $hook_interface;
+                $fq_class_name = $hook_interface->value;
             } elseif (!$is_enum_interface && !$intersects_with_shape_property) {
                 if (IssueBuffer::accepts(
                     new NoInterfaceProperties(
@@ -1478,7 +1490,7 @@ final class AtomicPropertyFetchAnalyzer
         TNamedObject $lhs_type_part,
         string $prop_name,
         bool $is_write,
-    ): ?string {
+    ): ?TNamedObject {
         if ($codebase->analysis_php_version_id < 8_04_00) {
             return null;
         }
@@ -1498,7 +1510,7 @@ final class AtomicPropertyFetchAnalyzer
             $property = $codebase->classlike_storage_provider->get($declaring_interface)->properties[$prop_name];
 
             if (($is_write ? $property->hook_set : $property->hook_get) !== null) {
-                return $type_part->value;
+                return $type_part;
             }
         }
 
