@@ -103,13 +103,6 @@ final class ImmutableAnnotationTest extends TestCase
                 'assertions' => [],
                 'ignored_issues' => ['MissingPureAnnotation'],
             ],
-            'SKIPPED-noMissing' => [
-                'code' => '<?php
-                    /** @psalm-immutable */
-                    abstract class test {
-                        abstract public function somePure(int $a) : int;
-                    }',
-            ],
             'memoizedCallStaysNullableAfterAnAssigningCondition' => [
                 'code' => '<?php
                     /** @psalm-immutable */
@@ -180,6 +173,13 @@ final class ImmutableAnnotationTest extends TestCase
                     '$m===' => 'null|string',
                 ],
                 'ignored_issues' => ['RiskyTruthyFalsyComparison', 'MissingPureAnnotation'],
+            ],
+            'SKIPPED-noMissing' => [
+                'code' => '<?php
+                    /** @psalm-immutable */
+                    abstract class test {
+                        abstract public function somePure(int $a) : int;
+                    }',
             ],
             'immutableClassGenerating' => [
                 'code' => '<?php
