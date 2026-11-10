@@ -2729,6 +2729,34 @@ final class ConditionalReturnTypeTest extends TestCase
                     }',
                 'php_version' => '8.0',
             ],
+            'staticConstantReturnIsTheConstantOfTheCallsStatic' => [
+                'code' => '<?php
+                    class Base {
+                        /** @var non-empty-string */
+                        public const TYPE = "base";
+
+                        /** @return static::TYPE */
+                        public function type(): string {
+                            throw new RuntimeException();
+                        }
+                    }
+
+                    class Child extends Base {
+                        public const TYPE = "child";
+
+                        public function run(): void {
+                            $parent = parent::type();
+                            /** @psalm-check-type-exact $parent = "child" */
+                            echo $parent;
+                        }
+                    }
+
+                    function type(Child $child): string {
+                        $type = $child->type();
+                        /** @psalm-check-type-exact $type = "child" */
+                        return $type;
+                    }',
+            ],
         ];
     }
 
