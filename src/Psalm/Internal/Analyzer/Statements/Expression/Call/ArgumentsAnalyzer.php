@@ -704,6 +704,31 @@ final class ArgumentsAnalyzer
         // caller, are put in the type: neither they nor the receiver's own type arguments are replaced
         $replaced_type = $replace($replaced_type, $new_bounds);
 
+        // a template of the method itself (a param conditional's) is bound by a static call only after its arguments:
+        // its constraint is the hint, as the template types give it for an instance call
+        if ($static_class_type !== null
+            && !$template_result->template_types
+            && $method_id !== null
+            && MethodIdentifier::isValidMethodIdReference($method_id)
+            && $replaced_type->hasTemplate()
+        ) {
+            $called_method_id = MethodIdentifier::fromMethodIdReference($method_id);
+            $defining_function = 'fn-' . strtolower(
+                (string) ($codebase->methods->getDeclaringMethodId($called_method_id) ?? $called_method_id),
+            );
+            $hint_atomics = [];
+
+            foreach ($replaced_type->getAtomicTypes() as $hint_atomic) {
+                if ($hint_atomic instanceof TTemplateParam && $hint_atomic->defining_class === $defining_function) {
+                    $hint_atomics = [...$hint_atomics, ...array_values($hint_atomic->as->getAtomicTypes())];
+                } else {
+                    $hint_atomics[] = $hint_atomic;
+                }
+            }
+
+            $replaced_type = new Union($hint_atomics);
+        }
+
         $untyped_replaced_type = $replaced_type;
         $typed_replaced_type = $replaced_type;
 
@@ -2383,6 +2408,7 @@ final class ArgumentsAnalyzer
             $calling_class_storage,
             $function_storage->template_types ?: [],
             $class_generic_params,
+            $template_result,
         );
 
         if (!$template_types) {

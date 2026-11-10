@@ -401,6 +401,7 @@ abstract class CallAnalyzer
      * @return array<string, array<string, Union>>
      * @param array<string, non-empty-array<string, Union>> $existing_template_types
      * @param array<string, array<string, Union>> $class_template_params
+     * @param ?TemplateResult $call_template_result the call's, whose `static` the constraints are expanded with
      */
     public static function getTemplateTypesForCall(
         Codebase $codebase,
@@ -409,6 +410,7 @@ abstract class CallAnalyzer
         ?ClassLikeStorage $calling_class_storage,
         array $existing_template_types = [],
         array $class_template_params = [],
+        ?TemplateResult $call_template_result = null,
     ): array {
         $template_types = $existing_template_types;
 
@@ -454,17 +456,25 @@ abstract class CallAnalyzer
             }
         }
 
+        $static_class_type = $calling_class_storage->name ?? null;
+        $static_class_is_final = $calling_class_storage->final ?? false;
+
+        if ($call_template_result !== null && $call_template_result->static_class_type !== null) {
+            $static_class_type = $call_template_result->static_class_type;
+            $static_class_is_final = $call_template_result->static_class_is_final;
+        }
+
         foreach ($template_types as $key => $type_map) {
             foreach ($type_map as $class => $type) {
                 $template_types[$key][$class] = TypeExpander::expandUnion(
                     $codebase,
                     $type,
                     $appearing_class_name,
-                    $calling_class_storage->name ?? null,
+                    $static_class_type,
                     null,
                     true,
                     false,
-                    $calling_class_storage->final ?? false,
+                    $static_class_is_final,
                 );
             }
         }

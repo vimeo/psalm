@@ -2237,6 +2237,74 @@ final class ConditionalReturnTypeTest extends TestCase
                         }
                     }',
             ],
+            'paramConditionalOnUntypedCallableOfStaticInParentCall' => [
+                'code' => '<?php
+                    class Base {
+                        /**
+                         * @param (callable(static): mixed)|null $callback
+                         * @return ($callback is null ? int : static)
+                         */
+                        public function tap(?callable $callback = null) {
+                            throw new RuntimeException();
+                        }
+                    }
+
+                    class Child extends Base {
+                        public function onlyChild(): void {}
+
+                        public function run(): void {
+                            $tapped = parent::tap(function ($item): void {
+                                /** @psalm-check-type-exact $item = Child&static */
+                                $item->onlyChild();
+                            });
+                            /** @psalm-check-type-exact $tapped = Child&static */
+                            $tapped->onlyChild();
+                        }
+                    }',
+            ],
+            'paramConditionalOnUntypedCallableOfStaticInNamedStaticCall' => [
+                'code' => '<?php
+                    class SC {
+                        /**
+                         * @param (callable(static): mixed)|null $callback
+                         * @return ($callback is null ? int : string)
+                         */
+                        public static function scmp(?callable $callback = null) {
+                            throw new RuntimeException();
+                        }
+
+                        public function onlySC(): void {}
+                    }
+
+                    $result = SC::scmp(function ($x): void {
+                        /** @psalm-check-type-exact $x = SC */
+                        $x->onlySC();
+                    });',
+                'assertions' => [
+                    '$result===' => 'string',
+                ],
+            ],
+            'paramConditionalOnUntypedCallableOfStaticInConstructor' => [
+                'code' => '<?php
+                    /** @template T */
+                    final class NGen {
+                        /**
+                         * @param (callable(static): mixed)|null $callback
+                         * @return ($callback is null ? NGen<int> : NGen<string>)
+                         */
+                        public function __construct(?callable $callback = null) {}
+
+                        public function onlyGen(): void {}
+                    }
+
+                    $gen = new NGen(function ($g): void {
+                        /** @psalm-check-type-exact $g = NGen */
+                        $g->onlyGen();
+                    });',
+                'assertions' => [
+                    '$gen===' => 'NGen<string>',
+                ],
+            ],
             'staticReturnOfNamedCallOfInstanceMethodIsTheCallersStatic' => [
                 'code' => '<?php
                     class RBase {
