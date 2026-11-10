@@ -1680,6 +1680,7 @@ final class PreloaderList {
         \Psalm\Plugin\FileExtensionsInterface::class,
         \Psalm\Plugin\PluginEntryPointInterface::class,
         \Psalm\Plugin\PluginFileExtensionsInterface::class,
+        \Psalm\Plugin\PluginFixableIssuesInterface::class,
         \Psalm\Plugin\PluginInterface::class,
         \Psalm\Plugin\RegistrationInterface::class,
         \Psalm\Plugin\Shepherd::class,
