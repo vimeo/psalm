@@ -201,11 +201,16 @@ final class AssertionFinder
 
         if ($var_name) {
             $if_types[$var_name] = [[new Truthy()]];
-            $if_types = self::addNullsafeReceiverAssertion($if_types, $conditional, $this_class_name, $source);
 
             if (!$conditional instanceof PhpParser\Node\Expr\MethodCall
                 && !$conditional instanceof PhpParser\Node\Expr\StaticCall
             ) {
+                return [$if_types];
+            }
+        } elseif ($conditional instanceof PhpParser\Node\Expr\NullsafePropertyFetch) {
+            $if_types = self::getNullsafeAssertions($conditional, new Truthy(), $this_class_name, $source);
+
+            if ($if_types) {
                 return [$if_types];
             }
         }
@@ -2200,28 +2205,58 @@ final class AssertionFinder
     }
 
     /**
-     * A non-null `$a?->b` means that `$a` is not null.
+     * What a non-null (or truthy) `$a?->b?->value` says: the fetch is that way, and so is every receiver of the chain
+     * (`$a?->b` and `$a`). A null one says nothing about the receivers, so no assertion is made for it.
      *
-     * @param non-empty-array<string, non-empty-list<non-empty-list<Assertion>>> $if_types
-     * @return non-empty-array<string, non-empty-list<non-empty-list<Assertion>>>
+     * @return array<string, non-empty-list<non-empty-list<Assertion>>>
      */
-    private static function addNullsafeReceiverAssertion(
-        array $if_types,
-        PhpParser\Node\Expr $expr,
+    private static function getNullsafeAssertions(
+        PhpParser\Node\Expr\NullsafePropertyFetch $expr,
+        Assertion $assertion,
         ?string $this_class_name,
         FileSource $source,
     ): array {
-        if (!$expr instanceof PhpParser\Node\Expr\NullsafePropertyFetch) {
-            return $if_types;
+        $if_types = [];
+
+        $property_id = self::getNullsafeChainVarId($expr, $this_class_name, $source);
+
+        if ($property_id !== null) {
+            $if_types[$property_id] = [[$assertion]];
         }
 
-        $receiver_id = ExpressionIdentifier::getExtendedVarId($expr->var, $this_class_name, $source);
+        $receiver = $expr;
 
-        if ($receiver_id !== null) {
-            $if_types[$receiver_id] = [[new IsNotType(new TNull())]];
+        while ($receiver instanceof PhpParser\Node\Expr\NullsafePropertyFetch) {
+            $receiver = $receiver->var;
+            $receiver_id = self::getNullsafeChainVarId($receiver, $this_class_name, $source);
+
+            if ($receiver_id !== null) {
+                $if_types[$receiver_id] = [[new IsNotType(new TNull())]];
+            }
         }
 
         return $if_types;
+    }
+
+    /**
+     * The id of a chain of properties, `$a?->b` counting as `$a->b`
+     */
+    private static function getNullsafeChainVarId(
+        PhpParser\Node\Expr $expr,
+        ?string $this_class_name,
+        FileSource $source,
+    ): ?string {
+        if (!$expr instanceof PhpParser\Node\Expr\NullsafePropertyFetch) {
+            return ExpressionIdentifier::getExtendedVarId($expr, $this_class_name, $source);
+        }
+
+        if (!$expr->name instanceof PhpParser\Node\Identifier) {
+            return null;
+        }
+
+        $object_id = self::getNullsafeChainVarId($expr->var, $this_class_name, $source);
+
+        return $object_id === null ? null : $object_id . '->' . $expr->name->name;
     }
 
     /**
@@ -2261,8 +2296,15 @@ final class AssertionFinder
             } else {
                 $if_types[$var_name] = [[new Truthy()]];
             }
-
-            $if_types = self::addNullsafeReceiverAssertion($if_types, $base_conditional, $this_class_name, $source);
+        } elseif ($base_conditional instanceof PhpParser\Node\Expr\NullsafePropertyFetch) {
+            $if_types = self::getNullsafeAssertions(
+                $base_conditional,
+                $conditional instanceof PhpParser\Node\Expr\BinaryOp\NotIdentical
+                    ? new IsNotType(new TNull())
+                    : new Truthy(),
+                $this_class_name,
+                $source,
+            );
         }
 
         if ($codebase

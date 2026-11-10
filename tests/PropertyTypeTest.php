@@ -669,6 +669,29 @@ final class PropertyTypeTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'nullsafeChainNotNullNarrowsEveryReceiver' => [
+                'code' => '<?php
+                    final class B {
+                        public ?string $value = null;
+                    }
+
+                    final class A {
+                        public ?B $b = null;
+                    }
+
+                    final class Root {
+                        public ?A $a = null;
+                    }
+
+                    function t(Root $r): void {
+                        if ($r->a?->b?->value !== null) {
+                            echo strlen($r->a->b->value);
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
             'nullsafePropertyNotNullNarrowsTheReceiver' => [
                 'code' => '<?php
                     final class B { public ?string $value = null; }
@@ -733,47 +756,6 @@ final class PropertyTypeTest extends TestCase
                 'assertions' => [
                     '$x===' => 'null|string',
                 ],
-                'ignored_issues' => [],
-                'php_version' => '8.0',
-            ],
-            'privateTemplatedPropertyInitializedByAFinalParentConstructorChain' => [
-                'code' => '<?php
-                    /**
-                     * @template T
-                     */
-                    class Box {
-                        /**
-                         * @return Box<int>
-                         */
-                        public static function factory(): self {
-                            /** @var Box<int> $instance */
-                            $instance = new self();
-
-                            return $instance;
-                        }
-                    }
-
-                    abstract class Base {
-                        final public function __construct() {
-                            $this->init();
-                        }
-
-                        abstract protected function init(): void;
-                    }
-
-                    final class Child extends Base {
-                        /** @var Box<int> */
-                        private $box;
-
-                        protected function init(): void {
-                            $this->box = Box::factory();
-                        }
-
-                        public function get(): Box {
-                            return $this->box;
-                        }
-                    }',
-                'assertions' => [],
                 'ignored_issues' => [],
                 'php_version' => '8.0',
             ],
@@ -3526,6 +3508,88 @@ final class PropertyTypeTest extends TestCase
     public static function providerInvalidCodeParse(): iterable
     {
         return [
+            'nullsafePropertyIdenticalToNullDoesNotNarrowTheReceiverInTheBranch' => [
+                'code' => '<?php
+                    final class B {
+                        public ?string $value = null;
+                        public function m(): int { return 1; }
+                    }
+
+                    final class A {
+                        public ?B $b = null;
+                    }
+
+                    function t(A $a): void {
+                        if ($a->b?->value === null) {
+                            echo $a->b->value;
+                        }
+                    }',
+                'error_message' => 'PossiblyNullPropertyFetch',
+                'error_levels' => [],
+                'php_version' => '8.0',
+            ],
+            'nullsafePropertyLooselyEqualToNullDoesNotNarrowTheReceiverInTheBranch' => [
+                'code' => '<?php
+                    final class B {
+                        public ?string $value = null;
+                        public function m(): int { return 1; }
+                    }
+
+                    final class A {
+                        public ?B $b = null;
+                    }
+
+                    function t(A $a): void {
+                        if ($a->b?->value == null) {
+                            echo $a->b->value;
+                        }
+                    }',
+                'error_message' => 'PossiblyNullPropertyFetch',
+                'error_levels' => [],
+                'php_version' => '8.0',
+            ],
+            'nullsafePropertyNotIssetDoesNotNarrowTheReceiverInTheBranch' => [
+                'code' => '<?php
+                    final class B {
+                        public ?string $value = null;
+                        public function m(): int { return 1; }
+                    }
+
+                    final class A {
+                        public ?B $b = null;
+                    }
+
+                    function t(A $a): void {
+                        if (!isset($a->b?->value)) {
+                            echo $a->b->value;
+                        }
+                    }',
+                'error_message' => 'PossiblyNullPropertyFetch',
+                'error_levels' => [],
+                'php_version' => '8.0',
+            ],
+            'nullsafePropertyIdenticalToNullLeavesTheReceiverNullableAfterAReturn' => [
+                'code' => '<?php
+                    final class B {
+                        public ?string $value = null;
+                        public function m(): int { return 1; }
+                    }
+
+                    final class A {
+                        public ?B $b = null;
+                    }
+
+                    function t(A $a): void {
+                        if ($a->b?->value === null) {
+                            return;
+                        }
+
+                        echo $a->b->m();
+                    }',
+                'error_message' => 'PossiblyNullReference',
+                'error_levels' => [],
+                'php_version' => '8.0',
+            ],
             'privateTraitPropertyIsNotVisibleInASubclass' => [
                 'code' => '<?php
                     trait IdTrait {

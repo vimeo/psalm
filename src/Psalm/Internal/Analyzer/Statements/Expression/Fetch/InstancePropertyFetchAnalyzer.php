@@ -109,38 +109,6 @@ final class InstancePropertyFetchAnalyzer
         );
 
         if ($var_id && $context->hasVariable($var_id)) {
-            // what is known of the property (`$a->b?->value !== null`) says nothing of the receiver on every path
-            if ($stmt_var_id !== null
-                && $context->hasVariable($stmt_var_id)
-                && !$context->inside_isset
-                && !$in_assignment
-                && $stmt->name instanceof PhpParser\Node\Identifier
-                && $receiver_state !== NullsafeChainState::ShortCircuit
-            ) {
-                $known_receiver_type = $context->vars_in_scope[$stmt_var_id];
-
-                if ($known_receiver_type->isNull()) {
-                    return !IssueBuffer::accepts(
-                        new NullPropertyFetch(
-                            'Cannot get property on null variable ' . $stmt_var_id,
-                            new CodeLocation($statements_analyzer->getSource(), $stmt),
-                        ),
-                        $statements_analyzer->getSuppressedIssues(),
-                    );
-                }
-
-                if ($known_receiver_type->isNullable() && !$known_receiver_type->ignore_nullable_issues) {
-                    IssueBuffer::maybeAdd(
-                        new PossiblyNullPropertyFetch(
-                            rtrim('Cannot get property on possibly null variable ' . $stmt_var_id)
-                            . ' of type ' . $known_receiver_type,
-                            new CodeLocation($statements_analyzer->getSource(), $stmt),
-                        ),
-                        $statements_analyzer->getSuppressedIssues(),
-                    );
-                }
-            }
-
             self::handleScopedProperty(
                 $context,
                 $var_id,
