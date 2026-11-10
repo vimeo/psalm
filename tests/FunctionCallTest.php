@@ -3378,6 +3378,23 @@ final class FunctionCallTest extends TestCase
                 'error_levels' => [],
                 'php_version' => '8.1',
             ],
+            'objectToStringReturnCoercionReportsImplicitCast' => [
+                'code' => '<?php
+                    final class Text {
+                        public function __toString(): string {
+                            return "text";
+                        }
+                    }
+
+                    /** @param lowercase-string $value */
+                    function acceptsLowercase(string $value): void {}
+
+                    /** @psalm-suppress ArgumentTypeCoercion */
+                    acceptsLowercase(new Text());',
+                'error_message' => 'ImplicitToStringCast',
+                'error_levels' => [],
+                'php_version' => '8.1',
+            ],
             'objectToStringReturnDoesNotMatchLiteralStringParameter' => [
                 'code' => '<?php
                     final class Text {

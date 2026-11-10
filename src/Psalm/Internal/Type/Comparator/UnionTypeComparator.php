@@ -133,6 +133,7 @@ final class UnionTypeComparator
             $type_match_found = false;
             $scalar_type_match_found = false;
             $all_to_string_cast = true;
+            $some_to_string_cast = false;
 
             $all_type_coerced = null;
             $all_type_coerced_from_mixed = null;
@@ -327,6 +328,10 @@ final class UnionTypeComparator
                 }
 
                 if ($atomic_comparison_result) {
+                    if ($atomic_comparison_result->to_string_cast === true) {
+                        $some_to_string_cast = true;
+                    }
+
                     if ($atomic_comparison_result->scalar_type_match_found !== null) {
                         $scalar_type_match_found = $atomic_comparison_result->scalar_type_match_found;
                     }
@@ -471,7 +476,9 @@ final class UnionTypeComparator
                 // only set this flag if we're definite that the only
                 // reason the type match has been found is because there
                 // was a __toString cast
-                if ($all_to_string_cast && $type_match_found) {
+                if (($all_to_string_cast && $type_match_found)
+                    || ($some_to_string_cast && !$type_match_found)
+                ) {
                     $union_comparison_result->to_string_cast = true;
                 }
 
