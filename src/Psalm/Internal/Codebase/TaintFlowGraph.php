@@ -55,6 +55,7 @@ use function implode;
 use function ksort;
 use function min;
 use function spl_object_id;
+use function str_starts_with;
 use function strcmp;
 use function strlen;
 use function strpos;
@@ -1019,6 +1020,8 @@ final class TaintFlowGraph extends DataFlowGraph
         // the graphs of the forked workers are merged in any order: keep the edges added the same
         ksort($this->generator_sends);
 
+        $reaching = $this->getNodesReachingGeneratorSentNodes($reverse);
+
         foreach ($this->generator_sends as $send_id => $generator_ids) {
             ksort($generator_ids);
 
@@ -1031,6 +1034,10 @@ final class TaintFlowGraph extends DataFlowGraph
             $searched = [];
 
             foreach ($generator_ids as $generator_id => $_) {
+                if (!isset($reaching[$generator_id])) {
+                    continue;
+                }
+
                 $queue[] = [$generator_id, []];
                 $visited[$generator_id . "\0"] = true;
             }
@@ -1062,6 +1069,11 @@ final class TaintFlowGraph extends DataFlowGraph
                 }
 
                 foreach ($reverse[$id] ?? [] as $from_id => $_) {
+                    // a specialization linked during the walk isn't in $reaching
+                    if (!isset($reaching[$from_id]) && !isset($reaching[self::splitSpecializedId($from_id)[0]])) {
+                        continue;
+                    }
+
                     $from_calls = $calls;
 
                     if ($specialization_key !== null && $from_id === $unspecialized_id) {
@@ -1072,17 +1084,17 @@ final class TaintFlowGraph extends DataFlowGraph
                             // too deep (recursion): any call matches
                             $from_calls = [];
                         }
-                    } else {
-                        [$from_unspecialized_id, $from_specialization_key] = self::splitSpecializedId($from_id);
+                    } elseif ($specialization_key === null
+                        && str_starts_with($from_id, $id . self::SPECIALIZATION_SEPARATOR)
+                    ) {
+                        // out of a body through the arguments of a call: the one entered, if any
+                        $from_specialization_key = substr($from_id, strlen($id . self::SPECIALIZATION_SEPARATOR));
 
-                        if ($from_unspecialized_id === $id) {
-                            // out of a body through the arguments of a call: the one entered, if any
-                            if ($from_calls && end($from_calls) !== $from_specialization_key) {
-                                continue;
-                            }
-
-                            array_pop($from_calls);
+                        if ($from_calls && end($from_calls) !== $from_specialization_key) {
+                            continue;
                         }
+
+                        array_pop($from_calls);
                     }
 
                     $state_key = $from_id . "\0" . implode("\0", $from_calls);
@@ -1105,6 +1117,56 @@ final class TaintFlowGraph extends DataFlowGraph
                 }
             }
         }
+    }
+
+    /**
+     * The nodes linkGeneratorSends() can reach a generator sent node from, walking $reverse: the ones reached from
+     * the sent nodes the other way. Its walk from any other node finds nothing, so it skips them.
+     *
+     * The links it adds during the walk go from the node sent to a generator into the node of what the generator
+     * receives, or into a specialization of it, so a node that reaches what a generator receives may reach a sent
+     * node later: those count from the start.
+     *
+     * @param array<string, array<string, true>> $reverse see getReverseEdges()
+     * @return array<string, true>
+     * @psalm-mutation-free
+     */
+    private function getNodesReachingGeneratorSentNodes(array $reverse): array
+    {
+        $reaching = [];
+        $queue = [];
+
+        foreach ($this->generator_sent_nodes as $id => $received_node) {
+            foreach ([$id, $received_node->id] as $start_id) {
+                if (!isset($reaching[$start_id])) {
+                    $reaching[$start_id] = true;
+                    $queue[] = $start_id;
+                }
+            }
+        }
+
+        while ($queue) {
+            $id = array_pop($queue);
+            $targets = $this->forward_edges[$id] ?? [];
+
+            // the specialization links go both ways in $reverse
+            foreach ($reverse[$id] ?? [] as $linked_id => $_) {
+                if (str_starts_with($linked_id, $id . self::SPECIALIZATION_SEPARATOR)
+                    || str_starts_with($id, $linked_id . self::SPECIALIZATION_SEPARATOR)
+                ) {
+                    $targets[$linked_id] = true;
+                }
+            }
+
+            foreach ($targets as $to_id => $_) {
+                if (!isset($reaching[$to_id])) {
+                    $reaching[$to_id] = true;
+                    $queue[] = $to_id;
+                }
+            }
+        }
+
+        return $reaching;
     }
 
     /**
