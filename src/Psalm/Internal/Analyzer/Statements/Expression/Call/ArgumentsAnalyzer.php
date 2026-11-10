@@ -730,27 +730,18 @@ final class ArgumentsAnalyzer
         }
 
         $untyped_replaced_type = $replaced_type;
-        $typed_replaced_type = $replaced_type;
-
-        // a typed param takes a late static type only when it is the caller's: a receiver `$this` or `new static`, or
-        // a forwarding call, whose late static type is not resolved yet. The result of a call returning `static` is
-        // resolved, on `$this` as on another instance, so it counts as another instance, whose late static class is
-        // not the closure's own `static`
-        $typed_static_is_final = $template_result->static_class_is_final
-            || !($static_class_type instanceof TNamedObject
-                && $static_class_type->is_static
-                && !$static_class_type->is_static_resolved);
 
         if ($static_class_type !== null) {
             (new DeclaredStaticReplacer($codebase, $static_class_type, $template_result->static_class_is_final))
                 ->traverse($untyped_replaced_type);
-
-            if ($typed_static_is_final === $template_result->static_class_is_final) {
-                $typed_replaced_type = $untyped_replaced_type;
-            } else {
-                (new DeclaredStaticReplacer($codebase, $static_class_type, true))->traverse($typed_replaced_type);
-            }
         }
+
+        // the caller's own late static type, not resolved yet: a receiver `$this` or `new static`, or a forwarding
+        // call. The result of a call returning `static` is resolved, on `$this` as on another instance
+        $static_is_callers = !$template_result->static_class_is_final
+            && $static_class_type instanceof TNamedObject
+            && $static_class_type->is_static
+            && !$static_class_type->is_static_resolved;
 
         $closure_id = strtolower($statements_analyzer->getFilePath())
             . ':' . $arg->value->getLine()
@@ -789,12 +780,16 @@ final class ArgumentsAnalyzer
                 );
 
                 if ($untyped_replaced_type !== $replaced_type) {
-                    $pass_type = self::inferClosureParamType(
-                        $codebase,
-                        $param_storage->signature_type === null ? $untyped_replaced_type : $typed_replaced_type,
-                        $closure_param_offset,
-                        $param_storage->signature_type,
-                    );
+                    $pass_type = $param_storage->signature_type === null
+                        ? self::inferClosureParamType($codebase, $untyped_replaced_type, $closure_param_offset, null)
+                        : self::getTypedClosureParamPassType(
+                            $codebase,
+                            $replaced_type,
+                            $untyped_replaced_type,
+                            $closure_param_offset,
+                            $param_storage->signature_type,
+                            $static_is_callers,
+                        );
 
                     if ($pass_type) {
                         $pass_types[$closure_param_offset] = $pass_type;
@@ -862,6 +857,50 @@ final class ArgumentsAnalyzer
         foreach ($params as $param) {
             $closure_storage->addParam($param, $param_lookup[$param->name] ?? true);
         }
+    }
+
+    /**
+     * The type a param declared with $declared_type takes for this analysis of the closure. A hint that holds the
+     * declared `static` does not narrow it to the class of the call, whose instances at runtime may be of any subclass
+     * (another atomic of a union receiver, another class using a trait, another loop pass): it keeps the declared type,
+     * marked static when the call's `static` is the caller's own and the hint is of the declared type.
+     */
+    private static function getTypedClosureParamPassType(
+        Codebase $codebase,
+        Union $declared_hint_type,
+        Union $resolved_hint_type,
+        int $closure_param_offset,
+        Union $declared_type,
+        bool $static_is_callers,
+    ): ?Union {
+        $resolved_param_type = self::inferClosureParamType($codebase, $resolved_hint_type, $closure_param_offset, null);
+
+        if ($resolved_param_type === null) {
+            return null;
+        }
+
+        $declared_param_type = self::inferClosureParamType($codebase, $declared_hint_type, $closure_param_offset, null);
+
+        if ($declared_param_type !== null && $declared_param_type->getId() === $resolved_param_type->getId()) {
+            // the hint of this param holds no declared `static`
+            return self::inferClosureParamType($codebase, $resolved_hint_type, $closure_param_offset, $declared_type);
+        }
+
+        if (!$static_is_callers
+            || !UnionTypeComparator::isContainedBy($codebase, $resolved_param_type, $declared_type)
+        ) {
+            return $declared_type;
+        }
+
+        $static_atomics = [];
+
+        foreach ($declared_type->getAtomicTypes() as $declared_atomic) {
+            $static_atomics[] = $declared_atomic instanceof TNamedObject
+                ? $declared_atomic->setIsStatic(true, true)
+                : $declared_atomic;
+        }
+
+        return $declared_type->setTypes($static_atomics);
     }
 
     /**

@@ -2704,6 +2704,31 @@ final class ConditionalReturnTypeTest extends TestCase
                         echo 1;
                     });',
             ],
+            'typedClosureParamOfCallableOfStaticOnUnionReceiverKeepsItsDeclaredType' => [
+                'code' => '<?php
+                    abstract class Node {
+                        /** @param callable(static): mixed $callback */
+                        public function visit(callable $callback): void {}
+                    }
+
+                    class Leaf extends Node {
+                        public function value(): int {
+                            return 1;
+                        }
+                    }
+
+                    class Branch extends Node {}
+
+                    function walk(Leaf|Branch $node): void {
+                        $node->visit(function (Node $x): void {
+                            /** @psalm-check-type-exact $x = Node */
+                            if ($x instanceof Leaf) {
+                                echo $x->value();
+                            }
+                        });
+                    }',
+                'php_version' => '8.0',
+            ],
         ];
     }
 
