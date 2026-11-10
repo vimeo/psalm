@@ -27,6 +27,7 @@ use Psalm\Internal\Type\TemplateInferredTypeReplacer;
 use Psalm\Internal\Type\TemplateResult;
 use Psalm\Internal\Type\TemplateStandinTypeReplacer;
 use Psalm\Internal\Type\TypeExpander;
+use Psalm\Internal\Type\TypeVariableTracker;
 use Psalm\Issue\ArgumentTypeCoercion;
 use Psalm\Issue\InvalidArgument;
 use Psalm\Issue\InvalidDocblock;
@@ -203,6 +204,8 @@ abstract class CallAnalyzer
 
             $is_final = $method_storage->final;
 
+            $visibility = $method_storage->visibility;
+
             if ($method_name !== $declaring_method_id->method_name) {
                 $appearing_method_id = $codebase->methods->getAppearingMethodId($method_id);
 
@@ -214,13 +217,16 @@ abstract class CallAnalyzer
                     if (isset($appearing_class_storage->trait_final_map[$method_name_lc])) {
                         $is_final = true;
                     }
+
+                    // a trait method can be made private by the alias that is called
+                    $visibility = $appearing_class_storage->trait_visibility_map[$method_name_lc] ?? $visibility;
                 }
             }
 
             if ($class_analyzer instanceof ClassLikeAnalyzer
                 && !$method_storage->is_static
                 && ($context->collect_nonprivate_initializations
-                    || $method_storage->visibility === ClassLikeAnalyzer::VISIBILITY_PRIVATE
+                    || $visibility === ClassLikeAnalyzer::VISIBILITY_PRIVATE
                     || $is_final)
             ) {
                 $local_vars_in_scope = [];
@@ -245,10 +251,7 @@ abstract class CallAnalyzer
                 $old_calling_method_id = $context->calling_method_id;
 
                 if ($fq_class_name === $source->getFQCLN()) {
-                    // what the caller established about its own variables says nothing about the method's
-                    $context->clauses = [];
-
-                    $class_analyzer->getMethodMutations($declaring_method_id->method_name, $context);
+                    $class_analyzer->getMethodMutations($method_name_lc, $context);
                 } else {
                     $declaring_fq_class_name = $declaring_method_id->fq_class_name;
 
@@ -754,6 +757,7 @@ abstract class CallAnalyzer
         TemplateResult $template_result,
         Context $context,
         StatementsAnalyzer $statements_analyzer,
+        ?string $static_class = null,
     ): void {
         $type_assertions = [];
 
@@ -872,7 +876,7 @@ abstract class CallAnalyzer
                                 $codebase,
                             ),
                             null,
-                            null,
+                            $static_class !== null ? new TNamedObject($static_class) : null,
                             null,
                         );
 
@@ -1219,9 +1223,13 @@ abstract class CallAnalyzer
                         continue;
                     }
 
+                    // type variables of different instantiations that stand for the same type are one type
                     $equality_types = array_unique(
                         array_map(
-                            static fn($bound_with_equality) => $bound_with_equality->type->getId(),
+                            static fn($bound_with_equality) => TypeVariableTracker::resolveTypeVariables(
+                                $bound_with_equality->type,
+                                $statements_analyzer->getCodebase(),
+                            )->getId(),
                             $bounds_with_equality,
                         ),
                     );

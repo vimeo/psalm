@@ -54,18 +54,38 @@ final class ConditionalTest extends TestCase
                         }
                     }',
             ],
-            'nonFinalClassCanBeIdenticalToIterable' => [
-                'code' => <<<'PHP'
-                    <?php
-                    class Foo {}
+            'finalMethodAnalysedFromTheConstructorIgnoresTheConditionsOfItsCaller' => [
+                'code' => '<?php
+                    declare(strict_types=1);
 
-                    function f(Foo $x, iterable $i): bool {
-                        return $x === $i;
-                    }
-                    PHP,
-                'assertions' => [],
-                'ignored_issues' => [],
-                'php_version' => '8.1',
+                    class Test {
+                        private string $pattern;
+
+                        public function __construct(string $pattern) {
+                            $this->captureErrors(fn(): bool => random_int(0, 1) ? true : false);
+                            $this->pattern = $pattern;
+                        }
+
+                        final public function captureErrors(\\Closure $function): void {
+                            if ($function() === false) {
+                                throw new \\RuntimeException($this->formatPcreError(random_int(0, 1)));
+                            }
+
+                            $errorCode = preg_last_error();
+
+                            if ($errorCode !== 0) {
+                                throw new \\RuntimeException($this->formatPcreError($errorCode));
+                            }
+                        }
+
+                        final public function formatPcreError(int $errorCode): string {
+                            if ($errorCode === 0) {
+                                return "Is Zero";
+                            }
+
+                            return "Not Zero";
+                        }
+                    }',
             ],
             'chainedAssignmentOfAConditionIsFalseWhereTheConditionIsFalse' => [
                 'code' => <<<'PHP'
@@ -90,6 +110,19 @@ final class ConditionalTest extends TestCase
                         if (!$isRoot || $isSimple) {
                             echo "not the root, or simple";
                         }
+                    }
+                    PHP,
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
+            'nonFinalClassCanBeIdenticalToIterable' => [
+                'code' => <<<'PHP'
+                    <?php
+                    class Foo {}
+
+                    function f(Foo $x, iterable $i): bool {
+                        return $x === $i;
                     }
                     PHP,
                 'assertions' => [],
@@ -963,6 +996,54 @@ final class ConditionalTest extends TestCase
                         public static function getOne() {
                             $one = current(static::getArr());
                             return $one instanceof static ? $one : null;
+                        }
+                    }',
+            ],
+            'negatedInstanceofStaticNarrowsAfterAnEarlyReturn' => [
+                'code' => '<?php
+                    interface Equatable {
+                        public function equals(Equatable $other): bool;
+                    }
+
+                    final class Money implements Equatable {
+                        public function __construct(private string $id) {}
+
+                        public function equals(Equatable $other): bool {
+                            if (!$other instanceof static) {
+                                return false;
+                            }
+
+                            /** @psalm-check-type-exact $other = Money&static */
+                            return $this->id === $other->id;
+                        }
+                    }',
+            ],
+            'negatedInstanceofThisNarrowsInTheElseBranch' => [
+                'code' => '<?php
+                    interface Equatable {}
+
+                    class Money implements Equatable {
+                        public function check(Equatable $other): void {
+                            if (!$other instanceof $this) {
+                                /** @psalm-check-type-exact $other = Equatable */
+                                return;
+                            } else {
+                                /** @psalm-check-type-exact $other = Money&static */
+                                return;
+                            }
+                        }
+                    }',
+            ],
+            'negatedInstanceofStaticKeepsTheTypeOfANonStaticValue' => [
+                'code' => '<?php
+                    class Money {
+                        public function check(Money $other): void {
+                            if (!$other instanceof static) {
+                                /** @psalm-check-type-exact $other = Money */
+                                return;
+                            }
+
+                            /** @psalm-check-type-exact $other = Money&static */
                         }
                     }',
             ],

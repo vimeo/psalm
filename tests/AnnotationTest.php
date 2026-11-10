@@ -1689,6 +1689,56 @@ final class AnnotationTest extends TestCase
                         }
                     };',
             ],
+            'paramNameWithTrailingSemicolon' => [
+                'code' => '<?php
+                    /**
+                     * @param list<int> $list;
+                     * @return list<int>
+                     */
+                    function foo(array $list): array {
+                        return $list;
+                    }',
+            ],
+            'paramOutNameWithTrailingSemicolon' => [
+                'code' => '<?php
+                    /**
+                     * @param-out non-empty-string $s;
+                     */
+                    function foo(?string &$s): void {
+                        $s = "a";
+                    }
+
+                    foo($a);',
+                'assertions' => [
+                    '$a===' => 'non-empty-string',
+                ],
+            ],
+            'magicPropertyNameWithTrailingSemicolon' => [
+                'code' => '<?php
+                    /**
+                     * @property string $name;
+                     */
+                    final class A {
+                        public function __get(string $name) {
+                            return null;
+                        }
+                    }
+
+                    function foo(A $a): string {
+                        return $a->name;
+                    }',
+            ],
+            'globalNameWithTrailingSemicolon' => [
+                'code' => '<?php
+                    /**
+                     * @global int $foo;
+                     */
+                    function bar(): int {
+                        global $foo;
+
+                        return $foo;
+                    }',
+            ],
         ];
     }
 
