@@ -2389,6 +2389,47 @@ final class ConditionalReturnTypeTest extends TestCase
                     '$child===' => 'Node',
                 ],
             ],
+            'staticParamOfConstructorThroughNewSelfAndNewParent' => [
+                'code' => '<?php
+                    class NStatic {
+                        /** @param static|null $other */
+                        public function __construct(?self $other = null) {}
+
+                        public function fresh(NStatic $other): void {
+                            $copy = new self($other);
+                            /** @psalm-check-type-exact $copy = NStatic */
+                            echo 1;
+                        }
+                    }
+
+                    class NChild extends NStatic {
+                        public function up(NStatic $other): void {
+                            $copy = new parent($other);
+                            /** @psalm-check-type-exact $copy = NStatic */
+                            echo 1;
+                        }
+                    }
+
+                    trait MakesSelf {
+                        public function make(): void {
+                            $copy = new self($this);
+                        }
+                    }
+
+                    class TUser {
+                        use MakesSelf;
+
+                        /** @param static|null $other */
+                        public function __construct(?self $other = null) {}
+                    }
+
+                    class TUser2 {
+                        use MakesSelf;
+
+                        /** @param static|null $other */
+                        public function __construct(?self $other = null) {}
+                    }',
+            ],
             'untypedClosureParamOfCallableOfStaticOnThisOfTemplateClassKeepsItsTemplate' => [
                 'code' => '<?php
                     class Model {}

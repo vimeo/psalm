@@ -634,10 +634,10 @@ final class NewAnalyzer extends CallAnalyzer
             $template_result ??= new TemplateResult([], []);
 
             $template_result->static_class_type = $fq_class_name;
-            // `new X` makes exactly an X
+            // `new X`, `new self` and `new parent` make exactly that class; `new static` and `new $class` do not
             $template_result->static_class_is_final = $storage->final
                 || ($stmt->class instanceof PhpParser\Node\Name
-                    && !in_array(strtolower($stmt->class->getFirst()), ['self', 'static', 'parent'], true));
+                    && strtolower($stmt->class->getFirst()) !== 'static');
 
             $args_analyzed = self::checkMethodArgs(
                 $method_id,
