@@ -25616,7 +25616,7 @@ return array (
   ),
   'eventhttprequest::gethost' => 
   array (
-    -1 => 'null|string',
+    -1 => 'string',
   ),
   'eventhttprequest::getinputbuffer' => 
   array (
@@ -25640,7 +25640,7 @@ return array (
   ),
   'eventhttprequest::geturi' => 
   array (
-    -1 => 'null|string',
+    -1 => 'string',
   ),
   'eventhttprequest::removeheader' => 
   array (
