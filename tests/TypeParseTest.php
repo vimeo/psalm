@@ -2048,6 +2048,36 @@ final class TypeParseTest extends TestCase
         }
     }
 
+    public function testStarProjectionsKnownDifferentlyAreNotEqualAndCombineToBoth(): void
+    {
+        $objects = new Union([new TStarProjection(false, Type::getList(Type::getObject()))]);
+        $ints = new Union([new TStarProjection(false, Type::getInt())]);
+
+        self::assertSame('*', $objects->getId());
+        self::assertTrue($objects->equals(new Union([new TStarProjection(false, Type::getList(Type::getObject()))])));
+        /** @var Union $unserialized */
+        $unserialized = unserialize(serialize($objects));
+        self::assertTrue($objects->equals($unserialized));
+        self::assertFalse($objects->equals($ints));
+        self::assertFalse($objects->equals(new Union([new TStarProjection()])));
+
+        foreach ([
+            Type::combineUnionTypes($objects, $ints),
+            Type::combineUnionTypes($ints, $objects),
+            Type::combineUnionTypes($objects, Type::getInt()),
+            Type::combineUnionTypes(Type::getInt(), $objects),
+        ] as $combined) {
+            $star = $combined->getSingleAtomic();
+            self::assertInstanceOf(TStarProjection::class, $star);
+            self::assertSame('int|list<object>', $star->as?->getId());
+        }
+
+        // a `*` not known to be more than its template's bound keeps nothing narrower
+        $unknown = Type::combineUnionTypes($objects, new Union([new TStarProjection()]))->getSingleAtomic();
+        self::assertInstanceOf(TStarProjection::class, $unknown);
+        self::assertNull($unknown->as);
+    }
+
     /**
      * @return iterable<string, array{string}>
      * @psalm-pure

@@ -553,10 +553,6 @@ abstract class Atomic implements TypeNode, Stringable
                 Type::getPure(),
             );
         }
-        // iterating a `Collection<int, *>` gives the bound of the template a `*` stands for
-        if ($this instanceof TGenericObject && ($read = StarProjection::readArguments($this, $codebase)) !== $this) {
-            return $read->getIterable($codebase);
-        }
         if ($this->hasTraversableInterface($codebase)) {
             // the key and value types, and what iterating it may do (TPurity)
             $traversable_params = strtolower($this->value) === 'traversable'
@@ -580,8 +576,9 @@ abstract class Atomic implements TypeNode, Stringable
                 throw new InvalidArgumentException('Wrong number of templates!');
             }
 
+            // iterating a `Collection<int, *>` gives what is known of the unknown type
             return new TIterable(
-                [$traversable_params[0], $traversable_params[1]],
+                [StarProjection::read($traversable_params[0]), StarProjection::read($traversable_params[1])],
                 [],
                 false,
                 $traversable_params[2] ?? null,

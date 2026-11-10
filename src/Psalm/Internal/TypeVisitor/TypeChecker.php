@@ -43,6 +43,7 @@ use Psalm\Type\Atomic\TGlobalConstant;
 use Psalm\Type\Atomic\TIntersection;
 use Psalm\Type\Atomic\TNamedObject;
 use Psalm\Type\Atomic\TResource;
+use Psalm\Type\Atomic\TStarProjection;
 use Psalm\Type\Atomic\TTemplateParam;
 use Psalm\Type\MutableUnion;
 use Psalm\Type\TypeNode;
@@ -109,6 +110,11 @@ final class TypeChecker extends TypeVisitor
         }
 
         if ($type->checked) {
+            return self::DONT_TRAVERSE_CHILDREN;
+        }
+
+        // what is known of a `*` is the bound of its template, checked where the template is declared
+        if ($type instanceof TStarProjection) {
             return self::DONT_TRAVERSE_CHILDREN;
         }
 

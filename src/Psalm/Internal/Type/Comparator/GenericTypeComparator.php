@@ -7,7 +7,6 @@ namespace Psalm\Internal\Type\Comparator;
 use Psalm\Codebase;
 use Psalm\Internal\Type\StarProjection;
 use Psalm\Internal\Type\TemplateStandinTypeReplacer;
-use Psalm\Type;
 use Psalm\Type\Atomic;
 use Psalm\Type\Atomic\TGenericObject;
 use Psalm\Type\Atomic\TIterable;
@@ -66,8 +65,6 @@ final class GenericTypeComparator
             $container_type_params_covariant,
         );
 
-        $input_bounds = null;
-
         $atomic_comparison_result_type_params = null;
         if ($atomic_comparison_result) {
             if (!$atomic_comparison_result->replacement_atomic_type) {
@@ -92,21 +89,13 @@ final class GenericTypeComparator
                 continue;
             }
 
-            // a `*` argument is some unknown type within its template's bound: it fits only a covariant argument
-            // holding that whole bound
+            // a `*` argument is some unknown type: it fits only a covariant argument holding what is known of it
+            // (`BoxReader<*>` with `@implements Reader<Box<T>>` reads as a `Box<*>`, not as a `Box<object>`)
             if (StarProjection::isStar($input_param)) {
-                $input_bounds ??= $input_type_part instanceof TGenericObject
-                    ? TemplateStandinTypeReplacer::getMappedGenericTypeParams(
-                        $codebase,
-                        StarProjection::readArguments($input_type_part, $codebase),
-                        $container_type_part,
-                    )
-                    : [];
-
                 if (!($container_type_params_covariant[$i] ?? false)
                     || !UnionTypeComparator::isContainedBy(
                         $codebase,
-                        $input_bounds[$i] ?? Type::getMixed(),
+                        StarProjection::read($input_param),
                         $container_param,
                     )
                 ) {

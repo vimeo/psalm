@@ -391,9 +391,11 @@ final class ArgumentAnalyzer
                 $context->calling_function_id ?: $context->calling_method_id,
             );
 
+            // a `*` binding tells what the receiver's template accepts, not what an argument typed with the calling
+            // class's own template is (`$this->next->set($this->value)` with a `Node<*> $next`)
             $arg_value_type = TemplateStandinTypeReplacer::replace(
                 $arg_value_type,
-                $readonly_template_result,
+                StarProjection::withoutStarBindings($readonly_template_result),
                 $codebase,
                 $statements_analyzer,
                 $arg_value_type,

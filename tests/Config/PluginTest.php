@@ -939,8 +939,99 @@ final class PluginTest extends TestCase
                 foreach ($box->all() as $item) {
                     takesObject($item);
                 }
+
+                $parameter = $box->parameterId();
+                /** @psalm-check-type-exact $parameter = "object" */
             }');
     }
+
+    public function testMethodProviderTakingTheReceiversStarArgumentAcceptsNothing(): void
+    {
+        $this->expectException(CodeException::class);
+        $this->expectExceptionMessage('somefile.php:44:42 - Argument 1 expects never, but stdClass provided');
+
+        $this->analyzeWithTemplateParameterPlugin('
+            /** @param Box<*> $box */
+            function run(Box $box): void {
+                $box->receiverConsumer()(new \stdClass());
+            }');
+    }
+
+    public function testMethodProviderTakingABoxOfTheReceiversStarArgumentAcceptsNoBox(): void
+    {
+        $this->expectException(CodeException::class);
+        $this->expectExceptionMessage('somefile.php:47:37 - Argument 1 expects Ns\Box<never>, but Ns\Box<stdClass> provided');
+
+        $this->analyzeWithTemplateParameterPlugin('
+            /**
+             * @param Box<*> $box
+             * @param Box<\stdClass> $other
+             */
+            function run(Box $box, Box $other): void {
+                $box->boxConsumer()($other);
+            }');
+    }
+
+    public function testMethodProviderReturningABoxOfTheReceiversStarArgumentKeepsItUnknown(): void
+    {
+        $this->expectException(CodeException::class);
+        $this->expectExceptionMessage('somefile.php:46:32 - Argument 1 of Ns\Box::set expects never, but stdClass provided');
+
+        $this->analyzeWithTemplateParameterPlugin('
+            /** @param Box<*> $box */
+            function run(Box $box): void {
+                foreach ($box->boxes() as $item) {
+                    takesObject($item->get());
+                    $item->set(new \stdClass());
+                }
+            }');
+    }
+
+    public function testMethodProviderReturningAnIntersectionReadsTheReceiversStarArgument(): void
+    {
+        $this->analyzeWithTemplateParameterPlugin(self::MARKED_SOURCE . '
+            /** @param Source<*> $source */
+            function run(Source $source): void {
+                foreach ($source->markedItems()->get() as $item) {
+                    takesObject($item);
+                }
+            }');
+    }
+
+    public function testMethodProviderReturningAnIntersectionWithAClosureOfTheReceiversStarArgumentAcceptsNoBox(): void
+    {
+        $this->expectException(CodeException::class);
+        $this->expectExceptionMessage('somefile.php:65:50 - Argument 1 expects Ns\Box<never>, but Ns\Box<stdClass> provided');
+
+        $this->analyzeWithTemplateParameterPlugin(self::MARKED_SOURCE . '
+            /**
+             * @param Source<*> $source
+             * @param Box<\stdClass> $box
+             */
+            function run(Source $source, Box $box): void {
+                $source->markedConsumer()->get()($box);
+            }');
+    }
+
+    private const MARKED_SOURCE = '
+            /** @template T */
+            interface Marker {}
+
+            /** @template T */
+            interface Holder {
+                /** @return T */
+                public function get(): mixed;
+            }
+
+            /** @template T of object */
+            abstract class Source {
+                /** @return Marker<int>&Holder<list<T>> */
+                abstract public function markedItems(): object;
+
+                /** @return Marker<int>&Holder<\Closure(Box<T>): void> */
+                abstract public function markedConsumer(): object;
+            }
+';
 
     private function analyzeWithTemplateParameterPlugin(string $code): void
     {
@@ -981,6 +1072,29 @@ final class PluginTest extends TestCase
 
                     /** @return list<T> */
                     public function all(): array {
+                        throw new \Exception();
+                    }
+
+                    /** @return non-empty-string */
+                    public function parameterId(): string {
+                        throw new \Exception();
+                    }
+
+                    /** @return \Closure(T): void */
+                    public function receiverConsumer(): \Closure {
+                        throw new \Exception();
+                    }
+
+                    /** @param T $value */
+                    public function set(object $value): void {}
+
+                    /** @return list<Box<T>> */
+                    public function boxes(): array {
+                        throw new \Exception();
+                    }
+
+                    /** @return \Closure(Box<T>): void */
+                    public function boxConsumer(): \Closure {
                         throw new \Exception();
                     }
                 }

@@ -582,14 +582,18 @@ final class TypeExpander
             ) {
                 $class_storage = $codebase->classlike_storage_provider->get($return_type->value);
 
-                $type_params = PurityArguments::align(
-                    TemplateDefaults::fillAndExpandTypeArguments(
-                        $type_params,
+                $type_params = StarProjection::boundStars(
+                    PurityArguments::align(
+                        TemplateDefaults::fillAndExpandTypeArguments(
+                            $type_params,
+                            $class_storage,
+                            $codebase,
+                            $return_type->from_docblock,
+                        ),
                         $class_storage,
-                        $codebase,
-                        $return_type->from_docblock,
                     ),
                     $class_storage,
+                    $codebase,
                 );
             }
 

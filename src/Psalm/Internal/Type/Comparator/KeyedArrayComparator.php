@@ -7,6 +7,7 @@ namespace Psalm\Internal\Type\Comparator;
 use Psalm\Codebase;
 use Psalm\Internal\Type\TemplateInferredTypeReplacer;
 use Psalm\Internal\Type\TemplateResult;
+use Psalm\Internal\TypeVisitor\StarProjectionVisitor;
 use Psalm\Type;
 use Psalm\Type\Atomic;
 use Psalm\Type\Atomic\TGenericObject;
@@ -345,9 +346,6 @@ final class KeyedArrayComparator
         return $all_types_contain;
     }
 
-    /**
-     * @psalm-capabilities read-props|write-this-props|write-props|write-refs
-     */
     public static function coerceToObjectWithProperties(
         Codebase $codebase,
         TNamedObject $input_type_part,
@@ -390,14 +388,21 @@ final class KeyedArrayComparator
             $properties[$property_name] = $property_type ?? Type::getMixed();
         }
 
+        $template_result = new TemplateResult(
+            $storage->template_types ?? [],
+            $inferred_lower_bounds,
+        );
+
+        // the properties are read from the object, like a property fetch reads them
         $replaced_object = TemplateInferredTypeReplacer::replace(
-            new Union([
-                new TObjectWithProperties($properties),
-            ]),
-            new TemplateResult(
-                $storage->template_types ?? [],
-                $inferred_lower_bounds,
+            StarProjectionVisitor::project(
+                new Union([
+                    new TObjectWithProperties($properties),
+                ]),
+                $template_result,
+                $codebase,
             ),
+            $template_result,
             $codebase,
         );
 

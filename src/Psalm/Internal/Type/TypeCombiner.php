@@ -110,6 +110,26 @@ final class TypeCombiner
             return new Union([$types[0]]);
         }
 
+        foreach ($types as $type) {
+            if ($type instanceof TStarProjection) {
+                return self::combineIntoStar($types, $codebase);
+            }
+        }
+
+        return self::combineTypes($types, $codebase, $overwrite_empty_array, $allow_mixed_union, $literal_limit);
+    }
+
+    /**
+     * @psalm-external-mutation-free
+     * @param  non-empty-list<Atomic> $types
+     */
+    private static function combineTypes(
+        array $types,
+        ?Codebase $codebase,
+        bool $overwrite_empty_array,
+        bool $allow_mixed_union,
+        int $literal_limit,
+    ): Union {
         $combination = new TypeCombination();
 
         $from_docblock = false;
@@ -195,7 +215,7 @@ final class TypeCombiner
                 // an iterable has no template a `*` could stand for: it is the bound of Traversable's
                 $combined_param_types[] = Type::combineUnionTypes(
                     $array_param_type,
-                    StarProjection::read($traversable_param_types[$i], Type::getMixed()),
+                    StarProjection::read($traversable_param_types[$i]),
                 );
             }
 
@@ -417,6 +437,37 @@ final class TypeCombiner
     }
 
     /**
+     * Combining type arguments (`Box<*>|Box<int>`), `*` absorbs the other ones: the unknown type is any of the
+     * types known of each `*` or given next to it, or nothing narrower than the template's bound when one `*` is
+     * not known to be more
+     *
+     * @param  non-empty-list<Atomic> $types
+     * @psalm-external-mutation-free
+     */
+    private static function combineIntoStar(array $types, ?Codebase $codebase): Union
+    {
+        $known_types = [];
+        $from_docblock = false;
+
+        foreach ($types as $type) {
+            $from_docblock = $from_docblock || $type->from_docblock;
+
+            if (!$type instanceof TStarProjection) {
+                $known_types[] = $type;
+            } elseif ($type->as === null) {
+                return new Union([new TStarProjection($from_docblock)]);
+            } else {
+                $known_types = [...$known_types, ...array_values($type->as->getAtomicTypes())];
+            }
+        }
+
+        return new Union([new TStarProjection(
+            $from_docblock,
+            self::combine($known_types, $codebase, false, false),
+        )]);
+    }
+
+    /**
      * @psalm-external-mutation-free
      * @psalm-suppress ImpurePropertyAssignment We're not actually mutating any external instance
      */
@@ -496,11 +547,6 @@ final class TypeCombiner
         bool $allow_mixed_union,
         int $literal_limit,
     ): ?Union {
-        // a `*` argument combined with any other (`Box<*>|Box<int>`) is still some unknown type
-        if ($type instanceof TStarProjection) {
-            return new Union([$type]);
-        }
-
         if ($type instanceof TMixed) {
             if ($type->from_loop_isset) {
                 if ($combination->mixed_from_loop_isset === null) {
@@ -610,8 +656,8 @@ final class TypeCombiner
             self::addIterablePurity($combination, $traversable_params[2] ?? Type::getImpure());
             $traversable_params = isset($traversable_params[1])
                 ? [
-                    StarProjection::read($traversable_params[0], Type::getMixed()),
-                    StarProjection::read($traversable_params[1], Type::getMixed()),
+                    StarProjection::read($traversable_params[0]),
+                    StarProjection::read($traversable_params[1]),
                 ]
                 : null;
 
@@ -754,7 +800,7 @@ final class TypeCombiner
                 /** @psalm-suppress PropertyTypeCoercion */
                 $combination->builtin_type_params[$type_key][$i] = Type::combineUnionTypes(
                     $combination->builtin_type_params[$type_key][$i] ?? null,
-                    $type_key === 'iterable' ? StarProjection::read($type_param, Type::getMixed()) : $type_param,
+                    $type_key === 'iterable' ? StarProjection::read($type_param) : $type_param,
                     $codebase,
                     $overwrite_empty_array,
                 );

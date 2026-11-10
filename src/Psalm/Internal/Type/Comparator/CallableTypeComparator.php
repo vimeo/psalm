@@ -18,6 +18,7 @@ use Psalm\Internal\Type\TemplateInferredTypeReplacer;
 use Psalm\Internal\Type\TemplateResult;
 use Psalm\Internal\Type\TemplateStandinTypeReplacer;
 use Psalm\Internal\Type\TypeExpander;
+use Psalm\Internal\TypeVisitor\StarProjectionVisitor;
 use Psalm\Storage\Capabilities;
 use Psalm\Storage\FunctionLikeStorage;
 use Psalm\Type;
@@ -307,7 +308,7 @@ final class CallableTypeComparator
 
     /**
      * The callable of a method of a generic object (`[$box, 'set']`, an invokable `Box<int>`) with the class
-     * templates bound by the object
+     * templates bound by the object: calling it writes to the method's parameters, so `*` ones accept nothing
      */
     private static function bindReceiverTemplates(
         Codebase $codebase,
@@ -331,9 +332,11 @@ final class CallableTypeComparator
             return $callable;
         }
 
+        $template_result = new TemplateResult([], $receiver_template_types);
+
         $bound_callable = TemplateInferredTypeReplacer::replace(
-            new Union([$callable]),
-            new TemplateResult([], $receiver_template_types),
+            StarProjectionVisitor::project(new Union([$callable]), $template_result, $codebase),
+            $template_result,
             $codebase,
         )->getSingleAtomic();
 

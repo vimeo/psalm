@@ -232,20 +232,37 @@ trait GenericTrait
         if ($input_type instanceof TGenericObject
             && ($this instanceof TGenericObject || $this instanceof TIterable)
         ) {
-            // a `*` argument binds a template as the bound of the template it stands for
-            $input_type = StarProjection::readArguments($input_type, $codebase);
-
             $input_object_type_params = TemplateStandinTypeReplacer::getMappedGenericTypeParams(
                 $codebase,
                 $input_type,
                 $this,
                 $container_type_params_covariant,
             );
+
+            // a `*` argument binds a template as what is known of it (`BoxReader<*>` with `@implements
+            // Reader<Box<T>>` binds a `Box<*>`)
+            $input_object_type_params = array_map(StarProjection::read(...), $input_object_type_params);
         }
 
         $type_params = $this->type_params;
 
         foreach ($type_params as $offset => $type_param) {
+            // an invariant argument mentioning a template bound to `*` stays `*` where a value is handed out (a
+            // parameter of a callable parameter); where one is passed in, the template takes `never` below like
+            // the template itself, as the unknown argument fits nothing else
+            $projected = $add_lower_bound && $this instanceof TGenericObject
+                ? StarProjection::readInvariantArgument($this, $offset, $template_result, $codebase)
+                : null;
+            $read_by_position = $projected !== null
+                && $this instanceof TGenericObject
+                && StarProjection::isReadByPosition($projected, $this, $offset);
+
+            if ($projected !== null && !$read_by_position) {
+                $type_params[$offset] = $projected;
+
+                continue;
+            }
+
             $input_type_param = null;
 
             if (($input_type instanceof TIterable
@@ -266,6 +283,11 @@ trait GenericTrait
                 $input_type_param = $input_object_type_params[$offset];
             }
 
+            // the `*` knows the argument with a callable in it as the replacer reads it by position, binding nothing
+            if ($read_by_position) {
+                $input_type_param = null;
+            }
+
             $type_params[$offset] = TemplateStandinTypeReplacer::replace(
                 $type_param,
                 $template_result,
@@ -283,6 +305,10 @@ trait GenericTrait
                     : null,
                 $depth + 1,
             );
+
+            if ($read_by_position) {
+                $type_params[$offset] = StarProjection::create($type_param->from_docblock, $type_params[$offset]);
+            }
         }
 
         return $type_params === $this->type_params ? null : $type_params;
@@ -297,6 +323,16 @@ trait GenericTrait
     ): ?array {
         $type_params = $this->type_params;
         foreach ($type_params as $offset => $type_param) {
+            // see StarProjection::readInvariantArgument(): `Pair<TFirst, TSecond>` on a `Pair<int, *>` is
+            // `Pair<int, *>`; a covariant argument is read with the bound, as elsewhere
+            if ($this instanceof TGenericObject
+                && ($projected = StarProjection::readInvariantArgument($this, $offset, $template_result, $codebase))
+            ) {
+                $type_params[$offset] = $projected;
+
+                continue;
+            }
+
             $type_param = TemplateInferredTypeReplacer::replace(
                 $type_param,
                 $template_result,

@@ -30,6 +30,7 @@ use Psalm\Internal\Type\TemplateInferredTypeReplacer;
 use Psalm\Internal\Type\TemplateResult;
 use Psalm\Internal\Type\TemplateStandinTypeReplacer;
 use Psalm\Internal\Type\TypeExpander;
+use Psalm\Internal\TypeVisitor\StarProjectionVisitor;
 use Psalm\Issue\IfThisIsMismatch;
 use Psalm\Issue\ImpureMethodCall;
 use Psalm\Issue\InvalidPropertyAssignmentValue;
@@ -482,7 +483,12 @@ final class ExistingAtomicMethodCallAnalyzer extends CallAnalyzer
             }
 
             $assertionsResolver = new AssertionsFromInheritanceResolver($codebase);
-            $assertions = $assertionsResolver->resolve($method_storage, $class_storage);
+            // the types a method asserts are read from the receiver, like its return type
+            $assertions = StarProjectionVisitor::projectAssertions(
+                $assertionsResolver->resolve($method_storage, $class_storage),
+                $template_result,
+                $codebase,
+            );
 
             if ($assertions) {
                 self::applyAssertionsToContext(
@@ -507,7 +513,15 @@ final class ExistingAtomicMethodCallAnalyzer extends CallAnalyzer
                         $codebase,
                         $static_type,
                     ),
-                    self::getAssertionsOnArgs($if_true_assertions, $method_storage, $args),
+                    self::getAssertionsOnArgs(
+                        StarProjectionVisitor::projectAssertions(
+                            $if_true_assertions,
+                            $template_result,
+                            $codebase,
+                        ),
+                        $method_storage,
+                        $args,
+                    ),
                 );
                 if ($lhs_var_id === null) {
                     $possibilities = array_filter(
@@ -533,7 +547,15 @@ final class ExistingAtomicMethodCallAnalyzer extends CallAnalyzer
                         $codebase,
                         $static_type,
                     ),
-                    self::getAssertionsOnArgs($if_false_assertions, $method_storage, $args),
+                    self::getAssertionsOnArgs(
+                        StarProjectionVisitor::projectAssertions(
+                            $if_false_assertions,
+                            $template_result,
+                            $codebase,
+                        ),
+                        $method_storage,
+                        $args,
+                    ),
                 );
                 if ($lhs_var_id === null) {
                     $possibilities = array_filter(

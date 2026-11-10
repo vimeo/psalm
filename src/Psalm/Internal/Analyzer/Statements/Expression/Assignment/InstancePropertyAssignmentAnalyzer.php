@@ -1699,6 +1699,7 @@ final class InstancePropertyAssignmentAnalyzer
                     $localizing_type_part,
                     $class_storage,
                     $declaring_class_storage,
+                    true,
                 );
             }
 

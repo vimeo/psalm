@@ -261,7 +261,7 @@ final class YieldAnalyzer
                             if (!$atomic_return_type->type_params[2]->isVoid()) {
                                 $statements_analyzer->node_data->setType(
                                     $stmt,
-                                    StarProjection::read($atomic_return_type->type_params[2], Type::getMixed()),
+                                    StarProjection::read($atomic_return_type->type_params[2]),
                                 );
                             }
                         } else {
