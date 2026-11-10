@@ -123,6 +123,9 @@ final class Populator
         }
 
         foreach ($this->classlike_storage_provider->getNew() as $class_storage) {
+            // `+=` on the typed property would copy the whole array on every merge
+            $dependents = $class_storage->dependent_classlikes;
+
             foreach ($class_storage->dependent_classlikes as $dependent_classlike_lc => $_) {
                 try {
                     $dependee_storage = $this->classlike_storage_provider->get($dependent_classlike_lc);
@@ -130,8 +133,10 @@ final class Populator
                     continue;
                 }
 
-                $class_storage->dependent_classlikes += $dependee_storage->dependent_classlikes;
+                $dependents += $dependee_storage->dependent_classlikes;
             }
+
+            $class_storage->dependent_classlikes = $dependents;
         }
 
         $this->progress->debug('FileStorage is populated' . "\n");
