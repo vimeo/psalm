@@ -499,8 +499,35 @@ final class UnionTypeComparator
 
             if (!$type_match_found) {
                 if ($union_comparison_result) {
-                    if ($some_type_coerced) {
+                    $remaining_types_coerced = true;
+
+                    if ($some_type_coerced && $input_atomic_types) {
+                        foreach ($input_atomic_types as $remaining_input_type) {
+                            $remaining_comparison_result = new TypeComparisonResult();
+                            $remaining_type_contained = self::isContainedBy(
+                                $codebase,
+                                new Union([$remaining_input_type]),
+                                $container_type,
+                                $ignore_null,
+                                $ignore_false,
+                                $remaining_comparison_result,
+                                $allow_interface_equality,
+                                $allow_float_int_equality,
+                            );
+
+                            if (!$remaining_type_contained
+                                && $remaining_comparison_result->type_coerced !== true
+                            ) {
+                                $remaining_types_coerced = false;
+                                break;
+                            }
+                        }
+                    }
+
+                    if ($some_type_coerced && $remaining_types_coerced) {
                         $union_comparison_result->type_coerced = true;
+                    } elseif ($some_type_coerced) {
+                        $union_comparison_result->type_coerced = false;
                     }
 
                     if ($some_type_coerced_from_mixed) {

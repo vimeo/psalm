@@ -767,7 +767,8 @@ final class AtomicTypeComparator
                             )
                         ) {
                             if ($atomic_comparison_result) {
-                                $atomic_comparison_result->type_coerced = $return_type_comparison->type_coerced;
+                                $atomic_comparison_result->type_coerced = $return_type === null
+                                    || $return_type_comparison->type_coerced;
                                 $atomic_comparison_result->to_string_cast = true;
                             }
 
