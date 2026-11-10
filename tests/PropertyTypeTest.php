@@ -831,13 +831,18 @@ final class PropertyTypeTest extends TestCase
                     final class Child extends Base {
                         public static bool $flag = false;
 
-                        public static function run(): void {
+                        public static function runChild(): void {
                             Child::$flag = false;
-                            Base::$flag = false;
                             Child::prepare();
 
                             /** @psalm-check-type-exact $child = false */
                             $child = Child::$flag;
+                        }
+
+                        public static function runBase(): void {
+                            Base::$flag = false;
+                            Child::prepare();
+
                             /** @psalm-check-type-exact $base = bool */
                             $base = Base::$flag;
                         }
@@ -885,15 +890,152 @@ final class PropertyTypeTest extends TestCase
                     final class Child extends Base {
                         public static bool $flag = false;
 
-                        public static function run(): void {
+                        public static function runChild(): void {
                             Child::$flag = false;
-                            Base::$flag = false;
                             Child::prepare();
 
                             /** @psalm-check-type-exact $child = false */
                             $child = Child::$flag;
+                        }
+
+                        public static function runBase(): void {
+                            Base::$flag = false;
+                            Child::prepare();
+
                             /** @psalm-check-type-exact $base = bool */
                             $base = Base::$flag;
+                        }
+                    }',
+            ],
+            'staticPropertyIncrementedByAMethodIsForgottenAfterTheCall' => [
+                'code' => '<?php
+                    final class Holder {
+                        public static int $n = 0;
+
+                        public static function change(): void {
+                            self::$n++;
+                        }
+
+                        public static function run(): void {
+                            self::$n = 0;
+                            self::change();
+
+                            /** @psalm-check-type-exact $n = int */
+                            $n = self::$n;
+                        }
+                    }',
+            ],
+            'staticPropertyPreDecrementedByAMethodIsForgottenAfterTheCall' => [
+                'code' => '<?php
+                    final class Holder {
+                        public static int $n = 0;
+
+                        public static function change(): void {
+                            --self::$n;
+                        }
+
+                        public static function run(): void {
+                            self::$n = 0;
+                            self::change();
+
+                            /** @psalm-check-type-exact $n = int */
+                            $n = self::$n;
+                        }
+                    }',
+            ],
+            'staticPropertyInAListAssignedByAMethodIsForgottenAfterTheCall' => [
+                'code' => '<?php
+                    final class Holder {
+                        public static int $n = 0;
+
+                        public static function change(): void {
+                            [self::$n] = [1];
+                        }
+
+                        public static function run(): void {
+                            self::$n = 0;
+                            self::change();
+
+                            /** @psalm-check-type-exact $n = int */
+                            $n = self::$n;
+                        }
+                    }',
+            ],
+            'staticPropertyAForeachTargetOfAMethodIsForgottenAfterTheCall' => [
+                'code' => '<?php
+                    final class Holder {
+                        public static int $n = 0;
+
+                        public static function change(): void {
+                            foreach ([1] as self::$n) {}
+                        }
+
+                        public static function run(): void {
+                            self::$n = 0;
+                            self::change();
+
+                            /** @psalm-check-type-exact $n = int */
+                            $n = self::$n;
+                        }
+                    }',
+            ],
+            'staticPropertyAssignedByAClosureOfAMethodIsAKnownLimit' => [
+                'code' => '<?php
+                    final class Holder {
+                        public static int $n = 0;
+
+                        public static function change(): void {
+                            $set = function (): void {
+                                self::$n = 1;
+                            };
+                            $set();
+                        }
+
+                        public static function run(): void {
+                            self::$n = 0;
+                            self::change();
+
+                            /** @psalm-check-type-exact $n = 0 */
+                            $n = self::$n;
+                        }
+                    }',
+            ],
+            'staticPropertyAssignedByAConstructorIsAKnownLimit' => [
+                'code' => '<?php
+                    final class Holder {
+                        public static int $n = 0;
+
+                        public static function run(): void {
+                            self::$n = 0;
+                            new Setter();
+
+                            /** @psalm-check-type-exact $n = 0 */
+                            $n = self::$n;
+                        }
+                    }
+
+                    final class Setter {
+                        public function __construct() {
+                            Holder::$n = 1;
+                        }
+                    }',
+            ],
+            'staticPropertyAssignedByAFirstClassCallableIsAKnownLimit' => [
+                'code' => '<?php
+                    final class Holder {
+                        public static int $n = 0;
+
+                        public static function change(): void {
+                            self::$n = 1;
+                        }
+
+                        public static function run(): void {
+                            self::$n = 0;
+                            $change = self::change(...);
+                            $change();
+
+                            /** @psalm-check-type-exact $n = 0 */
+                            $n = self::$n;
                         }
                     }',
             ],
