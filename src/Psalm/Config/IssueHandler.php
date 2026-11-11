@@ -209,7 +209,6 @@ final class IssueHandler
                 && $issue_name !== 'ClassIssue'
                 && $issue_name !== 'CodeIssue'
                 && $issue_name !== 'PsalmInternalError'
-                && $issue_name !== 'ParseError'
                 && $issue_name !== 'PluginIssue'
                 && $issue_name !== 'MixedIssue'
                 && $issue_name !== 'MixedIssueTrait'
