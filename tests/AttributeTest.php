@@ -92,6 +92,20 @@ final class AttributeTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'attributeOfTheClassConstantTargetOnClassConstants' => [
+                'code' => '<?php
+                    #[Attribute(Attribute::TARGET_CLASS_CONSTANT)]
+                    final class OnConst {}
+
+                    final class K {
+                        #[OnConst]
+                        public const C = 1;
+
+                        #[OnConst]
+                        public const D = 2, E = 3;
+                    }
+                    echo K::C . K::D . K::E;',
+            ],
             'classAndPropertyAttributesExists' => [
                 'code' => '<?php
                     namespace Foo;
@@ -299,32 +313,6 @@ final class AttributeTest extends TestCase
                         public function getIterator()
                         {
                             return new EmptyIterator();
-                        }
-                    }',
-                'assertions' => [],
-                'ignored_issues' => [],
-                'php_version' => '8.1',
-            ],
-            'returnTypeWillChangeNoSignatureType' => [
-                'code' => '<?php
-                    class Foo {
-                        /**
-                         * @param array<string> $arg
-                         * @return string
-                         */
-                        public function run($arg) : string {
-                            return implode("s", $arg);
-                        }
-                    }
-
-                    class Bar extends Foo {
-                        /**
-                         * @param array<string> $arg
-                         * @return string
-                         */
-                        #[ReturnTypeWillChange]
-                        public function run($arg) {
-                            return implode(" ", $arg);
                         }
                     }',
                 'assertions' => [],
@@ -612,6 +600,52 @@ final class AttributeTest extends TestCase
     public static function providerInvalidCodeParse(): iterable
     {
         return [
+            'missingAttributeOnClassConstant' => [
+                'code' => '<?php
+                    final class K {
+                        #[\Nope]
+                        public const C = 1;
+                    }',
+                'error_message' => 'UndefinedAttributeClass - src' . DIRECTORY_SEPARATOR . 'somefile.php:3:27',
+            ],
+            'attributeOfAnotherTargetOnClassConstant' => [
+                'code' => '<?php
+                    #[Attribute(Attribute::TARGET_METHOD)]
+                    final class OnlyMethod {}
+
+                    final class K {
+                        #[OnlyMethod]
+                        public const C = 1;
+                    }',
+                'error_message' => 'InvalidAttribute - src' . DIRECTORY_SEPARATOR . 'somefile.php:6:27',
+            ],
+            'returnTypeWillChangeDoesNotSuppressUserDefinedNativeSignature' => [
+                'code' => '<?php
+                    class Foo {
+                        /**
+                         * @param array<string> $arg
+                         * @return string
+                         */
+                        public function run($arg) : string {
+                            return implode("s", $arg);
+                        }
+                    }
+
+                    class Bar extends Foo {
+                        /**
+                         * @param array<string> $arg
+                         * @return string
+                         */
+                        #[ReturnTypeWillChange]
+                        public function run($arg) {
+                            return implode(" ", $arg);
+                        }
+                    }',
+                'error_message' => 'MethodSignatureMismatch - src' . DIRECTORY_SEPARATOR
+                    . 'somefile.php:17:25 - Method Bar::run',
+                'error_levels' => [],
+                'php_version' => '8.1',
+            ],
             'attributeClassHasNoAttributeAnnotation' => [
                 'code' => '<?php
                     class A {}

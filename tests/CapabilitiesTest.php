@@ -8,9 +8,16 @@ use Override;
 use Psalm\Config;
 use Psalm\Context;
 use Psalm\Exception\CodeException;
+use Psalm\Internal\Analyzer\IssueData;
+use Psalm\IssueBuffer;
 use Psalm\Storage\Capabilities;
 use Psalm\Tests\Traits\InvalidCodeAnalysisTestTrait;
 use Psalm\Tests\Traits\ValidCodeAnalysisTestTrait;
+
+use function array_filter;
+use function array_map;
+use function array_values;
+use function sort;
 
 use const DIRECTORY_SEPARATOR;
 
@@ -30,6 +37,89 @@ final class CapabilitiesTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'parentCallOfATraitMethodReturnsThisInEveryClassUsingTheTrait' => [
+                'code' => <<<'PHP'
+                    <?php
+                    class FirstBase {
+                        /** @return $this */
+                        public function f(): static {
+                            return $this;
+                        }
+                    }
+
+                    class SecondBase {
+                        /** @return $this */
+                        public function f(): static {
+                            return $this;
+                        }
+                    }
+
+                    class ThirdBase {
+                        /** @return $this */
+                        public function f(): static {
+                            return $this;
+                        }
+                    }
+
+                    trait ForwardsToParent {
+                        /** @return $this */
+                        public function f(): static {
+                            return parent::f();
+                        }
+                    }
+
+                    final class First extends FirstBase {
+                        use ForwardsToParent;
+                    }
+
+                    final class Second extends SecondBase {
+                        use ForwardsToParent;
+                    }
+
+                    final class Third extends ThirdBase {
+                        use ForwardsToParent;
+                    }
+                    PHP,
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
+            'parentSelfAndStaticCallsOfMethodReturningThisReturnThis' => [
+                'code' => <<<'PHP'
+                    <?php
+                    class Base {
+                        /** @return $this */
+                        public function f(): static {
+                            return $this;
+                        }
+                    }
+
+                    final class Child extends Base {
+                        #[Override]
+                        public function f(): static {
+                            return parent::f();
+                        }
+
+                        /** @return $this */
+                        public function viaSelf(): static {
+                            return self::f();
+                        }
+
+                        /** @return $this */
+                        public function viaStatic(): static {
+                            return static::f();
+                        }
+
+                        /** @return $this */
+                        public function chained(): static {
+                            return parent::f()->f();
+                        }
+                    }
+                    PHP,
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
             'staticReturnOfASubclassOfAPurityTemplatedClassIsTheCalledClass' => [
                 'code' => '<?php
                     /**
@@ -315,6 +405,23 @@ final class CapabilitiesTest extends TestCase
                         return $sum;
                     }',
             ],
+            'itemOfAnIntersectionWithArrayAccessPassedByReference' => [
+                'code' => '<?php
+                    interface Marker {}
+
+                    /** @param Marker&ArrayAccess<int, int|null> $o */
+                    function castFirst(Marker $o): bool {
+                        return settype($o[0], "int");
+                    }',
+            ],
+            'itemOfAFreshArrayObjectPassedByReferenceIsPure' => [
+                'code' => '<?php
+                    /** @psalm-pure */
+                    function sortFirst(): bool {
+                        $object = new ArrayObject([[2, 1]]);
+                        return sort($object[0]);
+                    }',
+            ],
             'splHeapsAndFixedArraysOnlyRequireWritingTheirOwnContents' => [
                 'code' => '<?php
                     /**
@@ -355,7 +462,7 @@ final class CapabilitiesTest extends TestCase
                         return $sum;
                     }',
                 'assertions' => [],
-                'ignored_issues' => ['MissingPureAnnotation'],
+                'ignored_issues' => [],
                 'php_version' => '8.0',
             ],
             'splWrappingIteratorsRequireWhatTheirInnerIteratorsDo' => [
@@ -2773,6 +2880,79 @@ final class CapabilitiesTest extends TestCase
                 'ignored_issues' => [],
                 'php_version' => '8.1',
             ],
+            'reflectionClassSubclassReadsItsOwnProperties' => [
+                'code' => '<?php
+                    /** @extends ReflectionClass<object> */
+                    final class MyClassReflection extends ReflectionClass {
+                        /** @var class-string */
+                        private string $cachedName = stdClass::class;
+
+                        /**
+                         * @return class-string
+                         * @psalm-capabilities read-props
+                         */
+                        #[Override]
+                        public function getName(): string {
+                            return $this->cachedName;
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.3',
+            ],
+            'reflectionSubclassesOfFunctionLikesAndPropertiesReadTheirOwnProperties' => [
+                'code' => '<?php
+                    final class MyMethodReflection extends ReflectionMethod {
+                        private bool $cachedIsStatic = false;
+
+                        /** @psalm-capabilities read-props */
+                        #[Override]
+                        public function isStatic(): bool {
+                            return $this->cachedIsStatic;
+                        }
+                    }
+
+                    final class MyFunctionReflection extends ReflectionFunction {
+                        private bool $cachedIsGenerator = false;
+
+                        /** @psalm-capabilities read-props */
+                        #[Override]
+                        public function isGenerator(): bool {
+                            return $this->cachedIsGenerator;
+                        }
+                    }
+
+                    final class MyPropertyReflection extends ReflectionProperty {
+                        private bool $cachedIsPublic = false;
+
+                        /** @psalm-capabilities read-props */
+                        #[Override]
+                        public function isPublic(): bool {
+                            return $this->cachedIsPublic;
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.3',
+            ],
+            'pureFunctionsMayCallReflectionGetters' => [
+                'code' => '<?php
+                    /**
+                     * @param ReflectionClass<object> $class
+                     * @psalm-pure
+                     */
+                    function className(ReflectionClass $class): string {
+                        return $class->getName();
+                    }
+
+                    /** @psalm-pure */
+                    function isStaticMethod(ReflectionMethod $method): bool {
+                        return $method->isStatic();
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.3',
+            ],
         ];
     }
 
@@ -2783,6 +2963,187 @@ final class CapabilitiesTest extends TestCase
     public static function providerInvalidCodeParse(): iterable
     {
         return [
+            'staticCallOfMethodNotReturningThisIsNotThis' => [
+                'code' => <<<'PHP'
+                    <?php
+                    class Base {
+                        public function copy(): static {
+                            return clone $this;
+                        }
+                    }
+
+                    final class Child extends Base {
+                        /** @return $this */
+                        public function f(): static {
+                            return parent::copy();
+                        }
+                    }
+                    PHP,
+                'error_message' => 'InvalidReturnStatement',
+                'error_levels' => [],
+                'php_version' => '8.1',
+            ],
+            'itemOfAnArrayObjectPassedByReferenceWritesIt' => [
+                'code' => '<?php
+                    /**
+                     * @param ArrayObject<int, list<int>> $object
+                     * @psalm-pure
+                     */
+                    function sortFirst(ArrayObject $object): bool {
+                        return sort($object[0]);
+                    }',
+                'error_message' => 'ImpureMethodCall - src' . DIRECTORY_SEPARATOR . 'somefile.php:7:37 - The context is pure but method ArrayObject::offsetSet requires write-props',
+            ],
+            'itemOfAnArrayObjectPassedByReferenceWritesItWhenReadingProps' => [
+                'code' => '<?php
+                    /**
+                     * @param ArrayObject<string, array<array-key, string>> $object
+                     * @psalm-capabilities read-props
+                     */
+                    function matchInto(ArrayObject $object): void {
+                        preg_match("/x/", "x", $object["m"]);
+                    }',
+                'error_message' => 'ImpureMethodCall - src' . DIRECTORY_SEPARATOR . 'somefile.php:7:48 - The context is read-props but method ArrayObject::offsetSet requires write-props',
+            ],
+            'itemOfAnArrayObjectPassedByReferenceForgetsMemoizedResultsOfItsMethods' => [
+                'code' => '<?php
+                    /**
+                     * @extends ArrayObject<int, list<int>>
+                     * @psalm-capabilities read-props|write-this-props
+                     */
+                    final class Lists extends ArrayObject {
+                        /** @psalm-capabilities read-props */
+                        public function first(): int {
+                            return $this[0][0];
+                        }
+                    }
+
+                    /** @return 2 */
+                    function firstAfterSorting(Lists $o): int {
+                        if ($o->first() !== 2) {
+                            return 2;
+                        }
+
+                        sort($o[0]);
+                        return $o->first();
+                    }',
+                'error_message' => 'LessSpecificReturnStatement - src' . DIRECTORY_SEPARATOR . 'somefile.php:20:32',
+            ],
+            'itemOfAnArrayObjectPassedByReferenceForgetsMemoizedResultsOfOtherObjects' => [
+                'code' => '<?php
+                    final class Holder {
+                        public function __construct(private ?string $x) {}
+
+                        /** @psalm-mutation-free */
+                        public function getX(): ?string {
+                            return $this->x;
+                        }
+                    }
+
+                    function sortedX(Holder $h): string {
+                        if ($h->getX() === null) {
+                            return "";
+                        }
+
+                        /** @var ArrayObject<int, list<int>> */
+                        $o = new ArrayObject($h);
+                        sort($o[0]);
+                        return $h->getX();
+                    }',
+                'error_message' => 'NullableReturnStatement - src' . DIRECTORY_SEPARATOR . 'somefile.php:19:32',
+                'error_levels' => [],
+                'php_version' => '8.0',
+            ],
+            'itemOfAnObjectWithoutOffsetSetPassedByReference' => [
+                'code' => '<?php
+                    /** @psalm-capabilities read-props */
+                    final class ReadOnlyBox {
+                        /**
+                         * @return list<int>
+                         * @psalm-pure
+                         */
+                        public function offsetGet(int $key): array {
+                            return [2, 1];
+                        }
+                    }
+
+                    /** @psalm-pure */
+                    function sortFirst(ReadOnlyBox $o): bool {
+                        return sort($o[0]);
+                    }',
+                'error_message' => 'UndefinedMethod - src' . DIRECTORY_SEPARATOR . 'somefile.php:15:37 - Method ReadOnlyBox::offsetSet does not exist',
+            ],
+            'itemOfAnIntersectionWithArrayObjectPassedByReferenceWritesIt' => [
+                'code' => '<?php
+                    /**
+                     * @param Countable&ArrayObject<int, list<int>> $object
+                     * @psalm-pure
+                     */
+                    function sortFirst($object): bool {
+                        return sort($object[0]);
+                    }',
+                'error_message' => 'ImpureMethodCall - src' . DIRECTORY_SEPARATOR . 'somefile.php:7:37 - The context is pure but method ArrayObject::offsetSet requires write-props',
+            ],
+            'itemOfAnObjectWithAPrivateOffsetSetPassedByReference' => [
+                'code' => '<?php
+                    final class ReadOnlyBox {
+                        /** @return list<int> */
+                        public function offsetGet(int $key): array {
+                            return [2, 1];
+                        }
+
+                        private function offsetSet(int $key, ?array $value): void {}
+                    }
+
+                    function sortFirst(ReadOnlyBox $o): bool {
+                        return sort($o[0]);
+                    }',
+                'error_message' => 'InaccessibleMethod - src' . DIRECTORY_SEPARATOR . 'somefile.php:12:37',
+            ],
+            'itemOfAnObjectWithMagicMethodsPassedByReference' => [
+                'code' => '<?php
+                    final class MagicBox {
+                        /** @return list<int> */
+                        public function offsetGet(int $key): array {
+                            return [1];
+                        }
+
+                        public function __call(string $name, array $args): mixed {
+                            return null;
+                        }
+                    }
+
+                    function sortFirst(MagicBox $o): bool {
+                        return sort($o[0]);
+                    }',
+                'error_message' => 'UndefinedMagicMethod - src' . DIRECTORY_SEPARATOR . 'somefile.php:14:37 - Magic method MagicBox::offsetset does not exist',
+                'error_levels' => [],
+                'php_version' => '8.0',
+            ],
+            'itemOfThisArrayObjectPassedByReferenceWritesWhatAnAssignmentWould' => [
+                'code' => '<?php
+                    /**
+                     * @extends ArrayObject<int, list<int>>
+                     * @psalm-capabilities read-props|write-this-props
+                     */
+                    final class Lists extends ArrayObject {
+                        /** @psalm-capabilities read-props|write-this-props */
+                        public function sortFirst(): bool {
+                            return sort($this[0]);
+                        }
+                    }',
+                'error_message' => 'ImpureMethodCall - src' . DIRECTORY_SEPARATOR . 'somefile.php:9:41 - The context is read-props|write-this-props but method Lists::offsetSet requires write-this-props|write-props',
+            ],
+            'itemOfAnArrayObjectBackedByAnObjectPassedByReferenceWritesIt' => [
+                'code' => '<?php
+                    /** @psalm-pure */
+                    function wrap(stdClass $storage): int {
+                        $object = new ArrayObject($storage);
+                        settype($object["key"], "int");
+                        return count($object);
+                    }',
+                'error_message' => 'ImpureMethodCall - src' . DIRECTORY_SEPARATOR . 'somefile.php:5:33 - The context is pure but method ArrayObject::offsetSet requires write-props',
+            ],
             'conditionalCapabilitiesOfAFunctionCalledWithoutTheArgument' => [
                 'code' => '<?php
                     /** @psalm-capabilities ($seed is null ? io : pure) */
@@ -3012,6 +3373,26 @@ final class CapabilitiesTest extends TestCase
                         return $storage->serialize();
                     }',
                 'error_message' => 'ImpureMethodCall',
+            ],
+            'reflectionSubclassesMayNotWriteWhenOverridingGetters' => [
+                'code' => '<?php
+                    /** @extends ReflectionClass<object> */
+                    final class CountingReflection extends ReflectionClass {
+                        private int $calls = 0;
+
+                        /**
+                         * @return class-string
+                         * @psalm-capabilities read-props|write-this-props
+                         */
+                        #[Override]
+                        public function getName(): string {
+                            ++$this->calls;
+                            return parent::getName();
+                        }
+                    }',
+                'error_message' => 'ReflectionClass::getName is read-props, but CountingReflection::getName additionally requires write-this-props',
+                'error_levels' => [],
+                'php_version' => '8.3',
             ],
             'splObjectStorageSubclassesKeepItsContract' => [
                 'code' => '<?php
@@ -5952,6 +6333,90 @@ final class CapabilitiesTest extends TestCase
         ];
     }
 
+    public function testEachPropertyWriteIsReportedOnce(): void
+    {
+        $this->testConfig->throw_exception = false;
+        $file_path = self::$src_dir_path . 'somefile.php';
+        $this->addFile($file_path, '<?php
+            final class C {
+                public int $n = 0;
+                public ?C $o = null;
+                public static ?C $g = null;
+
+                /** @psalm-capabilities read-props */
+                public function own(): void { $this->n = 1; }
+
+                /** @psalm-capabilities read-props */
+                public function unsetOwn(): void { unset($this->o); }
+            }
+
+            /** @psalm-capabilities read-props */
+            function assign(C $c): void { $c->n = 1; }
+            /** @psalm-capabilities read-props */
+            function increment(C $c): void { $c->n++; }
+            /** @psalm-capabilities read-props */
+            function compound(C $c): void { $c->n += 1; }
+            /** @psalm-capabilities read-props */
+            function coalesce(C $c): void { $c->n ??= 1; }
+            /** @psalm-capabilities read-props */
+            function destructure(C $c): void { [$c->n] = [1]; }
+            /** @psalm-capabilities read-props */
+            function nested(C $c): void { if ($c->o) { $c->o->n = 1; } }
+            /** @psalm-capabilities read-props */
+            function union(C|stdClass $c): void { $c->n = 1; }
+            /** @psalm-capabilities read-props */
+            function remove(C $c): void { unset($c->o); }
+            /** @psalm-capabilities read-props|read-globals */
+            function globalState(): void { if (C::$g) { C::$g->n = 1; } }
+            /** @psalm-capabilities read-props|read-globals */
+            function removeGlobal(): void { if (C::$g) { unset(C::$g->o); } }
+            /** @psalm-capabilities read-props */
+            function dynamic(C $c, string $p): void { $c->$p = 1; }
+            /** @psalm-capabilities read-props */
+            function untyped(mixed $c): void { $c->n = 1; }
+            /** @psalm-capabilities read-props */
+            function make(): C { return new C(); }
+            /** @psalm-capabilities read-props */
+            function onCallResult(): void { make()->n = 1; }
+            /** @psalm-capabilities read-props */
+            function fresh(): void { $c = new C(); $c->n = 1; unset($c->o); }
+        ');
+
+        $this->analyzeFile($file_path, new Context());
+
+        $issues = array_map(
+            static fn(IssueData $issue): array => [$issue->line_from, $issue->message],
+            array_values(array_filter(
+                IssueBuffer::getIssuesDataForFile($file_path),
+                static fn(IssueData $issue): bool => $issue->type === 'ImpurePropertyAssignment',
+            )),
+        );
+        sort($issues);
+
+        self::assertSame(
+            [
+                [8, 'The context is read-props but property assignment to C::$n requires write-this-props'],
+                [11, 'The context is read-props but unsetting a property on a mutable object requires write-this-props'],
+                [15, 'The context is read-props but property assignment to C::$n requires write-props'],
+                [17, 'The context is read-props but property assignment to C::$n requires write-props'],
+                [19, 'The context is read-props but property assignment to C::$n requires write-props'],
+                [21, 'The context is read-props but property assignment to C::$n requires write-props'],
+                [23, 'The context is read-props but property assignment to C::$n requires write-props'],
+                [25, 'The context is read-props but property assignment to C::$n requires write-props'],
+                [27, 'The context is read-props but property assignment to C::$n requires write-props'],
+                [29, 'The context is read-props but property assignment to C::$o requires write-props'],
+                [31, 'The context is read-props|read-globals but property assignment to C::$n'
+                    . ' on an object reached from global state requires write-props|write-globals'],
+                [33, 'The context is read-props|read-globals but property assignment to C::$o'
+                    . ' on an object reached from global state requires write-props|write-globals'],
+                [35, 'The context is read-props but property assignment requires write-props'],
+                [37, 'The context is read-props but property assignment requires write-props'],
+                [41, 'The context is read-props but property assignment requires write-props'],
+            ],
+            $issues,
+        );
+    }
+
     public function testPureNewAndStaticCallsKeepPropertyRefinements(): void
     {
         Config::getInstance()->remember_property_assignments_after_call = false;
@@ -5993,6 +6458,57 @@ final class CapabilitiesTest extends TestCase
                     }
                     touchGlobals();
                     return $a->x;
+                }',
+        );
+
+        $this->analyzeFile('somefile.php', new Context());
+    }
+
+    public function testPureMagicStaticCallKeepsPropertyRefinements(): void
+    {
+        Config::getInstance()->remember_property_assignments_after_call = false;
+
+        $this->addFile(
+            'somefile.php',
+            '<?php
+                final class A { public ?int $x = null; }
+
+                /** @psalm-no-seal-methods */
+                final class Magic {
+                    /** @psalm-pure */
+                    public static function __callStatic(string $name, array $args): int { return 1; }
+                }
+
+                function keep(A $a): int {
+                    if ($a->x === null) {
+                        return 0;
+                    }
+                    Magic::noop();
+                    return $a->x;
+                }',
+        );
+
+        $this->analyzeFile('somefile.php', new Context());
+    }
+
+    public function testItemOfAnArrayObjectPassedByReferenceForgetsPropertyRefinements(): void
+    {
+        $this->expectException(CodeException::class);
+        $this->expectExceptionMessage('NullableReturnStatement');
+        Config::getInstance()->remember_property_assignments_after_call = false;
+
+        $this->addFile(
+            'somefile.php',
+            '<?php
+                final class Holder { public ?string $x = null; }
+
+                /** @param ArrayObject<string, mixed> $o */
+                function matchedX(ArrayObject $o, Holder $h): string {
+                    if ($h->x === null) {
+                        return "";
+                    }
+                    preg_match("/x/", "s", $o["x"]);
+                    return $h->x;
                 }',
         );
 
