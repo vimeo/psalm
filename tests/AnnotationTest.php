@@ -1910,6 +1910,33 @@ final class AnnotationTest extends TestCase
                         return $foo;
                     }',
             ],
+            'fileLevelVarDocblockBeforeAUseStatement' => [
+                'code' => '<?php
+                    /**
+                     * @var string $foo
+                     * @var int $count
+                     */
+
+                    use stdClass;
+                    use Exception as E;
+
+                    echo strlen($foo) + $count;
+                    echo get_class(new stdClass());',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'globalInAFileDocumentingItsThisIsAnIncludedTemplate' => [
+                'code' => '<?php
+                    /**
+                     * @var stdClass $this
+                     */
+
+                    /** @var string $title */
+                    global $title;
+
+                    echo strlen($title);',
+            ],
         ];
     }
 
@@ -2761,6 +2788,23 @@ final class AnnotationTest extends TestCase
                 'error_message' => 'InvalidDocblock',
                 'error_levels' => [],
                 'php_version' => '8.0',
+            ],
+            'fileLevelVarDocblockBeforeAUseStatementOnlyDeclaresItsOwnVariables' => [
+                'code' => '<?php
+                    /**
+                     * @var string $foo
+                     */
+
+                    use stdClass;
+
+                    echo strlen($other);',
+                'error_message' => 'UndefinedGlobalVariable',
+            ],
+            'globalInAFileWithoutADocumentedThisIsInvalid' => [
+                'code' => '<?php
+                    /** @var string $title */
+                    global $title;',
+                'error_message' => 'InvalidGlobal',
             ],
         ];
     }

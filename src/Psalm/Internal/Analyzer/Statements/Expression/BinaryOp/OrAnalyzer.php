@@ -146,7 +146,7 @@ final class OrAnalyzer
             $left_referenced_var_ids = array_diff_key($left_referenced_var_ids, $left_assigned_var_ids);
         }
 
-        $left_referenced_var_ids = AndAnalyzer::withoutPathsBelow($left_referenced_var_ids, $left_assigned_var_ids);
+        $left_referenced_var_ids = AndAnalyzer::removeAssignedVarIds($left_referenced_var_ids, $left_assigned_var_ids);
 
         $left_cond_id = spl_object_id($stmt->left);
 
