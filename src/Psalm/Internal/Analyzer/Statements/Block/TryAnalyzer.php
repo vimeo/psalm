@@ -465,6 +465,12 @@ final class TryAnalyzer
 
                 $statements_analyzer->analyze($stmt->finally->stmts, $finally_context);
 
+                $context->constructor_exits?->applyFinally(
+                    $try_context->finally_scope,
+                    $finally_context->vars_in_scope,
+                    $finally_context->assigned_var_ids,
+                );
+
                 $finally_has_returned = $finally_context->has_returned;
 
                 /** @var string $var_id */
