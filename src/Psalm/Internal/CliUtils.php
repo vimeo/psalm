@@ -426,6 +426,8 @@ final class CliUtils
         array $autoloaders,
         bool $create_if_non_existent = false,
     ): Config {
+        Config::setAddCommandLinePaths(true);
+
         try {
             if ($path_to_config) {
                 $config = Config::loadFromXMLFile($path_to_config, $current_dir);
@@ -459,6 +461,8 @@ final class CliUtils
                 $e->getMessage() . PHP_EOL,
             );
             exit(1);
+        } finally {
+            Config::setAddCommandLinePaths(false);
         }
 
         $config->setComposerClassLoader($autoloaders);
