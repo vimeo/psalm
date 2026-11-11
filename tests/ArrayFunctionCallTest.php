@@ -100,27 +100,33 @@ final class ArrayFunctionCallTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
-            'arrayKeyExistsWithKeysThatTheArrayMayHave' => [
-                'code' => '<?php
-                    /**
-                     * @param list<int> $list
-                     * @param array<int, string> $ints
-                     * @param array<string, int> $strings
-                     * @param array<array-key, int> $keys
-                     * @param list<int>|array<string, int> $either
-                     * @param array{a: int} $shape
-                     */
-                    function f(array $list, array $ints, array $strings, array $keys, array $either, array $shape, array $any, string $s): bool {
-                        return array_key_exists("5", $list)
-                            || array_key_exists("5", $ints)
-                            || array_key_exists("a", $strings)
-                            || array_key_exists("a", $keys)
-                            || array_key_exists("a", $either)
-                            || array_key_exists("b", $shape)
-                            || array_key_exists("a", $any)
-                            || array_key_exists($s, $list)
-                            || array_key_exists(1, $list);
-                    }',
+            'arrayPopOfAListWithAnOptionalLastItem' => [
+                'code' => <<<'PHP'
+                    <?php
+                    function pop(bool $one, bool $two): void {
+                        $always = [0, 1];
+                        array_pop($always);
+
+                        $maybe = [0];
+                        if ($one) {
+                            $maybe[] = 2;
+                        }
+                        array_pop($maybe);
+
+                        $maybe_twice = [0];
+                        if ($one) {
+                            $maybe_twice[] = 2;
+                        }
+                        if ($two) {
+                            $maybe_twice[] = 3;
+                        }
+                        array_pop($maybe_twice);
+
+                        /** @psalm-check-type-exact $always = list{0: 0} */
+                        /** @psalm-check-type-exact $maybe = list{0?: 0} */
+                        /** @psalm-check-type-exact $maybe_twice = list{0?: 0, 1?: 2|3} */
+                    }
+                    PHP,
                 'assertions' => [],
                 'ignored_issues' => [],
                 'php_version' => '8.1',
@@ -3822,6 +3828,31 @@ final class ArrayFunctionCallTest extends TestCase
                 'ignored_issues' => [],
                 'php_version' => '8.4',
             ],
+            'arrayKeyExistsWithKeysThatTheArrayMayHave' => [
+                'code' => '<?php
+                    /**
+                     * @param list<int> $list
+                     * @param array<int, string> $ints
+                     * @param array<string, int> $strings
+                     * @param array<array-key, int> $keys
+                     * @param list<int>|array<string, int> $either
+                     * @param array{a: int} $shape
+                     */
+                    function f(array $list, array $ints, array $strings, array $keys, array $either, array $shape, array $any, string $s): bool {
+                        return array_key_exists("5", $list)
+                            || array_key_exists("5", $ints)
+                            || array_key_exists("a", $strings)
+                            || array_key_exists("a", $keys)
+                            || array_key_exists("a", $either)
+                            || array_key_exists("b", $shape)
+                            || array_key_exists("a", $any)
+                            || array_key_exists($s, $list)
+                            || array_key_exists(1, $list);
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
         ];
     }
 
@@ -3832,37 +3863,20 @@ final class ArrayFunctionCallTest extends TestCase
     public static function providerInvalidCodeParse(): iterable
     {
         return [
-            'arrayKeyExistsWithStringKeyOnList' => [
+            'arrayPopOfAListWithAnOptionalLastItemMayEmptyIt' => [
                 'code' => '<?php
-                    /** @param list<int> $a */
-                    function f(array $a): bool {
-                        return array_key_exists("a", $a);
+                    /** @param non-empty-list<int> $a */
+                    function foo(array $a): void {}
+
+                    function bar(bool $one): void {
+                        $d = [0];
+                        if ($one) {
+                            $d[] = 2;
+                        }
+                        array_pop($d);
+                        foo($d);
                     }',
-                'error_message' => 'InvalidArrayOffset - src' . DIRECTORY_SEPARATOR . 'somefile.php:4:49 - Cannot check offset',
-            ],
-            'arrayKeyExistsWithStringKeyOnIntKeyedArray' => [
-                'code' => '<?php
-                    /** @param array<int, string> $a */
-                    function f(array $a): bool {
-                        return array_key_exists("x", $a);
-                    }',
-                'error_message' => 'InvalidArrayOffset - src' . DIRECTORY_SEPARATOR . 'somefile.php:4:49 - Cannot check offset',
-            ],
-            'keyExistsWithStringKeyOnList' => [
-                'code' => '<?php
-                    /** @param list<int> $a */
-                    function f(array $a): bool {
-                        return key_exists("a", $a);
-                    }',
-                'error_message' => 'InvalidArrayOffset - src' . DIRECTORY_SEPARATOR . 'somefile.php:4:43 - Cannot check offset',
-            ],
-            'negatedArrayKeyExistsWithStringKeyOnList' => [
-                'code' => '<?php
-                    /** @param list<int> $a */
-                    function f(array $a): bool {
-                        return !array_key_exists("a", $a);
-                    }',
-                'error_message' => 'InvalidArrayOffset - src' . DIRECTORY_SEPARATOR . 'somefile.php:4:50 - Cannot check offset',
+                'error_message' => 'InvalidArgument',
             ],
             'arrayColumnIndexColumnOfAnObjectIsNotAnArrayKey' => [
                 'code' => '<?php
@@ -4429,6 +4443,38 @@ final class ArrayFunctionCallTest extends TestCase
                         return array_pop($a[0]);
                     }',
                 'error_message' => 'InvalidReturnStatement',
+            ],
+            'arrayKeyExistsWithStringKeyOnList' => [
+                'code' => '<?php
+                    /** @param list<int> $a */
+                    function f(array $a): bool {
+                        return array_key_exists("a", $a);
+                    }',
+                'error_message' => 'InvalidArrayOffset - src' . DIRECTORY_SEPARATOR . 'somefile.php:4:49 - Cannot check offset',
+            ],
+            'arrayKeyExistsWithStringKeyOnIntKeyedArray' => [
+                'code' => '<?php
+                    /** @param array<int, string> $a */
+                    function f(array $a): bool {
+                        return array_key_exists("x", $a);
+                    }',
+                'error_message' => 'InvalidArrayOffset - src' . DIRECTORY_SEPARATOR . 'somefile.php:4:49 - Cannot check offset',
+            ],
+            'keyExistsWithStringKeyOnList' => [
+                'code' => '<?php
+                    /** @param list<int> $a */
+                    function f(array $a): bool {
+                        return key_exists("a", $a);
+                    }',
+                'error_message' => 'InvalidArrayOffset - src' . DIRECTORY_SEPARATOR . 'somefile.php:4:43 - Cannot check offset',
+            ],
+            'negatedArrayKeyExistsWithStringKeyOnList' => [
+                'code' => '<?php
+                    /** @param list<int> $a */
+                    function f(array $a): bool {
+                        return !array_key_exists("a", $a);
+                    }',
+                'error_message' => 'InvalidArrayOffset - src' . DIRECTORY_SEPARATOR . 'somefile.php:4:50 - Cannot check offset',
             ],
         ];
     }
