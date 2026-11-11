@@ -99,8 +99,8 @@ Setting this to `"false"` hides all issues with `Mixed` types in Psalm’s outpu
   resolveFromConfigFile="[bool]"
 />
 ```
-If this is enabled, relative directories mentioned in the config file will be resolved relative to the location
-of the config file. If it is disabled, or absent they will be resolved relative to the working directory of the Psalm process.
+If this is enabled (the default), relative directories mentioned in the config file will be resolved relative to the location
+of the config file. If it is disabled, they will be resolved relative to the working directory of the Psalm process.
 
 New versions of Psalm enable this option when generating config files. Older versions did not include it.
 
@@ -222,7 +222,7 @@ When `true`, disables wildcard suppression of all issues with `@psalm-suppress a
   memoizeMethodCallResults="[bool]"
 >
 ```
-When `true`, the results of method calls without arguments passed are remembered between repeated calls of that method on a given object. Defaults to `false`.
+When `true`, the results of method calls without arguments passed are [memoized](https://en.wikipedia.org/wiki/Memoization) between repeated calls of that method on a given object. Defaults to `false`.
 
 #### hoistConstants
 
@@ -450,7 +450,6 @@ When `true`, Psalm enables these plugins without listing them in [`<plugins>`](p
 | `psalm/plugin-mockery` | `composer.json` requires `mockery/mockery` |
 | `psalm/plugin-symfony` | `composer.json` requires `symfony/framework-bundle` |
 | `psalm/plugin-laravel` | `composer.json` requires `laravel/framework` or `orchestra/testbench` |
-| `psalm/plugin-sabre-event` | `composer.json` requires `sabre/event` |
 | the plugin of `webmozart/assert` (2.4 and later) | `webmozart/assert` is installed |
 
 Psalm itself requires the `psalm/*` plugins, so they don't need installing.
@@ -576,7 +575,7 @@ Whether or not to report issues only for files that were passed explicitly as ar
   cacheDirectory="[string]"
 >
 ```
-The directory used to store Psalm's cache data - if you specify one (and it does not already exist), its parent directory must already exist, otherwise Psalm will throw an error.
+The directory used to store Psalm's cache data. Psalm creates it recursively when initializing the cache.
 
 Defaults to `$XDG_CACHE_HOME/psalm`. If `$XDG_CACHE_HOME` is either not set or empty, a default equal to `$HOME/.cache/psalm` is used or `sys_get_temp_dir() . '/psalm'` when not defined.
 
@@ -830,6 +829,16 @@ or interfaces defined in a stub file, this stub should be configured with attrib
 <stubs>
   <file name="path/to/file.php" />
   <file name="path/to/abstract-class.php" preloadClasses="true" />
+</stubs>
+```
+
+A `<directory name="path/to/stubs" />` adds every `.php` and `.phpstub` file below it, in alphabetical order, and takes
+the same `preloadClasses` attribute:
+
+```xml
+<stubs>
+  <directory name="path/to/stubs" />
+  <directory name="path/to/base-classes" preloadClasses="true" />
 </stubs>
 ```
 
