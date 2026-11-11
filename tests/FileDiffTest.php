@@ -56,7 +56,7 @@ final class FileDiffTest extends TestCase
             $diff[2],
         );
 
-        $this->assertSame(count($diff_map_offsets), count($diff[3]));
+        $this->assertCount(count($diff_map_offsets), $diff[3]);
 
         $found_offsets = array_map(
             /**
@@ -133,7 +133,7 @@ final class FileDiffTest extends TestCase
             $diff[2],
         );
 
-        $this->assertSame(count($diff_map_offsets), count($diff[3]));
+        $this->assertCount(count($diff_map_offsets), $diff[3]);
 
         $found_offsets = array_map(
             /**
@@ -153,7 +153,7 @@ final class FileDiffTest extends TestCase
      */
     private function assertTreesEqual(array $a, array $b): void
     {
-        $this->assertSame(count($a), count($b));
+        $this->assertCount(count($a), $b);
 
         foreach ($a as $i => $a_stmt) {
             $b_stmt = $b[$i];
