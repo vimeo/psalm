@@ -70,6 +70,22 @@ final class ForTest extends TestCase
                         /** @psalm-check-type-exact $flag = bool */;
                     }',
             ],
+            'variableAssignedAfterAnInnerLoopThatOnlyBreaksItself' => [
+                'code' => '<?php
+                    function f(): int {
+                        $foo = 0;
+
+                        for ($i = 0; $i < 10; ++$i) {
+                            for ($j = 0; $j < 10; ++$j) {
+                                break;
+                            }
+
+                            $foo = 1;
+                        }
+
+                        return $foo;
+                    }',
+            ],
             'narrowedPropertyOfLoopVariableIsKeptWhenTheVariableIsReassigned' => [
                 'code' => '<?php
                     final class Node {
@@ -267,6 +283,39 @@ final class ForTest extends TestCase
     public static function providerInvalidCodeParse(): iterable
     {
         return [
+            'variableAssignedAfterAnInnerLoopBreakingTheOuterOneIsPossiblyUndefined' => [
+                'code' => '<?php
+                    function f(): void {
+                        for ($i = 0; $i < 10; ++$i) {
+                            for ($j = 0; $j < 10; ++$j) {
+                                break 2;
+                            }
+
+                            $foo = 1;
+                        }
+
+                        echo $foo;
+                    }',
+                'error_message' => 'PossiblyUndefinedVariable',
+            ],
+            'variableAssignedAfterASwitchAndALoopBreakingTheOuterLoopIsPossiblyUndefined' => [
+                'code' => '<?php
+                    function f(): void {
+                        for ($i = 0; $i < 10; ++$i) {
+                            switch (true) {
+                                case true:
+                                    for ($j = 0; $j < 10; ++$j) {
+                                        break 3;
+                                    }
+                            }
+
+                            $foo = 1;
+                        }
+
+                        echo $foo;
+                    }',
+                'error_message' => 'PossiblyUndefinedVariable',
+            ],
             'possiblyUndefinedArrayInWhileAndForeach' => [
                 'code' => '<?php
                     for ($i = 0; $i < 4; $i++) {
