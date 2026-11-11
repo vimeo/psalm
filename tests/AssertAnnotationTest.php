@@ -251,6 +251,44 @@ final class AssertAnnotationTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'assertObjectShapeOnObject' => [
+                'code' => '<?php
+                    /** @psalm-assert object{a: int} $obj */
+                    function assertShape(mixed $obj): void {}
+
+                    function getObject(): object {
+                        return new stdClass;
+                    }
+
+                    $b = getObject();
+                    assertShape($b);',
+                'assertions' => [
+                    '$b===' => 'object{a:int}',
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'assertObjectShapeOnObjectKeepsEarlierShape' => [
+                'code' => '<?php
+                    /** @psalm-assert object{a: int} $obj */
+                    function assertA(mixed $obj): void {}
+
+                    /** @psalm-assert object{b: string} $obj */
+                    function assertB(mixed $obj): void {}
+
+                    function getObject(): object {
+                        return new stdClass;
+                    }
+
+                    $b = getObject();
+                    assertA($b);
+                    assertB($b);',
+                'assertions' => [
+                    '$b===' => 'object{a:int}&object{b:string}',
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
             'negatedArrayAssertionKeepsTheExistingArrayType' => [
                 'code' => '<?php
                     /**
@@ -755,6 +793,23 @@ final class AssertAnnotationTest extends TestCase
                 'assertions' => [],
                 'ignored_issues' => [],
                 'php_version' => '8.1',
+            ],
+            'assertionAboutAPropertyOfAnObjectShapeArgument' => [
+                'code' => '<?php
+                    /**
+                     * @param object{hasFoo: bool} $obj
+                     * @psalm-assert-if-true true $obj->hasFoo
+                     */
+                    function validate(object $obj): bool {
+                        return $obj->hasFoo;
+                    }
+
+                    /** @var object{hasFoo: bool} $shape */
+                    $shape = (object) ["hasFoo" => true];
+
+                    if (validate($shape)) {
+                        echo "valid";
+                    }',
             ],
             'assertKeyOfAClassConstantNarrowsToItsKeys' => [
                 'code' => '<?php
@@ -4165,6 +4220,22 @@ final class AssertAnnotationTest extends TestCase
                         return 0;
                     }',
                 'error_message' => 'NoInterfaceProperties - src' . DIRECTORY_SEPARATOR . 'somefile.php:17:36',
+            ],
+            'assertionAboutAPropertyAnObjectShapeDoesNotHave' => [
+                'code' => '<?php
+                    /**
+                     * @param object{hasFoo: bool} $obj
+                     * @psalm-assert-if-true true $obj->missing
+                     */
+                    function validate(object $obj): bool {
+                        return $obj->hasFoo;
+                    }
+
+                    /** @var object{hasFoo: bool} $shape */
+                    $shape = (object) ["hasFoo" => true];
+
+                    validate($shape);',
+                'error_message' => 'InvalidDocblock - src' . DIRECTORY_SEPARATOR . 'somefile.php:13:21 - Property missing is not defined on variable shape so the assertion cannot be applied',
             ],
             'assertInstanceOfMultipleInterfaces' => [
                 'code' => '<?php
