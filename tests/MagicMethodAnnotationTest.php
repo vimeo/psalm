@@ -1470,6 +1470,139 @@ final class MagicMethodAnnotationTest extends TestCase
                     '$m' => 'A|null',
                 ],
             ],
+            'traitPseudoMethodYieldsToMethodOfAnotherTraitOrOfTheClass' => [
+                'code' => '<?php
+                    /**
+                     * @method static foo(int $x)
+                     * @method static string bar()
+                     */
+                    trait PseudoTrait {}
+
+                    trait RealTrait {
+                        public function foo(?int $x = null): int {
+                            return 1;
+                        }
+                    }
+
+                    class A {
+                        use PseudoTrait, RealTrait;
+                    }
+
+                    class B {
+                        use RealTrait, PseudoTrait;
+                    }
+
+                    class C {
+                        use PseudoTrait;
+
+                        public function foo(?int $x = null): int {
+                            return 1;
+                        }
+
+                        public static function bar(): int {
+                            return 1;
+                        }
+                    }
+
+                    $a = (new A)->foo();
+                    $b = (new B)->foo();
+                    $c = (new C)->foo();
+                    $d = C::bar();',
+                'assertions' => [
+                    '$a===' => 'int',
+                    '$b===' => 'int',
+                    '$c===' => 'int',
+                    '$d===' => 'int',
+                ],
+            ],
+            'parentPseudoMethodYieldsToMethodOfATraitOfTheChild' => [
+                'code' => '<?php
+                    /** @method static foo(int $x) */
+                    class ParentClass {}
+
+                    trait RealTrait {
+                        public function foo(?int $x = null): int {
+                            return 1;
+                        }
+                    }
+
+                    class Child extends ParentClass {
+                        use RealTrait;
+                    }
+
+                    $a = (new Child)->foo();',
+                'assertions' => [
+                    '$a===' => 'int',
+                ],
+            ],
+            'parentInterfacePseudoMethodYieldsToMethodOfTheInterface' => [
+                'code' => '<?php
+                    /** @method string foo() */
+                    interface ParentInterface {}
+
+                    interface ChildInterface extends ParentInterface {
+                        public function foo(): int;
+                    }
+
+                    function f(ChildInterface $i): int {
+                        return $i->foo();
+                    }',
+            ],
+            'pseudoMethodOfTheClassOrOfItsTraitWinsOverOneOfTheParent' => [
+                'code' => '<?php
+                    /** @method int foo() */
+                    class ParentClass {
+                        public function __call(string $name, array $args) {
+                            return null;
+                        }
+                    }
+
+                    /** @method string foo() */
+                    trait PseudoTrait {}
+
+                    /** @method string foo() */
+                    class A extends ParentClass {}
+
+                    class B extends ParentClass {
+                        use PseudoTrait;
+                    }
+
+                    $a = (new A)->foo();
+                    $b = (new B)->foo();',
+                'assertions' => [
+                    '$a===' => 'string',
+                    '$b===' => 'string',
+                ],
+            ],
+            'pseudoMethodOfATraitOrOfTheParentStillOverridesMethodOfTheGrandparent' => [
+                'code' => '<?php
+                    class GrandParentClass {
+                        public function foo(?int $x = null): int|string {
+                            return 1;
+                        }
+                    }
+
+                    /** @method int foo(?int $x = null) */
+                    trait PseudoTrait {}
+
+                    class A extends GrandParentClass {
+                        use PseudoTrait;
+                    }
+
+                    /** @method int foo(?int $x = null) */
+                    class ParentClass extends GrandParentClass {}
+
+                    class B extends ParentClass {}
+
+                    $a = (new A)->foo();
+                    $b = (new B)->foo();',
+                'assertions' => [
+                    '$a===' => 'int',
+                    '$b===' => 'int',
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
         ];
     }
 

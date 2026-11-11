@@ -545,8 +545,24 @@ final class Populator
 
         $dependent_classlikes[$fq_classlike_name_lc] = true;
 
+        $trait_storages = [];
+
         foreach ($storage->used_traits as $used_trait_lc => $_) {
-            $this->populateDataFromTrait($storage, $storage_provider, $dependent_classlikes, $used_trait_lc);
+            $trait_storage = $this->populateDataFromTrait(
+                $storage,
+                $storage_provider,
+                $dependent_classlikes,
+                $used_trait_lc,
+            );
+
+            if ($trait_storage !== null) {
+                $trait_storages[] = $trait_storage;
+            }
+        }
+
+        // once every trait is in, so that a method of one trait wins over a `@method` of another
+        foreach ($trait_storages as $trait_storage) {
+            self::inheritPseudoMethods($storage, $trait_storage);
         }
 
         if ($storage->parent_classes) {
@@ -876,7 +892,7 @@ final class Populator
         ClassLikeStorageProvider $storage_provider,
         array $dependent_classlikes,
         string $used_trait_lc,
-    ): void {
+    ): ?ClassLikeStorage {
         try {
             $used_trait_lc = strtolower(
                 $this->classlikes->getUnAliasedName(
@@ -885,7 +901,7 @@ final class Populator
             );
             $trait_storage = $storage_provider->get($used_trait_lc);
         } catch (InvalidArgumentException) {
-            return;
+            return null;
         }
 
         $this->populateClassLikeStorage($trait_storage, $dependent_classlikes);
@@ -918,11 +934,7 @@ final class Populator
         $storage->pseudo_property_get_types += $trait_storage->pseudo_property_get_types;
         $storage->pseudo_property_set_types += $trait_storage->pseudo_property_set_types;
 
-        $storage->pseudo_static_methods += $trait_storage->pseudo_static_methods;
-        $storage->declaring_pseudo_static_method_ids += $trait_storage->declaring_pseudo_static_method_ids;
-
-        $storage->pseudo_methods += $trait_storage->pseudo_methods;
-        $storage->declaring_pseudo_method_ids += $trait_storage->declaring_pseudo_method_ids;
+        return $trait_storage;
     }
 
     /**
@@ -1016,6 +1028,9 @@ final class Populator
             self::removeEmptyConstructor($storage);
         }
 
+        // before the methods of the parent, which a `@method` of the class may override
+        self::inheritPseudoMethods($storage, $parent_storage);
+
         $this->inheritMethodsFromParent($storage, $parent_storage);
         $this->inheritPropertiesFromParent($storage, $parent_storage);
 
@@ -1065,28 +1080,32 @@ final class Populator
 
         $parent_storage->dependent_classlikes[strtolower($storage->name)] = true;
 
-        foreach ($parent_storage->pseudo_static_methods as $method_name => $pseudo_method) {
-            if (!isset($storage->methods[$method_name])) {
-                $storage->pseudo_static_methods[$method_name] = $pseudo_method;
-            }
-        }
+        $parent_storage->has_children = true;
+    }
+
+    /**
+     * A method the class declares itself or through a trait, and a `@method` it already has, win over the `@method`
+     * of a used trait or parent class
+     *
+     * Runs before the methods of the parent class are inherited, so that a `@method` may override those.
+     */
+    private static function inheritPseudoMethods(ClassLikeStorage $storage, ClassLikeStorage $parent_storage): void
+    {
         foreach ($parent_storage->pseudo_methods as $method_name => $pseudo_method) {
-            if (!isset($storage->methods[$method_name])) {
-                $storage->pseudo_methods[$method_name] = $pseudo_method;
-            }
-        }
-        foreach ($parent_storage->declaring_pseudo_method_ids as $method_name => $pseudo_method_id) {
-            if (!isset($storage->methods[$method_name])) {
-                $storage->declaring_pseudo_method_ids[$method_name] = $pseudo_method_id;
-            };
-        }
-        foreach ($parent_storage->declaring_pseudo_static_method_ids as $method_name => $pseudo_method_id) {
-            if (!isset($storage->methods[$method_name])) {
-                $storage->declaring_pseudo_static_method_ids[$method_name] = $pseudo_method_id;
+            if (!isset($storage->declaring_method_ids[$method_name])) {
+                $storage->pseudo_methods[$method_name] ??= $pseudo_method;
+                $storage->declaring_pseudo_method_ids[$method_name]
+                    ??= $parent_storage->declaring_pseudo_method_ids[$method_name];
             }
         }
 
-        $parent_storage->has_children = true;
+        foreach ($parent_storage->pseudo_static_methods as $method_name => $pseudo_method) {
+            if (!isset($storage->declaring_method_ids[$method_name])) {
+                $storage->pseudo_static_methods[$method_name] ??= $pseudo_method;
+                $storage->declaring_pseudo_static_method_ids[$method_name]
+                    ??= $parent_storage->declaring_pseudo_static_method_ids[$method_name];
+            }
+        }
     }
 
     /**
@@ -1334,8 +1353,13 @@ final class Populator
         $this->inheritMethodsFromParent($storage, $parent_interface_storage);
         $this->inheritPropertiesFromParent($storage, $parent_interface_storage);
 
-        $storage->pseudo_methods += $parent_interface_storage->pseudo_methods;
-        $storage->declaring_pseudo_method_ids += $parent_interface_storage->declaring_pseudo_method_ids;
+        foreach ($parent_interface_storage->pseudo_methods as $method_name => $pseudo_method) {
+            if (!isset($storage->methods[$method_name])) {
+                $storage->pseudo_methods[$method_name] ??= $pseudo_method;
+                $storage->declaring_pseudo_method_ids[$method_name]
+                    ??= $parent_interface_storage->declaring_pseudo_method_ids[$method_name];
+            }
+        }
 
         $storage->parent_interfaces = [...$parent_interface_storage->parent_interfaces, ...$storage->parent_interfaces];
 
