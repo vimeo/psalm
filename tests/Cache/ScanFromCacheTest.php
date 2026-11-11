@@ -212,7 +212,7 @@ final class ScanFromCacheTest extends TestCase
     {
         return new class extends Progress {
             /**
-             * @psalm-mutation-free
+             * @psalm-pure
              */
             #[Override]
             public function debug(string $message): void
