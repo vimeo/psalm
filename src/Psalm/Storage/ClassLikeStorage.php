@@ -14,6 +14,7 @@ use Psalm\Internal\MethodIdentifier;
 use Psalm\Internal\Type\TypeAlias\ClassTypeAlias;
 use Psalm\Issue\CodeIssue;
 use Psalm\Issue\DeprecatedClass;
+use Psalm\Type\Atomic\TGenericObject;
 use Psalm\Type\Atomic\TNamedObject;
 use Psalm\Type\Atomic\TTemplateParam;
 use Psalm\Type\Union;
@@ -518,6 +519,18 @@ final class ClassLikeStorage implements HasAttributesInterface
     public bool $enforce_template_inheritance = false;
 
     public ?string $extension_requirement = null;
+
+    /**
+     * The type arguments of the class `@psalm-require-extends` names, in the templates of the trait
+     */
+    public ?TGenericObject $extension_requirement_type = null;
+
+    /**
+     * The type arguments of the interfaces `@psalm-require-implements` names, in the templates of the trait
+     *
+     * @var array<string, TGenericObject>
+     */
+    public array $implementation_requirement_types = [];
 
     /**
      * @var array<int, string>

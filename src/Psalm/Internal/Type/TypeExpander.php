@@ -11,6 +11,7 @@ use Psalm\Exception\UnresolvableConstantException;
 use Psalm\Internal\Analyzer\Statements\Expression\ArrayAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\Fetch\AtomicPropertyFetchAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\Fetch\ConstFetchAnalyzer;
+use Psalm\Internal\TypeVisitor\ContainsStaticVisitor;
 use Psalm\Storage\Assertion\IsType;
 use Psalm\Storage\Capabilities;
 use Psalm\Type;
@@ -132,6 +133,23 @@ final class TypeExpander
             : null;
 
         return $fleshed_out_type;
+    }
+
+    /**
+     * The type expanded with $static_class_type when it has `static`, as is otherwise
+     */
+    public static function expandStatic(
+        Codebase $codebase,
+        Union $type,
+        string|TNamedObject $static_class_type,
+        bool $final,
+    ): Union {
+        $static_visitor = new ContainsStaticVisitor();
+        $static_visitor->traverse($type);
+
+        return $static_visitor->matches()
+            ? self::expandUnion($codebase, $type, null, $static_class_type, null, true, false, $final)
+            : $type;
     }
 
     /**

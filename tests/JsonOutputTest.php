@@ -8,9 +8,7 @@ use Override;
 use PHPUnit\Framework\Attributes\DataProvider;
 use Psalm\Context;
 use Psalm\Internal\Analyzer\ProjectAnalyzer;
-use Psalm\Internal\Provider\FakeFileProvider;
 use Psalm\Internal\Provider\Providers;
-use Psalm\Internal\RuntimeCaches;
 use Psalm\IssueBuffer;
 use Psalm\Report;
 use Psalm\Report\ReportOptions;
@@ -21,13 +19,8 @@ use function substr;
 final class JsonOutputTest extends TestCase
 {
     #[Override]
-    public function setUp(): void
+    protected function setUpProjectAnalyzer(): void
     {
-        // `TestCase::setUp()` creates its own ProjectAnalyzer and Config instance, but we don't want to do that in this
-        // case, so don't run a `parent::setUp()` call here.
-        RuntimeCaches::clearAll();
-        $this->file_provider = new FakeFileProvider();
-
         $config = new TestConfig();
         $config->throw_exception = false;
 
