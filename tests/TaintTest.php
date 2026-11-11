@@ -1122,6 +1122,47 @@ final class TaintTest extends TestCase
                         $receiver->go(...["sink" => "", "other" => (string) $_GET["x"]]);
                     }',
             ],
+            'guardAPrivateMethodCalledOnAnObjectRunsNoOverrideOfAClassExtendingIt' => [
+                'code' => '<?php // --taint-analysis
+                    class Base {
+                        private function v(string ...$rest): void {}
+
+                        private function f(string $sink): void {}
+
+                        public function run(self $other): void {
+                            $this->v(sink: (string) $_GET["x"]);
+                            $this->f((string) $_GET["x"]);
+                            $other->f((string) $_GET["x"]);
+                            self::f((string) $_GET["x"]);
+                        }
+                    }
+
+                    class Child extends Base {
+                        public function v(string $sink = "", string ...$rest): void {
+                            echo $sink;
+                        }
+
+                        public function f(string $sink): void {
+                            echo $sink;
+                        }
+                    }',
+            ],
+            'guardAPrivateMethodCalledOnAnObjectWithTheNullsafeOperatorRunsNoOverride' => [
+                'code' => '<?php // --taint-analysis
+                    class Base {
+                        private function f(string $sink): void {}
+
+                        public function run(?self $other): void {
+                            $other?->f((string) $_GET["x"]);
+                        }
+                    }
+
+                    class Child extends Base {
+                        public function f(string $sink): void {
+                            echo $sink;
+                        }
+                    }',
+            ],
             'taintSourceUnderAKeyOfTheReturnOnly' => [
                 'code' => '<?php // --taint-analysis
                     /**
@@ -5948,6 +5989,44 @@ final class TaintTest extends TestCase
                         public static function s(string $sink = "", string ...$rest): void {
                             echo $sink;
                         }
+                    }',
+                'error_message' => 'TaintedHtml',
+            ],
+            'taintAnOverrideParameterWithANamedArgumentOfAPrivateInstanceVariadicThroughStatic' => [
+                'code' => '<?php // --taint-analysis
+                    class Base {
+                        private function p(string ...$rest): void {}
+
+                        public function run(): void {
+                            static::p(sink: (string) $_GET["x"]);
+                        }
+                    }
+
+                    class Child extends Base {
+                        public function p(string $sink = "", string ...$rest): void {
+                            echo $sink;
+                        }
+                    }',
+                'error_message' => 'TaintedHtml',
+            ],
+            'taintAnOverrideParameterThroughAPrivateMethodAPublicAliasOfATraitMakesPublic' => [
+                'code' => '<?php // --taint-analysis
+                    trait T {
+                        private function p(string $sink): void {}
+                    }
+
+                    class Base {
+                        use T { p as public; }
+                    }
+
+                    class Child extends Base {
+                        public function p(string $sink): void {
+                            echo $sink;
+                        }
+                    }
+
+                    function viaParent(Base $receiver): void {
+                        $receiver->p((string) $_GET["x"]);
                     }',
                 'error_message' => 'TaintedHtml',
             ],
