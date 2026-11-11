@@ -198,6 +198,34 @@ final class AnnotationTest extends TestCase
                         }
                     }',
             ],
+            'optionalShapeKeysNamedLikeScalarAliases' => [
+                'code' => '<?php
+                    /** @var array{double?: string, integer?: int, boolean?: bool, real?: float} $a */
+                    $a = [];
+                    $double = $a["double"] ?? null;
+                    $integer = $a["integer"] ?? null;
+                    $boolean = $a["boolean"] ?? null;
+                    $real = $a["real"] ?? null;',
+                'assertions' => [
+                    '$double===' => 'null|string',
+                    '$integer===' => 'int|null',
+                    '$boolean===' => 'bool|null',
+                    '$real===' => 'float|null',
+                ],
+                'ignored_issues' => ['UnusedVariable'],
+            ],
+            'optionalShapeKeysNamedLikeSelfAndParent' => [
+                'code' => '<?php
+                    class P {}
+
+                    class C extends P {
+                        /** @param array{self?: int, parent?: string} $a */
+                        public function f(array $a): void {
+                            echo $a["self"] ?? 0;
+                            echo $a["parent"] ?? "";
+                        }
+                    }',
+            ],
             'psalmVarOverridesPhpstanVarOnProperty' => [
                 'code' => '<?php
                     class Foo {}
@@ -404,6 +432,27 @@ final class AnnotationTest extends TestCase
                 'assertions' => [],
                 'ignored_issues' => [],
                 'php_version' => '8.1',
+            ],
+            'varDocblockBeforeAUseStatementDefinesTheVariable' => [
+                'code' => '<?php
+                    /**
+                     * @var string $foo
+                     */
+
+                    use StdClass;
+
+                    echo strlen($foo);',
+            ],
+            'varDocblockBeforeAUseStatementInANamespaceDefinesTheVariable' => [
+                'code' => '<?php
+                    namespace App;
+
+                    /**
+                     * @var string $foo
+                     */
+                    use StdClass;
+
+                    echo strlen($foo);',
             ],
             'varWithoutNameDoesNotTakeNameOfPreviousVarLine' => [
                 'code' => '<?php
@@ -1924,6 +1973,33 @@ final class AnnotationTest extends TestCase
                         return $foo;
                     }',
             ],
+            'fileLevelVarDocblockBeforeAUseStatement' => [
+                'code' => '<?php
+                    /**
+                     * @var string $foo
+                     * @var int $count
+                     */
+
+                    use stdClass;
+                    use Exception as E;
+
+                    echo strlen($foo) + $count;
+                    echo get_class(new stdClass());',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'globalInAFileDocumentingItsThisIsAnIncludedTemplate' => [
+                'code' => '<?php
+                    /**
+                     * @var stdClass $this
+                     */
+
+                    /** @var string $title */
+                    global $title;
+
+                    echo strlen($title);',
+            ],
         ];
     }
 
@@ -1934,6 +2010,38 @@ final class AnnotationTest extends TestCase
     public static function providerInvalidCodeParse(): iterable
     {
         return [
+            'removedSelfAccessingCallableWithParamsIsInvalid' => [
+                'code' => <<<'PHP'
+                    <?php
+                    /** @param self-accessing-callable(): int $f */
+                    function f(callable $f): void {}
+                    PHP,
+                'error_message' => 'InvalidDocblock',
+            ],
+            'removedSelfMutatingCallableWithParamsIsInvalid' => [
+                'code' => <<<'PHP'
+                    <?php
+                    /** @param self-mutating-callable(): int $f */
+                    function f(callable $f): void {}
+                    PHP,
+                'error_message' => 'InvalidDocblock',
+            ],
+            'removedSelfAccessingClosureWithParamsIsInvalid' => [
+                'code' => <<<'PHP'
+                    <?php
+                    /** @param self-accessing-Closure(): int $f */
+                    function f(callable $f): void {}
+                    PHP,
+                'error_message' => 'InvalidDocblock',
+            ],
+            'removedSelfMutatingClosureWithParamsIsInvalid' => [
+                'code' => <<<'PHP'
+                    <?php
+                    /** @param self-mutating-Closure(): int $f */
+                    function f(callable $f): void {}
+                    PHP,
+                'error_message' => 'InvalidDocblock',
+            ],
             'psalmVarWithTooManyTemplateParamsOnProperty' => [
                 'code' => '<?php
                     class Foo {}
@@ -2743,6 +2851,23 @@ final class AnnotationTest extends TestCase
                 'error_message' => 'InvalidDocblock',
                 'error_levels' => [],
                 'php_version' => '8.0',
+            ],
+            'fileLevelVarDocblockBeforeAUseStatementOnlyDeclaresItsOwnVariables' => [
+                'code' => '<?php
+                    /**
+                     * @var string $foo
+                     */
+
+                    use stdClass;
+
+                    echo strlen($other);',
+                'error_message' => 'UndefinedGlobalVariable',
+            ],
+            'globalInAFileWithoutADocumentedThisIsInvalid' => [
+                'code' => '<?php
+                    /** @var string $title */
+                    global $title;',
+                'error_message' => 'InvalidGlobal',
             ],
         ];
     }
