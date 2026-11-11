@@ -184,34 +184,6 @@ final class AnnotationTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
-            'intMaskOfAnImportedGlobalConstant' => [
-                'code' => '<?php
-                    namespace Foo;
-
-                    use const PHP_INT_MAX;
-
-                    /**
-                     * @param int-mask<PHP_INT_MAX> $y
-                     */
-                    function takesMask(int $y): void {
-                        echo $y;
-                    }
-
-                    takesMask(0);',
-            ],
-            'intMaskOfGlobalConstantsFromANamespace' => [
-                'code' => '<?php
-                    namespace Foo;
-
-                    /**
-                     * @param int-mask<E_ERROR, E_WARNING> $y
-                     */
-                    function takesMask(int $y): void {
-                        echo $y;
-                    }
-
-                    takesMask(E_ERROR);',
-            ],
             'psalmVarOverridesPhpstanVarOnProperty' => [
                 'code' => '<?php
                     class Foo {}
@@ -1938,6 +1910,34 @@ final class AnnotationTest extends TestCase
                         return $foo;
                     }',
             ],
+            'intMaskOfAnImportedGlobalConstant' => [
+                'code' => '<?php
+                    namespace Foo;
+
+                    use const PHP_INT_MAX;
+
+                    /**
+                     * @param int-mask<PHP_INT_MAX> $y
+                     */
+                    function takesMask(int $y): void {
+                        echo $y;
+                    }
+
+                    takesMask(0);',
+            ],
+            'intMaskOfGlobalConstantsFromANamespace' => [
+                'code' => '<?php
+                    namespace Foo;
+
+                    /**
+                     * @param int-mask<E_ERROR, E_WARNING> $y
+                     */
+                    function takesMask(int $y): void {
+                        echo $y;
+                    }
+
+                    takesMask(E_ERROR);',
+            ],
         ];
     }
 
@@ -1948,28 +1948,36 @@ final class AnnotationTest extends TestCase
     public static function providerInvalidCodeParse(): iterable
     {
         return [
-            'intMaskOfAQualifiedConstantDoesNotFallBackToTheGlobalOne' => [
-                'code' => '<?php
-                    namespace Foo;
-
-                    /**
-                     * @param int-mask<\\Foo\\E_ERROR> $y
-                     */
-                    function takesMask(int $y): void {
-                        echo $y;
-                    }',
+            'removedSelfAccessingCallableWithParamsIsInvalid' => [
+                'code' => <<<'PHP'
+                    <?php
+                    /** @param self-accessing-callable(): int $f */
+                    function f(callable $f): void {}
+                    PHP,
                 'error_message' => 'InvalidDocblock',
             ],
-            'intMaskOfAnUndefinedConstantFromANamespace' => [
-                'code' => '<?php
-                    namespace Foo;
-
-                    /**
-                     * @param int-mask<NOT_A_CONSTANT> $y
-                     */
-                    function takesMask(int $y): void {
-                        echo $y;
-                    }',
+            'removedSelfMutatingCallableWithParamsIsInvalid' => [
+                'code' => <<<'PHP'
+                    <?php
+                    /** @param self-mutating-callable(): int $f */
+                    function f(callable $f): void {}
+                    PHP,
+                'error_message' => 'InvalidDocblock',
+            ],
+            'removedSelfAccessingClosureWithParamsIsInvalid' => [
+                'code' => <<<'PHP'
+                    <?php
+                    /** @param self-accessing-Closure(): int $f */
+                    function f(callable $f): void {}
+                    PHP,
+                'error_message' => 'InvalidDocblock',
+            ],
+            'removedSelfMutatingClosureWithParamsIsInvalid' => [
+                'code' => <<<'PHP'
+                    <?php
+                    /** @param self-mutating-Closure(): int $f */
+                    function f(callable $f): void {}
+                    PHP,
                 'error_message' => 'InvalidDocblock',
             ],
             'psalmVarWithTooManyTemplateParamsOnProperty' => [
@@ -2781,6 +2789,30 @@ final class AnnotationTest extends TestCase
                 'error_message' => 'InvalidDocblock',
                 'error_levels' => [],
                 'php_version' => '8.0',
+            ],
+            'intMaskOfAQualifiedConstantDoesNotFallBackToTheGlobalOne' => [
+                'code' => '<?php
+                    namespace Foo;
+
+                    /**
+                     * @param int-mask<\\Foo\\E_ERROR> $y
+                     */
+                    function takesMask(int $y): void {
+                        echo $y;
+                    }',
+                'error_message' => 'InvalidDocblock',
+            ],
+            'intMaskOfAnUndefinedConstantFromANamespace' => [
+                'code' => '<?php
+                    namespace Foo;
+
+                    /**
+                     * @param int-mask<NOT_A_CONSTANT> $y
+                     */
+                    function takesMask(int $y): void {
+                        echo $y;
+                    }',
+                'error_message' => 'InvalidDocblock',
             ],
         ];
     }
