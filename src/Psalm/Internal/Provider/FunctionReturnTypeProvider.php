@@ -27,6 +27,7 @@ use Psalm\Internal\Provider\ReturnTypeProvider\ArrayReplaceRecursiveReturnTypePr
 use Psalm\Internal\Provider\ReturnTypeProvider\ArrayReverseReturnTypeProvider;
 use Psalm\Internal\Provider\ReturnTypeProvider\ArraySliceReturnTypeProvider;
 use Psalm\Internal\Provider\ReturnTypeProvider\ArraySpliceReturnTypeProvider;
+use Psalm\Internal\Provider\ReturnTypeProvider\ArrayUserCompareDiffReturnTypeProvider;
 use Psalm\Internal\Provider\ReturnTypeProvider\BasenameReturnTypeProvider;
 use Psalm\Internal\Provider\ReturnTypeProvider\DateReturnTypeProvider;
 use Psalm\Internal\Provider\ReturnTypeProvider\DirnameReturnTypeProvider;
@@ -44,6 +45,7 @@ use Psalm\Internal\Provider\ReturnTypeProvider\MinMaxReturnTypeProvider;
 use Psalm\Internal\Provider\ReturnTypeProvider\MktimeReturnTypeProvider;
 use Psalm\Internal\Provider\ReturnTypeProvider\ParseUrlReturnTypeProvider;
 use Psalm\Internal\Provider\ReturnTypeProvider\PowReturnTypeProvider;
+use Psalm\Internal\Provider\ReturnTypeProvider\PropertyExistsReturnTypeProvider;
 use Psalm\Internal\Provider\ReturnTypeProvider\RandReturnTypeProvider;
 use Psalm\Internal\Provider\ReturnTypeProvider\RoundReturnTypeProvider;
 use Psalm\Internal\Provider\ReturnTypeProvider\SprintfReturnTypeProvider;
@@ -94,6 +96,7 @@ final class FunctionReturnTypeProvider
         $this->registerClass(ArrayReplaceRecursiveReturnTypeProvider::class);
         $this->registerClass(ArraySliceReturnTypeProvider::class);
         $this->registerClass(ArraySpliceReturnTypeProvider::class);
+        $this->registerClass(ArrayUserCompareDiffReturnTypeProvider::class);
         $this->registerClass(ArrayReverseReturnTypeProvider::class);
         $this->registerClass(ArrayFillReturnTypeProvider::class);
         $this->registerClass(ArrayFillKeysReturnTypeProvider::class);
@@ -101,6 +104,7 @@ final class FunctionReturnTypeProvider
         $this->registerClass(FilterVarReturnTypeProvider::class);
         $this->registerClass(IteratorToArrayReturnTypeProvider::class);
         $this->registerClass(ParseUrlReturnTypeProvider::class);
+        $this->registerClass(PropertyExistsReturnTypeProvider::class);
         $this->registerClass(StrReplaceReturnTypeProvider::class);
         $this->registerClass(StrTrReturnTypeProvider::class);
         $this->registerClass(StrvalReturnTypeProvider::class);
