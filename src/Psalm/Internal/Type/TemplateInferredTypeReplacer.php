@@ -6,8 +6,10 @@ namespace Psalm\Internal\Type;
 
 use InvalidArgumentException;
 use Psalm\Codebase;
+use Psalm\Internal\Type\Comparator\TypeComparisonResult;
 use Psalm\Internal\Type\Comparator\UnionTypeComparator;
 use Psalm\Internal\TypeVisitor\ConditionalSubjectReplacer;
+use Psalm\Internal\TypeVisitor\ContainsStaticVisitor;
 use Psalm\Type;
 use Psalm\Type\Atomic;
 use Psalm\Type\Atomic\TArray;
@@ -68,6 +70,11 @@ final class TemplateInferredTypeReplacer
 
         foreach ($union->getAtomicTypes() as $key => $atomic_type) {
             $should_set = true;
+
+            if ($atomic_type instanceof TConditional && $codebase) {
+                $atomic_type = self::expandStaticOfCall($codebase, $atomic_type, $template_result);
+            }
+
             $atomic_type = $atomic_type->replaceTemplateTypesWithArgTypes($template_result, $codebase);
 
             if ($atomic_type instanceof TTemplateParam) {
@@ -516,16 +523,19 @@ final class TemplateInferredTypeReplacer
             $l = $template_type->getAtomicTypes();
             foreach (isset($l['mixed']) ? [$l['mixed']] : $l as $candidate_atomic_type) {
                 $candidate = new Union([$candidate_atomic_type]);
+                $comparison_result = new TypeComparisonResult();
+                // an object that is only castable to string is not of a string condition
                 if (UnionTypeComparator::isContainedBy(
                     $codebase,
                     $candidate,
                     $conditional_type,
                     false,
                     false,
-                    null,
+                    $comparison_result,
                     false,
                     false,
                 )
+                    && !$comparison_result->to_string_cast
                     && (!$candidate_atomic_type instanceof TInt
                         || $conditional_type->getId() !== 'float')
                 ) {
@@ -535,6 +545,11 @@ final class TemplateInferredTypeReplacer
                 }
 
                 $matching_else_types[] = $candidate_atomic_type;
+
+                // no value is of the type `never`
+                if ($conditional_type->isNever()) {
+                    continue;
+                }
 
                 $if_part = Type::intersectUnionTypes(
                     $candidate,
@@ -665,6 +680,44 @@ final class TemplateInferredTypeReplacer
         }
 
         return self::replace($branch_type, $refined_template_result, $codebase);
+    }
+
+    /**
+     * A param conditional with `static` of the call in its constraint and condition, before the bounds, which may hold
+     * the `static` of the caller, are put in them: only when its template is bound by arguments alone (fallbacks and
+     * defaults have no argument offset), as they were checked against the params with that `static`. A bound holding
+     * the declared `static` (a closure param narrowed by an unexpanded hint) is compared with them as declared.
+     *
+     * @psalm-capabilities read-props
+     */
+    private static function expandStaticOfCall(
+        Codebase $codebase,
+        TConditional $conditional,
+        TemplateResult $template_result,
+    ): TConditional {
+        $static_class_type = $template_result->static_class_type;
+        $bounds = $template_result->lower_bounds[$conditional->param_name][$conditional->defining_class] ?? [];
+
+        if ($static_class_type === null || $conditional->subject_type !== null || !$bounds) {
+            return $conditional;
+        }
+
+        foreach ($bounds as $bound) {
+            $static_visitor = new ContainsStaticVisitor(true);
+            $static_visitor->traverse($bound->type);
+
+            if ($bound->arg_offset === null || $static_visitor->matches()) {
+                return $conditional;
+            }
+        }
+
+        $final = $template_result->static_class_is_final;
+
+        /** @psalm-suppress ImpureMethodCall reads codebase storage (constant types may be memoized) */
+        return $conditional->setTypes(
+            TypeExpander::expandStatic($codebase, $conditional->as_type, $static_class_type, $final),
+            TypeExpander::expandStatic($codebase, $conditional->conditional_type, $static_class_type, $final),
+        );
     }
 
     /**

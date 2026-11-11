@@ -11,6 +11,8 @@ use Psalm\Tests\Traits\InvalidCodeAnalysisTestTrait;
 use Psalm\Tests\Traits\InvalidCodeAnalysisWithIssuesTestTrait;
 use Psalm\Tests\Traits\ValidCodeAnalysisTestTrait;
 
+use const DIRECTORY_SEPARATOR;
+
 final class MixinAnnotationTest extends TestCase
 {
     use InvalidCodeAnalysisWithIssuesTestTrait;
@@ -24,6 +26,118 @@ final class MixinAnnotationTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'nearestMixinWinsForAStaticMethodOfNestedMixins' => [
+                'code' => '<?php
+                    final class Deep
+                    {
+                        public static function foo(): int
+                        {
+                            return 1;
+                        }
+                    }
+
+                    /**
+                     * @mixin Deep
+                     */
+                    final class Near
+                    {
+                        public static function foo(): string
+                        {
+                            return "";
+                        }
+                    }
+
+                    /**
+                     * @mixin Near
+                     */
+                    final class Host {}
+
+                    $a = Host::foo();',
+                'assertions' => [
+                    '$a' => 'string',
+                ],
+            ],
+            'staticMethodOnlyOfTheDeeperOfNestedMixins' => [
+                'code' => '<?php
+                    final class Deep
+                    {
+                        public static function deepOnly(): int
+                        {
+                            return 1;
+                        }
+                    }
+
+                    /**
+                     * @mixin Deep
+                     */
+                    final class Near {}
+
+                    /**
+                     * @mixin Near
+                     */
+                    final class Host {}
+
+                    $a = Host::deepOnly();',
+                'assertions' => [
+                    '$a' => 'int',
+                ],
+            ],
+            'nearestMixinWinsForAMethodOfNestedMixins' => [
+                'code' => '<?php
+                    final class Deep
+                    {
+                        public function foo(): int
+                        {
+                            return 1;
+                        }
+                    }
+
+                    /**
+                     * @mixin Deep
+                     */
+                    final class Near
+                    {
+                        public function foo(): string
+                        {
+                            return "";
+                        }
+                    }
+
+                    /**
+                     * @mixin Near
+                     */
+                    final class Host {}
+
+                    $a = (new Host())->foo();',
+                'assertions' => [
+                    '$a' => 'string',
+                ],
+            ],
+            'staticMethodsOfSeveralMixins' => [
+                'code' => '<?php
+                    interface Mixin
+                    {
+                        public static function mix(): string;
+                    }
+
+                    interface OtherMixin
+                    {
+                        public static function otherMix(): int;
+                    }
+
+                    /**
+                     * @mixin Mixin
+                     * @mixin OtherMixin
+                     */
+                    class Bar {}
+
+                    $a = Bar::mix();
+                    $b = Bar::otherMix();',
+                'assertions' => [
+                    '$a' => 'string',
+                    '$b' => 'int',
+                ],
+            ],
             'mixinMethodChargesWhatCallDoes' => [
                 'code' => '<?php
                     final class Connection {
@@ -1128,6 +1242,27 @@ final class MixinAnnotationTest extends TestCase
     public static function providerInvalidCodeParse(): iterable
     {
         return [
+            'staticMethodOfNoneOfSeveralMixins' => [
+                'code' => '<?php
+                    interface Mixin
+                    {
+                        public static function mix(): void;
+                    }
+
+                    interface OtherMixin
+                    {
+                        public static function otherMix(): void;
+                    }
+
+                    /**
+                     * @mixin Mixin
+                     * @mixin OtherMixin
+                     */
+                    class Bar {}
+
+                    Bar::missing();',
+                'error_message' => 'UndefinedMethod',
+            ],
             'mixinMethodChargesTheCallOfTheClassUsingTheMixin' => [
                 'code' => '<?php
                     final class Connection {
@@ -1424,6 +1559,13 @@ final class MixinAnnotationTest extends TestCase
                     }',
                 'error_message' => 'UndefinedVariable',
             ],
+            'unparseableMixinTypeIsAnIssue' => [
+                'code' => '<?php
+                    /** @mixin Foo< */
+                    class A {}',
+                'error_message' => 'InvalidDocblock - src' . DIRECTORY_SEPARATOR . 'somefile.php:3:27 -'
+                    . ' No generic params provided for type in docblock for A',
+            ],
         ];
     }
 
@@ -1459,5 +1601,70 @@ final class MixinAnnotationTest extends TestCase
 
         // Only Mid names the deprecated class; Host merely reaches it through Mid.
         $this->assertSame([8], $deprecated_class_lines);
+    }
+
+    public function testInvalidMixinTypeDoesNotDiscardTheNextMixin(): void
+    {
+        $this->project_analyzer->getConfig()->throw_exception = false;
+        $file_path = self::$src_dir_path . 'somefile.php';
+
+        $this->addFile(
+            $file_path,
+            '<?php
+                final class Provider
+                {
+                    public function hello(): string
+                    {
+                        return "hello";
+                    }
+                }
+
+                /**
+                 * @mixin Foo<
+                 * @mixin Provider
+                 */
+                final class Host {}
+
+                function greet(Host $host): string
+                {
+                    return $host->hello();
+                }',
+        );
+        $this->analyzeFile($file_path, new Context());
+
+        $issue_types = [];
+        foreach (IssueBuffer::getIssuesDataForFile($file_path) as $issue) {
+            $issue_types[] = $issue->type;
+        }
+
+        $this->assertSame(['InvalidDocblock'], $issue_types);
+        $this->assertSame(
+            'Host',
+            $this->project_analyzer->getCodebase()->classlike_storage_provider->get('Host')->mixin_declaring_fqcln,
+        );
+    }
+
+    public function testUnparseableMixinAloneBehavesLikeNoMixin(): void
+    {
+        $this->project_analyzer->getConfig()->throw_exception = false;
+        $file_path = self::$src_dir_path . 'somefile.php';
+
+        $this->addFile(
+            $file_path,
+            '<?php
+                /** @mixin Foo< */
+                final class A {}',
+        );
+        $this->analyzeFile($file_path, new Context());
+
+        $issue_types = [];
+        foreach (IssueBuffer::getIssuesDataForFile($file_path) as $issue) {
+            $issue_types[] = $issue->type;
+        }
+
+        $this->assertSame(['InvalidDocblock'], $issue_types);
+        $this->assertNull(
+            $this->project_analyzer->getCodebase()->classlike_storage_provider->get('A')->mixin_declaring_fqcln,
+        );
     }
 }
