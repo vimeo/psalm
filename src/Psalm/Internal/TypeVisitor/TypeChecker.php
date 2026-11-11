@@ -40,9 +40,12 @@ use Psalm\Type\Atomic\TClassConstant;
 use Psalm\Type\Atomic\TGenericObject;
 use Psalm\Type\Atomic\TGlobalConstant;
 use Psalm\Type\Atomic\TIntersection;
+use Psalm\Type\Atomic\TKeyOf;
 use Psalm\Type\Atomic\TNamedObject;
 use Psalm\Type\Atomic\TResource;
 use Psalm\Type\Atomic\TTemplateParam;
+use Psalm\Type\Atomic\TTypeAlias;
+use Psalm\Type\Atomic\TValueOf;
 use Psalm\Type\MutableUnion;
 use Psalm\Type\TypeNode;
 use Psalm\Type\TypeVisitor;
@@ -148,6 +151,8 @@ final class TypeChecker extends TypeVisitor
             $this->checkResource($type);
         } elseif ($type instanceof TIntersection) {
             $this->checkIntersection($type);
+        } elseif ($type instanceof TKeyOf || $type instanceof TValueOf) {
+            $this->checkKeyOrValueOfAlias($type);
         }
 
         /** @psalm-suppress InaccessibleProperty Doesn't affect anything else */
@@ -491,6 +496,40 @@ final class TypeChecker extends TypeVisitor
                 $this->source->getSuppressedIssues(),
             );
         }
+    }
+
+    /**
+     * An imported type alias is only known once the class is populated, so what the parser accepted of it is
+     * checked here, as it is for a type the parser could resolve itself
+     */
+    private function checkKeyOrValueOfAlias(TKeyOf|TValueOf $atomic): void
+    {
+        if (!array_any(
+            $atomic->type->getAtomicTypes(),
+            static fn(Atomic $part): bool => $part instanceof TTypeAlias,
+        )) {
+            return;
+        }
+
+        $expanded_type = TypeExpander::expandUnion($this->source->getCodebase(), $atomic->type, null, null, null);
+
+        if ($atomic instanceof TKeyOf
+            ? TKeyOf::isViableTemplateType($expanded_type)
+            : TValueOf::isViableTemplateType($expanded_type)
+        ) {
+            return;
+        }
+
+        IssueBuffer::maybeAdd(
+            new InvalidDocblock(
+                'Untemplated ' . ($atomic instanceof TKeyOf ? 'key-of' : 'value-of') . ' param '
+                    . $expanded_type->getId(false) . ' should be an array',
+                $this->code_location,
+            ),
+            $this->suppressed_issues,
+        );
+
+        $this->has_errors = true;
     }
 
     private function checkGlobalConstant(TGlobalConstant $atomic): void

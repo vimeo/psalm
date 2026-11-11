@@ -1420,6 +1420,7 @@ final class ProjectAnalyzer
         Context $this_context,
         string $root_file_path,
         string $root_file_name,
+        ?FileAnalyzer $calling_file_analyzer = null,
     ): void {
         $fq_class_name = $original_method_id->fq_class_name;
 
@@ -1445,6 +1446,10 @@ final class ProjectAnalyzer
         if ($appearing_fq_class_name !== $fq_class_name) {
             $file_analyzer = $this->getFileAnalyzerForClassLike($appearing_fq_class_name);
         }
+
+        // the files being analysed when the method is called: what the method's file includes of them is not
+        // included again
+        $calling_file_analyzer?->passIncludeChainTo($file_analyzer);
 
         $stmts = $this->getStatementsForMutations($file_analyzer->getFilePath());
 
