@@ -927,7 +927,8 @@ final class MethodCallReturnTypeFetcher
     ): array {
         $params = $codebase->methods->getMethodParams($method_id);
 
-        // a signature return type without a docblock one inherits the docblock return type of the parent, as a call does
+        // a signature return type without a docblock one inherits the docblock return type of the parent, as a
+        // call does
         if ($method_storage->return_type !== null && $method_storage->has_docblock_return_type) {
             return [
                 new TClosure($params, $method_storage->return_type, $method_storage->capabilities),
