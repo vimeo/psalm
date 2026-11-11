@@ -23,6 +23,142 @@ final class ClassTemplateExtendsTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'implementedTemplateWithUnionOfOwnTemplateIsResolvedAtTheCall' => [
+                'code' => '<?php
+                    /** @template T1 */
+                    interface InputType {
+                        /** @return T1 */
+                        public function castValue(mixed $value);
+                    }
+
+                    /**
+                     * @template T2
+                     * @implements InputType<T2|null>
+                     */
+                    final class NullableType implements InputType {
+                        /** @param T2 $innerType */
+                        public function __construct(private $innerType) {}
+
+                        public function castValue(mixed $value) {
+                            throw new \Exception("irrelevant");
+                        }
+                    }
+
+                    /** @var NullableType<string> $n */
+                    $n = new NullableType("a");
+                    $result = $n->castValue(1);',
+                'assertions' => [
+                    '$result===' => 'null|string',
+                ],
+                'ignored_issues' => ['MissingOverrideAttribute'],
+                'php_version' => '8.0',
+            ],
+            'implementedTemplateWithOwnTemplateIsResolvedAtTheCall' => [
+                'code' => '<?php
+                    /** @template T1 */
+                    interface Box {
+                        /** @return T1 */
+                        public function get();
+                    }
+
+                    /**
+                     * @template T2
+                     * @implements Box<list<T2>>
+                     */
+                    final class ListBox implements Box {
+                        /** @param list<T2> $items */
+                        public function __construct(private array $items) {}
+
+                        public function get() {
+                            return $this->items;
+                        }
+                    }
+
+                    /** @var ListBox<int> $box */
+                    $box = new ListBox([1]);
+                    $items = $box->get();',
+                'assertions' => [
+                    '$items===' => 'list<int>',
+                ],
+                'ignored_issues' => ['MissingOverrideAttribute'],
+            ],
+            'inheritedDocblockReturnTypeResolvesThroughSubclassTemplates' => [
+                'code' => '<?php
+                    /**
+                     * @template-covariant T
+                     */
+                    interface ReadableList {
+                        /** @return list<T> */
+                        public function toArray(): array;
+                    }
+
+                    /**
+                     * @template T
+                     * @implements ReadableList<T>
+                     */
+                    class Collection implements ReadableList {
+                        /** @param list<T> $values */
+                        public function __construct(protected array $values = []) {}
+
+                        public function toArray(): array {
+                            return $this->values;
+                        }
+                    }
+
+                    /**
+                     * @template T of scalar
+                     * @extends Collection<T>
+                     */
+                    class ScalarList extends Collection {}
+
+                    /** @var ScalarList<string> $strings */
+                    $strings = new ScalarList();
+                    $list = $strings->toArray();
+                ',
+                'assertions' => [
+                    '$list===' => 'list<string>',
+                ],
+            ],
+            'inheritedDocblockReturnTypeResolvesSwappedTemplates' => [
+                'code' => '<?php
+                    /**
+                     * @template A
+                     * @template B
+                     */
+                    interface Pair {
+                        /** @return array{A, B} */
+                        public function toArray(): array;
+                    }
+
+                    /**
+                     * @template K
+                     * @template V
+                     * @implements Pair<V, K>
+                     */
+                    class Impl implements Pair {
+                        /** @param array{V, K} $pair */
+                        public function __construct(private array $pair) {}
+
+                        public function toArray(): array {
+                            return $this->pair;
+                        }
+                    }
+
+                    /**
+                     * @template X
+                     * @template Y
+                     * @extends Impl<Y, X>
+                     */
+                    class Swapped extends Impl {}
+
+                    /** @var Swapped<int, string> $swapped */
+                    $swapped = new Swapped([1, "a"]);
+                    $pair = $swapped->toArray();
+                ',
+                'assertions' => [
+                    '$pair===' => 'list{int, string}',
+                ],
+            ],
             'newResolvesATemplateNotGivenToTheParentToItsBound' => [
                 'code' => '<?php
                     /** @template T */
