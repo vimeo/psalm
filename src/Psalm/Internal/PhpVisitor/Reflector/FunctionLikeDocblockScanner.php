@@ -22,6 +22,7 @@ use Psalm\Internal\Codebase\TaintStore;
 use Psalm\Internal\Scanner\FileScanner;
 use Psalm\Internal\Scanner\FunctionDocblockComment;
 use Psalm\Internal\Type\Comparator\UnionTypeComparator;
+use Psalm\Internal\Type\DocblockRefinement;
 use Psalm\Internal\Type\PurityWildcard;
 use Psalm\Internal\Type\TemplateDefaults;
 use Psalm\Internal\Type\TypeAlias;
@@ -1175,8 +1176,7 @@ final class FunctionLikeDocblockScanner
 
             foreach ($new_param_type->getAtomicTypes() as $key => $type) {
                 if (isset($storage_param_atomic_types[$key])) {
-                    /** @psalm-suppress InaccessibleProperty We just created this type */
-                    $type->from_docblock = false;
+                    DocblockRefinement::markGuaranteedBy($type, $storage_param_atomic_types[$key]);
 
                     if ($storage_param_atomic_types[$key] instanceof TArray
                         && $type instanceof TArray
@@ -1295,8 +1295,7 @@ final class FunctionLikeDocblockScanner
 
                 foreach ($storage->return_type->getAtomicTypes() as $key => $type) {
                     if (isset($signature_return_atomic_types[$key])) {
-                        /** @psalm-suppress InaccessibleProperty We just created this atomic type */
-                        $type->from_docblock = false;
+                        DocblockRefinement::markGuaranteedBy($type, $signature_return_atomic_types[$key]);
                     } else {
                         $all_typehint_types_match = false;
                     }

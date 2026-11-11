@@ -6,6 +6,7 @@ namespace Psalm\Internal\Provider\ReturnTypeProvider;
 
 use Override;
 use Psalm\Internal\Type\Comparator\UnionTypeComparator;
+use Psalm\Internal\Type\DocblockRefinement;
 use Psalm\Plugin\EventHandler\Event\FunctionReturnTypeProviderEvent;
 use Psalm\Plugin\EventHandler\FunctionReturnTypeProviderInterface;
 use Psalm\Type;
@@ -74,13 +75,22 @@ final class InArrayReturnTypeProvider implements FunctionReturnTypeProviderInter
         }
 
         $haystack_item_type = $array_arg_type->type_params[1];
+        $codebase = $event->getStatementsSource()->getCodebase();
 
         if (UnionTypeComparator::canExpressionTypesBeIdentical(
-            $event->getStatementsSource()->getCodebase(),
+            $codebase,
             $needle_type,
             $haystack_item_type,
         )) {
             return $bool;
+        }
+
+        if (!$false->from_docblock
+            // natively, a refined array may hold any value
+            && ($types['array']->refined_by_docblock
+                || DocblockRefinement::isNeededFor($codebase, $needle_type, $haystack_item_type, false))
+        ) {
+            return Type::getFalse(true);
         }
 
         return $false;

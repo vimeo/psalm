@@ -1059,6 +1059,7 @@ final class PreloaderList {
         \Psalm\Internal\Type\Comparator\ScalarTypeComparator::class,
         \Psalm\Internal\Type\Comparator\TypeComparisonResult::class,
         \Psalm\Internal\Type\Comparator\UnionTypeComparator::class,
+        \Psalm\Internal\Type\DocblockRefinement::class,
         \Psalm\Internal\Type\IntMask::class,
         \Psalm\Internal\Type\IterationPurity::class,
         \Psalm\Internal\Type\LiteralCast::class,

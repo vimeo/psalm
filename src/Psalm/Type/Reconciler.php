@@ -17,6 +17,7 @@ use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\Internal\DataFlow\DataFlowNode;
 use Psalm\Internal\MethodIdentifier;
 use Psalm\Internal\Type\AssertionReconciler;
+use Psalm\Internal\Type\DocblockRefinement;
 use Psalm\Internal\Type\TemplateResult;
 use Psalm\Internal\Type\TemplateStandinTypeReplacer;
 use Psalm\Internal\Type\TypeExpander;
@@ -384,6 +385,15 @@ class Reconciler
 
             if (!$result_type) {
                 throw new UnexpectedValueException('$result_type should not be null');
+            }
+
+            if ($before_adjustment) {
+                $result_type = DocblockRefinement::keepAfterReconciliation(
+                    $codebase,
+                    $before_adjustment,
+                    $result_type,
+                    $new_type_parts,
+                );
             }
 
             if ($has_inverted_key_exists || $has_inverted_isset) {
@@ -1322,16 +1332,17 @@ class Reconciler
             $assertion_string = '<= '.substr($assertion_string, 1);
         }
 
-        if ($negated) {
-            $redundant = !$redundant;
-            $not = !$not;
-        }
-
         $existing_var_atomic_types = $existing_var_type->getAtomicTypes();
 
         $from_docblock = $existing_var_type->from_docblock
             || (isset($existing_var_atomic_types[$assertion_string])
-                && $existing_var_atomic_types[$assertion_string]->from_docblock);
+                && $existing_var_atomic_types[$assertion_string]->from_docblock)
+            || DocblockRefinement::isNeededForAssertion($existing_var_type, $assertion, $redundant);
+
+        if ($negated) {
+            $redundant = !$redundant;
+            $not = !$not;
+        }
 
         if ($redundant) {
             if ($existing_var_type->from_property
@@ -1687,7 +1698,10 @@ class Reconciler
                             }
                         }
 
-                        $new_base_type = $new_base_type->getBuilder()->addType($base_atomic_type)->freeze();
+                        // the narrowed element is established by the code
+                        $new_base_type = $new_base_type->getBuilder()
+                            ->addType($base_atomic_type->setRefinedByDocblock(false))
+                            ->freeze();
 
                         $changed_var_ids[$base_key . '[' . $array_key . ']'] = true;
 

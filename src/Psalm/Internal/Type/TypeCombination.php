@@ -103,6 +103,8 @@ final class TypeCombination
 
     public ?bool $all_arrays_class_string_maps = null;
 
+    public bool $array_refined_by_docblock = false;
+
     /** @var array<string, bool> */
     public array $class_string_map_names = [];
 

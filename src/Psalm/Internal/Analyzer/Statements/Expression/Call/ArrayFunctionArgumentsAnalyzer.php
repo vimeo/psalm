@@ -19,6 +19,7 @@ use Psalm\Internal\MethodIdentifier;
 use Psalm\Internal\Type\ArrayType;
 use Psalm\Internal\Type\Comparator\TypeComparisonResult;
 use Psalm\Internal\Type\Comparator\UnionTypeComparator;
+use Psalm\Internal\Type\DocblockRefinement;
 use Psalm\Internal\Type\LiteralCast;
 use Psalm\Internal\Type\TemplateResult;
 use Psalm\Internal\Type\TemplateStandinTypeReplacer;
@@ -343,6 +344,9 @@ final class ArrayFunctionArgumentsAnalyzer
                     $by_ref_type = $by_ref_type->addParentNodes($arg_value_type->parent_nodes);
                 }
             }
+
+            // the code added to the array, so its refinements no longer come from the docblock alone
+            $by_ref_type = DocblockRefinement::withoutRefinements($by_ref_type);
 
             AssignmentAnalyzer::assignByRefParam(
                 $statements_analyzer,

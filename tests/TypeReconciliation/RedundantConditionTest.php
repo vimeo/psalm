@@ -5,9 +5,14 @@ declare(strict_types=1);
 namespace Psalm\Tests\TypeReconciliation;
 
 use Override;
+use Psalm\Context;
+use Psalm\Internal\Analyzer\IssueData;
+use Psalm\IssueBuffer;
 use Psalm\Tests\TestCase;
 use Psalm\Tests\Traits\InvalidCodeAnalysisTestTrait;
 use Psalm\Tests\Traits\ValidCodeAnalysisTestTrait;
+
+use function array_map;
 
 use const DIRECTORY_SEPARATOR;
 
@@ -15,6 +20,48 @@ final class RedundantConditionTest extends TestCase
 {
     use ValidCodeAnalysisTestTrait;
     use InvalidCodeAnalysisTestTrait;
+
+    public function testInArrayOfARefinedArrayIsReportedWithTheDocblockKind(): void
+    {
+        $this->testConfig->throw_exception = false;
+        $file_path = self::$src_dir_path . 'somefile.php';
+
+        $this->addFile(
+            $file_path,
+            '<?php
+                /** @param list<int> $values */
+                function inList(array $values, string $needle): void {
+                    if (in_array($needle, $values, true)) {}
+                }
+
+                /** @param list<int> $values */
+                function notInList(array $values, string $needle): void {
+                    if (!in_array($needle, $values, true)) {}
+                }
+
+                function inNativeList(string $needle): void {
+                    $values = [1, 2];
+                    if (in_array($needle, $values, true)) {}
+                }',
+        );
+
+        $this->analyzeFile($file_path, new Context());
+
+        // the assertion on the needle keeps the native kind, as it does for an array typed only by its docblock
+        self::assertSame(
+            [
+                [4, 'DocblockTypeContradiction'],
+                [4, 'RedundantCondition'],
+                [9, 'RedundantConditionGivenDocblockType'],
+                [9, 'RedundantCondition'],
+                [14, 'TypeDoesNotContainType'],
+            ],
+            array_map(
+                static fn(IssueData $issue): array => [$issue->line_from, $issue->type],
+                IssueBuffer::getIssuesDataForFile($file_path),
+            ),
+        );
+    }
 
     /**
      * @psalm-pure
@@ -1232,7 +1279,7 @@ final class RedundantConditionTest extends TestCase
                             echo "always";
                         }
                     }',
-                'error_message' => 'RedundantCondition',
+                'error_message' => 'RedundantConditionGivenDocblockType - src' . DIRECTORY_SEPARATOR . 'somefile.php:4:29',
             ],
             'instanceofOfATemplateParamAlreadyNarrowedToTheClass' => [
                 'code' => '<?php
@@ -1910,6 +1957,384 @@ final class RedundantConditionTest extends TestCase
                     if (array_key_exists("10", $a) && array_key_exists(10, $a)) {}',
                 'error_message' => 'RedundantCondition',
             ],
+            'listParamRefiningArrayNotListInStrictTypes' => [
+                'code' => '<?php declare(strict_types=1);
+                    /** @param list<int> $ids */
+                    function check(array $ids): void {
+                        if (!array_is_list($ids) || count($ids) !== 3) {
+                            throw new InvalidArgumentException();
+                        }
+                    }',
+                'error_message' => 'DocblockTypeContradiction - src' . DIRECTORY_SEPARATOR . 'somefile.php:4:29',
+                'error_levels' => [],
+                'php_version' => '8.1',
+            ],
+            'listParamRefiningArrayNotListWithoutStrictTypes' => [
+                'code' => '<?php
+                    /** @param list<int> $ids */
+                    function check(array $ids): void {
+                        if (!array_is_list($ids) || count($ids) !== 3) {
+                            throw new InvalidArgumentException();
+                        }
+                    }',
+                'error_message' => 'DocblockTypeContradiction - src' . DIRECTORY_SEPARATOR . 'somefile.php:4:29',
+                'error_levels' => [],
+                'php_version' => '8.1',
+            ],
+            'listParamRefiningArrayIsList' => [
+                'code' => '<?php
+                    /** @param list<int> $ids */
+                    function check(array $ids): void {
+                        if (array_is_list($ids)) {}
+                    }',
+                'error_message' => 'RedundantConditionGivenDocblockType - src' . DIRECTORY_SEPARATOR . 'somefile.php:4:29',
+                'error_levels' => [],
+                'php_version' => '8.1',
+            ],
+            'listParamRefiningArrayNotListAfterNullCheck' => [
+                'code' => '<?php
+                    /** @param list<int>|null $ids */
+                    function check(?array $ids, bool $b): void {
+                        if ($ids === null) {
+                            return;
+                        }
+                        if (!array_is_list($ids) || $b) {}
+                    }',
+                'error_message' => 'DocblockTypeContradiction - src' . DIRECTORY_SEPARATOR . 'somefile.php:7:29',
+                'error_levels' => [],
+                'php_version' => '8.1',
+            ],
+            'listReturnRefiningArrayNotList' => [
+                'code' => '<?php
+                    /** @return list<int> */
+                    function ids(): array {
+                        return [1];
+                    }
+                    function check(bool $b): void {
+                        $ids = ids();
+                        if (!array_is_list($ids) || $b) {}
+                    }',
+                'error_message' => 'DocblockTypeContradiction - src' . DIRECTORY_SEPARATOR . 'somefile.php:8:29',
+                'error_levels' => [],
+                'php_version' => '8.1',
+            ],
+            'listReturnRefiningArrayIsListOnCall' => [
+                'code' => '<?php
+                    /** @return list<int> */
+                    function ids(): array {
+                        return [1];
+                    }
+                    if (array_is_list(ids())) {}',
+                'error_message' => 'RedundantConditionGivenDocblockType - src' . DIRECTORY_SEPARATOR . 'somefile.php:6:25',
+                'error_levels' => [],
+                'php_version' => '8.1',
+            ],
+            'listPropertyRefiningArrayNotList' => [
+                'code' => '<?php
+                    final class A {
+                        /** @var list<int> */
+                        public array $ids = [];
+                        public function check(bool $b): void {
+                            if (!array_is_list($this->ids) || $b) {}
+                        }
+                    }',
+                'error_message' => 'DocblockTypeContradiction - src' . DIRECTORY_SEPARATOR . 'somefile.php:6:33',
+                'error_levels' => [],
+                'php_version' => '8.1',
+            ],
+            'listPromotedPropertyRefiningArrayNotList' => [
+                'code' => '<?php
+                    final class A {
+                        /** @param list<int> $ids */
+                        public function __construct(public array $ids) {}
+                        public function check(bool $b): void {
+                            if (!array_is_list($this->ids) || $b) {}
+                        }
+                    }',
+                'error_message' => 'DocblockTypeContradiction - src' . DIRECTORY_SEPARATOR . 'somefile.php:6:33',
+                'error_levels' => [],
+                'php_version' => '8.1',
+            ],
+            'listParamRefiningArrayAssertedDisjoint' => [
+                'code' => '<?php
+                    /** @psalm-assert list<string> $x */
+                    function assertStringList(array $x): void {}
+                    /** @param non-empty-list<int> $a */
+                    function check(array $a): void {
+                        assertStringList($a);
+                    }',
+                'error_message' => 'DocblockTypeContradiction - src' . DIRECTORY_SEPARATOR . 'somefile.php:6:25',
+            ],
+            'nonEmptyStringParamRefiningStringIdenticalToEmpty' => [
+                'code' => '<?php
+                    /** @param non-empty-string $s */
+                    function check(string $s): void {
+                        if ($s === "") {}
+                    }',
+                'error_message' => 'DocblockTypeContradiction - src' . DIRECTORY_SEPARATOR . 'somefile.php:4:29',
+            ],
+            'nonFalsyStringParamRefiningStringTruthy' => [
+                'code' => '<?php
+                    /** @param non-falsy-string $s */
+                    function check(string $s): void {
+                        if ($s) {}
+                    }',
+                'error_message' => 'RedundantConditionGivenDocblockType - src' . DIRECTORY_SEPARATOR . 'somefile.php:4:29',
+            ],
+            'nonFalsyStringParamRefiningStringFalsy' => [
+                'code' => '<?php
+                    /** @param non-falsy-string $s */
+                    function check(string $s): void {
+                        if (!$s) {}
+                    }',
+                'error_message' => 'DocblockTypeContradiction - src' . DIRECTORY_SEPARATOR . 'somefile.php:4:29',
+            ],
+            'nonFalsyStringParamRefiningStringNotEmpty' => [
+                'code' => '<?php
+                    /** @param non-falsy-string $s */
+                    function check(string $s): void {
+                        if (!empty($s)) {}
+                    }',
+                'error_message' => 'RedundantConditionGivenDocblockType - src' . DIRECTORY_SEPARATOR . 'somefile.php:4:29',
+            ],
+            'nonEmptyArrayParamRefiningArrayEmptyOr' => [
+                'code' => '<?php
+                    /** @param non-empty-array<string> $a */
+                    function check(array $a, bool $b): void {
+                        if ($a === [] || $b) {}
+                    }',
+                'error_message' => 'DocblockTypeContradiction - src' . DIRECTORY_SEPARATOR . 'somefile.php:4:29',
+            ],
+            'nonEmptyListParamRefiningArrayIdenticalToEmpty' => [
+                'code' => '<?php
+                    /** @param non-empty-list<int> $a */
+                    function check(array $a): void {
+                        if ($a === []) {}
+                    }',
+                'error_message' => 'DocblockTypeContradiction - src' . DIRECTORY_SEPARATOR . 'somefile.php:4:29',
+            ],
+            'nonEmptyListParamRefiningArrayNotIdenticalToEmpty' => [
+                'code' => '<?php
+                    /** @param non-empty-list<int> $a */
+                    function check(array $a): void {
+                        if ($a !== []) {}
+                    }',
+                'error_message' => 'RedundantConditionGivenDocblockType - src' . DIRECTORY_SEPARATOR . 'somefile.php:4:29',
+            ],
+            'shapeParamRefiningArrayCountLessThan' => [
+                'code' => '<?php
+                    /** @param array{int, int} $a */
+                    function check(array $a): void {
+                        if (count($a) < 1) {}
+                    }',
+                'error_message' => 'DocblockTypeContradiction - src' . DIRECTORY_SEPARATOR . 'somefile.php:4:29',
+            ],
+            'shapeParamRefiningArrayCountAtLeast' => [
+                'code' => '<?php
+                    /** @param array{int, int} $a */
+                    function check(array $a): void {
+                        if (count($a) >= 3) {}
+                    }',
+                'error_message' => 'DocblockTypeContradiction - src' . DIRECTORY_SEPARATOR . 'somefile.php:4:29',
+            ],
+            'nonFalsyStringParamRefiningStringAssertedTruthy' => [
+                'code' => '<?php
+                    /** @param non-falsy-string $s */
+                    function check(string $s): void {
+                        assert((bool) $s);
+                    }',
+                'error_message' => 'RedundantConditionGivenDocblockType - src' . DIRECTORY_SEPARATOR . 'somefile.php:4:25',
+            ],
+            'nonEmptyListParamRefiningArrayAssertedFalsy' => [
+                'code' => '<?php
+                    /** @param non-empty-list<int> $a */
+                    function check(array $a): void {
+                        assert(!(bool) $a);
+                    }',
+                'error_message' => 'DocblockTypeContradiction - src' . DIRECTORY_SEPARATOR . 'somefile.php:4:25',
+            ],
+            'nonEmptyListParamRefiningArrayCountPositive' => [
+                'code' => '<?php
+                    /** @param non-empty-list<int> $a */
+                    function check(array $a): void {
+                        if (count($a) > 0) {}
+                    }',
+                'error_message' => 'RedundantConditionGivenDocblockType - src' . DIRECTORY_SEPARATOR . 'somefile.php:4:29',
+            ],
+            'nonEmptyStringParamRefiningStringInArrayOfEmptyStrings' => [
+                'code' => '<?php
+                    /**
+                     * @param non-empty-string $s
+                     * @param list<""> $empties
+                     */
+                    function check(string $s, array $empties, bool $b): void {
+                        if (in_array($s, $empties, true) || $b) {}
+                    }',
+                'error_message' => 'DocblockTypeContradiction - src' . DIRECTORY_SEPARATOR . 'somefile.php:7:29',
+            ],
+            'nonEmptyStringParamRefiningStringNotIdenticalToEmpty' => [
+                'code' => '<?php
+                    /** @param non-empty-string $s */
+                    function check(string $s): void {
+                        if ($s !== "") {}
+                    }',
+                'error_message' => 'RedundantConditionGivenDocblockType - src' . DIRECTORY_SEPARATOR . 'somefile.php:4:29',
+            ],
+            'listParamRefiningArrayMergedByTernaryNotList' => [
+                'code' => '<?php
+                    /** @param list<int> $ids */
+                    function check(array $ids, bool $b): void {
+                        $x = $b ? $ids : [1, 2];
+                        if (!array_is_list($x) || $b) {}
+                    }',
+                'error_message' => 'DocblockTypeContradiction - src' . DIRECTORY_SEPARATOR . 'somefile.php:5:29',
+                'error_levels' => [],
+                'php_version' => '8.1',
+            ],
+            'listParamRefiningArrayMergedByIfElseNotList' => [
+                'code' => '<?php
+                    /** @param list<int> $ids */
+                    function check(array $ids, bool $b): void {
+                        if ($b) {
+                            $x = $ids;
+                        } else {
+                            $x = [1, 2];
+                        }
+                        if (!array_is_list($x) || $b) {}
+                    }',
+                'error_message' => 'DocblockTypeContradiction - src' . DIRECTORY_SEPARATOR . 'somefile.php:9:29',
+                'error_levels' => [],
+                'php_version' => '8.1',
+            ],
+            'listParamRefiningArrayNotArrayIsNative' => [
+                'code' => '<?php
+                    /** @param list<int> $ids */
+                    function check(array $ids, bool $b): void {
+                        if (!is_array($ids) || $b) {}
+                    }',
+                'error_message' => 'TypeDoesNotContainType - src' . DIRECTORY_SEPARATOR . 'somefile.php:4:29',
+            ],
+            'listParamRefiningArrayIsArrayIsNative' => [
+                'code' => '<?php
+                    /** @param list<int> $ids */
+                    function check(array $ids): void {
+                        if (is_array($ids)) {}
+                    }',
+                'error_message' => 'RedundantCondition - src' . DIRECTORY_SEPARATOR . 'somefile.php:4:29',
+            ],
+            'listParamCombinedNotArrayIsNative' => [
+                'code' => '<?php
+                    /** @param list<int> $ids */
+                    function check(array $ids, bool $b): void {
+                        $x = $b ? $ids : [1, 2];
+                        if (!is_array($x) || $b) {}
+                    }',
+                'error_message' => 'TypeDoesNotContainType - src' . DIRECTORY_SEPARATOR . 'somefile.php:5:29',
+            ],
+            'nativeIntNotIntIsNative' => [
+                'code' => '<?php
+                    function check(int $i): void {
+                        if (!is_int($i) || abs($i) !== 3) {}
+                    }',
+                'error_message' => 'TypeDoesNotContainType - src' . DIRECTORY_SEPARATOR . 'somefile.php:3:29',
+            ],
+            'nullableNonEmptyListParamNarrowedByTruthinessIsNative' => [
+                'code' => '<?php
+                    /** @param non-empty-list<int>|null $a */
+                    function check(?array $a): void {
+                        if ($a) {
+                            if ($a) {}
+                        }
+                    }',
+                'error_message' => 'RedundantCondition - src' . DIRECTORY_SEPARATOR . 'somefile.php:5:33',
+            ],
+            'nullableNonEmptyListParamNarrowedByEarlyReturnIsNative' => [
+                'code' => '<?php
+                    /** @param non-empty-list<int>|null $a */
+                    function check(?array $a, bool $b): void {
+                        if (!$a) {
+                            return;
+                        }
+                        if ($a === [] || $b) {}
+                    }',
+                'error_message' => 'TypeDoesNotContainType - src' . DIRECTORY_SEPARATOR . 'somefile.php:7:29',
+            ],
+            'nullableNonFalsyStringParamNarrowedByEarlyReturnIsNative' => [
+                'code' => '<?php
+                    /** @param non-falsy-string|null $s */
+                    function check(?string $s): void {
+                        if (!$s) {
+                            return;
+                        }
+                        if (!$s) {}
+                    }',
+                'error_message' => 'TypeDoesNotContainType - src' . DIRECTORY_SEPARATOR . 'somefile.php:7:29',
+            ],
+            'shapeParamWithWrittenKeyTruthyIsNative' => [
+                'code' => '<?php
+                    /** @param array{a?: int} $a */
+                    function check(array $a): void {
+                        $a["a"] = 1;
+                        if ($a) {}
+                    }',
+                'error_message' => 'RedundantCondition - src' . DIRECTORY_SEPARATOR . 'somefile.php:5:29',
+            ],
+            'shapeParamWithWrittenKeyFalsyIsNative' => [
+                'code' => '<?php
+                    /** @param array{a?: int} $a */
+                    function check(array $a, bool $b): void {
+                        $a["a"] = 1;
+                        if (!$a || $b) {}
+                    }',
+                'error_message' => 'TypeDoesNotContainType - src' . DIRECTORY_SEPARATOR . 'somefile.php:5:29',
+            ],
+            'shapeParamWithWrittenKeyCountIsNative' => [
+                'code' => '<?php
+                    /** @param array{a?: int} $a */
+                    function check(array $a): void {
+                        $a["a"] = 1;
+                        if (count($a) > 0) {}
+                    }',
+                'error_message' => 'RedundantCondition - src' . DIRECTORY_SEPARATOR . 'somefile.php:5:29',
+            ],
+            'listParamWithUnshiftedElementTruthyIsNative' => [
+                'code' => '<?php
+                    /** @param list<int> $a */
+                    function check(array $a): void {
+                        array_unshift($a, 1);
+                        if ($a) {}
+                    }',
+                'error_message' => 'RedundantCondition - src' . DIRECTORY_SEPARATOR . 'somefile.php:5:29',
+            ],
+            'shapeParamNarrowedByArrayKeyExistsIsNative' => [
+                'code' => '<?php
+                    /** @param array{a?: int, b?: int} $a */
+                    function check(array $a, bool $c): void {
+                        if (!array_key_exists("a", $a)) {
+                            return;
+                        }
+                        if ($a === [] || $c) {}
+                    }',
+                'error_message' => 'TypeDoesNotContainType - src' . DIRECTORY_SEPARATOR . 'somefile.php:7:29',
+            ],
+            'listParamNarrowedByArrayKeyExistsIsNative' => [
+                'code' => '<?php
+                    /** @param list<int> $a */
+                    function check(array $a): void {
+                        if (array_key_exists(0, $a)) {
+                            if ($a) {}
+                        }
+                    }',
+                'error_message' => 'RedundantCondition - src' . DIRECTORY_SEPARATOR . 'somefile.php:5:33',
+            ],
+            'nonEmptyStringParamInArrayOfLiteralIntsIsNative' => [
+                'code' => '<?php
+                    /** @param non-empty-string $s */
+                    function check(string $s): void {
+                        if (in_array($s, [1, 2], true)) {}
+                    }',
+                'error_message' => 'TypeDoesNotContainType - src' . DIRECTORY_SEPARATOR . 'somefile.php:4:29',
+            ],
             'assignedArrayOffsetCheckedTwice' => [
                 'code' => '<?php
                     /** @param array<int, string|int> $arr */
@@ -1929,7 +2354,7 @@ final class RedundantConditionTest extends TestCase
                     function f(string $s, array $ints): bool {
                         return [$s] === $ints;
                     }',
-                'error_message' => 'TypeDoesNotContainType - src' . DIRECTORY_SEPARATOR . 'somefile.php:4:32 - list{string} cannot be identical to list<int<1, max',
+                'error_message' => 'DocblockTypeContradiction - src' . DIRECTORY_SEPARATOR . 'somefile.php:4:32 - list{string} does not contain list<int<1, max',
             ],
             'identicalComparisonOfShapesWithOtherKeysIsImpossible' => [
                 'code' => '<?php
@@ -1944,7 +2369,7 @@ final class RedundantConditionTest extends TestCase
                     function f(int $i, array $map): bool {
                         return ["id" => $i] === $map;
                     }',
-                'error_message' => 'TypeDoesNotContainType - src' . DIRECTORY_SEPARATOR . 'somefile.php:4:32 - array{id: int} cannot be identical to array<string, string',
+                'error_message' => 'DocblockTypeContradiction - src' . DIRECTORY_SEPARATOR . 'somefile.php:4:32 - array{id: int} does not contain array<string, string',
             ],
             'identicalComparisonOfAListWithAShapeThatSkipsAnIndexIsImpossible' => [
                 'code' => '<?php
@@ -1955,7 +2380,7 @@ final class RedundantConditionTest extends TestCase
                     function f(array $list, array $shape): bool {
                         return $list === $shape;
                     }',
-                'error_message' => 'TypeDoesNotContainType - src' . DIRECTORY_SEPARATOR . 'somefile.php:7:32',
+                'error_message' => 'DocblockTypeContradiction - src' . DIRECTORY_SEPARATOR . 'somefile.php:7:32',
             ],
             'identicalComparisonOfAListWithAShapeWhoseSkippedItemIsOfAnotherTypeIsImpossible' => [
                 'code' => '<?php
@@ -1966,7 +2391,7 @@ final class RedundantConditionTest extends TestCase
                     function f(array $list, array $shape): bool {
                         return $list === $shape;
                     }',
-                'error_message' => 'TypeDoesNotContainType - src' . DIRECTORY_SEPARATOR . 'somefile.php:7:32',
+                'error_message' => 'DocblockTypeContradiction - src' . DIRECTORY_SEPARATOR . 'somefile.php:7:32',
             ],
             'identicalComparisonOfAShapeWithAShorterOneIsImpossible' => [
                 'code' => '<?php

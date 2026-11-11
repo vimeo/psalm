@@ -33,6 +33,7 @@ use Psalm\Internal\Codebase\InternalCallMapHandler;
 use Psalm\Internal\MethodIdentifier;
 use Psalm\Internal\Provider\ClassLikeStorageProvider;
 use Psalm\Internal\Type\Comparator\UnionTypeComparator;
+use Psalm\Internal\Type\DocblockRefinement;
 use Psalm\Internal\Type\TypeExpander;
 use Psalm\Issue\DocblockTypeContradiction;
 use Psalm\Issue\InvalidDocblock;
@@ -1047,7 +1048,9 @@ final class AssertionFinder
         }
 
         if (!$negate) {
-            if ($first_var_type->from_docblock) {
+            if ($first_var_type->from_docblock
+                || DocblockRefinement::isNeededFor($codebase, $first_var_type, $expected_type, true)
+            ) {
                 IssueBuffer::maybeAdd(
                     new RedundantConditionGivenDocblockType(
                         'Docblock type ' . $first_var_type . ' always contains ' . $expected_type,
@@ -1067,7 +1070,9 @@ final class AssertionFinder
                 );
             }
         } else {
-            if ($first_var_type->from_docblock) {
+            if ($first_var_type->from_docblock
+                || DocblockRefinement::isNeededFor($codebase, $first_var_type, $expected_type, true)
+            ) {
                 IssueBuffer::maybeAdd(
                     new DocblockTypeContradiction(
                         'Docblock type !' . $first_var_type . ' does not contain ' . $expected_type,
@@ -2595,7 +2600,9 @@ final class AssertionFinder
                     $empty_array_type,
                     $var_type,
                 )) {
-                    if ($var_type->from_docblock) {
+                    if ($var_type->from_docblock
+                        || DocblockRefinement::isNeededFor($codebase, $var_type, $empty_array_type, false)
+                    ) {
                         IssueBuffer::maybeAdd(
                             new RedundantConditionGivenDocblockType(
                                 'Docblock-defined type ' . $var_type->getId() . ' can never be an empty array',
@@ -3322,7 +3329,9 @@ final class AssertionFinder
                 $empty_array_type,
                 $var_type,
             )) {
-                if ($var_type->from_docblock) {
+                if ($var_type->from_docblock
+                    || DocblockRefinement::isNeededFor($codebase, $var_type, $empty_array_type, false)
+                ) {
                     IssueBuffer::maybeAdd(
                         new DocblockTypeContradiction(
                             $var_type . ' does not contain an empty array',
@@ -4389,7 +4398,27 @@ final class AssertionFinder
             $other_type,
             $var_type,
         )) {
-            if ($var_type->from_docblock || $other_type->from_docblock) {
+            $from_docblock = $var_type->from_docblock
+                || $other_type->from_docblock
+                || DocblockRefinement::isNeededFor($codebase, $var_type, $other_type, false)
+                || DocblockRefinement::isNeededFor($codebase, $other_type, $var_type, false);
+
+            if ($conditional instanceof NotEqual || $conditional instanceof NotIdentical) {
+                IssueBuffer::maybeAdd(
+                    $from_docblock
+                        ? new RedundantConditionGivenDocblockType(
+                            $var_type->getId() . ' can never contain ' . $other_type->getId(),
+                            new CodeLocation($source, $conditional),
+                            $var_type->getId() . ' ' . $other_type->getId(),
+                        )
+                        : new RedundantCondition(
+                            $var_type->getId() . ' can never contain ' . $other_type->getId(),
+                            new CodeLocation($source, $conditional),
+                            $var_type->getId() . ' ' . $other_type->getId(),
+                        ),
+                    $source->getSuppressedIssues(),
+                );
+            } elseif ($from_docblock) {
                 IssueBuffer::maybeAdd(
                     new DocblockTypeContradiction(
                         $var_type->getId() . ' does not contain ' . $other_type->getId(),
@@ -4399,25 +4428,14 @@ final class AssertionFinder
                     $source->getSuppressedIssues(),
                 );
             } else {
-                if ($conditional instanceof NotEqual || $conditional instanceof NotIdentical) {
-                    IssueBuffer::maybeAdd(
-                        new RedundantCondition(
-                            $var_type->getId() . ' can never contain ' . $other_type->getId(),
-                            new CodeLocation($source, $conditional),
-                            $var_type->getId() . ' ' . $other_type->getId(),
-                        ),
-                        $source->getSuppressedIssues(),
-                    );
-                } else {
-                    IssueBuffer::maybeAdd(
-                        new TypeDoesNotContainType(
-                            $var_type->getId() . ' cannot be identical to ' . $other_type->getId(),
-                            new CodeLocation($source, $conditional),
-                            $var_type->getId() . ' ' . $other_type->getId(),
-                        ),
-                        $source->getSuppressedIssues(),
-                    );
-                }
+                IssueBuffer::maybeAdd(
+                    new TypeDoesNotContainType(
+                        $var_type->getId() . ' cannot be identical to ' . $other_type->getId(),
+                        new CodeLocation($source, $conditional),
+                        $var_type->getId() . ' ' . $other_type->getId(),
+                    ),
+                    $source->getSuppressedIssues(),
+                );
             }
         }
     }

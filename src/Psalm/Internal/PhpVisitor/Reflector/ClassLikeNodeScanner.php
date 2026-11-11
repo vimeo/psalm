@@ -36,6 +36,7 @@ use Psalm\Internal\Scanner\ClassLikeDocblockComment;
 use Psalm\Internal\Scanner\FileScanner;
 use Psalm\Internal\Scanner\ParsedDocblock;
 use Psalm\Internal\Scanner\UnresolvedConstantComponent;
+use Psalm\Internal\Type\DocblockRefinement;
 use Psalm\Internal\Type\TemplateDefaults;
 use Psalm\Internal\Type\TypeAlias;
 use Psalm\Internal\Type\TypeAlias\ClassTypeAlias;
@@ -2143,8 +2144,7 @@ final class ClassLikeNodeScanner
 
                     foreach ($property_storage->type->getAtomicTypes() as $key => $type) {
                         if (isset($signature_atomic_types[$key])) {
-                            /** @psalm-suppress InaccessibleProperty We just created this type */
-                            $type->from_docblock = false;
+                            DocblockRefinement::markGuaranteedBy($type, $signature_atomic_types[$key]);
                         } else {
                             $all_typehint_types_match = false;
                         }

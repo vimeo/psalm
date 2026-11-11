@@ -87,6 +87,8 @@ final class TypeExpander
 
         foreach ($return_type->getAtomicTypes() as $return_type_part) {
             $is_int_mask = self::isIntMask($codebase, $return_type_part, $self_class);
+            // expandAtomic() may replace the atomic type it is given, as TKeyedArray::make() rebuilds lists
+            $refined_by_docblock = $return_type_part->refined_by_docblock;
 
             $parts = self::expandAtomic(
                 $codebase,
@@ -101,6 +103,13 @@ final class TypeExpander
                 $expand_templates,
                 $throw_on_unresolvable_constant,
             );
+
+            if ($refined_by_docblock) {
+                foreach ($parts as &$part) {
+                    $part = $part->setRefinedByDocblock(true);
+                }
+                unset($part);
+            }
 
             $part_int_mask_bits = $is_int_mask ? IntMask::getExpandedBits($parts) : null;
 

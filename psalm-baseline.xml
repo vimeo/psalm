@@ -1666,19 +1666,19 @@
     </RiskyTruthyFalsyComparison>
   </file>
   <file src="src/Psalm/Internal/Diff/FileStatementsDiffer.php">
-    <RedundantCondition>
+    <RedundantConditionGivenDocblockType>
       <code><![CDATA[assert(!empty($name_parts))]]></code>
       <code><![CDATA[assert(!empty($name_parts))]]></code>
-    </RedundantCondition>
+    </RedundantConditionGivenDocblockType>
   </file>
   <file src="src/Psalm/Internal/Diff/NamespaceStatementsDiffer.php">
     <ImplicitToStringCast>
       <code><![CDATA[$diff_elem->old->name]]></code>
     </ImplicitToStringCast>
-    <RedundantCondition>
+    <RedundantConditionGivenDocblockType>
       <code><![CDATA[assert(!empty($name_parts))]]></code>
       <code><![CDATA[assert(!empty($name_parts))]]></code>
-    </RedundantCondition>
+    </RedundantConditionGivenDocblockType>
   </file>
   <file src="src/Psalm/Internal/ExecutionEnvironment/GitInfoCollector.php">
     <PossiblyUndefinedArrayOffset>

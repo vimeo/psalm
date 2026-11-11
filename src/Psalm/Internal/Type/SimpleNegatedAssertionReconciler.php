@@ -576,6 +576,7 @@ final class SimpleNegatedAssertionReconciler extends Reconciler
         bool $is_equality,
         ?int $count,
     ): Union {
+        $original_var_type = $existing_var_type;
         $existing_var_type = $existing_var_type->getBuilder();
         $old_var_type_string = $existing_var_type->getId();
         $existing_var_atomic_types = $existing_var_type->getAtomicTypes();
@@ -661,7 +662,7 @@ final class SimpleNegatedAssertionReconciler extends Reconciler
             ) {
                 if ($key && $code_location) {
                     self::triggerIssueForImpossible(
-                        $existing_var_type,
+                        $original_var_type,
                         $old_var_type_string,
                         $key,
                         $assertion,
@@ -927,6 +928,7 @@ final class SimpleNegatedAssertionReconciler extends Reconciler
         int &$failed_reconciliation,
         bool $recursive_check,
     ): Union {
+        $original_var_type = $existing_var_type;
         $existing_var_type = $existing_var_type->getBuilder();
         $old_var_type_string = $existing_var_type->getId();
 
@@ -951,7 +953,7 @@ final class SimpleNegatedAssertionReconciler extends Reconciler
             //every type was removed, this is an impossible assertion
             if ($code_location && $key && !$recursive_check) {
                 self::triggerIssueForImpossible(
-                    $existing_var_type,
+                    $original_var_type,
                     $old_var_type_string,
                     $key,
                     $assertion,

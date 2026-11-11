@@ -18,6 +18,7 @@ use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\Internal\DataFlow\DataFlowNode;
 use Psalm\Internal\Type\Comparator\TypeComparisonResult;
 use Psalm\Internal\Type\Comparator\UnionTypeComparator;
+use Psalm\Internal\Type\DocblockRefinement;
 use Psalm\Issue\ForbiddenCode;
 use Psalm\Issue\PossibleRawObjectIteration;
 use Psalm\Issue\RawObjectIteration;
@@ -594,7 +595,9 @@ final class NamedFunctionCallHandler
                     Type::getList(),
                 )
             ) {
-                if ($first_arg_type->from_docblock) {
+                if ($first_arg_type->from_docblock
+                    || DocblockRefinement::isNeededFor($codebase, $first_arg_type, Type::getList(), true)
+                ) {
                     IssueBuffer::maybeAdd(
                         new RedundantFunctionCallGivenDocblockType(
                             "The call to $function_id is unnecessary given the list docblock type $first_arg_type",
@@ -628,7 +631,9 @@ final class NamedFunctionCallHandler
                 )
                 && !$comparison_result->to_string_cast
             ) {
-                if ($first_arg_type->from_docblock) {
+                if ($first_arg_type->from_docblock
+                    || DocblockRefinement::isNeededFor($codebase, $first_arg_type, Type::getLowercaseString(), true)
+                ) {
                     IssueBuffer::maybeAdd(
                         new RedundantFunctionCallGivenDocblockType(
                             'The call to strtolower is unnecessary given the docblock type',

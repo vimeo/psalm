@@ -491,6 +491,12 @@ final class TypeCombiner
         bool $allow_mixed_union,
         int $literal_limit,
     ): ?Union {
+        if ($type->refined_by_docblock
+            && ($type instanceof TArray || $type instanceof TKeyedArray || $type instanceof TClassStringMap)
+        ) {
+            $combination->array_refined_by_docblock = true;
+        }
+
         if ($type instanceof TMixed) {
             if ($type->from_loop_isset) {
                 if ($combination->mixed_from_loop_isset === null) {
@@ -1832,7 +1838,7 @@ final class TypeCombiner
                     );
                 }
 
-                $new_types[] = $objectlike;
+                $new_types[] = $objectlike->setRefinedByDocblock($combination->array_refined_by_docblock);
             } else {
                 $key_type = $combination->objectlike_key_type ?? Type::getArrayKey();
                 $value_type = $combination->objectlike_value_type ?? Type::getMixed();
@@ -1842,7 +1848,9 @@ final class TypeCombiner
                     $array_type = new TArray([$key_type, $value_type]);
                 }
 
-                $new_types[] = $array_type->setFromDocblock($from_docblock);
+                $new_types[] = $array_type
+                    ->setFromDocblock($from_docblock)
+                    ->setRefinedByDocblock($combination->array_refined_by_docblock);
             }
 
             // if we're merging an empty array with an object-like, clobber empty array
@@ -2006,6 +2014,8 @@ final class TypeCombiner
             }
         }
 
-        return $array_type->setFromDocblock($from_docblock);
+        return $array_type
+            ->setFromDocblock($from_docblock)
+            ->setRefinedByDocblock($combination->array_refined_by_docblock);
     }
 }
