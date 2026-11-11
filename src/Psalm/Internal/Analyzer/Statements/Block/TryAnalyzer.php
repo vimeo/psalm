@@ -83,11 +83,18 @@ final class TryAnalyzer
         $try_scope = new TryScope();
         $try_scope->outer = $outer_try_scope;
 
-        foreach ($stmt->catches as $catch) {
+        /** @var int $catch_i */
+        foreach ($stmt->catches as $catch_i => $catch) {
             foreach ($catch->types as $catch_type) {
-                $try_scope->catch_classes[] = strtolower($codebase->classlikes->getUnAliasedName(
+                $catch_class = strtolower($codebase->classlikes->getUnAliasedName(
                     ClassLikeAnalyzer::getFQCLNFromNameObject($catch_type, $statements_analyzer->getAliases()),
                 ));
+
+                $try_scope->catch_classes[] = $catch_class;
+
+                if (in_array(ScopeAnalyzer::ACTION_NONE, $catch_actions[$catch_i], true)) {
+                    $try_scope->continuing_catch_classes[] = $catch_class;
+                }
             }
         }
 

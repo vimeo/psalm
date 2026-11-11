@@ -2428,6 +2428,19 @@ final class UnusedCodeTest extends TestCase
                     (new Base())->run();
                     (new Child())->other();',
             ],
+            'suppressUnusedPropertyOnAPromotedProperty' => [
+                'code' => '<?php
+                    final class Test
+                    {
+                        public function __construct(
+                            /** @psalm-suppress PossiblyUnusedProperty */
+                            public bool $result,
+                        ) {
+                        }
+                    }
+
+                    new Test(true);',
+            ],
             'assignmentInABranchThatBreaksIsSeenAfterTheLoop' => [
                 'code' => '<?php
                     function test(bool $b): string {
@@ -2444,6 +2457,26 @@ final class UnusedCodeTest extends TestCase
                         }
 
                         return $test;
+                    }
+
+                    echo test(true);',
+            ],
+            'assignmentBeforeAThrowIsSeenAfterTheTryWhereAnotherMatchingCatchGoesOn' => [
+                'code' => '<?php
+                    function test(bool $b): string {
+                        $x = "initial";
+
+                        try {
+                            if ($b) {
+                                $x = "thrown";
+                                throw new RuntimeException();
+                            }
+                        } catch (LogicException $e) {
+                            return "logic";
+                        } catch (RuntimeException $e) {
+                        }
+
+                        return $x;
                     }
 
                     echo test(true);',
@@ -3596,6 +3629,22 @@ final class UnusedCodeTest extends TestCase
                     (new Factory())->run();',
                 'error_message' => 'Cannot find any calls to method Factory::__callStatic',
             ],
+            'suppressOnAPromotedPropertyDoesNotCoverTheNextOne' => [
+                'code' => '<?php
+                    final class Test
+                    {
+                        public function __construct(
+                            /** @psalm-suppress PossiblyUnusedProperty */
+                            public bool $result,
+                            public bool $other,
+                        ) {
+                        }
+                    }
+
+                    new Test(true, false);',
+                'error_message' => 'PossiblyUnusedProperty',
+                'error_levels' => ['UnusedVariable'],
+            ],
             'assignmentBeforeAnUncaughtThrowInATryFinallyIsNotSeenAfterTheTry' => [
                 'code' => '<?php
                     function test(bool $b): string {
@@ -3615,6 +3664,48 @@ final class UnusedCodeTest extends TestCase
 
                     echo test(true);',
                 'error_message' => 'UnusedVariable',
+                'error_levels' => [],
+            ],
+            'assignmentBeforeAThrowThatTheMatchingCatchAlwaysLeavesIsNotSeenAfterTheTry' => [
+                'code' => '<?php
+                    function test(bool $b): string {
+                        $x = "initial";
+
+                        try {
+                            if ($b) {
+                                $x = "unused";
+                                throw new RuntimeException();
+                            }
+                        } catch (RuntimeException $e) {
+                            return "caught";
+                        }
+
+                        return $x;
+                    }
+
+                    echo test(true);',
+                'error_message' => 'UnusedVariable - src' . DIRECTORY_SEPARATOR . 'somefile.php:7:33',
+                'error_levels' => [],
+            ],
+            'assignmentBeforeAThrowThatTheMatchingCatchAlwaysThrowsIsNotSeenAfterTheTry' => [
+                'code' => '<?php
+                    function test(bool $b): string {
+                        $x = "initial";
+
+                        try {
+                            if ($b) {
+                                $x = "unused";
+                                throw new RuntimeException();
+                            }
+                        } catch (RuntimeException $e) {
+                            throw new LogicException("caught");
+                        }
+
+                        return $x;
+                    }
+
+                    echo test(true);',
+                'error_message' => 'UnusedVariable - src' . DIRECTORY_SEPARATOR . 'somefile.php:7:33',
                 'error_levels' => [],
             ],
             'assignmentBeforeAThrowThatNoCatchTakesIsNotSeenAfterTheTry' => [

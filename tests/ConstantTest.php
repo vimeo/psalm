@@ -18,6 +18,36 @@ final class ConstantTest extends TestCase
     use InvalidCodeAnalysisTestTrait;
     use ValidCodeAnalysisTestTrait;
 
+    public function testConstantDefinedInSeveralBranchesIsTheUnionInAnotherFile(): void
+    {
+        // the constants of other files are known without including them
+        $this->project_analyzer->getCodebase()->all_constants_global = true;
+
+        $file1 = (string) getcwd() . DIRECTORY_SEPARATOR . 'tests' . DIRECTORY_SEPARATOR . 'file1.php';
+        $file2 = (string) getcwd() . DIRECTORY_SEPARATOR . 'tests' . DIRECTORY_SEPARATOR . 'file2.php';
+
+        $this->addFile(
+            $file1,
+            '<?php
+                if (rand(0, 1)) {
+                    define("BRANCHED", "x");
+                } else {
+                    define("BRANCHED", "y");
+                }
+            ',
+        );
+
+        $this->addFile(
+            $file2,
+            '<?php
+                /** @psalm-check-type-exact $value = \'x\'|\'y\' */
+                $value = BRANCHED;
+            ',
+        );
+
+        $this->analyzeFile($file2, new Context());
+    }
+
     public function testGlobalConstantOfEnumCasesFromAnotherFile(): void
     {
         $this->project_analyzer->setPhpVersion('8.1', 'tests');
@@ -250,6 +280,86 @@ final class ConstantTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'staticConstantMapOffsetWithANullDefaultOfDestructuredValues' => [
+                'code' => '<?php
+                    class Handler
+                    {
+                        protected const MAP = [
+                            "view" => ["read", "show"],
+                            "revert" => ["write", "update"],
+                        ];
+
+                        public function check(string $operation): string
+                        {
+                            [$permission, $entity_operation] = static::MAP[$operation] ?? [null, null];
+
+                            if ($permission) {
+                                return $permission . ($entity_operation ?? "");
+                            }
+
+                            return "";
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => ['MissingClassConstType'],
+            ],
+            'staticConstantMapOffsetAfterAnIssetOfTheSameOffset' => [
+                'code' => '<?php
+                    class Handler
+                    {
+                        protected const MAP = [
+                            "view" => ["read", "show"],
+                        ];
+
+                        public function check(string $operation): string
+                        {
+                            if (!isset(static::MAP[$operation])) {
+                                return "";
+                            }
+
+                            return static::MAP[$operation][0];
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => ['MissingClassConstType'],
+            ],
+            'defineInSeveralSwitchBranchesWithoutDefault' => [
+                'code' => '<?php
+                    switch (random_int(1, 3)) {
+                        case 1:
+                            define("ASD", "x");
+                            break;
+                        case 2:
+                            define("ASD", "y");
+                            break;
+                    }
+
+                    if (ASD === "x") {
+                        echo "x";
+                    }
+
+                    if (ASD === "y") {
+                        echo "y";
+                    }
+
+                    $value = ASD;',
+                'assertions' => [
+                    '$value===' => '\'x\'|\'y\'',
+                ],
+            ],
+            'defineInBothBranchesOfAnIf' => [
+                'code' => '<?php
+                    if (rand(0, 1)) {
+                        define("CHOICE", 1);
+                    } else {
+                        define("CHOICE", 2);
+                    }
+
+                    $value = CHOICE;',
+                'assertions' => [
+                    '$value===' => '1|2',
+                ],
+            ],
             'classConstantFromAShiftOfANonLiteral' => [
                 'code' => '<?php
                     class Card
@@ -2438,6 +2548,33 @@ final class ConstantTest extends TestCase
                     class FooBar implements FooInterface, BarInterface {}
                     PHP,
             ],
+            'staticClassConstantComparedWithNullIsNarrowedInTheBranch' => [
+                'code' => '<?php
+                    function greet(string $name = "default"): void {
+                        echo $name;
+                    }
+
+                    abstract class Base {
+                        /** @var string|null */
+                        const NAME = null;
+
+                        public static function ternary(): void {
+                            static::NAME !== null ? greet(static::NAME) : greet();
+                        }
+
+                        public static function branch(): void {
+                            if (static::NAME !== null) {
+                                greet(static::NAME);
+                            }
+                        }
+                    }
+
+                    final class Child extends Base {
+                        const NAME = "child";
+                    }
+
+                    Child::ternary();',
+            ],
         ];
     }
 
@@ -3096,6 +3233,40 @@ final class ConstantTest extends TestCase
                 'error_message' => 'ParseError',
                 'error_levels' => [],
                 'php_version' => '8.2',
+            ],
+            'narrowingAStaticClassConstantDoesNotNarrowSelf' => [
+                'code' => '<?php
+                    function greet(string $name): void {
+                        echo $name;
+                    }
+
+                    abstract class Base {
+                        /** @var string|null */
+                        const NAME = null;
+
+                        public static function run(): void {
+                            if (static::NAME !== null) {
+                                greet(self::NAME);
+                            }
+                        }
+                    }',
+                'error_message' => 'NullArgument - src' . DIRECTORY_SEPARATOR . 'somefile.php:12:39',
+            ],
+            'staticClassConstantIsNullableOutsideTheCheck' => [
+                'code' => '<?php
+                    function greet(string $name): void {
+                        echo $name;
+                    }
+
+                    abstract class Base {
+                        /** @var string|null */
+                        const NAME = null;
+
+                        public static function run(): void {
+                            greet(static::NAME);
+                        }
+                    }',
+                'error_message' => 'PossiblyNullArgument - src' . DIRECTORY_SEPARATOR . 'somefile.php:11:35',
             ],
         ];
     }

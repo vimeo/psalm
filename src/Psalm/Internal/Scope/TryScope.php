@@ -26,6 +26,13 @@ final class TryScope
     public array $catch_classes = [];
 
     /**
+     * The classes of the catches that can continue after the try (the others always return or throw)
+     *
+     * @var list<string>
+     */
+    public array $continuing_catch_classes = [];
+
+    /**
      * The try the body of this one is in
      */
     public ?TryScope $outer = null;
