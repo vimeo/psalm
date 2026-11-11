@@ -1013,15 +1013,15 @@ final class ArithmeticOpAnalyzer
         } elseif ($operation instanceof PhpParser\Node\Expr\BinaryOp\BitwiseXor) {
             $result = $operand1 ^ $operand2;
         } elseif ($operation instanceof PhpParser\Node\Expr\BinaryOp\ShiftLeft) {
-            // a shift by a negative number always throws
-            if ($operand2 < 0) {
+            // a shift by a negative number always throws (a float count is truncated to int first)
+            if ($operand2 <= -1) {
                 return Type::getNever();
             }
 
             $result = $operand1 << $operand2;
         } elseif ($operation instanceof PhpParser\Node\Expr\BinaryOp\ShiftRight) {
-            // a shift by a negative number always throws
-            if ($operand2 < 0) {
+            // a shift by a negative number always throws (a float count is truncated to int first)
+            if ($operand2 <= -1) {
                 return Type::getNever();
             }
 
