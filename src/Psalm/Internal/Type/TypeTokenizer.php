@@ -208,16 +208,11 @@ final class TypeTokenizer
 
                 $was_char = false;
 
-                if ($char === '\\'
+                // an escape sequence stays as written, it is read when the literal is parsed
+                $escaped = $char === '\\'
                     && !$escaped
                     && $i < $c - 1
-                    && ($chars[$i + 1] === $quote_char || $chars[$i + 1] === '\\')
-                ) {
-                    $escaped = true;
-                    continue;
-                }
-
-                $escaped = false;
+                    && ($chars[$i + 1] === $quote_char || $chars[$i + 1] === '\\');
 
                 $type_tokens[$rtc][0] .= $char;
 
