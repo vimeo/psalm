@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Psalm\Internal\Scope;
 
 use Psalm\Context;
+use Psalm\Storage\Assertion;
 use Psalm\Type\Union;
 
 /**
@@ -13,6 +14,13 @@ use Psalm\Type\Union;
 final class LoopScope
 {
     public int $iteration_count = 0;
+
+    /**
+     * What the condition being false says of the variables, when the loop has no break
+     *
+     * @var array<string, list<list<Assertion>>>
+     */
+    public array $exit_truths = [];
 
     /**
      * @var array<string, Union>

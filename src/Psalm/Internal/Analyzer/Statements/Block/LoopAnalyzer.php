@@ -19,6 +19,7 @@ use Psalm\Internal\PhpVisitor\AssignmentMapVisitor;
 use Psalm\Internal\PhpVisitor\NodeCleanerVisitor;
 use Psalm\Internal\Scope\LoopScope;
 use Psalm\IssueBuffer;
+use Psalm\Storage\Assertion;
 use Psalm\Type;
 use Psalm\Type\Reconciler;
 use Psalm\Type\Union;
@@ -543,6 +544,7 @@ final class LoopAnalyzer
             }
 
             $negated_pre_condition_types = Algebra::getTruthsFromFormula($negated_pre_condition_clauses);
+            $loop_scope->exit_truths = $negated_pre_condition_types;
 
             if ($negated_pre_condition_types) {
                 $changed_var_ids = [];
@@ -700,6 +702,7 @@ final class LoopAnalyzer
                     $evaluated_condition,
                     $context,
                     $inner_loop_context,
+                    $loop_scope->exit_truths,
                 );
             }
         }
@@ -725,12 +728,16 @@ final class LoopAnalyzer
 
     /**
      * Defines the variables the expression assigns whenever it is evaluated, with the type of what they are assigned
+     * (and what the condition being false says of it, where the loop is only left by the condition)
+     *
+     * @param array<string, list<list<Assertion>>> $exit_truths
      */
     private static function setVarsAssignedInCondition(
         StatementsAnalyzer $statements_analyzer,
         PhpParser\Node\Expr $expr,
         Context $context,
         Context $inner_loop_context,
+        array $exit_truths,
     ): void {
         if ($expr instanceof PhpParser\Node\Expr\Assign) {
             if ($expr->var instanceof PhpParser\Node\Expr\Variable && is_string($expr->var->name)) {
@@ -741,6 +748,26 @@ final class LoopAnalyzer
                     && !isset($context->vars_in_scope[$var_id])
                     && isset($inner_loop_context->vars_in_scope[$var_id])
                 ) {
+                    // the loop was left because the condition is false: that is true of what was assigned
+                    if (isset($exit_truths[$var_id])) {
+                        $changed_var_ids = [];
+
+                        [$reconciled_vars, $_] = Reconciler::reconcileKeyedTypes(
+                            [$var_id => $exit_truths[$var_id]],
+                            [],
+                            [$var_id => $assigned_type],
+                            [],
+                            $changed_var_ids,
+                            [],
+                            $statements_analyzer,
+                            [],
+                            true,
+                            new CodeLocation($statements_analyzer->getSource(), $expr),
+                        );
+
+                        $assigned_type = $reconciled_vars[$var_id] ?? $assigned_type;
+                    }
+
                     // the type of the value, with the data flow of the variable
                     $context->vars_in_scope[$var_id] = $assigned_type->setParentNodes(
                         $inner_loop_context->vars_in_scope[$var_id]->parent_nodes,
@@ -748,11 +775,29 @@ final class LoopAnalyzer
                 }
             }
 
-            self::setVarsAssignedInCondition($statements_analyzer, $expr->expr, $context, $inner_loop_context);
+            self::setVarsAssignedInCondition(
+                $statements_analyzer,
+                $expr->expr,
+                $context,
+                $inner_loop_context,
+                $exit_truths,
+            );
         } elseif ($expr instanceof PhpParser\Node\Expr\BooleanNot) {
-            self::setVarsAssignedInCondition($statements_analyzer, $expr->expr, $context, $inner_loop_context);
+            self::setVarsAssignedInCondition(
+                $statements_analyzer,
+                $expr->expr,
+                $context,
+                $inner_loop_context,
+                $exit_truths,
+            );
         } elseif ($expr instanceof PhpParser\Node\Expr\BinaryOp) {
-            self::setVarsAssignedInCondition($statements_analyzer, $expr->left, $context, $inner_loop_context);
+            self::setVarsAssignedInCondition(
+                $statements_analyzer,
+                $expr->left,
+                $context,
+                $inner_loop_context,
+                $exit_truths,
+            );
 
             // the right operand of a short-circuiting operator may not be evaluated
             if (!$expr instanceof PhpParser\Node\Expr\BinaryOp\BooleanAnd
@@ -761,7 +806,13 @@ final class LoopAnalyzer
                 && !$expr instanceof PhpParser\Node\Expr\BinaryOp\LogicalOr
                 && !$expr instanceof PhpParser\Node\Expr\BinaryOp\Coalesce
             ) {
-                self::setVarsAssignedInCondition($statements_analyzer, $expr->right, $context, $inner_loop_context);
+                self::setVarsAssignedInCondition(
+                    $statements_analyzer,
+                    $expr->right,
+                    $context,
+                    $inner_loop_context,
+                    $exit_truths,
+                );
             }
         }
     }

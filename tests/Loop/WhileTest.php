@@ -21,6 +21,44 @@ final class WhileTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'variableAssignedInANegatedWhileConditionIsWhatTheConditionLeavesOfItAfterTheLoop' => [
+                'code' => '<?php
+                    /** @return Slot|false */
+                    function acquire() {
+                        return rand(0, 1) ? new Slot() : false;
+                    }
+
+                    final class Slot {
+                        public function use(): void {}
+                    }
+
+                    function nextLine(): string|false {
+                        return false;
+                    }
+
+                    while (!($slot = acquire())) {
+                        usleep(10);
+                    }
+
+                    $slot->use();
+
+                    while (($line = nextLine()) !== false) {
+                        echo $line;
+                    }
+
+                    while (!($other = acquire())) {
+                        if (rand(0, 1)) {
+                            break;
+                        }
+                    }',
+                'assertions' => [
+                    '$slot===' => 'Slot',
+                    '$line===' => 'false',
+                    '$other===' => 'Slot|false',
+                ],
+                'ignored_issues' => ['RedundantCondition', 'UnusedVariable', 'MixedAssignment'],
+                'php_version' => '8.2',
+            ],
             'variableAssignedInTheWhileConditionIsDefinedAfterTheLoop' => [
                 'code' => '<?php
                     function next_int(): int {
