@@ -1929,7 +1929,7 @@ final class ClassTest extends TestCase
                     $leaf = Leaf::empty();
                     $leaf->onlyOnLeaf();',
                 'assertions' => [
-                    '$leaf===' => 'Leaf<T:Leaf as mixed>',
+                    '$leaf===' => 'Leaf<mixed>',
                 ],
                 'ignored_issues' => [],
                 'php_version' => '8.0',

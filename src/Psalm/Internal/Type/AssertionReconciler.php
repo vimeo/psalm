@@ -795,6 +795,123 @@ final class AssertionReconciler extends Reconciler
         return [$type_1_atomic, $type_2_atomic];
     }
 
+    /**
+     * Narrows each type argument of the first generic type with the same one of the second
+     *
+     * @param TGenericObject|TArray|TIterable $atomic_1
+     * @param TGenericObject|TArray|TIterable $atomic_2
+     * @return TGenericObject|TArray|TIterable|null
+     */
+    private static function filterTypeParamsWithAnother(
+        Codebase $codebase,
+        Atomic $atomic_1,
+        Atomic $atomic_2,
+        bool &$any_scalar_type_match_found,
+    ): ?Atomic {
+        $type_1_params = $atomic_1->type_params;
+        foreach ($atomic_2->type_params as $i => $type_2_param) {
+            $type_1_param = $type_1_params[$i];
+
+            $type_2_param_id = $type_2_param->getId();
+
+            $type_2_param = self::filterTypeWithAnother(
+                $codebase,
+                $type_1_param,
+                $type_2_param,
+                $any_scalar_type_match_found,
+            );
+
+            if ($type_2_param === null) {
+                return null;
+            }
+
+            if ($type_1_params[$i]->getId() !== $type_2_param_id) {
+                $type_1_params[$i] = $type_2_param;
+            }
+        }
+
+        /** @psalm-suppress InvalidArgument */
+        return $atomic_1->setTypeParams(
+            $type_1_params,
+        );
+    }
+
+    /**
+     * Narrows each property of a keyed array with the value type of an array or iterable
+     *
+     * @param TArray|TIterable $iterable
+     */
+    private static function filterKeyedArrayWithIterable(
+        Codebase $codebase,
+        TKeyedArray $keyed,
+        Atomic $iterable,
+        bool &$any_scalar_type_match_found,
+    ): ?Atomic {
+        $type_2_param = $iterable->type_params[1];
+        $type_1_properties = $keyed->properties;
+        foreach ($type_1_properties as &$type_1_param) {
+            $type_2_param = self::filterTypeWithAnother(
+                $codebase,
+                $type_1_param,
+                $type_2_param,
+                $any_scalar_type_match_found,
+            );
+
+            if ($type_2_param === null) {
+                return null;
+            }
+
+            if ($type_1_param->getId() !== $type_2_param->getId()) {
+                $type_1_param = $type_2_param->setPossiblyUndefined($type_1_param->possibly_undefined);
+            }
+        }
+        unset($type_1_param);
+
+        if ($keyed->fallback_params === null) {
+            $fallback_types = null;
+        } else {
+            //any fallback type is now the value of iterable
+            $fallback_types = [$keyed->fallback_params[0], $type_2_param];
+        }
+
+        $filtered_atomic_type = TKeyedArray::make(
+            $type_1_properties,
+            $keyed->class_strings,
+            $fallback_types,
+            $keyed->is_list,
+            $keyed->from_docblock,
+        );
+
+        return $filtered_atomic_type instanceof TKeyedArray
+            ? $filtered_atomic_type->setIsCallable($keyed->is_callable)
+            : $filtered_atomic_type;
+    }
+
+    /**
+     * `$this instanceof Child` narrows a late static `$this` to a `Child` that is still late static
+     *
+     * @psalm-pure
+     */
+    private static function keepLateStatic(?Atomic $refined, bool $was_static): ?Atomic
+    {
+        return $was_static && $refined instanceof TNamedObject ? $refined->setIsStatic(true, true) : $refined;
+    }
+
+    /**
+     * Whether `$child` is a class extending the class of the late static `$ancestor` that is not contained by it, as
+     * when it fixes the template arguments of the ancestor (`@extends Bag<string>`) of a templated `$this`
+     *
+     * @psalm-assert-if-true TNamedObject $child
+     */
+    private static function isChildOfLateStatic(Codebase $codebase, Atomic $ancestor, Atomic $child): bool
+    {
+        return $ancestor instanceof TNamedObject
+            && $child instanceof TNamedObject
+            && $codebase->classExists($child->value)
+            && $codebase->classlikes->classExtends($child->value, $ancestor->value)
+            && self::childMayHaveTypeArguments($codebase, $child, $ancestor);
+    }
+
     private static function filterAtomicWithAnother(
         Atomic &$type_1_atomic,
         Atomic $type_2_atomic,
@@ -853,7 +970,7 @@ final class AssertionReconciler extends Reconciler
                 $atomic_comparison_results->type_coerced ?? false,
             );
 
-            return $type_1_is_static && $refined instanceof TNamedObject ? $refined->setIsStatic(true, true) : $refined;
+            return self::keepLateStatic($refined, $type_1_is_static);
         }
 
         $atomic_comparison_results = new TypeComparisonResult();
@@ -875,7 +992,7 @@ final class AssertionReconciler extends Reconciler
                 $atomic_comparison_results->type_coerced ?? false,
             );
 
-            return $type_1_is_static && $refined instanceof TNamedObject ? $refined->setIsStatic(true, true) : $refined;
+            return self::keepLateStatic($refined, $type_1_is_static);
         }
 
         $matching_atomic_type = null;
@@ -893,14 +1010,7 @@ final class AssertionReconciler extends Reconciler
             return $type_2_atomic->addIntersectionType($type_1_atomic);
         }
 
-        // a child that fixes the template arguments (`@extends Bag<string>`) isn't contained by a templated `$this`
-        if ($type_1_is_static
-            && $type_1_atomic instanceof TNamedObject
-            && $type_2_atomic instanceof TNamedObject
-            && $codebase->classExists($type_2_atomic->value)
-            && $codebase->classlikes->classExtends($type_2_atomic->value, $type_1_atomic->value)
-            && self::childMayHaveTypeArguments($codebase, $type_2_atomic, $type_1_atomic)
-        ) {
+        if ($type_1_is_static && self::isChildOfLateStatic($codebase, $type_1_atomic, $type_2_atomic)) {
             return $type_2_atomic->setIsStatic(true, true);
         }
 
@@ -976,32 +1086,18 @@ final class AssertionReconciler extends Reconciler
                 || $type_1_atomic instanceof TIterable)
             && count($type_2_atomic->type_params) === count($type_1_atomic->type_params)
         ) {
-            $type_1_params = $type_1_atomic->type_params;
-            foreach ($type_2_atomic->type_params as $i => $type_2_param) {
-                $type_1_param = $type_1_params[$i];
+            $filtered_type_params_atomic = self::filterTypeParamsWithAnother(
+                $codebase,
+                $type_1_atomic,
+                $type_2_atomic,
+                $any_scalar_type_match_found,
+            );
 
-                $type_2_param_id = $type_2_param->getId();
-
-                $type_2_param = self::filterTypeWithAnother(
-                    $codebase,
-                    $type_1_param,
-                    $type_2_param,
-                    $any_scalar_type_match_found,
-                );
-
-                if ($type_2_param === null) {
-                    return null;
-                }
-
-                if ($type_1_params[$i]->getId() !== $type_2_param_id) {
-                    $type_1_params[$i] = $type_2_param;
-                }
+            if ($filtered_type_params_atomic === null) {
+                return null;
             }
 
-            /** @psalm-suppress InvalidArgument */
-            $type_1_atomic = $type_1_atomic->setTypeParams(
-                $type_1_params,
-            );
+            $type_1_atomic = $filtered_type_params_atomic;
 
             $matching_atomic_type = $type_1_atomic;
             $atomic_comparison_results->type_coerced = true;
@@ -1041,43 +1137,17 @@ final class AssertionReconciler extends Reconciler
                 || $type_2_atomic instanceof TIterable)
             && $type_1_atomic instanceof TKeyedArray
         ) {
-            $type_2_param = $type_2_atomic->type_params[1];
-            $type_1_properties = $type_1_atomic->properties;
-            foreach ($type_1_properties as &$type_1_param) {
-                $type_2_param = self::filterTypeWithAnother(
-                    $codebase,
-                    $type_1_param,
-                    $type_2_param,
-                    $any_scalar_type_match_found,
-                );
-
-                if ($type_2_param === null) {
-                    return null;
-                }
-
-                if ($type_1_param->getId() !== $type_2_param->getId()) {
-                    $type_1_param = $type_2_param->setPossiblyUndefined($type_1_param->possibly_undefined);
-                }
-            }
-            unset($type_1_param);
-
-            if ($type_1_atomic->fallback_params === null) {
-                $fallback_types = null;
-            } else {
-                //any fallback type is now the value of iterable
-                $fallback_types = [$type_1_atomic->fallback_params[0], $type_2_param];
-            }
-
-            $filtered_atomic_type = TKeyedArray::make(
-                $type_1_properties,
-                $type_1_atomic->class_strings,
-                $fallback_types,
-                $type_1_atomic->is_list,
-                $type_1_atomic->from_docblock,
+            $matching_atomic_type = self::filterKeyedArrayWithIterable(
+                $codebase,
+                $type_1_atomic,
+                $type_2_atomic,
+                $any_scalar_type_match_found,
             );
-            $matching_atomic_type = $filtered_atomic_type instanceof TKeyedArray
-                ? $filtered_atomic_type->setIsCallable($type_1_atomic->is_callable)
-                : $filtered_atomic_type;
+
+            if ($matching_atomic_type === null) {
+                return null;
+            }
+
             $atomic_comparison_results->type_coerced = true;
         }
 
