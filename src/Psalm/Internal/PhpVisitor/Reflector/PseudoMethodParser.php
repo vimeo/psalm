@@ -139,7 +139,9 @@ final class PseudoMethodParser
                 if (preg_match('/^ ?: ?(\S.*)$/s', $after_paren, $return_matches)
                     && isset($return_matches[1])
                 ) {
-                    $method_entry .= ':' . CommentAnalyzer::splitDocLine($return_matches[1])[0];
+                    $method_entry .= ':' . CommentAnalyzer::sanitizeDocblockType(
+                        CommentAnalyzer::splitDocLine($return_matches[1])[0],
+                    );
                 }
             }
         }
