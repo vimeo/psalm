@@ -19,6 +19,7 @@ use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\Internal\Clause;
 use Psalm\Internal\Scope\IfScope;
 use Psalm\Internal\Type\AssertionReconciler;
+use Psalm\Internal\Type\Comparator\UnionTypeComparator;
 use Psalm\Node\Expr\VirtualBooleanNot;
 use Psalm\Storage\Assertion\Truthy;
 use Psalm\Type;
@@ -303,7 +304,11 @@ final class TernaryAnalyzer
 
         //if the same var was assigned in both branches
         foreach ($assign_all as $var_id => $_) {
-            if (isset($if_context->vars_in_scope[$var_id]) && isset($t_else_context->vars_in_scope[$var_id])) {
+            if (isset($if_context->vars_in_scope[$var_id])
+                && isset($t_else_context->vars_in_scope[$var_id])
+                && !(self::keepsOuterMixedType($statements_analyzer, $context, $if_context, $var_id)
+                    && self::keepsOuterMixedType($statements_analyzer, $context, $t_else_context, $var_id))
+            ) {
                 $context->vars_in_scope[$var_id] = Type::combineUnionTypes(
                     $if_context->vars_in_scope[$var_id],
                     $t_else_context->vars_in_scope[$var_id],
@@ -320,6 +325,12 @@ final class TernaryAnalyzer
 
         //these vars were changed in both branches
         foreach ($redef_all as $redef_var_id) {
+            if (self::keepsOuterMixedType($statements_analyzer, $context, $if_context, $redef_var_id)
+                && self::keepsOuterMixedType($statements_analyzer, $context, $t_else_context, $redef_var_id)
+            ) {
+                continue;
+            }
+
             $context->vars_in_scope[$redef_var_id] = Type::combineUnionTypes(
                 $if_context->vars_in_scope[$redef_var_id],
                 $t_else_context->vars_in_scope[$redef_var_id],
@@ -328,7 +339,9 @@ final class TernaryAnalyzer
 
         //these vars were changed in the if and existed before
         foreach ($redef_var_ifs as $redef_var_ifs_id) {
-            if (isset($context->vars_in_scope[$redef_var_ifs_id])) {
+            if (isset($context->vars_in_scope[$redef_var_ifs_id])
+                && !self::keepsOuterMixedType($statements_analyzer, $context, $if_context, $redef_var_ifs_id)
+            ) {
                 $context->vars_in_scope[$redef_var_ifs_id] = Type::combineUnionTypes(
                     $context->vars_in_scope[$redef_var_ifs_id],
                     $if_context->vars_in_scope[$redef_var_ifs_id],
@@ -338,7 +351,9 @@ final class TernaryAnalyzer
 
         //these vars were changed in the else and existed before
         foreach ($redef_var_else as $redef_var_else_id) {
-            if (isset($context->vars_in_scope[$redef_var_else_id])) {
+            if (isset($context->vars_in_scope[$redef_var_else_id])
+                && !self::keepsOuterMixedType($statements_analyzer, $context, $t_else_context, $redef_var_else_id)
+            ) {
                 $context->vars_in_scope[$redef_var_else_id] = Type::combineUnionTypes(
                     $context->vars_in_scope[$redef_var_else_id],
                     $t_else_context->vars_in_scope[$redef_var_else_id],
@@ -358,6 +373,30 @@ final class TernaryAnalyzer
         ];
 
         return self::setResultType($statements_analyzer, $stmt, $context);
+    }
+
+    /**
+     * A mixed variable that a branch only narrowed (never wrote) is still just mixed after the ternary: merging the
+     * narrowed type back in would only produce a `mixed|Foo` union, as IfAnalyzer avoids
+     */
+    private static function keepsOuterMixedType(
+        StatementsAnalyzer $statements_analyzer,
+        Context $outer_context,
+        Context $branch_context,
+        string $var_id,
+    ): bool {
+        return isset($outer_context->vars_in_scope[$var_id], $branch_context->vars_in_scope[$var_id])
+            && $outer_context->vars_in_scope[$var_id]->hasMixed()
+            // the branch context starts as a copy of the outer one, which can have assigned the variable earlier
+            && ($branch_context->assigned_var_ids[$var_id] ?? null)
+                === ($outer_context->assigned_var_ids[$var_id] ?? null)
+            && isset($branch_context->possibly_assigned_var_ids[$var_id])
+                === isset($outer_context->possibly_assigned_var_ids[$var_id])
+            && UnionTypeComparator::isContainedBy(
+                $statements_analyzer->getCodebase(),
+                $branch_context->vars_in_scope[$var_id],
+                $outer_context->vars_in_scope[$var_id],
+            );
     }
 
     private static function setResultType(
