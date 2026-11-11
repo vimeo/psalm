@@ -170,7 +170,7 @@ final class ArrayMapReturnTypeProvider implements FunctionReturnTypeProviderInte
                     : Type::combineUnionTypes($expanded_arg_type, $arg_type_part, $statements_source->getCodebase());
             }
 
-            $arg_types = $expanded_arg_type?->getAtomicTypes() ?? [];
+            $arg_types = $expanded_arg_type->getAtomicTypes();
 
             if (isset($arg_types['array'])) {
                 $array_arg_atomic_type = $arg_types['array'];

@@ -564,6 +564,11 @@ final class ClassLikeDocblockParser
                     );
                 }
 
+                $statements[0]->stmts[0]->setAttribute(
+                    'psalm_tag',
+                    isset($parsed_docblock->tags['psalm-method'][$offset]),
+                );
+
                 $info->methods[] = $statements[0]->stmts[0];
             }
         }
