@@ -58,6 +58,30 @@ final class FunctionCallTest extends TestCase
                 'ignored_issues' => [],
                 'php_version' => '8.1',
             ],
+            'propertyExistsOfAnUnknownOrDynamicPropertyIsNotReported' => [
+                'code' => '<?php
+                    class Page {
+                        public string $title = "";
+                    }
+
+                    function check(Page $page, object $object, string $name): void {
+                        if (property_exists($page, "missing")) {
+                            echo "dynamic";
+                        }
+
+                        if (property_exists($page, $name)) {
+                            echo "named";
+                        }
+
+                        if (property_exists($object, "title")) {
+                            echo "object";
+                        }
+
+                        if (property_exists(Page::class, "title") || property_exists("Other", "title")) {
+                            echo "class name";
+                        }
+                    }',
+            ],
             'arrayFilterWithAStringCallableNarrowsTheResultOfACall' => [
                 'code' => '<?php
                     /** @return list<object|null> */
@@ -3097,6 +3121,34 @@ final class FunctionCallTest extends TestCase
                 'error_message' => 'TypeDoesNotContainType',
                 'error_levels' => [],
                 'php_version' => '8.1',
+            ],
+            'propertyExistsOfADeclaredPropertyIsAlwaysTrue' => [
+                'code' => '<?php
+                    class Page {
+                        public string $title = "";
+                    }
+
+                    function check(Page $page): void {
+                        if (property_exists($page, "title")) {
+                            echo "has title";
+                        }
+                    }',
+                'error_message' => 'RedundantCondition - src' . DIRECTORY_SEPARATOR . 'somefile.php:7:29 - Operand of type true is always truthy',
+            ],
+            'negatedPropertyExistsOfAnInheritedPropertyIsAlwaysFalse' => [
+                'code' => '<?php
+                    class Page {
+                        public string $title = "";
+                    }
+
+                    final class Post extends Page {}
+
+                    function check(Post $post): void {
+                        if (!property_exists($post, "title")) {
+                            echo "no title";
+                        }
+                    }',
+                'error_message' => 'TypeDoesNotContainType - src' . DIRECTORY_SEPARATOR . 'somefile.php:9:29 - Operand of type false is always falsy',
             ],
             'functionExistsDoesNotGuardAnotherFunctionInsideAnotherNarrowingCondition' => [
                 'code' => '<?php

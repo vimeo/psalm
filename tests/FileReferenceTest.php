@@ -14,7 +14,6 @@ use Psalm\Internal\Provider\FakeFileProvider;
 use Psalm\Internal\Provider\FileReferenceCacheProvider;
 use Psalm\Internal\Provider\FileReferenceProvider;
 use Psalm\Internal\Provider\Providers;
-use Psalm\Internal\RuntimeCaches;
 use Psalm\Tests\Internal\Provider\FakeParserCacheProvider;
 
 use function array_values;
@@ -30,17 +29,7 @@ final class FileReferenceTest extends TestCase
     #[Override]
     public function setUp(): void
     {
-        RuntimeCaches::clearAll();
-
-        $this->file_provider = new FakeFileProvider();
-
-        $this->project_analyzer = new ProjectAnalyzer(
-            new TestConfig(),
-            new Providers(
-                $this->file_provider,
-                new FakeParserCacheProvider(),
-            ),
-        );
+        parent::setUp();
 
         $this->project_analyzer->getCodebase()->collectLocations();
         $this->project_analyzer->setPhpVersion('7.3', 'tests');
@@ -68,7 +57,7 @@ final class FileReferenceTest extends TestCase
         $found_references = $this->project_analyzer->getCodebase()->findReferencesToSymbol($symbol);
         $found_references = array_values($found_references);
 
-        $this->assertSame(count($found_references), count($expected_locations));
+        $this->assertCount(count($found_references), $expected_locations);
 
         foreach ($found_references as &$loc) {
             $loc = $loc->getLineNumber() . ':' . $loc->getColumn()
