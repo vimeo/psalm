@@ -55,6 +55,7 @@ use function array_diff_key;
 use function array_values;
 use function count;
 use function floor;
+use function in_array;
 use function is_int;
 use function is_numeric;
 use function max;
@@ -1122,6 +1123,23 @@ final class ArithmeticOpAnalyzer
     }
 
     /**
+     * round(), floor() and ceil() return floats, and the functions that read a number in a base ints or floats, that
+     * are whole numbers: converting them to int loses nothing
+     *
+     * @psalm-pure
+     */
+    private static function isCallOfAFunctionReturningWholeNumbers(PhpParser\Node\Expr $expr): bool
+    {
+        return $expr instanceof PhpParser\Node\Expr\FuncCall
+            && $expr->name instanceof PhpParser\Node\Name
+            && in_array(
+                strtolower($expr->name->getLast()),
+                ['round', 'floor', 'ceil', 'hexdec', 'octdec', 'bindec'],
+                true,
+            );
+    }
+
+    /**
      * A bitwise operation converts its operands to ints, dropping the fraction of a float
      */
     private static function reportFloatOperand(
@@ -1130,6 +1148,10 @@ final class ArithmeticOpAnalyzer
         Union $operand_type,
         string $side,
     ): void {
+        if (self::isCallOfAFunctionReturningWholeNumbers($operand)) {
+            return;
+        }
+
         foreach ($operand_type->getAtomicTypes() as $atomic_type) {
             if ($atomic_type instanceof TFloat
                 && !($atomic_type instanceof TLiteralFloat && self::isExactInt($atomic_type->value))

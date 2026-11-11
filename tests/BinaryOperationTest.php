@@ -1448,6 +1448,61 @@ final class BinaryOperationTest extends TestCase
                 ],
                 'ignored_issues' => ['ImplicitFloatToIntCast'],
             ],
+            'bitwiseOperationsOfWholeNumberFunctionsAreNotReported' => [
+                'code' => <<<'PHP'
+                    <?php
+                    function colors(int $r, int $g, int $b, string $octal): int {
+                        $a = round($b / 255) << 2 | (round($g / 255) << 1) | round($r / 255);
+                        $f = floor($r / 2) & 1;
+                        $c = ceil($g / 2) ^ 1;
+                        $o = octdec(substr($octal, 0, 3)) | 2;
+                        $h = hexdec(substr($octal, 0, 2)) & 255;
+                        $d = bindec(substr($octal, 0, 4)) >> 1;
+
+                        return $a + $f + $c + $o + $h + $d;
+                    }
+                    PHP,
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.3',
+            ],
+            'bitwiseOperationsOfNonNumbersGiveIntsOrStrings' => [
+                'code' => <<<'PHP'
+                    <?php
+                    /** @var array<int|string, mixed> $log */
+                    $log = [];
+                    /** @var string $numeric */
+                    $numeric = "12";
+                    /** @var string $other */
+                    $other = "ab";
+                    /** @var bool $flag */
+                    $flag = true;
+
+                    $levels = 0;
+                    foreach ($log as $type => $_) {
+                        $levels |= $type;
+                    }
+
+                    $all = true;
+                    foreach ($log as $item) {
+                        $all &= empty($item);
+                    }
+
+                    $or = 1 | $numeric;
+                    $shifted = 5 << $numeric;
+                    $strings = $numeric ^ $other;
+                    $bool = $flag | 1;
+                    PHP,
+                'assertions' => [
+                    '$levels===' => 'int',
+                    '$all===' => 'int|true',
+                    '$or===' => 'int',
+                    '$shifted===' => 'int',
+                    '$strings===' => 'string',
+                ],
+                'ignored_issues' => ['MixedAssignment', 'MixedOperand', 'InvalidOperand'],
+                'php_version' => '8.3',
+            ],
             'bitwiseOperationsOfIntegralFloatsAreNotReported' => [
                 'code' => '<?php
                     /** @var float $f */
