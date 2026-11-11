@@ -105,5 +105,5 @@ class ZipArchive implements Countable
     public const EM_AES_192 = 258;
     public const EM_AES_256 = 259;
     public const EM_UNKNOWN = 65535;
-    public const LIBZIP_VERSION = 1.7.3;
+    public const LIBZIP_VERSION = '1.7.3';
 }
