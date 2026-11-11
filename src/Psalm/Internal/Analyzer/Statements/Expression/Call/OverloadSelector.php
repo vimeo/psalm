@@ -22,29 +22,30 @@ use function count;
 final class OverloadSelector
 {
     /**
-     * The offset of the first of the overloads (`@method` of one name, `@psalm-overload`) whose parameters accept the
-     * arguments of the call, null when none does
+     * The first of the overloads (`@method` of one name, `@psalm-overload`) whose parameters accept the arguments of
+     * the call; when none does, the last declared, which reports the issues
      *
+     * @template T of FunctionLikeStorage
      * @param list<PhpParser\Node\Arg> $args
-     * @param list<FunctionLikeStorage> $overloads
-     * @return int<0, max>|null
+     * @param non-empty-list<T> $overloads
+     * @return T
      */
-    public static function findOffset(
+    public static function select(
         StatementsAnalyzer $statements_analyzer,
         Codebase $codebase,
         array $args,
         Context $context,
         array $overloads,
-    ): ?int {
+    ): FunctionLikeStorage {
         $arg_types = self::getArgTypes($statements_analyzer, $args, $context);
 
-        foreach ($overloads as $offset => $overload) {
+        foreach ($overloads as $overload) {
             if (self::overloadAcceptsArgs($codebase, $overload, $args, $arg_types)) {
-                return $offset;
+                return $overload;
             }
         }
 
-        return null;
+        return $overloads[count($overloads) - 1];
     }
 
     /**
