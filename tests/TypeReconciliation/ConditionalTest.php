@@ -5,14 +5,147 @@ declare(strict_types=1);
 namespace Psalm\Tests\TypeReconciliation;
 
 use Override;
+use Psalm\Context;
+use Psalm\IssueBuffer;
 use Psalm\Tests\TestCase;
 use Psalm\Tests\Traits\InvalidCodeAnalysisTestTrait;
 use Psalm\Tests\Traits\ValidCodeAnalysisTestTrait;
+
+use const DIRECTORY_SEPARATOR;
 
 final class ConditionalTest extends TestCase
 {
     use InvalidCodeAnalysisTestTrait;
     use ValidCodeAnalysisTestTrait;
+
+    /**
+     * @return list<int>
+     */
+    private function getMixedAssignmentLines(string $code): array
+    {
+        $this->testConfig->throw_exception = false;
+        $file_path = self::$src_dir_path . 'somefile.php';
+        $this->addFile($file_path, $code);
+
+        $this->analyzeFile($file_path, new Context());
+
+        $lines = [];
+
+        foreach (IssueBuffer::getIssuesDataForFile($file_path) as $issue) {
+            if ($issue->type === 'MixedAssignment') {
+                $lines[] = $issue->line_from;
+            }
+        }
+
+        return $lines;
+    }
+
+    public function testMixedVarNarrowedByAnElseifIsNotReportedWhereItIsAssigned(): void
+    {
+        self::assertSame(
+            [],
+            $this->getMixedAssignmentLines('<?php
+                function returnsArray(): array {
+                    return ["foo" => 42];
+                }
+
+                foreach (returnsArray() as $key => $value) {
+                    if ($key !== "foo") {
+                        throw new Exception("Unexpected array key");
+                    } elseif (!is_int($value)) {
+                        throw new Exception("Unexpected array value");
+                    }
+
+                    echo $value * 3;
+                }'),
+        );
+    }
+
+    public function testMixedVarNarrowedByTheIfOfAnElseifChainIsNotReportedWhereItIsAssigned(): void
+    {
+        self::assertSame(
+            [],
+            $this->getMixedAssignmentLines('<?php
+                function returnsArray(): array {
+                    return ["foo" => 42];
+                }
+
+                foreach (returnsArray() as $key => $value) {
+                    if (!is_int($value)) {
+                        throw new Exception("Unexpected array value");
+                    } elseif ($key !== "foo") {
+                        throw new Exception("Unexpected array key");
+                    }
+
+                    echo $value * 3;
+                }'),
+        );
+    }
+
+    public function testMixedVarNarrowedByTheLastOfThreeLeavingBranchesIsNotReportedWhereItIsAssigned(): void
+    {
+        self::assertSame(
+            [],
+            $this->getMixedAssignmentLines('<?php
+                function returnsArray(): array {
+                    return ["foo" => 42];
+                }
+
+                foreach (returnsArray() as $key => $value) {
+                    if ($key === "bar") {
+                        continue;
+                    } elseif ($key === "baz") {
+                        break;
+                    } elseif (!is_string($value)) {
+                        throw new Exception("Unexpected array value");
+                    }
+
+                    echo strlen($value);
+                }'),
+        );
+    }
+
+    public function testMixedVarIsStillReportedWhenAnElseifBranchDoesNotLeave(): void
+    {
+        self::assertSame(
+            [6],
+            $this->getMixedAssignmentLines('<?php
+                function returnsArray(): array {
+                    return ["foo" => 42];
+                }
+
+                foreach (returnsArray() as $key => $value) {
+                    if ($key !== "foo") {
+                        throw new Exception("Unexpected array key");
+                    } elseif (!is_int($value)) {
+                        echo "not an int";
+                    }
+
+                    echo $value;
+                }'),
+        );
+    }
+
+    public function testMixedVarIsStillReportedWhenTheIfBranchDoesNotLeave(): void
+    {
+        self::assertSame(
+            [6],
+            $this->getMixedAssignmentLines('<?php
+                function returnsArray(): array {
+                    return ["foo" => 42];
+                }
+
+                foreach (returnsArray() as $key => $value) {
+                    if ($key !== "foo") {
+                        echo "other key";
+                    } elseif (!is_int($value)) {
+                        throw new Exception("Unexpected array value");
+                    }
+
+                    echo $value;
+                }'),
+        );
+    }
 
     /**
      * @psalm-pure
@@ -21,6 +154,26 @@ final class ConditionalTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'identicalKeyedArraysWithAnOptionalKeyOfOverlappingTypes' => [
+                'code' => '<?php
+                    /** @param array{a?: int|string} $x */
+                    function f(array $x, string|bool $s): bool {
+                        return $x === ["a" => $s];
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'identicalKeyedArraysWithAFallbackOfOverlappingTypes' => [
+                'code' => '<?php
+                    /** @param array{a: int|string, ...<string, mixed>} $x */
+                    function f(array $x, string|bool $s): bool {
+                        return $x === ["a" => $s];
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
             'mixedStaysMixedAfterAStackedTernaryOnItsType' => [
                 'code' => '<?php
                     /** @var mixed $a */
@@ -3210,6 +3363,119 @@ final class ConditionalTest extends TestCase
                 'ignored_issues' => [],
                 'php_version' => '8.0',
             ],
+            'negatedInstanceofOfANonFinalClassKeepsIt' => [
+                'code' => '<?php
+                    class Open {}
+
+                    function f(Open $o): void {
+                        if (!$o instanceof Open) {
+                            /** @psalm-check-type-exact $o = Open */
+                        }
+                    }',
+            ],
+            'nullsafePropertyComparedToNullKeepsTheReceiverAndPropertyNotNull' => [
+                'code' => '<?php
+                    final class RangeInfo {
+                        public function __construct(public ?string $titleIdentifier) {}
+                    }
+
+                    final class Isbn {
+                        public function __construct(private ?RangeInfo $rangeInfo) {}
+
+                        public function getTitleIdentifier(): string {
+                            if ($this->rangeInfo?->titleIdentifier === null) {
+                                throw new Exception();
+                            }
+
+                            return $this->rangeInfo->titleIdentifier;
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'nullsafePropertyNotIdenticalToNull' => [
+                'code' => '<?php
+                    final class Box {
+                        public function __construct(public ?string $value) {}
+                    }
+
+                    function f(?Box $box): string {
+                        if ($box?->value !== null) {
+                            /** @psalm-check-type-exact $box = Box */
+                            return $box->value;
+                        }
+
+                        /** @psalm-check-type-exact $box = Box|null */
+                        return "";
+                    }
+
+                    function reversed(?Box $box): string {
+                        if (null !== $box?->value) {
+                            return $box->value;
+                        }
+
+                        return "";
+                    }
+
+                    function loose(?Box $box): string {
+                        if ($box?->value != null) {
+                            return $box->value;
+                        }
+
+                        return "";
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'nullsafePropertyIdenticalToNull' => [
+                'code' => '<?php
+                    final class Box {
+                        public function __construct(public ?string $value) {}
+                    }
+
+                    function reversed(?Box $box): string {
+                        if (null === $box?->value) {
+                            return "";
+                        }
+
+                        return $box->value;
+                    }
+
+                    function loose(?Box $box): string {
+                        if ($box?->value == null) {
+                            return "";
+                        }
+
+                        return $box->value;
+                    }
+
+                    function elseBranch(?Box $box): string {
+                        if ($box?->value === null) {
+                            /** @psalm-check-type-exact $box = Box|null */
+                            return "";
+                        } else {
+                            /** @psalm-check-type-exact $box = Box */
+                            return $box->value;
+                        }
+                    }
+
+                    function ternary(?Box $box): string {
+                        return $box?->value === null ? "" : $box->value;
+                    }
+
+                    function andCondition(?Box $box, bool $flag): string {
+                        if ($flag && $box?->value !== null) {
+                            return $box->value;
+                        }
+
+                        return "";
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
             'onlySingleErrorForEarlyExit' => [
                 'code' => '<?php
                     class App {
@@ -4161,25 +4427,21 @@ final class ConditionalTest extends TestCase
     public static function providerInvalidCodeParse(): iterable
     {
         return [
-            'identicalKeyedArraysWithAnOptionalKeyOfOverlappingTypesAreAKnownLimit' => [
+            'negatedInstanceofOfAnEnumOfItself' => [
                 'code' => '<?php
-                    /** @param array{a?: int|string} $x */
-                    function f(array $x, string|bool $s): bool {
-                        return $x === ["a" => $s];
+                    enum Code: int {
+                        case Ok = 0;
+                        case Fatal = 1;
+                    }
+
+                    function f(Code $code): void {
+                        if (!$code instanceof Code) {
+                            echo 1;
+                        }
                     }',
-                'error_message' => 'TypeDoesNotContainType',
+                'error_message' => 'TypeDoesNotContainType - src' . DIRECTORY_SEPARATOR . 'somefile.php:8:30 - Type Code for $code',
                 'error_levels' => [],
-                'php_version' => '8.0',
-            ],
-            'identicalKeyedArraysWithAFallbackOfOverlappingTypesAreAKnownLimit' => [
-                'code' => '<?php
-                    /** @param array{a: int|string, ...<string, mixed>} $x */
-                    function f(array $x, string|bool $s): bool {
-                        return $x === ["a" => $s];
-                    }',
-                'error_message' => 'TypeDoesNotContainType',
-                'error_levels' => [],
-                'php_version' => '8.0',
+                'php_version' => '8.1',
             ],
             'identicalKeyedArraysOfDisjointTypes' => [
                 'code' => '<?php
@@ -4279,6 +4541,23 @@ final class ConditionalTest extends TestCase
                         return strtoupper($value);
                     }',
                 'error_message' => 'PossiblyInvalidArgument',
+            ],
+            'nullsafePropertyIdenticalToNullKeepsTheReceiverNullable' => [
+                'code' => '<?php
+                    final class Box {
+                        public function __construct(public ?string $value) {}
+                    }
+
+                    function f(?Box $box): string {
+                        if ($box?->value === null) {
+                            return (string) $box->value;
+                        }
+
+                        return "";
+                    }',
+                'error_message' => 'PossiblyNullPropertyFetch',
+                'error_levels' => [],
+                'php_version' => '8.0',
             ],
             'makeNonNullableNull' => [
                 'code' => '<?php
