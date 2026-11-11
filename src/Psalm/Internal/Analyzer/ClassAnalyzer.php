@@ -119,6 +119,8 @@ use function substr;
  */
 final class ClassAnalyzer extends ClassLikeAnalyzer
 {
+    /** @var array<string, true> */
+    private static array $anonymous_classes_in_analysis = [];
     /** Set on the call of the constructor that stands for it when the initialization of properties is checked */
     public const FAKE_CONSTRUCTOR_CALL_ATTRIBUTE = 'fake_constructor_call';
 
@@ -178,6 +180,30 @@ final class ClassAnalyzer extends ClassLikeAnalyzer
     public function analyze(
         ?Context $class_context = null,
         ?Context $global_context = null,
+    ): void {
+        // an anonymous class using a trait whose method creates it again is analysed while it already is
+        if (!$this->class instanceof PhpParser\Node\Stmt\Class_ || $this->class->name !== null) {
+            $this->analyzeClass($class_context, $global_context);
+
+            return;
+        }
+
+        if (isset(self::$anonymous_classes_in_analysis[$this->fq_class_name])) {
+            return;
+        }
+
+        self::$anonymous_classes_in_analysis[$this->fq_class_name] = true;
+
+        try {
+            $this->analyzeClass($class_context, $global_context);
+        } finally {
+            unset(self::$anonymous_classes_in_analysis[$this->fq_class_name]);
+        }
+    }
+
+    private function analyzeClass(
+        ?Context $class_context,
+        ?Context $global_context,
     ): void {
         $class = $this->class;
 
