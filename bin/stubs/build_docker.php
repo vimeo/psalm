@@ -221,9 +221,6 @@ const LOCK_PATTERNS = [
 /** A version an extension reports that install-php-extensions takes back (<extension>-<version>). */
 const REPORTED_VERSION = '~^\d[A-Za-z0-9.]*$~D';
 
-const CACHE_KEY_LABEL = 'dev.psalm.stubs.cache-key';
-const COMPONENTS_LABEL = 'dev.psalm.stubs.components';
-
 // Both run on the PHP of the images, 7.0 included. The first fails the build unless PHP and every separately
 // released extension have their locked versions.
 const VERIFY_SCRIPT = '$failed = PHP_VERSION !== $argv[1];'
@@ -1110,7 +1107,6 @@ $lock = resolveVersion(resolveGlobals(loadLock(), false), $version, $refresh);
 writeLock($lock);
 
 $dockerfile = generateDockerfile($version, $lock);
-$cacheKey = hash('sha256', $dockerfile);
 $image = "ghcr.io/$actor/psalm:" . imageTag($version, $dockerfile);
 if (imageConfig($image) !== null) {
     echo "::notice title=Stub image::$image exists already, nothing to build.\n";
@@ -1120,21 +1116,12 @@ if (imageConfig($image) !== null) {
 // The layer cache is shared by every image of a version, so a changed input only rebuilds the layers after it.
 $cacheRef = "ghcr.io/$actor/psalm:internal_stubs_{$version}_buildcache";
 
-$entry = $lock['versions'][$version];
-$components = ['php=' . $entry['php'], 'install-php-extensions=' . $lock['installer']];
-foreach ($entry['extensions'] as $extension => $spec) {
-    $components[] = "$extension=$spec";
-}
-
 $context = buildContext($version, $dockerfile);
 run(sprintf(
-    'docker buildx build --push %s -f %s -t %s --label %s --label %s --cache-from %s --cache-to %s',
+    'docker buildx build --push %s -f %s -t %s --cache-from %s --cache-to %s',
     escapeshellarg($context),
     escapeshellarg("$context/Dockerfile"),
     escapeshellarg($image),
-    escapeshellarg(CACHE_KEY_LABEL . '=' . $cacheKey),
-    // base64 keeps the newline-joined list a single label value
-    escapeshellarg(COMPONENTS_LABEL . '=' . base64_encode(implode("\n", $components))),
     escapeshellarg("type=registry,ref=$cacheRef"),
     escapeshellarg("type=registry,ref=$cacheRef,mode=max,image-manifest=true,oci-mediatypes=true,ignore-error=true"),
 ));
