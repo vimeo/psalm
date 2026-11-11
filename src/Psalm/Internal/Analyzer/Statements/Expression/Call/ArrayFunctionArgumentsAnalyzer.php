@@ -268,8 +268,10 @@ final class ArrayFunctionArgumentsAnalyzer
                     $new_offset_type = Type::getInt();
                 }
 
-                if (!($arg_value_type = $statements_analyzer->node_data->getType($arg->value))
-                    || $arg_value_type->hasMixed()
+                // a value of unknown type still goes to the front of a list, which stays a list
+                if ((!($arg_value_type = $statements_analyzer->node_data->getType($arg->value))
+                        || $arg_value_type->hasMixed())
+                    && !($objectlike_list && !$arg->unpack)
                 ) {
                     $by_ref_type = Type::combineUnionTypes(
                         $by_ref_type,
@@ -308,7 +310,7 @@ final class ArrayFunctionArgumentsAnalyzer
                 } else {
                     if ($objectlike_list) {
                         $properties = $objectlike_list->properties;
-                        array_unshift($properties, $arg_value_type);
+                        array_unshift($properties, $arg_value_type ?? Type::getMixed());
 
                         $by_ref_type = new Union([$objectlike_list->setProperties($properties)]);
                     } elseif ($array_type instanceof TArray && $array_type->isEmptyArray()) {
@@ -654,13 +656,13 @@ final class ArrayFunctionArgumentsAnalyzer
     ): void {
         $codebase = $statements_analyzer->getCodebase();
 
-        if ($arg->value instanceof PhpParser\Node\Expr\ArrayDimFetch) {
-            self::writeBackItemWithoutEnd($statements_analyzer, $arg->value, $context, $is_array_shift);
-
+        if ($arg->value instanceof PhpParser\Node\Expr\ArrayDimFetch
+            && self::writeBackItemWithoutEnd($statements_analyzer, $arg->value, $context, $is_array_shift)
+        ) {
             return;
         }
 
-        $var_id = ExpressionIdentifier::getVarId(
+        $var_id = ExpressionIdentifier::getExtendedVarId(
             $arg->value,
             $statements_analyzer->getFQCLN(),
             $statements_analyzer,
@@ -683,14 +685,15 @@ final class ArrayFunctionArgumentsAnalyzer
     }
 
     /**
-     * Writes the item back without its end, see isItemWrittenBack() for the items that are
+     * Writes the item back without its end if it is one that is written back (see isItemWrittenBack()), and tells
+     * whether it did
      */
     private static function writeBackItemWithoutEnd(
         StatementsAnalyzer $statements_analyzer,
         PhpParser\Node\Expr\ArrayDimFetch $item,
         Context $context,
         bool $is_array_shift,
-    ): void {
+    ): bool {
         $item_type = $statements_analyzer->node_data->getType($item);
 
         // in a loop, and in a by-reference closure which is analysed as one, the shortened item would be widened
@@ -698,7 +701,7 @@ final class ArrayFunctionArgumentsAnalyzer
             || $context->inside_loop
             || !self::isItemWrittenBack($statements_analyzer, $item)
         ) {
-            return;
+            return false;
         }
 
         // the call throws on anything but an array: afterwards the item is one
@@ -728,6 +731,8 @@ final class ArrayFunctionArgumentsAnalyzer
             $context,
             false,
         );
+
+        return true;
     }
 
     /**
@@ -948,7 +953,7 @@ final class ArrayFunctionArgumentsAnalyzer
     }
 
     /**
-     * @param  (TArray|null)[] $array_arg_types
+     * @param  array<int, TArray|null> $array_arg_types
      */
     private static function checkClosureType(
         StatementsAnalyzer $statements_analyzer,
@@ -1112,7 +1117,7 @@ final class ArrayFunctionArgumentsAnalyzer
 
     /**
      * @param  TClosure|TCallable $closure_type
-     * @param  (TArray|null)[] $array_arg_types
+     * @param  array<int, TArray|null> $array_arg_types
      */
     private static function checkClosureTypeArgs(
         StatementsAnalyzer $statements_analyzer,
@@ -1140,7 +1145,23 @@ final class ArrayFunctionArgumentsAnalyzer
             }
         }
 
-        if (count($closure_params) < $min_closure_param_count) {
+        // a variadic parameter, or func_get_args(), takes any number of arguments
+        $accepts_any_count = false;
+
+        foreach ($closure_params as $param) {
+            if ($param->is_variadic) {
+                $accepts_any_count = true;
+            }
+        }
+
+        if (!$accepts_any_count && $closure_type instanceof TClosure && $closure_type->callable_id !== null) {
+            $accepts_any_count = FunctionCallReturnTypeFetcher::getClosureStorage(
+                $statements_analyzer,
+                $closure_type->callable_id,
+            )?->variadic === true;
+        }
+
+        if (!$accepts_any_count && count($closure_params) < $min_closure_param_count) {
             $argument_text = $min_closure_param_count === 1 ? 'one argument' : $min_closure_param_count . ' arguments';
 
             IssueBuffer::maybeAdd(
@@ -1177,12 +1198,16 @@ final class ArrayFunctionArgumentsAnalyzer
             return;
         }
 
-        foreach ($closure_params as $i => $closure_param) {
-            if (!isset($array_arg_types[$i])) {
+        $last_closure_param = $closure_params ? $closure_params[count($closure_params) - 1] : null;
+
+        foreach ($array_arg_types as $i => $array_arg_type) {
+            // every array beyond the parameters is passed to the variadic one
+            $closure_param = $closure_params[$i]
+                ?? ($last_closure_param !== null && $last_closure_param->is_variadic ? $last_closure_param : null);
+
+            if ($closure_param === null || $array_arg_type === null) {
                 continue;
             }
-
-            $array_arg_type = $array_arg_types[$i];
 
             $input_type = $array_arg_type->type_params[1];
 
