@@ -43,7 +43,8 @@ final class ExpressionIdentifier
             if (count($stmt->class->getParts()) === 1
                 && in_array(strtolower($stmt->class->getFirst()), ['self', 'static', 'parent'], true)
             ) {
-                if (!$this_class_name) {
+                // `static` may be a subclass redeclaring the property: it is not the property of `self`
+                if (!$this_class_name || strtolower($stmt->class->getFirst()) === 'static') {
                     $fq_class_name = $stmt->class->getFirst();
                 } else {
                     $fq_class_name = $this_class_name;
@@ -139,6 +140,8 @@ final class ExpressionIdentifier
                     if ($object_id && $stmt->dim->name instanceof PhpParser\Node\Identifier) {
                         $offset = $object_id . '->' . $stmt->dim->name;
                     }
+                } elseif ($stmt->dim instanceof PhpParser\Node\Expr\StaticPropertyFetch) {
+                    $offset = self::getExtendedVarId($stmt->dim, $this_class_name, $source);
                 } elseif ($stmt->dim instanceof PhpParser\Node\Expr\ClassConstFetch
                     && $stmt->dim->name instanceof PhpParser\Node\Identifier
                     && $stmt->dim->class instanceof PhpParser\Node\Name
