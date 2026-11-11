@@ -23,25 +23,23 @@ final class DoTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
-            'preDecrementInConditionHoldsTheValueTheLoopExitsWith' => [
+            'doWhileConditionOnUnsetPropertyIsNotRedundant' => [
                 'code' => '<?php
-                    $i = 5;
+                    class Options {
+                        public bool $foo = false;
+                    }
+
+                    $options = new Options();
+
+                    if (random_int(0, 1)) {
+                        $options->foo = true;
+                    }
+
+                    $i = 0;
                     do {
                         echo $i;
-                    } while (--$i > 0);',
-                'assertions' => [
-                    '$i===' => 'int<0, 0>',
-                ],
-            ],
-            'postDecrementInConditionHoldsTheValueTheLoopExitsWith' => [
-                'code' => '<?php
-                    $i = 5;
-                    do {
-                        echo $i;
-                    } while ($i-- > 0);',
-                'assertions' => [
-                    '$i===' => 'int<-1, -1>',
-                ],
+                        $i++;
+                    } while ($options->foo && $i < 3);',
             ],
             'doWhileConditionAfterContinueBeforeAssignment' => [
                 'code' => '<?php
@@ -419,6 +417,26 @@ final class DoTest extends TestCase
                         echo "here";
                     } while ($code === 1);',
             ],
+            'preDecrementInConditionHoldsTheValueTheLoopExitsWith' => [
+                'code' => '<?php
+                    $i = 5;
+                    do {
+                        echo $i;
+                    } while (--$i > 0);',
+                'assertions' => [
+                    '$i===' => 'int<0, 0>',
+                ],
+            ],
+            'postDecrementInConditionHoldsTheValueTheLoopExitsWith' => [
+                'code' => '<?php
+                    $i = 5;
+                    do {
+                        echo $i;
+                    } while ($i-- > 0);',
+                'assertions' => [
+                    '$i===' => 'int<-1, -1>',
+                ],
+            ],
         ];
     }
 
@@ -429,6 +447,21 @@ final class DoTest extends TestCase
     public static function providerInvalidCodeParse(): iterable
     {
         return [
+            'doWhileConditionOnNarrowedPropertyIsRedundant' => [
+                'code' => '<?php
+                    class Options {
+                        public bool $foo = false;
+                    }
+
+                    $options = new Options();
+                    $options->foo = true;
+
+                    $i = 0;
+                    do {
+                        $i++;
+                    } while ($options->foo && $i < 3);',
+                'error_message' => 'RedundantCondition',
+            ],
             'doWhileVarWithPossibleBreakWithoutDefining' => [
                 'code' => '<?php
                     do {
