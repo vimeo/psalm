@@ -5,9 +5,16 @@ declare(strict_types=1);
 namespace Psalm\Tests\Template;
 
 use Override;
+use PhpParser\Node\Stmt\Return_;
+use Psalm\Context;
+use Psalm\Plugin\EventHandler\AfterStatementAnalysisInterface;
+use Psalm\Plugin\EventHandler\Event\AfterStatementAnalysisEvent;
 use Psalm\Tests\TestCase;
 use Psalm\Tests\Traits\InvalidCodeAnalysisTestTrait;
 use Psalm\Tests\Traits\ValidCodeAnalysisTestTrait;
+
+use function count;
+use function get_class;
 
 use const DIRECTORY_SEPARATOR;
 
@@ -15,6 +22,59 @@ final class FunctionTemplateTest extends TestCase
 {
     use InvalidCodeAnalysisTestTrait;
     use ValidCodeAnalysisTestTrait;
+
+    public function testReturnedLiteralKeepsItsOwnTypeAndProvenance(): void
+    {
+        $hook = new class implements AfterStatementAnalysisInterface {
+            /** @var array<int, array{string, int}> line => type of the returned literal, number of its parent nodes */
+            public static array $literals = [];
+
+            #[Override]
+            public static function afterStatementAnalysis(AfterStatementAnalysisEvent $event): ?bool
+            {
+                $stmt = $event->getStmt();
+
+                if ($stmt instanceof Return_ && $stmt->expr !== null) {
+                    $type = $event->getStatementsSource()->getNodeTypeProvider()->getType($stmt->expr);
+
+                    if ($type !== null) {
+                        self::$literals[$stmt->getStartLine()] = [$type->getId(), count($type->parent_nodes)];
+                    }
+                }
+
+                return null;
+            }
+        };
+
+        $hook::$literals = [];
+        $this->project_analyzer->trackTaintedInputs();
+        $this->project_analyzer->getCodebase()->config->eventDispatcher->after_statement_checks[] = get_class($hook);
+
+        $file_path = self::$src_dir_path . 'somefile.php';
+
+        $this->addFile(
+            $file_path,
+            '<?php
+                /**
+                 * @template T of int
+                 * @param T $a
+                 * @return T
+                 */
+                function run($a): int {
+                    if ($a === 15) {
+                        return 15;
+                    }
+
+                    return $a;
+                }',
+        );
+
+        $this->analyzeFile($file_path, new Context());
+
+        // the returned literal is still the literal `15`, not the template variable it is returned as (whose flow it
+        // would take over); the variable on the other return is the variable
+        $this->assertSame([9 => ['15', 0], 12 => ['T:fn-run as int', 1]], $hook::$literals);
+    }
 
     /**
      * @psalm-pure

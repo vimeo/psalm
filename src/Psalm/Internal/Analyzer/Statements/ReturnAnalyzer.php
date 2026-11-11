@@ -146,9 +146,8 @@ final class ReturnAnalyzer
             return $expr_type;
         }
 
-        $statements_analyzer->node_data->setType($expr, $template_type);
-
-        return $template_type;
+        // the value is the literal's, so is where it comes from: only its type is the variable's
+        return $template_type->setParentNodes($expr_type->parent_nodes);
     }
 
     public static function analyze(
