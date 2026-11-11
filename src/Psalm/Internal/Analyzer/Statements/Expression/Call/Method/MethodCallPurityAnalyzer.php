@@ -17,6 +17,7 @@ use Psalm\Internal\Analyzer\Statements\Expression\Call\ByRefArgumentAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\Call\CallPurityResolver;
 use Psalm\Internal\Analyzer\Statements\Expression\Call\NoDiscardAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\GlobalStateAnalyzer;
+use Psalm\Internal\Analyzer\Statements\ReturnAnalyzer;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\Internal\MethodIdentifier;
 use Psalm\Internal\Type\TemplateResult;
@@ -32,9 +33,9 @@ use Psalm\Type\Atomic\TNamedObject;
 use Psalm\Type\Atomic\TTemplateParam;
 use Psalm\Type\Union;
 
-use function array_diff_key;
 use function array_pop;
 use function array_values;
+use function strtolower;
 
 /**
  * @internal
@@ -290,20 +291,40 @@ final class MethodCallPurityAnalyzer
     }
 
     /**
-     * Drops the flag, as a trait's call node is analyzed again for each class using it. Unset rather
-     * than false, because the attributes of a static call are copied onto its synthetic method call.
+     * The nodes of a trait are analyzed once per class that uses it: forget what an earlier analysis recorded
      */
-    public static function clearReturnsThis(Expr\StaticCall $stmt): void
+    public static function resetReturnsThis(Expr\StaticCall $stmt): void
     {
-        $stmt->setAttributes(array_diff_key($stmt->getAttributes(), [self::RETURNS_THIS => true]));
+        $attributes = $stmt->getAttributes();
+        unset($attributes[self::RETURNS_THIS]);
+        $stmt->setAttributes($attributes);
     }
 
     /**
-     * Flags a `parent::f()`, `self::f()` or `static::f()` call as giving back the caller's own `$this`
+     * A static call forwarded to a call of the method on `$this` returns what that call does
      */
-    public static function setReturnsThis(Expr\StaticCall $stmt, bool $returns_this): void
+    public static function forwardReturnsThis(Expr\MethodCall $forwarded_call, Expr\StaticCall $stmt): void
     {
-        $stmt->setAttribute(self::RETURNS_THIS, $returns_this);
+        $stmt->setAttribute(self::RETURNS_THIS, $forwarded_call->getAttribute(self::RETURNS_THIS, false) === true);
+    }
+
+    /**
+     * A `parent::` call of a method returning its receiver gives back the caller's own `$this`
+     */
+    public static function markStaticCallReturningThis(
+        StatementsAnalyzer $statements_analyzer,
+        Expr\StaticCall $stmt,
+        MethodIdentifier $method_id,
+        MethodStorage $method_storage,
+    ): void {
+        $stmt->setAttribute(
+            self::RETURNS_THIS,
+            ReturnAnalyzer::mustReturnThis($statements_analyzer->getCodebase(), $method_storage, $method_id)
+                && !$method_storage->is_static
+                && !$stmt->isFirstClassCallable()
+                && $stmt->class instanceof PhpParser\Node\Name
+                && strtolower($stmt->class->getFirst()) === 'parent',
+        );
     }
 
     /**
@@ -347,7 +368,7 @@ final class MethodCallPurityAnalyzer
         $stmt->setAttribute(
             self::RETURNS_THIS,
             $stmt->getAttribute(self::RETURNS_THIS, true) === true
-                && $method_storage->returns_this
+                && ReturnAnalyzer::mustReturnThis($codebase, $method_storage, $method_id)
                 && !$stmt->isFirstClassCallable()
                 && self::isReceiverThis($stmt->var),
         );
@@ -540,6 +561,15 @@ final class MethodCallPurityAnalyzer
                     (string) $method_id,
                 ),
                 $statements_analyzer->getSuppressedIssues(),
+            );
+        }
+
+        if ($method_storage->static_property_mutations !== null) {
+            $context->resetMutatedStaticProperties(
+                $method_storage->static_property_mutations,
+                $method_id->fq_class_name,
+                $codebase->methods->getAppearingMethodId($method_id)?->fq_class_name ?? $method_id->fq_class_name,
+                $codebase,
             );
         }
 

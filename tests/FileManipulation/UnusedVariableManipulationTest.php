@@ -38,6 +38,96 @@ final class UnusedVariableManipulationTest extends FileManipulationTestCase
                 'issues_to_fix' => ['UnusedVariable'],
                 'safe_types' => true,
             ],
+            'dontRemoveAnAssignmentWhoseValueIsStoredInAnUnusedArray' => [
+                'input' => '<?php
+                    $array = [
+                        "foo" => "hello",
+                    ];
+
+                    $bar = $array["foo"];
+                    unset($array["foo"]);
+                    $array["bar"] = $bar;',
+                'output' => '<?php
+                    $array = [
+                        "foo" => "hello",
+                    ];
+
+                    $bar = $array["foo"];
+                    unset($array["foo"]);
+                    $array["bar"] = $bar;',
+                'php_version' => '7.1',
+                'issues_to_fix' => ['UnusedVariable'],
+                'safe_types' => true,
+            ],
+            'removeUnusedVariablesStoredIntoAnArrayLiteral' => [
+                'input' => '<?php
+                    class A {
+                        public function foo() : void {
+                            $x = 1;
+                            $y = [$x];
+                        }
+                    }',
+                'output' => '<?php
+                    class A {
+                        public function foo() : void {
+                        }
+                    }',
+                'php_version' => '7.1',
+                'issues_to_fix' => ['UnusedVariable'],
+                'safe_types' => true,
+            ],
+            'dontRemoveAssignmentReadAfterPossiblyUndefinedFix' => [
+                'input' => '<?php
+                    function foo(int $i): void {
+                        if ($i === 1) {
+                            $b = 3;
+                        }
+                        echo "Hello world\n";
+
+                        if ($i === 1) {
+                            echo $b;
+                        }
+                    }',
+                'output' => '<?php
+                    function foo(int $i): void {
+                        $b = null;
+                        if ($i === 1) {
+                            $b = 3;
+                        }
+                        echo "Hello world\n";
+
+                        if ($i === 1) {
+                            echo $b;
+                        }
+                    }',
+                'php_version' => '7.1',
+                'issues_to_fix' => ['UnusedVariable', 'PossiblyUndefinedVariable'],
+                'safe_types' => true,
+            ],
+            'dontRemoveGlobalAssignmentReadAfterPossiblyUndefinedFix' => [
+                'input' => '<?php
+                    if (rand(0, 1)) {
+                        $b = 3;
+                    }
+                    echo "Hello world\n";
+
+                    if (rand(0, 1)) {
+                        echo $b;
+                    }',
+                'output' => '<?php
+                    $b = null;
+                    if (rand(0, 1)) {
+                        $b = 3;
+                    }
+                    echo "Hello world\n";
+
+                    if (rand(0, 1)) {
+                        echo $b;
+                    }',
+                'php_version' => '7.1',
+                'issues_to_fix' => ['UnusedVariable', 'PossiblyUndefinedGlobalVariable'],
+                'safe_types' => true,
+            ],
             'dontRemovePossiblyUndefined' => [
                 'input' => '<?php
                     function foo(bool $b): void {
