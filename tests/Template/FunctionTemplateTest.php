@@ -23,39 +23,62 @@ final class FunctionTemplateTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
-            'conditionalParamBeforeTheTemplateParamKeepsTheTemplateBound' => [
-                'code' => '<?php
-                    /**
-                     * @template T of "a"|"b"
-                     * @param (T is "a" ? string : null) $conditional
-                     * @param T $type
-                     * @return T
-                     */
-                    function conditionalFirst(?string $conditional, string $type): string {
-                        return $type;
-                    }
-
-                    $r = conditionalFirst("some-string", "a");',
-                'assertions' => [
-                    '$r===' => '\'a\'',
-                ],
-            ],
-            'conditionalParamBeforeTheTemplateParamOfAnUnconstrainedTemplate' => [
+            'typePredicatesOnATemplateBoundedByATemplate' => [
                 'code' => '<?php
                     /**
                      * @template T
-                     * @param (T is int ? string : null) $conditional
-                     * @param T $value
-                     * @return T
+                     * @template U of T
+                     * @param U $v
                      */
-                    function conditionalFirst(?string $conditional, $value) {
-                        return $value;
-                    }
+                    function f($v): int {
+                        $count = 0;
 
-                    $r = conditionalFirst(null, 5);',
-                'assertions' => [
-                    '$r===' => '5',
-                ],
+                        if (is_string($v)) {
+                            $count++;
+                        }
+
+                        if (is_int($v)) {
+                            $count++;
+                        }
+
+                        if (is_float($v)) {
+                            $count++;
+                        }
+
+                        if (is_numeric($v)) {
+                            $count++;
+                        }
+
+                        if (is_scalar($v)) {
+                            $count++;
+                        }
+
+                        if (is_bool($v)) {
+                            $count++;
+                        }
+
+                        if ($v === true) {
+                            $count++;
+                        }
+
+                        if ($v === false) {
+                            $count++;
+                        }
+
+                        if (is_object($v)) {
+                            $count++;
+                        }
+
+                        if (is_array($v)) {
+                            $count++;
+                        }
+
+                        if (is_callable($v)) {
+                            $count++;
+                        }
+
+                        return $count;
+                    }',
             ],
             'classStringTemplateOfAParamUsedInAConditionalReturnType' => [
                 'code' => '<?php
@@ -2542,6 +2565,40 @@ final class FunctionTemplateTest extends TestCase
                     }',
                 'assertions' => [],
             ],
+            'conditionalParamBeforeTheTemplateParamKeepsTheTemplateBound' => [
+                'code' => '<?php
+                    /**
+                     * @template T of "a"|"b"
+                     * @param (T is "a" ? string : null) $conditional
+                     * @param T $type
+                     * @return T
+                     */
+                    function conditionalFirst(?string $conditional, string $type): string {
+                        return $type;
+                    }
+
+                    $r = conditionalFirst("some-string", "a");',
+                'assertions' => [
+                    '$r===' => '\'a\'',
+                ],
+            ],
+            'conditionalParamBeforeTheTemplateParamOfAnUnconstrainedTemplate' => [
+                'code' => '<?php
+                    /**
+                     * @template T
+                     * @param (T is int ? string : null) $conditional
+                     * @param T $value
+                     * @return T
+                     */
+                    function conditionalFirst(?string $conditional, $value) {
+                        return $value;
+                    }
+
+                    $r = conditionalFirst(null, 5);',
+                'assertions' => [
+                    '$r===' => '5',
+                ],
+            ],
         ];
     }
 
@@ -2552,6 +2609,20 @@ final class FunctionTemplateTest extends TestCase
     public static function providerInvalidCodeParse(): iterable
     {
         return [
+            'typePredicateImpossibleForATemplateBoundedByATemplate' => [
+                'code' => '<?php
+                    /**
+                     * @template T of string
+                     * @template U of T
+                     * @param U $v
+                     */
+                    function f($v): void {
+                        if (is_int($v)) {
+                            echo 1;
+                        }
+                    }',
+                'error_message' => 'DocblockTypeContradiction',
+            ],
             'templateBoundedByMixedIsBoundedByMixedAgainAfterABranchNarrowingIt' => [
                 'code' => '<?php
                     function takesInt(int $i): void {}
