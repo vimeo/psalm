@@ -115,7 +115,6 @@ use function in_array;
 use function is_int;
 use function is_numeric;
 use function ltrim;
-use function mb_chr;
 use function octdec;
 use function preg_match;
 use function preg_replace;
@@ -2850,8 +2849,27 @@ final class TypeParser
                 } elseif (isset($match[2]) && $match[2] !== '') {
                     $value .= chr((int) hexdec($match[2]));
                 } else {
-                    $code_point = mb_chr((int) hexdec($match[3] ?? '0'));
-                    $value .= $code_point === false ? '' : $code_point;
+                    $code_point = (int) hexdec($match[3] ?? '0');
+
+                    // as PHP: always UTF-8, a surrogate is encoded like any other code point
+                    if ($code_point > 0x10FFFF) {
+                        throw new TypeParseTreeException(
+                            'Invalid UTF-8 codepoint escape sequence: Codepoint too large',
+                        );
+                    }
+
+                    $value .= $code_point < 0x80
+                        ? chr($code_point)
+                        : ($code_point < 0x800
+                            ? chr(0xC0 | $code_point >> 6) . chr(0x80 | $code_point & 0x3F)
+                            : ($code_point < 0x10000
+                                ? chr(0xE0 | $code_point >> 12)
+                                    . chr(0x80 | $code_point >> 6 & 0x3F)
+                                    . chr(0x80 | $code_point & 0x3F)
+                                : chr(0xF0 | $code_point >> 18)
+                                    . chr(0x80 | $code_point >> 12 & 0x3F)
+                                    . chr(0x80 | $code_point >> 6 & 0x3F)
+                                    . chr(0x80 | $code_point & 0x3F)));
                 }
 
                 $i += strlen($match[0] ?? '');

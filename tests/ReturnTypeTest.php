@@ -7,6 +7,10 @@ namespace Psalm\Tests;
 use Override;
 use Psalm\Tests\Traits\InvalidCodeAnalysisTestTrait;
 use Psalm\Tests\Traits\ValidCodeAnalysisTestTrait;
+use Psalm\Type;
+use Psalm\Type\Atomic\TLiteralString;
+
+use function mb_internal_encoding;
 
 use const DIRECTORY_SEPARATOR;
 
@@ -19,6 +23,23 @@ final class ReturnTypeTest extends TestCase
     {
         // PHP-Parser rejects void parameters before Psalm analyzes the body.
         $this->testInvalidCode('<?php function f(void $p): void {}', 'ParseError');
+    }
+
+    public function testUnicodeEscapeOfADocblockStringLiteralIsNotTheInternalEncoding(): void
+    {
+        $encoding = mb_internal_encoding();
+        mb_internal_encoding('ISO-8859-1');
+
+        try {
+            $type = Type::parseString('"\u{e9}\u{1F600}"');
+        } finally {
+            mb_internal_encoding($encoding);
+        }
+
+        $atomic = $type->getSingleAtomic();
+
+        self::assertInstanceOf(TLiteralString::class, $atomic);
+        self::assertSame("\u{e9}\u{1F600}", $atomic->value);
     }
 
     /**
@@ -43,6 +64,13 @@ final class ReturnTypeTest extends TestCase
                     /** @return \'\\\\\\\\\' */
                     function twoBackslashesSingleQuoted(): string {
                         return \'\\\\\\\\\';
+                    }',
+            ],
+            'docblockStringLiteralWithNonAsciiUnicodeEscapes' => [
+                'code' => '<?php
+                    /** @return "\u{e9}\u{20AC}\u{1F600}" */
+                    function nonAscii(): string {
+                        return "é€😀";
                     }',
             ],
             'docblockStringLiteralWithEscapeSequences' => [
@@ -2182,6 +2210,14 @@ final class ReturnTypeTest extends TestCase
     public static function providerInvalidCodeParse(): iterable
     {
         return [
+            'docblockStringLiteralWithATooLargeUnicodeEscape' => [
+                'code' => '<?php
+                    /** @return "\u{110000}" */
+                    function tooLarge(): string {
+                        return "";
+                    }',
+                'error_message' => 'InvalidDocblock',
+            ],
             'docblockStringLiteralWithEscapeSequenceIsNotTheBackslashAndLetter' => [
                 'code' => '<?php
                     /** @return "\t" */
