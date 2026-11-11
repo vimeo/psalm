@@ -75,7 +75,7 @@ To add the types of an extension, add it to `EXTENSIONS` in `bin/stubs/build_doc
 (or to `INCLUDES`, for some PHP versions only) with its version source in `SOURCES`.
 `PIE_PACKAGES` lists the extensions installed with PIE, `EXCLUDES` the ones that
 don't build on a PHP version yet, and `PINS` the versions held back. Removing a `PINS`
-entry keeps the pinned version in the lock until the next refresh.
+entry keeps the pinned version until a refresh finds a newer one.
 
 Every push runs the "Build docker image for stubs" workflow. It adds the inputs the lock
 lacks (the newest version of an added extension), builds the images of the stale
@@ -90,7 +90,10 @@ while a stamp doesn't match.
 New releases of PHP, the extensions and install-php-extensions reach the lock only in a
 refresh: the weekly scheduled run of the workflow, or a manual run with `refresh`
 checked. It resolves every input again and opens a pull request from
-`stubs-refresh/<branch>` with the lock and callmap changes. On master (and on 6.x once it
+`stubs-refresh/<branch>` with the lock and callmap changes. A refresh never lowers a
+version install-php-extensions picked (the PECL CDN can lag behind a release); to go back
+to an older one, add a `PINS` entry.
+On master (and on 6.x once it
 gets this flow), any lock or reflected callmap change goes to that pull request instead of
 being pushed. Opening it
 needs "Allow GitHub Actions to create and approve pull requests" in the repository

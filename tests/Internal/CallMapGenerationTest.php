@@ -10,11 +10,13 @@ use Symfony\Component\Filesystem\Filesystem;
 use Symfony\Component\Process\Process;
 
 use function chmod;
+use function count;
 use function dirname;
 use function explode;
 use function file_get_contents;
 use function file_put_contents;
 use function getenv;
+use function json_decode;
 use function str_repeat;
 use function str_replace;
 use function substr_count;
@@ -218,6 +220,46 @@ final class CallMapGenerationTest extends TestCase
         } finally {
             (new Filesystem())->remove($directory);
         }
+    }
+
+    public function testProbeNeverLowersALockedPeclVersion(): void
+    {
+        $git = 'git@' . str_repeat('c', 40);
+        $process = new Process([PHP_BINARY, '-r', <<<PHP
+            register_shutdown_function(static function (): void {
+                echo json_encode([
+                    'stale CDN' => probedSpec('8.4', 'event', 'pecl@3.1.6', 'pecl@3.2.0'),
+                    'release' => probedSpec('8.4', 'event', 'pecl@3.2.1', 'pecl@3.2.0'),
+                    'release candidate' => probedSpec('8.4', 'igbinary', 'pecl@3.2.17RC1', 'pecl@3.2.16'),
+                    'new extension' => probedSpec('8.4', 'event', 'pecl@3.1.6', null),
+                    'pie@ floor' => probedSpec('7.4', 'ds', 'pecl@1.3.0', 'pie@php-ds/ext-ds:v2.0.0'),
+                    'git commit' => probedSpec('8.4', 'zmq', '$git:1.1.2', '$git:1.1.3'),
+                ]);
+            });
+            \$argv = ['build_docker.php', '--versions'];
+            require 'bin/stubs/build_docker.php';
+            PHP], dirname(__DIR__, 2));
+        $process->run();
+
+        self::assertSame(0, $process->getExitCode(), $process->getErrorOutput());
+        $lines = explode("\n", trim($process->getOutput()));
+        self::assertSame(
+            [
+                'stale CDN' => 'pecl@3.2.0',
+                'release' => 'pecl@3.2.1',
+                'release candidate' => 'pecl@3.2.17RC1',
+                'new extension' => 'pecl@3.1.6',
+                'pie@ floor' => 'pecl@1.3.0',
+                'git commit' => $git . ':1.1.2',
+            ],
+            json_decode($lines[count($lines) - 1], true),
+        );
+        self::assertSame(
+            '::warning title=Stub image lock::PHP 8.4: the probe installed event 3.1.6, older than the locked 3.2.0'
+                . ' (a stale PECL CDN, or a lower install-php-extensions pin); keeping pecl@3.2.0',
+            $lines[1],
+        );
+        self::assertCount(3, $lines);
     }
 
     /**

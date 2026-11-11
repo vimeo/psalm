@@ -698,11 +698,13 @@ function resolveVersion(array $lock, string $version, bool $refresh): array
     }
     if ($probes !== []) {
         $reported = probe($version, $lock['installer'], $php, array_map(static fn(array $probe): string => $probe[0], $probes));
+        $extensions = lockedExtensions($version);
         foreach ($probes as $base => [, $prefix]) {
             if (!preg_match(REPORTED_VERSION, $reported[$base] ?? '')) {
                 fail("PHP $version: $base reports the version " . var_export($reported[$base] ?? null, true) . ', which cannot be pinned.');
             }
-            $specs[$base] = $prefix . $reported[$base];
+            // against the committed entry, also in a refresh
+            $specs[$base] = probedSpec($version, $extensions[$base], $prefix . $reported[$base], $old['extensions'][$base] ?? null);
         }
     }
     ksort($specs);
@@ -719,6 +721,25 @@ function resolveVersion(array $lock, string $version, bool $refresh): array
 
     $lock['versions'][$version] = ['php' => $php, 'extensions' => $specs];
     return validLock($lock, "the lock resolved for PHP $version");
+}
+
+/**
+ * The lock spec of a version a probe installed. PEAR resolves an unversioned PECL extension through the PECL CDN, which
+ * can serve releases days out of date, so a lower version than the locked one keeps the locked one.
+ */
+function probedSpec(string $version, string $extension, string $probed, ?string $locked): string
+{
+    if ($locked === null
+        || !str_starts_with($probed, 'pecl@')
+        || !str_starts_with($locked, 'pecl@')
+        || version_compare(specVersion($probed), specVersion($locked), '>=')
+    ) {
+        return $probed;
+    }
+    echo "::warning title=Stub image lock::PHP $version: the probe installed $extension " . specVersion($probed)
+        . ', older than the locked ' . specVersion($locked)
+        . " (a stale PECL CDN, or a lower install-php-extensions pin); keeping $locked\n";
+    return $locked;
 }
 
 /**
