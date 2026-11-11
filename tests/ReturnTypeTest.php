@@ -390,6 +390,25 @@ final class ReturnTypeTest extends TestCase
                         }
                     }',
             ],
+            'voidFunctionThatNeverEndsIsCorrect' => [
+                'code' => '<?php
+                    function work(): void {}
+
+                    class Listener {
+                        /** @return void */
+                        public function listen() {
+                            while (true) {
+                                work();
+                            }
+                        }
+
+                        /** @return void */
+                        public function stop() {
+                            work();
+                            exit(1);
+                        }
+                    }',
+            ],
             'voidNeverDeclaredWithANeverReturningCallPathAndAnImplicitReturn' => [
                 'code' => '<?php
                     function stop(): never {
