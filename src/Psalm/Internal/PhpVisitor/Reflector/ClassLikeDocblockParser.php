@@ -182,7 +182,7 @@ final class ClassLikeDocblockParser
             foreach ($parsed_docblock->tags['mixin'] as $rawMixin) {
                 $mixin = trim($rawMixin);
                 $doc_line_parts = CommentAnalyzer::splitDocLine($mixin);
-                $mixin = $doc_line_parts[0];
+                $mixin = CommentAnalyzer::sanitizeDocblockType($doc_line_parts[0]);
 
                 if ($mixin) {
                     $info->mixins[] = $mixin;
@@ -392,7 +392,9 @@ final class ClassLikeDocblockParser
                         if (preg_match('/^ ?: ?(\S.*)$/s', $after_paren, $return_matches)
                             && isset($return_matches[1])
                         ) {
-                            $method_entry .= ':' . CommentAnalyzer::splitDocLine($return_matches[1])[0];
+                            $method_entry .= ':' . CommentAnalyzer::sanitizeDocblockType(
+                                CommentAnalyzer::splitDocLine($return_matches[1])[0],
+                            );
                         }
                     }
                 }
@@ -411,9 +413,20 @@ final class ClassLikeDocblockParser
                     throw new DocblockParseException('No @method entry specified');
                 }
 
+                // the name of the method isn't a type, even when it reads like one (`callable()`)
+                $method_name = null;
+                $tokenized_entry = $method_entry;
+
+                if (preg_match('/^([a-zA-Z_]\w*)(?= ?\()/', $method_entry, $name_matches)
+                    && isset($name_matches[1])
+                ) {
+                    $method_name = $name_matches[1];
+                    $tokenized_entry = 'psalm_method_name' . substr($method_entry, strlen($method_name));
+                }
+
                 try {
                     $method_tokens = TypeTokenizer::getFullyQualifiedTokens(
-                        $method_entry,
+                        $tokenized_entry,
                         $aliases,
                         $purity_template_map,
                     );
@@ -421,7 +434,7 @@ final class ClassLikeDocblockParser
                     if ($param_template_map !== $purity_template_map) {
                         $method_tokens = self::keepTemplatesInParamTypes(
                             $method_tokens,
-                            TypeTokenizer::getFullyQualifiedTokens($method_entry, $aliases, $param_template_map),
+                            TypeTokenizer::getFullyQualifiedTokens($tokenized_entry, $aliases, $param_template_map),
                         );
                     }
 
@@ -499,7 +512,8 @@ final class ClassLikeDocblockParser
                     }
                 }
 
-                $function_string = 'function ' . $method_tree->value . '(' . implode(', ', $args) . ')';
+                $function_string = 'function ' . ($method_name ?? $method_tree->value)
+                    . '(' . implode(', ', $args) . ')';
 
                 if ($is_static) {
                     $function_string = 'static ' . $function_string;
@@ -640,12 +654,12 @@ final class ClassLikeDocblockParser
             }
 
             if (count($line_parts) > 1) {
-                if (preg_match('/^&?\$[A-Za-z0-9_]+,?$/', $line_parts[1])
+                if (preg_match('/^&?\$[A-Za-z0-9_\x80-\xff]+[,;]?$/', $line_parts[1])
                     && $line_parts[0][0] !== '{'
                 ) {
                     $line_parts[1] = str_replace('&', '', $line_parts[1]);
 
-                    $line_parts[1] = (string) preg_replace('/,$/', '', $line_parts[1], 1);
+                    $line_parts[1] = (string) preg_replace('/[,;]$/', '', $line_parts[1], 1);
 
                     $end = $offset + strlen($line_parts[0]);
 
@@ -653,7 +667,7 @@ final class ClassLikeDocblockParser
 
                     if ($line_parts[0] === ''
                         || ($line_parts[0][0] === '$'
-                            && !preg_match('/^\$this(\||$)/', $line_parts[0]))
+                            && !preg_match('/^\$this *(\||$)/', $line_parts[0]))
                     ) {
                         throw new IncorrectDocblockException('Misplaced variable');
                     }
