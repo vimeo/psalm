@@ -23,24 +23,116 @@ final class FunctionTemplateTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
-            'methodClassStringTemplateTakesAClassOfItsBound' => [
+            'methodTemplateBoundAfterTheClassStringOfAFinalClassWasExcluded' => [
                 'code' => '<?php
-                    interface Vehicle {}
-                    class Car implements Vehicle {}
+                    interface StampInterface {}
 
-                    class Garage {
+                    final class Envelope {
                         /**
-                         * @template U of Vehicle
-                         * @param class-string<U> $class
-                         * @return list<U>
+                         * @template TStamp of StampInterface
+                         * @param class-string<TStamp> $stampFqcn
+                         * @return TStamp|null
                          */
-                        public function find(string $class): array { return []; }
+                        public function last(string $stampFqcn): ?StampInterface {
+                            return null;
+                        }
                     }
 
-                    $cars = (new Garage)->find(Car::class);',
-                'assertions' => [
-                    '$cars===' => 'list<Car>',
-                ],
+                    /** @param array<string, array{class-string<Envelope|StampInterface>, bool}> $parameters */
+                    function handle(Envelope $envelope, array $parameters): void {
+                        foreach ($parameters as [$class, $nullable]) {
+                            if (Envelope::class === $class) {
+                                echo "envelope";
+                            } elseif (null !== $stamp = $envelope->last($class)) {
+                                echo get_class($stamp);
+                            }
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'functionTemplateBoundAfterTheClassStringOfAFinalClassWasExcluded' => [
+                'code' => '<?php
+                    interface StampInterface {}
+
+                    final class Envelope {}
+
+                    /**
+                     * @template TStamp of StampInterface
+                     * @param class-string<TStamp> $stampFqcn
+                     * @return TStamp|null
+                     */
+                    function last(string $stampFqcn): ?StampInterface {
+                        return null;
+                    }
+
+                    /** @param class-string<Envelope|StampInterface> $class */
+                    function handle(string $class): void {
+                        if (Envelope::class !== $class) {
+                            last($class);
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'typePredicatesOnATemplateBoundedByATemplate' => [
+                'code' => '<?php
+                    /**
+                     * @template T
+                     * @template U of T
+                     * @param U $v
+                     */
+                    function f($v): int {
+                        $count = 0;
+
+                        if (is_string($v)) {
+                            $count++;
+                        }
+
+                        if (is_int($v)) {
+                            $count++;
+                        }
+
+                        if (is_float($v)) {
+                            $count++;
+                        }
+
+                        if (is_numeric($v)) {
+                            $count++;
+                        }
+
+                        if (is_scalar($v)) {
+                            $count++;
+                        }
+
+                        if (is_bool($v)) {
+                            $count++;
+                        }
+
+                        if ($v === true) {
+                            $count++;
+                        }
+
+                        if ($v === false) {
+                            $count++;
+                        }
+
+                        if (is_object($v)) {
+                            $count++;
+                        }
+
+                        if (is_array($v)) {
+                            $count++;
+                        }
+
+                        if (is_callable($v)) {
+                            $count++;
+                        }
+
+                        return $count;
+                    }',
             ],
             'classStringTemplateOfAParamUsedInAConditionalReturnType' => [
                 'code' => '<?php
@@ -2527,6 +2619,25 @@ final class FunctionTemplateTest extends TestCase
                     }',
                 'assertions' => [],
             ],
+            'methodClassStringTemplateTakesAClassOfItsBound' => [
+                'code' => '<?php
+                    interface Vehicle {}
+                    class Car implements Vehicle {}
+
+                    class Garage {
+                        /**
+                         * @template U of Vehicle
+                         * @param class-string<U> $class
+                         * @return list<U>
+                         */
+                        public function find(string $class): array { return []; }
+                    }
+
+                    $cars = (new Garage)->find(Car::class);',
+                'assertions' => [
+                    '$cars===' => 'list<Car>',
+                ],
+            ],
         ];
     }
 
@@ -2537,38 +2648,46 @@ final class FunctionTemplateTest extends TestCase
     public static function providerInvalidCodeParse(): iterable
     {
         return [
-            'methodClassStringTemplateRejectsAClassOutsideItsBound' => [
+            'methodTemplateBoundStillReportsTheClassStringOfANonFinalClassThatWasExcluded' => [
                 'code' => '<?php
-                    interface Vehicle {}
+                    interface StampInterface {}
 
-                    class Garage {
+                    class Envelope {}
+
+                    final class Box {
                         /**
-                         * @template U of Vehicle
-                         * @param class-string<U> $class
-                         * @return list<U>
+                         * @template TStamp of StampInterface
+                         * @param class-string<TStamp> $stampFqcn
+                         * @return TStamp|null
                          */
-                        public function find(string $class): array { return []; }
+                        public function last(string $stampFqcn): ?StampInterface {
+                            return null;
+                        }
                     }
 
-                    (new Garage)->find(Countable::class);',
-                'error_message' => 'InvalidArgument',
+                    /** @param class-string<Envelope|StampInterface> $class */
+                    function handle(Box $box, string $class): void {
+                        if (Envelope::class !== $class) {
+                            $box->last($class);
+                        }
+                    }',
+                'error_message' => 'PossiblyInvalidArgument',
+                'error_levels' => [],
+                'php_version' => '8.0',
             ],
-            'methodOfAGenericClassClassStringTemplateRejectsAClassOutsideItsBound' => [
+            'typePredicateImpossibleForATemplateBoundedByATemplate' => [
                 'code' => '<?php
-                    interface Vehicle {}
-
-                    /** @template T */
-                    class Garage {
-                        /**
-                         * @template U of Vehicle
-                         * @param class-string<U> $class
-                         * @return list<U>
-                         */
-                        public function find(string $class): array { return []; }
-                    }
-
-                    (new Garage)->find(Countable::class);',
-                'error_message' => 'InvalidArgument',
+                    /**
+                     * @template T of string
+                     * @template U of T
+                     * @param U $v
+                     */
+                    function f($v): void {
+                        if (is_int($v)) {
+                            echo 1;
+                        }
+                    }',
+                'error_message' => 'DocblockTypeContradiction',
             ],
             'templateBoundedByMixedIsBoundedByMixedAgainAfterABranchNarrowingIt' => [
                 'code' => '<?php
@@ -3262,6 +3381,39 @@ final class FunctionTemplateTest extends TestCase
                         throw new Exception();
                     }',
                 'error_message' => 'UndefinedClass - src' . DIRECTORY_SEPARATOR . 'somefile.php:3:24 - Class, interface or enum named Missing does not exist',
+            ],
+            'methodClassStringTemplateRejectsAClassOutsideItsBound' => [
+                'code' => '<?php
+                    interface Vehicle {}
+
+                    class Garage {
+                        /**
+                         * @template U of Vehicle
+                         * @param class-string<U> $class
+                         * @return list<U>
+                         */
+                        public function find(string $class): array { return []; }
+                    }
+
+                    (new Garage)->find(Countable::class);',
+                'error_message' => 'InvalidArgument',
+            ],
+            'methodOfAGenericClassClassStringTemplateRejectsAClassOutsideItsBound' => [
+                'code' => '<?php
+                    interface Vehicle {}
+
+                    /** @template T */
+                    class Garage {
+                        /**
+                         * @template U of Vehicle
+                         * @param class-string<U> $class
+                         * @return list<U>
+                         */
+                        public function find(string $class): array { return []; }
+                    }
+
+                    (new Garage)->find(Countable::class);',
+                'error_message' => 'InvalidArgument',
             ],
         ];
     }

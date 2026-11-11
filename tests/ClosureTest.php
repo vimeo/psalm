@@ -7,11 +7,13 @@ namespace Psalm\Tests;
 use Override;
 use PHPUnit\Framework\Attributes\DataProvider;
 use Psalm\Context;
+use Psalm\Internal\Analyzer\IssueData;
 use Psalm\IssueBuffer;
 use Psalm\Tests\Traits\InvalidCodeAnalysisTestTrait;
 use Psalm\Tests\Traits\ValidCodeAnalysisTestTrait;
 
 use function array_column;
+use function array_filter;
 
 use const DIRECTORY_SEPARATOR;
 
@@ -19,6 +21,45 @@ final class ClosureTest extends TestCase
 {
     use InvalidCodeAnalysisTestTrait;
     use ValidCodeAnalysisTestTrait;
+
+    public function testACapturedByReferenceVariableLeftAsItWasOnAReturnPathStaysMixedAfterTheClosure(): void
+    {
+        $this->testConfig->throw_exception = false;
+        $file_path = self::$src_dir_path . 'somefile.php';
+
+        $this->addFile(
+            $file_path,
+            '<?php
+                function g(string $style, string $string): string {
+                    static $labels = [];
+
+                    $style = preg_replace_callback("/x/", function (array $m) use ($string, &$labels) {
+                        if (trim($m[0]) === "a") {
+                            if (!isset($labels[$string])) {
+                                $labels[$string] = "c" . count($labels);
+                            }
+
+                            return $labels[$string];
+                        }
+
+                        return $m[0];
+                    }, $style);
+
+                    return (string) $style;
+                }',
+        );
+
+        $this->analyzeFile($file_path, new Context());
+
+        // the closure is analysed again with the type it leaves behind: one report for the mixed `$labels`
+        self::assertCount(
+            1,
+            array_filter(
+                IssueBuffer::getIssuesDataForFile($file_path),
+                static fn(IssueData $issue): bool => $issue->type === 'MixedArgument' && $issue->line_from === 8,
+            ),
+        );
+    }
 
     /**
      * @param list<string> $expected_issue_types
@@ -88,6 +129,84 @@ final class ClosureTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'closureByRefWriteBeforeAnEarlyReturnIsKept' => [
+                'code' => '<?php
+                    $hasOne = false;
+
+                    $f = static function (int $x) use (&$hasOne): int {
+                        if ($x === 1) {
+                            $hasOne = true;
+
+                            return 0;
+                        }
+
+                        return $x;
+                    };',
+                'assertions' => [
+                    '$hasOne' => 'bool',
+                ],
+            ],
+            'closureByRefWriteBeforeEachReturnIsKept' => [
+                'code' => '<?php
+                    $count = 0;
+
+                    $f = static function (int $x) use (&$count): int {
+                        if ($x === 1) {
+                            $count = 5;
+
+                            return 0;
+                        }
+
+                        if ($x === 2) {
+                            $count = 7;
+
+                            return 1;
+                        }
+
+                        return $x;
+                    };',
+                'assertions' => [
+                    '$count===' => '0|5|7',
+                ],
+            ],
+            'closureByRefVariableNotWrittenBeforeAReturnKeepsItsType' => [
+                'code' => '<?php
+                    $flag = false;
+                    $other = 1;
+
+                    $f = static function (int $x) use (&$flag, &$other): int {
+                        if ($x === 1) {
+                            $other = 2;
+
+                            return 0;
+                        }
+
+                        return $x;
+                    };',
+                'assertions' => [
+                    '$flag' => 'false',
+                    '$other' => 'int',
+                ],
+            ],
+            'closureByRefVariablePartlyMixedAtTheReturnKeepsItsKnownPart' => [
+                'code' => '<?php
+                    final class C {}
+
+                    /** @var mixed $list */
+                    $list = json_decode("[]", true);
+
+                    $f = function (string $k) use (&$list): int {
+                        if (!$list[$k] instanceof C) {
+                            $list[$k] = new C();
+                        }
+
+                        return 0;
+                    };',
+                'assertions' => [
+                    '$list===' => 'mixed|non-empty-array<string, C>',
+                ],
+                'ignored_issues' => ['MixedArrayAccess', 'MixedArrayAssignment'],
+            ],
             'byRefUseOfAVariableThatIsNotDefinedYet' => [
                 'code' => '<?php
                     function collect(): int {
@@ -120,6 +239,53 @@ final class ClosureTest extends TestCase
                     }',
                 'assertions' => [],
                 'ignored_issues' => [],
+            ],
+            'closureWithSelfParamCalledInATrait' => [
+                'code' => '<?php
+                    trait Walks {
+                        public function direct(): void {
+                            $f = function (self $other): void {};
+                            $f($this);
+                        }
+
+                        public function recursive(): void {
+                            $f = null;
+                            $f = function (self $other, int $depth) use (&$f): void {
+                                if ($depth > 0) {
+                                    $f($other, $depth - 1);
+                                }
+                            };
+                            $f($this, 3);
+                        }
+
+                        public function arrow(): int {
+                            $f = fn (self $other): int => 1;
+                            return $f($this);
+                        }
+                    }
+
+                    final class Walker {
+                        use Walks;
+                    }',
+            ],
+            'closureWithSelfParamFromATraitPassedToAnotherClass' => [
+                'code' => '<?php
+                    trait Hands {
+                        public function handOver(Taker $t): void {
+                            $t->take(function (self $other): void {});
+                        }
+                    }
+
+                    final class Giver {
+                        use Hands;
+                    }
+
+                    final class Taker {
+                        /** @param Closure(Giver): void $f */
+                        public function take(Closure $f): void {
+                            $f(new Giver());
+                        }
+                    }',
             ],
             'byRefUseVarUnsetInClosure' => [
                 'code' => '<?php
@@ -873,6 +1039,159 @@ final class ClosureTest extends TestCase
                     '$result' => 'int<0, max>',
                 ],
                 'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
+            'FirstClassCallable:InstanceMethod:InheritedReturnType' => [
+                'code' => '<?php
+                    interface Counter {
+                        /** @return positive-int */
+                        public function count();
+                    }
+
+                    final class Items implements Counter {
+                        #[Override]
+                        public function count() {
+                            return 1;
+                        }
+                    }
+
+                    $items = new Items();
+                    $count = $items->count(...);
+                    $result = $count();',
+                'assertions' => [
+                    '$count===' => 'Closure[impure]():int<1, max>',
+                    '$result' => 'int<1, max>',
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
+            'FirstClassCallable:DynamicMethodName:InheritedReturnType' => [
+                'code' => '<?php
+                    interface Counter {
+                        /** @return positive-int */
+                        public function count();
+
+                        /** @return positive-int */
+                        public static function total();
+                    }
+
+                    final class Items implements Counter {
+                        #[Override]
+                        public function count() {
+                            return 1;
+                        }
+
+                        #[Override]
+                        public static function total() {
+                            return 1;
+                        }
+                    }
+
+                    $items = new Items();
+                    $count = $items->{"count"}(...);
+                    $total = Items::{"total"}(...);',
+                'assertions' => [
+                    '$count===' => 'Closure[impure]():int<1, max>',
+                    '$total===' => 'Closure[impure]():int<1, max>',
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
+            'FirstClassCallable:InstanceMethod:InheritedStaticReturnType' => [
+                'code' => '<?php
+                    class Items {
+                        /** @return static */
+                        public function make() {
+                            return $this;
+                        }
+                    }
+
+                    final class SubItems extends Items {
+                        #[Override]
+                        public function make() {
+                            return $this;
+                        }
+                    }
+
+                    $items = new SubItems();
+                    $make = $items->make(...);
+                    $result = $make();',
+                'assertions' => [
+                    '$make===' => 'Closure[impure]():SubItems',
+                    '$result' => 'SubItems',
+                ],
+                'ignored_issues' => ['ClassMustBeFinal'],
+                'php_version' => '8.1',
+            ],
+            'FirstClassCallable:InstanceMethod:InheritedReturnTypeKeepsTheOwnParameters' => [
+                'code' => '<?php
+                    interface Counter {
+                        /** @return positive-int */
+                        public function count();
+                    }
+
+                    final class Items implements Counter {
+                        #[Override]
+                        public function count(int $step = 1) {
+                            return 1;
+                        }
+                    }
+
+                    $count = (new Items())->count(...);
+                    $result = $count(5);',
+                'assertions' => [
+                    '$count===' => 'Closure[impure](int=):int<1, max>',
+                    '$result' => 'int<1, max>',
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
+            'FirstClassCallable:InstanceMethod:InheritedParameterType' => [
+                'code' => '<?php
+                    interface Sink {
+                        /** @param positive-int $count */
+                        public function take($count): void;
+                    }
+
+                    final class Box implements Sink {
+                        #[Override]
+                        public function take($count): void {
+                        }
+                    }
+
+                    $take = (new Box())->take(...);',
+                'assertions' => [
+                    '$take===' => 'Closure[impure](int<1, max>):void',
+                ],
+                'ignored_issues' => ['MissingParamType'],
+                'php_version' => '8.1',
+            ],
+            'FirstClassCallable:InstanceMethod:InheritedTemplate' => [
+                'code' => '<?php
+                    interface Identity {
+                        /**
+                         * @template T
+                         * @param T $x
+                         * @return T
+                         */
+                        public function id($x);
+                    }
+
+                    final class Same implements Identity {
+                        #[Override]
+                        public function id($x) {
+                            return $x;
+                        }
+                    }
+
+                    $same = new Same();
+                    $id = $same->id(...);
+                    $result = $id("s");',
+                'assertions' => [
+                    '$id===' => 'Closure[impure](mixed):mixed',
+                    '$result' => 'mixed',
+                ],
+                'ignored_issues' => ['MixedAssignment'],
                 'php_version' => '8.1',
             ],
             'FirstClassCallable:InstanceMethod:UserDefined' => [
@@ -1806,6 +2125,45 @@ final class ClosureTest extends TestCase
                 'ignored_issues' => ['UnsafeInstantiation'],
                 'php_version' => '8.1',
             ],
+            'nestedArrowFunctionsTakeTheTypesOfTheClosureTheyAreReturnedFrom' => [
+                'code' => '<?php
+                    /**
+                     * @template TArg1
+                     * @template TArg2
+                     * @template TArg3
+                     * @template TRes
+                     *
+                     * @psalm-param Closure(TArg1, TArg2, TArg3): TRes $func
+                     * @psalm-param TArg1 $arg1
+                     *
+                     * @psalm-return Closure(TArg2): Closure(TArg3): TRes
+                     */
+                    function curry3(Closure $func, $arg1): Closure {
+                        return fn($arg2) => fn($arg3) => $func($arg1, $arg2, $arg3);
+                    }',
+            ],
+            'nestedClosuresTakeTheTypesOfTheClosureTheyAreReturnedFrom' => [
+                'code' => '<?php
+                    /**
+                     * @template A
+                     * @param A $x
+                     * @return Closure(): Closure(A): A
+                     */
+                    function two($x): Closure {
+                        return function () {
+                            return function ($y) {
+                                return $y;
+                            };
+                        };
+                    }',
+            ],
+            'nestedArrowFunctionsWithDeclaredTypes' => [
+                'code' => '<?php
+                    /** @return Closure(int): Closure(string): string */
+                    function build(): Closure {
+                        return fn($number) => fn($text) => $text . $number;
+                    }',
+            ],
         ];
     }
 
@@ -1816,12 +2174,66 @@ final class ClosureTest extends TestCase
     public static function providerInvalidCodeParse(): iterable
     {
         return [
+            'FirstClassCallable:InstanceMethod:InheritedReturnTypeKeepsTheOwnParameterType' => [
+                'code' => '<?php
+                    interface Fmt {
+                        /** @return non-empty-string */
+                        public function fmt($x);
+                    }
+
+                    final class F implements Fmt {
+                        #[Override]
+                        public function fmt(int|string $x) {
+                            return "a" . $x;
+                        }
+                    }
+
+                    $fmt = (new F())->fmt(...);
+                    $fmt([]);',
+                'error_message' => 'InvalidArgument',
+                'error_levels' => ['MissingParamType'],
+                'php_version' => '8.1',
+            ],
             'byValueUseOfAVariableThatIsNotDefinedYet' => [
                 'code' => '<?php
                     $f = function () use ($total): int {
                         return 1;
                     };',
                 'error_message' => 'UndefinedVariable',
+            ],
+            'closureWithSelfParamCalledInATraitRejectsAnotherClass' => [
+                'code' => '<?php
+                    trait Walks {
+                        public function direct(): void {
+                            $f = function (self $other): void {};
+                            $f(new stdClass());
+                        }
+                    }
+
+                    final class Walker {
+                        use Walks;
+                    }',
+                'error_message' => 'InvalidArgument - src' . DIRECTORY_SEPARATOR . 'somefile.php:5:32 - Argument 1 expects Walker',
+            ],
+            'closureWithSelfParamFromATraitIsTheUsingClassInAnotherClass' => [
+                'code' => '<?php
+                    trait Hands {
+                        public function handOver(Taker $t): void {
+                            $t->take(function (self $other): void {});
+                        }
+                    }
+
+                    final class Giver {
+                        use Hands;
+                    }
+
+                    final class Taker {
+                        /** @param Closure(Taker): void $f */
+                        public function take(Closure $f): void {
+                            $f($this);
+                        }
+                    }',
+                'error_message' => 'expects Closure[impure](Taker):void, but Closure[pure](Giver):void provided',
             ],
             'wrongArg' => [
                 'code' => '<?php
@@ -2332,6 +2744,14 @@ final class ClosureTest extends TestCase
                     fn &(): int => 45;
                 ',
                 'error_message' => 'NonVariableReferenceReturn',
+            ],
+            'nestedArrowFunctionReturningTheWrongType' => [
+                'code' => '<?php
+                    /** @return Closure(int): Closure(string): int */
+                    function build(): Closure {
+                        return fn($number) => fn($text) => $text;
+                    }',
+                'error_message' => 'InvalidReturnStatement',
             ],
         ];
     }
