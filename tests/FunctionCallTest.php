@@ -182,6 +182,19 @@ final class FunctionCallTest extends TestCase
                 'ignored_issues' => [],
                 'php_version' => '8.1',
             ],
+            'zeroIsANonEmptyLowercaseString' => [
+                'code' => <<<'PHP'
+                    <?php
+                    /** @param non-empty-lowercase-string $s */
+                    function takesNonEmptyLowercase(string $s): void {}
+
+                    takesNonEmptyLowercase('0');
+                    takesNonEmptyLowercase('a');
+                    PHP,
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
             'propertyExistsOfAnUnknownOrDynamicPropertyIsNotReported' => [
                 'code' => '<?php
                     class Page {
@@ -1083,6 +1096,17 @@ final class FunctionCallTest extends TestCase
                     }
 
                     a(["a" => "hello"]);',
+            ],
+            'getenvCalledWithOtherCasing' => [
+                'code' => '<?php
+                    $a = getEnv("some_key");
+                    $b = GETENV();
+                    $c = getenv("some_key", true);',
+                'assertions' => [
+                    '$a===' => 'false|string',
+                    '$b===' => 'array<string, string>',
+                    '$c===' => 'false|string',
+                ],
             ],
             'functionExistsGuardsTheRightOperandInsideAnotherNarrowingCondition' => [
                 'code' => '<?php
@@ -2721,6 +2745,27 @@ final class FunctionCallTest extends TestCase
                         return $lines;
                     }',
             ],
+            'execOutputEmptyArrayIsListOfStrings' => [
+                'code' => '<?php
+                    $bar = array();
+                    exec("pwd", $bar);
+
+                    $baz = [];
+                    exec("pwd", $baz, $code);
+
+                    $foo = null;
+                    exec("pwd", $foo);
+
+                    /** @var array<string> $existing */
+                    $existing = [];
+                    exec("pwd", $existing);',
+                'assertions' => [
+                    '$bar===' => 'list<string>',
+                    '$baz===' => 'list<string>',
+                    '$foo===' => 'list<string>',
+                    '$existing===' => 'array<array-key, mixed>',
+                ],
+            ],
             'array_is_list' => [
                 'code' => '<?php
                     function getArray() : array {
@@ -2815,6 +2860,84 @@ final class FunctionCallTest extends TestCase
                     }',
                 'assertions' => [],
                 'ignored_issues' => ['ImplicitToStringCast'],
+                'php_version' => '8.1',
+            ],
+            'objectWithRefinedToStringReturnMatchesStringParameter' => [
+                'code' => '<?php
+                    final class LowercaseText {
+                        /** @return lowercase-string */
+                        public function __toString(): string {
+                            return "lowercase";
+                        }
+                    }
+
+                    /** @param lowercase-string $value */
+                    function acceptsLowercase(string $value): void {}
+
+                    /** @psalm-suppress ImplicitToStringCast */
+                    acceptsLowercase(new LowercaseText());',
+                'php_version' => '8.1',
+            ],
+            'genericObjectWithRefinedToStringReturnMatchesStringParameter' => [
+                'code' => '<?php
+                    /** @template T of string */
+                    final class Box {
+                        /** @param T $value */
+                        public function __construct(private string $value) {}
+
+                        /** @return T */
+                        public function __toString(): string {
+                            return $this->value;
+                        }
+                    }
+
+                    /** @param lowercase-string $value */
+                    function acceptsLowercase(string $value): void {}
+
+                    /** @var Box<lowercase-string> $box */
+                    $box = new Box("lowercase");
+
+                    /** @psalm-suppress ImplicitToStringCast */
+                    acceptsLowercase($box);',
+                'php_version' => '8.1',
+            ],
+            'stringConditionOnObjectPreservesObjectType' => [
+                'code' => '<?php
+                    final class Path {
+                        public function __toString(): string {
+                            return "path";
+                        }
+
+                        public function getElement(): string {
+                            return "element";
+                        }
+                    }
+
+                    function getElement(Path $path): string {
+                        if (str_starts_with($path, "p")) {
+                            return $path->getElement();
+                        }
+
+                        return "";
+                    }',
+                'ignored_issues' => ['ImplicitToStringCast'],
+                'php_version' => '8.1',
+            ],
+            'failedNestedStringCastDoesNotLeakFromArray' => [
+                'code' => '<?php
+                    final class Join {
+                        public function __toString(): string {
+                            return "join";
+                        }
+                    }
+
+                    /**
+                     * @param string|object|list<string>|array{join: array<int|string, object>} $part
+                     */
+                    function add(string|object|array $part): void {}
+
+                    add(["root" => new Join()]);',
+                'ignored_issues' => ['InvalidScalarArgument'],
                 'php_version' => '8.1',
             ],
             'strReplaceWithAsManyReplacementsAsSearches' => [
@@ -3291,6 +3414,25 @@ final class FunctionCallTest extends TestCase
                 'error_message' => 'InvalidDocblock - src' . DIRECTORY_SEPARATOR . 'somefile.php:5:21 - '
                     . 'overload(string $a:int is not a valid method: Unterminated method in docblock for pick',
             ],
+            'streamSelectDoesNotTakeAContextBeforePhp86' => [
+                'code' => '<?php
+                    $read = [STDIN];
+                    $write = null;
+                    $except = null;
+
+                    stream_select($read, $write, $except, 0, 0, null);',
+                'error_message' => 'TooManyArguments',
+                'error_levels' => [],
+                'php_version' => '8.5',
+            ],
+            'emptyStringIsNotANonEmptyLowercaseString' => [
+                'code' => '<?php
+                    /** @param non-empty-lowercase-string $s */
+                    function takesNonEmptyLowercase(string $s): void {}
+
+                    takesNonEmptyLowercase("");',
+                'error_message' => 'InvalidArgument',
+            ],
             'propertyExistsOfADeclaredPropertyIsAlwaysTrue' => [
                 'code' => '<?php
                     class Page {
@@ -3561,6 +3703,184 @@ final class FunctionCallTest extends TestCase
                     'RedundantConditionGivenDocblockType',
                 ],
             ],
+            'objectToStringReturnDoesNotMatchLowercaseStringParameter' => [
+                'code' => '<?php
+                    final class UppercaseText {
+                        /** @return "AAA" */
+                        public function __toString(): string {
+                            return "AAA";
+                        }
+                    }
+
+                    /** @param lowercase-string $value */
+                    function acceptsLowercase(string $value): void {}
+
+                    /** @psalm-suppress ImplicitToStringCast */
+                    acceptsLowercase(new UppercaseText());',
+                'error_message' => 'InvalidArgument',
+                'error_levels' => [],
+                'php_version' => '8.1',
+            ],
+            'objectToStringReturnCoercesToLowercaseStringParameter' => [
+                'code' => '<?php
+                    final class Text {
+                        public function __toString(): string {
+                            return "text";
+                        }
+                    }
+
+                    /** @param lowercase-string $value */
+                    function acceptsLowercase(string $value): void {}
+
+                    /** @psalm-suppress ImplicitToStringCast */
+                    acceptsLowercase(new Text());',
+                'error_message' => 'ArgumentTypeCoercion',
+                'error_levels' => [],
+                'php_version' => '8.1',
+            ],
+            'objectToStringReturnCoercionReportsImplicitCast' => [
+                'code' => '<?php
+                    final class Text {
+                        public function __toString(): string {
+                            return "text";
+                        }
+                    }
+
+                    /** @param lowercase-string $value */
+                    function acceptsLowercase(string $value): void {}
+
+                    /** @psalm-suppress ArgumentTypeCoercion */
+                    acceptsLowercase(new Text());',
+                'error_message' => 'ImplicitToStringCast',
+                'error_levels' => [],
+                'php_version' => '8.1',
+            ],
+            'stringableUnionWithNonStringableObjectDoesNotCoerce' => [
+                'code' => '<?php
+                    final class Text {
+                        public function __toString(): string {
+                            return "text";
+                        }
+                    }
+
+                    final class Other {}
+
+                    /** @param lowercase-string $value */
+                    function acceptsLowercase(string $value): void {}
+
+                    /** @param Text|Other $value */
+                    function passObject($value): void {
+                        /** @psalm-suppress ImplicitToStringCast */
+                        acceptsLowercase($value);
+                    }',
+                'error_message' => 'InvalidArgument',
+                'error_levels' => [],
+                'php_version' => '8.1',
+            ],
+            'untypedObjectToStringReturnCoercesToLowercaseStringParameter' => [
+                'code' => '<?php
+                    final class Text {
+                        public function __toString() {
+                            return "text";
+                        }
+                    }
+
+                    /** @param lowercase-string $value */
+                    function acceptsLowercase(string $value): void {}
+
+                    /** @psalm-suppress ImplicitToStringCast */
+                    acceptsLowercase(new Text());',
+                'error_message' => 'ArgumentTypeCoercion',
+                'error_levels' => [],
+                'php_version' => '7.4',
+            ],
+            'objectToStringReturnCoercesToClassStringParameter' => [
+                'code' => '<?php
+                    final class Text {
+                        public function __toString(): string {
+                            return "text";
+                        }
+                    }
+
+                    /** @param class-string $value */
+                    function acceptsClassString(string $value): void {}
+
+                    /** @psalm-suppress ImplicitToStringCast */
+                    acceptsClassString(new Text());',
+                'error_message' => 'ArgumentTypeCoercion',
+                'error_levels' => [],
+                'php_version' => '8.1',
+            ],
+            'objectToStringReturnCoercesToNumericStringParameter' => [
+                'code' => '<?php
+                    final class Text {
+                        public function __toString(): string {
+                            return "text";
+                        }
+                    }
+
+                    /** @param numeric-string $value */
+                    function acceptsNumericString(string $value): void {}
+
+                    /** @psalm-suppress ImplicitToStringCast */
+                    acceptsNumericString(new Text());',
+                'error_message' => 'ArgumentTypeCoercion',
+                'error_levels' => [],
+                'php_version' => '8.1',
+            ],
+            'objectToStringReturnDoesNotMatchLiteralStringParameter' => [
+                'code' => '<?php
+                    final class Text {
+                        /** @return "AAA" */
+                        public function __toString(): string {
+                            return "AAA";
+                        }
+                    }
+
+                    /** @param "BBB"|"CCC" $value */
+                    function acceptsOtherLiterals(string $value): void {}
+
+                    /** @psalm-suppress ImplicitToStringCast */
+                    acceptsOtherLiterals(new Text());',
+                'error_message' => 'InvalidArgument',
+                'error_levels' => [],
+                'php_version' => '8.1',
+            ],
+            'objectToStringReturnDoesNotMatchNonEmptyStringParameter' => [
+                'code' => '<?php
+                    final class EmptyText {
+                        /** @return "" */
+                        public function __toString(): string {
+                            return "";
+                        }
+                    }
+
+                    /** @param non-empty-string $value */
+                    function acceptsNonEmpty(string $value): void {}
+
+                    /** @psalm-suppress ImplicitToStringCast */
+                    acceptsNonEmpty(new EmptyText());',
+                'error_message' => 'InvalidArgument',
+                'error_levels' => [],
+                'php_version' => '8.1',
+            ],
+            'objectToStringReturnCoercesToNonEmptyStringParameter' => [
+                'code' => '<?php
+                    final class Text {
+                        public function __toString(): string {
+                            return "text";
+                        }
+                    }
+
+                    /** @param non-empty-string $value */
+                    function acceptsNonEmpty(string $value): void {}
+
+                    /** @psalm-suppress ImplicitToStringCast */
+                    acceptsNonEmpty(new Text());',
+                'error_message' => 'ArgumentTypeCoercion',
+                'error_levels' => [],
+                'php_version' => '8.1',
+            ],
             'clampIsUndefinedBeforePhp86' => [
                 'code' => '<?php
                     $result = clamp(5, 0, 10);',
@@ -3794,6 +4114,38 @@ final class FunctionCallTest extends TestCase
                 'code' => '<?php
                     preg_match(\'/adsf/\');',
                 'error_message' => 'TooFewArguments - src' . DIRECTORY_SEPARATOR . 'somefile.php:2:21 - Too few arguments for preg_match - expecting subject to be passed',
+            ],
+            'tooFewArgsForCallableNamesTheCallable' => [
+                'code' => '<?php
+                    /** @param callable(mixed): bool $c */
+                    function f(callable $c): void {
+                        $c();
+                    }',
+                'error_message' => 'TooFewArguments - src' . DIRECTORY_SEPARATOR . 'somefile.php:4:25 - Too few arguments for callable(mixed) - expecting parameter #1 to be passed',
+            ],
+            'tooFewArgsForCallableCountsTheMissingParameterFromTheStart' => [
+                'code' => '<?php
+                    /** @param callable(int, string): void $c */
+                    function f(callable $c): void {
+                        $c(1);
+                    }',
+                'error_message' => 'TooFewArguments - src' . DIRECTORY_SEPARATOR . 'somefile.php:4:25 - Too few arguments for callable(int, string) - expecting parameter #2 to be passed',
+            ],
+            'tooFewArgsForCallableWithNamedParametersNamesTheParameter' => [
+                'code' => '<?php
+                    /** @param callable(int $a, string $b): void $c */
+                    function f(callable $c): void {
+                        $c(1);
+                    }',
+                'error_message' => 'TooFewArguments - src' . DIRECTORY_SEPARATOR . 'somefile.php:4:25 - Too few arguments for callable(int, string) - expecting b to be passed',
+            ],
+            'tooManyArgsForCallableNamesTheCallable' => [
+                'code' => '<?php
+                    /** @param callable(int, string): void $c */
+                    function f(callable $c): void {
+                        $c(1, "a", 3);
+                    }',
+                'error_message' => 'TooManyArguments - src' . DIRECTORY_SEPARATOR . 'somefile.php:4:25 - Too many arguments for callable(int, string) - expecting 2 but saw 3',
             ],
             'compactUndefinedVariable' => [
                 'code' => '<?php

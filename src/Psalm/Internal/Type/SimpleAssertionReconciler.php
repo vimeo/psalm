@@ -580,6 +580,19 @@ final class SimpleAssertionReconciler extends Reconciler
             $redundant = false;
         }
 
+        foreach ($existing_var_type->getAtomicTypes() as $atomic_type) {
+            if ($atomic_type instanceof TTemplateParam && $atomic_type->as->isNullable()) {
+                $as = $atomic_type->as->getBuilder();
+                $as->removeType('null');
+
+                if (!$as->isUnionEmpty()) {
+                    $existing_var_type->addType($atomic_type->replaceAs($as->freeze()));
+
+                    $redundant = false;
+                }
+            }
+        }
+
         if (!$existing_var_type->hasMixed()
             && !$is_equality
             && ($redundant || $existing_var_type->isUnionEmpty())
@@ -1657,6 +1670,9 @@ final class SimpleAssertionReconciler extends Reconciler
                     $object_types[] = $type;
                 }
 
+                $redundant = false;
+            } elseif ($type::class === TObject::class && $assertion_type instanceof TObjectWithProperties) {
+                $object_types[] = $assertion_type;
                 $redundant = false;
             } elseif ($type->isObjectType()) {
                 if ($assertion_type_is_intersectable_type
