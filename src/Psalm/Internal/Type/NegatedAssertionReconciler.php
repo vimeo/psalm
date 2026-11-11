@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Psalm\Internal\Type;
 
 use Psalm\CodeLocation;
+use Psalm\Codebase;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\Internal\Analyzer\TraitAnalyzer;
 use Psalm\Internal\Type\Comparator\AtomicTypeComparator;
@@ -39,8 +40,6 @@ use Psalm\Type\Reconciler;
 use Psalm\Type\Union;
 
 use function array_filter;
-use function array_merge;
-use function array_values;
 use function count;
 use function strtolower;
 
@@ -168,9 +167,9 @@ final class NegatedAssertionReconciler extends Reconciler
         }
 
         if (!$is_equality && $assertion_type instanceof TNamedObject) {
-            foreach ($existing_var_type->getAtomicTypes() as $key => $type) {
+            foreach ($existing_var_type->getAtomicTypes() as $atomic_key => $type) {
                 if ($type instanceof TEnumCase && $type->value === $assertion_type->value) {
-                    $existing_var_type->removeType($key);
+                    $existing_var_type->removeType($atomic_key);
                 }
             }
         }
@@ -214,6 +213,7 @@ final class NegatedAssertionReconciler extends Reconciler
             && $existing_var_type->hasNamedObjectType()
             && $assertion_type instanceof TNamedObject
             && isset($existing_var_type->getAtomicTypes()[$assertion_type->getKey()])
+            && !self::isEnum($codebase, $assertion_type->value)
         ) {
             // checking if two types share a common parent is not enough to guarantee children are instanceof each other
             // fall through
@@ -221,15 +221,7 @@ final class NegatedAssertionReconciler extends Reconciler
             && ($assertion->getAtomicType() instanceof TArray
                 || $assertion->getAtomicType() instanceof TKeyedArray)
         ) {
-            //if both types are arrays, try to combine them
-            $combined_type = TypeCombiner::combine(
-                array_merge(array_values($existing_var_type->getAtomicTypes()), [$assertion->getAtomicType()]),
-                $codebase,
-            );
-            $existing_var_type->removeType('array');
-            if ($combined_type->isSingle()) {
-                $existing_var_type->addType($combined_type->getSingleAtomic());
-            }
+            // an array that isn't of the asserted array type is of the existing one
         } elseif (!$is_equality) {
             $assertion_type = $assertion->getAtomicType();
 
@@ -565,5 +557,16 @@ final class NegatedAssertionReconciler extends Reconciler
         }
 
         return $existing_var_type;
+    }
+
+    /**
+     * An enum has no child that an instanceof check of itself could leave out
+     *
+     * @psalm-capabilities read-props
+     */
+    private static function isEnum(Codebase $codebase, string $fq_class_name): bool
+    {
+        return $codebase->classlike_storage_provider->has($fq_class_name)
+            && $codebase->classlike_storage_provider->get($fq_class_name)->is_enum;
     }
 }

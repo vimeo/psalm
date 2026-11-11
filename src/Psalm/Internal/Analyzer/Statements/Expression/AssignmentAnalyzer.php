@@ -45,6 +45,7 @@ use Psalm\Internal\Scanner\VarDocblockComment;
 use Psalm\Internal\Type\Comparator\UnionTypeComparator;
 use Psalm\Internal\Type\TypeExpander;
 use Psalm\Internal\TypeVisitor\TypeChecker;
+use Psalm\Internal\TypeVisitor\TypeVariableResolver;
 use Psalm\Issue\AssignmentToVoid;
 use Psalm\Issue\ImpureByReferenceAssignment;
 use Psalm\Issue\ImpureGlobalVariable;
@@ -379,6 +380,7 @@ final class AssignmentAnalyzer
                 && (!$not_ignored_docblock_var_ids || isset($not_ignored_docblock_var_ids[$extended_var_id]))
                 && $temp_assign_value_type->getId() === $comment_type->getId()
                 && !$comment_type->isMixed(true)
+                && !self::isTypeFromPhpstanVar($var_comments, $var_id)
             ) {
                 if ($codebase->alter_code
                     && isset($statements_analyzer->getProjectAnalyzer()->getIssuesToFix()['UnnecessaryVarAnnotation'])
@@ -840,6 +842,23 @@ final class AssignmentAnalyzer
         }
     }
 
+    /**
+     * @param list<VarDocblockComment> $var_comments
+     * @psalm-capabilities read-props
+     */
+    private static function isTypeFromPhpstanVar(array $var_comments, ?string $var_id): bool
+    {
+        $from_phpstan = false;
+
+        foreach ($var_comments as $var_comment) {
+            if ($var_comment->var_id === null || $var_comment->var_id === $var_id) {
+                $from_phpstan = $var_comment->from_phpstan;
+            }
+        }
+
+        return $from_phpstan;
+    }
+
     public static function assignTypeFromVarDocblock(
         StatementsAnalyzer $statements_analyzer,
         PhpParser\Node $stmt,
@@ -925,6 +944,7 @@ final class AssignmentAnalyzer
 
             if ($codebase->find_unused_variables
                 && $type_location
+                && !$var_comment->from_phpstan
                 && (!$not_ignored_docblock_var_ids || isset($not_ignored_docblock_var_ids[$var_comment->var_id]))
                 && isset($context->vars_in_scope[$var_comment->var_id])
                 && $context->vars_in_scope[$var_comment->var_id]->getId() === $var_comment_type->getId()
@@ -1080,7 +1100,15 @@ final class AssignmentAnalyzer
         Context $context,
         ?PhpParser\Node\Stmt $from_stmt,
     ): bool {
+        // Usage through a reference held by a property or array item can't be tracked, so the referenced
+        // variable counts as used, like the value of a regular assignment to one.
+        $was_inside_general_use = $context->inside_general_use;
+        $context->inside_general_use = $was_inside_general_use
+            || $stmt->var instanceof PropertyFetch
+            || $stmt->var instanceof PhpParser\Node\Expr\StaticPropertyFetch
+            || $stmt->var instanceof ArrayDimFetch;
         ExpressionAnalyzer::analyze($statements_analyzer, $stmt->expr, $context, false, null, null, null, true);
+        $context->inside_general_use = $was_inside_general_use;
 
         $lhs_var_id = ExpressionIdentifier::getExtendedVarId(
             $stmt->var,
@@ -1193,7 +1221,10 @@ final class AssignmentAnalyzer
         }
 
         $lhs_location = new CodeLocation($statements_analyzer->getSource(), $stmt->var);
-        if (!$stmt->var instanceof ArrayDimFetch && !$stmt->var instanceof PropertyFetch) {
+        if (!$stmt->var instanceof ArrayDimFetch
+            && !$stmt->var instanceof PropertyFetch
+            && !$stmt->var instanceof PhpParser\Node\Expr\StaticPropertyFetch
+        ) {
             // If left-hand-side is an array offset or object property, usage is too difficult to track,
             // so it's not registered as an unused variable (this mirrors behavior for non-references).
             $statements_analyzer->registerVariableAssignment(
@@ -1590,6 +1621,60 @@ final class AssignmentAnalyzer
     }
 
     /**
+     * Report non-array accesses in a destructuring assignment.
+     * A null atomic type is reported later, if no keyed-array item was directly assigned.
+     */
+    private static function checkDestructuredArrayAccess(
+        StatementsAnalyzer $statements_analyzer,
+        Codebase $codebase,
+        PhpParser\Node\Expr $var,
+        Atomic $assign_value_atomic_type,
+        Union $assign_value_type,
+        ?string $extended_var_id,
+    ): bool {
+        if ($assign_value_atomic_type instanceof TMixed) {
+            IssueBuffer::maybeAdd(
+                new MixedArrayAccess(
+                    'Cannot access array value on mixed variable ' . $extended_var_id,
+                    new CodeLocation($statements_analyzer->getSource(), $var),
+                ),
+                $statements_analyzer->getSuppressedIssues(),
+            );
+        } elseif ($assign_value_atomic_type instanceof TNull) {
+            return true;
+        } elseif (!$assign_value_atomic_type instanceof TArray
+            && !$assign_value_atomic_type instanceof TKeyedArray
+            && !$assign_value_type->hasArrayAccessInterface($codebase)
+        ) {
+            if ($assign_value_type->hasArray()) {
+                if ($assign_value_atomic_type instanceof TFalse && $assign_value_type->ignore_falsable_issues) {
+                    // do nothing
+                } else {
+                    IssueBuffer::maybeAdd(
+                        new PossiblyInvalidArrayAccess(
+                            'Cannot access array value on non-array variable '
+                            . $extended_var_id . ' of type ' . $assign_value_atomic_type->getId(),
+                            new CodeLocation($statements_analyzer->getSource(), $var),
+                        ),
+                        $statements_analyzer->getSuppressedIssues(),
+                    );
+                }
+            } else {
+                IssueBuffer::maybeAdd(
+                    new InvalidArrayAccess(
+                        'Cannot access array value on non-array variable '
+                        . $extended_var_id . ' of type ' . $assign_value_atomic_type->getId(),
+                        new CodeLocation($statements_analyzer->getSource(), $var),
+                    ),
+                    $statements_analyzer->getSuppressedIssues(),
+                );
+            }
+        }
+
+        return false;
+    }
+
+    /**
      * @param PhpParser\Node\Expr\List_|PhpParser\Node\Expr\Array_ $assign_var
      * @param list<VarDocblockComment> $var_comments
      */
@@ -1605,6 +1690,8 @@ final class AssignmentAnalyzer
         array $var_comments,
         int $removed_taints,
     ): void {
+        $assign_value_type = TypeVariableResolver::resolveTopLevel($assign_value_type, $codebase);
+
         if (!$assign_value_type->hasArray()
             && !$assign_value_type->isMixed()
             && !$assign_value_type->hasArrayAccessInterface($codebase)
@@ -1725,43 +1812,15 @@ final class AssignmentAnalyzer
                     }
                 }
 
-                if ($assign_value_atomic_type instanceof TMixed) {
-                    IssueBuffer::maybeAdd(
-                        new MixedArrayAccess(
-                            'Cannot access array value on mixed variable ' . $extended_var_id,
-                            new CodeLocation($statements_analyzer->getSource(), $var),
-                        ),
-                        $statements_analyzer->getSuppressedIssues(),
-                    );
-                } elseif ($assign_value_atomic_type instanceof TNull) {
+                if (self::checkDestructuredArrayAccess(
+                    $statements_analyzer,
+                    $codebase,
+                    $var,
+                    $assign_value_atomic_type,
+                    $assign_value_type,
+                    $extended_var_id,
+                )) {
                     $has_null = true;
-                } elseif (!$assign_value_atomic_type instanceof TArray
-                    && !$assign_value_atomic_type instanceof TKeyedArray
-                    && !$assign_value_type->hasArrayAccessInterface($codebase)
-                ) {
-                    if ($assign_value_type->hasArray()) {
-                        if ($assign_value_atomic_type instanceof TFalse && $assign_value_type->ignore_falsable_issues) {
-                            // do nothing
-                        } else {
-                            IssueBuffer::maybeAdd(
-                                new PossiblyInvalidArrayAccess(
-                                    'Cannot access array value on non-array variable '
-                                    . $extended_var_id . ' of type ' . $assign_value_atomic_type->getId(),
-                                    new CodeLocation($statements_analyzer->getSource(), $var),
-                                ),
-                                $statements_analyzer->getSuppressedIssues(),
-                            );
-                        }
-                    } else {
-                        IssueBuffer::maybeAdd(
-                            new InvalidArrayAccess(
-                                'Cannot access array value on non-array variable '
-                                . $extended_var_id . ' of type ' . $assign_value_atomic_type->getId(),
-                                new CodeLocation($statements_analyzer->getSource(), $var),
-                            ),
-                            $statements_analyzer->getSuppressedIssues(),
-                        );
-                    }
                 }
 
                 if ($var instanceof PhpParser\Node\Expr\List_
@@ -1884,6 +1943,8 @@ final class AssignmentAnalyzer
                     );
                 }
 
+                $has_comment_type = false;
+
                 foreach ($var_comments as $var_comment) {
                     if (!$var_comment->type) {
                         continue;
@@ -1902,6 +1963,7 @@ final class AssignmentAnalyzer
                             $var_comment_type = $var_comment_type->setFromDocblock();
 
                             $new_assign_type = $var_comment_type;
+                            $has_comment_type = true;
                             break;
                         }
                     } catch (UnexpectedValueException $e) {
@@ -1915,6 +1977,23 @@ final class AssignmentAnalyzer
                 }
 
                 if ($list_var_id) {
+                    if ($new_assign_type !== null
+                        && $new_assign_type->hasMixed()
+                        && !$has_comment_type
+                        && !str_contains($list_var_id, '->')
+                        && !str_starts_with($list_var_id, '$_')
+                        && !$context->collect_initializations
+                        && !$context->collect_mutations
+                    ) {
+                        IssueBuffer::maybeAdd(
+                            new MixedAssignment(
+                                'Unable to determine the type that ' . $list_var_id . ' is being assigned to',
+                                new CodeLocation($statements_analyzer->getSource(), $var),
+                            ),
+                            $statements_analyzer->getSuppressedIssues(),
+                        );
+                    }
+
                     $context->vars_in_scope[$list_var_id] = $new_assign_type ?: Type::getMixed();
 
                     if ($statements_analyzer->data_flow_graph) {
@@ -2166,8 +2245,10 @@ final class AssignmentAnalyzer
 
                 if ($assign_value_type->getId() === 'bool'
                     && ($assign_value instanceof PhpParser\Node\Expr\BinaryOp
+                        || $assign_value instanceof PhpParser\Node\Expr\Instanceof_
                         || ($assign_value instanceof PhpParser\Node\Expr\BooleanNot
-                            && $assign_value->expr instanceof PhpParser\Node\Expr\BinaryOp))
+                            && ($assign_value->expr instanceof PhpParser\Node\Expr\BinaryOp
+                                || $assign_value->expr instanceof PhpParser\Node\Expr\Instanceof_)))
                 ) {
                     $var_object_id = spl_object_id($assign_var);
                     $cond_object_id = spl_object_id($assign_value);

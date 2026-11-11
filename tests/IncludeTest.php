@@ -14,6 +14,7 @@ use ReflectionProperty;
 
 use function getcwd;
 use function preg_quote;
+use function set_time_limit;
 use function strpos;
 
 use const DIRECTORY_SEPARATOR;
@@ -31,7 +32,10 @@ final class IncludeTest extends TestCase
         array $files_to_check,
         bool $hoist_constants = false,
         array $ignored_issues = [],
+        string $php_version = '7.4',
     ): void {
+        $this->project_analyzer->setPhpVersion($php_version, 'tests');
+
         $codebase = $this->project_analyzer->getCodebase();
 
         foreach ($files as $file_path => $contents) {
@@ -106,7 +110,7 @@ final class IncludeTest extends TestCase
     }
 
     /**
-     * @return array<string,array{files:array<string,string>,files_to_check:array<int,string>,hoist_constants?:bool,ignored_issues?:list<string>}>
+     * @return array<string,array{files:array<string,string>,files_to_check:array<int,string>,hoist_constants?:bool,ignored_issues?:list<string>,php_version?:string}>
      */
     public static function providerTestValidIncludes(): array
     {
@@ -116,6 +120,19 @@ final class IncludeTest extends TestCase
                     (string) getcwd() . DIRECTORY_SEPARATOR . 'a' . DIRECTORY_SEPARATOR . 'script.php' => '<?php
                         if (file_exists(__DIR__ . "/../optional.php")) {
                             require __DIR__ . "/../optional.php";
+                        }',
+                ],
+                'files_to_check' => [
+                    (string) getcwd() . DIRECTORY_SEPARATOR . 'a' . DIRECTORY_SEPARATOR . 'script.php',
+                ],
+            ],
+            'requireOfAResolvedPathCheckedByFileExistsInAnAndCondition' => [
+                'files' => [
+                    (string) getcwd() . DIRECTORY_SEPARATOR . 'a' . DIRECTORY_SEPARATOR . 'script.php' => '<?php
+                        function load(bool $flag): void {
+                            if ($flag && is_file(__DIR__ . "/optional.php")) {
+                                require __DIR__ . "/optional.php";
+                            }
                         }',
                 ],
                 'files_to_check' => [
@@ -154,6 +171,53 @@ final class IncludeTest extends TestCase
                 'files_to_check' => [
                     (string) getcwd() . DIRECTORY_SEPARATOR . 'file2.php',
                 ],
+            ],
+            'includedCodeRefiningThisKeepsTheRefinement' => [
+                'files' => [
+                    (string) getcwd() . DIRECTORY_SEPARATOR . 'file2.php' => '<?php
+                        class ParentExample {
+                            public function main(): int {
+                                require __DIR__ . "/file1.php";
+
+                                return $this->childOnly();
+                            }
+                        }
+
+                        class ChildExample extends ParentExample {
+                            public function childOnly(): int {
+                                return 1;
+                            }
+                        }',
+                    (string) getcwd() . DIRECTORY_SEPARATOR . 'file1.php' => '<?php
+                        if (!$this instanceof ChildExample) {
+                            throw new RuntimeException();
+                        }',
+                ],
+                'files_to_check' => [
+                    (string) getcwd() . DIRECTORY_SEPARATOR . 'file2.php',
+                ],
+                'hoist_constants' => false,
+            ],
+            'includedCodeCheckingThisDoesNotChangeIt' => [
+                'files' => [
+                    (string) getcwd() . DIRECTORY_SEPARATOR . 'file2.php' => '<?php
+                        class Example {
+                            public function main(): Example {
+                                require __DIR__ . "/file1.php";
+
+                                return $this;
+                            }
+                        }',
+                    (string) getcwd() . DIRECTORY_SEPARATOR . 'file1.php' => '<?php
+                        if (!$this instanceof stdClass) {
+                            throw new RuntimeException();
+                        }',
+                ],
+                'files_to_check' => [
+                    (string) getcwd() . DIRECTORY_SEPARATOR . 'file2.php',
+                ],
+                'hoist_constants' => false,
+                'ignored_issues' => ['RedundantCondition'],
             ],
             'requireSingleStringType' => [
                 'files' => [
@@ -498,6 +562,18 @@ final class IncludeTest extends TestCase
                 ],
                 'hoist_constants' => true,
             ],
+            'hoistConstantsSkipsFirstClassCallableDefine' => [
+                'files' => [
+                    (string) getcwd() . DIRECTORY_SEPARATOR . 'file1.php' => '<?php
+                        define(...);',
+                ],
+                'files_to_check' => [
+                    (string) getcwd() . DIRECTORY_SEPARATOR . 'file1.php',
+                ],
+                'hoist_constants' => true,
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
             'duplicateClasses' => [
                 'files' => [
                     (string) getcwd() . DIRECTORY_SEPARATOR . 'file1.php' => '<?php
@@ -718,6 +794,20 @@ final class IncludeTest extends TestCase
                     (string) getcwd() . DIRECTORY_SEPARATOR . 'a' . DIRECTORY_SEPARATOR . 'script.php' => '<?php
                         if (file_exists(__DIR__ . "/../optional.php")) {
                             require __DIR__ . "/../other.php";
+                        }',
+                ],
+                'files_to_check' => [
+                    (string) getcwd() . DIRECTORY_SEPARATOR . 'a' . DIRECTORY_SEPARATOR . 'script.php',
+                ],
+                'error_message' => 'MissingFile',
+            ],
+            'requireOfAResolvedPathCheckedByANegatedFileExistsInAnAndCondition' => [
+                'files' => [
+                    (string) getcwd() . DIRECTORY_SEPARATOR . 'a' . DIRECTORY_SEPARATOR . 'script.php' => '<?php
+                        function load(bool $flag): void {
+                            if ($flag && !is_file(__DIR__ . "/missing.php")) {
+                                require __DIR__ . "/missing.php";
+                            }
                         }',
                 ],
                 'files_to_check' => [
@@ -1052,5 +1142,117 @@ final class IncludeTest extends TestCase
         // This must not crash — previously threw UnexpectedValueException
         // from MethodAnalyzer when the method was missing from storage.
         $file_analyzer->analyze();
+    }
+
+    /**
+     * The constructor of the parent initializes its property through a helper, in a file that requires the
+     * child's file: collecting what the helper does must not be cut short by the include cycle.
+     */
+    public function testInitializationsAreCollectedAcrossFilesRequiringEachOther(): void
+    {
+        set_time_limit(30);
+
+        $codebase = $this->project_analyzer->getCodebase();
+        $config = $codebase->config;
+        $config->throw_exception = true;
+
+        $child_path = (string) getcwd() . DIRECTORY_SEPARATOR . 'Child.php';
+        $parent_path = (string) getcwd() . DIRECTORY_SEPARATOR . 'ParentClass.php';
+
+        $this->addFile($child_path, '<?php
+            namespace Foo;
+
+            class Child extends ParentClass {
+                public function __construct() {
+                    parent::__construct();
+                }
+            }
+        ');
+        $this->addFile($parent_path, '<?php
+            namespace Foo;
+
+            require_once __DIR__ . "/Child.php";
+
+            class ParentClass {
+                protected int $prop;
+
+                public function __construct() {
+                    $this->init();
+                }
+
+                private function init(): void {
+                    $this->prop = 1;
+                }
+            }
+        ');
+
+        foreach ([$child_path, $parent_path] as $file_path) {
+            $codebase->scanner->addFilesToShallowScan([$file_path => $file_path]);
+            $codebase->addFilesToAnalyze([$file_path => $file_path]);
+        }
+
+        $codebase->scanFiles();
+
+        foreach ([$child_path, $parent_path] as $file_path) {
+            $file_analyzer = new FileAnalyzer(
+                $this->project_analyzer,
+                $file_path,
+                $config->shortenFileName($file_path),
+            );
+            $file_analyzer->analyze();
+        }
+
+        self::assertTrue(true);
+    }
+
+    /**
+     * A class whose parent's file requires the class's file made the analysis of the constructor call
+     * collect the parent's file again and again. A hang shows as the time limit being hit.
+     */
+    public function testTaintAnalysisOfFilesRequiringEachOtherTerminates(): void
+    {
+        set_time_limit(30);
+
+        $codebase = $this->project_analyzer->getCodebase();
+        $config = $codebase->config;
+        $config->throw_exception = false;
+
+        $child_path = (string) getcwd() . DIRECTORY_SEPARATOR . 'Child.php';
+        $parent_path = (string) getcwd() . DIRECTORY_SEPARATOR . 'ParentClass.php';
+
+        $this->addFile($child_path, '<?php
+            namespace Foo;
+
+            class Child extends ParentClass {
+                public $prop;
+            }
+        ');
+        $this->addFile($parent_path, '<?php
+            namespace Foo;
+
+            require_once __DIR__ . "/Child.php";
+
+            class ParentClass {
+                public function __construct() {}
+            }
+        ');
+
+        $this->project_analyzer->trackTaintedInputs();
+
+        foreach ([$child_path, $parent_path] as $file_path) {
+            $codebase->scanner->addFilesToShallowScan([$file_path => $file_path]);
+            $codebase->addFilesToAnalyze([$file_path => $file_path]);
+        }
+
+        $codebase->scanFiles();
+
+        $file_analyzer = new FileAnalyzer(
+            $this->project_analyzer,
+            $child_path,
+            $config->shortenFileName($child_path),
+        );
+        $file_analyzer->analyze();
+
+        self::assertTrue(true);
     }
 }
