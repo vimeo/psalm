@@ -818,7 +818,11 @@ final class TemplateStandinTypeReplacer
                         $atomic_types[] = $replacement_atomic_type;
                     }
 
-                    $had_template = true;
+                    // a binding that is only read (class templates fixed by the receiver) is the actual
+                    // type, not a stand-in for what the arguments may still infer
+                    if (!$template_result->readonly) {
+                        $had_template = true;
+                    }
                 }
             }
 
