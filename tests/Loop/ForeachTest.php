@@ -23,69 +23,26 @@ final class ForeachTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
-            'foreachByReferenceWritingEveryItemReplacesTheItemTypes' => [
+            'foreachOverListKeepsTheEmptyStringOfAnEmptyOrNumericString' => [
                 'code' => '<?php
-                    /**
-                     * @param list<string> $names
-                     * @return array<string, array<string, true>>
-                     */
-                    function nest(array $names): array {
-                        $outers = [];
-                        $inners = [];
-
-                        foreach ($names as $name) {
-                            $outers[$name] = true;
-                            $inners[$name] = true;
+                    /** @var list<array{foo: ""|numeric-string}> $rows */
+                    $rows = [];
+                    $row = ["foo" => "1"];
+                    foreach ($rows as $row) {
+                        if ("" === $row["foo"]) {
+                            throw new Exception("empty");
                         }
-
-                        foreach ($outers as &$outer) {
-                            $outer = $inners;
-                        }
-
-                        return $outers;
                     }
 
-                    function shape(): void {
-                        $letters = ["a", "b", "c"];
-
-                        foreach ($letters as &$letter) {
-                            $letter = false;
-                        }
-
-                        unset($letter);
-
-                        /** @psalm-check-type-exact $letters = list{false, false, false} */;
-                    }
-
-                    function partly(): void {
-                        $numbers = [1, 2];
-
-                        foreach ($numbers as &$number) {
-                            if (rand(0, 1)) {
-                                $number = "x";
-                            }
-                        }
-
-                        unset($number);
-
-                        /** @psalm-check-type-exact $numbers = list{\'x\'|1|2, \'x\'|1|2} */;
-                    }
-
-                    function leftEarly(): void {
-                        $numbers = [1, 2];
-
-                        foreach ($numbers as &$number) {
-                            $number = "y";
-
-                            if (rand(0, 1)) {
-                                break;
-                            }
-                        }
-
-                        unset($number);
-
-                        /** @psalm-check-type-exact $numbers = list{\'y\'|1, \'y\'|2} */;
+                    /** @var non-empty-list<""|numeric-string> $values */
+                    $values = ["1"];
+                    $value = "1";
+                    foreach ($values as $value) {
                     }',
+                'assertions' => [
+                    '$row===' => "array{foo: numeric-string}",
+                    '$value===' => "''|numeric-string",
+                ],
             ],
             'postDecrementInTheConditionOfAnIfThatBreaksOverAConcreteArray' => [
                 'code' => '<?php
@@ -1710,6 +1667,70 @@ final class ForeachTest extends TestCase
                 'assertions' => [],
                 'ignored_issues' => [],
                 'php_version' => '8.0',
+            ],
+            'foreachByReferenceWritingEveryItemReplacesTheItemTypes' => [
+                'code' => '<?php
+                    /**
+                     * @param list<string> $names
+                     * @return array<string, array<string, true>>
+                     */
+                    function nest(array $names): array {
+                        $outers = [];
+                        $inners = [];
+
+                        foreach ($names as $name) {
+                            $outers[$name] = true;
+                            $inners[$name] = true;
+                        }
+
+                        foreach ($outers as &$outer) {
+                            $outer = $inners;
+                        }
+
+                        return $outers;
+                    }
+
+                    function shape(): void {
+                        $letters = ["a", "b", "c"];
+
+                        foreach ($letters as &$letter) {
+                            $letter = false;
+                        }
+
+                        unset($letter);
+
+                        /** @psalm-check-type-exact $letters = list{false, false, false} */;
+                    }
+
+                    function partly(): void {
+                        $numbers = [1, 2];
+
+                        foreach ($numbers as &$number) {
+                            if (rand(0, 1)) {
+                                $number = "x";
+                            }
+                        }
+
+                        unset($number);
+
+                        /** @psalm-check-type-exact $numbers = list{\'x\'|1|2, \'x\'|1|2} */;
+                    }
+
+                    function leftEarly(): void {
+                        $numbers = [1, 2];
+
+                        foreach ($numbers as &$number) {
+                            $number = "y";
+
+                            if (rand(0, 1)) {
+                                break;
+                            }
+                        }
+
+                        unset($number);
+
+                        /** @psalm-check-type-exact $numbers = list{\'y\'|1, \'y\'|2} */;
+                    }',
             ],
         ];
     }
