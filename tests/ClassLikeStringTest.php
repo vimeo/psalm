@@ -324,14 +324,77 @@ final class ClassLikeStringTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
-            'negatedClassExistsOnTheLeftOfAnOrAllowsTheClassOnTheRight' => [
+            'isSubclassOfKeepsTheTemplateOfAClassString' => [
                 'code' => '<?php
-                    function check(): bool {
-                        return !class_exists(Missing::class) || Missing::foo();
+                    /** @psalm-consistent-constructor */
+                    abstract class Message {}
+                    class MessageImpl extends Message {}
+
+                    interface Builder
+                    {
+                        /**
+                         * @template T as object
+                         * @psalm-param class-string<T> $className
+                         * @return T
+                         */
+                        public function build(string $className);
                     }
 
-                    function checkTwo(): bool {
-                        return (!class_exists(First::class) || !class_exists(Second::class)) || First::foo();
+                    class MessageBuilder implements Builder
+                    {
+                        public function build(string $className)
+                        {
+                            if (!is_subclass_of($className, Message::class)) {
+                                throw new \LogicException();
+                            }
+
+                            return new $className();
+                        }
+                    }
+
+                    function run(MessageBuilder $builder): MessageImpl
+                    {
+                        return $builder->build(MessageImpl::class);
+                    }',
+                'assertions' => [],
+                'ignored_issues' => ['MissingOverrideAttribute'],
+            ],
+            'isAKeepsTheTemplateOfAClassString' => [
+                'code' => '<?php
+                    /** @psalm-consistent-constructor */
+                    abstract class Message {}
+
+                    /**
+                     * @template T of object
+                     * @param class-string<T> $className
+                     * @return T
+                     */
+                    function make(string $className): object
+                    {
+                        if (!is_a($className, Message::class, true)) {
+                            throw new \LogicException();
+                        }
+
+                        return new $className();
+                    }',
+            ],
+            'isSubclassOfOfAClassStringWithAnUnrelatedBound' => [
+                'code' => '<?php
+                    interface HasName {}
+                    interface HasId {}
+
+                    /**
+                     * @template T of HasName
+                     * @param class-string<T> $className
+                     * @return T
+                     */
+                    function make(string $className): object
+                    {
+                        if (!is_subclass_of($className, HasId::class)) {
+                            throw new \LogicException();
+                        }
+
+                        return new $className();
                     }',
             ],
             'staticInAListParameterOfAStaticCallNamingAClass' => [
@@ -937,51 +1000,6 @@ final class ClassLikeStringTest extends TestCase
                         }
                     }',
             ],
-            'allowClassExistsChecksCombinedWithAnd' => [
-                'code' => '<?php
-                    function test(): void {
-                        if (class_exists(\\Doesnt\\Really::class) && class_exists(\\Doesnt\\Either::class)) {
-                            \\Doesnt\\Really::something();
-                            \\Doesnt\\Either::something();
-                            new \\Doesnt\\Either();
-                        }
-                    }',
-            ],
-            'allowClassExistsChecksCombinedWithOrAndAnEarlyReturn' => [
-                'code' => '<?php
-                    /** @param class-string $class */
-                    function test(string $class): void {
-                        if (!class_exists(\\Doesnt\\Really::class) || !class_exists(\\Doesnt\\Either::class)) {
-                            return;
-                        }
-
-                        if (is_subclass_of($class, \\Doesnt\\Really::class)
-                            || is_subclass_of($class, \\Doesnt\\Either::class)
-                        ) {
-                            new \\Doesnt\\Either();
-                        }
-                    }',
-            ],
-            'allowClassExistsChecksCombinedWithSeveralOperands' => [
-                'code' => '<?php
-                    function test(): void {
-                        if (class_exists("Doesnt\\One") && class_exists("Doesnt\\Two") && class_exists("Doesnt\\Three")) {
-                            \\Doesnt\\Three::something();
-                        }
-                    }',
-            ],
-            'allowInterfaceAndEnumExistsChecksCombinedWithAnd' => [
-                'code' => '<?php
-                    function test(): void {
-                        if (interface_exists(\\Doesnt\\Really::class) && enum_exists(\\Doesnt\\Either::class)) {
-                            \\Doesnt\\Really::something();
-                            \\Doesnt\\Either::something();
-                        }
-                    }',
-                'assertions' => [],
-                'ignored_issues' => [],
-                'php_version' => '8.1',
-            ],
             'allowComparisonToStaticClassString' => [
                 'code' => '<?php
                     class A {
@@ -1312,6 +1330,51 @@ final class ClassLikeStringTest extends TestCase
                     '$r' => 'class-string<A>',
                 ],
             ],
+            'allowClassExistsChecksCombinedWithAnd' => [
+                'code' => '<?php
+                    function test(): void {
+                        if (class_exists(\\Doesnt\\Really::class) && class_exists(\\Doesnt\\Either::class)) {
+                            \\Doesnt\\Really::something();
+                            \\Doesnt\\Either::something();
+                            new \\Doesnt\\Either();
+                        }
+                    }',
+            ],
+            'allowClassExistsChecksCombinedWithOrAndAnEarlyReturn' => [
+                'code' => '<?php
+                    /** @param class-string $class */
+                    function test(string $class): void {
+                        if (!class_exists(\\Doesnt\\Really::class) || !class_exists(\\Doesnt\\Either::class)) {
+                            return;
+                        }
+
+                        if (is_subclass_of($class, \\Doesnt\\Really::class)
+                            || is_subclass_of($class, \\Doesnt\\Either::class)
+                        ) {
+                            new \\Doesnt\\Either();
+                        }
+                    }',
+            ],
+            'allowClassExistsChecksCombinedWithSeveralOperands' => [
+                'code' => '<?php
+                    function test(): void {
+                        if (class_exists("Doesnt\\One") && class_exists("Doesnt\\Two") && class_exists("Doesnt\\Three")) {
+                            \\Doesnt\\Three::something();
+                        }
+                    }',
+            ],
+            'allowInterfaceAndEnumExistsChecksCombinedWithAnd' => [
+                'code' => '<?php
+                    function test(): void {
+                        if (interface_exists(\\Doesnt\\Really::class) && enum_exists(\\Doesnt\\Either::class)) {
+                            \\Doesnt\\Really::something();
+                            \\Doesnt\\Either::something();
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
         ];
     }
 
@@ -1322,44 +1385,6 @@ final class ClassLikeStringTest extends TestCase
     public static function providerInvalidCodeParse(): iterable
     {
         return [
-            'classExistsOnTheLeftOfAnOrDoesNotAllowTheClassOnTheRight' => [
-                'code' => '<?php
-                    function check(): bool {
-                        return class_exists(Missing::class) || Missing::foo();
-                    }',
-                'error_message' => 'UndefinedClass',
-            ],
-            'negatedClassExistsOnTheLeftOfAnAndDoesNotAllowTheClassOnTheRight' => [
-                'code' => '<?php
-                    function check(): bool {
-                        return !class_exists(Missing::class) && Missing::foo();
-                    }',
-                'error_message' => 'UndefinedClass',
-            ],
-            'classExistsInAnOrOnTheLeftOfAnAndDoesNotAllowTheClassOnTheRight' => [
-                'code' => '<?php
-                    function check(): bool {
-                        return (class_exists(Missing::class) || class_exists(Other::class)) && Missing::foo();
-                    }',
-                'error_message' => 'UndefinedClass',
-            ],
-            'classExistsChecksOfOtherClassesDoNotAllowAnUncheckedOne' => [
-                'code' => '<?php
-                    function test(): void {
-                        if (class_exists(\\Doesnt\\Really::class) && class_exists(\\Doesnt\\Either::class)) {
-                            new \\Doesnt\\Unchecked();
-                        }
-                    }',
-                'error_message' => 'Class, interface or enum named Doesnt\\Unchecked does not exist',
-            ],
-            'classExistsInStandaloneAndDoesNotLeakAfterTheExpression' => [
-                'code' => '<?php
-                    function test(): void {
-                        $result = class_exists(\\Doesnt\\Really::class) && \\Doesnt\\Really::bar();
-                        new \\Doesnt\\Really();
-                    }',
-                'error_message' => 'Class, interface or enum named Doesnt\\Really does not exist',
-            ],
             'staticInAStaticCallNamingASubclassRejectsTheParentClassString' => [
                 'code' => '<?php
                     class Foo {
@@ -1624,6 +1649,44 @@ final class ClassLikeStringTest extends TestCase
                         return $s;
                     }',
                 'error_message' => 'InvalidReturnStatement',
+            ],
+            'classExistsOnTheLeftOfAnOrDoesNotAllowTheClassOnTheRight' => [
+                'code' => '<?php
+                    function check(): bool {
+                        return class_exists(Missing::class) || Missing::foo();
+                    }',
+                'error_message' => 'UndefinedClass',
+            ],
+            'negatedClassExistsOnTheLeftOfAnAndDoesNotAllowTheClassOnTheRight' => [
+                'code' => '<?php
+                    function check(): bool {
+                        return !class_exists(Missing::class) && Missing::foo();
+                    }',
+                'error_message' => 'UndefinedClass',
+            ],
+            'classExistsInAnOrOnTheLeftOfAnAndDoesNotAllowTheClassOnTheRight' => [
+                'code' => '<?php
+                    function check(): bool {
+                        return (class_exists(Missing::class) || class_exists(Other::class)) && Missing::foo();
+                    }',
+                'error_message' => 'UndefinedClass',
+            ],
+            'classExistsChecksOfOtherClassesDoNotAllowAnUncheckedOne' => [
+                'code' => '<?php
+                    function test(): void {
+                        if (class_exists(\\Doesnt\\Really::class) && class_exists(\\Doesnt\\Either::class)) {
+                            new \\Doesnt\\Unchecked();
+                        }
+                    }',
+                'error_message' => 'Class, interface or enum named Doesnt\\Unchecked does not exist',
+            ],
+            'classExistsInStandaloneAndDoesNotLeakAfterTheExpression' => [
+                'code' => '<?php
+                    function test(): void {
+                        $result = class_exists(\\Doesnt\\Really::class) && \\Doesnt\\Really::bar();
+                        new \\Doesnt\\Really();
+                    }',
+                'error_message' => 'Class, interface or enum named Doesnt\\Really does not exist',
             ],
         ];
     }
