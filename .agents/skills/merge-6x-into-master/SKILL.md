@@ -20,8 +20,14 @@ to `origin/master`, but CI runs on it first.
    - **Native symbol availability:** master-only tests using newer native symbols at the
      default PHP 7.4 fail. Set `php_version`, positionally (see CLAUDE.md).
    - **Baseline:** psalm-baseline.xml entries the merge made stale.
-   - `.github/workflows/build-stubs.yml` triggers must stay identical on both branches
-     (branch pushes only, never tags or releases).
+   - **Stub images:** 6.x still builds floating stub images, master builds them from
+     `bin/stubs/image_lock.php`. Keep master's side of the stub flow, even where the merge
+     raised no conflict:
+     `git checkout HEAD -- .github/workflows/build-stubs.yml bin/stubs/build_docker.php bin/stubs/gen_callmap.sh bin/stubs/gen_base_callmap.php bin/stubs/image_lock.php dictionaries/autogen/`.
+     Port 6.x changes of the `build_docker.php` constants (`EXTENSIONS`, `PINS`, …) by
+     hand; the stubs workflow on the PR branch then regenerates the affected versions. The
+     `Check PHP syntax` job fails while a stamp in `dictionaries/autogen/CallMapInputs.php`
+     doesn't match.
 3. Push the merge commit to a temporary branch on your fork, open a **draft** PR against
    master (`gh pr create --repo vimeo/psalm --base master --draft`, plus a `release:*`
    label), and wait for green CI.
@@ -30,6 +36,8 @@ to `origin/master`, but CI runs on it first.
 5. **Composer build patch:** after a push to 6.x or master, the "Build docker image for
    stubs" workflow regenerates the callmaps and other `composer build` files, and its
    `push-composer-build` job commits any difference to the branch ("Update the files
-   composer build generates") and dispatches CI on it. Pull before pushing again. If that
+   composer build generates") and dispatches CI on it. On master, a difference in
+   `bin/stubs/image_lock.php` or `dictionaries/autogen/` goes to a pull request from
+   `stubs-refresh/master` instead. Pull before pushing again. If that
    job fails, run `bin/ci/apply-composer-build-patch.sh` on a checkout at the commit the
    run built (it finds the run by commit), commit, and push.
