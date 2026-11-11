@@ -418,8 +418,14 @@ final class IfElseAnalyzer
 
         if ($if_scope->redefined_vars) {
             foreach ($if_scope->redefined_vars as $var_id => $type) {
+                $previous_type = $context->vars_in_scope[$var_id] ?? null;
                 $context->vars_in_scope[$var_id] = $type;
                 $if_scope->updated_vars[$var_id] = true;
+
+                // what was known of an offset or property of a variable a branch assigned is no longer true
+                if ($previous_type && isset($if_scope->reassigned_var_ids[$var_id])) {
+                    $context->removeDescendents($var_id, $previous_type, $type);
+                }
 
                 if ($if_scope->reasonable_clauses) {
                     $if_scope->reasonable_clauses = Context::filterClauses(
