@@ -21,6 +21,47 @@ final class ConditionalTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'sideEffectInTheOrConditionRunsOnceInTheElse' => [
+                'code' => '<?php
+                    /** @return list<string> */
+                    function getData(): array {
+                        return [];
+                    }
+
+                    function plain(): void {
+                        $i = 0;
+
+                        if ($i++ > 5 || !($d = getData())) {
+                            echo 1;
+                        } else {
+                            /** @psalm-check-type-exact $i = 1 */;
+                            echo count($d);
+                        }
+                    }
+
+                    function chained(bool $flag): void {
+                        $i = 0;
+
+                        if ($flag) {
+                            echo 0;
+                        } elseif ($i++ > 5 || !($d = getData())) {
+                            echo 1;
+                        } else {
+                            /** @psalm-check-type-exact $i = 1 */;
+                            echo count($d);
+                        }
+                    }
+
+                    /** @psalm-return 1 */
+                    function ternary(): int {
+                        $i = 0;
+
+                        return $i++ > 5 || !($d = getData()) ? 1 : $i;
+                    }',
+                'assertions' => [],
+                'ignored_issues' => ['RiskyTruthyFalsyComparison'],
+                'php_version' => '8.0',
+            ],
             'elseifElseKnowsVarAssignedInOrCondition' => [
                 'code' => '<?php
                     /** @return string[] */

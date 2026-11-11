@@ -52,6 +52,12 @@ final class TernaryAnalyzer
         $if_scope = new IfScope();
 
         try {
+            // the else of an `||` is analysed again from where the condition started, not from where it ended
+            $pre_condition_context = $stmt->cond instanceof PhpParser\Node\Expr\BinaryOp\BooleanOr
+                || $stmt->cond instanceof PhpParser\Node\Expr\BinaryOp\LogicalOr
+                    ? clone $context
+                    : null;
+
             $if_conditional_scope = IfConditionalAnalyzer::analyze(
                 $statements_analyzer,
                 $stmt->cond,
@@ -207,14 +213,11 @@ final class TernaryAnalyzer
         $t_else_context = clone $context;
 
         // the else runs when every operand of an `||` was evaluated and falsy, so what they assigned is known there
-        if (array_filter($assigned_in_conditional_var_ids) !== []
-            && ($stmt->cond instanceof PhpParser\Node\Expr\BinaryOp\BooleanOr
-                || $stmt->cond instanceof PhpParser\Node\Expr\BinaryOp\LogicalOr)
-        ) {
+        if (array_filter($assigned_in_conditional_var_ids) !== [] && $pre_condition_context !== null) {
             IfAnalyzer::addConditionallyAssignedVarsToContext(
                 $statements_analyzer,
                 $stmt->cond,
-                clone $context,
+                $pre_condition_context,
                 $t_else_context,
                 $assigned_in_conditional_var_ids,
             );

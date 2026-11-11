@@ -95,7 +95,7 @@ final class ElseIfAnalyzer
             IfAnalyzer::addConditionallyAssignedVarsToContext(
                 $statements_analyzer,
                 $elseif->cond,
-                clone $post_if_context,
+                clone $pre_conditional_context,
                 $else_context,
                 $assigned_in_conditional_var_ids,
             );
