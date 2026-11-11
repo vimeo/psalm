@@ -8,14 +8,12 @@ use PhpParser;
 use Psalm\CodeLocation;
 use Psalm\Codebase;
 use Psalm\Context;
-use Psalm\FileManipulation;
 use Psalm\Internal\Analyzer\ClassAnalyzer;
 use Psalm\Internal\Analyzer\ClassLikeAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\ExpressionIdentifier;
 use Psalm\Internal\Analyzer\Statements\Expression\Fetch\StaticPropertyFetchAnalyzer;
 use Psalm\Internal\Analyzer\Statements\ExpressionAnalyzer;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
-use Psalm\Internal\FileManipulation\FileManipulationBuffer;
 use Psalm\Internal\Type\Comparator\TypeComparisonResult;
 use Psalm\Internal\Type\Comparator\UnionTypeComparator;
 use Psalm\Internal\Type\TypeExpander;
@@ -32,7 +30,6 @@ use Psalm\Type;
 use Psalm\Type\Atomic\TNamedObject;
 use Psalm\Type\Union;
 
-use function explode;
 use function in_array;
 use function strcspn;
 use function strpos;
@@ -164,48 +161,16 @@ final class StaticPropertyAssignmentAnalyzer
                 false,
             );
 
-            $declaring_property_id = strtolower($declaring_property_class) . '::$' . $prop_name;
-
             if ($codebase->alter_code && $stmt->class instanceof PhpParser\Node\Name) {
-                $moved_class = $codebase->classlikes->handleClassLikeReferenceInMigration(
-                    $codebase,
+                StaticPropertyFetchAnalyzer::handleMigration(
                     $statements_analyzer,
+                    $stmt,
                     $stmt->class,
-                    $fq_class_name,
                     $context,
+                    $fq_class_name,
+                    $declaring_property_class,
+                    $prop_name->name,
                 );
-
-                if (!$moved_class) {
-                    foreach ($codebase->property_transforms as $original_pattern => $transformation) {
-                        if ($declaring_property_id === $original_pattern) {
-                            [$old_declaring_fq_class_name] = explode('::$', $declaring_property_id);
-                            [$new_fq_class_name, $new_property_name] = explode('::$', $transformation);
-
-                            $file_manipulations = [];
-
-                            if (strtolower($new_fq_class_name) !== $old_declaring_fq_class_name) {
-                                $file_manipulations[] = new FileManipulation(
-                                    (int) $stmt->class->getAttribute('startFilePos'),
-                                    (int) $stmt->class->getAttribute('endFilePos') + 1,
-                                    Type::getStringFromFQCLN(
-                                        $new_fq_class_name,
-                                        $statements_analyzer->getNamespace(),
-                                        $statements_analyzer->getAliasedClassesFlipped(),
-                                        null,
-                                    ),
-                                );
-                            }
-
-                            $file_manipulations[] = new FileManipulation(
-                                (int) $stmt->name->getAttribute('startFilePos'),
-                                (int) $stmt->name->getAttribute('endFilePos') + 1,
-                                '$' . $new_property_name,
-                            );
-
-                            FileManipulationBuffer::add($statements_analyzer->getFilePath(), $file_manipulations);
-                        }
-                    }
-                }
             }
 
             $class_storage = $codebase->classlike_storage_provider->get($declaring_property_class);

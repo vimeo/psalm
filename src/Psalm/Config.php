@@ -6,6 +6,7 @@ namespace Psalm;
 
 use Amp\Serialization\NativeSerializer;
 use Amp\Serialization\Serializer;
+use Closure;
 use Composer\Autoload\ClassLoader;
 use Composer\Semver\Constraint\Constraint;
 use Composer\Semver\VersionParser;
@@ -447,6 +448,8 @@ final class Config
     public bool $ensure_array_string_offsets_exist = false;
 
     public bool $ensure_array_int_offsets_exist = false;
+
+    public bool $strict_optional_callable_params = false;
 
     public bool $ensure_override_attribute = true;
 
@@ -1128,6 +1131,7 @@ final class Config
             'includePhpVersionsInErrorBaseline' => 'include_php_versions_in_error_baseline',
             'ensureArrayStringOffsetsExist' => 'ensure_array_string_offsets_exist',
             'ensureArrayIntOffsetsExist' => 'ensure_array_int_offsets_exist',
+            'strictOptionalCallableParams' => 'strict_optional_callable_params',
             'ensureOverrideAttribute' => 'ensure_override_attribute',
             'suggestPurityAnnotations' => 'suggest_purity_annotations',
             'reportMixedIssues' => 'show_mixed_issues',
@@ -1361,7 +1365,15 @@ final class Config
         }
 
         if (isset($config_xml->projectFiles)) {
-            $config->project_files = ProjectFileFilter::loadFromXMLElement($config_xml->projectFiles, $base_dir, true);
+            $project_files_xml = $config_xml->projectFiles;
+            $config->project_files = self::loadWithContext(
+                '<projectFiles>',
+                static fn(): ProjectFileFilter => ProjectFileFilter::loadFromXMLElement(
+                    $project_files_xml,
+                    $base_dir,
+                    true,
+                ),
+            );
         }
 
         // any paths passed via CLI should be added to the projectFiles
@@ -1426,23 +1438,39 @@ final class Config
                     $child->addAttribute('name', $path);
                 }
 
-                $config->project_files = ProjectFileFilter::loadFromXMLElement(
-                    $config_xml->projectFiles,
-                    $base_dir,
-                    true,
+                $project_files_xml = $config_xml->projectFiles;
+                $config->project_files = self::loadWithContext(
+                    '<projectFiles>',
+                    static fn(): ProjectFileFilter => ProjectFileFilter::loadFromXMLElement(
+                        $project_files_xml,
+                        $base_dir,
+                        true,
+                    ),
                 );
             }
         }
 
         if (isset($config_xml->extraFiles)) {
-            $config->extra_files = ProjectFileFilter::loadFromXMLElement($config_xml->extraFiles, $base_dir, true);
+            $extra_files_xml = $config_xml->extraFiles;
+            $config->extra_files = self::loadWithContext(
+                '<extraFiles>',
+                static fn(): ProjectFileFilter => ProjectFileFilter::loadFromXMLElement(
+                    $extra_files_xml,
+                    $base_dir,
+                    true,
+                ),
+            );
         }
 
         if (isset($config_xml->taintAnalysis->ignoreFiles)) {
-            $config->taint_analysis_ignored_files = TaintAnalysisFileFilter::loadFromXMLElement(
-                $config_xml->taintAnalysis->ignoreFiles,
-                $base_dir,
-                false,
+            $taint_ignore_files_xml = $config_xml->taintAnalysis->ignoreFiles;
+            $config->taint_analysis_ignored_files = self::loadWithContext(
+                '<taintAnalysis><ignoreFiles>',
+                static fn(): TaintAnalysisFileFilter => TaintAnalysisFileFilter::loadFromXMLElement(
+                    $taint_ignore_files_xml,
+                    $base_dir,
+                    false,
+                ),
             );
         }
 
@@ -1621,7 +1649,10 @@ final class Config
                     foreach ($issue_handler_children as $key => $issue_handler) {
                         $handled_issue = $key === 'PluginIssue' ? (string) $issue_handler['name'] : $key;
 
-                        $loaded_handler = IssueHandler::loadFromXMLElement($issue_handler, $base_dir);
+                        $loaded_handler = self::loadWithContext(
+                            $key === 'PluginIssue' ? '<PluginIssue name="' . $handled_issue . '">' : '<' . $key . '>',
+                            static fn(): IssueHandler => IssueHandler::loadFromXMLElement($issue_handler, $base_dir),
+                        );
 
                         // an issue named twice keeps what both elements say
                         if (isset($config->issue_handlers[$handled_issue])) {
@@ -3348,6 +3379,23 @@ final class Config
     {
         if ($this->cache_directory !== null) {
             $this->cache_directory .= '-s';
+        }
+    }
+
+    /**
+     * Names the element of psalm.xml that a config error comes from
+     *
+     * @psalm-pure
+     * @template T
+     * @param Closure[_](): T $load
+     * @return T
+     */
+    private static function loadWithContext(string $element, Closure $load): mixed
+    {
+        try {
+            return $load();
+        } catch (ConfigException $e) {
+            throw new ConfigException('In ' . $element . ': ' . $e->getMessage(), 0, $e);
         }
     }
 

@@ -20,6 +20,31 @@ final class EnumTest extends TestCase
     use ValidCodeAnalysisTestTrait;
     use InvalidCodeAnalysisTestTrait;
 
+    private const BINARY_ENUM_CODE = '<?php
+        enum Bom: string {
+            case Utf16Le = "\xFF\xFE";
+        }
+
+        abstract class AbstractCsv {
+            protected ?Bom $bom = null;
+
+            public function getBom(): string {
+                return $this->bom->value ?? "";
+            }
+        }
+
+        final class Reader extends AbstractCsv {}
+
+        function read(Reader $reader): string {
+            return $reader->getBom();
+        }';
+
+    public function testInheritedMethodReturningBinaryEnumValueWithTaintAnalysis(): void
+    {
+        $this->project_analyzer->trackTaintedInputs();
+        $this->testValidCode(self::BINARY_ENUM_CODE, [], [], '8.1');
+    }
+
     public function testAMixedPartOfTheReceiverDoesNotMakeTheValueOfTheEnumPartMixed(): void
     {
         $this->testConfig->throw_exception = false;
@@ -68,6 +93,23 @@ final class EnumTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'casesOfAnEnumString' => [
+                'code' => '<?php
+                    /** @param enum-string $string */
+                    function listCases(string $string): void {
+                        $cases = $string::cases();
+                        /** @psalm-check-type-exact $cases = list<UnitEnum> */
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
+            'inheritedMethodReturningBinaryEnumValue' => [
+                'code' => self::BINARY_ENUM_CODE,
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
             'enumDeclaredInAConditional' => [
                 'code' => '<?php
                     if (PHP_VERSION_ID >= 80100) {
@@ -1013,6 +1055,16 @@ final class EnumTest extends TestCase
     public static function providerInvalidCodeParse(): iterable
     {
         return [
+            'methodOfABackedEnumIsUnknownOnAnEnumString' => [
+                'code' => '<?php
+                    /** @param enum-string $string */
+                    function fromValue(string $string): void {
+                        $string::from(1);
+                    }',
+                'error_message' => 'MixedMethodCall',
+                'error_levels' => [],
+                'php_version' => '8.1',
+            ],
             'tryFromWithValueOfTemplate' => [
                 'code' => '<?php
                     enum Suit: string {
