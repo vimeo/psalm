@@ -1596,17 +1596,6 @@ final class AnnotationTest extends TestCase
                         return $a;
                     }',
             ],
-            'globalInAFileDocumentingItsThisIsAnIncludedTemplate' => [
-                'code' => '<?php
-                    /**
-                     * @var stdClass $this
-                     */
-
-                    /** @var string $title */
-                    global $title;
-
-                    echo strlen($title);',
-            ],
             'globalDocBlockInGlobalScope' => [
                 'code' => '<?php
                     /**
@@ -1921,6 +1910,17 @@ final class AnnotationTest extends TestCase
                         return $foo;
                     }',
             ],
+            'globalInAFileDocumentingItsThisIsAnIncludedTemplate' => [
+                'code' => '<?php
+                    /**
+                     * @var stdClass $this
+                     */
+
+                    /** @var string $title */
+                    global $title;
+
+                    echo strlen($title);',
+            ],
         ];
     }
 
@@ -1931,11 +1931,37 @@ final class AnnotationTest extends TestCase
     public static function providerInvalidCodeParse(): iterable
     {
         return [
-            'globalInAFileWithoutADocumentedThisIsInvalid' => [
-                'code' => '<?php
-                    /** @var string $title */
-                    global $title;',
-                'error_message' => 'InvalidGlobal',
+            'removedSelfAccessingCallableWithParamsIsInvalid' => [
+                'code' => <<<'PHP'
+                    <?php
+                    /** @param self-accessing-callable(): int $f */
+                    function f(callable $f): void {}
+                    PHP,
+                'error_message' => 'InvalidDocblock',
+            ],
+            'removedSelfMutatingCallableWithParamsIsInvalid' => [
+                'code' => <<<'PHP'
+                    <?php
+                    /** @param self-mutating-callable(): int $f */
+                    function f(callable $f): void {}
+                    PHP,
+                'error_message' => 'InvalidDocblock',
+            ],
+            'removedSelfAccessingClosureWithParamsIsInvalid' => [
+                'code' => <<<'PHP'
+                    <?php
+                    /** @param self-accessing-Closure(): int $f */
+                    function f(callable $f): void {}
+                    PHP,
+                'error_message' => 'InvalidDocblock',
+            ],
+            'removedSelfMutatingClosureWithParamsIsInvalid' => [
+                'code' => <<<'PHP'
+                    <?php
+                    /** @param self-mutating-Closure(): int $f */
+                    function f(callable $f): void {}
+                    PHP,
+                'error_message' => 'InvalidDocblock',
             ],
             'psalmVarWithTooManyTemplateParamsOnProperty' => [
                 'code' => '<?php
@@ -2746,6 +2772,12 @@ final class AnnotationTest extends TestCase
                 'error_message' => 'InvalidDocblock',
                 'error_levels' => [],
                 'php_version' => '8.0',
+            ],
+            'globalInAFileWithoutADocumentedThisIsInvalid' => [
+                'code' => '<?php
+                    /** @var string $title */
+                    global $title;',
+                'error_message' => 'InvalidGlobal',
             ],
         ];
     }
