@@ -126,6 +126,34 @@ final class ArrayAssignmentTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'assignToTheItemOfAnArrayAFunctionReturnsByReference' => [
+                'code' => '<?php
+                    function &ensureArray(array &$what): array {
+                        return $what;
+                    }
+
+                    $f = [];
+                    ensureArray($f)[] = "foobar";',
+            ],
+            'assignToTheItemOfAnArrayAMethodReturnsByReference' => [
+                'code' => '<?php
+                    final class Bag {
+                        private array $items = [];
+
+                        public function &items(): array {
+                            return $this->items;
+                        }
+
+                        public static function &of(array &$what): array {
+                            return $what;
+                        }
+                    }
+
+                    $bag = new Bag();
+                    $bag->items()[] = "foo";
+                    $a = [];
+                    Bag::of($a)["k"] = "bar";',
+            ],
             'coalesceAssignmentOnTwoOptionalKeysOfAnArrayWithAShapeIntersection' => [
                 'code' => '<?php
                     /** @var array{name?: string, age?: int}&array $data */
@@ -2858,6 +2886,16 @@ final class ArrayAssignmentTest extends TestCase
     public static function providerInvalidCodeParse(): iterable
     {
         return [
+            'assignToTheItemOfAnArrayAFunctionReturnsByValue' => [
+                'code' => '<?php
+                    function getArray(array $what): array {
+                        return $what;
+                    }
+
+                    $f = [];
+                    getArray($f)[] = "foobar";',
+                'error_message' => 'InvalidArrayAssignment',
+            ],
             'assignToNestedKeyOfListWithUnrelatedKeyIsNotAList' => [
                 'code' => '<?php
                     /**
