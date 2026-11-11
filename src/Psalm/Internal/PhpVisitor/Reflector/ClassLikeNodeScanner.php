@@ -2383,6 +2383,7 @@ final class ClassLikeNodeScanner
                 $import_type_entry['line_number'],
                 $import_type_entry['start_offset'],
                 $import_type_entry['end_offset'],
+                Type::getFQCLNFromString($as_alias_name, $this->aliases),
             );
         }
 
