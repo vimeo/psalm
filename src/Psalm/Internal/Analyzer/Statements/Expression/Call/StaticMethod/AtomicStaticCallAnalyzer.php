@@ -18,6 +18,7 @@ use Psalm\Internal\Analyzer\Statements\Expression\Call\ArgumentMapPopulator;
 use Psalm\Internal\Analyzer\Statements\Expression\Call\ArgumentsAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\Call\CallPurityResolver;
 use Psalm\Internal\Analyzer\Statements\Expression\Call\ClassTemplateParamCollector;
+use Psalm\Internal\Analyzer\Statements\Expression\Call\Method\AtomicMethodCallAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\Call\Method\MethodCallPurityAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\Call\Method\MethodCallReturnTypeFetcher;
 use Psalm\Internal\Analyzer\Statements\Expression\Call\Method\MethodVisibilityAnalyzer;
@@ -522,6 +523,7 @@ final class AtomicStaticCallAnalyzer
                         $mixin_context,
                         '__tmp_mixin_var__',
                         true,
+                        $fq_class_name,
                     );
                 }
             }
@@ -1412,6 +1414,7 @@ final class AtomicStaticCallAnalyzer
         Context $context,
         string $virtual_var_name = 'this',
         bool $always_set_node_type = false,
+        ?string $mixin_host = null,
     ): bool {
         $old_data_provider = $statements_analyzer->node_data;
 
@@ -1423,6 +1426,10 @@ final class AtomicStaticCallAnalyzer
             $stmt->args,
             $stmt->getAttributes(),
         );
+
+        if ($mixin_host !== null) {
+            $fake_method_call_expr->setAttribute(AtomicMethodCallAnalyzer::MIXIN_HOST_ATTRIBUTE, $mixin_host);
+        }
 
         if (MethodCallAnalyzer::analyze(
             $statements_analyzer,

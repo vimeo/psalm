@@ -34,6 +34,7 @@ use Psalm\Tests\DeferredAnalyzerTestCase;
 use Psalm\Tests\Internal\Provider\FakeParserCacheProvider;
 use Psalm\Tests\TestConfig;
 use Psalm\Type;
+use Psalm\Type\Atomic\TTemplateParam;
 use Psalm\Type\Union;
 
 use function array_fill_keys;
@@ -48,6 +49,7 @@ use function ob_start;
 use function restore_error_handler;
 use function set_error_handler;
 use function sprintf;
+use function strtolower;
 
 use const DIRECTORY_SEPARATOR;
 
@@ -1031,6 +1033,171 @@ final class PluginTest extends DeferredAnalyzerTestCase
         $this->analyzeFile($file_path, new Context());
 
         $this->assertSame(4, $hook::$params_lookups);
+    }
+
+    public function testMethodProvidersOfAMixinHostAreConsultedForMixinMethods(): void
+    {
+        $this->project_analyzer = $this->getProjectAnalyzerWithConfig(
+            TestConfig::loadFromXML(
+                dirname(__DIR__, 2) . DIRECTORY_SEPARATOR,
+                '<?xml version="1.0"?>
+                <psalm
+                    errorLevel="1"
+                    findUnusedPsalmSuppress="true"
+                ></psalm>',
+            ),
+        );
+
+        $codebase = $this->project_analyzer->getCodebase();
+
+        // `foo` gets a string, `qux` a string parameter, `typeParam` the first type parameter of the receiver
+        // and `tpl` a parameter of that type.
+        // `baz` is answered for the mixin `ProvidedMixin` only, the host leaves it to the mixin.
+        $hook = new class implements MethodParamsProviderInterface, MethodReturnTypeProviderInterface {
+            /**
+             * @return array<string>
+             * @psalm-pure
+             */
+            #[Override]
+            public static function getClassLikeNames(): array
+            {
+                return ['Ns\Host', 'Ns\TemplatedHost', 'Ns\GenericHost', 'Ns\ProvidedHost', 'Ns\ProvidedMixin'];
+            }
+
+            /**
+             * @return ?array<int, FunctionLikeParameter>
+             */
+            #[Override]
+            public static function getMethodParams(MethodParamsProviderEvent $event): ?array
+            {
+                return match ($event->getMethodNameLowercase()) {
+                    'qux' => [new FunctionLikeParameter('x', false, Type::getString(), Type::getString())],
+                    'tpl' => [new FunctionLikeParameter(
+                        'x',
+                        false,
+                        new Union([new TTemplateParam('T', Type::getMixed(), 'Ns\\GenericHost')]),
+                    )],
+                    'baz' => strtolower($event->getFqClasslikeName()) === 'ns\providedmixin'
+                        ? [new FunctionLikeParameter('x', false, Type::getString(), Type::getString())]
+                        : null,
+                    default => null,
+                };
+            }
+
+            #[Override]
+            public static function getMethodReturnType(MethodReturnTypeProviderEvent $event): ?Union
+            {
+                return match ($event->getMethodNameLowercase()) {
+                    'foo' => Type::getString(),
+                    'baz' => strtolower($event->getFqClasslikeName()) === 'ns\providedmixin'
+                        ? Type::getString()
+                        : null,
+                    'typeparam' => $event->getTemplateTypeParameters()[0] ?? null,
+                    default => null,
+                };
+            }
+        };
+
+        (new PluginRegistrationSocket($codebase->config, $codebase))->registerHooksFromClass(get_class($hook));
+
+        $file_path = (string) getcwd() . '/src/somefile.php';
+
+        $this->addFile(
+            $file_path,
+            '<?php
+                namespace Ns;
+
+                final class Mixin {
+                    /** @psalm-mutation-free */
+                    public function foo(string $x): int { return 1; }
+                    /** @psalm-mutation-free */
+                    public function qux(int $x, int $y): int { return $x + $y; }
+                    /** @psalm-mutation-free */
+                    public function bar(int $x): int { return $x; }
+                    /** @psalm-mutation-free */
+                    public function typeParam(): int { return 1; }
+                    /** @psalm-mutation-free */
+                    public function tpl(int $x): int { return $x; }
+                }
+
+                class BaseMixin {
+                    /** @psalm-mutation-free */
+                    public function baz(int $x): int { return $x; }
+                }
+
+                final class ProvidedMixin extends BaseMixin {}
+
+                class MyException extends \Exception {}
+
+                /** @mixin Mixin */
+                class Host {}
+
+                final class Child extends Host {
+                    public function run(): void {
+                        $parent = parent::foo("a");
+                        /** @psalm-check-type-exact $parent = string */;
+                    }
+                }
+
+                /**
+                 * @template T of Mixin
+                 * @mixin T
+                 */
+                final class TemplatedHost {}
+
+                /**
+                 * @template T
+                 * @mixin Mixin
+                 */
+                final class GenericHost {}
+
+                /** @mixin ProvidedMixin */
+                final class ProvidedHost {}
+
+                /** @mixin MyException */
+                final class ThrowableHost {}
+
+                /**
+                 * @param TemplatedHost<Mixin> $templated
+                 * @param GenericHost<string> $generic
+                 */
+                function f(Host $host, TemplatedHost $templated, GenericHost $generic): void {
+                    $foo = $host->foo("a");
+                    /** @psalm-check-type-exact $foo = string */;
+
+                    $host->qux("a");
+
+                    $static = Host::foo("a");
+                    /** @psalm-check-type-exact $static = string */;
+
+                    $qux = $host->qux(...);
+                    $qux("a");
+
+                    // the host provider returns null: the mixin keeps its types
+                    $bar = $host->bar(1);
+                    /** @psalm-check-type-exact $bar = int */;
+
+                    $foo = $templated->foo("a");
+                    /** @psalm-check-type-exact $foo = string */;
+
+                    $type = $generic->typeParam();
+                    /** @psalm-check-type-exact $type = string */;
+
+                    $generic->tpl("ok");
+
+                    /** @psalm-suppress InvalidArgument the host template is bound to string */
+                    $generic->tpl(1);
+
+                    // the host provider returns null: the provider of the mixin itself applies
+                    $baz = (new ProvidedHost())->baz("a");
+                    /** @psalm-check-type-exact $baz = string */;
+
+                    $code = (new ThrowableHost())->getCode();
+                    /** @psalm-check-type-exact $code = int */;
+                }',
+        );
+
+        $this->analyzeFile($file_path, new Context());
     }
 
     public function testFunctionProviderHooks(): void

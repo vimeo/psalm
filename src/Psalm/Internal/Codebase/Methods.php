@@ -275,6 +275,7 @@ final class Methods
 
     /**
      * @param  list<PhpParser\Node\Arg> $args
+     * @param  ?MethodIdentifier $premixin_method_id the method as called on the class whose `@mixin` has it
      * @return list<FunctionLikeParameter>
      */
     public function getMethodParams(
@@ -283,13 +284,15 @@ final class Methods
         ?array $args = null,
         ?Context $context = null,
         ?CodeLocation $code_location = null,
+        ?MethodIdentifier $premixin_method_id = null,
     ): array {
-        return $this->findMethodParams($method_id, $source, $args, $context, $code_location)
+        return $this->findMethodParams($method_id, $source, $args, $context, $code_location, $premixin_method_id)
             ?? throw new UnexpectedValueException('Cannot get method params for ' . $method_id);
     }
 
     /**
      * @param  list<PhpParser\Node\Arg> $args
+     * @param  ?MethodIdentifier $premixin_method_id the method as called on the class whose `@mixin` has it
      * @return list<FunctionLikeParameter>|null null when neither a params provider nor any storage knows the method
      */
     public function findMethodParams(
@@ -298,22 +301,27 @@ final class Methods
         ?array $args = null,
         ?Context $context = null,
         ?CodeLocation $code_location = null,
+        ?MethodIdentifier $premixin_method_id = null,
     ): ?array {
-        $fq_class_name = $method_id->fq_class_name;
         $method_name = $method_id->method_name;
 
-        if ($this->params_provider->has($fq_class_name)) {
-            $method_params = $this->params_provider->getMethodParams(
-                $fq_class_name,
-                $method_name,
-                $args,
-                $source,
-                $context,
-                $code_location,
-            );
+        // a provider of the class using a `@mixin` is asked about the methods it forwards to the mixin first
+        $provider_ids = $premixin_method_id !== null ? [$premixin_method_id, $method_id] : [$method_id];
 
-            if ($method_params !== null) {
-                return $method_params;
+        foreach ($provider_ids as $provider_id) {
+            if ($this->params_provider->has($provider_id->fq_class_name)) {
+                $method_params = $this->params_provider->getMethodParams(
+                    $provider_id->fq_class_name,
+                    $provider_id->method_name,
+                    $args,
+                    $source,
+                    $context,
+                    $code_location,
+                );
+
+                if ($method_params !== null) {
+                    return $method_params;
+                }
             }
         }
 
