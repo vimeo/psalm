@@ -21,6 +21,7 @@ use Psalm\Internal\Scope\IfScope;
 use Psalm\Internal\Type\Comparator\UnionTypeComparator;
 use Psalm\Issue\ConflictingReferenceConstraint;
 use Psalm\IssueBuffer;
+use Psalm\Node\Expr\VirtualBooleanNot;
 use Psalm\Type\Reconciler;
 
 use function array_any;
@@ -45,6 +46,37 @@ use function spl_object_id;
  */
 final class ElseIfAnalyzer
 {
+    /**
+     * The negation of the clauses of the condition: made from the negated condition where the clauses leave out what
+     * the left side of an `&&` tested of a variable that its right side assigns (see FormulaGenerator)
+     *
+     * @param list<Clause> $elseif_clauses
+     * @return list<Clause>
+     */
+    private static function getNegatedClauses(
+        StatementsAnalyzer $statements_analyzer,
+        Codebase $codebase,
+        PhpParser\Node\Stmt\ElseIf_ $elseif,
+        Context $else_context,
+        array $elseif_clauses,
+    ): array {
+        if (!FormulaGenerator::leavesOutClausesOfAssignedVars($elseif->cond, $else_context->self)) {
+            return Algebra::negateFormula($elseif_clauses);
+        }
+
+        $elseif_cond_id = spl_object_id($elseif->cond);
+
+        return FormulaGenerator::getFormula(
+            $elseif_cond_id,
+            $elseif_cond_id,
+            new VirtualBooleanNot($elseif->cond),
+            $else_context->self,
+            $statements_analyzer,
+            $codebase,
+            false,
+        );
+    }
+
     /**
      * @return false|null
      */
@@ -218,7 +250,7 @@ final class ElseIfAnalyzer
                 $active_elseif_types,
             );
             $negated_elseif_types = Algebra::getTruthsFromFormula(
-                Algebra::negateFormula($elseif_clauses),
+                self::getNegatedClauses($statements_analyzer, $codebase, $elseif, $else_context, $elseif_clauses),
             );
         } catch (ComplicatedExpressionException) {
             $reconcilable_elseif_types = [];
@@ -437,7 +469,10 @@ final class ElseIfAnalyzer
 
         try {
             $if_scope->negated_clauses = Algebra::simplifyCNF(
-                [...$if_scope->negated_clauses, ...Algebra::negateFormula($elseif_clauses)],
+                [
+                    ...$if_scope->negated_clauses,
+                    ...self::getNegatedClauses($statements_analyzer, $codebase, $elseif, $else_context, $elseif_clauses),
+                ],
             );
         } catch (ComplicatedExpressionException) {
             $if_scope->negated_clauses = [];

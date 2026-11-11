@@ -778,6 +778,35 @@ final class AssignmentInConditionalTest extends TestCase
                         if ($a) {}
                     }',
             ],
+            'assignmentInRightOperandOfAndOfAnElseifOrALogicalAndKeepsThePreviousValueWhereTheLeftOneIsFalse' => [
+                'code' => '<?php
+                    function fresh(): ?string {
+                        return null;
+                    }
+
+                    function elseifBranch(bool $flag, ?string $name): void {
+                        if ($flag) {
+                            echo "flag";
+                        } elseif (null === $name && null !== ($name = fresh())) {
+                            echo "assigned";
+                        } else {
+                            /** @psalm-check-type-exact $name = null|string */
+                            echo "else";
+                        }
+                    }
+
+                    function logicalAnd(?string $name): void {
+                        if (null === $name and null !== ($name = fresh())) {
+                            return;
+                        }
+
+                        /** @psalm-check-type-exact $name = null|string */
+                        echo "after";
+                    }',
+                'assertions' => [],
+                'ignored_issues' => ['RedundantCondition'],
+                'php_version' => '8.1',
+            ],
             'assignmentInRightOperandOfAndKeepsThePreviousValueWhereTheLeftOneIsFalse' => [
                 'code' => '<?php
                     function fresh(): ?string {

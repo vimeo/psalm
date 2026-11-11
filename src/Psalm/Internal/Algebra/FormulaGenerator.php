@@ -255,7 +255,9 @@ final class FormulaGenerator
                 return Algebra::negateFormula($clauses);
             }
 
-            if ($conditional->expr instanceof PhpParser\Node\Expr\BinaryOp\BooleanAnd) {
+            if ($conditional->expr instanceof PhpParser\Node\Expr\BinaryOp\BooleanAnd
+                || $conditional->expr instanceof PhpParser\Node\Expr\BinaryOp\LogicalAnd
+            ) {
                 $and_expr = new VirtualBooleanOr(
                     new VirtualBooleanNot(
                         $conditional->expr->left,
