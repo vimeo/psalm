@@ -564,6 +564,11 @@ final class ArgumentsAnalyzer
 
         $codebase = $statements_analyzer->getCodebase();
 
+        $static_class_type = $template_result->static_class_type;
+        $expand_static = static fn(Union $type): Union => $static_class_type !== null
+            ? TypeExpander::expandStatic($codebase, $type, $static_class_type, $template_result->static_class_is_final)
+            : $type;
+
         if (($argument_offset === 1 && in_array($method_id, self::ARRAY_FILTERLIKE, true) && count($args) === 2)
             || ($argument_offset === 0 && $method_id === 'array_map' && count($args) >= 2)
         ) {
@@ -641,28 +646,44 @@ final class ArgumentsAnalyzer
             }
         }
 
-        $replace_template_result = new TemplateResult(
-            $new_bounds,
-            [],
-        );
-        unset($new_bounds);
+        /** @param array<string, array<string, Union>> $bounds */
+        $replace = static function (Union $type, array $bounds) use ($codebase, $statements_analyzer, $context): Union {
+            $replace_template_result = new TemplateResult($bounds, []);
 
-        $replaced_type = TemplateStandinTypeReplacer::replace(
-            $replaced_type,
-            $replace_template_result,
-            $codebase,
-            $statements_analyzer,
-            null,
-            null,
-            null,
-            $context->calling_method_id ?: $context->calling_function_id,
-        );
+            return TemplateInferredTypeReplacer::replace(
+                TemplateStandinTypeReplacer::replace(
+                    $type,
+                    $replace_template_result,
+                    $codebase,
+                    $statements_analyzer,
+                    null,
+                    null,
+                    null,
+                    $context->calling_method_id ?: $context->calling_function_id,
+                ),
+                $replace_template_result,
+                $codebase,
+            );
+        };
 
-        $replaced_type = TemplateInferredTypeReplacer::replace(
-            $replaced_type,
-            $replace_template_result,
-            $codebase,
-        );
+        // an untyped param takes the declared types with `static` of the call, as the argument is checked against
+        // them, before the bounds, which may hold the `static` of the caller, are put in them; a typed param is
+        // narrowed to the hint, so it keeps the `static` it is declared with, the caller's
+        $untyped_bounds = $new_bounds;
+        foreach ($template_result->template_types as $k => $template_map) {
+            foreach ($template_map as $kk => $template_type) {
+                if (($new_bounds[$k][$kk] ?? null) === $template_type) {
+                    $untyped_bounds[$k][$kk] = $expand_static($template_type);
+                }
+            }
+        }
+
+        $untyped_type = $expand_static($replaced_type);
+        $untyped_replaced_type = $untyped_type === $replaced_type && $untyped_bounds === $new_bounds
+            ? null
+            : $replace($untyped_type, $untyped_bounds);
+        $replaced_type = $replace($replaced_type, $new_bounds);
+        $untyped_replaced_type ??= $replaced_type;
 
         $closure_id = strtolower($statements_analyzer->getFilePath())
             . ':' . $arg->value->getLine()
@@ -691,7 +712,11 @@ final class ArgumentsAnalyzer
             }
 
             if (!$has_different_docblock_type) {
-                foreach ($replaced_type->getAtomicTypes() as $replaced_type_part) {
+                // a param declared with a type keeps master's hint also once it was narrowed by an earlier pass (type
+                // inferred), as the closure's storage is shared by every class using a trait it is in
+                $hint_type = $param_storage->signature_type !== null ? $replaced_type : $untyped_replaced_type;
+
+                foreach ($hint_type->getAtomicTypes() as $replaced_type_part) {
                     if ($replaced_type_part instanceof TCallable
                         || $replaced_type_part instanceof TClosure
                     ) {
@@ -965,6 +990,7 @@ final class ArgumentsAnalyzer
         TemplateResult $template_result,
         CodeLocation $code_location,
         Context $context,
+        bool $static_is_called_class = false,
     ): ?bool {
         $in_call_map = $method_id ? InternalCallMapHandler::inCallMap((string) $method_id) : false;
 
@@ -1114,6 +1140,7 @@ final class ArgumentsAnalyzer
                             $template_result,
                             $specialize_taint,
                             $in_call_map,
+                            $static_is_called_class,
                         );
                     }
                 }
@@ -1126,6 +1153,8 @@ final class ArgumentsAnalyzer
 
         $arg_function_params = [];
         $matched_args = [];
+        // names given as named arguments to the variadic parameter: positional ones are not duplicates of them
+        $named_variadic_args = [];
         $named_args_was_used = false;
 
         foreach ($args as $argument_offset => $arg) {
@@ -1169,7 +1198,10 @@ final class ArgumentsAnalyzer
                             foreach ($function_params as $candidate_param) {
                                 if ($candidate_param->name === $key_type->value || $candidate_param->is_variadic) {
                                     if ($candidate_param->name === $key_type->value) {
-                                        if (isset($matched_args[$candidate_param->name])) {
+                                        if (($candidate_param->is_variadic
+                                                ? isset($named_variadic_args[$candidate_param->name])
+                                                : isset($matched_args[$candidate_param->name]))
+                                        ) {
                                             IssueBuffer::maybeAdd(
                                                 new InvalidNamedArgument(
                                                     'Parameter $' . $key_type->value . ' has already been used in '
@@ -1181,7 +1213,11 @@ final class ArgumentsAnalyzer
                                             );
                                         }
 
-                                        $matched_args[$candidate_param->name] = true;
+                                        if ($candidate_param->is_variadic) {
+                                            $named_variadic_args[$candidate_param->name] = true;
+                                        } else {
+                                            $matched_args[$candidate_param->name] = true;
+                                        }
                                     }
 
                                     $param_found = true;
@@ -1209,7 +1245,10 @@ final class ArgumentsAnalyzer
                 foreach ($function_params as $candidate_param) {
                     if ($candidate_param->name === $arg->name->name || $candidate_param->is_variadic) {
                         if ($candidate_param->name === $arg->name->name) {
-                            if (isset($matched_args[$candidate_param->name])) {
+                            if (($candidate_param->is_variadic
+                                    ? isset($named_variadic_args[$candidate_param->name])
+                                    : isset($matched_args[$candidate_param->name]))
+                            ) {
                                 IssueBuffer::maybeAdd(
                                     new InvalidNamedArgument(
                                         'Parameter $' . $arg->name->name . ' has already been used in '
@@ -1221,7 +1260,11 @@ final class ArgumentsAnalyzer
                                 );
                             }
 
-                            $matched_args[$candidate_param->name] = true;
+                            if ($candidate_param->is_variadic) {
+                                $named_variadic_args[$candidate_param->name] = true;
+                            } else {
+                                $matched_args[$candidate_param->name] = true;
+                            }
                         }
 
                         $arg_function_params[$argument_offset] = [$candidate_param];
@@ -1299,6 +1342,7 @@ final class ArgumentsAnalyzer
                     $template_result,
                     $specialize_taint,
                     $in_call_map,
+                    $static_is_called_class,
                 ) === false) {
                     return false;
                 }
@@ -1621,7 +1665,7 @@ final class ArgumentsAnalyzer
                         $template_result,
                         $codebase,
                         $statements_analyzer,
-                        $statements_analyzer->node_data->getType($arg->value),
+                        null,
                         $argument_offset,
                         $context->self,
                         $context->calling_method_id ?: $context->calling_function_id,

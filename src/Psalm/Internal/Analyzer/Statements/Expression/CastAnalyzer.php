@@ -18,6 +18,7 @@ use Psalm\Internal\Codebase\TaintFlowGraph;
 use Psalm\Internal\DataFlow\DataFlowNode;
 use Psalm\Internal\FileManipulation\FileManipulationBuffer;
 use Psalm\Internal\MethodIdentifier;
+use Psalm\Internal\Type\Comparator\UnionTypeComparator;
 use Psalm\Internal\Type\LiteralCast;
 use Psalm\Internal\Type\TypeCombiner;
 use Psalm\Internal\Type\TypeVariableTracker;
@@ -37,6 +38,7 @@ use Psalm\Type\Atomic\Scalar;
 use Psalm\Type\Atomic\TArray;
 use Psalm\Type\Atomic\TBool;
 use Psalm\Type\Atomic\TClosedResource;
+use Psalm\Type\Atomic\TClosure;
 use Psalm\Type\Atomic\TDecimalIntString;
 use Psalm\Type\Atomic\TFalse;
 use Psalm\Type\Atomic\TFloat;
@@ -68,6 +70,7 @@ use Psalm\Type\Union;
 use function array_merge;
 use function array_pop;
 use function array_values;
+use function count;
 use function range;
 use function strtolower;
 
@@ -282,6 +285,11 @@ final class CastAnalyzer
                         || $type instanceof TKeyedArray
                     ) {
                         $permissible_atomic_types[] = $type;
+                    } elseif ($type instanceof TClosure
+                        || ($type instanceof TNamedObject && strtolower($type->value) === 'closure')
+                    ) {
+                        // a closure has no properties: it becomes the only element
+                        $permissible_atomic_types[] = TKeyedArray::make([new Union([$type])], null, null, true);
                     } elseif ($type instanceof TObjectWithProperties) {
                         $array_type = $type->properties === []
                             ? Type::getArrayAtomic()
@@ -772,6 +780,8 @@ final class CastAnalyzer
         $invalid_casts = [];
         $valid_strings = [];
         $castable_types = [];
+        // what an invalid cast of an array gives, which only matters for the result type
+        $array_strings = [];
 
         // a bare class-template type variable stands for the shape inferred at
         // its construction site; that shape is what is being cast
@@ -824,6 +834,10 @@ final class CastAnalyzer
                     $intersection_types = array_merge($intersection_types, $atomic_type->extra_types);
                 }
 
+                // the value is every one of the intersected types, so what it casts to is the narrowest
+                // of what their __toString methods return
+                $return_types = [];
+
                 foreach ($intersection_types as $intersection_type) {
                     if ($intersection_type instanceof TNamedObject) {
                         $intersection_method_id = new MethodIdentifier(
@@ -836,7 +850,7 @@ final class CastAnalyzer
                             $context->calling_method_id,
                             new CodeLocation($statements_analyzer->getSource(), $stmt),
                         )) {
-                            $return_type = $codebase->getMethodReturnType(
+                            $return_types[] = $codebase->getMethodReturnType(
                                 $intersection_method_id,
                                 $self_class,
                             ) ?? Type::getString();
@@ -862,20 +876,23 @@ final class CastAnalyzer
                                     $var_id === '$this' ? $to_string_storage : null,
                                 );
                             }
-
-                            $castable_types = [...$castable_types, ...array_values($return_type->getAtomicTypes())];
-
-                            continue 2;
                         }
                     }
 
                     if ($intersection_type instanceof TObjectWithProperties
                         && isset($intersection_type->methods['__tostring'])
                     ) {
-                        $castable_types[] = new TString();
-
-                        continue 2;
+                        $return_types[] = Type::getString();
                     }
+                }
+
+                if ($return_types) {
+                    $castable_types = [
+                        ...$castable_types,
+                        ...array_values(self::getNarrowestType($codebase, $return_types)->getAtomicTypes()),
+                    ];
+
+                    continue;
                 }
             }
 
@@ -900,6 +917,10 @@ final class CastAnalyzer
             }
 
             $invalid_casts[] = $atomic_type->getId();
+
+            if ($atomic_type instanceof TArray || $atomic_type instanceof TKeyedArray) {
+                $array_strings[] = Type::getAtomicStringFromLiteral('Array');
+            }
         }
 
         if ($invalid_casts && $report_issues) {
@@ -924,7 +945,12 @@ final class CastAnalyzer
             // todo: emit error here
         }
 
-        $valid_types = [...$valid_strings, ...$castable_types];
+        $valid_types = [...$valid_strings, ...$castable_types, ...$array_strings];
+
+        // what can't be cast, other than arrays, may still be any string (e.g. an object with a __toString)
+        if (count($array_strings) < count($invalid_casts)) {
+            $valid_types[] = new TString();
+        }
 
         if (!$valid_types) {
             $str_type = Type::getString();
@@ -1012,12 +1038,34 @@ final class CastAnalyzer
     }
 
     /**
+     * The type that is contained in all the others, or the first one if there is none
+     *
+     * @param non-empty-list<Union> $types
+     */
+    private static function getNarrowestType(Codebase $codebase, array $types): Union
+    {
+        foreach ($types as $candidate) {
+            foreach ($types as $other) {
+                if (!UnionTypeComparator::isContainedBy($codebase, $candidate, $other)) {
+                    continue 2;
+                }
+            }
+
+            return $candidate;
+        }
+
+        return $types[0];
+    }
+
+    /**
      * What an object is cast to: what the __toString of its class returns, or null if it has none
      */
     public static function castObjectToString(
         Codebase $codebase,
         TNamedObject|TObjectWithProperties $atomic_type,
     ): ?Union {
+        $return_types = [];
+
         foreach ([$atomic_type, ...array_values($atomic_type->extra_types)] as $intersection_type) {
             if ($intersection_type instanceof TNamedObject) {
                 $to_string_id = new MethodIdentifier($intersection_type->value, '__tostring');
@@ -1025,15 +1073,19 @@ final class CastAnalyzer
                 if ($codebase->methodExists($to_string_id)) {
                     $self_class = null;
 
-                    return $codebase->getMethodReturnType($to_string_id, $self_class) ?? Type::getString();
+                    $return_types[] = $codebase->getMethodReturnType($to_string_id, $self_class) ?? Type::getString();
                 }
             }
 
             if ($intersection_type instanceof TObjectWithProperties
                 && isset($intersection_type->methods['__tostring'])
             ) {
-                return Type::getString();
+                $return_types[] = Type::getString();
             }
+        }
+
+        if ($return_types) {
+            return self::getNarrowestType($codebase, $return_types);
         }
 
         return null;
