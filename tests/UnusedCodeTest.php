@@ -775,6 +775,20 @@ final class UnusedCodeTest extends TestCase
                         $arr[0] = &$value;
                     }',
             ],
+            'shebangBeforeNamespaceWithExit' => [
+                'code' => '#!/usr/bin/env php
+<?php
+                    namespace Foo;
+
+                    exit(1);',
+            ],
+            'shebangBeforeNamespaceWithReturn' => [
+                'code' => '#!/usr/bin/env php
+<?php
+                    namespace Foo;
+
+                    return [];',
+            ],
             'usedExceptionsAreNotReported' => [
                 'code' => '<?php
                     /** @psalm-api */
@@ -2692,6 +2706,15 @@ final class UnusedCodeTest extends TestCase
                     f(1);',
                 'error_message' => 'UnusedParam',
                 'error_levels' => ['UnusedVariable'],
+            ],
+            'unevaluatedCodeAfterExitInNamespaceWithShebang' => [
+                'code' => '#!/usr/bin/env php
+<?php
+                    namespace Foo;
+
+                    exit(1);
+                    echo "unreachable";',
+                'error_message' => 'UnevaluatedCode',
             ],
             'unusedClass' => [
                 'code' => '<?php
