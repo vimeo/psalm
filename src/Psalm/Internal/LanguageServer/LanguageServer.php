@@ -826,7 +826,7 @@ final class LanguageServer extends Dispatcher
      * @template T of object
      * @param T $object
      * @return T
-     * @psalm-pure
+     * @psalm-capabilities read-props|write-props
      */
     private static function omitNullProperties(object $object): object
     {
@@ -835,7 +835,7 @@ final class LanguageServer extends Dispatcher
             if ($value === null) {
                 unset($object->$name);
             } elseif (is_object($value)) {
-                self::omitNullProperties($value);
+                $object->$name = self::omitNullProperties($value);
             }
         }
 
