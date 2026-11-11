@@ -79,9 +79,16 @@ final class TryAnalyzer
 
         $was_inside_try = $context->inside_try;
         $context->inside_try = true;
+
+        // a try nested in the body leaves through the finally of this one too
+        $outer_finally_scope = $context->finally_scope;
+        $context->finally_scope = $try_context->finally_scope;
+
         if ($statements_analyzer->analyze($stmt->stmts, $context) === false) {
             return false;
         }
+
+        $context->finally_scope = $outer_finally_scope;
         $context->inside_try = $was_inside_try;
 
         $context->has_returned = false;
@@ -155,6 +162,9 @@ final class TryAnalyzer
         $definitely_newly_assigned_var_ids = $newly_assigned_var_ids;
 
         /** @var int $i */
+        // the variables a catch of a try that always exits gave the context: the next catches add to them
+        $vars_set_by_catches = [];
+
         foreach ($stmt->catches as $i => $catch) {
             $catch_context = clone $original_context;
             $catch_context->has_returned = false;
@@ -366,9 +376,7 @@ final class TryAnalyzer
                 $context->mergeExceptions($catch_context);
             }
 
-            $catch_doesnt_leave_parent_scope = $catch_actions[$i] !== [ScopeAnalyzer::ACTION_END]
-                && $catch_actions[$i] !== [ScopeAnalyzer::ACTION_CONTINUE]
-                && $catch_actions[$i] !== [ScopeAnalyzer::ACTION_BREAK];
+            $catch_doesnt_leave_parent_scope = in_array(ScopeAnalyzer::ACTION_NONE, $catch_actions[$i], true);
 
             if ($catch_doesnt_leave_parent_scope) {
                 $definitely_newly_assigned_var_ids = array_intersect_key(
@@ -378,7 +386,10 @@ final class TryAnalyzer
 
                 foreach ($catch_context->vars_in_scope as $var_id => $type) {
                     if ($try_block_control_actions === [ScopeAnalyzer::ACTION_END]) {
-                        $context->vars_in_scope[$var_id] = $type;
+                        $context->vars_in_scope[$var_id] = isset($vars_set_by_catches[$var_id])
+                            ? Type::combineUnionTypes($context->vars_in_scope[$var_id], $type)
+                            : $type;
+                        $vars_set_by_catches[$var_id] = true;
                     } elseif (isset($context->vars_in_scope[$var_id])) {
                         $context->vars_in_scope[$var_id] = Type::combineUnionTypes(
                             $context->vars_in_scope[$var_id],
@@ -440,6 +451,12 @@ final class TryAnalyzer
 
                 $statements_analyzer->analyze($stmt->finally->stmts, $finally_context);
 
+                $context->constructor_exits?->applyFinally(
+                    $try_context->finally_scope,
+                    $finally_context->vars_in_scope,
+                    $finally_context->assigned_var_ids,
+                );
+
                 $finally_has_returned = $finally_context->has_returned;
 
                 /** @var string $var_id */
@@ -450,16 +467,12 @@ final class TryAnalyzer
                         $possibly_undefined = $context->vars_in_scope[$var_id]->possibly_undefined
                             && $context->vars_in_scope[$var_id]->possibly_undefined_from_try;
 
-                        $context->vars_in_scope[$var_id] = Type::combineUnionTypes(
-                            $context->vars_in_scope[$var_id],
-                            $finally_context->vars_in_scope[$var_id],
-                            $codebase,
-                        );
+                        // the finally block started from every state the try and the catches can end in
+                        $context->vars_in_scope[$var_id] = $finally_context->vars_in_scope[$var_id];
+
                         if ($possibly_undefined) {
-                            /** @psalm-suppress InaccessibleProperty We just created this type */
-                            $context->vars_in_scope[$var_id]->possibly_undefined = false;
-                            /** @psalm-suppress InaccessibleProperty We just created this type */
-                            $context->vars_in_scope[$var_id]->possibly_undefined_from_try = false;
+                            $context->vars_in_scope[$var_id] = $context->vars_in_scope[$var_id]
+                                ->setPossiblyUndefined(false, false);
                         }
                     } elseif (isset($finally_context->vars_in_scope[$var_id])) {
                         $context->vars_in_scope[$var_id] = $finally_context->vars_in_scope[$var_id];
