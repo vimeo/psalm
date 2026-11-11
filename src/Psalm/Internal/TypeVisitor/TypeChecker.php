@@ -442,7 +442,7 @@ final class TypeChecker extends TypeVisitor
     public function checkScalarClassConstant(TClassConstant $atomic): void
     {
         $fq_classlike_name = $atomic->fq_classlike_name === 'self'
-            ? $this->source->getClassName()
+            ? $this->source->getFQCLN()
             : $atomic->fq_classlike_name;
 
         if (!$fq_classlike_name) {
@@ -514,7 +514,7 @@ final class TypeChecker extends TypeVisitor
                     : 'Const ' . $const_name . ' is not defined',
                 $this->code_location,
             ),
-            $this->source->getSuppressedIssues(),
+            $this->suppressed_issues + $this->source->getSuppressedIssues(),
         );
     }
 

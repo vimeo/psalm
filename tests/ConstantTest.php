@@ -1413,6 +1413,18 @@ final class ConstantTest extends TestCase
                     '$a===' => '0|1|2|3',
                 ],
             ],
+            'intMaskWithSuppressedUndefinedGlobalConstantInPropertyType' => [
+                'code' => '<?php
+                    namespace App;
+
+                    final class Holder {
+                        /**
+                         * @psalm-suppress UndefinedConstant
+                         * @var int-mask<NO_SUCH_CONSTANT>
+                         */
+                        public int $flags = 0;
+                    }',
+            ],
             'globalConstantWildcard' => [
                 'code' => '<?php
                     namespace Ns;
@@ -2740,6 +2752,16 @@ final class ConstantTest extends TestCase
                     /** @param int-mask<NO_SUCH_CONSTANT> $flags */
                     function encode(int $flags): void {}',
                 'error_message' => 'UndefinedConstant - src/somefile.php:4:32 - Const NO_SUCH_CONSTANT is not defined',
+            ],
+            'intMaskWithUndefinedGlobalConstantInPropertyType' => [
+                'code' => '<?php
+                    namespace App;
+
+                    final class Holder {
+                        /** @var int-mask<NO_SUCH_CONSTANT> */
+                        public int $flags = 0;
+                    }',
+                'error_message' => 'UndefinedConstant - src/somefile.php:5:34 - Const NO_SUCH_CONSTANT is not defined',
             ],
             'intMaskWithNonIntGlobalConstant' => [
                 'code' => '<?php
