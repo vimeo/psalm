@@ -1366,6 +1366,22 @@ final class IssetTest extends TestCase
     public static function providerInvalidCodeParse(): iterable
     {
         return [
+            'issetOnPropertyOfUnionWhoseMembersAllHaveItThroughAnIntersectionIsRedundant' => [
+                'code' => '<?php
+                    final class A {
+                        public string $a = "";
+                    }
+
+                    interface B {}
+
+                    /** @param A|(B&object{a: string}) $x */
+                    function f($x): string {
+                        return isset($x->a) ? $x->a : "";
+                    }',
+                'error_message' => 'RedundantConditionGivenDocblockType',
+                'error_levels' => [],
+                'php_version' => '8.2',
+            ],
             'variableNotSetByTheEmptyBranchOfAnIssetCheckIsPossiblyUndefinedAfterIt' => [
                 'code' => '<?php
 

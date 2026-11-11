@@ -100,6 +100,7 @@ final class AtomicPropertyFetchAnalyzer
         bool &$has_valid_fetch_type,
         array &$invalid_fetch_types,
         bool $is_static_access = false,
+        bool &$missing_in_isset = false,
     ): void {
         if ($lhs_type_part instanceof TNull) {
             return;
@@ -256,6 +257,7 @@ final class AtomicPropertyFetchAnalyzer
                     $has_magic_getter,
                     $var_id,
                     $has_valid_fetch_type,
+                    $missing_in_isset,
                 );
             }
 
@@ -382,6 +384,7 @@ final class AtomicPropertyFetchAnalyzer
                         $has_valid_fetch_type,
                         $invalid_fetch_types,
                         $is_static_access,
+                        $missing_in_isset,
                     );
 
                     if ($has_valid_fetch_type) {
@@ -468,6 +471,7 @@ final class AtomicPropertyFetchAnalyzer
                 $has_magic_getter,
                 $var_id,
                 $has_valid_fetch_type,
+                $missing_in_isset,
             );
 
             return;
@@ -1303,8 +1307,12 @@ final class AtomicPropertyFetchAnalyzer
         string $property_id,
         bool $has_magic_getter,
         ?string $var_id,
+        bool &$missing_in_isset,
     ): void {
         if ($context->inside_isset || $context->collect_initializations) {
+            // isset() sees null where the object doesn't have the property
+            $missing_in_isset = $context->inside_isset && !$has_magic_getter;
+
             $statements_analyzer->signalMutation(
                 Capabilities::READ_PROPS, // Strange but matches previous code
                 $context,
@@ -1585,6 +1593,7 @@ final class AtomicPropertyFetchAnalyzer
         bool $has_magic_getter,
         ?string $var_id,
         bool &$has_valid_fetch_type,
+        bool &$missing_in_isset,
     ): void {
         if (($config->use_phpdoc_property_without_magic_or_parent
             || $class_storage->hasAttributeIncludingParents('AllowDynamicProperties', $codebase))
@@ -1648,6 +1657,7 @@ final class AtomicPropertyFetchAnalyzer
             $property_id,
             $has_magic_getter,
             $var_id,
+            $missing_in_isset,
         );
     }
 
