@@ -52,6 +52,44 @@ final class ReferenceConstraintTest extends TestCase
                 'ignored_issues' => [],
                 'php_version' => '8.0',
             ],
+            'paramOutOfAClassTemplateReplacesAMixedVariable' => [
+                'code' => '<?php
+                    /** @template T of int */
+                    class FooBar {
+                        /** @param-out T $s */
+                        public function fill(mixed &$s): void {}
+                    }
+
+                    /** @param mixed $value */
+                    function foo($value): int {
+                        $fooBar = new FooBar();
+                        $fooBar->fill($value);
+
+                        return $value;
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'paramOutOfAFunctionTemplateIsWhatTheArgumentsBoundIt' => [
+                'code' => '<?php
+                    /**
+                     * @template T
+                     * @param T $in
+                     * @param-out T $out
+                     */
+                    function same(mixed $in, mixed &$out): void {
+                        $out = $in;
+                    }
+
+                    $a = 5;
+                    same("x", $a);',
+                'assertions' => [
+                    '$a===' => "'x'",
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
             'paramOutOnInterfaceMethodWithoutBody' => [
                 'code' => '<?php
                     interface I {
