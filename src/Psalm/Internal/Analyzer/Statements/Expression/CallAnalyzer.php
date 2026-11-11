@@ -30,7 +30,6 @@ use Psalm\Internal\Type\TypeExpander;
 use Psalm\Internal\Type\TypeVariableTracker;
 use Psalm\Issue\ArgumentTypeCoercion;
 use Psalm\Issue\InvalidArgument;
-use Psalm\Issue\InvalidDocblock;
 use Psalm\Issue\InvalidScalarArgument;
 use Psalm\Issue\MixedArgumentTypeCoercion;
 use Psalm\Issue\TypeDoesNotContainType;
@@ -64,11 +63,9 @@ use function array_unique;
 use function array_values;
 use function assert;
 use function count;
-use function explode;
 use function implode;
 use function in_array;
 use function is_int;
-use function is_numeric;
 use function mt_rand;
 use function pathinfo;
 use function preg_match;
@@ -821,63 +818,16 @@ abstract class CallAnalyzer
             } elseif (isset($context->vars_in_scope[$var_possibilities->var_id])) {
                 $assertion_var_id = $var_possibilities->var_id;
             } elseif (str_contains($var_possibilities->var_id, '->')) {
-                $exploded = explode('->', $var_possibilities->var_id);
+                $assertion_var_id = AssertionFinder::getAssertedArgumentPropertyVarId(
+                    $expr,
+                    $args,
+                    $statements_analyzer,
+                    $var_possibilities->var_id,
+                );
 
-                if (count($exploded) < 2) {
-                    IssueBuffer::maybeAdd(
-                        new InvalidDocblock(
-                            'Assert notation is malformed',
-                            new CodeLocation($statements_analyzer, $expr),
-                        ),
-                    );
+                if ($assertion_var_id === null) {
                     continue;
                 }
-
-                [$var_id, $property] = $exploded;
-
-                $var_id = is_numeric($var_id) ? (int) $var_id : $var_id;
-
-                if (!is_int($var_id) || !isset($args[$var_id])) {
-                    IssueBuffer::maybeAdd(
-                        new InvalidDocblock(
-                            'Variable ' . $var_id . ' is not an argument so cannot be asserted',
-                            new CodeLocation($statements_analyzer, $expr),
-                        ),
-                    );
-                    continue;
-                }
-
-                $arg_value = $args[$var_id]->value;
-
-                $arg_var_id = ExpressionIdentifier::getExtendedVarId($arg_value, null, $statements_analyzer);
-
-                if (!$arg_var_id) {
-                    IssueBuffer::maybeAdd(
-                        new InvalidDocblock(
-                            'Variable being asserted as argument ' . ($var_id+1) .  ' cannot be found in local scope',
-                            new CodeLocation($statements_analyzer, $expr),
-                        ),
-                    );
-                    continue;
-                }
-
-                if (count($exploded) === 2) {
-                    $failedMessage = AssertionFinder::isPropertyImmutableOnArgument(
-                        $property,
-                        $statements_analyzer->getNodeTypeProvider()->getType($arg_value),
-                        $statements_analyzer->getCodebase()->classlike_storage_provider,
-                        $arg_var_id,
-                    );
-
-                    if (null !== $failedMessage) {
-                        IssueBuffer::maybeAdd(
-                            new InvalidDocblock($failedMessage, new CodeLocation($statements_analyzer, $expr)),
-                        );
-                        continue;
-                    }
-                }
-
-                $assertion_var_id = str_replace((string) $var_id, $arg_var_id, $var_possibilities->var_id);
             }
 
             $codebase = $statements_analyzer->getCodebase();
