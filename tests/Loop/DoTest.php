@@ -23,57 +23,23 @@ final class DoTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
-            'doWhileConditionAssignmentKeepsTheAssignedTypeAfterTheLoop' => [
+            'doWhileConditionOnUnsetPropertyIsNotRedundant' => [
                 'code' => '<?php
-                    function fetchError(): ?stdClass {
-                        return rand(0, 1) ? new stdClass() : null;
+                    class Options {
+                        public bool $foo = false;
                     }
 
-                    $try = 0;
-                    do {
-                        $try++;
-                    } while ((null !== $error = fetchError()) && $try < 3);
+                    $options = new Options();
 
-                    $result = $error;
-
-                    if (null !== $error) {
-                        echo "failed";
-                    }',
-                'assertions' => [
-                    '$result===' => 'null|stdClass',
-                ],
-            ],
-            'doWhileConditionAssignmentAfterTheFirstOperandMayBeSkipped' => [
-                'code' => '<?php
-                    function fetchError(): ?stdClass {
-                        return rand(0, 1) ? new stdClass() : null;
+                    if (random_int(0, 1)) {
+                        $options->foo = true;
                     }
 
-                    $try = 0;
-                    $error = null;
+                    $i = 0;
                     do {
-                        $try++;
-                    } while ($try < 3 && null !== ($error = fetchError()));
-
-                    $result = $error;',
-                'assertions' => [
-                    '$result===' => 'null|stdClass',
-                ],
-            ],
-            'doWhileConditionAssignmentIsNarrowedWhenTheLoopEndsOnIt' => [
-                'code' => '<?php
-                    function fetchError(): ?stdClass {
-                        return rand(0, 1) ? new stdClass() : null;
-                    }
-
-                    do {
-                        $x = 1;
-                    } while (null !== ($error = fetchError()));
-
-                    $result = $error;',
-                'assertions' => [
-                    '$result===' => 'null',
-                ],
+                        echo $i;
+                        $i++;
+                    } while ($options->foo && $i < 3);',
             ],
             'doWhileConditionAfterContinueBeforeAssignment' => [
                 'code' => '<?php
@@ -451,6 +417,58 @@ final class DoTest extends TestCase
                         echo "here";
                     } while ($code === 1);',
             ],
+            'doWhileConditionAssignmentKeepsTheAssignedTypeAfterTheLoop' => [
+                'code' => '<?php
+                    function fetchError(): ?stdClass {
+                        return rand(0, 1) ? new stdClass() : null;
+                    }
+
+                    $try = 0;
+                    do {
+                        $try++;
+                    } while ((null !== $error = fetchError()) && $try < 3);
+
+                    $result = $error;
+
+                    if (null !== $error) {
+                        echo "failed";
+                    }',
+                'assertions' => [
+                    '$result===' => 'null|stdClass',
+                ],
+            ],
+            'doWhileConditionAssignmentAfterTheFirstOperandMayBeSkipped' => [
+                'code' => '<?php
+                    function fetchError(): ?stdClass {
+                        return rand(0, 1) ? new stdClass() : null;
+                    }
+
+                    $try = 0;
+                    $error = null;
+                    do {
+                        $try++;
+                    } while ($try < 3 && null !== ($error = fetchError()));
+
+                    $result = $error;',
+                'assertions' => [
+                    '$result===' => 'null|stdClass',
+                ],
+            ],
+            'doWhileConditionAssignmentIsNarrowedWhenTheLoopEndsOnIt' => [
+                'code' => '<?php
+                    function fetchError(): ?stdClass {
+                        return rand(0, 1) ? new stdClass() : null;
+                    }
+
+                    do {
+                        $x = 1;
+                    } while (null !== ($error = fetchError()));
+
+                    $result = $error;',
+                'assertions' => [
+                    '$result===' => 'null',
+                ],
+            ],
         ];
     }
 
@@ -461,6 +479,21 @@ final class DoTest extends TestCase
     public static function providerInvalidCodeParse(): iterable
     {
         return [
+            'doWhileConditionOnNarrowedPropertyIsRedundant' => [
+                'code' => '<?php
+                    class Options {
+                        public bool $foo = false;
+                    }
+
+                    $options = new Options();
+                    $options->foo = true;
+
+                    $i = 0;
+                    do {
+                        $i++;
+                    } while ($options->foo && $i < 3);',
+                'error_message' => 'RedundantCondition',
+            ],
             'doWhileVarWithPossibleBreakWithoutDefining' => [
                 'code' => '<?php
                     do {
