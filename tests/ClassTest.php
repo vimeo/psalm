@@ -55,13 +55,9 @@ final class ClassTest extends TestCase
         self::assertContains($issues[1]->line_from, [10, 11]);
     }
 
-    /**
-     * @psalm-capabilities read-props|write-this-props|write-props
-     */
     public function testClassExistsInAnArgumentOfANegatedCallChecksTheClassWhereItIsUsed(): void
     {
-        $this->project_analyzer->getConfig()->throw_exception = false;
-        $this->project_analyzer->setPhpVersion('8.2', 'tests');
+        $this->testConfig->throw_exception = false;
         $file_path = self::$src_dir_path . 'somefile.php';
 
         $this->addFile(
@@ -103,6 +99,9 @@ final class ClassTest extends TestCase
         $this->assertStringNotContainsString('MessageIdValidation', implode(' ', $undefined_classes));
     }
 
+    /**
+     * @psalm-capabilities read-props|write-this-props|write-props
+     */
     public function testExtendsMysqli(): void
     {
         $this->addFile(
