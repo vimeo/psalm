@@ -304,6 +304,46 @@ final class TaintTest extends TestCase
     }
 
     /**
+     * The flags of htmlspecialchars() and the like are the argument named `flags`, wherever it is written: the second
+     * written argument is another parameter with named arguments.
+     */
+    public function testHtmlFunctionsReadTheirFlagsByName(): void
+    {
+        $this->testConfig->throw_exception = false;
+        $file_path = self::$src_dir_path . 'somefile.php';
+        $this->addFile($file_path, '<?php
+            echo htmlspecialchars(string: $_GET["a"], encoding: "UTF-8");
+            echo htmlspecialchars($_GET["b"], flags: ENT_NOQUOTES);
+            echo htmlspecialchars(flags: ENT_QUOTES, string: $_GET["c"]);
+            echo htmlspecialchars($_GET["d"], ENT_NOQUOTES, encoding: "UTF-8");
+            echo html_entity_decode(string: $_GET["e"], encoding: "UTF-8");
+            echo html_entity_decode($_GET["f"], flags: ENT_NOQUOTES);
+        ');
+        $this->project_analyzer->setPhpVersion('8.1', 'tests');
+        $this->project_analyzer->trackTaintedInputs();
+        $this->project_analyzer->getCodebase()->config->initializePlugins($this->project_analyzer);
+
+        $this->analyzeFile($file_path, new Context(), false);
+
+        $issues = array_values(array_filter(
+            IssueBuffer::getIssuesDataForFile($file_path),
+            static fn(IssueData $issue): bool => !in_array($issue->type, self::IGNORE, true),
+        ));
+
+        self::assertEqualsCanonicalizing(
+            [
+                [3, 'TaintedTextWithQuotes'],
+                [5, 'TaintedTextWithQuotes'],
+                [6, 'TaintedHtml'],
+                [6, 'TaintedTextWithQuotes'],
+                [7, 'TaintedHtml'],
+                [7, 'TaintedTextWithQuotes'],
+            ],
+            array_map(static fn(IssueData $issue): array => [$issue->line_from, $issue->type], $issues),
+        );
+    }
+
+    /**
      * json_encode() escapes every control character, so its output can't split a header, unless it pretty prints.
      */
     public function testJsonEncodeRemovesTheHeaderTaintUnlessItPrettyPrints(): void
@@ -5119,6 +5159,34 @@ final class TaintTest extends TestCase
                         echo $model->tags[1];
                     }',
             ],
+            'pseudoPropertiesReadThroughObjectShapeKeepApart' => [
+                'code' => '<?php
+                    /**
+                     * @property string $name
+                     * @property string $other
+                     */
+                    final class Model {
+                        /** @var array<string, mixed> */
+                        private array $attributes = [];
+
+                        public function __get(string $key): mixed {
+                            return $this->attributes[$key] ?? null;
+                        }
+
+                        public function __set(string $key, mixed $value): void {
+                            $this->attributes[$key] = $value;
+                        }
+                    }
+
+                    function source(Model $m): void {
+                        $m->name = (string) $_GET["name"];
+                    }
+
+                    /** @param Model&object{name: string, other: string} $m */
+                    function sink(Model $m): void {
+                        echo $m->other;
+                    }',
+            ],
             'propertyBagElementsKeepTheOtherPropertiesApart' => [
                 'code' => '<?php
                     /** @psalm-taint-property-bag $properties */
@@ -7753,6 +7821,84 @@ final class TaintTest extends TestCase
 
                     function show(Model $model): void {
                         echo $model->getTitle();
+                    }',
+                'error_message' => 'TaintedHtml',
+            ],
+            'pseudoPropertyReadThroughObjectShapeOnFinalClass' => [
+                'code' => '<?php
+                    /** @property string $name */
+                    final class Model {
+                        /** @var array<string, mixed> */
+                        private array $attributes = [];
+
+                        public function __get(string $key): mixed {
+                            return $this->attributes[$key] ?? null;
+                        }
+
+                        public function __set(string $key, mixed $value): void {
+                            $this->attributes[$key] = $value;
+                        }
+                    }
+
+                    function source(Model $m): void {
+                        $m->name = (string) $_GET["name"];
+                    }
+
+                    /** @param Model&object{name: string} $m */
+                    function sink(Model $m): void {
+                        echo $m->name;
+                    }',
+                'error_message' => 'TaintedHtml',
+            ],
+            'pseudoPropertyReadThroughObjectShapeOnNonFinalClass' => [
+                'code' => '<?php
+                    /** @property string $name */
+                    class Model {
+                        /** @var array<string, mixed> */
+                        private array $attributes = [];
+
+                        public function __get(string $key): mixed {
+                            return $this->attributes[$key] ?? null;
+                        }
+
+                        public function __set(string $key, mixed $value): void {
+                            $this->attributes[$key] = $value;
+                        }
+                    }
+
+                    function source(Model $m): void {
+                        $m->name = (string) $_GET["name"];
+                    }
+
+                    /** @param Model&object{name: string} $m */
+                    function sink(Model $m): void {
+                        echo $m->name;
+                    }',
+                'error_message' => 'TaintedHtml',
+            ],
+            'pseudoPropertyWrittenThroughObjectShape' => [
+                'code' => '<?php
+                    /** @property string $name */
+                    final class Model {
+                        /** @var array<string, mixed> */
+                        private array $attributes = [];
+
+                        public function __get(string $key): mixed {
+                            return $this->attributes[$key] ?? null;
+                        }
+
+                        public function __set(string $key, mixed $value): void {
+                            $this->attributes[$key] = $value;
+                        }
+                    }
+
+                    /** @param Model&object{name: string} $m */
+                    function source(Model $m): void {
+                        $m->name = (string) $_GET["name"];
+                    }
+
+                    function sink(Model $m): void {
+                        echo $m->name;
                     }',
                 'error_message' => 'TaintedHtml',
             ],
@@ -15560,6 +15706,25 @@ final class TaintTest extends TestCase
                     $response = new ChildResponse();
                     $response->setTaint((string) $_GET["bar"]);
                     echo $response->getTaint();',
+                'error_message' => 'TaintedHtml',
+            ],
+            'taintStaysThroughAnInterpolatedElementOfAnArrayOrString' => [
+                'code' => '<?php // --taint-analysis
+                    echo "A: " . "{$_GET["a"]}";',
+                'error_message' => 'TaintedHtml',
+            ],
+            'taintStaysThroughCastOfAnArrayOrObjectSource' => [
+                'code' => '<?php // --taint-analysis
+                    /**
+                     * @return array<array-key, mixed>|object
+                     * @psalm-taint-source input
+                     */
+                    function source(): array|object {
+                        return new stdClass();
+                    }
+
+                    /** @psalm-suppress InvalidCast */
+                    echo (string) source();',
                 'error_message' => 'TaintedHtml',
             ],
         ];
