@@ -488,7 +488,7 @@ final class PartialFunctionApplicationTest extends TestCase
                         $exists = array_key_exists(?, ['a' => 1]);
                     PHP,
                 'assertions' => [
-                    '$sort===' => 'Closure[pure](array<array-key, mixed>):bool',
+                    '$sort===' => 'Closure[pure](array<array-key, mixed> &$_):bool',
                     '$replace===' => 'Closure[write-refs](array<array-key, float|int|string>|string)'
                         . ':(array<array-key, string>|string)',
                     '$exists===' => 'Closure[pure](array-key):bool',
@@ -716,6 +716,24 @@ final class PartialFunctionApplicationTest extends TestCase
                         }
                     PHP,
                 'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.6',
+            ],
+            'PartialApplication:BoundItemHasItsKeyEvaluatedOnce' => [
+                'code' => <<<'PHP'
+                    <?php
+                        /** @param-out int $x */
+                        function fill(mixed &$x, int $v): void {
+                            $x = $v;
+                        }
+                        $items = [[1], [2]];
+                        $i = 0;
+                        $closure = fill($items[$i++], ?);
+                        $j = $i;
+                    PHP,
+                'assertions' => [
+                    '$j===' => '1',
+                ],
                 'ignored_issues' => [],
                 'php_version' => '8.6',
             ],

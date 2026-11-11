@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Psalm\Tests;
 
 use Override;
+use Psalm\Config;
 use Psalm\Context;
 use Psalm\Exception\CodeException;
 use Psalm\Tests\Traits\InvalidCodeAnalysisTestTrait;
@@ -73,6 +74,25 @@ final class ArrayFunctionCallTest extends TestCase
         $this->assertSame('string', $context->vars_in_scope['$last']->getId());
     }
 
+    public function testArrayFindNullableResultIsReportedWithoutIgnoringInternalNullableIssues(): void
+    {
+        Config::getInstance()->ignore_internal_nullable_issues = false;
+        $this->project_analyzer->setPhpVersion('8.4', 'tests');
+
+        $this->expectException(CodeException::class);
+        $this->expectExceptionMessage('PossiblyNullArgument');
+
+        $this->addFile(
+            'somefile.php',
+            '<?php
+                /** @var list<string> $list */
+                $list = [];
+                echo strlen(array_find($list, fn (string $v): bool => $v === "x"));',
+        );
+
+        $this->analyzeFile('somefile.php', new Context());
+    }
+
     /**
      * @psalm-pure
      */
@@ -80,6 +100,272 @@ final class ArrayFunctionCallTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'arrayPopAndShiftOfAnArrayElementMakeItPossiblyEmpty' => [
+                'code' => '<?php
+                    /**
+                     * @param array[] $data
+                     * @psalm-suppress RiskyTruthyFalsyComparison
+                     */
+                    function test(array $data): void {
+                        if (empty($data[0])) {
+                            throw new InvalidArgumentException();
+                        }
+
+                        array_pop($data[0]);
+
+                        if (empty($data[0])) {
+                            throw new InvalidArgumentException();
+                        }
+
+                        array_shift($data[0]);
+
+                        if (empty($data[0])) {
+                            throw new InvalidArgumentException();
+                        }
+                    }',
+            ],
+            'arrayPopOfAListWithAnOptionalLastItem' => [
+                'code' => <<<'PHP'
+                    <?php
+                    function pop(bool $one, bool $two): void {
+                        $always = [0, 1];
+                        array_pop($always);
+
+                        $maybe = [0];
+                        if ($one) {
+                            $maybe[] = 2;
+                        }
+                        array_pop($maybe);
+
+                        $maybe_twice = [0];
+                        if ($one) {
+                            $maybe_twice[] = 2;
+                        }
+                        if ($two) {
+                            $maybe_twice[] = 3;
+                        }
+                        array_pop($maybe_twice);
+
+                        /** @psalm-check-type-exact $always = list{0: 0} */
+                        /** @psalm-check-type-exact $maybe = list{0?: 0} */
+                        /** @psalm-check-type-exact $maybe_twice = list{0?: 0, 1?: 2|3} */
+                    }
+                    PHP,
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
+            'arrayUdiffKeepsTheTypeOfTheFirstArray' => [
+                'code' => '<?php
+                    $removed = array_udiff(
+                        ["foo", "bar"],
+                        ["bar"],
+                        fn (string $a, string $b): int => $a === $b ? 0 : 1,
+                    );
+
+                    $byKey = array_diff_ukey(["a" => 1], ["b" => 2], "strcmp");
+
+                    $common = array_uintersect_uassoc(
+                        ["a" => 1],
+                        ["a" => 1],
+                        fn (int $a, int $b): int => $a <=> $b,
+                        "strcmp",
+                    );
+
+                    /**
+                     * @param list<int>|array<string, string> $either
+                     * @param array<int, string> $others
+                     */
+                    function either(array $either, array $others): array {
+                        return array_udiff_assoc($either, $others, "strcmp");
+                    }
+
+                    /** @var array $untyped */
+                    $untyped = [];
+                    $fromUntyped = array_udiff($untyped, [], "strcmp");',
+                'assertions' => [
+                    '$removed===' => 'array<int<0, 1>, \'bar\'|\'foo\'>',
+                    '$byKey===' => 'array<\'a\', 1>',
+                    '$common===' => 'array<\'a\', 1>',
+                    '$fromUntyped===' => 'array<array-key, mixed>',
+                ],
+                'ignored_issues' => ['MixedArgumentTypeCoercion', 'MixedArgument'],
+            ],
+            'arrayFindNullableResultIsIgnoredByDefaultInTests' => [
+                'code' => '<?php
+                    /** @var list<string> $list */
+                    $list = [];
+                    echo strlen(array_find($list, fn (string $v): bool => $v === "x"));',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.4',
+            ],
+            'arrayFindFallsBackWhenTheArrayIsUnknown' => [
+                'code' => '<?php
+                    /** @var mixed $mixed */
+                    $mixed = [];
+                    /** @var list<array{list<string>, callable(string): bool}> $args */
+                    $args = [];
+
+                    $fromMixed = array_find($mixed, fn (mixed $v): bool => true);
+                    $unpacked = array_find(...$args[0]);',
+                'assertions' => [
+                    '$fromMixed===' => 'mixed',
+                    '$unpacked===' => 'mixed',
+                ],
+                'ignored_issues' => ['MixedAssignment', 'MixedArgument'],
+                'php_version' => '8.4',
+            ],
+            'arrayFindWithNamedArguments' => [
+                'code' => '<?php
+                    /** @var list<string> $list */
+                    $list = [];
+                    $found = array_find(callback: fn (string $v): bool => $v === "x", array: $list);
+                    $key = array_find_key(callback: fn (string $v): bool => $v === "x", array: $list);',
+                'assertions' => [
+                    '$found===' => 'null|string',
+                    '$key===' => 'int<0, max>|null',
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.4',
+            ],
+            'arrayFindKeyReturnsTheKeyTypeOrNull' => [
+                'code' => '<?php
+                    /** @var list<string> $list */
+                    $list = [];
+                    $listKey = array_find_key($list, fn (string $v): bool => $v === "x");
+
+                    /** @var array<string, int> $map */
+                    $map = [];
+                    $mapKey = array_find_key($map, fn (int $v): bool => $v > 1);
+
+                    $shapeKey = array_find_key(["a" => 1, "b" => 2], fn (int $v): bool => $v > 1);
+
+                    /** @var list<int>|array<string, bool> $union */
+                    $union = [];
+                    $fromUnion = array_find_key($union, fn (int|bool $v): bool => (bool) $v);',
+                'assertions' => [
+                    '$listKey===' => 'int<0, max>|null',
+                    '$mapKey===' => 'null|string',
+                    '$shapeKey===' => '\'a\'|\'b\'|null',
+                    '$fromUnion===' => 'int<0, max>|null|string',
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.4',
+            ],
+            'arrayFindReturnsTheValueTypeOrNull' => [
+                'code' => '<?php
+                    class Account {
+                        public function __construct(public string $iban) {}
+                    }
+
+                    /** @var list<Account> $accounts */
+                    $accounts = [];
+                    $account = array_find($accounts, fn (Account $account): bool => $account->iban === "abc");
+
+                    $shape = array_find(["a" => 1, "b" => "x"], fn (int|string $v): bool => $v === "x");
+
+                    /** @var list<int>|array<string, bool> $union */
+                    $union = [];
+                    $fromUnion = array_find($union, fn (int|bool $v): bool => (bool) $v);',
+                'assertions' => [
+                    '$account===' => 'Account|null',
+                    '$shape===' => '\'x\'|1|null',
+                    '$fromUnion===' => 'bool|int|null',
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.4',
+            ],
+            'usortClosureWithoutParamTypesTakesTheElementType' => [
+                'code' => '<?php
+                    /** @param list<array{foo: int}> $list */
+                    function sortByFoo(array $list): void {
+                        usort($list, static function ($a, $b): int {
+                            /** @psalm-check-type-exact $a = array{foo: int} */
+                            /** @psalm-check-type-exact $b = array{foo: int} */
+                            return $a["foo"] <=> $b["foo"];
+                        });
+                    }',
+                'assertions' => [],
+            ],
+            'usortClosureWithANativeArrayParamTakesTheElementType' => [
+                'code' => '<?php
+                    /** @param list<array{foo: int}> $list */
+                    function sortByFoo(array $list): void {
+                        usort($list, static function (array $a, array $b): int {
+                            /** @psalm-check-type-exact $a = array{foo: int} */
+                            return $a["foo"] <=> $b["foo"];
+                        });
+                    }',
+                'assertions' => [],
+            ],
+            'uasortAndUksortClosuresTakeTheValuesAndTheKeys' => [
+                'code' => '<?php
+                    /** @param array<string, array{foo: int}> $map */
+                    function sortMap(array $map): void {
+                        uasort($map, static function ($a, $b): int {
+                            /** @psalm-check-type-exact $a = array{foo: int} */
+                            return $a["foo"] <=> $b["foo"];
+                        });
+                        uksort($map, static function ($a, $b): int {
+                            /** @psalm-check-type-exact $a = string */
+                            return $a <=> $b;
+                        });
+                    }',
+                'assertions' => [],
+            ],
+            'closureTakesTheTemplateBoundsOfTheByRefArgWhateverTheOrderOfNamedArgs' => [
+                'code' => '<?php
+                    /**
+                     * @template T
+                     * @template TArray as array<T>
+                     * @param TArray $items
+                     * @param list<string> $other
+                     * @param callable(T, T): int $cmp
+                     * @param-out (TArray is non-empty-array ? non-empty-list<T> : list<T>) $items
+                     */
+                    function sortBoth(array &$items, array $other, callable $cmp): void {
+                        usort($items, $cmp);
+                    }
+
+                    /**
+                     * @param list<int> $ints
+                     * @param list<string> $strings
+                     */
+                    function run(array $ints, array $strings): void {
+                        sortBoth($ints, $strings, static function ($a, $b): int {
+                            /** @psalm-check-type-exact $a = int */
+                            return $a <=> $b;
+                        });
+                        sortBoth(other: $strings, items: $ints, cmp: static function ($a, $b): int {
+                            /** @psalm-check-type-exact $a = int */
+                            return $a <=> $b;
+                        });
+                        sortBoth(items: $ints, other: $strings, cmp: static function ($a, $b): int {
+                            /** @psalm-check-type-exact $a = int */
+                            return $a <=> $b;
+                        });
+                    }',
+                'assertions' => [],
+            ],
+            'usortClosureKeepsItsDocblockParamTypes' => [
+                'code' => '<?php
+                    /** @param list<array{foo: int, bar: string}> $list */
+                    function sortByFoo(array $list): void {
+                        usort(
+                            $list,
+                            /**
+                             * @param array<string, int|string> $a
+                             * @param array<string, int|string> $b
+                             */
+                            static function (array $a, array $b): int {
+                                /** @psalm-check-type-exact $a = array<string, int|string> */
+                                return 0;
+                            },
+                        );
+                    }',
+                'assertions' => [],
+            ],
             'arraySpliceWithALengthOutsideTheRangeOfAnInt' => [
                 'code' => '<?php
                     $big = [1, 2, 3];
@@ -1443,6 +1729,106 @@ final class ArrayFunctionCallTest extends TestCase
                 'ignored_issues' => [],
                 'php_version' => '8.0',
             ],
+            'arrayReduceOverElementsThatAreMixedOrString' => [
+                'code' => '<?php
+                    function join_all(mixed $other): string {
+                        $items = ["a", $other];
+
+                        return array_reduce(
+                            $items,
+                            static fn (string $carry, string $part): string => $carry . $part,
+                            "",
+                        );
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
+            'arrayReduceOverTheMixedOrStringResultOfAnotherArrayReduce' => [
+                'code' => '<?php
+                    function join_path(string $path): string {
+                        $parts = array_reduce(
+                            explode("/", $path),
+                            static fn (array $carry, string $part): array => [...$carry, $part, $carry[0] ?? $part],
+                            [],
+                        );
+
+                        return array_reduce(
+                            $parts,
+                            static fn (string $carry, string $part): string => $carry . "/" . $part,
+                            "",
+                        );
+                    }',
+                'assertions' => [],
+                'ignored_issues' => ['MixedAssignment', 'MixedOperand', 'MixedArgument'],
+                'php_version' => '8.1',
+            ],
+            'arrayReduceUntypedArrayWithTypedCallbackIsNotReported' => [
+                'code' => '<?php
+                    function multiply(array $arr): int {
+                        return array_reduce($arr, fn(int $carry, int $item): int => $carry * $item, 1);
+                    }',
+            ],
+            'arrayReduceOverTheMixedResultOfAnotherArrayReduce' => [
+                'code' => '<?php
+                    function join_path(string $path): string {
+                        $normalized = array_reduce(
+                            explode("/", $path),
+                            static function (array $carry, string $part): array {
+                                $carry[] = $part;
+                                return $carry;
+                            },
+                            [],
+                        );
+
+                        return array_reduce(
+                            $normalized,
+                            static fn (string $carry, string $part): string => $carry . "/" . $part,
+                            "",
+                        );
+                    }',
+                'assertions' => [],
+                'ignored_issues' => ['MixedArgument'],
+            ],
+            'arrayReduceOverAnArrayOfMixed' => [
+                'code' => '<?php
+                    /** @param array<mixed> $values */
+                    function join_all(array $values): string {
+                        return array_reduce(
+                            $values,
+                            static fn (string $carry, string $part): string => $carry . $part,
+                            "",
+                        );
+                    }',
+            ],
+            'arrayReduceCallbackParamsTakeTheTypeOfTheElements' => [
+                'code' => '<?php
+                    /** @param array<array{tags: string}> $a */
+                    function typed(array $a): string {
+                        return array_reduce($a, function (string $carry, array $value) {
+                            return $carry . $value["tags"];
+                        }, "");
+                    }
+
+                    /** @param array<array{tags: string}> $a */
+                    function untyped(array $a): string {
+                        return array_reduce($a, function ($carry, $value) {
+                            return $value["tags"];
+                        }, "");
+                    }
+
+                    /** @param list<array{tags: string}> $a */
+                    function arrow(array $a): string {
+                        return array_reduce($a, fn(string $carry, array $value) => $carry . $value["tags"], "");
+                    }
+
+                    /** @param array{a: array{tags: string}, b: array{tags: string}} $a */
+                    function shape(array $a): string {
+                        return array_reduce($a, function (string $carry, array $value) {
+                            return $carry . $value["tags"];
+                        }, "");
+                    }',
+            ],
             'implodeMultiDimensionalArray' => [
                 'code' => '<?php
                     $urls = array_map("implode", [["a", "b"]]);',
@@ -1454,8 +1840,8 @@ final class ArrayFunctionCallTest extends TestCase
                     $a = implode(":", $l);
                     $b = implode(":", $k);',
                 'assertions' => [
-                    '$a===' => 'non-empty-literal-string',
-                    '$b===' => 'non-empty-literal-string',
+                    '$a===' => '\'a:b\'',
+                    '$b===' => '\'1:2:3\'',
                 ],
             ],
             'implodeArrayOfNonEmptyStringAndEmptyString' => [
@@ -1468,7 +1854,7 @@ final class ArrayFunctionCallTest extends TestCase
                     $a = implode("", $l);
                     $b = implode("", $k);',
                 'assertions' => [
-                    '$a===' => 'non-empty-literal-string',
+                    '$a===' => '\'ab\'',
                     '$b===' => 'non-empty-string',
                 ],
             ],
@@ -1515,7 +1901,7 @@ final class ArrayFunctionCallTest extends TestCase
                     $h = join(":", getStrings());',
                 'assertions' => [
                     '$a===' => 'literal-string',
-                    '$b===' => 'non-empty-literal-string',
+                    '$b===' => '\'a:\'',
                     '$c===' => 'string',
                     '$d===' => 'string',
                     '$e===' => 'non-empty-string',
@@ -1542,13 +1928,88 @@ final class ArrayFunctionCallTest extends TestCase
                     $f = implode(",", [$s]);
                     $g = join(",", [$s, $s]);',
                 'assertions' => [
-                    '$a===' => 'non-empty-string',
-                    '$b===' => 'non-empty-string',
-                    '$c===' => 'non-empty-string',
+                    '$a===' => 'non-falsy-string',
+                    '$b===' => 'non-falsy-string',
+                    '$c===' => 'non-falsy-string',
                     '$d===' => 'string',
-                    '$e===' => 'non-empty-literal-string',
+                    '$e===' => '\',\'',
                     '$f===' => 'string',
+                    '$g===' => 'non-falsy-string',
+                ],
+            ],
+            'implodeOfKnownLiteralsIsTheLiteral' => [
+                'code' => '<?php
+                    class Foo {
+                        const DIR = __DIR__;
+                    }
+                    $a = implode(" ", ["", ""]);
+                    $b = implode("", ["0", "0"]);
+                    $c = implode(",", ["a", 1]);
+                    $d = implode("", ["", "0"]);
+                    $e = implode(" ", ["", Foo::DIR]);',
+                'assertions' => [
+                    '$a===' => '\' \'',
+                    '$b===' => 'non-empty-literal-string',
+                    '$c===' => '\'a,1\'',
+                    '$d===' => 'non-empty-literal-string',
+                    '$e===' => 'non-falsy-string',
+                ],
+            ],
+            'implodeNonFalsyPieceOrSeparator' => [
+                'code' => '<?php
+                    /** @return non-falsy-string */
+                    function getNonFalsy(): string {
+                        return "ab";
+                    }
+                    /** @return non-empty-string */
+                    function getNonEmpty(): string {
+                        return "0";
+                    }
+                    function getString(): string {
+                        return "";
+                    }
+                    /** @return 1|2 */
+                    function getNonZeroInt(): int {
+                        return 1;
+                    }
+                    /** @return 0|1 */
+                    function getInt(): int {
+                        return 1;
+                    }
+                    /** @return list{string, non-falsy-string}|list{non-empty-string, non-empty-string} */
+                    function getShapes(): array {
+                        return ["", "ab"];
+                    }
+                    $s = getString();
+                    $a = implode("", [$s, getNonFalsy()]);
+                    $b = implode(getNonFalsy(), [$s, $s]);
+                    $c = implode("0", [$s, $s]);
+                    $d = implode("", [$s, getNonEmpty()]);
+                    $e = implode(getNonEmpty(), [$s, $s]);
+                    $f = implode("", [$s, getNonZeroInt()]);
+                    $g = implode("", [$s, getInt()]);
+                    $h = implode("", [$s, true]);
+                    $i = implode(rand(0, 1) ? "," : ";", [$s, $s]);
+                    $j = implode(rand(0, 1) ? "," : "0", [$s, $s]);
+                    $k = implode("", getShapes());
+                    $l = implode(",", getShapes());
+                    $m = implode("", [$s, 0]);
+                    $n = implode("", [$s, "0"]);',
+                'assertions' => [
+                    '$a===' => 'non-falsy-string',
+                    '$b===' => 'non-falsy-string',
+                    '$c===' => 'non-empty-string',
+                    '$d===' => 'non-empty-string',
+                    '$e===' => 'non-empty-string',
+                    '$f===' => 'non-falsy-string',
                     '$g===' => 'non-empty-string',
+                    '$h===' => 'non-falsy-string',
+                    '$i===' => 'non-falsy-string',
+                    '$j===' => 'non-empty-string',
+                    '$k===' => 'non-empty-string',
+                    '$l===' => 'non-falsy-string',
+                    '$m===' => 'non-empty-string',
+                    '$n===' => 'non-empty-string',
                 ],
             ],
             'key' => [
@@ -1922,6 +2383,25 @@ final class ArrayFunctionCallTest extends TestCase
                     '$p' => 'list<int>',
                 ],
             ],
+            'arrayColumnKeyIsCastToAnArrayKey' => [
+                'code' => '<?php
+                    $null = array_column([[null, 1]], 1, 0);
+                    $false = array_column([[false, 1]], 1, 0);
+                    $true = array_column([[true, 1]], 1, 0);
+                    $float = array_column([[1.5, 1]], 1, 0);
+                    $mixed = array_column([[null, 1], ["a", 2]], 1, 0);
+                    $stringable = array_column([[new class { public function __toString(): string { return ""; } }, 1]], 1, 0);
+                    $string = array_column([["a", 1]], 1, 0);',
+                'assertions' => [
+                    '$null===' => "non-empty-array<'', 1>",
+                    '$false===' => 'non-empty-array<0, 1>',
+                    '$true===' => 'non-empty-array<1, 1>',
+                    '$float===' => 'non-empty-array<int, 1>',
+                    '$mixed===' => "non-empty-array<''|'a', 1|2>",
+                    '$stringable===' => 'non-empty-array<string, 1>',
+                    '$string===' => "non-empty-array<'a', 1>",
+                ],
+            ],
             'arrayColumnExactInference' => [
                 'code' => '<?php
                     $a = array_column([
@@ -2118,6 +2598,13 @@ final class ArrayFunctionCallTest extends TestCase
                     '$function_call_result' => 'int',
                 ],
             ],
+            'arrayReduceInternalSignatureReturn' => [
+                'code' => '<?php
+                    $result = array_reduce([2, 2], "intdiv", 16);',
+                'assertions' => ['$result' => 'int'],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
             'arrayReduceStaticMethods' => [
                 'code' => '<?php
                     $arr = [2, 3, 4, 5];
@@ -2127,10 +2614,12 @@ final class ArrayFunctionCallTest extends TestCase
                             return $carry * $item;
                         }
 
+                        /** @param list<int> $arr */
                         public static function multiplySelf(array $arr): int {
                             return array_reduce($arr, [self::class, "multiply"], 1);
                         }
 
+                        /** @param list<int> $arr */
                         public static function multiplyStatic(array $arr): int {
                             return array_reduce($arr, [static::class, "multiply"], 1);
                         }
@@ -2173,6 +2662,75 @@ final class ArrayFunctionCallTest extends TestCase
                 'assertions' => [
                     '$e' => 'list<int>',
                 ],
+            ],
+            'arraySpliceReturnKeepsTheTypeOfTheElements' => [
+                'code' => '<?php
+                    /** @var list<array{id: int}> $shapes */
+                    $shapes = [];
+                    /** @var array<int, bool> $bools */
+                    $bools = [];
+                    /** @var non-empty-list<float> $floats */
+                    $floats = [1.0];
+                    /** @var list<"a"|"b"> $literals */
+                    $literals = [];
+                    /** @var array<string, int> $named */
+                    $named = [];
+                    /** @var array<array-key, int> $keys */
+                    $keys = [];
+                    /** @var list<mixed> $mixed */
+                    $mixed = [];
+
+                    $a = array_splice($shapes, 0, 1);
+                    $b = array_splice($bools, 0, 1);
+                    $c = array_splice($floats, 0, 1);
+                    $d = array_splice($literals, 0, 1);
+                    $e = array_splice($named, 0, 1);
+                    $f = array_splice($keys, 0, 1);
+                    $g = array_splice($mixed, 0, 1);',
+                'assertions' => [
+                    '$a===' => 'list<array{id: int}>',
+                    '$b===' => 'list<bool>',
+                    '$c===' => 'list<float>',
+                    '$d===' => 'list<\'a\'|\'b\'>',
+                    '$e===' => 'array<string, int>',
+                    '$f===' => 'array<array-key, int>',
+                    '$g===' => 'list<mixed>',
+                ],
+            ],
+            'arraySpliceReturnIsAcceptedWhereTheElementsAreExpected' => [
+                'code' => '<?php
+                    /**
+                     * @param array[] $body
+                     * @return object[]
+                     */
+                    function sendWebRequest(array $body): array
+                    {
+                        $result = [];
+                        foreach ($body as $item) {
+                            $result[] = (object) $item;
+                        }
+                        return $result;
+                    }
+
+                    /**
+                     * @param int[] $ids
+                     * @return object[]
+                     */
+                    function fetchListing(array $ids, string $type): array {
+                        $fetch = [];
+                        foreach ($ids as $id) {
+                            $fetch[] = [$type => $id];
+                        }
+
+                        $output = [];
+                        while (count($fetch)) {
+                            $length = min(100, count($fetch));
+                            $input = array_splice($fetch, 0, $length);
+                            $output = array_merge($output, sendWebRequest($input));
+                        }
+
+                        return $output;
+                    }',
             ],
             'arraySpliceOtherType' => [
                 'code' => '<?php
@@ -2938,6 +3496,29 @@ final class ArrayFunctionCallTest extends TestCase
                 ],
                 'ignored_issues' => ['RiskyTruthyFalsyComparison'],
             ],
+            'arrayMergeSpreadOfAListBuiltWithUnshiftOfMixed' => [
+                'code' => '<?php
+                    function merge(callable $get): array {
+                        $parameters = [];
+                        $parameters[] = $get("label");
+
+                        do {
+                            array_unshift($parameters, $get("label"));
+                        } while (rand() === 0);
+
+                        return array_merge([], ...$parameters);
+                    }',
+                'assertions' => [],
+                'ignored_issues' => ['MixedAssignment', 'MixedArgument'],
+            ],
+            'arrayUnshiftOfMixedOnAListKeepsAList' => [
+                'code' => '<?php
+                    function unshift(callable $get): void {
+                        $list = [$get()];
+                        array_unshift($list, $get());
+                        /** @psalm-check-type-exact $list = list{mixed, mixed} */
+                    }',
+            ],
             'arrayUnshiftOnEmptyArrayMeansNonEmptyList' => [
                 'code' => '<?php
                     /**
@@ -3431,6 +4012,14 @@ final class ArrayFunctionCallTest extends TestCase
                     function f(array $m, string $k): void {
                         array_shift($m[$k]);
                         $shifted = array_shift($m[$k]);
+                        /** @psalm-check-type-exact $shifted = string */
+                    }
+
+                    /** @param array<string, list{int, string}> $m */
+                    function h(array $m, string $k, string $other_k): void {
+                        array_shift($m[$k]);
+                        $k = $other_k;
+                        $shifted = array_shift($m[$k]);
                         /** @psalm-check-type-exact $shifted = int|string */
                     }
 
@@ -3442,7 +4031,7 @@ final class ArrayFunctionCallTest extends TestCase
                         return $i;
                     }',
                 'assertions' => [
-                    '$popped===' => "'s'|1",
+                    '$popped===' => '1',
                 ],
             ],
             'arrayPopShiftEmptyTemplateArray' => [
@@ -3471,6 +4060,262 @@ final class ArrayFunctionCallTest extends TestCase
                 'ignored_issues' => [],
                 'php_version' => '8.4',
             ],
+            'arrayIntersectKeyDropsKeysTheFirstArrayCannotHave' => [
+                'code' => <<<'PHP'
+                    <?php
+                    /** @var array<string, int> $a */
+                    $a = [];
+                    $r = array_intersect_key($a, [1 => 'a']);
+
+                    /** @psalm-check-type-exact $r = array<string, int> */
+                    PHP,
+                'assertions' => [],
+            ],
+            'arrayIntersectKeyWithUnpackedArgumentKeepsTheKeys' => [
+                'code' => <<<'PHP'
+                    <?php
+                    /** @var array<string, int> $a */
+                    $a = [];
+                    $others = [['x' => 1]];
+                    $r = array_intersect_key($a, ...$others);
+
+                    /** @psalm-check-type-exact $r = array<string, int> */
+                    PHP,
+                'assertions' => [],
+            ],
+            'arrayIntersectKeyWithoutSealedShapeKeepsTheKeys' => [
+                'code' => <<<'PHP'
+                    <?php
+                    /** @var array<string, int> $a */
+                    $a = [];
+                    /** @var array<string, int> $b */
+                    $b = [];
+                    $r = array_intersect_key($a, $b);
+
+                    /** @psalm-check-type-exact $r = array<string, int> */
+                    PHP,
+                'assertions' => [],
+            ],
+            'arrayIntersectKeyKeepsTheKeysSharedByAllSealedShapes' => [
+                'code' => <<<'PHP'
+                    <?php
+                    /** @var array<string, int> $a */
+                    $a = [];
+                    /** @var array<string, int> $unknown */
+                    $unknown = [];
+                    $r = array_intersect_key($a, ['x' => 1, 'y' => 2, 'z' => 3], $unknown, ['y' => 1, 'z' => 1, 'w' => 1]);
+
+                    /** @psalm-check-type-exact $r = array<'y'|'z', int> */
+                    PHP,
+                'assertions' => [],
+            ],
+            'arrayIntersectKeyKeepsTheKeysOfASealedShape' => [
+                'code' => <<<'PHP'
+                    <?php
+                    $default = ['foo' => 'foo', 'bar' => 'bar'];
+
+                    /** @var array<string, int> $a */
+                    $a = [];
+                    $r = array_intersect_key($a, $default);
+
+                    /** @psalm-check-type-exact $r = array<'bar'|'foo', int> */
+                    PHP,
+                'assertions' => [],
+            ],
+            'arrayIntersectKeyOfMergedDefaultsIsStringKeyed' => [
+                'code' => <<<'PHP'
+                    <?php
+                    /** @return array<string, mixed> */
+                    function foo(array $values) {
+                        $default = ['foo' => 'foo', 'bar' => 'bar'];
+
+                        return array_intersect_key(array_merge($default, $values), $default);
+                    }
+                    PHP,
+                'assertions' => [],
+            ],
+            'arrayFilterOfAnArrayOrMixedKeepsAnArrayType' => [
+                'code' => '<?php
+                    /** @var mixed $maybe */
+                    $maybe = 1;
+                    $bar = $maybe ?? [];
+                    $filtered = array_filter($bar);',
+                'assertions' => [
+                    '$filtered' => 'array<array-key, non-empty-mixed>',
+                ],
+                'ignored_issues' => ['MixedAssignment', 'MixedArgument'],
+            ],
+            'arrayFilterOfAnArrayOrMixedIsNotEmpty' => [
+                'code' => '<?php
+                    /**
+                     * @param array<string, mixed> $array
+                     */
+                    function foo(array $array): void {
+                        $bar = $array["key"] ?? [];
+                        $filtered = array_filter($bar);
+
+                        if (count($filtered) !== 1) {
+                            throw new Exception();
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => ['MixedAssignment', 'MixedArgument'],
+            ],
+            'arrayMapWithATypedVariadicCallbackAndSeveralArrays' => [
+                'code' => '<?php
+                    /**
+                     * @param list<int> $x
+                     * @param list<int> $y
+                     * @param list<int> $z
+                     * @return list<int>
+                     */
+                    function sums(array $x, array $y, array $z): array {
+                        return array_map(static fn (int ...$values): int => array_sum($values), $x, $y, $z);
+                    }',
+            ],
+            'arrayMapWithAVariadicCallbackAndSeveralArrays' => [
+                'code' => '<?php
+                    /**
+                     * @param list<int> $x
+                     * @param list<int> $y
+                     * @param list<int> $z
+                     * @return list<array<array-key, int>>
+                     */
+                    function zip(array $x, array $y, array $z): array {
+                        return array_map(static fn (...$values): array => $values, $x, $y, $z);
+                    }',
+            ],
+            'arrayMapWithACallbackUsingFuncGetArgsAndSeveralArrays' => [
+                'code' => '<?php
+                    /**
+                     * @param list<int> $x
+                     * @param list<int> $y
+                     * @param list<int> $z
+                     */
+                    function zip(array $x, array $y, array $z): array {
+                        return array_map(static fn ($_): array => func_get_args(), $x, $y, $z);
+                    }',
+                'assertions' => [],
+                'ignored_issues' => ['MixedReturnTypeCoercion'],
+            ],
+            'arrayUniqueOfStringableObjects' => [
+                'code' => '<?php
+                    /**
+                     * @param list<stringable-object> $objects
+                     * @return list<stringable-object>
+                     */
+                    function unique(array $objects): array {
+                        return array_values(array_unique($objects));
+                    }',
+            ],
+            'arrayUniqueOfValuesThatConvertToStrings' => [
+                'code' => '<?php
+                    final class Name {
+                        public function __toString(): string {
+                            return "name";
+                        }
+                    }
+
+                    /** @var list<string> $strings */
+                    $strings = [];
+                    /** @var array<string, int|float|bool|null> $scalars */
+                    $scalars = [];
+                    /** @var list<Name> $names */
+                    $names = [];
+                    /** @var list<array<array-key, mixed>> $arrays */
+                    $arrays = [];
+                    /** @var list<mixed> $mixed */
+                    $mixed = [];
+                    /** @var list<stdClass> $objects */
+                    $objects = [];
+
+                    $a = array_unique($strings);
+                    $b = array_unique($scalars, SORT_STRING);
+                    $c = array_unique($names, SORT_LOCALE_STRING);
+                    $d = array_unique($arrays);
+                    $e = array_unique($mixed);
+                    $f = array_unique($objects, SORT_REGULAR);
+                    $g = array_unique(array: $objects, flags: SORT_REGULAR);
+                    $h = array_unique($objects, SORT_NUMERIC);
+                    $i = array_unique($objects, (int) $mixed[0]);
+                    $j = array_unique($objects, ...[SORT_REGULAR]);',
+                'assertions' => [
+                    '$a===' => 'array<int<0, max>, string>',
+                ],
+                'ignored_issues' => ['MixedArgumentTypeCoercion', 'MixedArgument', 'MixedAssignment'],
+                'php_version' => '8.0',
+            ],
+            'arrayMapOnATemplateBoundedByAListKeepsTheList' => [
+                'code' => '<?php
+                    /**
+                     * @template T of list<string>
+                     * @param T $v
+                     * @return list<string>
+                     */
+                    function f(array $v): array {
+                        return array_map(fn(string $i) => $i, $v);
+                    }',
+            ],
+            'arrayMapOnAUnionOfAnArrayAndATemplateBoundedByAListKeepsTheStringKeys' => [
+                'code' => '<?php
+                    /**
+                     * @template T of list<int>
+                     * @param array<string, int>|T $v
+                     * @return array<array-key, int>
+                     */
+                    function f(array $v): array {
+                        return array_map(fn(int $i) => $i + 1, $v);
+                    }',
+            ],
+            'arrayMapOnATemplateBoundedByANonEmptyListKeepsThat' => [
+                'code' => '<?php
+                    /**
+                     * @template T of non-empty-list<int>
+                     * @param T $v
+                     * @return non-empty-list<string>
+                     */
+                    function f(array $v): array {
+                        return array_map(fn(int $i) => (string) $i, $v);
+                    }',
+            ],
+            'arrayMapOnATemplateBoundedByAnArrayKeepsTheKeys' => [
+                'code' => '<?php
+                    /**
+                     * @template T of array<string, int>
+                     * @param T $v
+                     * @return array<string, string>
+                     */
+                    function f(array $v): array {
+                        return array_map(fn(int $i) => (string) $i, $v);
+                    }',
+            ],
+            'arrayMergeRecursiveOfShapesWithoutSharedKeys' => [
+                'code' => '<?php
+                    /**
+                     * @param array{name: string} $a
+                     * @param array{age: int} $b
+                     * @return array{name: string, age: int}
+                     */
+                    function merge(array $a, array $b): array {
+                        return array_merge_recursive($a, $b);
+                    }
+
+                    $a = ["name" => "a"];
+                    $b = ["age" => 1];
+                    $merged = array_merge_recursive($a, $b);',
+                'assertions' => [
+                    '$merged===' => "array{age: 1, name: 'a'}",
+                ],
+            ],
+            'arrayMergeRecursiveOfShapesWithSharedKeysStaysGeneric' => [
+                'code' => '<?php
+                    $a = ["name" => "a"];
+                    $b = ["name" => "b", "age" => 1];
+                    $merged = array_merge_recursive($a, $b);',
+                'assertions' => [
+                    '$merged===' => "array<'age'|'name', 'a'|'b'|1>",
+                ],
+            ],
         ];
     }
 
@@ -3481,6 +4326,62 @@ final class ArrayFunctionCallTest extends TestCase
     public static function providerInvalidCodeParse(): iterable
     {
         return [
+            'arrayMapOnAUnionOfAnArrayAndATemplateBoundedByAListIsNotAList' => [
+                'code' => '<?php
+                    /**
+                     * @template T of list<int>
+                     * @param array<string, int>|T $v
+                     * @return list<int>
+                     */
+                    function f(array $v): array {
+                        return array_map(fn(int $i) => $i + 1, $v);
+                    }',
+                'error_message' => 'LessSpecificReturnStatement',
+            ],
+            'arrayReduceCallbackParamOfTheWrongType' => [
+                'code' => '<?php
+                    /** @param list<array{tags: string}> $a */
+                    function f(array $a): string {
+                        return array_reduce($a, fn(string $carry, int $value): string => $carry . $value, "");
+                    }',
+                'error_message' => 'InvalidArgument',
+            ],
+            'arrayPopOfAListWithAnOptionalLastItemMayEmptyIt' => [
+                'code' => '<?php
+                    /** @param non-empty-list<int> $a */
+                    function foo(array $a): void {}
+
+                    function bar(bool $one): void {
+                        $d = [0];
+                        if ($one) {
+                            $d[] = 2;
+                        }
+                        array_pop($d);
+                        foo($d);
+                    }',
+                'error_message' => 'InvalidArgument',
+            ],
+            'arrayColumnIndexColumnOfAnObjectIsNotAnArrayKey' => [
+                'code' => '<?php
+                    $result = array_column([[new stdClass, 1]], 1, 0);',
+                'error_message' => 'InvalidArgument - src' . DIRECTORY_SEPARATOR . 'somefile.php:2:31 - The index column has the type stdClass',
+                'error_levels' => [],
+                'php_version' => '8.0',
+            ],
+            'arrayColumnIndexColumnOfAnArrayIsNotAnArrayKey' => [
+                'code' => '<?php
+                    $result = array_column([[[], 1]], 1, 0);',
+                'error_message' => 'InvalidArgument',
+                'error_levels' => [],
+                'php_version' => '8.0',
+            ],
+            'arrayColumnIndexColumnMayBeAnObject' => [
+                'code' => '<?php
+                    $result = array_column([[new stdClass, 1], ["a", 2]], 1, 0);',
+                'error_message' => 'PossiblyInvalidArgument',
+                'error_levels' => [],
+                'php_version' => '8.0',
+            ],
             'arrayFilterUseMethodOnInferableInt' => [
                 'code' => '<?php
                     $a = array_filter([1, 2, 3, 4], function ($i) { return $i->foo(); });',
@@ -3764,6 +4665,22 @@ final class ArrayFunctionCallTest extends TestCase
                     array_combine(["a", "b"], [1, 2, 3]);',
                 'error_message' => 'InvalidArgument',
             ],
+            'arrayMergeSpreadOfAnArrayThatMayHaveStringKeys' => [
+                'code' => '<?php
+                    /** @param array<array-key, array<int, int>> $lists */
+                    function merge(array $lists): array {
+                        return array_merge(...$lists);
+                    }',
+                'error_message' => 'NamedArgumentNotAllowed',
+            ],
+            'arrayMergeSpreadAfterAnotherArgumentOfAnArrayThatMayHaveStringKeys' => [
+                'code' => '<?php
+                    /** @param array<array-key, array<int, int>> $lists */
+                    function merge(array $lists): array {
+                        return array_merge([], ...$lists);
+                    }',
+                'error_message' => 'NamedArgumentNotAllowed',
+            ],
             'arrayMergeNoNamed' => [
                 'code' => '<?php
                     $map = ["a" => []];
@@ -4025,6 +4942,80 @@ final class ArrayFunctionCallTest extends TestCase
                         return array_pop($a[0]);
                     }',
                 'error_message' => 'InvalidReturnStatement',
+            ],
+            'arrayMapWithATypedVariadicCallbackChecksEveryArray' => [
+                'code' => '<?php
+                    /**
+                     * @param list<int> $x
+                     * @param list<string> $y
+                     */
+                    function sums(array $x, array $y): array {
+                        return array_map(static fn (int ...$values): int => array_sum($values), $x, $y);
+                    }',
+                'error_message' => 'InvalidArgument - src' . DIRECTORY_SEPARATOR . 'somefile.php:7:42 - Parameter 2 of closure passed to function array_map expects int',
+            ],
+            'arrayMapWithATypedVariadicCallbackChecksTheThirdArray' => [
+                'code' => '<?php
+                    /**
+                     * @param list<int> $x
+                     * @param list<int> $y
+                     * @param list<string> $z
+                     */
+                    function sums(array $x, array $y, array $z): array {
+                        return array_map(static fn (int $first, int ...$rest): int => $first + array_sum($rest), $x, $y, $z);
+                    }',
+                'error_message' => 'InvalidArgument - src' . DIRECTORY_SEPARATOR . 'somefile.php:8:42 - Parameter 3 of closure passed to function array_map expects int',
+            ],
+            'arrayMapWithACallbackTakingFewerParametersThanArrays' => [
+                'code' => '<?php
+                    /**
+                     * @param list<int> $x
+                     * @param list<int> $y
+                     */
+                    function zip(array $x, array $y): array {
+                        return array_map(static fn (int $a): int => $a, $x, $y);
+                    }',
+                'error_message' => 'TooManyArguments',
+            ],
+            'arrayUniqueOfObjectsThatAreNotStringable' => [
+                'code' => '<?php
+                    /** @var list<stdClass> $objects */
+                    $objects = [];
+
+                    array_unique($objects);',
+                'error_message' => 'InvalidArgument',
+            ],
+            'arrayUniqueOfObjectsWithTheStringFlag' => [
+                'code' => '<?php
+                    /** @var list<stdClass> $objects */
+                    $objects = [];
+
+                    array_unique($objects, SORT_STRING);',
+                'error_message' => 'InvalidArgument',
+            ],
+            'arrayUniqueOfObjectsWithTheLocaleStringFlag' => [
+                'code' => '<?php
+                    /** @var list<stdClass> $objects */
+                    $objects = [];
+
+                    array_unique($objects, SORT_LOCALE_STRING);',
+                'error_message' => 'InvalidArgument',
+            ],
+            'arrayUniqueOfObjectsWithANamedStringFlag' => [
+                'code' => '<?php
+                    /** @var list<stdClass> $objects */
+                    $objects = [];
+
+                    array_unique(flags: SORT_STRING, array: $objects);',
+                'error_message' => 'InvalidArgument',
+            ],
+            'arrayUniqueOfSomeObjectsThatAreNotStringable' => [
+                'code' => '<?php
+                    /** @var list<string|stdClass> $values */
+                    $values = [];
+
+                    array_unique($values);',
+                'error_message' => 'PossiblyInvalidArgument',
             ],
         ];
     }
