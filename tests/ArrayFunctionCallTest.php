@@ -100,79 +100,36 @@ final class ArrayFunctionCallTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
-            'arrayIntersectKeyDropsKeysTheFirstArrayCannotHave' => [
+            'arrayPopOfAListWithAnOptionalLastItem' => [
                 'code' => <<<'PHP'
                     <?php
-                    /** @var array<string, int> $a */
-                    $a = [];
-                    $r = array_intersect_key($a, [1 => 'a']);
+                    function pop(bool $one, bool $two): void {
+                        $always = [0, 1];
+                        array_pop($always);
 
-                    /** @psalm-check-type-exact $r = array<string, int> */
-                    PHP,
-                'assertions' => [],
-            ],
-            'arrayIntersectKeyWithUnpackedArgumentKeepsTheKeys' => [
-                'code' => <<<'PHP'
-                    <?php
-                    /** @var array<string, int> $a */
-                    $a = [];
-                    $others = [['x' => 1]];
-                    $r = array_intersect_key($a, ...$others);
+                        $maybe = [0];
+                        if ($one) {
+                            $maybe[] = 2;
+                        }
+                        array_pop($maybe);
 
-                    /** @psalm-check-type-exact $r = array<string, int> */
-                    PHP,
-                'assertions' => [],
-            ],
-            'arrayIntersectKeyWithoutSealedShapeKeepsTheKeys' => [
-                'code' => <<<'PHP'
-                    <?php
-                    /** @var array<string, int> $a */
-                    $a = [];
-                    /** @var array<string, int> $b */
-                    $b = [];
-                    $r = array_intersect_key($a, $b);
+                        $maybe_twice = [0];
+                        if ($one) {
+                            $maybe_twice[] = 2;
+                        }
+                        if ($two) {
+                            $maybe_twice[] = 3;
+                        }
+                        array_pop($maybe_twice);
 
-                    /** @psalm-check-type-exact $r = array<string, int> */
-                    PHP,
-                'assertions' => [],
-            ],
-            'arrayIntersectKeyKeepsTheKeysSharedByAllSealedShapes' => [
-                'code' => <<<'PHP'
-                    <?php
-                    /** @var array<string, int> $a */
-                    $a = [];
-                    /** @var array<string, int> $unknown */
-                    $unknown = [];
-                    $r = array_intersect_key($a, ['x' => 1, 'y' => 2, 'z' => 3], $unknown, ['y' => 1, 'z' => 1, 'w' => 1]);
-
-                    /** @psalm-check-type-exact $r = array<'y'|'z', int> */
-                    PHP,
-                'assertions' => [],
-            ],
-            'arrayIntersectKeyKeepsTheKeysOfASealedShape' => [
-                'code' => <<<'PHP'
-                    <?php
-                    $default = ['foo' => 'foo', 'bar' => 'bar'];
-
-                    /** @var array<string, int> $a */
-                    $a = [];
-                    $r = array_intersect_key($a, $default);
-
-                    /** @psalm-check-type-exact $r = array<'bar'|'foo', int> */
-                    PHP,
-                'assertions' => [],
-            ],
-            'arrayIntersectKeyOfMergedDefaultsIsStringKeyed' => [
-                'code' => <<<'PHP'
-                    <?php
-                    /** @return array<string, mixed> */
-                    function foo(array $values) {
-                        $default = ['foo' => 'foo', 'bar' => 'bar'];
-
-                        return array_intersect_key(array_merge($default, $values), $default);
+                        /** @psalm-check-type-exact $always = list{0: 0} */
+                        /** @psalm-check-type-exact $maybe = list{0?: 0} */
+                        /** @psalm-check-type-exact $maybe_twice = list{0?: 0, 1?: 2|3} */
                     }
                     PHP,
                 'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
             ],
             'arrayUdiffKeepsTheTypeOfTheFirstArray' => [
                 'code' => '<?php
@@ -3871,6 +3828,80 @@ final class ArrayFunctionCallTest extends TestCase
                 'ignored_issues' => [],
                 'php_version' => '8.4',
             ],
+            'arrayIntersectKeyDropsKeysTheFirstArrayCannotHave' => [
+                'code' => <<<'PHP'
+                    <?php
+                    /** @var array<string, int> $a */
+                    $a = [];
+                    $r = array_intersect_key($a, [1 => 'a']);
+
+                    /** @psalm-check-type-exact $r = array<string, int> */
+                    PHP,
+                'assertions' => [],
+            ],
+            'arrayIntersectKeyWithUnpackedArgumentKeepsTheKeys' => [
+                'code' => <<<'PHP'
+                    <?php
+                    /** @var array<string, int> $a */
+                    $a = [];
+                    $others = [['x' => 1]];
+                    $r = array_intersect_key($a, ...$others);
+
+                    /** @psalm-check-type-exact $r = array<string, int> */
+                    PHP,
+                'assertions' => [],
+            ],
+            'arrayIntersectKeyWithoutSealedShapeKeepsTheKeys' => [
+                'code' => <<<'PHP'
+                    <?php
+                    /** @var array<string, int> $a */
+                    $a = [];
+                    /** @var array<string, int> $b */
+                    $b = [];
+                    $r = array_intersect_key($a, $b);
+
+                    /** @psalm-check-type-exact $r = array<string, int> */
+                    PHP,
+                'assertions' => [],
+            ],
+            'arrayIntersectKeyKeepsTheKeysSharedByAllSealedShapes' => [
+                'code' => <<<'PHP'
+                    <?php
+                    /** @var array<string, int> $a */
+                    $a = [];
+                    /** @var array<string, int> $unknown */
+                    $unknown = [];
+                    $r = array_intersect_key($a, ['x' => 1, 'y' => 2, 'z' => 3], $unknown, ['y' => 1, 'z' => 1, 'w' => 1]);
+
+                    /** @psalm-check-type-exact $r = array<'y'|'z', int> */
+                    PHP,
+                'assertions' => [],
+            ],
+            'arrayIntersectKeyKeepsTheKeysOfASealedShape' => [
+                'code' => <<<'PHP'
+                    <?php
+                    $default = ['foo' => 'foo', 'bar' => 'bar'];
+
+                    /** @var array<string, int> $a */
+                    $a = [];
+                    $r = array_intersect_key($a, $default);
+
+                    /** @psalm-check-type-exact $r = array<'bar'|'foo', int> */
+                    PHP,
+                'assertions' => [],
+            ],
+            'arrayIntersectKeyOfMergedDefaultsIsStringKeyed' => [
+                'code' => <<<'PHP'
+                    <?php
+                    /** @return array<string, mixed> */
+                    function foo(array $values) {
+                        $default = ['foo' => 'foo', 'bar' => 'bar'];
+
+                        return array_intersect_key(array_merge($default, $values), $default);
+                    }
+                    PHP,
+                'assertions' => [],
+            ],
         ];
     }
 
@@ -3881,6 +3912,21 @@ final class ArrayFunctionCallTest extends TestCase
     public static function providerInvalidCodeParse(): iterable
     {
         return [
+            'arrayPopOfAListWithAnOptionalLastItemMayEmptyIt' => [
+                'code' => '<?php
+                    /** @param non-empty-list<int> $a */
+                    function foo(array $a): void {}
+
+                    function bar(bool $one): void {
+                        $d = [0];
+                        if ($one) {
+                            $d[] = 2;
+                        }
+                        array_pop($d);
+                        foo($d);
+                    }',
+                'error_message' => 'InvalidArgument',
+            ],
             'arrayColumnIndexColumnOfAnObjectIsNotAnArrayKey' => [
                 'code' => '<?php
                     $result = array_column([[new stdClass, 1]], 1, 0);',
