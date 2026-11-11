@@ -67,6 +67,12 @@ use const PHP_INT_MAX;
  */
 final class ArithmeticOpAnalyzer
 {
+    /** @var array<lowercase-string, string> classes whose instances overload the arithmetic operators */
+    private const OPERATOR_OVERLOADING_CLASSES = [
+        'decimal\\decimal' => 'Decimal\\Decimal',
+        'bcmath\\number' => 'BcMath\\Number',
+    ];
+
     public static function analyze(
         ?StatementsSource $statements_source,
         NodeDataProvider $nodes,
@@ -338,6 +344,7 @@ final class ArithmeticOpAnalyzer
             if ($statements_source !== null
                 && $config->strict_binary_operands
                 && $left_type_part::class !== $right_type_part::class
+                && !$parent instanceof PhpParser\Node\Expr\BinaryOp\Pow
             ) {
                 IssueBuffer::maybeAdd(
                     new InvalidOperand(
@@ -716,31 +723,37 @@ final class ArithmeticOpAnalyzer
             || $parent instanceof PhpParser\Node\Expr\BinaryOp\Mod
             || $parent instanceof PhpParser\Node\Expr\BinaryOp\Pow
         ) {
-            $non_decimal_type = null;
-            if ($left_type_part instanceof TNamedObject
-                && strtolower($left_type_part->value) === "decimal\\decimal"
-            ) {
-                $non_decimal_type = $right_type_part;
-            } elseif ($right_type_part instanceof TNamedObject
-                && strtolower($right_type_part->value) === "decimal\\decimal"
-            ) {
-                $non_decimal_type = $left_type_part;
+            $overloading_operand = null;
+            foreach (self::OPERATOR_OVERLOADING_CLASSES as $class_lc => $class_name) {
+                if ($left_type_part instanceof TNamedObject && strtolower($left_type_part->value) === $class_lc) {
+                    $overloading_operand = [$class_name, $right_type_part];
+                    break;
+                }
+
+                if ($right_type_part instanceof TNamedObject && strtolower($right_type_part->value) === $class_lc) {
+                    $overloading_operand = [$class_name, $left_type_part];
+                    break;
+                }
             }
-            if ($non_decimal_type !== null) {
-                if ($non_decimal_type instanceof TInt
-                    || $non_decimal_type instanceof TNumericString
-                    || $non_decimal_type instanceof TNamedObject
-                        && strtolower($non_decimal_type->value) === "decimal\\decimal"
+
+            if ($overloading_operand !== null) {
+                [$operator_class, $other_operand_type] = $overloading_operand;
+
+                if ($other_operand_type instanceof TInt
+                    || $other_operand_type instanceof TNumericString
+                    || $other_operand_type instanceof TLiteralString && is_numeric($other_operand_type->value)
+                    || $other_operand_type instanceof TNamedObject
+                        && strtolower($other_operand_type->value) === strtolower($operator_class)
                 ) {
                     $result_type = Type::combineUnionTypes(
-                        new Union([new TNamedObject("Decimal\\Decimal")]),
+                        new Union([new TNamedObject($operator_class)]),
                         $result_type,
                     );
                 } else {
                     if ($statements_source) {
                         IssueBuffer::maybeAdd(
                             new InvalidOperand(
-                                "Cannot add Decimal\\Decimal to {$non_decimal_type->getId()}",
+                                "Cannot add {$operator_class} to {$other_operand_type->getId()}",
                                 new CodeLocation($statements_source, $parent),
                             ),
                             $statements_source->getSuppressedIssues(),
@@ -772,7 +785,7 @@ final class ArithmeticOpAnalyzer
             if (($left_type_part instanceof TNumeric || $right_type_part instanceof TNumeric)
                 && ($left_type_part->isNumericType() && $right_type_part->isNumericType())
             ) {
-                if ($config->strict_binary_operands) {
+                if ($config->strict_binary_operands && !$parent instanceof PhpParser\Node\Expr\BinaryOp\Pow) {
                     if ($statements_source) {
                         IssueBuffer::maybeAdd(
                             new InvalidOperand(
@@ -925,7 +938,7 @@ final class ArithmeticOpAnalyzer
             if (($left_type_part instanceof TFloat && $right_type_part instanceof TInt)
                 || ($left_type_part instanceof TInt && $right_type_part instanceof TFloat)
             ) {
-                if ($config->strict_binary_operands) {
+                if ($config->strict_binary_operands && !$parent instanceof PhpParser\Node\Expr\BinaryOp\Pow) {
                     if ($statements_source) {
                         IssueBuffer::maybeAdd(
                             new InvalidOperand(
@@ -951,7 +964,7 @@ final class ArithmeticOpAnalyzer
             }
 
             if ($left_type_part->isNumericType() && $right_type_part->isNumericType()) {
-                if ($config->strict_binary_operands) {
+                if ($config->strict_binary_operands && !$parent instanceof PhpParser\Node\Expr\BinaryOp\Pow) {
                     if ($statements_source) {
                         IssueBuffer::maybeAdd(
                             new InvalidOperand(

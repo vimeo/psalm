@@ -24,6 +24,7 @@ use Psalm\Type\Reconciler;
 use Psalm\Type\Union;
 use UnexpectedValueException;
 
+use function array_diff_key;
 use function array_filter;
 use function array_keys;
 use function array_merge;
@@ -214,8 +215,14 @@ final class LoopAnalyzer
 
             // the types the variables the loop defines start an iteration with
             $loop_var_types_at_start = [];
+            $unset_in_loop_vars = [];
 
-            for ($i = 0; $i < $assignment_depth; ++$i) {
+            // the data flow of the last pass is linked to the reads of the first one by one more pass
+            $max_passes = $assignment_depth;
+            $data_flow_pass_added = false;
+            $force_pass = false;
+
+            for ($i = 0; $i < $max_passes; ++$i) {
                 $vars_to_remove = [];
 
                 $loop_scope->iteration_count++;
@@ -285,14 +292,35 @@ final class LoopAnalyzer
                     }
                 }
 
+                // a variable the body unset is gone where the next iteration starts only if the body ran:
+                // it's possibly undefined there
+                foreach ($original_parent_context->vars_in_scope as $var_id => $_) {
+                    if (!isset($continue_context->vars_in_scope[$var_id])
+                        && !isset($unset_in_loop_vars[$var_id])
+                        && self::isLoopVar($var_id)
+                    ) {
+                        $unset_in_loop_vars[$var_id] = true;
+                        $has_changes = true;
+                    }
+                }
+
+                foreach ($unset_in_loop_vars as $var_id => $_) {
+                    if (!isset($continue_context->vars_in_scope[$var_id])) {
+                        $continue_context->vars_in_scope[$var_id]
+                            = $original_parent_context->vars_in_scope[$var_id]->setPossiblyUndefined(true);
+                    }
+                }
+
                 $continue_context->has_returned = false;
 
                 $loop_parent_context->vars_possibly_in_scope += $continue_context->vars_possibly_in_scope;
 
                 // if there are no changes to the types, no need to re-examine
-                if (!$has_changes) {
+                if (!$has_changes && !$force_pass) {
                     break;
                 }
+
+                $force_pass = false;
 
                 // the variables the loop defines are possibly defined where the next iteration starts, holding what
                 // an iteration left in them where it ended or continued: the other ones defined in the loop go
@@ -373,6 +401,8 @@ final class LoopAnalyzer
                 );
                 $traverser->traverse($stmts);
 
+                $vars_at_pass_start = $continue_context->vars_in_scope;
+
                 $statements_analyzer->analyze($stmts, $continue_context);
 
                 self::updateLoopScopeContexts($loop_scope, $loop_context, $continue_context, $original_parent_context);
@@ -407,6 +437,16 @@ final class LoopAnalyzer
                 $recorded_issues = IssueBuffer::clearRecordingLevel();
 
                 IssueBuffer::stopRecording();
+
+                if ($i + 1 === $max_passes
+                    && !$data_flow_pass_added
+                    && $codebase->find_unused_variables
+                    && self::hasNewParentNodes($vars_at_pass_start, $continue_context->vars_in_scope)
+                ) {
+                    ++$max_passes;
+                    $data_flow_pass_added = true;
+                    $force_pass = true;
+                }
             }
 
             if ($recorded_issues) {
@@ -560,6 +600,25 @@ final class LoopAnalyzer
         );
 
         return null;
+    }
+
+    /**
+     * @param array<string, Union> $before
+     * @param array<string, Union> $after
+     * @psalm-pure
+     */
+    private static function hasNewParentNodes(array $before, array $after): bool
+    {
+        foreach ($after as $var_id => $type) {
+            if ($type->parent_nodes
+                && isset($before[$var_id])
+                && array_diff_key($type->parent_nodes, $before[$var_id]->parent_nodes)
+            ) {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     /**
