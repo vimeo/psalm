@@ -23,28 +23,26 @@ final class ForeachTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
-            'foreachOverIteratorIteratorHasNoNullFromPastTheEnd' => [
-                'code' => <<<'PHP'
-                    <?php
-                    /** @param IteratorIterator<int, string, Iterator<int, string>> $iterator */
-                    function iterate(IteratorIterator $iterator): void {
-                        foreach ($iterator as $key => $value) {
-                            /** @psalm-check-type-exact $key = int */
-                            /** @psalm-check-type-exact $value = string */
+            'foreachOverListKeepsTheEmptyStringOfAnEmptyOrNumericString' => [
+                'code' => '<?php
+                    /** @var list<array{foo: ""|numeric-string}> $rows */
+                    $rows = [];
+                    $row = ["foo" => "1"];
+                    foreach ($rows as $row) {
+                        if ("" === $row["foo"]) {
+                            throw new Exception("empty");
                         }
                     }
 
-                    /** @param IteratorIterator<int|null, string|null, Iterator<int|null, string|null>> $iterator */
-                    function nullable(IteratorIterator $iterator): void {
-                        foreach ($iterator as $key => $value) {
-                            /** @psalm-check-type-exact $key = int|null */
-                            /** @psalm-check-type-exact $value = string|null */
-                        }
-                    }
-                    PHP,
-                'assertions' => [],
-                'ignored_issues' => [],
-                'php_version' => '8.1',
+                    /** @var non-empty-list<""|numeric-string> $values */
+                    $values = ["1"];
+                    $value = "1";
+                    foreach ($values as $value) {
+                    }',
+                'assertions' => [
+                    '$row===' => "array{foo: numeric-string}",
+                    '$value===' => "''|numeric-string",
+                ],
             ],
             'postDecrementInTheConditionOfAnIfThatBreaksOverAConcreteArray' => [
                 'code' => '<?php
@@ -1669,6 +1667,29 @@ final class ForeachTest extends TestCase
                 'assertions' => [],
                 'ignored_issues' => [],
                 'php_version' => '8.0',
+            ],
+            'foreachOverIteratorIteratorHasNoNullFromPastTheEnd' => [
+                'code' => <<<'PHP'
+                    <?php
+                    /** @param IteratorIterator<int, string, Iterator<int, string>> $iterator */
+                    function iterate(IteratorIterator $iterator): void {
+                        foreach ($iterator as $key => $value) {
+                            /** @psalm-check-type-exact $key = int */
+                            /** @psalm-check-type-exact $value = string */
+                        }
+                    }
+
+                    /** @param IteratorIterator<int|null, string|null, Iterator<int|null, string|null>> $iterator */
+                    function nullable(IteratorIterator $iterator): void {
+                        foreach ($iterator as $key => $value) {
+                            /** @psalm-check-type-exact $key = int|null */
+                            /** @psalm-check-type-exact $value = string|null */
+                        }
+                    }
+                    PHP,
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
             ],
         ];
     }
