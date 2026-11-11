@@ -93,20 +93,15 @@ final class EnumTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
-            'enumCaseValueFromAConstantDefinedAtRuntime' => [
+            'casesOfAnEnumString' => [
                 'code' => '<?php
-                    define("SOME", 1);
-
-                    enum Foo: int
-                    {
-                        case ONE = SOME;
-                    }
-
-                    $v = Foo::ONE->value;',
-                'assertions' => [
-                    '$v' => 'mixed',
-                ],
-                'ignored_issues' => ['MixedAssignment'],
+                    /** @param enum-string $string */
+                    function listCases(string $string): void {
+                        $cases = $string::cases();
+                        /** @psalm-check-type-exact $cases = list<UnitEnum> */
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
                 'php_version' => '8.1',
             ],
             'inheritedMethodReturningBinaryEnumValue' => [
@@ -1050,6 +1045,22 @@ final class EnumTest extends TestCase
                 'ignored_issues' => [],
                 'php_version' => '8.6',
             ],
+            'enumCaseValueFromAConstantDefinedAtRuntime' => [
+                'code' => '<?php
+                    define("SOME", 1);
+
+                    enum Foo: int
+                    {
+                        case ONE = SOME;
+                    }
+
+                    $v = Foo::ONE->value;',
+                'assertions' => [
+                    '$v' => 'mixed',
+                ],
+                'ignored_issues' => ['MixedAssignment'],
+                'php_version' => '8.1',
+            ],
         ];
     }
 
@@ -1060,6 +1071,16 @@ final class EnumTest extends TestCase
     public static function providerInvalidCodeParse(): iterable
     {
         return [
+            'methodOfABackedEnumIsUnknownOnAnEnumString' => [
+                'code' => '<?php
+                    /** @param enum-string $string */
+                    function fromValue(string $string): void {
+                        $string::from(1);
+                    }',
+                'error_message' => 'MixedMethodCall',
+                'error_levels' => [],
+                'php_version' => '8.1',
+            ],
             'tryFromWithValueOfTemplate' => [
                 'code' => '<?php
                     enum Suit: string {
