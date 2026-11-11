@@ -29,7 +29,7 @@
 - With `rememberPropertyAssignmentsAfterCall="false"`, property refinements now survive `new` and static calls of callees that cannot write properties, and static property refinements survive callees that cannot write globals (previously every `new`/static call, and only callees writing properties, forgot them).
 - `@psalm-purity-template` accepts bounds written as a chain, `lower <= Name(default) <= upper`: an upper bound (`P <= write-props`) and, on classes, a lower bound (`write-this-props <= C`, which the methods depending on `C` may use unconditionally) and a default (`C(pure) <= write-props`); `Closure[_](...)` in a parameter's type declares an implicit purity template; `@psalm-capabilities` accepts type aliases (`@psalm-type`, `@psalm-import-type`). An unknown capability name is now reported as `InvalidDocblock` rather than `MissingDocblockType`.
 - PHP 8.6 partial function application is supported. Plugins see `f(2, ?)` as a `Psalm\Node\Expr\PartialApplication` node holding `f(...)` (`$call`) and the arguments as written (`$args`), never as a call with a `?` placeholder, so provider events only meet its first-class callable. `getCallArgs()` of `FunctionReturnTypeProviderEvent`, `MethodReturnTypeProviderEvent` and `MethodCapabilitiesProviderEvent`, and `getArgs()` of `DynamicFunctionStorageProviderEvent`, return `[]` for a first-class callable `f(...)`.
-- Psalm requires `psalm/plugin-phpunit` `^0.21`, the first release built on `psalm/psalm-plugin-api` 0.4: a project requiring an older version (`^0.19`, `^0.20`) must raise it.
+- Psalm requires `psalm/plugin-phpunit` `^0.21 || ^0.22 || ^1.0` (0.21 is the first release built on `psalm/psalm-plugin-api` 0.4): a project requiring an older version (`^0.19`, `^0.20`) must raise it.
 
 - Backwards compatibility for the plugin API is now covered by a separate metapackage, [psalm/psalm-plugin-api](https://packagist.org/packages/psalm/psalm-plugin-api).  
 
@@ -121,6 +121,8 @@
 - `MissingPureAnnotation`, `MissingImmutableAnnotation`, `MissingAbstractPureAnnotation` and `MissingInterfaceImmutableAnnotation` are suggestions that are off by default: they are only reported with the new config attribute `suggestPurityAnnotations="true"` (`Psalm\Config#$suggest_purity_annotations`), and their `ERROR_LEVEL` is now `-2` (feature-specific errors). Capability checks are unchanged (they use declared annotations only), and taint analysis still uses the purity it infers for unannotated code. `psalm --alter --issues=MissingPureAnnotation` and `--issues=MissingImmutableAnnotation` work without the attribute. If your baseline contains these issues, either set the attribute, or run `--update-baseline` to drop their entries (`UnusedBaselineEntry` reports them otherwise). A `@psalm-suppress` of one of them, or a nested `<errorLevel>` handler for it, is reported as unused while the attribute is off (`UnusedPsalmSuppress`, `UnusedIssueHandlerSuppression`).
 
 ## Removed
+
+- Psalm no longer requires `psalm/plugin-sabre-event` nor enables it for projects requiring `sabre/event`: sabre/event 5.1.1 and later declare the same generic types. A config listing `Psalm\SabreEventPlugin\Plugin` needs the plugin installed (`composer require --dev psalm/plugin-sabre-event`), or the entry removed.
 
 - [BC] Constant Psalm\Type\Atomic\TKeyedArray::NAME_ARRAY was removed
 
