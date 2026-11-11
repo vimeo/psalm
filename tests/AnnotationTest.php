@@ -184,15 +184,6 @@ final class AnnotationTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
-            'assertionWithOnlyAStarInPlaceOfTheType' => [
-                'code' => '<?php
-                    /**
-                     * @psalm-assert * $x
-                     */
-                    function f(int $x): void {
-                        echo $x;
-                    }',
-            ],
             'psalmVarOverridesPhpstanVarOnProperty' => [
                 'code' => '<?php
                     class Foo {}
@@ -1919,6 +1910,15 @@ final class AnnotationTest extends TestCase
                         return $foo;
                     }',
             ],
+            'assertionWithOnlyAStarInPlaceOfTheType' => [
+                'code' => '<?php
+                    /**
+                     * @psalm-assert * $x
+                     */
+                    function f(int $x): void {
+                        echo $x;
+                    }',
+            ],
         ];
     }
 
@@ -1929,16 +1929,36 @@ final class AnnotationTest extends TestCase
     public static function providerInvalidCodeParse(): iterable
     {
         return [
-            'returnTypeWithOnlyAStarInPlaceOfTheType' => [
-                'code' => '<?php
-                    class X {
-                        /**
-                         * @psalm-return      * @return list<int>
-                         */
-                        public static function a(): array {
-                            return [];
-                        }
-                    }',
+            'removedSelfAccessingCallableWithParamsIsInvalid' => [
+                'code' => <<<'PHP'
+                    <?php
+                    /** @param self-accessing-callable(): int $f */
+                    function f(callable $f): void {}
+                    PHP,
+                'error_message' => 'InvalidDocblock',
+            ],
+            'removedSelfMutatingCallableWithParamsIsInvalid' => [
+                'code' => <<<'PHP'
+                    <?php
+                    /** @param self-mutating-callable(): int $f */
+                    function f(callable $f): void {}
+                    PHP,
+                'error_message' => 'InvalidDocblock',
+            ],
+            'removedSelfAccessingClosureWithParamsIsInvalid' => [
+                'code' => <<<'PHP'
+                    <?php
+                    /** @param self-accessing-Closure(): int $f */
+                    function f(callable $f): void {}
+                    PHP,
+                'error_message' => 'InvalidDocblock',
+            ],
+            'removedSelfMutatingClosureWithParamsIsInvalid' => [
+                'code' => <<<'PHP'
+                    <?php
+                    /** @param self-mutating-Closure(): int $f */
+                    function f(callable $f): void {}
+                    PHP,
                 'error_message' => 'InvalidDocblock',
             ],
             'psalmVarWithTooManyTemplateParamsOnProperty' => [
@@ -2750,6 +2770,18 @@ final class AnnotationTest extends TestCase
                 'error_message' => 'InvalidDocblock',
                 'error_levels' => [],
                 'php_version' => '8.0',
+            ],
+            'returnTypeWithOnlyAStarInPlaceOfTheType' => [
+                'code' => '<?php
+                    class X {
+                        /**
+                         * @psalm-return      * @return list<int>
+                         */
+                        public static function a(): array {
+                            return [];
+                        }
+                    }',
+                'error_message' => 'InvalidDocblock',
             ],
         ];
     }
