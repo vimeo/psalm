@@ -543,6 +543,14 @@ final class ClassLikeNodeScanner
                                 continue;
                             }
 
+                            // a class named only in the bound (`@template TArr of array{a: stdClass}`) is read where
+                            // the template is read through its bound
+                            (new TypeScanner(
+                                $this->codebase->scanner,
+                                $this->file_storage,
+                                $storage->template_types + $purity_template_types,
+                            ))->traverse($template_type);
+
                             $storage->template_types[$template_name] = [
                                 $fq_classlike_name => $template_type,
                             ];
@@ -727,31 +735,39 @@ final class ClassLikeNodeScanner
             }
 
             if ($docblock_info->extension_requirement !== null) {
-                $storage->extension_requirement = (string) TypeParser::parseTokens(
-                    TypeTokenizer::getFullyQualifiedTokens(
-                        $docblock_info->extension_requirement,
-                        $this->aliases,
-                        $this->class_template_types,
-                        $this->type_aliases,
-                    ),
-                    null,
-                    $this->class_template_types,
-                    $this->type_aliases,
-                );
+                try {
+                    $requirement_type = $this->parseRequirement($docblock_info->extension_requirement);
+                    $requirement_atomic = $requirement_type->isSingle() ? $requirement_type->getSingleAtomic() : null;
+
+                    $storage->extension_requirement = $this->getRequirementName($docblock_info->extension_requirement);
+                    $storage->extension_requirement_type = $requirement_atomic instanceof TGenericObject
+                        ? $requirement_atomic
+                        : null;
+                } catch (TypeParseTreeException $e) {
+                    $storage->docblock_issues[] = new InvalidDocblock(
+                        $e->getMessage() . ' in docblock for ' . $fq_classlike_name,
+                        $name_location ?? $class_location,
+                    );
+                }
             }
 
             foreach ($docblock_info->implementation_requirements as $implementation_requirement) {
-                $storage->implementation_requirements[] = (string) TypeParser::parseTokens(
-                    TypeTokenizer::getFullyQualifiedTokens(
-                        $implementation_requirement,
-                        $this->aliases,
-                        $this->class_template_types,
-                        $this->type_aliases,
-                    ),
-                    null,
-                    $this->class_template_types,
-                    $this->type_aliases,
-                );
+                try {
+                    $requirement_name = $this->getRequirementName($implementation_requirement);
+                    $requirement_type = $this->parseRequirement($implementation_requirement);
+                    $requirement_atomic = $requirement_type->isSingle() ? $requirement_type->getSingleAtomic() : null;
+
+                    $storage->implementation_requirements[] = $requirement_name;
+
+                    if ($requirement_atomic instanceof TGenericObject) {
+                        $storage->implementation_requirement_types[$requirement_name] = $requirement_atomic;
+                    }
+                } catch (TypeParseTreeException $e) {
+                    $storage->docblock_issues[] = new InvalidDocblock(
+                        $e->getMessage() . ' in docblock for ' . $fq_classlike_name,
+                        $name_location ?? $class_location,
+                    );
+                }
             }
 
             $storage->sealed_properties = $docblock_info->sealed_properties;
@@ -895,20 +911,29 @@ final class ClassLikeNodeScanner
 
             $storage->enforce_template_inheritance = $docblock_info->consistent_templates;
 
-            foreach ($docblock_info->mixins as $key => $mixin) {
-                $mixin_type = TypeParser::parseTokens(
-                    TypeTokenizer::getFullyQualifiedTokens(
-                        $mixin,
-                        $this->aliases,
+            foreach ($docblock_info->mixins as $mixin) {
+                try {
+                    $mixin_type = TypeParser::parseTokens(
+                        TypeTokenizer::getFullyQualifiedTokens(
+                            $mixin,
+                            $this->aliases,
+                            $this->class_template_types,
+                            $this->type_aliases,
+                            $fq_classlike_name,
+                        ),
+                        null,
                         $this->class_template_types,
                         $this->type_aliases,
-                        $fq_classlike_name,
-                    ),
-                    null,
-                    $this->class_template_types,
-                    $this->type_aliases,
-                    true,
-                );
+                        true,
+                    );
+                } catch (TypeParseTreeException $e) {
+                    $storage->docblock_issues[] = new InvalidDocblock(
+                        $e->getMessage() . ' in docblock for ' . $fq_classlike_name,
+                        $name_location ?? $class_location,
+                    );
+
+                    continue;
+                }
 
                 /** @psalm-suppress UnusedMethodCall */
                 $mixin_type->queueClassLikesForScanning(
@@ -929,9 +954,7 @@ final class ClassLikeNodeScanner
                     }
                 }
 
-                if ($key === 0) {
-                    $storage->mixin_declaring_fqcln = $storage->name;
-                }
+                $storage->mixin_declaring_fqcln = $storage->name;
             }
 
             $deferred_capabilities = [];
@@ -2696,5 +2719,33 @@ final class ClassLikeNodeScanner
         }
 
         return $referenced_names;
+    }
+
+    /**
+     * The class or interface named by a `@psalm-require-extends` or `@psalm-require-implements` type: its type
+     * arguments don't change which class is required
+     */
+    private function getRequirementName(string $docblock_type): string
+    {
+        $type = $this->parseRequirement($docblock_type);
+
+        $atomic_type = $type->isSingle() ? $type->getSingleAtomic() : null;
+
+        return $atomic_type instanceof TNamedObject ? $atomic_type->value : (string) $type;
+    }
+
+    private function parseRequirement(string $docblock_type): Union
+    {
+        return TypeParser::parseTokens(
+            TypeTokenizer::getFullyQualifiedTokens(
+                $docblock_type,
+                $this->aliases,
+                $this->class_template_types,
+                $this->type_aliases,
+            ),
+            null,
+            $this->class_template_types,
+            $this->type_aliases,
+        );
     }
 }

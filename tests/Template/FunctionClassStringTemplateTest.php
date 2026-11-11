@@ -21,6 +21,43 @@ final class FunctionClassStringTemplateTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'templateBoundFromGetClassOfAnObjectOfAKnownClass' => [
+                'code' => '<?php
+                    /**
+                     * @template T of object
+                     * @param class-string<T> $className
+                     * @return T|null
+                     */
+                    function find(string $className): ?object {
+                        return null;
+                    }
+
+                    $object = new stdClass();
+
+                    $viaGetClass = find(get_class($object));
+                    $viaClassConstant = find($object::class);',
+                'assertions' => [
+                    '$viaGetClass===' => 'null|stdClass',
+                    '$viaClassConstant===' => 'null|stdClass',
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'templateBoundFromGetClassOfAnObjectOfAnUnknownClass' => [
+                'code' => '<?php
+                    /**
+                     * @template T of object
+                     * @param class-string<T> $className
+                     * @return T|null
+                     */
+                    function find(string $className): ?object {
+                        return null;
+                    }
+
+                    function check(object $object): ?object {
+                        return find(get_class($object));
+                    }',
+            ],
             'callStaticMethodOnTemplatedClassName' => [
                 'code' => '<?php
                     /**
