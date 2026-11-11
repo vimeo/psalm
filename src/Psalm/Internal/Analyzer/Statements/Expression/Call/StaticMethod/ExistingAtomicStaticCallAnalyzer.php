@@ -215,6 +215,29 @@ final class ExistingAtomicStaticCallAnalyzer
             return;
         }
 
+        $declaring_method_id = $codebase->methods->getDeclaringMethodId($method_id) ?? $method_id;
+        $static_property_mutations = $codebase->methods->getStorage($declaring_method_id, true)
+            ->static_property_mutations;
+
+        if ($static_property_mutations !== null
+            && !$context->collect_mutations
+            && !$context->collect_initializations
+        ) {
+            $appearing_class = $codebase->methods->getAppearingMethodId($method_id)?->fq_class_name
+                ?? $declaring_method_id->fq_class_name;
+
+            // parent::, self:: and static:: forward the late static binding of the caller
+            $forwards_static = $stmt->class instanceof PhpParser\Node\Name
+                && in_array(strtolower($stmt->class->getFirst()), ['parent', 'self', 'static'], true);
+
+            $context->resetMutatedStaticProperties(
+                $static_property_mutations,
+                $forwards_static && $context->self !== null ? $context->self : $method_id->fq_class_name,
+                $appearing_class,
+                $codebase,
+            );
+        }
+
         $fq_class_name = $stmt->class instanceof PhpParser\Node\Name && $stmt->class->getParts() === ['parent']
             ? (string) $statements_analyzer->getFQCLN()
             : $fq_class_name;
