@@ -1056,7 +1056,8 @@ final class MethodCallReturnTypeFetcher
             );
 
             // the `static` of what a template is bound to is the caller's: it is not resolved to the receiver's
-            $bounds_result = new TemplateResult($template_result->template_types, []);
+            $bounds_result = clone $template_result;
+            $bounds_result->lower_bounds = [];
 
             foreach ($template_result->lower_bounds as $template_name => $type_map) {
                 foreach ($type_map as $defining_class => $bounds) {
