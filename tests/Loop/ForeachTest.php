@@ -1668,6 +1668,23 @@ final class ForeachTest extends TestCase
                 'ignored_issues' => [],
                 'php_version' => '8.0',
             ],
+            'incrementInsideAnAssignmentInLoopIsNotFoldedLikeALiteral' => [
+                'code' => <<<'PHP'
+                    <?php
+                    $counts = ['one' => 0];
+                    $previous = 0;
+
+                    foreach ([1, 2, 3] as $_) {
+                        $previous = $counts['one']++;
+                    }
+                    PHP,
+                'assertions' => [
+                    '$counts===' => 'array{one: int<1, max>}',
+                    '$previous===' => 'int<0, max>',
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
             'readOfAnItemTheLoopDoesNotChangeIsFoldedLikeALiteral' => [
                 'code' => <<<'PHP'
                     <?php
