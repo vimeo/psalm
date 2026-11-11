@@ -21,58 +21,60 @@ final class ConditionalTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
-            'nullsafeMethodCallFalsyKeepsTheNullableVariable' => [
+            'identicalKeyedArraysWithTheSameKeysInAnotherOrder' => [
                 'code' => '<?php
-                    class C {
-                        public function isOne(): bool {
-                            return rand(0, 1) === 1;
+                    /**
+                     * @param array{a: int|string, b: string} $x
+                     * @param array{b: string|int, a: int} $y
+                     */
+                    function f(array $x, array $y): void {
+                        if ($x === $y) {
+                            echo "same";
                         }
-                    }
+                    }',
+            ],
+            'identicalKeyedArraysOfOverlappingTypesNarrowTheArray' => [
+                'code' => '<?php
+                    $x = rand(0, 1);
+                    $b = (bool) rand(0, 1);
+                    $w = [$x, true];
 
-                    function f(?C $value): ?C {
-                        if ($value?->isOne()) {
-                            return $value;
-                        } elseif ($value?->isOne()) {
-                            return $value;
-                        }
-
-                        return $value;
+                    $narrowed = $w === [0, $b] ? $w : null;',
+                'assertions' => [
+                    '$narrowed===' => 'list{0, true}|null',
+                ],
+            ],
+            'identicalArraysOfItemsOfOverlappingTypes' => [
+                'code' => '<?php
+                    function f(int|string $a, string|bool $b, int|string $c, string|bool $d): bool {
+                        return [$a] === [$b] || [$a, 1] === [$d, 1] || ["a" => $c] === ["a" => $d];
                     }',
                 'assertions' => [],
                 'ignored_issues' => [],
                 'php_version' => '8.0',
             ],
-            'nullsafeMethodCallTruthyMakesTheVariableNotNull' => [
+            'identicalKeyedArrayAndArrayShapeOfItemsOfOverlappingTypes' => [
                 'code' => '<?php
-                    class C {
-                        public function isOne(): bool {
-                            return rand(0, 1) === 1;
-                        }
-                    }
-
-                    function f(?C $value): C {
-                        if ($value?->isOne()) {
-                            return $value;
-                        }
-
-                        return new C();
+                    /** @param array{a: int|string} $x */
+                    function f(array $x, string|bool $s): bool {
+                        return $x === ["a" => $s];
                     }',
                 'assertions' => [],
                 'ignored_issues' => [],
                 'php_version' => '8.0',
             ],
-            'nonFinalClassCanBeIdenticalToIterable' => [
-                'code' => <<<'PHP'
-                    <?php
-                    class Foo {}
-
-                    function f(Foo $x, iterable $i): bool {
-                        return $x === $i;
-                    }
-                    PHP,
+            'matchOnAnArrayWithItemsOfOverlappingTypes' => [
+                'code' => '<?php
+                    function generateState(int $x, bool $breakOnZero = true): string {
+                        return match ([$x, true]) {
+                            [0, $breakOnZero] => "fail",
+                            [0, !$breakOnZero] => "state_0",
+                            default => "state_" . $x,
+                        };
+                    }',
                 'assertions' => [],
                 'ignored_issues' => [],
-                'php_version' => '8.1',
+                'php_version' => '8.0',
             ],
             'chainedAssignmentOfAConditionIsFalseWhereTheConditionIsFalse' => [
                 'code' => <<<'PHP'
@@ -97,6 +99,19 @@ final class ConditionalTest extends TestCase
                         if (!$isRoot || $isSimple) {
                             echo "not the root, or simple";
                         }
+                    }
+                    PHP,
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
+            'nonFinalClassCanBeIdenticalToIterable' => [
+                'code' => <<<'PHP'
+                    <?php
+                    class Foo {}
+
+                    function f(Foo $x, iterable $i): bool {
+                        return $x === $i;
                     }
                     PHP,
                 'assertions' => [],
@@ -261,6 +276,18 @@ final class ConditionalTest extends TestCase
                 'assertions' => [],
                 'ignored_issues' => [],
                 'php_version' => '8.0',
+            ],
+            'identicalKeyedArraysWithStringKeysOfOverlappingTypes' => [
+                'code' => '<?php
+                    function f(int $x, string $s): int {
+                        $a = ["id" => $x, "name" => $s];
+
+                        if ($a === ["id" => 1, "name" => "a"]) {
+                            return $a["id"];
+                        }
+
+                        return 0;
+                    }',
             ],
             'orredClausesOfOneVariableAreAllKept' => [
                 'code' => '<?php
@@ -3915,17 +3942,28 @@ final class ConditionalTest extends TestCase
                         public function onlyB(): void {}
                     }',
             ],
-        ];
-    }
+            'nullsafeMethodCallFalsyKeepsTheNullableVariable' => [
+                'code' => '<?php
+                    class C {
+                        public function isOne(): bool {
+                            return rand(0, 1) === 1;
+                        }
+                    }
 
-    /**
-     * @psalm-pure
-     */
-    #[Override]
-    public static function providerInvalidCodeParse(): iterable
-    {
-        return [
-            'nullsafeMethodCallFalsyKeepsNullPossible' => [
+                    function f(?C $value): ?C {
+                        if ($value?->isOne()) {
+                            return $value;
+                        } elseif ($value?->isOne()) {
+                            return $value;
+                        }
+
+                        return $value;
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'nullsafeMethodCallTruthyMakesTheVariableNotNull' => [
                 'code' => '<?php
                     class C {
                         public function isOne(): bool {
@@ -3938,11 +3976,63 @@ final class ConditionalTest extends TestCase
                             return $value;
                         }
 
-                        return $value;
+                        return new C();
                     }',
-                'error_message' => 'NullableReturnStatement',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+        ];
+    }
+
+    /**
+     * @psalm-pure
+     */
+    #[Override]
+    public static function providerInvalidCodeParse(): iterable
+    {
+        return [
+            'identicalKeyedArraysWithAnOptionalKeyOfOverlappingTypesAreAKnownLimit' => [
+                'code' => '<?php
+                    /** @param array{a?: int|string} $x */
+                    function f(array $x, string|bool $s): bool {
+                        return $x === ["a" => $s];
+                    }',
+                'error_message' => 'TypeDoesNotContainType',
                 'error_levels' => [],
                 'php_version' => '8.0',
+            ],
+            'identicalKeyedArraysWithAFallbackOfOverlappingTypesAreAKnownLimit' => [
+                'code' => '<?php
+                    /** @param array{a: int|string, ...<string, mixed>} $x */
+                    function f(array $x, string|bool $s): bool {
+                        return $x === ["a" => $s];
+                    }',
+                'error_message' => 'TypeDoesNotContainType',
+                'error_levels' => [],
+                'php_version' => '8.0',
+            ],
+            'identicalKeyedArraysOfDisjointTypes' => [
+                'code' => '<?php
+                    function f(int $x): void {
+                        $a = [$x, "a"];
+
+                        if ($a === [0, "b"]) {
+                            echo 1;
+                        }
+                    }',
+                'error_message' => 'TypeDoesNotContainType',
+            ],
+            'identicalKeyedArraysOfDifferentKeys' => [
+                'code' => '<?php
+                    function f(int $x): void {
+                        $a = ["a" => $x];
+
+                        if ($a === ["b" => 1]) {
+                            echo 1;
+                        }
+                    }',
+                'error_message' => 'TypeDoesNotContainType',
             ],
             'iterableIsNotInstanceOfAnEnum' => [
                 'code' => <<<'PHP'
@@ -4502,6 +4592,25 @@ final class ConditionalTest extends TestCase
                         echo $i;
                     }',
                 'error_message' => 'TypeDoesNotContainType',
+            ],
+            'nullsafeMethodCallFalsyKeepsNullPossible' => [
+                'code' => '<?php
+                    class C {
+                        public function isOne(): bool {
+                            return rand(0, 1) === 1;
+                        }
+                    }
+
+                    function f(?C $value): C {
+                        if ($value?->isOne()) {
+                            return $value;
+                        }
+
+                        return $value;
+                    }',
+                'error_message' => 'NullableReturnStatement',
+                'error_levels' => [],
+                'php_version' => '8.0',
             ],
         ];
     }
