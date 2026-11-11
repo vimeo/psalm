@@ -121,6 +121,71 @@ final class ClassTest extends TestCase
 
                     f(["string", Countable::class]);',
             ],
+            'newStaticOfAClassImplementingAnInterfaceWithAConstructor' => [
+                'code' => '<?php
+                    interface Buildable {
+                        public function __construct();
+                    }
+
+                    interface Product extends Buildable {}
+
+                    abstract class Base implements Buildable {
+                        public function __construct() {}
+
+                        public static function build(): static {
+                            return new static();
+                        }
+                    }
+
+                    class Item implements Product {
+                        public function __construct() {}
+
+                        public static function create(): static {
+                            return new static();
+                        }
+                    }
+
+                    /** @param class-string<Item> $class */
+                    function instantiate(string $class): Item {
+                        return new $class();
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'newStaticWithArgumentsTheConstructorOfTheInterfaceAccepts' => [
+                'code' => '<?php
+                    interface Buildable {
+                        public function __construct(int $x, string ...$names);
+                    }
+
+                    abstract class Base implements Buildable {
+                        public function __construct(int|string $x, string ...$names) {}
+
+                        public static function build(): static {
+                            return new static(5, "a", "b");
+                        }
+                    }
+
+                    abstract class WithoutItsOwnConstructor implements Buildable {
+                        public static function build(): static {
+                            return new static(5);
+                        }
+                    }
+
+                    /** @param class-string<Base> $class */
+                    function instantiate(string $class): Base {
+                        return new $class(5);
+                    }
+
+                    /** @param class-string<Base> $class */
+                    function instantiateWith(string $class, int $x): Base {
+                        return new $class($x, "a");
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
             'consistentConstructorClassUsingATraitConstructorKeepsTheOneOfTheTrait' => [
                 'code' => '<?php
                     trait HasName {
@@ -1403,6 +1468,105 @@ final class ClassTest extends TestCase
     public static function providerInvalidCodeParse(): iterable
     {
         return [
+            'newStaticOfAClassImplementingAnInterfaceWithoutAConstructor' => [
+                'code' => '<?php
+                    interface Marker {}
+
+                    class Item implements Marker {
+                        public function __construct() {}
+
+                        public static function create(): static {
+                            return new static();
+                        }
+                    }',
+                'error_message' => 'UnsafeInstantiation - src' . DIRECTORY_SEPARATOR . 'somefile.php:8:36',
+            ],
+            'newStaticWithAnArgumentTheConstructorOfTheInterfaceDoesNotDeclare' => [
+                'code' => '<?php
+                    interface Buildable {
+                        public function __construct();
+                    }
+
+                    abstract class Base implements Buildable {
+                        public function __construct(int $x = 0) {}
+
+                        public static function build(): static {
+                            return new static(5);
+                        }
+                    }',
+                'error_message' => 'UnsafeInstantiation - src' . DIRECTORY_SEPARATOR . 'somefile.php:10:36',
+                'error_levels' => [],
+                'php_version' => '8.0',
+            ],
+            'newStaticWithAnArgumentOfATypeTheConstructorOfTheInterfaceDoesNotAccept' => [
+                'code' => '<?php
+                    interface Buildable {
+                        public function __construct(int $x);
+                    }
+
+                    abstract class Base implements Buildable {
+                        public function __construct(int|string $x) {}
+
+                        public static function build(): static {
+                            return new static("a");
+                        }
+                    }',
+                'error_message' => 'UnsafeInstantiation - src' . DIRECTORY_SEPARATOR . 'somefile.php:10:36',
+                'error_levels' => [],
+                'php_version' => '8.0',
+            ],
+            'newStaticWithFewerArgumentsThanTheConstructorOfTheInterfaceRequires' => [
+                'code' => '<?php
+                    interface Buildable {
+                        public function __construct(int $x, int $y);
+                    }
+
+                    abstract class Base implements Buildable {
+                        public function __construct(int $x, int $y = 0) {}
+
+                        public static function build(): static {
+                            return new static(5);
+                        }
+                    }',
+                'error_message' => 'UnsafeInstantiation - src' . DIRECTORY_SEPARATOR . 'somefile.php:10:36',
+                'error_levels' => [],
+                'php_version' => '8.0',
+            ],
+            'newStaticWithANamedArgumentOfTheConstructorOfTheInterface' => [
+                'code' => '<?php
+                    interface Buildable {
+                        public function __construct(int $x);
+                    }
+
+                    abstract class Base implements Buildable {
+                        public function __construct(int $x) {}
+
+                        public static function build(): static {
+                            return new static(x: 5);
+                        }
+                    }',
+                'error_message' => 'UnsafeInstantiation - src' . DIRECTORY_SEPARATOR . 'somefile.php:10:36',
+                'error_levels' => [],
+                'php_version' => '8.0',
+            ],
+            'newOfAClassStringWithAnArgumentTheConstructorOfTheInterfaceDoesNotDeclare' => [
+                'code' => '<?php
+                    interface Buildable {
+                        public function __construct();
+                    }
+
+                    abstract class Base implements Buildable {
+                        public function __construct(int $x = 0) {}
+                    }
+
+                    /** @param class-string<Base> $class */
+                    function instantiate(string $class): Base {
+                        return new $class(5);
+                    }',
+                'error_message' => 'UnsafeInstantiation - src' . DIRECTORY_SEPARATOR . 'somefile.php:12:32',
+                'error_levels' => [],
+                'php_version' => '8.0',
+            ],
             'consistentConstructorClassUsingATraitConstructorDoesNotTakeTheOneOfTheParent' => [
                 'code' => '<?php
                     trait HasName {
