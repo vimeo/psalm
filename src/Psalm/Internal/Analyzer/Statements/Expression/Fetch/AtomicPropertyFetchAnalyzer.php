@@ -186,6 +186,10 @@ final class AtomicPropertyFetchAnalyzer
 
         $class_exists = false;
 
+        // the part of the receiver a magic getter is called on: the property may be read from a member of an
+        // intersection, but the getter of any of the other members could serve it
+        $magic_get_receiver = $lhs_type_part;
+
         $codebase = $statements_analyzer->getCodebase();
 
         if (!$codebase->classExists($lhs_type_part->value, null, $context)
@@ -361,6 +365,7 @@ final class AtomicPropertyFetchAnalyzer
                         $matched_mixin = true;
                         $fq_class_name = $mixin->value;
                         $lhs_type_part = $mixin;
+                        $magic_get_receiver = $mixin;
                         $class_storage = $new_class_storage;
 
                         if (!isset($new_class_storage->pseudo_property_get_types['$' . $prop_name])) {
@@ -410,6 +415,7 @@ final class AtomicPropertyFetchAnalyzer
             $fq_class_name,
             $prop_name,
             $lhs_type_part,
+            $magic_get_receiver,
             $property_id,
             $has_magic_getter,
             $stmt_var_id,
@@ -715,6 +721,7 @@ final class AtomicPropertyFetchAnalyzer
         string $fq_class_name,
         string $prop_name,
         TNamedObject $lhs_type_part,
+        TNamedObject $magic_get_receiver,
         string &$property_id,
         bool &$has_magic_getter,
         ?string $stmt_var_id,
@@ -810,7 +817,7 @@ final class AtomicPropertyFetchAnalyzer
 
             $statements_analyzer->node_data = clone $statements_analyzer->node_data;
 
-            $statements_analyzer->node_data->setType($stmt->var, new Union([$lhs_type_part]));
+            $statements_analyzer->node_data->setType($stmt->var, new Union([$magic_get_receiver]));
 
             $fake_method_call = new VirtualMethodCall(
                 $stmt->var,
