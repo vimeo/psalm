@@ -669,6 +669,37 @@ final class PropertyTypeTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'nullsafeFetchOfANonNullablePropertyChecksTheReceiver' => [
+                'code' => '<?php
+                    final class T {}
+
+                    final class U {
+                        public function __construct(public T $valueType) {}
+                    }
+
+                    final class N {
+                        public ?U $unsealed = null;
+                    }
+
+                    function truthy(N $n): bool {
+                        if ($n->unsealed?->valueType) {
+                            return get_class($n->unsealed->valueType) === T::class;
+                        }
+
+                        return false;
+                    }
+
+                    function notNull(N $n): bool {
+                        if ($n->unsealed?->valueType !== null) {
+                            return get_class($n->unsealed->valueType) === T::class;
+                        }
+
+                        return false;
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
             'nullsafeChainNotNullNarrowsEveryReceiver' => [
                 'code' => '<?php
                     final class B {

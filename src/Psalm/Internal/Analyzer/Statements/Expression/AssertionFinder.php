@@ -2220,7 +2220,13 @@ final class AssertionFinder
 
         $property_id = self::getNullsafeChainVarId($expr, $this_class_name, $source);
 
-        if ($property_id !== null) {
+        // a property that can't be null (or falsy) says nothing: it is the receiver that was checked
+        $property_type = self::getNullsafePropertyType($expr, $source);
+
+        if ($property_id !== null
+            && ($property_type === null
+                || ($assertion instanceof Truthy ? !$property_type->isAlwaysTruthy() : $property_type->isNullable()))
+        ) {
             $if_types[$property_id] = [[$assertion]];
         }
 
@@ -2236,6 +2242,53 @@ final class AssertionFinder
         }
 
         return $if_types;
+    }
+
+    /**
+     * The declared type of the property a nullsafe fetch reads, or null when it isn't known for every class the
+     * receiver may be
+     */
+    private static function getNullsafePropertyType(
+        PhpParser\Node\Expr\NullsafePropertyFetch $expr,
+        FileSource $source,
+    ): ?Union {
+        if (!$source instanceof StatementsAnalyzer || !$expr->name instanceof PhpParser\Node\Identifier) {
+            return null;
+        }
+
+        $receiver_type = $source->getNodeTypeProvider()->getType($expr->var);
+
+        if ($receiver_type === null) {
+            return null;
+        }
+
+        $codebase = $source->getCodebase();
+        $property_types = [];
+
+        foreach ($receiver_type->getAtomicTypes() as $atomic_type) {
+            if ($atomic_type instanceof TNull) {
+                continue;
+            }
+
+            if (!$atomic_type instanceof TNamedObject || !$codebase->classExists($atomic_type->value)) {
+                return null;
+            }
+
+            $storage = $codebase->classlike_storage_provider->get($atomic_type->value);
+            $declaring_class = $storage->declaring_property_ids[$expr->name->name] ?? null;
+            $property_type = $declaring_class === null
+                ? null
+                : $codebase->classlike_storage_provider->get($declaring_class)->properties[$expr->name->name]->type
+                    ?? null;
+
+            if ($property_type === null || $property_type->hasMixed() || $property_type->hasTemplate()) {
+                return null;
+            }
+
+            $property_types[] = $property_type;
+        }
+
+        return $property_types === [] ? null : Type::combineUnionTypeArray($property_types, $codebase);
     }
 
     /**
