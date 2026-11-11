@@ -20,6 +20,59 @@ final class IntersectionTypeTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'propertyFetchOfTheSecondClassOfAnIntersectionWithAnInterface' => [
+                'code' => '<?php
+                    interface I {}
+
+                    abstract class A {}
+
+                    abstract class B extends A {
+                        public int $number = 1;
+                    }
+
+                    function test(I $i): int {
+                        if (!$i instanceof A) {
+                            return 0;
+                        }
+
+                        if (!$i instanceof B) {
+                            return 0;
+                        }
+
+                        return $i->number + 1;
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'propertyOfTheSecondClassOfAnIntersectionWithAnInterface' => [
+                'code' => '<?php
+                    interface I {}
+
+                    abstract class A {}
+
+                    abstract class B extends A {
+                        public int $number = 1;
+                    }
+
+                    function test(I $i): int {
+                        if (!$i instanceof A) {
+                            return 0;
+                        }
+
+                        if (!$i instanceof B) {
+                            return 0;
+                        }
+
+                        $i->number = 2;
+                        ++$i->number;
+
+                        return $i->number;
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
             'methodOfIntersectedInterfaceIsNotRoutedThroughMagicCall' => [
                 'code' => '<?php
                     interface MockObject {
@@ -423,6 +476,31 @@ final class IntersectionTypeTest extends TestCase
     public static function providerInvalidCodeParse(): iterable
     {
         return [
+            'missingPropertyOfAnIntersectionWithAnInterface' => [
+                'code' => '<?php
+                    interface I {}
+
+                    abstract class A {}
+
+                    abstract class B extends A {}
+
+                    function test(I $i): int {
+                        if (!$i instanceof A) {
+                            return 0;
+                        }
+
+                        if (!$i instanceof B) {
+                            return 0;
+                        }
+
+                        $i->number = 2;
+
+                        return 1;
+                    }',
+                'error_message' => 'UndefinedPropertyAssignment',
+                'error_levels' => [],
+                'php_version' => '8.0',
+            ],
             'methodMissingInAllIntersectedTypesGoesThroughMagicCall' => [
                 'code' => '<?php
                     interface MockObject {
