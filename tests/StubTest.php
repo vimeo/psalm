@@ -2092,4 +2092,106 @@ final class StubTest extends DeferredAnalyzerTestCase
         $this->assertFalse($stub_defined->user_defined);
         $this->assertTrue($stub_defined->stubbed);
     }
+
+    public function testMethodOfAStubWinsOverPseudoMethodOfTheRealClass(): void
+    {
+        $this->project_analyzer = $this->getProjectAnalyzerWithConfig(
+            TestConfig::loadFromXML(
+                dirname(__DIR__),
+                '<?xml version="1.0"?>
+                <psalm errorLevel="1">
+                    <projectFiles>
+                        <directory name="src" />
+                    </projectFiles>
+
+                    <stubs>
+                        <file name="tests/fixtures/stubs/stub_pseudo_method.phpstub" />
+                    </stubs>
+                </psalm>',
+            ),
+        );
+
+        // the real classes are scanned before the stub, like the ones of a library
+        $codebase = $this->project_analyzer->getCodebase();
+
+        foreach (['Facade', 'DB', 'Cache'] as $file) {
+            $codebase->scanner->addFileToShallowScan(
+                dirname(__DIR__) . '/tests/fixtures/stub_pseudo_method/' . $file . '.php',
+            );
+        }
+
+        $codebase->scanFiles();
+
+        $file_path = (string) getcwd() . '/src/somefile.php';
+
+        $this->addFile(
+            $file_path,
+            '<?php
+                use StubPseudoMethod\Cache;
+                use StubPseudoMethod\ChildDB;
+                use StubPseudoMethod\DB;
+                use StubPseudoMethod\Facade;
+                use StubPseudoMethod\StubWithOwnPseudoMethod;
+
+                /**
+                 * @method static non-empty-string both()
+                 * @method non-empty-string bothOnInstance()
+                 */
+                class Plain extends Facade
+                {
+                    public static function both(): string
+                    {
+                        return "a";
+                    }
+
+                    public function bothOnInstance(): string
+                    {
+                        return "a";
+                    }
+                }
+
+                // a stub declares the method
+                $static = DB::transaction(fn(): int => 5);
+                $instance = (new DB())->run(fn(): string => "a");
+                $same_file = Cache::remember(fn(): float => 1.5);
+                $static_replaces_instance = (new DB())->instanceByStatic();
+                $child_static = ChildDB::transaction(fn(): int => 5);
+                $child_instance = (new ChildDB())->run(fn(): string => "a");
+
+                // a stub does not declare it, or the method is not public
+                $untouched_static = DB::untouched();
+                $untouched_instance = (new DB())->untouchedOnInstance();
+                $child_untouched = ChildDB::untouched();
+                $not_public_static = DB::notPublic();
+                $private = (new DB())->secret();
+
+                // the `@method` and the method are in the same declaration
+                $own_in_stub = StubWithOwnPseudoMethod::own();
+                $plain_static = Plain::both();
+                $plain_instance = (new Plain())->bothOnInstance();',
+        );
+
+        $context = new Context();
+        $this->analyzeFile($file_path, $context);
+
+        $this->assertContextVars(
+            [
+                '$static===' => '5',
+                '$instance===' => '\'a\'',
+                '$same_file===' => 'float(1.5)',
+                '$static_replaces_instance===' => 'int',
+                '$child_static===' => '5',
+                '$child_instance===' => '\'a\'',
+                '$untouched_static===' => 'string',
+                '$untouched_instance===' => 'string',
+                '$child_untouched===' => 'string',
+                '$not_public_static===' => 'string',
+                '$private===' => 'string',
+                '$own_in_stub===' => 'string',
+                '$plain_static===' => 'non-empty-string',
+                '$plain_instance===' => 'non-empty-string',
+            ],
+            $context,
+        );
+    }
 }

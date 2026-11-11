@@ -82,6 +82,7 @@ final class Populator
         private readonly ClassLikeStorageProvider $classlike_storage_provider,
         private readonly FileStorageProvider $file_storage_provider,
         private readonly ClassLikes $classlikes,
+        private readonly Scanner $scanner,
         private readonly FileReferenceProvider $file_reference_provider,
         private readonly Progress $progress,
     ) {
@@ -547,6 +548,7 @@ final class Populator
 
         // a storage populated again still holds the `@method`s it inherited the last time
         self::removeInheritedPseudoMethods($storage);
+        $this->removePseudoMethodsShadowedByStub($storage);
 
         $trait_storages = [];
 
@@ -1187,6 +1189,54 @@ final class Populator
                 );
             }
         }
+    }
+
+    /**
+     * A stub refines the class it declares: a public method the stub declares replaces the `@method` of the same name
+     * that another declaration of the class has, like a method of the stub replaces the method of that declaration.
+     * The `@method` of the stub itself keeps winning over the method it declares alongside, as in any other class.
+     */
+    private function removePseudoMethodsShadowedByStub(ClassLikeStorage $storage): void
+    {
+        foreach ($storage->pseudo_methods as $method_name => $pseudo_method) {
+            if ($this->isShadowedByStubMethod($storage, $method_name, $pseudo_method)) {
+                unset($storage->pseudo_methods[$method_name], $storage->declaring_pseudo_method_ids[$method_name]);
+            }
+        }
+
+        foreach ($storage->pseudo_static_methods as $method_name => $pseudo_method) {
+            if ($this->isShadowedByStubMethod($storage, $method_name, $pseudo_method)) {
+                unset(
+                    $storage->pseudo_static_methods[$method_name],
+                    $storage->declaring_pseudo_static_method_ids[$method_name],
+                );
+            }
+        }
+    }
+
+    /**
+     * Static and instance methods are not told apart: a public method of the class can't be reached through `__call`
+     * or `__callStatic`, whichever of them the `@method` says.
+     *
+     * @psalm-mutation-free
+     */
+    private function isShadowedByStubMethod(
+        ClassLikeStorage $storage,
+        string $method_name,
+        MethodStorage $pseudo_method,
+    ): bool {
+        $method = $storage->methods[$method_name] ?? null;
+
+        if ($method === null
+            || $method->visibility !== ClassLikeAnalyzer::VISIBILITY_PUBLIC
+            || $method->location === null
+            || $pseudo_method->location === null
+        ) {
+            return false;
+        }
+
+        return $this->scanner->isStubFile($method->location->file_path)
+            && !$this->scanner->isStubFile($pseudo_method->location->file_path);
     }
 
     /**
