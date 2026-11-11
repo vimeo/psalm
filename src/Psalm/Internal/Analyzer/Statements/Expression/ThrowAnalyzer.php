@@ -49,22 +49,30 @@ final class ThrowAnalyzer
             $thrown_type,
         );
 
-        if ($try_scope !== null
-            && array_any(
+        if ($try_scope !== null) {
+            $continues_after_try = array_any(
                 $try_scope->continuing_catch_classes,
                 static fn(string $catch_class): bool => self::mayBeCaughtBy(
                     $statements_analyzer->getCodebase(),
                     $thrown_type,
                     $catch_class,
                 ),
-            )
-        ) {
+            );
+
             foreach ($context->assigned_var_ids as $var_id => $_) {
                 if (isset($context->vars_in_scope[$var_id])) {
-                    $try_scope->parent_nodes[$var_id] = [
+                    $nodes = [
                         ...($try_scope->parent_nodes[$var_id] ?? []),
                         ...$context->vars_in_scope[$var_id]->parent_nodes,
                     ];
+                    $try_scope->parent_nodes[$var_id] = $nodes;
+
+                    if ($continues_after_try) {
+                        $try_scope->post_try_parent_nodes[$var_id] = [
+                            ...($try_scope->post_try_parent_nodes[$var_id] ?? []),
+                            ...$context->vars_in_scope[$var_id]->parent_nodes,
+                        ];
+                    }
                 }
             }
         }

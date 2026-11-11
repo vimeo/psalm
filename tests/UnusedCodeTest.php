@@ -2461,6 +2461,40 @@ final class UnusedCodeTest extends TestCase
 
                     echo test(true);',
             ],
+            'assignmentUsedInACatchThatAlwaysReturnsIsNotUnused' => [
+                'code' => '<?php
+                    function test(): string {
+                        $x = "initial";
+
+                        try {
+                            $x = "modified";
+                            throw new RuntimeException();
+                        } catch (RuntimeException $e) {
+                            return $x;
+                        }
+                    }
+
+                    echo test();',
+            ],
+            'assignmentInABranchUsedInACatchThatAlwaysReturnsIsNotUnused' => [
+                'code' => '<?php
+                    function test(bool $flag): string {
+                        $x = "initial";
+
+                        try {
+                            if ($flag) {
+                                $x = "modified";
+                                throw new RuntimeException();
+                            }
+                        } catch (RuntimeException $e) {
+                            return $x;
+                        }
+
+                        return "done";
+                    }
+
+                    echo test(true);',
+            ],
             'assignmentBeforeAThrowIsSeenAfterTheTryWhereAnotherMatchingCatchGoesOn' => [
                 'code' => '<?php
                     function test(bool $b): string {

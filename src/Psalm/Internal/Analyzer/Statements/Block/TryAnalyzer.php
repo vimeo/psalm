@@ -113,7 +113,7 @@ final class TryAnalyzer
         $context->inside_try = $was_inside_try;
         $context->try_scope = $outer_try_scope;
 
-        foreach ($try_scope->parent_nodes as $try_var_id => $try_parent_nodes) {
+        foreach ($try_scope->post_try_parent_nodes as $try_var_id => $try_parent_nodes) {
             if ($outer_try_scope !== null) {
                 $outer_try_scope->parent_nodes[$try_var_id] = [
                     ...($outer_try_scope->parent_nodes[$try_var_id] ?? []),
@@ -202,6 +202,14 @@ final class TryAnalyzer
         foreach ($stmt->catches as $i => $catch) {
             $catch_context = clone $original_context;
             $catch_context->has_returned = false;
+
+            // what a branch that throws assigned is there for the catches, also those that never go on
+            foreach ($try_scope->parent_nodes as $try_var_id => $try_parent_nodes) {
+                if (isset($catch_context->vars_in_scope[$try_var_id])) {
+                    $catch_context->vars_in_scope[$try_var_id] = $catch_context->vars_in_scope[$try_var_id]
+                        ->setParentNodes($catch_context->vars_in_scope[$try_var_id]->parent_nodes + $try_parent_nodes);
+                }
+            }
 
             foreach ($catch_context->vars_in_scope as $var_id => $type) {
                 if (!isset($old_context->vars_in_scope[$var_id])) {

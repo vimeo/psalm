@@ -7,7 +7,8 @@ namespace Psalm\Internal\Scope;
 use Psalm\Internal\DataFlow\DataFlowNode;
 
 /**
- * Collects what a try body assigned to variables, also inside branches that leave the body by throwing.
+ * Collects what a try body assigned to variables, also inside branches that leave the body by throwing: what a
+ * catch can see, and what is seen after the try.
  *
  * @internal
  */
@@ -17,6 +18,13 @@ final class TryScope
      * @var array<string, array<string, DataFlowNode>>
      */
     public array $parent_nodes = [];
+
+    /**
+     * What the throwing branches assigned that is seen after the try: only through a catch that goes on
+     *
+     * @var array<string, array<string, DataFlowNode>>
+     */
+    public array $post_try_parent_nodes = [];
 
     /**
      * The classes the catches of the try name, in lowercase
