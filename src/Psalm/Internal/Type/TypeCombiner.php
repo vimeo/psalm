@@ -62,6 +62,7 @@ use UnexpectedValueException;
 
 use function array_any;
 use function array_filter;
+use function array_intersect_assoc;
 use function array_intersect_key;
 use function array_key_exists;
 use function array_keys;
@@ -75,6 +76,8 @@ use function min;
 use function strcspn;
 use function strtolower;
 use function substr;
+
+use const ARRAY_FILTER_USE_BOTH;
 
 /**
  * @internal
@@ -276,16 +279,17 @@ final class TypeCombiner
             $generic_type = substr($generic_type, 0, strcspn($generic_type, '<['));
 
             /** @psalm-suppress ArgumentTypeCoercion Caused by the PropertyTypeCoercion above */
-            $generic_object = new TGenericObject(
+            $new_types[] = (new TGenericObject(
                 $generic_type,
                 $generic_type_params,
                 false,
-                $combination->object_static[$generic_type] ?? false,
+                false,
                 $combination->extra_types,
                 $from_docblock,
+            ))->setIsStatic(
+                $combination->object_static[$generic_type] ?? false,
+                $combination->object_static_resolved[$generic_type] ?? false,
             );
-
-            $new_types[] = $generic_object;
         }
 
         if ($combination->class_string_types) {
@@ -436,6 +440,44 @@ final class TypeCombiner
         }
 
         return $new_types;
+    }
+
+    /**
+     * `object` is every object, shapes included. Shapes are open, so an object matching one shape may have any
+     * additional property: two shapes are only known to share the properties both declare
+     *
+     * @return ?TObject the type to hold, null if $existing is that already
+     * @psalm-capabilities read-props|write-this-props|write-refs
+     */
+    private static function combineObjects(?Atomic $existing, TObject $type, ?Codebase $codebase): ?TObject
+    {
+        if ($existing instanceof TObject && $existing::class === TObject::class) {
+            return null;
+        }
+
+        if (!$existing instanceof TObjectWithProperties || !$type instanceof TObjectWithProperties) {
+            return $type;
+        }
+
+        $properties = [];
+
+        foreach (array_intersect_key($existing->properties, $type->properties) as $name => $property) {
+            $properties[$name] = Type::combineUnionTypes($property, $type->properties[$name], $codebase);
+        }
+
+        $extra_types = array_filter(
+            array_intersect_key($existing->extra_types, $type->extra_types),
+            static fn(Atomic $extra_type, string $key): bool
+                => $extra_type->getId() === $type->extra_types[$key]->getId(),
+            ARRAY_FILTER_USE_BOTH,
+        );
+
+        return new TObjectWithProperties(
+            $properties,
+            array_intersect_assoc($existing->methods, $type->methods),
+            $extra_types,
+            $existing->from_docblock && $type->from_docblock,
+        );
     }
 
     /**
@@ -604,6 +646,10 @@ final class TypeCombiner
             } else {
                 $combination->object_static[$type->value] = $type->is_static;
             }
+
+            // a static already bound to its receiver stays bound, or the next method call binds it again
+            $combination->object_static_resolved[$type->value] = $type->is_static_resolved
+                && ($combination->object_static_resolved[$type->value] ?? true);
         }
 
         if ($type instanceof TKeyedArray && $type->is_callable) {
@@ -758,9 +804,7 @@ final class TypeCombiner
                     $has_defined_keys = true;
                 }
 
-                if (($candidate_property_type->possibly_undefined || ($value_type->possibly_undefined ?? true))
-                    && $combination->fallbackKeyContains($candidate_property_name)
-                ) {
+                if ($value_type === null && $combination->fallbackKeyContains($candidate_property_name)) {
                     $combination->objectlike_entries[$candidate_property_name] = Type::combineUnionTypes(
                         $combination->objectlike_entries[$candidate_property_name],
                         $combination->objectlike_value_type,
@@ -866,7 +910,15 @@ final class TypeCombiner
                 $combination->named_object_types = null;
             }
 
-            $combination->value_types[$type_key] = $type;
+            $combined_object = self::combineObjects(
+                $type_key === 'object' ? ($combination->value_types['object'] ?? null) : null,
+                $type,
+                $codebase,
+            );
+
+            if ($combined_object !== null) {
+                $combination->value_types[$type_key] = $combined_object;
+            }
 
             return null;
         }
@@ -1124,6 +1176,7 @@ final class TypeCombiner
             } else {
                 $shared_classlikes = $codebase ? self::getSharedTypes($combination, $codebase) : [];
 
+                $had_literals = $combination->strings !== null;
                 $combination->strings = null;
 
                 if (isset($combination->value_types['string'])
@@ -1140,7 +1193,13 @@ final class TypeCombiner
                     && $combination->value_types['string'] instanceof TNumericString
                     && !$type instanceof TLiteralClassString
                 ) {
-                    if (!is_numeric($type->value)) {
+                    if (!$had_literals
+                        && $type->value === ''
+                        && $combination->value_types['string']::class === TNumericString::class
+                    ) {
+                        // stays beside the numeric-string, as when the literal is combined first
+                        $combination->strings = [$type_key => $type];
+                    } elseif (!is_numeric($type->value)) {
                         $combination->value_types['string'] = $type->value === ''
                             ? new TString()
                             : new TNonEmptyString();
@@ -1389,6 +1448,9 @@ final class TypeCombiner
                     } else {
                         $combination->value_types['string'] = new TString();
                     }
+                } else {
+                    // the literals beside this string type were placed when it was first added
+                    return;
                 }
             }
 
