@@ -26,6 +26,7 @@ use Psalm\Internal\FileManipulation\FileManipulationBuffer;
 use Psalm\Internal\FileManipulation\PropertyDocblockManipulator;
 use Psalm\Internal\MethodIdentifier;
 use Psalm\Internal\Provider\NodeDataProvider;
+use Psalm\Internal\Type\Comparator\GenericTypeComparator;
 use Psalm\Internal\Type\Comparator\TypeComparisonResult;
 use Psalm\Internal\Type\Comparator\UnionTypeComparator;
 use Psalm\Internal\Type\TemplateDefaults;
@@ -82,6 +83,7 @@ use Psalm\Storage\FunctionLikeParameter;
 use Psalm\Storage\MethodStorage;
 use Psalm\Storage\PropertyStorage;
 use Psalm\Type;
+use Psalm\Type\Atomic;
 use Psalm\Type\Atomic\TGenericObject;
 use Psalm\Type\Atomic\TLiteralInt;
 use Psalm\Type\Atomic\TLiteralString;
@@ -98,6 +100,7 @@ use function array_keys;
 use function array_map;
 use function array_merge;
 use function array_pop;
+use function array_shift;
 use function array_values;
 use function assert;
 use function count;
@@ -116,10 +119,16 @@ use function substr;
  */
 final class ClassAnalyzer extends ClassLikeAnalyzer
 {
+    /** Set on the call of the constructor that stands for it when the initialization of properties is checked */
+    public const FAKE_CONSTRUCTOR_CALL_ATTRIBUTE = 'fake_constructor_call';
+
     /**
      * @var array<string, Union>
      */
     public array $inferred_property_types = [];
+
+    /** @var array<string, true>|null */
+    private ?array $properties_only_read_under_isset = null;
 
     /**
      * @param PhpParser\Node\Stmt\Class_|PhpParser\Node\Stmt\Enum_ $class
@@ -855,6 +864,10 @@ final class ClassAnalyzer extends ClassLikeAnalyzer
                         $codebase,
                     );
 
+                    // an imported type alias is the type it stands for
+                    $guide_property_type = TypeExpander::expandUnion($codebase, $guide_property_type, null, null, null);
+                    $property_type = TypeExpander::expandUnion($codebase, $property_type, null, null, null);
+
                     if ($guide_property_storage->readonly
                         && UnionTypeComparator::isContainedBy(
                             $codebase,
@@ -973,7 +986,10 @@ final class ClassAnalyzer extends ClassLikeAnalyzer
                 );
             }
 
-            if ($property_type_location && !$fleshed_out_type->isMixed()) {
+            $has_docblock_over_signature = $property_storage->signature_type
+                && $property_storage->type?->getId() !== $property_storage->signature_type->getId();
+
+            if ($property_type_location && (!$fleshed_out_type->isMixed() || $has_docblock_over_signature)) {
                 $stmt = array_filter(
                     $stmts,
                     static fn($stmt): bool => $stmt instanceof PhpParser\Node\Stmt\Property
@@ -1008,10 +1024,19 @@ final class ClassAnalyzer extends ClassLikeAnalyzer
                 if ($property_storage->signature_type) {
                     $union_comparison_result = new TypeComparisonResult();
 
+                    // `self` of a property of a trait is the class that uses it, as in the type compared with
+                    $signature_type = TypeExpander::expandUnion(
+                        $codebase,
+                        $property_storage->signature_type,
+                        $fq_class_name,
+                        $fq_class_name,
+                        $parent_fq_class_name,
+                    );
+
                     if (!UnionTypeComparator::isContainedBy(
                         $codebase,
                         $fleshed_out_type,
-                        $property_storage->signature_type,
+                        $signature_type,
                         false,
                         false,
                         $union_comparison_result,
@@ -1022,10 +1047,30 @@ final class ClassAnalyzer extends ClassLikeAnalyzer
                                 'Parameter '
                                     . $property_class_name . '::$' . $property_name
                                     . ' has wrong type \'' . $fleshed_out_type .
-                                    '\', should be \'' . $property_storage->signature_type . '\'',
+                                    '\', should be \'' . $signature_type->getId() . '\'',
                                 $property_type_location,
                             ),
                         );
+                    }
+
+                    if ($property_storage->signature_type_location && $has_docblock_over_signature) {
+                        // only the classes: the docblock type replaces the native one everywhere else
+                        $signature_classes = array_filter(
+                            $property_storage->signature_type->getAtomicTypes(),
+                            static fn(Atomic $atomic): bool => $atomic instanceof TNamedObject
+                                && !self::isReservedClassName($atomic->value),
+                        );
+
+                        if ($signature_classes) {
+                            /** @psalm-suppress UnusedMethodCall This call has the side effect of creating issues */
+                            (new Union($signature_classes))->check(
+                                $statements_source,
+                                $property_storage->signature_type_location,
+                                $storage->suppressed_issues + $statements_source->getSuppressedIssues() + $suppressed,
+                                [],
+                                false,
+                            );
+                        }
                     }
                 }
             }
@@ -1034,6 +1079,9 @@ final class ClassAnalyzer extends ClassLikeAnalyzer
                 $property_id = $fq_class_name . '::$' . $property_name;
 
                 $class_context->vars_in_scope[$property_id] = $fleshed_out_type;
+                // `static::$p` is what the property is declared as for this class too, not for the trait that
+                // declares it
+                $class_context->vars_in_scope['static::$' . $property_name] = $fleshed_out_type;
             } else {
                 $class_context->vars_in_scope['$this->' . $property_name] = $fleshed_out_type;
             }
@@ -1056,6 +1104,49 @@ final class ClassAnalyzer extends ClassLikeAnalyzer
                 $class_context->vars_in_scope['$this->' . $property_name] = $fleshed_out_type;
             }
         }
+    }
+
+    /**
+     * @return array<string, true>
+     */
+    private function getPropertiesOnlyReadUnderIsset(): array
+    {
+        if ($this->properties_only_read_under_isset !== null) {
+            return $this->properties_only_read_under_isset;
+        }
+
+        $codebase = $this->getCodebase();
+        $stmts = $this->class->stmts;
+        $traits_to_read = array_keys(
+            $codebase->classlike_storage_provider->get($this->fq_class_name)->used_traits,
+        );
+        $read_traits = [];
+
+        // what the methods of the traits do with the property counts too
+        while ($trait_name = array_shift($traits_to_read)) {
+            // a trait may be used through a class_alias() name
+            $trait_name = strtolower($codebase->classlikes->getUnAliasedName($trait_name));
+
+            if (isset($read_traits[$trait_name])) {
+                continue;
+            }
+
+            $read_traits[$trait_name] = true;
+
+            try {
+                $trait_node = $codebase->classlikes->getTraitNode($trait_name);
+            } catch (UnexpectedValueException) {
+                continue;
+            }
+
+            $stmts = [...$stmts, ...$trait_node->stmts];
+            $traits_to_read = [
+                ...$traits_to_read,
+                ...array_keys($codebase->classlike_storage_provider->get($trait_name)->used_traits),
+            ];
+        }
+
+        return $this->properties_only_read_under_isset = IssetGuardedProperties::find($stmts);
     }
 
     private function checkPropertyInitialization(
@@ -1262,6 +1353,7 @@ final class ClassAnalyzer extends ClassLikeAnalyzer
 
                 $fake_call_attributes = $fake_constructor_attributes
                     + [
+                        self::FAKE_CONSTRUCTOR_CALL_ATTRIBUTE => true,
                         'comments' => [new PhpParser\Comment\Doc(
                             '/** @psalm-suppress InaccessibleMethod */',
                             $class->extends->getLine(),
@@ -1350,6 +1442,10 @@ final class ClassAnalyzer extends ClassLikeAnalyzer
             $method_context->vars_possibly_in_scope['$this'] = true;
             $method_context->calling_method_id = strtolower($fq_class_name) . '::__construct';
 
+            $method_context->constructor_exits = new ConstructorExits(
+                $constructor_analyzer->getFunctionLikeStorage(),
+            );
+
             $constructor_analyzer->analyze(
                 $method_context,
                 new NodeDataProvider(),
@@ -1364,6 +1460,34 @@ final class ClassAnalyzer extends ClassLikeAnalyzer
                     $end_type = new Union([new TVoid()], ['initialized' => false]);
                 } else {
                     $end_type = $method_context->vars_in_scope['$this->' . $property_name];
+                }
+
+                // the property has to be initialised wherever the constructor returns, and at its end if reachable
+                $exit_types = [];
+
+                // a private property that the class only reads where isset() holds may be left uninitialised on
+                // purpose, so only the end of the constructor decides
+                if ($property_storage->visibility !== ClassLikeAnalyzer::VISIBILITY_PRIVATE
+                    || !isset($this->getPropertiesOnlyReadUnderIsset()[$property_name])
+                ) {
+                    foreach ($method_context->constructor_exits->states as $exit_state) {
+                        $exit_types[] = $exit_state['$this->' . $property_name]
+                            ?? new Union([new TVoid()], ['initialized' => false]);
+                    }
+                }
+
+                if ($exit_types !== []) {
+                    if (!$method_context->has_returned) {
+                        $exit_types[] = $end_type;
+                    }
+
+                    foreach ($exit_types as $exit_type) {
+                        $end_type = $exit_type;
+
+                        if (!$exit_type->initialized) {
+                            break;
+                        }
+                    }
                 }
 
                 $constructor_class_property_storage = $property_storage;
@@ -1528,7 +1652,13 @@ final class ClassAnalyzer extends ClassLikeAnalyzer
                 $extension_requirement = $codebase->classlikes->getUnAliasedName(
                     $trait_storage->extension_requirement,
                 );
-                $extensionRequirementMet = in_array($extension_requirement, $storage->parent_classes);
+                $extensionRequirementMet = in_array($extension_requirement, $storage->parent_classes)
+                    && self::requirementTypeArgumentsAreMet(
+                        $codebase,
+                        $storage,
+                        $trait_storage,
+                        $trait_storage->extension_requirement_type,
+                    );
 
                 if (!$extensionRequirementMet) {
                     IssueBuffer::maybeAdd(
@@ -1542,9 +1672,15 @@ final class ClassAnalyzer extends ClassLikeAnalyzer
                 }
             }
 
-            foreach ($trait_storage->implementation_requirements as $implementation_requirement) {
-                $implementation_requirement = $codebase->classlikes->getUnAliasedName($implementation_requirement);
-                $implementationRequirementMet = in_array($implementation_requirement, $storage->class_implements);
+            foreach ($trait_storage->implementation_requirements as $declared_requirement) {
+                $implementation_requirement = $codebase->classlikes->getUnAliasedName($declared_requirement);
+                $implementationRequirementMet = in_array($implementation_requirement, $storage->class_implements)
+                    && self::requirementTypeArgumentsAreMet(
+                        $codebase,
+                        $storage,
+                        $trait_storage,
+                        $trait_storage->implementation_requirement_types[$declared_requirement] ?? null,
+                    );
 
                 if (!$implementationRequirementMet) {
                     IssueBuffer::maybeAdd(
@@ -1695,6 +1831,8 @@ final class ClassAnalyzer extends ClassLikeAnalyzer
             && isset($project_analyzer->getIssuesToFix()['MissingPropertyType'])
             && !$codebase->config->suppressesIssueType($this->getSuppressedIssues(), 'MissingPropertyType')
             && $suggested_type
+            // a type can't be added to a single property of `public $a, $b;`
+            && count($stmt->props) === 1
         ) {
             if ($suggested_type->hasMixed() || $suggested_type->isNull()) {
                 return;
@@ -1950,7 +2088,7 @@ final class ClassAnalyzer extends ClassLikeAnalyzer
     /**
      * @psalm-mutation-free
      */
-    private static function getThisObjectType(
+    public static function getThisObjectType(
         ClassLikeStorage $class_storage,
         string $original_fq_classlike_name,
     ): TNamedObject {
@@ -2643,5 +2781,63 @@ final class ClassAnalyzer extends ClassLikeAnalyzer
                 }
             }
         }
+    }
+
+    /**
+     * The type arguments a trait gives the class its `@psalm-require-extends` or `@psalm-require-implements` names must
+     * be the ones the class gives it, once the templates of the trait are bound by the `@use` of the class
+     */
+    private static function requirementTypeArgumentsAreMet(
+        Codebase $codebase,
+        ClassLikeStorage $storage,
+        ClassLikeStorage $trait_storage,
+        ?TGenericObject $required,
+    ): bool {
+        if ($required === null) {
+            return true;
+        }
+
+        $required_name = $codebase->classlikes->getUnAliasedName($required->value);
+        $required_storage = $codebase->classlike_storage_provider->get($required_name);
+        $given_params = $storage->template_extended_params[$required_storage->name] ?? null;
+
+        if ($given_params === null || $required_storage->template_types === null) {
+            return true;
+        }
+
+        $lower_bounds = [];
+
+        foreach ($storage->template_extended_params[$trait_storage->name] ?? [] as $template_name => $bound) {
+            $lower_bounds[$template_name][$trait_storage->name] = $bound;
+        }
+
+        $template_result = new TemplateResult([], $lower_bounds);
+
+        $expected_params = [];
+        $actual_params = [];
+
+        foreach (array_keys($required_storage->template_types) as $offset => $template_name) {
+            if (!isset($required->type_params[$offset], $given_params[$template_name])) {
+                return true;
+            }
+
+            $expected_params[] = TemplateInferredTypeReplacer::replace(
+                $required->type_params[$offset],
+                $template_result,
+                $codebase,
+            );
+            $actual_params[] = $given_params[$template_name];
+        }
+
+        if ($expected_params === [] || $actual_params === []) {
+            return true;
+        }
+
+        // as the arguments of a type are compared: by the variance the required class declares for each
+        return GenericTypeComparator::isContainedBy(
+            $codebase,
+            new TGenericObject($required_storage->name, $actual_params),
+            new TGenericObject($required_storage->name, $expected_params),
+        );
     }
 }

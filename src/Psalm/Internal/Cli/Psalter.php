@@ -84,7 +84,7 @@ final class Psalter
 {
     private const SHORT_OPTIONS =  ['f:', 'm', 'h', 'r:', 'c:'];
 
-    private const LONG_OPTIONS = [
+    public const LONG_OPTIONS = [
         'help', 'debug', 'debug-by-line', 'debug-emitted-issues', 'config:', 'file:', 'root:',
         'plugin:', 'issues:', 'list-supported-issues', 'php-version:', 'dry-run', 'safe-types',
         'find-unused-code', 'threads:', 'scan-threads:', 'codeowner:',
@@ -294,11 +294,6 @@ final class Psalter
             );
         }
 
-        if (array_key_exists('list-supported-issues', $options)) {
-            echo implode(',', ProjectAnalyzer::getSupportedIssuesToFix()) . PHP_EOL;
-            exit();
-        }
-
         $debug = array_key_exists('debug', $options) || array_key_exists('debug-by-line', $options);
         // CI takes precedence over AI detection: persistent CI logs still want
         // per-phase breadcrumbs for humans reviewing the build.
@@ -330,6 +325,11 @@ final class Psalter
             $scanThreads,
             $progress,
         );
+
+        if (array_key_exists('list-supported-issues', $options)) {
+            echo implode(',', $project_analyzer->getAllIssuesToFix()) . PHP_EOL;
+            exit();
+        }
 
         if (array_key_exists('debug-by-line', $options)) {
             $project_analyzer->debug_lines = true;
