@@ -324,6 +324,16 @@ final class ClassLikeStringTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'negatedClassExistsOnTheLeftOfAnOrAllowsTheClassOnTheRight' => [
+                'code' => '<?php
+                    function check(): bool {
+                        return !class_exists(Missing::class) || Missing::foo();
+                    }
+
+                    function checkTwo(): bool {
+                        return (!class_exists(First::class) || !class_exists(Second::class)) || First::foo();
+                    }',
+            ],
             'isSubclassOfKeepsTheTemplateOfAClassString' => [
                 'code' => '<?php
                     /** @psalm-consistent-constructor */
