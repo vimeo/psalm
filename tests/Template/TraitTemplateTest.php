@@ -9,6 +9,8 @@ use Psalm\Tests\TestCase;
 use Psalm\Tests\Traits\InvalidCodeAnalysisTestTrait;
 use Psalm\Tests\Traits\ValidCodeAnalysisTestTrait;
 
+use const DIRECTORY_SEPARATOR;
+
 final class TraitTemplateTest extends TestCase
 {
     use InvalidCodeAnalysisTestTrait;
@@ -21,6 +23,288 @@ final class TraitTemplateTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'receiverWithoutTypeArgumentsOfAGenericClassUsingATraitTakesTheBoundsOfItsTemplates' => [
+                'code' => '<?php
+                    /**
+                     * @template TKey of array-key
+                     * @template TValue
+                     * @extends ArrayAccess<TKey, TValue>
+                     */
+                    interface ArrayInterface extends ArrayAccess {}
+
+                    trait IsIterable {
+                        public function offsetSet(mixed $offset, mixed $value): void {}
+                        public function offsetGet(mixed $offset): mixed { return null; }
+                        public function offsetExists(mixed $offset): bool { return false; }
+                        public function offsetUnset(mixed $offset): void {}
+                    }
+
+                    /**
+                     * @template TKey of array-key
+                     * @template TValue
+                     * @implements ArrayInterface<TKey, TValue>
+                     */
+                    final class ImmutableArray implements ArrayInterface {
+                        use IsIterable;
+                    }
+
+                    final class Element {
+                        private ImmutableArray $scopedVariables;
+
+                        public function __construct() {
+                            $this->scopedVariables = new ImmutableArray();
+                        }
+
+                        public function add(string $name): void {
+                            $this->scopedVariables[$name] = $name;
+                            $this->scopedVariables[5] = new stdClass();
+
+                            if (isset($this->scopedVariables[$name])) {
+                                $value = $this->scopedVariables[$name];
+                            }
+
+                            $this->scopedVariables[$name] ??= "default";
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => ['MixedAssignment'],
+                'php_version' => '8.0',
+            ],
+            'subclassOfAGenericClassUsingATraitThroughAnIntermediateInterfaceTakesItsTypeArguments' => [
+                'code' => '<?php
+                    /**
+                     * @template TKey of array-key
+                     * @template TValue
+                     * @extends ArrayAccess<TKey, TValue>
+                     */
+                    interface ArrayInterface extends ArrayAccess {}
+
+                    trait IsArrayAccess {
+                        public function offsetSet(mixed $offset, mixed $value): void {}
+                        public function offsetGet(mixed $offset): mixed { return null; }
+                        public function offsetExists(mixed $offset): bool { return false; }
+                        public function offsetUnset(mixed $offset): void {}
+                    }
+
+                    /**
+                     * @template TKey of array-key
+                     * @template TValue
+                     * @implements ArrayInterface<TKey, TValue>
+                     */
+                    abstract class AbstractArray implements ArrayInterface {
+                        use IsArrayAccess;
+                    }
+
+                    final class ImmutableString {}
+
+                    /** @extends AbstractArray<string, ImmutableString> */
+                    final class Concrete extends AbstractArray {}
+
+                    function f(Concrete $c): void {
+                        $c["key"] = new ImmutableString();
+                        $value = $c["key"];
+                        echo isset($c["other"]);
+                    }
+
+                    /** @param ArrayInterface<string, ImmutableString> $i */
+                    function g(ArrayInterface $i): void {
+                        $i["key"] = new ImmutableString();
+                    }',
+                'assertions' => [],
+                'ignored_issues' => ['MixedAssignment'],
+                'php_version' => '8.0',
+            ],
+            'genericClassImplementingAnInterfaceThroughATraitTakesItsTypeArguments' => [
+                'code' => '<?php
+                    trait IsArrayAccess {
+                        public function offsetSet(mixed $offset, mixed $value): void {}
+                        public function offsetGet(mixed $offset): mixed { return null; }
+                        public function offsetExists(mixed $offset): bool { return false; }
+                        public function offsetUnset(mixed $offset): void {}
+                    }
+
+                    /**
+                     * @template TKey of array-key
+                     * @template TValue
+                     * @implements ArrayAccess<TKey, TValue>
+                     */
+                    final class ImmutableArray implements ArrayAccess {
+                        use IsArrayAccess;
+                    }
+
+                    final class ImmutableString {}
+
+                    /** @param ImmutableArray<array-key, ImmutableString> $suggestions */
+                    function f(ImmutableArray $suggestions): void {
+                        $suggestions["key"] = new ImmutableString();
+                        $suggestions[5] = new ImmutableString();
+                        $value = $suggestions["key"];
+                        echo isset($suggestions["other"]);
+                    }',
+                'assertions' => [],
+                'ignored_issues' => ['MixedAssignment'],
+                'php_version' => '8.0',
+            ],
+            'traitMethodWithoutDocblockImplementsTemplatedParent' => [
+                'code' => '<?php
+                    /** @template T */
+                    abstract class A
+                    {
+                        /**
+                         * @param T $s
+                         * @return T
+                         */
+                        abstract public function someMethod(mixed $s): mixed;
+                    }
+
+                    trait LetsTrait
+                    {
+                        public function someMethod(mixed $s): mixed
+                        {
+                            return $s;
+                        }
+                    }
+
+                    /** @extends A<string> */
+                    class C extends A
+                    {
+                        use LetsTrait;
+                    }
+
+                    $result = (new C())->someMethod("x");',
+                'assertions' => ['$result' => 'string'],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'traitMethodWithoutDocblockImplementsTemplatedParentOfTheIssue' => [
+                'code' => '<?php
+                    /** @psalm-template T */
+                    abstract class A
+                    {
+                        /**
+                         * @psalm-param T $s
+                         * @psalm-return T
+                         */
+                        abstract public function someMethod($s): mixed;
+                    }
+
+                    /** @extends A<string> */
+                    class B extends A
+                    {
+                        public function someMethod($s): mixed
+                        {
+                            return $s;
+                        }
+                    }
+
+                    /** @extends A<string> */
+                    class C extends A
+                    {
+                        use LetsTrait;
+                    }
+
+                    trait LetsTrait
+                    {
+                        public function someMethod($s): mixed
+                        {
+                            return $s;
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'traitMethodWithoutDocblockImplementsTemplatedInterface' => [
+                'code' => '<?php
+                    /** @template T */
+                    interface I
+                    {
+                        /** @return T */
+                        public function get(): mixed;
+                    }
+
+                    trait GetTrait
+                    {
+                        public function get(): mixed
+                        {
+                            return "a";
+                        }
+                    }
+
+                    /** @implements I<string> */
+                    class C implements I
+                    {
+                        use GetTrait;
+                    }
+
+                    $result = (new C())->get();',
+                'assertions' => ['$result' => 'string'],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'traitMethodWithoutDocblockImplementsParentWithOnlyAReturnTag' => [
+                'code' => '<?php
+                    /** @template T */
+                    abstract class A
+                    {
+                        /** @return T */
+                        abstract public function get(): mixed;
+                    }
+
+                    trait GetTrait
+                    {
+                        public function get(): mixed
+                        {
+                            return "a";
+                        }
+                    }
+
+                    /** @extends A<string> */
+                    class C extends A
+                    {
+                        use GetTrait;
+                    }
+
+                    $result = (new C())->get();',
+                'assertions' => ['$result' => 'string'],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'traitMethodWithoutDocblockUsedByClassesWithDifferentTemplateArguments' => [
+                'code' => '<?php
+                    /** @template T */
+                    abstract class A
+                    {
+                        /** @return T */
+                        abstract public function get(): mixed;
+                    }
+
+                    trait GetTrait
+                    {
+                        public function get(): mixed
+                        {
+                            throw new Exception();
+                        }
+                    }
+
+                    /** @extends A<string> */
+                    class C extends A
+                    {
+                        use GetTrait;
+                    }
+
+                    /** @extends A<int> */
+                    class D extends A
+                    {
+                        use GetTrait;
+                    }
+
+                    $c = (new C())->get();
+                    $d = (new D())->get();',
+                'assertions' => ['$c' => 'string', '$d' => 'int'],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
             'traitUseNotExtended' => [
                 'code' => '<?php
                     /**
@@ -553,6 +837,296 @@ final class TraitTemplateTest extends TestCase
     public static function providerInvalidCodeParse(): iterable
     {
         return [
+            'receiverWithoutTypeArgumentsOfAGenericClassUsingATraitStillChecksTheBound' => [
+                'code' => '<?php
+                    /**
+                     * @template TKey of array-key
+                     * @template TValue
+                     * @extends ArrayAccess<TKey, TValue>
+                     */
+                    interface ArrayInterface extends ArrayAccess {}
+
+                    trait IsIterable {
+                        public function offsetSet(mixed $offset, mixed $value): void {}
+                        public function offsetGet(mixed $offset): mixed { return null; }
+                        public function offsetExists(mixed $offset): bool { return false; }
+                        public function offsetUnset(mixed $offset): void {}
+                    }
+
+                    /**
+                     * @template TKey of array-key
+                     * @template TValue
+                     * @implements ArrayInterface<TKey, TValue>
+                     */
+                    final class ImmutableArray implements ArrayInterface {
+                        use IsIterable;
+                    }
+
+                    final class Element {
+                        private ImmutableArray $scopedVariables;
+
+                        public function __construct() {
+                            $this->scopedVariables = new ImmutableArray();
+                        }
+
+                        public function add(): void {
+                            $this->scopedVariables[1.5] = "x";
+                        }
+                    }',
+                'error_message' => 'InvalidArgument - src' . DIRECTORY_SEPARATOR . 'somefile.php:33:52 - Argument 1 of ImmutableArray::offsetSet expects array-key|null, but float(1.5) provided',
+                'error_levels' => [],
+                'php_version' => '8.0',
+            ],
+            'subclassOfAGenericClassUsingATraitChecksTheKeyType' => [
+                'code' => '<?php
+                    /**
+                     * @template TKey of array-key
+                     * @template TValue
+                     * @extends ArrayAccess<TKey, TValue>
+                     */
+                    interface ArrayInterface extends ArrayAccess {}
+
+                    trait IsArrayAccess {
+                        public function offsetSet(mixed $offset, mixed $value): void {}
+                        public function offsetGet(mixed $offset): mixed { return null; }
+                        public function offsetExists(mixed $offset): bool { return false; }
+                        public function offsetUnset(mixed $offset): void {}
+                    }
+
+                    /**
+                     * @template TKey of array-key
+                     * @template TValue
+                     * @implements ArrayInterface<TKey, TValue>
+                     */
+                    abstract class AbstractArray implements ArrayInterface {
+                        use IsArrayAccess;
+                    }
+
+                    final class ImmutableString {}
+
+                    /** @extends AbstractArray<string, ImmutableString> */
+                    final class Concrete extends AbstractArray {}
+
+                    function f(Concrete $c): void {
+                        $c[5] = new ImmutableString();
+                    }',
+                'error_message' => 'Argument 1 of Concrete::offsetSet expects null|string, but 5 provided',
+                'error_levels' => [],
+                'php_version' => '8.0',
+            ],
+            'subclassOfAGenericClassUsingATraitChecksTheValueType' => [
+                'code' => '<?php
+                    /**
+                     * @template TKey of array-key
+                     * @template TValue
+                     * @extends ArrayAccess<TKey, TValue>
+                     */
+                    interface ArrayInterface extends ArrayAccess {}
+
+                    trait IsArrayAccess {
+                        public function offsetSet(mixed $offset, mixed $value): void {}
+                        public function offsetGet(mixed $offset): mixed { return null; }
+                        public function offsetExists(mixed $offset): bool { return false; }
+                        public function offsetUnset(mixed $offset): void {}
+                    }
+
+                    /**
+                     * @template TKey of array-key
+                     * @template TValue
+                     * @implements ArrayInterface<TKey, TValue>
+                     */
+                    abstract class AbstractArray implements ArrayInterface {
+                        use IsArrayAccess;
+                    }
+
+                    final class ImmutableString {}
+
+                    /** @extends AbstractArray<string, ImmutableString> */
+                    final class Concrete extends AbstractArray {}
+
+                    function f(Concrete $c): void {
+                        $c["key"] = "not an ImmutableString";
+                    }',
+                'error_message' => 'Argument 2 of Concrete::offsetSet expects ImmutableString, but',
+                'error_levels' => [],
+                'php_version' => '8.0',
+            ],
+            'genericClassImplementingAnInterfaceThroughATraitChecksTheKeyType' => [
+                'code' => '<?php
+                    trait IsArrayAccess {
+                        public function offsetSet(mixed $offset, mixed $value): void {}
+                        public function offsetGet(mixed $offset): mixed { return null; }
+                        public function offsetExists(mixed $offset): bool { return false; }
+                        public function offsetUnset(mixed $offset): void {}
+                    }
+
+                    /**
+                     * @template TKey of array-key
+                     * @template TValue
+                     * @implements ArrayAccess<TKey, TValue>
+                     */
+                    final class ImmutableArray implements ArrayAccess {
+                        use IsArrayAccess;
+                    }
+
+                    final class ImmutableString {}
+
+                    /** @param ImmutableArray<string, ImmutableString> $suggestions */
+                    function f(ImmutableArray $suggestions): void {
+                        $suggestions[5] = new ImmutableString();
+                    }',
+                'error_message' => 'Argument 1 of ImmutableArray::offsetSet expects null|string, but 5 provided',
+                'error_levels' => [],
+                'php_version' => '8.0',
+            ],
+            'genericClassImplementingAnInterfaceThroughATraitChecksTheValueType' => [
+                'code' => '<?php
+                    trait IsArrayAccess {
+                        public function offsetSet(mixed $offset, mixed $value): void {}
+                        public function offsetGet(mixed $offset): mixed { return null; }
+                        public function offsetExists(mixed $offset): bool { return false; }
+                        public function offsetUnset(mixed $offset): void {}
+                    }
+
+                    /**
+                     * @template TKey of array-key
+                     * @template TValue
+                     * @implements ArrayAccess<TKey, TValue>
+                     */
+                    final class ImmutableArray implements ArrayAccess {
+                        use IsArrayAccess;
+                    }
+
+                    final class ImmutableString {}
+
+                    /** @param ImmutableArray<string, ImmutableString> $suggestions */
+                    function f(ImmutableArray $suggestions): void {
+                        $suggestions["key"] = "not an ImmutableString";
+                    }',
+                'error_message' => 'Argument 2 of ImmutableArray::offsetSet expects ImmutableString, but',
+                'error_levels' => [],
+                'php_version' => '8.0',
+            ],
+            'traitMethodWithItsOwnDocblockIsComparedWithTheParent' => [
+                'code' => '<?php
+                    /** @template T */
+                    abstract class A
+                    {
+                        /**
+                         * @param T $s
+                         * @return T
+                         */
+                        abstract public function someMethod(mixed $s): mixed;
+                    }
+
+                    trait LetsTrait
+                    {
+                        /**
+                         * @param mixed $s
+                         * @return mixed
+                         */
+                        public function someMethod(mixed $s): mixed
+                        {
+                            return $s;
+                        }
+                    }
+
+                    /** @extends A<string> */
+                    class C extends A
+                    {
+                        use LetsTrait;
+                    }',
+                'error_message' => "The inherited return type 'string' for A::someMethod",
+                'error_levels' => [],
+                'php_version' => '8.0',
+            ],
+            'traitMethodWithoutDocblockCalledWithAnArgumentOfTheWrongType' => [
+                'code' => '<?php
+                    /** @template T */
+                    abstract class A
+                    {
+                        /**
+                         * @param T $s
+                         * @return T
+                         */
+                        abstract public function someMethod(mixed $s): mixed;
+                    }
+
+                    trait LetsTrait
+                    {
+                        public function someMethod(mixed $s): mixed
+                        {
+                            return $s;
+                        }
+                    }
+
+                    /** @extends A<string> */
+                    class C extends A
+                    {
+                        use LetsTrait;
+                    }
+
+                    (new C())->someMethod(5);',
+                'error_message' => 'Argument 1 of C::someMethod expects string, but 5 provided',
+                'error_levels' => [],
+                'php_version' => '8.0',
+            ],
+            'traitMethodWithoutDocblockReturningNullForATemplatedParent' => [
+                'code' => '<?php
+                    /** @template T */
+                    abstract class A
+                    {
+                        /** @return T */
+                        abstract public function get(): mixed;
+                    }
+
+                    trait GetTrait
+                    {
+                        public function get(): ?string
+                        {
+                            return null;
+                        }
+                    }
+
+                    /** @extends A<string> */
+                    class C extends A
+                    {
+                        use GetTrait;
+                    }',
+                'error_message' => 'InvalidNullableReturnType',
+                'error_levels' => [],
+                'php_version' => '8.0',
+            ],
+            'traitMethodWithoutDocblockImplementingTwoInterfacesDocumentingTheMethod' => [
+                'code' => '<?php
+                    interface I1
+                    {
+                        /** @return non-empty-string */
+                        public function f(): string;
+                    }
+
+                    interface I2
+                    {
+                        /** @return numeric-string */
+                        public function f(): string;
+                    }
+
+                    trait T
+                    {
+                        public function f(): string
+                        {
+                            return "1";
+                        }
+                    }
+
+                    final class E implements I1, I2
+                    {
+                        use T;
+                    }',
+                'error_message' => "The inherited return type 'non-empty-string' for I1::f",
+                'error_levels' => [],
+                'php_version' => '8.0',
+            ],
             'badTemplateUse' => [
                 'code' => '<?php
                     /**
