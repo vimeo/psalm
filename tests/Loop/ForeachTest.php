@@ -23,41 +23,26 @@ final class ForeachTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
-            'incrementOfAnItemInLoopIsNotFoldedLikeALiteral' => [
-                'code' => <<<'PHP'
-                    <?php
-                    /** @param list<string> $elems */
-                    function check(array $elems): bool {
-                        $results = ['one' => 0, 'two' => 0];
-
-                        foreach ($elems as $elem) {
-                            $results[$elem]++;
+            'foreachOverListKeepsTheEmptyStringOfAnEmptyOrNumericString' => [
+                'code' => '<?php
+                    /** @var list<array{foo: ""|numeric-string}> $rows */
+                    $rows = [];
+                    $row = ["foo" => "1"];
+                    foreach ($rows as $row) {
+                        if ("" === $row["foo"]) {
+                            throw new Exception("empty");
                         }
-
-                        return isset($results['one']) && $results['one'] == 4;
                     }
 
-                    class Counter {
-                        public int $count = 0;
-                    }
-
-                    $counts = ['one' => 0];
-                    $counter = new Counter();
-
-                    foreach ([1, 2, 3] as $_) {
-                        $counts['one']++;
-                        $counter->count += 1;
-                    }
-
-                    $once = ['one' => 0];
-                    $once['one']++;
-                    PHP,
+                    /** @var non-empty-list<""|numeric-string> $values */
+                    $values = ["1"];
+                    $value = "1";
+                    foreach ($values as $value) {
+                    }',
                 'assertions' => [
-                    '$counts===' => 'array{one: int<1, max>}',
-                    '$once===' => 'array{one: 1}',
+                    '$row===' => "array{foo: numeric-string}",
+                    '$value===' => "''|numeric-string",
                 ],
-                'ignored_issues' => [],
-                'php_version' => '8.1',
             ],
             'postDecrementInTheConditionOfAnIfThatBreaksOverAConcreteArray' => [
                 'code' => '<?php
@@ -1682,6 +1667,61 @@ final class ForeachTest extends TestCase
                 'assertions' => [],
                 'ignored_issues' => [],
                 'php_version' => '8.0',
+            ],
+            'readOfAnItemTheLoopDoesNotChangeIsFoldedLikeALiteral' => [
+                'code' => <<<'PHP'
+                    <?php
+                    $config = ['step' => 1];
+                    $counts = ['one' => 0];
+                    $next = 0;
+
+                    foreach ([1, 2, 3] as $_) {
+                        $counts['one']++;
+                        $next = $config['step'] + 1;
+                    }
+                    PHP,
+                'assertions' => [
+                    '$next===' => '2',
+                    '$counts===' => 'array{one: int<1, max>}',
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
+            'incrementOfAnItemInLoopIsNotFoldedLikeALiteral' => [
+                'code' => <<<'PHP'
+                    <?php
+                    /** @param list<string> $elems */
+                    function check(array $elems): bool {
+                        $results = ['one' => 0, 'two' => 0];
+
+                        foreach ($elems as $elem) {
+                            $results[$elem]++;
+                        }
+
+                        return isset($results['one']) && $results['one'] == 4;
+                    }
+
+                    class Counter {
+                        public int $count = 0;
+                    }
+
+                    $counts = ['one' => 0];
+                    $counter = new Counter();
+
+                    foreach ([1, 2, 3] as $_) {
+                        $counts['one']++;
+                        $counter->count += 1;
+                    }
+
+                    $once = ['one' => 0];
+                    $once['one']++;
+                    PHP,
+                'assertions' => [
+                    '$counts===' => 'array{one: int<1, max>}',
+                    '$once===' => 'array{one: 1}',
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
             ],
         ];
     }

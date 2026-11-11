@@ -11,6 +11,7 @@ use Psalm\Config;
 use Psalm\Context;
 use Psalm\Internal\Analyzer\FunctionLikeAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\Assignment\ArrayAssignmentAnalyzer;
+use Psalm\Internal\Analyzer\Statements\Expression\ExpressionIdentifier;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\Internal\Analyzer\TraitAnalyzer;
 use Psalm\Internal\Provider\NodeDataProvider;
@@ -335,7 +336,7 @@ final class ArithmeticOpAnalyzer
                 //we don't try to do arithmetics on what a loop can change in loops: variables, items, properties
                 $context === null
                 || $context->inside_loop === false
-                || (!self::isChangeableByLoop($left) && !self::isChangeableByLoop($right))
+                || (!self::isChangeableByLoop($left, $context) && !self::isChangeableByLoop($right, $context))
             )
         ) {
             // get_class is fine here because both classes are final.
@@ -1091,14 +1092,26 @@ final class ArithmeticOpAnalyzer
     }
 
     /**
-     * @psalm-pure
+     * What a loop can change: any variable, and an item or property of one the loop assigns or passes to a call
      */
-    private static function isChangeableByLoop(PhpParser\Node\Expr $expr): bool
+    private static function isChangeableByLoop(PhpParser\Node\Expr $expr, ?Context $context): bool
     {
-        return $expr instanceof PhpParser\Node\Expr\Variable
-            || $expr instanceof PhpParser\Node\Expr\ArrayDimFetch
-            || $expr instanceof PhpParser\Node\Expr\PropertyFetch
-            || $expr instanceof PhpParser\Node\Expr\StaticPropertyFetch;
+        if ($expr instanceof PhpParser\Node\Expr\Variable) {
+            return true;
+        }
+
+        if (!$expr instanceof PhpParser\Node\Expr\ArrayDimFetch
+            && !$expr instanceof PhpParser\Node\Expr\PropertyFetch
+            && !$expr instanceof PhpParser\Node\Expr\StaticPropertyFetch
+        ) {
+            return false;
+        }
+
+        $root_var_id = $context !== null ? ExpressionIdentifier::getRootVarId($expr, $context->self) : null;
+
+        return $root_var_id === null
+            || $context?->loop_scope === null
+            || isset($context->loop_scope->assigned_root_var_ids[$root_var_id]);
     }
 
     /**
