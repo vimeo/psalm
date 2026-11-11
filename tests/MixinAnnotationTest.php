@@ -11,6 +11,8 @@ use Psalm\Tests\Traits\InvalidCodeAnalysisTestTrait;
 use Psalm\Tests\Traits\InvalidCodeAnalysisWithIssuesTestTrait;
 use Psalm\Tests\Traits\ValidCodeAnalysisTestTrait;
 
+use const DIRECTORY_SEPARATOR;
+
 final class MixinAnnotationTest extends TestCase
 {
     use InvalidCodeAnalysisWithIssuesTestTrait;
@@ -1424,6 +1426,13 @@ final class MixinAnnotationTest extends TestCase
                     }',
                 'error_message' => 'UndefinedVariable',
             ],
+            'unparseableMixinTypeIsAnIssue' => [
+                'code' => '<?php
+                    /** @mixin Foo< */
+                    class A {}',
+                'error_message' => 'InvalidDocblock - src' . DIRECTORY_SEPARATOR . 'somefile.php:3:27 -'
+                    . ' No generic params provided for type in docblock for A',
+            ],
         ];
     }
 
@@ -1459,5 +1468,70 @@ final class MixinAnnotationTest extends TestCase
 
         // Only Mid names the deprecated class; Host merely reaches it through Mid.
         $this->assertSame([8], $deprecated_class_lines);
+    }
+
+    public function testInvalidMixinTypeDoesNotDiscardTheNextMixin(): void
+    {
+        $this->project_analyzer->getConfig()->throw_exception = false;
+        $file_path = self::$src_dir_path . 'somefile.php';
+
+        $this->addFile(
+            $file_path,
+            '<?php
+                final class Provider
+                {
+                    public function hello(): string
+                    {
+                        return "hello";
+                    }
+                }
+
+                /**
+                 * @mixin Foo<
+                 * @mixin Provider
+                 */
+                final class Host {}
+
+                function greet(Host $host): string
+                {
+                    return $host->hello();
+                }',
+        );
+        $this->analyzeFile($file_path, new Context());
+
+        $issue_types = [];
+        foreach (IssueBuffer::getIssuesDataForFile($file_path) as $issue) {
+            $issue_types[] = $issue->type;
+        }
+
+        $this->assertSame(['InvalidDocblock'], $issue_types);
+        $this->assertSame(
+            'Host',
+            $this->project_analyzer->getCodebase()->classlike_storage_provider->get('Host')->mixin_declaring_fqcln,
+        );
+    }
+
+    public function testUnparseableMixinAloneBehavesLikeNoMixin(): void
+    {
+        $this->project_analyzer->getConfig()->throw_exception = false;
+        $file_path = self::$src_dir_path . 'somefile.php';
+
+        $this->addFile(
+            $file_path,
+            '<?php
+                /** @mixin Foo< */
+                final class A {}',
+        );
+        $this->analyzeFile($file_path, new Context());
+
+        $issue_types = [];
+        foreach (IssueBuffer::getIssuesDataForFile($file_path) as $issue) {
+            $issue_types[] = $issue->type;
+        }
+
+        $this->assertSame(['InvalidDocblock'], $issue_types);
+        $this->assertNull(
+            $this->project_analyzer->getCodebase()->classlike_storage_provider->get('A')->mixin_declaring_fqcln,
+        );
     }
 }

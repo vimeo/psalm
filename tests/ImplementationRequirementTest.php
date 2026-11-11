@@ -8,6 +8,8 @@ use Override;
 use Psalm\Tests\Traits\InvalidCodeAnalysisTestTrait;
 use Psalm\Tests\Traits\ValidCodeAnalysisTestTrait;
 
+use const DIRECTORY_SEPARATOR;
+
 final class ImplementationRequirementTest extends TestCase
 {
     use ValidCodeAnalysisTestTrait;
@@ -59,6 +61,22 @@ final class ImplementationRequirementTest extends TestCase
                 trait ImposesPhpstanImplementationRequirements { }
             ',
         );
+
+        $this->addFile(
+            'generic_trait.php',
+            '<?php
+                namespace ImplementationRequirements\Generic;
+
+                /** @template T */
+                interface GenericA { }
+
+                /**
+                 * @template T
+                 * @psalm-require-implements GenericA<T>
+                 */
+                trait ImposesGenericImplementationRequirement { }
+            ',
+        );
     }
 
     /**
@@ -76,6 +94,33 @@ final class ImplementationRequirementTest extends TestCase
 
                     class Valid implements A, B {
                         use ImposesImplementationRequirements;
+                    }
+                ',
+            ],
+            'implementsGenericRequirement' => [
+                'code' => '<?php
+                    use ImplementationRequirements\Generic\GenericA;
+                    use ImplementationRequirements\Generic\ImposesGenericImplementationRequirement;
+
+                    /**
+                     * @template T
+                     * @implements GenericA<T>
+                     */
+                    class Valid implements GenericA {
+                        /** @use ImposesGenericImplementationRequirement<T> */
+                        use ImposesGenericImplementationRequirement;
+                    }
+                ',
+            ],
+            'implementsGenericRequirementWithTheSameTypeArgument' => [
+                'code' => '<?php
+                    use ImplementationRequirements\Generic\GenericA;
+                    use ImplementationRequirements\Generic\ImposesGenericImplementationRequirement;
+
+                    /** @implements GenericA<string> */
+                    class Valid implements GenericA {
+                        /** @use ImposesGenericImplementationRequirement<string> */
+                        use ImposesGenericImplementationRequirement;
                     }
                 ',
             ],
@@ -121,6 +166,31 @@ final class ImplementationRequirementTest extends TestCase
                 ',
                 'error_message' => 'requires using class to implement',
             ],
+            'doesNotImplementGenericRequirement' => [
+                'code' => '<?php
+                    use ImplementationRequirements\Generic\ImposesGenericImplementationRequirement;
+
+                    /** @template T */
+                    class Invalid {
+                        /** @use ImposesGenericImplementationRequirement<T> */
+                        use ImposesGenericImplementationRequirement;
+                    }
+                ',
+                'error_message' => 'requires using class to implement ImplementationRequirements\Generic\GenericA',
+            ],
+            'implementsGenericRequirementWithAnotherTypeArgument' => [
+                'code' => '<?php
+                    use ImplementationRequirements\Generic\GenericA;
+                    use ImplementationRequirements\Generic\ImposesGenericImplementationRequirement;
+
+                    /** @implements GenericA<string> */
+                    class Invalid implements GenericA {
+                        /** @use ImposesGenericImplementationRequirement<int> */
+                        use ImposesGenericImplementationRequirement;
+                    }
+                ',
+                'error_message' => 'requires using class to implement ImplementationRequirements\Generic\GenericA',
+            ],
             'onlyImplementsOneRequirementWithPhpstanTags' => [
                 'code' => '<?php
                     use ImplementationRequirements\Trait\ImposesPhpstanImplementationRequirements;
@@ -131,6 +201,13 @@ final class ImplementationRequirementTest extends TestCase
                     }
                 ',
                 'error_message' => 'requires using class to implement',
+            ],
+            'unparseableImplementationRequirementIsAnIssue' => [
+                'code' => '<?php
+                    /** @psalm-require-implements SomeInterface< */
+                    trait T {}',
+                'error_message' => 'InvalidDocblock - src' . DIRECTORY_SEPARATOR . 'somefile.php:3:27 -'
+                    . ' No generic params provided for type in docblock for T',
             ],
         ];
     }
