@@ -7,7 +7,6 @@ namespace Psalm\Internal\TypeVisitor;
 use Override;
 use Psalm\Type\Atomic\TArray;
 use Psalm\Type\Atomic\TFalse;
-use Psalm\Type\Atomic\TIntRange;
 use Psalm\Type\Atomic\TLiteralFloat;
 use Psalm\Type\Atomic\TLiteralInt;
 use Psalm\Type\Atomic\TLiteralString;
@@ -23,13 +22,6 @@ final class ContainsLiteralVisitor extends TypeVisitor
     private bool $contains_literal = false;
 
     /**
-     * @psalm-mutation-free
-     */
-    public function __construct(private readonly bool $closed_int_ranges_are_literals = false)
-    {
-    }
-
-    /**
      * @psalm-external-mutation-free
      */
     #[Override]
@@ -40,16 +32,6 @@ final class ContainsLiteralVisitor extends TypeVisitor
             || $type instanceof TLiteralFloat
             || $type instanceof TTrue
             || $type instanceof TFalse
-        ) {
-            $this->contains_literal = true;
-            return self::STOP_TRAVERSAL;
-        }
-
-        // a closed range, like the one inferred for the keys of a list literal, is as precise as the literals
-        if ($this->closed_int_ranges_are_literals
-            && $type instanceof TIntRange
-            && $type->min_bound !== null
-            && $type->max_bound !== null
         ) {
             $this->contains_literal = true;
             return self::STOP_TRAVERSAL;

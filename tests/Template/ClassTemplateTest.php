@@ -4711,24 +4711,21 @@ final class ClassTemplateTest extends TestCase
                     $fromList = new KeyedCollection(["a", "b"]);
                     takesIntKeys($fromList);',
             ],
-            'closedIntRangeInAGeneralizedArrayParamIsAcceptedLikeALiteral' => [
+            'constructorOfAListVariableGeneralizes' => [
                 'code' => '<?php
-                    /** @template T */
-                    final class Box {
-                        /** @param T $value */
-                        public function __construct(public mixed $value) {}
+                    /** @template TKey */
+                    final class KeyedCollection {
+                        /** @param array<TKey, mixed> $items */
+                        public function __construct(array $items) {}
                     }
 
-                    /** @param Box<array<int, Throwable>> $box */
-                    function takesBox(Box $box): void {}
+                    /** @param KeyedCollection<int> $c */
+                    function takesIntKeys(KeyedCollection $c): void {}
 
-                    /** @param Box<array<int<0, 1>, Exception>> $box */
-                    function passes(Box $box): void {
-                        takesBox($box);
+                    /** @param list<string> $items */
+                    function fromListVariable(array $items): void {
+                        takesIntKeys(new KeyedCollection($items));
                     }',
-                'assertions' => [],
-                'ignored_issues' => [],
-                'php_version' => '8.0',
             ],
             'nullReturnAgainstTemplatedTypeSilent' => [
                 'code' => '<?php
@@ -5991,22 +5988,24 @@ final class ClassTemplateTest extends TestCase
     public static function providerInvalidCodeParse(): iterable
     {
         return [
-            'openIntRangeIsStillRejectedForAnInvariantParam' => [
+            'declaredClosedIntRangeIsStillInvariant' => [
                 'code' => '<?php
-                    /** @template TKey */
-                    final class KeyedCollection {
-                        /** @param array<TKey, mixed> $items */
-                        public function __construct(array $items) {}
+                    /** @template T */
+                    final class Box {
+                        /** @param T $value */
+                        public function __construct(public mixed $value) {}
                     }
 
-                    /** @param KeyedCollection<int> $c */
-                    function takesIntKeys(KeyedCollection $c): void {}
+                    /** @param Box<int> $box */
+                    function takesBox(Box $box): void {}
 
-                    /** @param list<string> $items */
-                    function fromListVariable(array $items): void {
-                        takesIntKeys(new KeyedCollection($items));
+                    /** @param Box<int<1, 12>> $box */
+                    function month(Box $box): void {
+                        takesBox($box);
                     }',
                 'error_message' => 'InvalidArgument',
+                'error_levels' => [],
+                'php_version' => '8.0',
             ],
             'differentTypesFromTwoConstructionsOfAGenericClassAreNotOneType' => [
                 'code' => '<?php
