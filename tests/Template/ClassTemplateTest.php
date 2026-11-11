@@ -57,6 +57,30 @@ final class ClassTemplateTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'listParamInheritedFromATemplatedParentAcceptsAList' => [
+                'code' => '<?php
+                    /** @template T */
+                    abstract class P {
+                        /** @param list<string> $x */
+                        abstract public function f(array $x): void;
+
+                        /** @param non-empty-list<string> $x */
+                        abstract public function g(array $x): void;
+                    }
+
+                    /** @extends P<string> */
+                    final class C extends P {
+                        /** @inheritDoc */
+                        public function f(array $x): void {}
+
+                        /** @inheritDoc */
+                        public function g(array $x): void {}
+                    }
+
+                    $c = new C();
+                    $c->f(["a", "b"]);
+                    $c->g(["a", "b"]);',
+            ],
             'sameTypeFromTwoConstructionsOfAGenericClassIsOneType' => [
                 'code' => '<?php
                     class obj {}
@@ -4697,36 +4721,6 @@ final class ClassTemplateTest extends TestCase
 
                     takesInts(new SomeCollection([1, 2, 3]));',
             ],
-            'constructorListKeysGeneralize' => [
-                'code' => '<?php
-                    /** @template TKey */
-                    final class KeyedCollection {
-                        /** @param array<TKey, mixed> $items */
-                        public function __construct(array $items) {}
-                    }
-
-                    /** @param KeyedCollection<int> $c */
-                    function takesIntKeys(KeyedCollection $c): void {}
-
-                    $fromList = new KeyedCollection(["a", "b"]);
-                    takesIntKeys($fromList);',
-            ],
-            'constructorOfAListVariableGeneralizes' => [
-                'code' => '<?php
-                    /** @template TKey */
-                    final class KeyedCollection {
-                        /** @param array<TKey, mixed> $items */
-                        public function __construct(array $items) {}
-                    }
-
-                    /** @param KeyedCollection<int> $c */
-                    function takesIntKeys(KeyedCollection $c): void {}
-
-                    /** @param list<string> $items */
-                    function fromListVariable(array $items): void {
-                        takesIntKeys(new KeyedCollection($items));
-                    }',
-            ],
             'nullReturnAgainstTemplatedTypeSilent' => [
                 'code' => '<?php
                     /** @template T as array|object|string */
@@ -5978,6 +5972,36 @@ final class ClassTemplateTest extends TestCase
                 'ignored_issues' => [],
                 'php_version' => '8.0',
             ],
+            'constructorListKeysGeneralize' => [
+                'code' => '<?php
+                    /** @template TKey */
+                    final class KeyedCollection {
+                        /** @param array<TKey, mixed> $items */
+                        public function __construct(array $items) {}
+                    }
+
+                    /** @param KeyedCollection<int> $c */
+                    function takesIntKeys(KeyedCollection $c): void {}
+
+                    $fromList = new KeyedCollection(["a", "b"]);
+                    takesIntKeys($fromList);',
+            ],
+            'constructorOfAListVariableGeneralizes' => [
+                'code' => '<?php
+                    /** @template TKey */
+                    final class KeyedCollection {
+                        /** @param array<TKey, mixed> $items */
+                        public function __construct(array $items) {}
+                    }
+
+                    /** @param KeyedCollection<int> $c */
+                    function takesIntKeys(KeyedCollection $c): void {}
+
+                    /** @param list<string> $items */
+                    function fromListVariable(array $items): void {
+                        takesIntKeys(new KeyedCollection($items));
+                    }',
+            ],
         ];
     }
 
@@ -5988,24 +6012,22 @@ final class ClassTemplateTest extends TestCase
     public static function providerInvalidCodeParse(): iterable
     {
         return [
-            'declaredClosedIntRangeIsStillInvariant' => [
+            'listParamInheritedFromATemplatedParentRejectsAWrongList' => [
                 'code' => '<?php
                     /** @template T */
-                    final class Box {
-                        /** @param T $value */
-                        public function __construct(public mixed $value) {}
+                    abstract class P {
+                        /** @param list<string> $x */
+                        abstract public function f(array $x): void;
                     }
 
-                    /** @param Box<int> $box */
-                    function takesBox(Box $box): void {}
+                    /** @extends P<string> */
+                    final class C extends P {
+                        /** @inheritDoc */
+                        public function f(array $x): void {}
+                    }
 
-                    /** @param Box<int<1, 12>> $box */
-                    function month(Box $box): void {
-                        takesBox($box);
-                    }',
+                    (new C())->f(["a", 1]);',
                 'error_message' => 'InvalidArgument',
-                'error_levels' => [],
-                'php_version' => '8.0',
             ],
             'differentTypesFromTwoConstructionsOfAGenericClassAreNotOneType' => [
                 'code' => '<?php
@@ -7141,6 +7163,25 @@ final class ClassTemplateTest extends TestCase
                      */
                     final class A {}',
                 'error_message' => 'InvalidDocblock - src' . DIRECTORY_SEPARATOR . 'somefile.php:4:33 - Missing default after = for template T in docblock for A',
+            ],
+            'declaredClosedIntRangeIsStillInvariant' => [
+                'code' => '<?php
+                    /** @template T */
+                    final class Box {
+                        /** @param T $value */
+                        public function __construct(public mixed $value) {}
+                    }
+
+                    /** @param Box<int> $box */
+                    function takesBox(Box $box): void {}
+
+                    /** @param Box<int<1, 12>> $box */
+                    function month(Box $box): void {
+                        takesBox($box);
+                    }',
+                'error_message' => 'InvalidArgument',
+                'error_levels' => [],
+                'php_version' => '8.0',
             ],
         ];
     }
