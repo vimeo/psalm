@@ -6,6 +6,7 @@ namespace Psalm;
 
 use InvalidArgumentException;
 use Psalm\Internal\Analyzer\ConstructorExits;
+use Psalm\Internal\Analyzer\Statements\Expression\Assignment\InstancePropertyAssignmentAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\Fetch\VariableFetchAnalyzer;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\Internal\Clause;
@@ -24,8 +25,10 @@ use Psalm\Type\Atomic\TObjectWithProperties;
 use Psalm\Type\Union;
 use RuntimeException;
 
+use function array_keys;
 use function array_search;
 use function array_shift;
+use function array_values;
 use function assert;
 use function count;
 use function in_array;
@@ -876,6 +879,184 @@ final class Context
                 $type = $builder->freeze();
             }
         }
+    }
+
+    /**
+     * Resets the static properties a callee assigns directly to their declared types
+     *
+     * @param array<string, bool> $mutations MethodStorage::$static_property_mutations
+     * @param string $called_class the class the method is called on: what `static` stands for
+     * @param string $appearing_class the class the method appears in, as its own or through a trait it uses: what
+     *                                `self` stands for
+     */
+    public function resetMutatedStaticProperties(
+        array $mutations,
+        string $called_class,
+        string $appearing_class,
+        Codebase $codebase,
+    ): void {
+        $self_class = $appearing_class;
+
+        // the classes a mutated property can belong to, by its name
+        $mutated_classes = [];
+
+        foreach ($mutations as $mutation => $_) {
+            $separator = strpos($mutation, '::$');
+
+            if ($separator === false) {
+                continue;
+            }
+
+            $mutation_class = substr($mutation, 0, $separator);
+            $property_name = substr($mutation, $separator + 3);
+
+            if ($mutation_class === 'self') {
+                $class_names = [$self_class];
+            } elseif ($mutation_class === 'static') {
+                $class_names = [$called_class];
+            } elseif ($mutation_class === 'parent') {
+                // `parent::$p` is the property of the parent: what a class further up has of its own is another one
+                $parent_class = $codebase->classlike_storage_provider->has($self_class)
+                    ? $codebase->classlike_storage_provider->get($self_class)->parent_class
+                    : null;
+                $class_names = $parent_class !== null ? [$parent_class] : [];
+            } else {
+                $class_names = [$mutation_class];
+            }
+
+            foreach ($class_names as $class_name) {
+                $mutated_classes[$property_name][strtolower($class_name)] = true;
+            }
+        }
+
+        $var_ids = array_keys($this->vars_in_scope);
+
+        foreach ($this->clauses as $clause) {
+            $var_ids = [...$var_ids, ...array_keys($clause->possibilities)];
+        }
+
+        foreach ($var_ids as $var_id) {
+            $root_id = substr($var_id, 0, strcspn($var_id, '[-'));
+            $class_length = (int) strpos($root_id, '::');
+            $class_name = self::resolveClassOfStaticPropertyId(
+                $codebase,
+                substr($root_id, 0, $class_length),
+                $this->self,
+            );
+            $property_name = substr($root_id, $class_length + 3);
+
+            if (!isset($mutated_classes[$property_name])
+                || !self::isMutatedStaticPropertyClass(
+                    $codebase,
+                    $class_name,
+                    $property_name,
+                    $mutated_classes[$property_name],
+                )
+            ) {
+                continue;
+            }
+
+            $declared_type = null;
+
+            if ($root_id === $var_id && $codebase->classlike_storage_provider->has($class_name)) {
+                $declared_type = InstancePropertyAssignmentAnalyzer::getExpandedPropertyType(
+                    $codebase,
+                    $class_name,
+                    substr($root_id, $class_length + 3),
+                    $codebase->classlike_storage_provider->get($class_name),
+                );
+            }
+
+            $this->remove($var_id);
+            $this->removeVarFromConflictingClauses($var_id);
+            $this->possibly_assigned_var_ids[$var_id] = true;
+
+            if ($declared_type !== null && isset($this->vars_in_scope[$var_id]) === false) {
+                $this->vars_in_scope[$var_id] = $declared_type;
+            }
+        }
+    }
+
+    /**
+     * @param array<string, true> $mutated_class_names lowercased
+     */
+    private static function isMutatedStaticPropertyClass(
+        Codebase $codebase,
+        string $class_name,
+        string $property_name,
+        array $mutated_class_names,
+    ): bool {
+        $class_name_lc = strtolower($class_name);
+
+        // a `self`, `static` or `parent` of a caller whose class isn't known can be the property of any of them
+        if (in_array($class_name_lc, ['self', 'static', 'parent'], true)) {
+            return true;
+        }
+
+        $declaring_class = self::getStaticPropertyDeclaringClass($codebase, $class_name, $property_name);
+
+        foreach ($mutated_class_names as $mutated_class_name => $_) {
+            // a class that redeclares the property has a property of its own
+            if (self::getStaticPropertyDeclaringClass($codebase, $mutated_class_name, $property_name)
+                === $declaring_class
+            ) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    /**
+     * The class a `self::`, `static::` or `parent::` of the code the context is of stands for
+     *
+     * @psalm-capabilities read-props
+     */
+    private static function resolveClassOfStaticPropertyId(
+        Codebase $codebase,
+        string $class_name,
+        ?string $context_self,
+    ): string {
+        $class_name_lc = strtolower($class_name);
+
+        if ($context_self === null || !in_array($class_name_lc, ['self', 'static', 'parent'], true)) {
+            return $class_name;
+        }
+
+        if ($class_name_lc !== 'parent') {
+            return $context_self;
+        }
+
+        return $codebase->classlike_storage_provider->has($context_self)
+            ? $codebase->classlike_storage_provider->get($context_self)->parent_class ?? $class_name
+            : $class_name;
+    }
+
+    private static function getStaticPropertyDeclaringClass(
+        Codebase $codebase,
+        string $class_name,
+        string $property_name,
+    ): string {
+        $declaring_class = $codebase->classOrInterfaceExists($class_name)
+            ? $codebase->properties->getDeclaringClassForProperty($class_name . '::$' . $property_name, true)
+            : null;
+
+        // every class using a trait has a property of its own, which its subclasses share
+        if ($declaring_class !== null
+            && $codebase->classlike_storage_provider->get($declaring_class)->is_trait
+        ) {
+            $class_storage = $codebase->classlike_storage_provider->get($class_name);
+
+            foreach ([$class_name, ...array_values($class_storage->parent_classes)] as $candidate) {
+                if (isset($codebase->classlike_storage_provider->get($candidate)->used_traits[
+                    strtolower($declaring_class)
+                ])) {
+                    return strtolower($candidate);
+                }
+            }
+        }
+
+        return strtolower($declaring_class ?? $class_name);
     }
 
     /**
