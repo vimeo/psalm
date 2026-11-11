@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Psalm\Tests;
 
+use Override;
 use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\Attributes\Test;
 use Psalm\Config;
@@ -13,7 +14,14 @@ use Psalm\Exception\CodeException;
 use Psalm\Internal\Analyzer\DataFlowNodeData;
 use Psalm\Internal\Analyzer\IssueData;
 use Psalm\IssueBuffer;
+use Psalm\Plugin\EventHandler\Event\FunctionReturnTypeProviderEvent;
+use Psalm\Plugin\EventHandler\Event\MethodReturnTypeProviderEvent;
+use Psalm\Plugin\EventHandler\FunctionReturnTypeProviderInterface;
+use Psalm\Plugin\EventHandler\MethodReturnTypeProviderInterface;
+use Psalm\PluginRegistrationSocket;
+use Psalm\Type;
 use Psalm\Type\TaintKind;
+use Psalm\Type\Union;
 
 use function array_count_values;
 use function array_diff;
@@ -433,6 +441,120 @@ final class TaintTest extends TestCase
                 [22, 'TaintedTextWithQuotes'],
                 [23, 'TaintedHtml'],
                 [23, 'TaintedTextWithQuotes'],
+            ],
+            array_map(static fn(IssueData $issue): array => [$issue->line_from, $issue->type], $issues),
+        );
+    }
+
+    /**
+     * A plugin supplying the return type of a call doesn't make the call lose the taints its declaration gives.
+     */
+    public function testTaintOfACallWhoseReturnTypeAPluginProvides(): void
+    {
+        $this->testConfig->throw_exception = false;
+        $file_path = self::$src_dir_path . 'somefile.php';
+        $this->addFile($file_path, '<?php
+            class Request {
+                /** @psalm-taint-source input */
+                public function get(): mixed {
+                    return null;
+                }
+
+                /** @psalm-taint-source input */
+                public static function make(): mixed {
+                    return null;
+                }
+
+                public function clean(): mixed {
+                    return null;
+                }
+
+                /** @psalm-flow ($v) -> return */
+                public function pass(string $v): mixed {
+                    return $v;
+                }
+            }
+
+            class FormRequest extends Request {}
+
+            /** @psalm-taint-source input */
+            function readInput(): mixed {
+                return null;
+            }
+
+            function cleanInput(): mixed {
+                return null;
+            }
+
+            $request = new Request();
+            echo $request->get();
+            echo $request->clean();
+            echo $request->pass((string) $_GET["x"]);
+            echo Request::make();
+            echo (new FormRequest())->get();
+            echo readInput();
+            echo cleanInput();
+        ');
+        $this->project_analyzer->setPhpVersion('8.0', 'tests');
+        $this->project_analyzer->trackTaintedInputs();
+
+        $codebase = $this->project_analyzer->getCodebase();
+        $socket = new PluginRegistrationSocket($codebase->config, $codebase);
+        $socket->registerHooksFromClass((new class implements MethodReturnTypeProviderInterface {
+            /**
+             * @psalm-pure
+             * @return array<string>
+             */
+            #[Override]
+            public static function getClassLikeNames(): array
+            {
+                return ['Request'];
+            }
+
+            #[Override]
+            public static function getMethodReturnType(MethodReturnTypeProviderEvent $event): ?Union
+            {
+                return Type::getString();
+            }
+        })::class);
+        $socket->registerHooksFromClass((new class implements FunctionReturnTypeProviderInterface {
+            /**
+             * @psalm-pure
+             * @return array<lowercase-string>
+             */
+            #[Override]
+            public static function getFunctionIds(): array
+            {
+                return ['readinput', 'cleaninput'];
+            }
+
+            #[Override]
+            public static function getFunctionReturnType(FunctionReturnTypeProviderEvent $event): ?Union
+            {
+                return Type::getString();
+            }
+        })::class);
+        $codebase->config->initializePlugins($this->project_analyzer);
+
+        $this->analyzeFile($file_path, new Context(), false);
+
+        $issues = array_values(array_filter(
+            IssueBuffer::getIssuesDataForFile($file_path),
+            static fn(IssueData $issue): bool => !in_array($issue->type, self::IGNORE, true),
+        ));
+
+        self::assertEqualsCanonicalizing(
+            [
+                [35, 'TaintedHtml'],
+                [35, 'TaintedTextWithQuotes'],
+                [37, 'TaintedHtml'],
+                [37, 'TaintedTextWithQuotes'],
+                [38, 'TaintedHtml'],
+                [38, 'TaintedTextWithQuotes'],
+                [39, 'TaintedHtml'],
+                [39, 'TaintedTextWithQuotes'],
+                [40, 'TaintedHtml'],
+                [40, 'TaintedTextWithQuotes'],
             ],
             array_map(static fn(IssueData $issue): array => [$issue->line_from, $issue->type], $issues),
         );
@@ -975,6 +1097,30 @@ final class TaintTest extends TestCase
                     }
 
                     v(zzz: (string) $_GET["x"]);',
+            ],
+            'guardAnOverrideParameterTakesNoArgumentOfTheParentVariadicItDoesNotBind' => [
+                'code' => '<?php // --taint-analysis
+                    class Base {
+                        public function go(string ...$rest): void {}
+                    }
+
+                    class Child extends Base {
+                        /** @psalm-suppress ParamNameMismatch */
+                        #[\Override]
+                        public function go(string $sink = "", string ...$rest): void {
+                            echo $sink;
+                        }
+                    }
+
+                    function viaParent(Base $receiver): void {
+                        $receiver->go(sink: "");
+                        $receiver->go(SINK: (string) $_GET["x"]);
+                        $receiver->go(zzz: (string) $_GET["x"]);
+                        $receiver->go("", (string) $_GET["x"]);
+                        $receiver->go(...["", (string) $_GET["x"]]);
+                        $receiver->go("", ...["", (string) $_GET["x"]]);
+                        $receiver->go(...["sink" => "", "other" => (string) $_GET["x"]]);
+                    }',
             ],
             'taintSourceUnderAKeyOfTheReturnOnly' => [
                 'code' => '<?php // --taint-analysis
@@ -5755,6 +5901,180 @@ final class TaintTest extends TestCase
                     }
 
                     v("", (string) $_GET["x"]);',
+                'error_message' => 'TaintedHtml',
+            ],
+            'taintAnOverrideParameterWithAPositionalArgumentOfTheParentVariadic' => [
+                'code' => '<?php // --taint-analysis
+                    class Base {
+                        public function go(string ...$rest): void {}
+                    }
+
+                    class Child extends Base {
+                        /** @psalm-suppress ParamNameMismatch */
+                        #[\Override]
+                        public function go(string $sink = "", string ...$rest): void {
+                            echo $sink;
+                        }
+                    }
+
+                    function viaParent(Base $receiver): void {
+                        $receiver->go((string) $_GET["x"]);
+                    }',
+                'error_message' => 'TaintedHtml',
+            ],
+            'taintAnOverrideParameterWithANamedArgumentOfTheParentVariadic' => [
+                'code' => '<?php // --taint-analysis
+                    class Base {
+                        public function go(string ...$rest): void {}
+                    }
+
+                    class Child extends Base {
+                        /** @psalm-suppress ParamNameMismatch */
+                        #[\Override]
+                        public function go(string $other = "", string $sink = "", string ...$rest): void {
+                            echo $sink;
+                        }
+                    }
+
+                    function viaParent(Base $receiver): void {
+                        $receiver->go(sink: (string) $_GET["x"]);
+                    }',
+                'error_message' => 'TaintedHtml',
+            ],
+            'taintALaterOverrideParameterWithAPositionalArgumentOfTheParentVariadic' => [
+                'code' => '<?php // --taint-analysis
+                    class Base {
+                        public function go(string ...$rest): void {}
+                    }
+
+                    class Child extends Base {
+                        /** @psalm-suppress ParamNameMismatch */
+                        #[\Override]
+                        public function go(string $a = "", string $b = "", string ...$rest): void {
+                            echo $b;
+                        }
+                    }
+
+                    function viaParent(Base $receiver): void {
+                        $receiver->go("", (string) $_GET["x"]);
+                    }',
+                'error_message' => 'TaintedHtml',
+            ],
+            'taintAnOverrideParameterWithANamedArgumentOfTheParentVariadicThroughStatic' => [
+                'code' => '<?php // --taint-analysis
+                    class Base {
+                        public static function s(string ...$rest): void {}
+
+                        public static function run(): void {
+                            static::s(sink: (string) $_GET["x"]);
+                        }
+                    }
+
+                    class Child extends Base {
+                        /** @psalm-suppress ParamNameMismatch */
+                        #[\Override]
+                        public static function s(string $sink = "", string ...$rest): void {
+                            echo $sink;
+                        }
+                    }',
+                'error_message' => 'TaintedHtml',
+            ],
+            'taintAnOverrideParameterWithAnUnpackedElementOfTheParentVariadic' => [
+                'code' => '<?php // --taint-analysis
+                    class Base {
+                        public function go(string ...$rest): void {}
+                    }
+
+                    class Child extends Base {
+                        /** @psalm-suppress ParamNameMismatch */
+                        #[\Override]
+                        public function go(string $sink = "", string ...$rest): void {
+                            echo $sink;
+                        }
+                    }
+
+                    function viaParent(Base $receiver): void {
+                        $receiver->go(...[(string) $_GET["x"], ""]);
+                    }',
+                'error_message' => 'TaintedHtml',
+            ],
+            'taintAnOverrideParameterWithAnUnpackedKeyOfTheParentVariadic' => [
+                'code' => '<?php // --taint-analysis
+                    class Base {
+                        public function go(string ...$rest): void {}
+                    }
+
+                    class Child extends Base {
+                        /** @psalm-suppress ParamNameMismatch */
+                        #[\Override]
+                        public function go(string $sink = "", string ...$rest): void {
+                            echo $sink;
+                        }
+                    }
+
+                    function viaParent(Base $receiver): void {
+                        $receiver->go(...["sink" => (string) $_GET["x"]]);
+                    }',
+                'error_message' => 'TaintedHtml',
+            ],
+            'guardTaintAnOverrideOfTheSameSignatureWithAnUnpackedElementOfTheParentVariadic' => [
+                'code' => '<?php // --taint-analysis
+                    class Base {
+                        public function go(string ...$rest): void {}
+                    }
+
+                    class Child extends Base {
+                        #[\Override]
+                        public function go(string ...$rest): void {
+                            echo $rest[0];
+                        }
+                    }
+
+                    function viaParent(Base $receiver): void {
+                        $receiver->go(...[(string) $_GET["x"]]);
+                    }',
+                'error_message' => 'TaintedHtml',
+            ],
+            'guardTaintAnOverrideOfTheSameSignatureWithAnUnpackedKeyOfTheParentVariadic' => [
+                'code' => '<?php // --taint-analysis
+                    class Base {
+                        public function go(string ...$rest): void {}
+                    }
+
+                    class Child extends Base {
+                        #[\Override]
+                        public function go(string ...$rest): void {
+                            echo $rest["sink"];
+                        }
+                    }
+
+                    function viaParent(Base $receiver): void {
+                        $receiver->go(...["sink" => (string) $_GET["x"]]);
+                    }',
+                'error_message' => 'TaintedHtml',
+            ],
+            'taintAnOverrideParameterWithAnUnpackedArrayOfAnUnknownShapeOfTheParentVariadic' => [
+                'code' => '<?php // --taint-analysis
+                    class Base {
+                        public function go(string ...$rest): void {}
+                    }
+
+                    class Child extends Base {
+                        /** @psalm-suppress ParamNameMismatch */
+                        #[\Override]
+                        public function go(string $a = "", string $sink = "", string ...$rest): void {
+                            echo $sink;
+                        }
+                    }
+
+                    function viaParent(Base $receiver): void {
+                        $taints = [];
+                        foreach ([1, 2] as $_) {
+                            $taints[] = (string) $_GET["x"];
+                        }
+
+                        $receiver->go(...$taints);
+                    }',
                 'error_message' => 'TaintedHtml',
             ],
             'taintSourceUnderAKeyOfTheReturnOfAFunction' => [
