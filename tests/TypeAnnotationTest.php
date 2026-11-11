@@ -22,6 +22,29 @@ final class TypeAnnotationTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'typeImportRenamedWithAs' => [
+                'code' => '<?php
+                    namespace A {
+                        /**
+                         * @psalm-type Phone = array{phone: string}
+                         */
+                        final class Phone {}
+                    }
+
+                    namespace B {
+                        use A\Phone;
+
+                        /**
+                         * @psalm-import-type Phone from Phone as PhoneType
+                         */
+                        final class User {
+                            /** @param PhoneType $arg */
+                            public function foo(array $arg): string {
+                                return $arg["phone"];
+                            }
+                        }
+                    }',
+            ],
             'typeAliasOfAClassWithATemplateNamedLikeAShapeKey' => [
                 'code' => '<?php
                     /**
@@ -1189,15 +1212,24 @@ final class TypeAnnotationTest extends TestCase
     public static function providerInvalidCodeParse(): iterable
     {
         return [
-            'typeAliasImportedFromAnExistingClassWithoutTheAliasDoesNotCrash' => [
+            'typeImportNamedLikeAnExistingClass' => [
                 'code' => '<?php
-                    /** @psalm-import-type StageExpression from \\Directory */
-                    abstract class Stage
-                    {
-                        /** @return StageExpression */
-                        abstract public function getExpression(): ?array;
+                    namespace A {
+                        /**
+                         * @psalm-type Phone = array{phone: string}
+                         */
+                        final class Phone {}
+                    }
+
+                    namespace B {
+                        use A\Phone;
+
+                        /**
+                         * @psalm-import-type Phone from Phone
+                         */
+                        final class User {}
                     }',
-                'error_message' => 'MismatchingDocblockReturnType',
+                'error_message' => 'InvalidTypeImport - src' . DIRECTORY_SEPARATOR . 'somefile.php:13:47 - Type alias Phone imported from A\Phone is named like the class A\Phone',
             ],
             'typeAliasUsingTheTemplateOfItsClassInANamespace' => [
                 'code' => '<?php
@@ -1568,6 +1600,16 @@ final class TypeAnnotationTest extends TestCase
                 'error_message' => 'InvalidDocblock',
                 'error_levels' => [],
                 'php_version' => '8.1',
+            ],
+            'typeAliasImportedFromAnExistingClassWithoutTheAliasDoesNotCrash' => [
+                'code' => '<?php
+                    /** @psalm-import-type StageExpression from \\Directory */
+                    abstract class Stage
+                    {
+                        /** @return StageExpression */
+                        abstract public function getExpression(): ?array;
+                    }',
+                'error_message' => 'MismatchingDocblockReturnType',
             ],
         ];
     }
