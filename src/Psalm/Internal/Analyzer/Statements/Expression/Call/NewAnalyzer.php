@@ -590,15 +590,16 @@ final class NewAnalyzer extends CallAnalyzer
         }
 
 
-        if ($context->self
-            && !$context->collect_initializations
+        $caller_identifier = $statements_analyzer->getFullyQualifiedFunctionMethodOrNamespaceName() ?? '';
+
+        if (!$context->collect_initializations
             && !$context->collect_mutations
-            && !NamespaceAnalyzer::isWithinAny($context->self, $storage->internal)
+            && !NamespaceAnalyzer::isWithinAny($caller_identifier, $storage->internal)
         ) {
             IssueBuffer::maybeAdd(
                 new InternalClass(
                     $fq_class_name . ' is internal to ' . InternalClass::listToPhrase($storage->internal)
-                        . ' but called from ' . $context->self,
+                        . ' but called from ' . ($caller_identifier ?: 'root namespace'),
                     new CodeLocation($statements_analyzer->getSource(), $stmt),
                     $fq_class_name,
                 ),
@@ -631,6 +632,11 @@ final class NewAnalyzer extends CallAnalyzer
             }
 
             $template_result ??= new TemplateResult([], []);
+
+            if (!self::isInTrait($statements_analyzer)) {
+                $template_result->static_class_type = $fq_class_name;
+                $template_result->static_class_is_final = $storage->final;
+            }
 
             $args_analyzed = self::checkMethodArgs(
                 $method_id,
@@ -667,7 +673,6 @@ final class NewAnalyzer extends CallAnalyzer
             if ($declaring_method_id) {
                 $method_storage = $codebase->methods->getStorage($declaring_method_id);
 
-                $caller_identifier = $statements_analyzer->getFullyQualifiedFunctionMethodOrNamespaceName() ?: '';
                 if (!NamespaceAnalyzer::isWithinAny($caller_identifier, $method_storage->internal)) {
                     IssueBuffer::maybeAdd(
                         new InternalMethod(
@@ -1726,6 +1731,10 @@ final class NewAnalyzer extends CallAnalyzer
             return null;
         }
 
+        if (!self::isInTrait($statements_analyzer)) {
+            $template_result->static_class_type = $fq_class_name;
+        }
+
         $self_out_candidate = MethodCallReturnTypeFetcher::replaceTemplateTypes(
             $self_out_candidate,
             $template_result,
@@ -2094,6 +2103,22 @@ final class NewAnalyzer extends CallAnalyzer
                 $template_name,
             );
         }
+
+        // the constraint may name the other templates of the class (`TIterator as Iterator<TKey, TValue>`): the
+        // earlier ones stand for what they are bound to in the new object, the others for their constraints
+        $named_templates = [];
+        $template_offset = 0;
+
+        foreach ($storage->template_types ?? [] as $name => $other_type_map) {
+            $named_templates[$name][array_key_first($other_type_map)]
+                = $generic_param_types[$template_offset++] ?? reset($other_type_map);
+        }
+
+        $constraint = TemplateInferredTypeReplacer::replace(
+            $constraint,
+            new TemplateResult([], $named_templates),
+            $statements_analyzer->getCodebase(),
+        );
 
         if (isset($unconstrainable_templates[$template_name])) {
             return $constraint;
