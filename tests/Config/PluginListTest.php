@@ -11,12 +11,12 @@ use Mockery\MockInterface;
 use Override;
 use PHPUnit\Framework\Attributes\Group;
 use PHPUnit\Framework\Attributes\Test;
+use PHPUnit\Framework\TestCase;
 use Psalm\Config;
 use Psalm\Internal\PluginManager\ComposerLock;
 use Psalm\Internal\PluginManager\ConfigFile;
 use Psalm\Internal\PluginManager\PluginList;
 use Psalm\Internal\RuntimeCaches;
-use Psalm\Tests\TestCase;
 
 #[Group('PluginManager')]
 final class PluginListTest extends TestCase

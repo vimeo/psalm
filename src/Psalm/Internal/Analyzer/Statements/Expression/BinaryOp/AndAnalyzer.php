@@ -16,6 +16,7 @@ use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\Internal\Clause;
 use Psalm\Node\Stmt\VirtualExpression;
 use Psalm\Node\Stmt\VirtualIf;
+use Psalm\Type;
 use Psalm\Type\Reconciler;
 
 use function array_diff_key;
@@ -26,6 +27,7 @@ use function array_values;
 use function count;
 use function in_array;
 use function spl_object_id;
+use function str_starts_with;
 
 /**
  * @internal
@@ -97,7 +99,7 @@ final class AndAnalyzer
 
         $left_assigned_var_ids = array_diff_key($left_context->assigned_var_ids, $pre_assigned_var_ids);
 
-        $left_referenced_var_ids = array_diff_key($left_referenced_var_ids, $left_assigned_var_ids);
+        $left_referenced_var_ids = self::removeAssignedVarIds($left_referenced_var_ids, $left_assigned_var_ids);
 
         $context_clauses = array_merge($left_context->clauses, $left_clauses);
 
@@ -134,6 +136,10 @@ final class AndAnalyzer
 
         if ($left_type_assertions) {
             $right_context = clone $context;
+            // what the left side guards (function_exists(), class_exists(), defined()...) holds for the right one
+            $right_context->updateChecks($left_context);
+            $right_context->phantom_classes += $left_context->phantom_classes;
+            $right_context->phantom_functions += $left_context->phantom_functions;
             // while in an and, we allow scope to boil over to support
             // statements of the form if ($x && $x->foo())
             [$right_context->vars_in_scope, $right_context->references_in_scope] = Reconciler::reconcileKeyedTypes(
@@ -173,6 +179,8 @@ final class AndAnalyzer
 
         if ($context->inside_conditional) {
             $context->updateChecks($right_context);
+            $context->phantom_classes += $right_context->phantom_classes;
+            $context->phantom_functions += $right_context->phantom_functions;
 
             $context->vars_possibly_in_scope = array_merge(
                 $right_context->vars_possibly_in_scope,
@@ -203,12 +211,16 @@ final class AndAnalyzer
                 ...$context->assigned_var_ids,
             ];
 
+            // clauses simplification derived from the reconciled ones (a nullsafe call's receiver) are applied too
             $if_body_context->reconciled_expression_clauses = [
                 ...$if_body_context->reconciled_expression_clauses,
                 ...array_map(
                     /** @return string|int */
                     static fn(Clause $c) => $c->hash,
-                    $partitioned_clauses[1],
+                    [
+                        ...$partitioned_clauses[1],
+                        ...Context::removeReconciledClauses($simplified_clauses, $changed_var_ids)[1],
+                    ],
                 ),
             ];
 
@@ -218,10 +230,50 @@ final class AndAnalyzer
             ];
 
             $if_body_context->updateChecks($context);
+            $if_body_context->phantom_classes += $context->phantom_classes;
+            $if_body_context->phantom_functions += $context->phantom_functions;
         } else {
             $context->vars_in_scope = $left_context->vars_in_scope;
+
+            // the right operand is skipped when the left one is false
+            foreach ($right_context->assigned_var_ids as $var_id => $assigned_offset) {
+                if ((!isset($left_context->assigned_var_ids[$var_id])
+                        || $left_context->assigned_var_ids[$var_id] !== $assigned_offset)
+                    && isset($context->vars_in_scope[$var_id], $right_context->vars_in_scope[$var_id])
+                ) {
+                    $context->vars_in_scope[$var_id] = Type::combineUnionTypes(
+                        $context->vars_in_scope[$var_id],
+                        $right_context->vars_in_scope[$var_id],
+                    );
+                }
+            }
         }
 
         return true;
+    }
+
+    /**
+     * Drops the assigned variables and the keys nested in them, which the left side already narrowed.
+     *
+     * @param array<string, bool> $referenced_var_ids
+     * @param array<string, int> $assigned_var_ids
+     * @return array<string, bool>
+     * @psalm-pure
+     */
+    private static function removeAssignedVarIds(array $referenced_var_ids, array $assigned_var_ids): array
+    {
+        foreach ($referenced_var_ids as $referenced_var_id => $_) {
+            foreach ($assigned_var_ids as $assigned_var_id => $__) {
+                if ($referenced_var_id === $assigned_var_id
+                    || str_starts_with($referenced_var_id, $assigned_var_id . '[')
+                    || str_starts_with($referenced_var_id, $assigned_var_id . '->')
+                ) {
+                    unset($referenced_var_ids[$referenced_var_id]);
+                    break;
+                }
+            }
+        }
+
+        return $referenced_var_ids;
     }
 }
