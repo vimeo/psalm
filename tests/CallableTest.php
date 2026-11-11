@@ -185,6 +185,39 @@ final class CallableTest extends TestCase
                 'ignored_issues' => [],
                 'php_version' => '8.3',
             ],
+            'firstClassCallableOfAnOverrideKeepsItsNarrowerNativeReturnType' => [
+                'code' => <<<'PHP'
+                    <?php
+                    class ParentWithADocblockType
+                    {
+                        /**
+                         * @return int|string
+                         * @psalm-impure
+                         */
+                        public function value()
+                        {
+                            return 1;
+                        }
+                    }
+
+                    final class ChildWithANativeType extends ParentWithADocblockType
+                    {
+                        #[\Override]
+                        public function value(): int
+                        {
+                            return 1;
+                        }
+                    }
+
+                    $callable = (new ChildWithANativeType())->value(...);
+                    $instance = $callable();
+                    PHP,
+                'assertions' => [
+                    '$instance' => 'int',
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.3',
+            ],
             'byReferenceCallableParamAcceptsByReferenceCallee' => [
                 'code' => '<?php
                     /** @param callable(int &$i): void $closure */

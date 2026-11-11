@@ -85,6 +85,7 @@ final class MethodCallReturnTypeFetcher
                     $codebase,
                     $method_id,
                     $method_storage,
+                    $statements_analyzer,
                 );
 
                 return self::getFirstClassCallableType(
@@ -924,6 +925,7 @@ final class MethodCallReturnTypeFetcher
         Codebase $codebase,
         MethodIdentifier $method_id,
         MethodStorage $method_storage,
+        StatementsAnalyzer $statements_analyzer,
     ): array {
         $params = $codebase->methods->getMethodParams($method_id);
 
@@ -946,7 +948,7 @@ final class MethodCallReturnTypeFetcher
         return [
             new TClosure(
                 $params,
-                $codebase->methods->getMethodReturnType($codebase, $method_id, $self_class),
+                $codebase->methods->getMethodReturnType($codebase, $method_id, $self_class, $statements_analyzer),
                 $method_storage->capabilities,
             ),
             ($documenting_method_id !== null
