@@ -2626,7 +2626,7 @@ return array (
   'assert' => 
   array (
     -1 => 'bool',
-    'assertion' => 'bool|int|string',
+    'assertion' => 'mixed',
     'description=' => 'Throwable|null|string',
   ),
   'assert_options' => 
@@ -15904,7 +15904,7 @@ return array (
   array (
     -1 => 'bool',
     'constant_name' => 'string',
-    'value' => 'array<array-key, mixed>|null|scalar',
+    'value' => 'mixed',
     'case_insensitive=' => 'false',
   ),
   'define_syslog_variables' => 
@@ -59029,7 +59029,6 @@ return array (
   ),
   'mysqli::get_warnings' => 
   array (
-    0 => 'mysqli_warning',
     -1 => 'false|mysqli_warning',
     -2 => 'tentative',
   ),
@@ -59519,7 +59518,6 @@ return array (
   ),
   'mysqli_get_warnings' => 
   array (
-    0 => 'mysqli_warning',
     -1 => 'false|mysqli_warning',
     'mysql' => 'mysqli',
   ),
@@ -66691,6 +66689,7 @@ return array (
     'function_name' => 'string',
     'callback' => 'callable[impure]',
     'num_args=' => 'int',
+    'flags=' => 'int',
   ),
   'pdo\\mysql::__construct' => 
   array (
@@ -85300,19 +85299,19 @@ return array (
   ),
   'sodium_crypto_xof_shake128_init' => 
   array (
-    -1 => 'string',
+    -1 => 'SodiumCryptoXofShake128State',
     'domain=' => 'int|null',
   ),
   'sodium_crypto_xof_shake128_squeeze' => 
   array (
     -1 => 'string',
-    '&state' => 'string',
+    'state' => 'SodiumCryptoXofShake128State',
     'length' => 'int',
   ),
   'sodium_crypto_xof_shake128_update' => 
   array (
-    -1 => 'true',
-    '&state' => 'string',
+    -1 => 'void',
+    'state' => 'SodiumCryptoXofShake128State',
     'message' => 'string',
   ),
   'sodium_crypto_xof_shake256' => 
@@ -85323,19 +85322,19 @@ return array (
   ),
   'sodium_crypto_xof_shake256_init' => 
   array (
-    -1 => 'string',
+    -1 => 'SodiumCryptoXofShake256State',
     'domain=' => 'int|null',
   ),
   'sodium_crypto_xof_shake256_squeeze' => 
   array (
     -1 => 'string',
-    '&state' => 'string',
+    'state' => 'SodiumCryptoXofShake256State',
     'length' => 'int',
   ),
   'sodium_crypto_xof_shake256_update' => 
   array (
-    -1 => 'true',
-    '&state' => 'string',
+    -1 => 'void',
+    'state' => 'SodiumCryptoXofShake256State',
     'message' => 'string',
   ),
   'sodium_crypto_xof_turboshake128' => 
@@ -85346,19 +85345,19 @@ return array (
   ),
   'sodium_crypto_xof_turboshake128_init' => 
   array (
-    -1 => 'string',
+    -1 => 'SodiumCryptoXofTurboshake128State',
     'domain=' => 'int|null',
   ),
   'sodium_crypto_xof_turboshake128_squeeze' => 
   array (
     -1 => 'string',
-    '&state' => 'string',
+    'state' => 'SodiumCryptoXofTurboshake128State',
     'length' => 'int',
   ),
   'sodium_crypto_xof_turboshake128_update' => 
   array (
-    -1 => 'true',
-    '&state' => 'string',
+    -1 => 'void',
+    'state' => 'SodiumCryptoXofTurboshake128State',
     'message' => 'string',
   ),
   'sodium_crypto_xof_turboshake256' => 
@@ -85369,19 +85368,19 @@ return array (
   ),
   'sodium_crypto_xof_turboshake256_init' => 
   array (
-    -1 => 'string',
+    -1 => 'SodiumCryptoXofTurboshake256State',
     'domain=' => 'int|null',
   ),
   'sodium_crypto_xof_turboshake256_squeeze' => 
   array (
     -1 => 'string',
-    '&state' => 'string',
+    'state' => 'SodiumCryptoXofTurboshake256State',
     'length' => 'int',
   ),
   'sodium_crypto_xof_turboshake256_update' => 
   array (
-    -1 => 'true',
-    '&state' => 'string',
+    -1 => 'void',
+    'state' => 'SodiumCryptoXofTurboshake256State',
     'message' => 'string',
   ),
   'sodium_hex2bin' => 
@@ -102437,7 +102436,7 @@ return array (
   array (
     -1 => 'bool',
     'signal_no' => 'int',
-    'callback=' => 'callable[impure]|null',
+    'callback=' => 'callable[impure]|int|null',
   ),
   'swoole\\process::start' => 
   array (

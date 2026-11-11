@@ -1788,16 +1788,6 @@ return array (
     'key' => 'mixed',
     'search' => 'mixed',
   ),
-  'array_key_first' => 
-  array (
-    0 => 'mixed',
-    'array' => 'array<array-key, mixed>',
-  ),
-  'array_key_last' => 
-  array (
-    0 => 'mixed',
-    'array' => 'array<array-key, mixed>',
-  ),
   'array_keys' => 
   array (
     0 => 'mixed',
