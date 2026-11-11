@@ -266,8 +266,10 @@ final class ArrayFunctionArgumentsAnalyzer
                     $new_offset_type = Type::getInt();
                 }
 
-                if (!($arg_value_type = $statements_analyzer->node_data->getType($arg->value))
-                    || $arg_value_type->hasMixed()
+                // a value of unknown type still goes to the front of a list, which stays a list
+                if ((!($arg_value_type = $statements_analyzer->node_data->getType($arg->value))
+                        || $arg_value_type->hasMixed())
+                    && !($objectlike_list && !$arg->unpack)
                 ) {
                     $by_ref_type = Type::combineUnionTypes(
                         $by_ref_type,
@@ -306,7 +308,7 @@ final class ArrayFunctionArgumentsAnalyzer
                 } else {
                     if ($objectlike_list) {
                         $properties = $objectlike_list->properties;
-                        array_unshift($properties, $arg_value_type);
+                        array_unshift($properties, $arg_value_type ?? Type::getMixed());
 
                         $by_ref_type = new Union([$objectlike_list->setProperties($properties)]);
                     } elseif ($array_type instanceof TArray && $array_type->isEmptyArray()) {
