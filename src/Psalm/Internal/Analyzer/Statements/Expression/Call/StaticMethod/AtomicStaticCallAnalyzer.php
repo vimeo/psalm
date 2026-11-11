@@ -112,9 +112,15 @@ final class AtomicStaticCallAnalyzer
 
             $intersection_types = $lhs_type_part->extra_types;
         } elseif ($lhs_type_part instanceof TClassString
-            && $lhs_type_part->as_type
+            && ($lhs_type_part->as_type
+                || ($lhs_type_part->is_enum
+                    && $stmt->name instanceof PhpParser\Node\Identifier
+                    && $statements_analyzer->getCodebase()->methodExists('UnitEnum::' . $stmt->name->name)
+                )
+            )
         ) {
-            $fq_class_name = $lhs_type_part->as_type->value;
+            // any enum implements UnitEnum, but only what UnitEnum declares is known of an unspecified one
+            $fq_class_name = $lhs_type_part->as_type->value ?? 'UnitEnum';
 
             if (!ClassLikeAnalyzer::checkFullyQualifiedClassLikeName(
                 $statements_analyzer,
@@ -127,7 +133,7 @@ final class AtomicStaticCallAnalyzer
                 return;
             }
 
-            $intersection_types = $lhs_type_part->as_type->extra_types;
+            $intersection_types = $lhs_type_part->as_type->extra_types ?? [];
         } elseif ($lhs_type_part instanceof TDependentGetClass
             && !$lhs_type_part->as_type->hasObject()
         ) {
@@ -273,7 +279,11 @@ final class AtomicStaticCallAnalyzer
                         if ($method_exists) {
                             $declaring_method_id = $codebase->methods->getDeclaringMethodId($method_identifier)
                                 ?? $method_identifier;
-                            $method_storage = $codebase->methods->getStorage($declaring_method_id);
+                            [$closure, $method_template_types] = MethodCallReturnTypeFetcher::getInheritedClosure(
+                                $codebase,
+                                $declaring_method_id,
+                                $codebase->methods->getStorage($declaring_method_id),
+                            );
                             $self_fq_class_name = $stmt->class instanceof PhpParser\Node\Name
                                 && $stmt->class->getParts() === ['parent']
                                 ? (string) $statements_analyzer->getFQCLN()
@@ -287,12 +297,8 @@ final class AtomicStaticCallAnalyzer
                                 $method_identifier,
                                 $codebase->classlike_storage_provider->get($declaring_method_id->fq_class_name),
                                 $codebase->classlike_storage_provider->get($fq_class_name),
-                                new TClosure(
-                                    $method_storage->params,
-                                    $method_storage->return_type,
-                                    $method_storage->capabilities,
-                                ),
-                                $method_storage->template_types ?? [],
+                                $closure,
+                                $method_template_types,
                                 $self_fq_class_name,
                                 $self_fq_class_name,
                                 $inferred_template_result,

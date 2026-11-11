@@ -3029,8 +3029,24 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
                 $closure_return_type = Type::getMixed();
             }
 
+            // `self` in the signature is the class the closure is written in (the using class, in a trait), wherever
+            // the closure is called from
+            $closure_params = [];
+
+            foreach ($storage->params as $param) {
+                $closure_params[] = $param->type
+                    ? $param->setType(TypeExpander::expandUnion(
+                        $codebase,
+                        $param->type,
+                        $context->self,
+                        null,
+                        $this->getParentFQCLN(),
+                    ))
+                    : $param;
+            }
+
             $closure_type = new TClosure(
-                $storage->params,
+                $closure_params,
                 $closure_return_type,
                 $storage->capabilities,
                 $storage instanceof FunctionStorage ? $storage->byref_uses : [],

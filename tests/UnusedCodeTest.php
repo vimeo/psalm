@@ -519,6 +519,28 @@ final class UnusedCodeTest extends TestCase
     public static function providerValidCodeParse(): array
     {
         return [
+            'preIncrementAsArrayAssignmentKey' => [
+                'code' => '<?php
+                    /** @psalm-api */
+                    function f(): array {
+                        $row = 1;
+                        $array = [];
+                        $array[$row] = "1";
+                        $array[++$row] = "2";
+                        $array[++$row] = "3";
+
+                        return $array;
+                    }',
+            ],
+            'preDecrementAsArrayLiteralKey' => [
+                'code' => '<?php
+                    /** @psalm-api */
+                    function f(): array {
+                        $i = 3;
+
+                        return [--$i => 1];
+                    }',
+            ],
             'classExistsGuardedStaticFirstClassCallable' => [
                 'code' => '<?php
                     if (class_exists("Nope")) {
@@ -2416,6 +2438,25 @@ final class UnusedCodeTest extends TestCase
     public static function providerInvalidCodeParse(): array
     {
         return [
+            'postIncrementAsArrayKeyIsAnUnusedAssignment' => [
+                'code' => '<?php
+                    /** @psalm-api */
+                    function f(): array {
+                        $i = 0;
+
+                        return [$i++ => 1];
+                    }',
+                'error_message' => 'UnusedVariable',
+            ],
+            'preIncrementStatementIsAnUnusedAssignment' => [
+                'code' => '<?php
+                    /** @psalm-api */
+                    function f(): void {
+                        $i = 0;
+                        ++$i;
+                    }',
+                'error_message' => 'UnusedVariable',
+            ],
             'undefinedClassStaticFirstClassCallable' => [
                 'code' => '<?php
                     $callable = Nope::stat(...);',
