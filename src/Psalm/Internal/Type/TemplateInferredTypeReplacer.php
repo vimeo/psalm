@@ -8,6 +8,7 @@ use InvalidArgumentException;
 use Psalm\Codebase;
 use Psalm\Internal\Type\Comparator\UnionTypeComparator;
 use Psalm\Internal\TypeVisitor\ConditionalSubjectReplacer;
+use Psalm\Internal\TypeVisitor\ContainsStaticVisitor;
 use Psalm\Type;
 use Psalm\Type\Atomic;
 use Psalm\Type\Atomic\TArray;
@@ -68,6 +69,11 @@ final class TemplateInferredTypeReplacer
 
         foreach ($union->getAtomicTypes() as $key => $atomic_type) {
             $should_set = true;
+
+            if ($atomic_type instanceof TConditional && $codebase) {
+                $atomic_type = self::expandStaticOfCall($codebase, $atomic_type, $template_result);
+            }
+
             $atomic_type = $atomic_type->replaceTemplateTypesWithArgTypes($template_result, $codebase);
 
             if ($atomic_type instanceof TTemplateParam) {
@@ -668,32 +674,67 @@ final class TemplateInferredTypeReplacer
     }
 
     /**
+     * A param conditional with `static` of the call in its constraint and condition, before the bounds, which may hold
+     * the `static` of the caller, are put in them: only when its template is bound by arguments alone (fallbacks and
+     * defaults have no argument offset), as they were checked against the params with that `static`. A bound holding
+     * the declared `static` (a closure param narrowed by an unexpanded hint) is compared with them as declared.
+     *
+     * @psalm-capabilities read-props
+     */
+    private static function expandStaticOfCall(
+        Codebase $codebase,
+        TConditional $conditional,
+        TemplateResult $template_result,
+    ): TConditional {
+        $static_class_type = $template_result->static_class_type;
+        $bounds = $template_result->lower_bounds[$conditional->param_name][$conditional->defining_class] ?? [];
+
+        if ($static_class_type === null || $conditional->subject_type !== null || !$bounds) {
+            return $conditional;
+        }
+
+        foreach ($bounds as $bound) {
+            $static_visitor = new ContainsStaticVisitor(true);
+            $static_visitor->traverse($bound->type);
+
+            if ($bound->arg_offset === null || $static_visitor->matches()) {
+                return $conditional;
+            }
+        }
+
+        $final = $template_result->static_class_is_final;
+
+        /** @psalm-suppress ImpureMethodCall reads codebase storage (constant types may be memoized) */
+        return $conditional->setTypes(
+            TypeExpander::expandStatic($codebase, $conditional->as_type, $static_class_type, $final),
+            TypeExpander::expandStatic($codebase, $conditional->conditional_type, $static_class_type, $final),
+        );
+    }
+
+    /**
      * Whether no value of $candidate is of $conditional_type
      */
     private static function isDisjoint(Codebase $codebase, Atomic $candidate, Union $conditional_type): bool
     {
         // the empty array is never a non-empty one, nor the reverse
-        if (self::isEmptyArray($candidate) || self::isNonEmptyArray($candidate)) {
-            $all_disjoint = true;
+        $overlapping_atomic_types = [];
 
-            foreach ($conditional_type->getAtomicTypes() as $conditional_atomic_type) {
-                if (!(self::isEmptyArray($candidate) && self::isNonEmptyArray($conditional_atomic_type))
-                    && !(self::isNonEmptyArray($candidate) && self::isEmptyArray($conditional_atomic_type))
-                ) {
-                    $all_disjoint = false;
-                    break;
-                }
+        foreach ($conditional_type->getAtomicTypes() as $conditional_atomic_type) {
+            if (!(self::isEmptyArray($candidate) && self::isNonEmptyArray($conditional_atomic_type))
+                && !(self::isNonEmptyArray($candidate) && self::isEmptyArray($conditional_atomic_type))
+            ) {
+                $overlapping_atomic_types[] = $conditional_atomic_type;
             }
+        }
 
-            if ($all_disjoint) {
-                return true;
-            }
+        if (!$overlapping_atomic_types) {
+            return true;
         }
 
         return !UnionTypeComparator::canExpressionTypesBeIdentical(
             $codebase,
             new Union([$candidate]),
-            $conditional_type,
+            new Union($overlapping_atomic_types),
             false,
         );
     }

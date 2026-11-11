@@ -12,9 +12,11 @@ use Psalm\CodeLocation;
 use Psalm\Codebase;
 use Psalm\Context;
 use Psalm\Internal\FileManipulation\FileManipulationBuffer;
+use Psalm\Internal\MethodIdentifier;
 use Psalm\Internal\Provider\NodeDataProvider;
 use Psalm\Internal\Type\Comparator\UnionTypeComparator;
 use Psalm\Internal\Type\PurityArguments;
+use Psalm\Internal\Type\TemplateDefaults;
 use Psalm\Internal\Type\TemplateResult;
 use Psalm\Internal\Type\TemplateStandinTypeReplacer;
 use Psalm\Internal\Type\TypeExpander;
@@ -115,10 +117,9 @@ abstract class ClassLikeAnalyzer extends SourceAnalyzer
      * unused-suppression check, so redundant ones are reported (UnusedPsalmSuppress)
      * like member-level suppressions already are.
      *
-     * Uses the suppressed_issues already parsed from the docblock during scanning;
-     * these are keyed by the char offset of the issue name, unlike suppressions
-     * added programmatically by plugins (which are appended as a plain list and,
-     * having no source location, must not be reported).
+     * Uses the docblock suppressions recorded during scanning, keyed by the char offset of
+     * the issue name. Suppressions added programmatically by plugins land only in
+     * $storage->suppressed_issues and, having no source location, must not be reported.
      *
      * @psalm-external-mutation-free
      */
@@ -127,14 +128,15 @@ abstract class ClassLikeAnalyzer extends SourceAnalyzer
         string $file_path,
         Codebase $codebase,
     ): void {
-        // isset($suppressed_issues[0]) => the list was appended to programmatically
-        if (!$codebase->track_unused_suppressions || isset($storage->suppressed_issues[0])) {
+        $suppressed_issues = $storage->docblock_suppressed_issues;
+
+        if (!$codebase->track_unused_suppressions || $suppressed_issues === []) {
             return;
         }
 
         // a lone UnusedPsalmSuppress should still be reported as unused
-        if (count($storage->suppressed_issues) > 1
-            && $codebase->config->suppressesIssueType($storage->suppressed_issues, 'UnusedPsalmSuppress')
+        if (count($suppressed_issues) > 1
+            && $codebase->config->suppressesIssueType($suppressed_issues, 'UnusedPsalmSuppress')
         ) {
             return;
         }
@@ -142,7 +144,7 @@ abstract class ClassLikeAnalyzer extends SourceAnalyzer
         $file_path = $storage->location !== null ? $storage->location->file_path : $file_path;
         $taint_analysis = $codebase->taint_flow_graph !== null;
 
-        foreach ($storage->suppressed_issues as $offset => $issue_type) {
+        foreach ($suppressed_issues as $offset => $issue_type) {
             IssueBuffer::addUnusedSuppression($file_path, $offset, $issue_type, $taint_analysis);
         }
     }
@@ -174,6 +176,9 @@ abstract class ClassLikeAnalyzer extends SourceAnalyzer
         }
     }
 
+    /**
+     * @param string $method_name the name the method is called by, which can be the alias of a trait method
+     */
     public function getMethodMutations(
         string $method_name,
         Context $context,
@@ -181,66 +186,106 @@ abstract class ClassLikeAnalyzer extends SourceAnalyzer
         $project_analyzer = $this->getFileAnalyzer()->project_analyzer;
         $codebase = $project_analyzer->getCodebase();
 
+        // only the method PHP calls is analyzed: not the one of the class when an alias of a trait method is
+        // called, nor the one of a trait when the class overrides it
+        $called_method_id = $codebase->methods->getDeclaringMethodId(
+            new MethodIdentifier($context->self ?: $this->fq_class_name, strtolower($method_name)),
+        );
+        $actual_method_name = $called_method_id !== null ? $called_method_id->method_name : $method_name;
+
         foreach ($this->class->stmts as $stmt) {
             if ($stmt instanceof PhpParser\Node\Stmt\ClassMethod &&
-                strtolower($stmt->name->name) === strtolower($method_name)
+                strtolower($stmt->name->name) === strtolower($actual_method_name)
             ) {
+                if ($called_method_id !== null
+                    && strtolower($called_method_id->fq_class_name) !== strtolower($this->fq_class_name)
+                ) {
+                    continue;
+                }
+
                 $method_analyzer = new MethodAnalyzer($stmt, $this);
 
                 $method_analyzer->analyze($context, new NodeDataProvider(), null, true);
 
                 $context->clauses = [];
             } elseif ($stmt instanceof PhpParser\Node\Stmt\TraitUse) {
-                foreach ($stmt->traits as $trait) {
-                    $fq_trait_name = $codebase->classlikes->getUnAliasedName(
-                        self::getFQCLNFromNameObject($trait, $this->source->getAliases()),
+                $this->getTraitUseMethodMutations(
+                    $stmt,
+                    $this->source->getAliases(),
+                    $actual_method_name,
+                    $called_method_id,
+                    $context,
+                );
+            }
+        }
+    }
+
+    /**
+     * Collects the mutations of a method defined by a trait used in the class, or by a trait that trait uses
+     */
+    private function getTraitUseMethodMutations(
+        PhpParser\Node\Stmt\TraitUse $stmt,
+        Aliases $aliases,
+        string $method_name,
+        ?MethodIdentifier $called_method_id,
+        Context $context,
+    ): void {
+        $project_analyzer = $this->getFileAnalyzer()->project_analyzer;
+        $codebase = $project_analyzer->getCodebase();
+
+        foreach ($stmt->traits as $trait) {
+            $fq_trait_name = $codebase->classlikes->getUnAliasedName(
+                self::getFQCLNFromNameObject($trait, $aliases),
+            );
+
+            $trait_file_analyzer = $project_analyzer->getFileAnalyzerForClassLike($fq_trait_name);
+            $trait_node = $codebase->classlikes->getTraitNode($fq_trait_name);
+            $trait_storage = $codebase->classlike_storage_provider->get($fq_trait_name);
+            $trait_aliases = $trait_storage->aliases;
+
+            if ($trait_aliases === null) {
+                continue;
+            }
+
+            $trait_analyzer = new TraitAnalyzer(
+                $trait_node,
+                $trait_file_analyzer,
+                $fq_trait_name,
+                $trait_aliases,
+            );
+
+            foreach ($trait_node->stmts as $trait_stmt) {
+                if ($trait_stmt instanceof PhpParser\Node\Stmt\TraitUse) {
+                    $this->getTraitUseMethodMutations(
+                        $trait_stmt,
+                        $trait_aliases,
+                        $method_name,
+                        $called_method_id,
+                        $context,
                     );
+                } elseif ($trait_stmt instanceof PhpParser\Node\Stmt\ClassMethod &&
+                    strtolower($trait_stmt->name->name) === strtolower($method_name)
+                ) {
+                    $method_analyzer = new MethodAnalyzer($trait_stmt, $trait_analyzer);
 
-                    $trait_file_analyzer = $project_analyzer->getFileAnalyzerForClassLike($fq_trait_name);
-                    $trait_node = $codebase->classlikes->getTraitNode($fq_trait_name);
-                    $trait_storage = $codebase->classlike_storage_provider->get($fq_trait_name);
-                    $trait_aliases = $trait_storage->aliases;
-
-                    if ($trait_aliases === null) {
+                    // only the method PHP calls is analyzed: a class that overrides the method of a trait
+                    // doesn't run the one of the trait
+                    if ($called_method_id !== null
+                        && (string) $method_analyzer->getMethodId() !== (string) $called_method_id
+                    ) {
                         continue;
                     }
 
-                    $trait_analyzer = new TraitAnalyzer(
-                        $trait_node,
-                        $trait_file_analyzer,
-                        $fq_trait_name,
-                        $trait_aliases,
+                    $method_analyzer->analyze(
+                        $context,
+                        new NodeDataProvider(),
+                        null,
+                        true,
                     );
-
-                    foreach ($trait_node->stmts as $trait_stmt) {
-                        if ($trait_stmt instanceof PhpParser\Node\Stmt\ClassMethod &&
-                            strtolower($trait_stmt->name->name) === strtolower($method_name)
-                        ) {
-                            $method_analyzer = new MethodAnalyzer($trait_stmt, $trait_analyzer);
-
-                            $actual_method_id = $method_analyzer->getMethodId();
-
-                            if ($context->self && $context->self !== $this->fq_class_name) {
-                                $analyzed_method_id = $method_analyzer->getMethodId($context->self);
-                                $declaring_method_id = $codebase->methods->getDeclaringMethodId($analyzed_method_id);
-
-                                if ((string) $actual_method_id !== (string) $declaring_method_id) {
-                                    break;
-                                }
-                            }
-
-                            $method_analyzer->analyze(
-                                $context,
-                                new NodeDataProvider(),
-                                null,
-                                true,
-                            );
-                        }
-                    }
-
-                    $trait_file_analyzer->clearSourceBeforeDestruction();
                 }
             }
+
+            $trait_file_analyzer->clearSourceBeforeDestruction();
         }
     }
 
@@ -258,6 +303,19 @@ abstract class ClassLikeAnalyzer extends SourceAnalyzer
         }
 
         return null;
+    }
+
+    /**
+     * Whether the name is one of the type names that can't be a class name
+     *
+     * @psalm-pure
+     */
+    public static function isReservedClassName(string $fq_class_name): bool
+    {
+        return (bool) preg_match(
+            '/(^|\\\)(int|float|bool|string|void|null|false|true|object|mixed)$/i',
+            $fq_class_name,
+        ) || strtolower($fq_class_name) === 'resource';
     }
 
     /**
@@ -298,11 +356,7 @@ abstract class ClassLikeAnalyzer extends SourceAnalyzer
             return true;
         }
 
-        if (preg_match(
-            '/(^|\\\)(int|float|bool|string|void|null|false|true|object|mixed)$/i',
-            $fq_class_name,
-        ) || strtolower($fq_class_name) === 'resource'
-        ) {
+        if (self::isReservedClassName($fq_class_name)) {
             $class_name_parts = explode('\\', $fq_class_name);
             $class_name = array_pop($class_name_parts);
 
@@ -741,6 +795,22 @@ abstract class ClassLikeAnalyzer extends SourceAnalyzer
                     return $emit_issues ? null : true;
                 }
 
+                // a property redeclared by a subclass or its trait is the one of the class that declared it first
+                $appearing_class_storage = $codebase->classlike_storage_provider->get($appearing_property_class);
+
+                foreach ($appearing_class_storage->parent_classes as $parent_class_name) {
+                    $parent_property = $codebase->classlike_storage_provider->get($parent_class_name)
+                        ->properties[$property_name] ?? null;
+
+                    if ($parent_property !== null
+                        && $parent_property->visibility !== self::VISIBILITY_PRIVATE
+                        && (strtolower($context->self) === strtolower($parent_class_name)
+                            || $codebase->classExtends($context->self, $parent_class_name))
+                    ) {
+                        return $emit_issues ? null : true;
+                    }
+                }
+
                 if (!$codebase->classExtends($context->self, $appearing_property_class)) {
                     if ($emit_issues) {
                         IssueBuffer::maybeAdd(
@@ -760,6 +830,33 @@ abstract class ClassLikeAnalyzer extends SourceAnalyzer
         return $emit_issues ? null : true;
     }
 
+    /**
+     * Reports the docblock issues found when the class-like was scanned, and the template defaults naming undefined
+     * classes or outside their bounds, which can only be checked once the codebase is populated.
+     *
+     * @param array<string> $suppressed_issues
+     */
+    protected static function reportDocblockIssues(
+        StatementsSource $source,
+        ClassLikeStorage $storage,
+        array $suppressed_issues,
+    ): void {
+        foreach ($storage->docblock_issues as $docblock_issue) {
+            IssueBuffer::maybeAdd($docblock_issue);
+        }
+
+        TemplateDefaults::checkBounds(
+            $source,
+            $storage->template_types ?? [],
+            $storage->template_defaults,
+            $storage->template_default_locations,
+            $storage->name,
+            $storage->parent_class,
+            $storage->name,
+            $suppressed_issues,
+        );
+    }
+
     protected function checkTemplateParams(
         Codebase $codebase,
         ClassLikeStorage $storage,
@@ -775,7 +872,7 @@ abstract class ClassLikeAnalyzer extends SourceAnalyzer
             IssueBuffer::maybeAdd(
                 new MissingTemplateParam(
                     $storage->name . ' has missing template params when extending ' . $parent_storage->name
-                        . ', expecting ' . $expected_param_count,
+                        . ', expecting ' . TemplateDefaults::getExpectedParamCount($parent_storage),
                     $code_location,
                 ),
                 $storage->suppressed_issues + $this->getSuppressedIssues(),
@@ -822,6 +919,10 @@ abstract class ClassLikeAnalyzer extends SourceAnalyzer
 
         if ($parent_storage->template_types && $storage->template_extended_params) {
             $i = 0;
+
+            // the written arguments, but for the purity arguments, which come last
+            $written_type_arg_count = $given_param_count
+                - count(PurityArguments::split($storage->template_extended_offsets[$parent_storage->name] ?? [])[1]);
 
             // the bounds of type templates may use purity templates, which come after them
             $previous_extended = [];
@@ -915,7 +1016,15 @@ abstract class ClassLikeAnalyzer extends SourceAnalyzer
                         }
                     }
 
-                    if (!$template_type->isMixed()) {
+                    // a parent template left to its default is checked where the default is declared: any of them
+                    // when no arguments are written, else a type template past the written type arguments (type
+                    // templates come first, so $i is its position among them)
+                    if (!$template_type->isMixed()
+                        && !(isset($parent_storage->template_defaults[$template_name])
+                            && ($given_param_count === 0
+                                || ($i >= $written_type_arg_count
+                                    && !isset($parent_storage->purity_templates[$template_name]))))
+                    ) {
                         $template_result = new TemplateResult(
                             $previous_extended ?: [],
                             [],

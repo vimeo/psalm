@@ -20,6 +20,61 @@ final class ReferenceConstraintTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'paramOutOfAClassTemplateReplacesAMixedVariable' => [
+                'code' => '<?php
+                    /** @template T of int */
+                    class FooBar {
+                        /** @param-out T $s */
+                        public function fill(mixed &$s): void {}
+                    }
+
+                    /** @param mixed $value */
+                    function foo($value): int {
+                        $fooBar = new FooBar();
+                        $fooBar->fill($value);
+
+                        return $value;
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'paramOutOfAFunctionTemplateIsWhatTheArgumentsBoundIt' => [
+                'code' => '<?php
+                    /**
+                     * @template T
+                     * @param T $in
+                     * @param-out T $out
+                     */
+                    function same(mixed $in, mixed &$out): void {
+                        $out = $in;
+                    }
+
+                    $a = 5;
+                    same("x", $a);',
+                'assertions' => [
+                    '$a===' => "'x'",
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'paramOutOnInterfaceMethodWithoutBody' => [
+                'code' => '<?php
+                    interface I {
+                        /** @param-out int $a */
+                        public function a(?int &$a = null): void;
+
+                        /** @param-out array{foo: string, ...} $a */
+                        public function addFoo(array &$a): void;
+                    }',
+            ],
+            'paramOutOnAbstractMethodWithoutBody' => [
+                'code' => '<?php
+                    abstract class A {
+                        /** @param-out int $a */
+                        abstract public function a(?int &$a = null): void;
+                    }',
+            ],
             'functionParameterNoViolation' => [
                 'code' => '<?php
                     /** @return void */
@@ -311,6 +366,14 @@ final class ReferenceConstraintTest extends TestCase
     public static function providerInvalidCodeParse(): iterable
     {
         return [
+            'paramOutOnMethodWithBodyThatDoesNotMatchIt' => [
+                'code' => '<?php
+                    class B {
+                        /** @param-out int $a */
+                        public function a(?int &$a = null): void {}
+                    }',
+                'error_message' => 'ReferenceConstraintViolation',
+            ],
             'functionParameterViolation' => [
                 'code' => '<?php
                     /** @return void */
