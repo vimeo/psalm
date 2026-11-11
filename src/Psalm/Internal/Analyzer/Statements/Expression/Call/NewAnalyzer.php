@@ -52,6 +52,7 @@ use Psalm\IssueBuffer;
 use Psalm\Plugin\EventHandler\Event\AddRemoveTaintsEvent;
 use Psalm\Storage\Capabilities;
 use Psalm\Storage\ClassLikeStorage;
+use Psalm\Storage\FunctionLikeStorage;
 use Psalm\Storage\MethodStorage;
 use Psalm\Storage\Possibilities;
 use Psalm\Type;
@@ -549,6 +550,24 @@ final class NewAnalyzer extends CallAnalyzer
         }
     }
 
+    /**
+     * The `@psalm-overload` of the constructor that the arguments select, null when it has none
+     */
+    private static function getConstructorOverload(
+        StatementsAnalyzer $statements_analyzer,
+        MethodIdentifier $method_id,
+        PhpParser\Node\Expr\New_ $stmt,
+        Context $context,
+    ): ?FunctionLikeStorage {
+        $codebase = $statements_analyzer->getCodebase();
+        $declaring_method_id = $codebase->methods->getDeclaringMethodId($method_id);
+        $overloads = $declaring_method_id ? $codebase->methods->getStorage($declaring_method_id)->overloads : [];
+
+        return $overloads !== []
+            ? OverloadSelector::select($statements_analyzer, $codebase, $stmt->getArgs(), $context, $overloads)
+            : null;
+    }
+
     private static function analyzeNamedConstructor(
         StatementsAnalyzer $statements_analyzer,
         Codebase $codebase,
@@ -633,23 +652,6 @@ final class NewAnalyzer extends CallAnalyzer
 
             $template_result ??= new TemplateResult([], []);
 
-            $declared_constructor_id = $codebase->methods->getDeclaringMethodId($method_id);
-            $overloaded_constructor = $declared_constructor_id
-                ? $codebase->methods->getStorage($declared_constructor_id)
-                : null;
-
-            $overload = null;
-
-            if ($overloaded_constructor && $overloaded_constructor->overloads !== []) {
-                $overload = $overloaded_constructor->overloads[OverloadSelector::findOffset(
-                    $statements_analyzer,
-                    $codebase,
-                    $stmt->getArgs(),
-                    $context,
-                    $overloaded_constructor->overloads,
-                ) ?? count($overloaded_constructor->overloads) - 1];
-            }
-
             if (!self::isInTrait($statements_analyzer)) {
                 $template_result->static_class_type = $fq_class_name;
                 $template_result->static_class_is_final = $storage->final;
@@ -663,7 +665,7 @@ final class NewAnalyzer extends CallAnalyzer
                 new CodeLocation($statements_analyzer->getSource(), $stmt),
                 $statements_analyzer,
                 false,
-                $overload,
+                self::getConstructorOverload($statements_analyzer, $method_id, $stmt, $context),
             ) !== false;
 
             if ($from_static) {
