@@ -247,19 +247,19 @@ final class IfAnalyzer
         } else {
             if (!$has_break_statement) {
                 $if_scope->reasonable_clauses = [];
+            }
 
-                // If we're assigning inside
-                if ($if_conditional_scope->assigned_in_conditional_var_ids
-                    && $if_scope->post_leaving_if_context
-                ) {
-                    self::addConditionallyAssignedVarsToContext(
-                        $statements_analyzer,
-                        $stmt->cond,
-                        $if_scope->post_leaving_if_context,
-                        $outer_context,
-                        $if_conditional_scope->assigned_in_conditional_var_ids,
-                    );
-                }
+            // If we're assigning inside
+            if ($if_conditional_scope->assigned_in_conditional_var_ids
+                && $if_scope->post_leaving_if_context
+            ) {
+                self::addConditionallyAssignedVarsToContext(
+                    $statements_analyzer,
+                    $stmt->cond,
+                    $if_scope->post_leaving_if_context,
+                    $outer_context,
+                    $if_conditional_scope->assigned_in_conditional_var_ids,
+                );
             }
         }
 
