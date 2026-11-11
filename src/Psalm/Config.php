@@ -34,7 +34,6 @@ use Psalm\Exception\ConfigNotFoundException;
 use Psalm\Internal\Analyzer\ClassLikeAnalyzer;
 use Psalm\Internal\Analyzer\FileAnalyzer;
 use Psalm\Internal\Analyzer\ProjectAnalyzer;
-use Psalm\Internal\CliUtils;
 use Psalm\Internal\Composer;
 use Psalm\Internal\EventDispatcher;
 use Psalm\Internal\Fork\IgbinarySerializer;
@@ -1379,80 +1378,6 @@ final class Config
             );
         }
 
-        // any paths passed via CLI should be added to the projectFiles
-        // as they're getting analyzed like if they are part of the project
-        // ProjectAnalyzer::getInstance()->check_paths_files is not populated at this point in time
-
-        $paths_to_check = null;
-
-        global $argv;
-
-        // Hack for Symfonys own argv resolution.
-        // @see https://github.com/vimeo/psalm/issues/10465
-        if (!isset($argv[0]) || basename($argv[0]) !== 'psalm-plugin') {
-            $paths_to_check = CliUtils::getPathsToCheck(null);
-        }
-
-        if ($paths_to_check !== null) {
-            $paths_to_add_to_project_files = [];
-            foreach ($paths_to_check as $path) {
-                // if we have an .xml arg here, the files passed are invalid
-                // valid cases (in which we don't want to add CLI passed files to projectFiles though)
-                // are e.g. if running phpunit tests for psalm itself
-                if (str_ends_with($path, '.xml')) {
-                    $paths_to_add_to_project_files = [];
-                    break;
-                }
-
-                // we need an absolute path for checks
-                if (Path::isRelative($path)) {
-                    $prospective_path = $base_dir . DIRECTORY_SEPARATOR . $path;
-                } else {
-                    $prospective_path = $path;
-                }
-
-                // will report an error when config is loaded anyway
-                if (!file_exists($prospective_path)) {
-                    continue;
-                }
-
-                if ($config->isInProjectDirs($prospective_path)) {
-                    continue;
-                }
-
-                $paths_to_add_to_project_files[] = $prospective_path;
-            }
-
-            if ($paths_to_add_to_project_files !== [] && !isset($config_xml->projectFiles)) {
-                if ($config_xml === null) {
-                    $config_xml = new SimpleXMLElement('<psalm/>');
-                }
-                $config_xml->addChild('projectFiles');
-            }
-
-            if ($paths_to_add_to_project_files !== [] && isset($config_xml->projectFiles)) {
-                foreach ($paths_to_add_to_project_files as $path) {
-                    if (is_dir($path)) {
-                        $child = $config_xml->projectFiles->addChild('directory');
-                    } else {
-                        $child = $config_xml->projectFiles->addChild('file');
-                    }
-
-                    $child->addAttribute('name', $path);
-                }
-
-                $project_files_xml = $config_xml->projectFiles;
-                $config->project_files = self::loadWithContext(
-                    '<projectFiles>',
-                    static fn(): ProjectFileFilter => ProjectFileFilter::loadFromXMLElement(
-                        $project_files_xml,
-                        $base_dir,
-                        true,
-                    ),
-                );
-            }
-        }
-
         if (isset($config_xml->extraFiles)) {
             $extra_files_xml = $config_xml->extraFiles;
             $config->extra_files = self::loadWithContext(
@@ -2302,6 +2227,30 @@ final class Config
         $offset = strrpos($class, '\\');
 
         return $offset === false ? $class : substr($class, $offset + 1);
+    }
+
+    /**
+     * Treats the existing files and directories passed on the command line as part of <projectFiles>,
+     * so that Psalm reports all issues in them, even when the config doesn't list them.
+     *
+     * @internal
+     * @param list<string> $paths absolute paths
+     */
+    public function addPathsToProjectFiles(array $paths): void
+    {
+        foreach ($paths as $path) {
+            if ($this->isInProjectDirs($path)) {
+                continue;
+            }
+
+            $this->project_files ??= new ProjectFileFilter(true);
+
+            if (is_dir($path)) {
+                $this->project_files->addDirectory($path);
+            } else {
+                $this->project_files->addFile($path);
+            }
+        }
     }
 
     /**

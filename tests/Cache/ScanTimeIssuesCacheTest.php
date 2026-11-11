@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace Psalm\Tests\Cache;
 
-use Override;
 use PHPUnit\Framework\Attributes\DataProvider;
 use Psalm\Config;
 use Psalm\Internal\Analyzer\ProjectAnalyzer;
@@ -32,16 +31,6 @@ use const DIRECTORY_SEPARATOR;
  */
 final class ScanTimeIssuesCacheTest extends TestCase
 {
-    #[Override]
-    public static function setUpBeforeClass(): void
-    {
-        parent::setUpBeforeClass();
-
-        // hack to isolate Psalm from PHPUnit cli arguments
-        global $argv;
-        $argv = [];
-    }
-
     /**
      * @param array<string, string> $files
      * @param list<string> $expected_issues

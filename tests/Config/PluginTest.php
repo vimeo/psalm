@@ -51,10 +51,6 @@ final class PluginTest extends DeferredAnalyzerTestCase
     {
         parent::setUpBeforeClass();
 
-        // hack to isolate Psalm from PHPUnit cli arguments
-        global $argv;
-        $argv = [];
-
         new TestConfig();
     }
 

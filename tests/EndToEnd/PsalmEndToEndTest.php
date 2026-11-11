@@ -309,6 +309,55 @@ final class PsalmEndToEndTest extends TestCase
         $this->assertSame(0, substr_count($result['STDOUT'], 'ParseError'));
     }
 
+    /**
+     * Guard: passes on master too, where Config::loadFromXML() adds the paths, and fails if psalm doesn't
+     */
+    public function testAFilePassedOutsideTheProjectFilesHidesTheErrorsOfTheFilesItRequires(): void
+    {
+        $this->runPsalmInit(1);
+        unlink(self::$tmpDir . '/src/FileWithErrors.php');
+        mkdir(self::$tmpDir . '/outside');
+        file_put_contents(self::$tmpDir . '/outside/Dependency.php', "<?php\nfunction dep(): int {\n    return 'a';\n}\n");
+        file_put_contents(
+            self::$tmpDir . '/outside/Passed.php',
+            "<?php\nrequire __DIR__ . '/Dependency.php';\nfunction f(): int {\n    return dep() . 'a';\n}\n",
+        );
+
+        try {
+            $result = $this->runPsalm(['--no-progress', 'outside/Passed.php'], self::$tmpDir, true, false);
+        } finally {
+            self::recursiveRemoveDirectory(self::$tmpDir . '/outside');
+        }
+
+        $this->assertStringContainsString('Passed.php', $result['STDOUT']);
+        $this->assertStringNotContainsString('Dependency.php', $result['STDOUT']);
+    }
+
+    /**
+     * Guard: passes on master too, where Config::loadFromXML() adds the paths, and fails if psalter doesn't
+     */
+    public function testPsalterAltersFilesPassedOutsideTheProjectFiles(): void
+    {
+        $this->runPsalmInit(1);
+        $psalm_xml = (string) file_get_contents(self::$tmpDir . '/psalm.xml');
+        file_put_contents(self::$tmpDir . '/psalm.xml', str_replace('<psalm', '<psalm runTaintAnalysis="false"', $psalm_xml));
+        mkdir(self::$tmpDir . '/outside');
+        file_put_contents(self::$tmpDir . '/outside/a.php', "<?php\nfunction a() {\n    return 1;\n}\n");
+        file_put_contents(self::$tmpDir . '/outside/b.php', "<?php\nfunction b() {\n    return 1;\n}\n");
+
+        try {
+            (new Process(
+                [PHP_BINARY, $this->psalter, '--issues=MissingReturnType', 'outside/a.php', 'outside/b.php'],
+                self::$tmpDir,
+            ))->mustRun();
+
+            $this->assertStringContainsString('function a(): int', (string) file_get_contents(self::$tmpDir . '/outside/a.php'));
+            $this->assertStringContainsString('function b(): int', (string) file_get_contents(self::$tmpDir . '/outside/b.php'));
+        } finally {
+            self::recursiveRemoveDirectory(self::$tmpDir . '/outside');
+        }
+    }
+
     public function testPsalmWithPHPVersionOverride(): void
     {
         $this->runPsalmInit(1);

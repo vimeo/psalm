@@ -328,6 +328,10 @@ final class Psalm
 
         $paths_to_check = CliUtils::getPathsToCheck($options['f'] ?? null);
 
+        if ($paths_to_check !== null) {
+            $config->addPathsToProjectFiles($paths_to_check);
+        }
+
         if ($config->resolve_from_config_file) {
             $current_dir = $config->base_dir;
             chdir($current_dir);

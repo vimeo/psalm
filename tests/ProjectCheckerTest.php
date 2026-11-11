@@ -42,10 +42,6 @@ final class ProjectCheckerTest extends DeferredAnalyzerTestCase
     {
         parent::setUpBeforeClass();
 
-        // hack to stop Psalm seeing the phpunit arguments
-        global $argv;
-        $argv = [];
-
         new TestConfig();
     }
 

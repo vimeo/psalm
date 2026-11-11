@@ -55,10 +55,6 @@ final class CacheConsolidationTest extends TestCase
     {
         parent::setUpBeforeClass();
 
-        // hack to isolate Psalm from PHPUnit cli arguments
-        global $argv;
-        $argv = [];
-
         self::$cache_root = sys_get_temp_dir()
             . DIRECTORY_SEPARATOR
             . uniqid('psalm-cache-consolidation-test-', true);
