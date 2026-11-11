@@ -23,25 +23,30 @@ final class RedundantConditionTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
-            'shapesWithOptionalKeysOfOtherValuesCanBeIdentical' => [
-                'code' => '<?php
-                    /**
-                     * @param array{foo: 1, bar?: 2} $a
-                     * @param array{foo: 1, bar?: 3} $b
-                     */
-                    function f(array $a, array $b): bool {
-                        return $a === $b;
-                    }',
-            ],
-            'shapeWithAnOptionalKeyCanBeIdenticalToOneWithoutIt' => [
-                'code' => '<?php
-                    /**
-                     * @param array{foo: 1, bar?: 2} $a
-                     * @param array{foo: 1} $b
-                     */
-                    function f(array $a, array $b): bool {
-                        return $a === $b;
-                    }',
+            'ctypeCheckOfNumericStringExpressionIsNotRedundant' => [
+                'code' => <<<'PHP'
+                    <?php
+                    function negated(int $id): void {
+                        if (!ctype_digit("$id")) {
+                            throw new InvalidArgumentException("Bad id $id");
+                        }
+                    }
+
+                    function positive(int $id): void {
+                        if (ctype_digit("$id")) {
+                            echo "non-negative";
+                        }
+                    }
+
+                    function lower(): void {
+                        if (ctype_lower("abc" . rand())) {
+                            echo "lower";
+                        }
+                    }
+                    PHP,
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
             ],
             'negatedInstanceofOfAGenericSubclassOnAnInterfaceWithTemplateArguments' => [
                 'code' => '<?php
@@ -1084,6 +1089,26 @@ final class RedundantConditionTest extends TestCase
                         assert(!!$p);
                     }',
             ],
+            'shapesWithOptionalKeysOfOtherValuesCanBeIdentical' => [
+                'code' => '<?php
+                    /**
+                     * @param array{foo: 1, bar?: 2} $a
+                     * @param array{foo: 1, bar?: 3} $b
+                     */
+                    function f(array $a, array $b): bool {
+                        return $a === $b;
+                    }',
+            ],
+            'shapeWithAnOptionalKeyCanBeIdenticalToOneWithoutIt' => [
+                'code' => '<?php
+                    /**
+                     * @param array{foo: 1, bar?: 2} $a
+                     * @param array{foo: 1} $b
+                     */
+                    function f(array $a, array $b): bool {
+                        return $a === $b;
+                    }',
+            ],
         ];
     }
 
@@ -1094,28 +1119,6 @@ final class RedundantConditionTest extends TestCase
     public static function providerInvalidCodeParse(): iterable
     {
         return [
-            'shapesWithRequiredKeysOfOtherValuesCannotBeIdentical' => [
-                'code' => '<?php
-                    /**
-                     * @param array{foo: 1, bar: 2} $a
-                     * @param array{foo: 1, bar: 3} $b
-                     */
-                    function f(array $a, array $b): bool {
-                        return $a === $b;
-                    }',
-                'error_message' => 'TypeDoesNotContainType',
-            ],
-            'shapeWithARequiredKeyCannotBeIdenticalToOneWithoutIt' => [
-                'code' => '<?php
-                    /**
-                     * @param array{foo: 1, bar: 2} $a
-                     * @param array{foo: 1} $b
-                     */
-                    function f(array $a, array $b): bool {
-                        return $a === $b;
-                    }',
-                'error_message' => 'TypeDoesNotContainType',
-            ],
             'inequalityWithAnEmptyArrayOfANonEmptyArrayIsRedundant' => [
                 'code' => '<?php
                     $a = [1, 2];
@@ -1831,6 +1834,28 @@ final class RedundantConditionTest extends TestCase
 
                     if (array_key_exists("10", $a) && array_key_exists(10, $a)) {}',
                 'error_message' => 'RedundantCondition',
+            ],
+            'shapesWithRequiredKeysOfOtherValuesCannotBeIdentical' => [
+                'code' => '<?php
+                    /**
+                     * @param array{foo: 1, bar: 2} $a
+                     * @param array{foo: 1, bar: 3} $b
+                     */
+                    function f(array $a, array $b): bool {
+                        return $a === $b;
+                    }',
+                'error_message' => 'TypeDoesNotContainType',
+            ],
+            'shapeWithARequiredKeyCannotBeIdenticalToOneWithoutIt' => [
+                'code' => '<?php
+                    /**
+                     * @param array{foo: 1, bar: 2} $a
+                     * @param array{foo: 1} $b
+                     */
+                    function f(array $a, array $b): bool {
+                        return $a === $b;
+                    }',
+                'error_message' => 'TypeDoesNotContainType',
             ],
         ];
     }
