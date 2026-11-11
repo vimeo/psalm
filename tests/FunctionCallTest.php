@@ -24,20 +24,18 @@ final class FunctionCallTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
-            'filterVarIpGlobalRangeFlagOfBothValues' => [
+            'zeroIsANonEmptyLowercaseString' => [
                 'code' => <<<'PHP'
                     <?php
-                    /** @psalm-pure */
-                    function isGlobalIp(string $ip): bool
-                    {
-                        // 268435456 up to PHP 8.4, 536870912 from PHP 8.5
-                        return filter_var($ip, FILTER_VALIDATE_IP, 268435456) !== false
-                            || filter_var($ip, FILTER_VALIDATE_IP, 536870912) !== false;
-                    }
+                    /** @param non-empty-lowercase-string $s */
+                    function takesNonEmptyLowercase(string $s): void {}
+
+                    takesNonEmptyLowercase('0');
+                    takesNonEmptyLowercase('a');
                     PHP,
                 'assertions' => [],
                 'ignored_issues' => [],
-                'php_version' => '8.5',
+                'php_version' => '8.1',
             ],
             'propertyExistsOfAnUnknownOrDynamicPropertyIsNotReported' => [
                 'code' => '<?php
@@ -3069,6 +3067,21 @@ final class FunctionCallTest extends TestCase
                 'ignored_issues' => [],
                 'php_version' => '7.4',
             ],
+            'filterVarIpGlobalRangeFlagOfBothValues' => [
+                'code' => <<<'PHP'
+                    <?php
+                    /** @psalm-pure */
+                    function isGlobalIp(string $ip): bool
+                    {
+                        // 268435456 up to PHP 8.4, 536870912 from PHP 8.5
+                        return filter_var($ip, FILTER_VALIDATE_IP, 268435456) !== false
+                            || filter_var($ip, FILTER_VALIDATE_IP, 536870912) !== false;
+                    }
+                    PHP,
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.5',
+            ],
         ];
     }
 
@@ -3079,6 +3092,14 @@ final class FunctionCallTest extends TestCase
     public static function providerInvalidCodeParse(): iterable
     {
         return [
+            'emptyStringIsNotANonEmptyLowercaseString' => [
+                'code' => '<?php
+                    /** @param non-empty-lowercase-string $s */
+                    function takesNonEmptyLowercase(string $s): void {}
+
+                    takesNonEmptyLowercase("");',
+                'error_message' => 'InvalidArgument',
+            ],
             'propertyExistsOfADeclaredPropertyIsAlwaysTrue' => [
                 'code' => '<?php
                     class Page {
