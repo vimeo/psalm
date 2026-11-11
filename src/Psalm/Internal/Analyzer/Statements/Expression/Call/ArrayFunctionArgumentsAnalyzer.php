@@ -650,7 +650,7 @@ final class ArrayFunctionArgumentsAnalyzer
         Context $context,
         bool $is_array_shift,
     ): void {
-        $var_id = ExpressionIdentifier::getVarId(
+        $var_id = ExpressionIdentifier::getExtendedVarId(
             $arg->value,
             $statements_analyzer->getFQCLN(),
             $statements_analyzer,
