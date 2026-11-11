@@ -888,6 +888,8 @@ final class TemplateStandinTypeReplacer
 
                 if (isset(
                     $template_result->lower_bounds[$param_name_key][$atomic_type->defining_class],
+                ) && !self::isConstraintFallbackOnly(
+                    $template_result->lower_bounds[$param_name_key][$atomic_type->defining_class],
                 )) {
                     $existing_lower_bounds = $template_result->lower_bounds
                         [$param_name_key]
@@ -960,7 +962,9 @@ final class TemplateStandinTypeReplacer
                     || $t instanceof TIterable
                     || $t instanceof TObjectWithProperties
                 ) {
-                    $t = $t->setIntersectionTypes($extra_types);
+                    if ($extra_types) {
+                        $t = $t->setIntersectionTypes([...$t->getIntersectionTypes(), ...$extra_types]);
+                    }
                 } elseif ($t instanceof TObject && $extra_types) {
                     $t = reset($extra_types)->setIntersectionTypes(array_slice($extra_types, 1));
                 }
@@ -1080,7 +1084,21 @@ final class TemplateStandinTypeReplacer
         if ($input_type && !$template_result->readonly) {
             $valid_input_atomic_types = [];
 
+            // a template bounded by a class-string (the one generated for a parameter used in a conditional
+            // return type) is as good as its bound
+            $input_atomic_types = [];
+
             foreach ($input_type->getAtomicTypes() as $input_atomic_type) {
+                if ($input_atomic_type instanceof TTemplateParam) {
+                    foreach ($input_atomic_type->as->getAtomicTypes() as $bound_atomic_type) {
+                        $input_atomic_types[] = $bound_atomic_type;
+                    }
+                } else {
+                    $input_atomic_types[] = $input_atomic_type;
+                }
+            }
+
+            foreach ($input_atomic_types as $input_atomic_type) {
                 if ($input_atomic_type instanceof TLiteralClassString) {
                     $valid_input_atomic_types[] = new TNamedObject(
                         $input_atomic_type->value,
@@ -1116,7 +1134,14 @@ final class TemplateStandinTypeReplacer
                         $valid_input_atomic_types[] = new TObject(true);
                     }
                 } elseif ($input_atomic_type instanceof TDependentGetClass) {
-                    $valid_input_atomic_types[] = new TObject(true);
+                    // what get_class($x) is known to be: the class of $x, or any object if that is not known
+                    if ($input_atomic_type->as_type->isMixed() || $input_atomic_type->as_type->hasObject()) {
+                        $valid_input_atomic_types[] = new TObject(true);
+                    } else {
+                        foreach ($input_atomic_type->as_type->getAtomicTypes() as $as_atomic_type) {
+                            $valid_input_atomic_types[] = $as_atomic_type;
+                        }
+                    }
                 }
             }
 
@@ -1156,7 +1181,11 @@ final class TemplateStandinTypeReplacer
             }
 
             if ($generic_param) {
-                if (isset($template_result->lower_bounds[$atomic_type->param_name][$atomic_type->defining_class])) {
+                if (isset($template_result->lower_bounds[$atomic_type->param_name][$atomic_type->defining_class])
+                    && !self::isConstraintFallbackOnly(
+                        $template_result->lower_bounds[$atomic_type->param_name][$atomic_type->defining_class],
+                    )
+                ) {
                     $template_result->lower_bounds[$atomic_type->param_name][$atomic_type->defining_class] = [
                         new TemplateBound(
                             Type::combineUnionTypes(
@@ -1246,6 +1275,24 @@ final class TemplateStandinTypeReplacer
         }
 
         return null;
+    }
+
+    /**
+     * A placeholder written after an argument that bound nothing must be
+     * replaced, not merged, by a real bound.
+     *
+     * @param non-empty-list<TemplateBound> $lower_bounds
+     * @psalm-capabilities read-props
+     */
+    private static function isConstraintFallbackOnly(array $lower_bounds): bool
+    {
+        foreach ($lower_bounds as $lower_bound) {
+            if (!$lower_bound->from_constraint_fallback) {
+                return false;
+            }
+        }
+
+        return true;
     }
 
     /**
@@ -1347,14 +1394,21 @@ final class TemplateStandinTypeReplacer
         if ($input_type_part instanceof TGenericObject || $input_type_part instanceof TIterable) {
             $input_type_params = $input_type_part->type_params;
 
-            // a purity template left out (`Iterator<int, int>`) is bound to its default, never to mixed
+            // left-out templates (`Foo<A>`, purity ones of `Iterator<int, int>`) take their default, never mixed
             if ($input_type_part instanceof TGenericObject
                 && $codebase->classlike_storage_provider->has($input_type_part->value)
             ) {
                 $input_class_storage = $codebase->classlike_storage_provider->get($input_type_part->value);
+                $input_type_params = TemplateDefaults::fillTypeArguments(
+                    $input_type_params,
+                    $input_class_storage,
+                    $codebase,
+                    $input_type_part->from_docblock,
+                );
 
                 foreach (array_keys($input_class_storage->template_types ?? []) as $i => $template_name) {
                     if ($i >= count($input_type_params)
+                        && isset($input_class_storage->purity_templates[$template_name])
                         && isset($input_class_storage->template_defaults[$template_name])
                     ) {
                         $input_type_params[] = $input_class_storage->template_defaults[$template_name];

@@ -16,9 +16,11 @@ use Psalm\CodeLocation;
 use Psalm\Context;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\Internal\Codebase\ConstantTypeResolver;
+use Psalm\Internal\PhpVisitor\PartialApplicationVisitor;
 use Psalm\Internal\Provider\NodeDataProvider;
 use Psalm\Internal\Scanner\UnresolvedConstantComponent;
 use Psalm\Issue\InvalidAttribute;
+use Psalm\Issue\ParseError;
 use Psalm\Issue\UndefinedClass;
 use Psalm\IssueBuffer;
 use Psalm\Storage\ClassLikeStorage;
@@ -73,6 +75,8 @@ final class AttributesAnalyzer
             }
         }
 
+        self::reportPlaceholders($source, $attribute_groups, $suppressed_issues);
+
         foreach (self::iterateAttributeNodes($attribute_groups) as $attribute) {
             $fq_attribute_name = self::getFqAttributeName($source, $attribute);
 
@@ -95,14 +99,17 @@ final class AttributesAnalyzer
                 $suppressed_issues,
             );
 
-            self::analyzeAttributeConstruction(
-                $source,
-                $context,
-                $fq_attribute_name,
-                $attribute,
-                $suppressed_issues,
-                $storage instanceof ClassLikeStorage ? $storage : null,
-            );
+            // the placeholders are gone from the arguments, which PHP never passes
+            if ($attribute->getAttribute(PartialApplicationVisitor::PLACEHOLDER_IN_ATTRIBUTE) !== true) {
+                self::analyzeAttributeConstruction(
+                    $source,
+                    $context,
+                    $fq_attribute_name,
+                    $attribute,
+                    $suppressed_issues,
+                    $storage instanceof ClassLikeStorage ? $storage : null,
+                );
+            }
 
             if (($attribute_class_flags & GlobalAttribute::IS_REPEATABLE) === 0) {
                 // Not IS_REPEATABLE
@@ -152,6 +159,31 @@ final class AttributesAnalyzer
                         "Attribute {$attribute_name} cannot be used on a function or method with a "
                             . 'void or never return type',
                         $attribute_name_location,
+                    ),
+                    $suppressed_issues,
+                );
+            }
+        }
+    }
+
+    /**
+     * Reports the argument placeholders PHP rejects in attributes, on every target (including those with no other
+     * attribute checks)
+     *
+     * @param array<array-key, AttributeGroup> $attribute_groups
+     * @param array<array-key, string> $suppressed_issues
+     */
+    public static function reportPlaceholders(
+        SourceAnalyzer $source,
+        array $attribute_groups,
+        array $suppressed_issues,
+    ): void {
+        foreach (self::iterateAttributeNodes($attribute_groups) as $attribute) {
+            if ($attribute->getAttribute(PartialApplicationVisitor::PLACEHOLDER_IN_ATTRIBUTE) === true) {
+                IssueBuffer::maybeAdd(
+                    new ParseError(
+                        'Cannot create Closure as attribute argument',
+                        new CodeLocation($source, $attribute),
                     ),
                     $suppressed_issues,
                 );

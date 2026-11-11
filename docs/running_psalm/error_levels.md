@@ -74,12 +74,8 @@ These issues have very low false-positive rates and indicate definite problems. 
  - [LoopInvalidation](issues/LoopInvalidation.md)
  - [MethodSignatureMustOmitReturnType](issues/MethodSignatureMustOmitReturnType.md)
  - [MethodSignatureMustProvideReturnType](issues/MethodSignatureMustProvideReturnType.md)
- - [MissingAbstractPureAnnotation](issues/MissingAbstractPureAnnotation.md)
  - [MissingDependency](issues/MissingDependency.md)
  - [MissingFile](issues/MissingFile.md)
- - [MissingImmutableAnnotation](issues/MissingImmutableAnnotation.md)
- - [MissingInterfaceImmutableAnnotation](issues/MissingInterfaceImmutableAnnotation.md)
- - [MissingPureAnnotation](issues/MissingPureAnnotation.md)
  - [MissingTemplateParam](issues/MissingTemplateParam.md)
  - [MissingThrowsDocblock](issues/MissingThrowsDocblock.md)
  - [NoEnumProperties](issues/NoEnumProperties.md)
@@ -237,6 +233,7 @@ These issues become info (non-blocking) at level 5 and higher.
 
  - [FalseOperand](issues/FalseOperand.md)
  - [ForbiddenCode](issues/ForbiddenCode.md)
+ - [HiddenGeneratorReturn](issues/HiddenGeneratorReturn.md)
  - [IfThisIsMismatch](issues/IfThisIsMismatch.md)
  - [ImplementedParamTypeMismatch](issues/ImplementedParamTypeMismatch.md)
  - [ImplementedReturnTypeMismatch](issues/ImplementedReturnTypeMismatch.md)
@@ -344,7 +341,11 @@ These issues become info (non-blocking) at level 8.
 These issues are only reported when their corresponding feature is enabled (e.g., `--taint-analysis` for Tainted* issues, `--find-unused-code` for Unused* issues). When enabled, they are always treated as errors.
 
  - [LiteralKeyUnshapedArray](issues/LiteralKeyUnshapedArray.md)
+ - [MissingAbstractPureAnnotation](issues/MissingAbstractPureAnnotation.md)
+ - [MissingImmutableAnnotation](issues/MissingImmutableAnnotation.md)
+ - [MissingInterfaceImmutableAnnotation](issues/MissingInterfaceImmutableAnnotation.md)
  - [MissingOverrideAttribute](issues/MissingOverrideAttribute.md)
+ - [MissingPureAnnotation](issues/MissingPureAnnotation.md)
  - [PossiblyUndefinedIntArrayOffset](issues/PossiblyUndefinedIntArrayOffset.md)
  - [PossiblyUndefinedStringArrayOffset](issues/PossiblyUndefinedStringArrayOffset.md)
  - [PossiblyUnusedMethod](issues/PossiblyUnusedMethod.md)

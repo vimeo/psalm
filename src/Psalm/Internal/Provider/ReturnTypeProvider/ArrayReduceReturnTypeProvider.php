@@ -209,10 +209,13 @@ final class ArrayReduceReturnTypeProvider implements FunctionReturnTypeProviderI
                 $part_match_found = false;
 
                 foreach ($mapping_function_id_parts as $mapping_function_id_part) {
-                    if (isset($call_map[$mapping_function_id_part][0])) {
-                        if ($call_map[$mapping_function_id_part][0]) {
+                    $call_map_return_type = $call_map[$mapping_function_id_part][0]
+                        ?? $call_map[$mapping_function_id_part][-1]
+                        ?? null;
+                    if ($call_map_return_type !== null) {
+                        if ($call_map_return_type) {
                             $mapped_function_return =
-                                Type::parseString($call_map[$mapping_function_id_part][0]);
+                                Type::parseString($call_map_return_type);
 
                             $reduce_return_type = Type::combineUnionTypes(
                                 $reduce_return_type,
