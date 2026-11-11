@@ -587,7 +587,27 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
             foreach ($byref_uses as $var_id => $_) {
                 // unsetting the variable only drops the closure's own reference to it: what the
                 // closure wrote through the reference before is not known anymore
-                $byref_type = $ref_context->vars_in_scope[$var_id] ?? Type::getMixed();
+                $end_type = $ref_context->vars_in_scope[$var_id] ?? null;
+
+                // the closure leaves through its returns: where it also has no end, nothing else is possible
+                $types_at_return = $this instanceof ClosureAnalyzer
+                    ? $this->captured_by_ref_types_at_return[$var_id] ?? []
+                    : [];
+
+                if ($types_at_return !== []) {
+                    $path_types = $end_type !== null ? [$end_type, ...$types_at_return] : $types_at_return;
+                    $byref_type = Type::combineUnionTypeArray($path_types, $codebase);
+
+                    // a path on which the closure left the variable as it was (mixed in the closure) makes it mixed
+                    foreach ($path_types as $path_type) {
+                        if ($path_type->isMixed()) {
+                            $byref_type = Type::getMixed();
+                            break;
+                        }
+                    }
+                } else {
+                    $byref_type = $end_type ?? Type::getMixed();
+                }
 
                 $byref_vars[$var_id] = $byref_type;
                 $context->vars_in_scope[$var_id] = $byref_type;
@@ -1032,7 +1052,6 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
             && !$context->collect_initializations
             && !$context->collect_mutations
             && $codebase->find_unused_variables
-            && $context->check_variables
         ) {
             $this->checkParamReferences(
                 $statements_analyzer,
@@ -1289,7 +1308,10 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
     ): void {
         $codebase = $statements_analyzer->getCodebase();
 
-        $unused_params = $this->detectUnusedParameters($statements_analyzer, $storage, $context);
+        // after `eval`, `extract` or an include the uses of the params are unknown
+        $unused_params = $context->check_variables
+            ? $this->detectUnusedParameters($statements_analyzer, $storage, $context)
+            : [];
 
         if (!$storage instanceof MethodStorage
             || !$storage->cased_name
@@ -3059,8 +3081,24 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
                 $closure_return_type = Type::getMixed();
             }
 
+            // `self` in the signature is the class the closure is written in (the using class, in a trait), wherever
+            // the closure is called from
+            $closure_params = [];
+
+            foreach ($storage->params as $param) {
+                $closure_params[] = $param->type
+                    ? $param->setType(TypeExpander::expandUnion(
+                        $codebase,
+                        $param->type,
+                        $context->self,
+                        null,
+                        $this->getParentFQCLN(),
+                    ))
+                    : $param;
+            }
+
             $closure_type = new TClosure(
-                $storage->params,
+                $closure_params,
                 $closure_return_type,
                 $storage->capabilities,
                 $storage instanceof FunctionStorage ? $storage->byref_uses : [],
