@@ -545,6 +545,11 @@ final class TemplateInferredTypeReplacer
 
                 $matching_else_types[] = $candidate_atomic_type;
 
+                // no value is of the type `never`
+                if ($conditional_type->isNever()) {
+                    continue;
+                }
+
                 // an intersection of an interface and the final Closure is not an object there can be
                 if (array_all(
                     $conditional_type->getAtomicTypes(),
