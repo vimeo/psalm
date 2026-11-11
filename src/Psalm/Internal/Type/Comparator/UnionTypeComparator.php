@@ -332,6 +332,13 @@ final class UnionTypeComparator
                     }
 
                     if ($union_comparison_result
+                        && $is_atomic_contained_by
+                        && $atomic_comparison_result->callable_by_reference_mismatch
+                    ) {
+                        $union_comparison_result->callable_by_reference_mismatch = true;
+                    }
+
+                    if ($union_comparison_result
                         && $atomic_comparison_result->type_coerced_from_scalar !== null
                     ) {
                         $union_comparison_result->type_coerced_from_scalar

@@ -189,6 +189,7 @@ These issues become info (non-blocking) at level 3 and higher.
 These issues become info (non-blocking) at level 4 and higher.
 
  - [ArgumentTypeCoercion](issues/ArgumentTypeCoercion.md)
+ - [CallableByReferenceMismatch](issues/CallableByReferenceMismatch.md)
  - [LessSpecificReturnStatement](issues/LessSpecificReturnStatement.md)
  - [MoreSpecificReturnType](issues/MoreSpecificReturnType.md)
  - [NonInvariantDocblockPropertyType](issues/NonInvariantDocblockPropertyType.md)

@@ -131,9 +131,10 @@ final class CallableTypeComparator
                     return false;
                 }
 
-                // a callee that takes the argument by reference can't be called with a value
-                if ($input_param->by_ref && !$container_param->by_ref) {
-                    return false;
+                // a callee that takes the argument by reference can't be called with a value: it is a subtype all the
+                // same, and reported where the type is checked
+                if ($input_param->by_ref && !$container_param->by_ref && $atomic_comparison_result) {
+                    $atomic_comparison_result->callable_by_reference_mismatch = true;
                 }
 
                 if ($container_param->type

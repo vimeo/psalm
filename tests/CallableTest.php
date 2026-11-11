@@ -22,6 +22,35 @@ final class CallableTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'byReferenceCallbackOfArrayWalkIsAccepted' => [
+                'code' => '<?php
+                    /** @param list<int> $numbers */
+                    function bump(array $numbers): void {
+                        array_walk($numbers, function (int &$number): void {
+                            $number++;
+                        });
+                        array_walk_recursive($numbers, function (int &$number): void {
+                            $number++;
+                        });
+                    }',
+            ],
+            'byReferenceCalleeGivenToAByValueCallableCanBeSuppressed' => [
+                'code' => '<?php
+                    /** @param callable(int): void $closure */
+                    function takesClosure(callable $closure): void {}
+
+                    /** @psalm-suppress CallableByReferenceMismatch */
+                    takesClosure(function (int &$i): void {});',
+            ],
+            'byReferenceVariadicCalleeGivenToAByReferenceVariadicCallableIsAccepted' => [
+                'code' => '<?php
+                    function bump(int &...$numbers): void {}
+
+                    /** @param callable(int &...$numbers): void $closure */
+                    function takesRefCallable(callable $closure): void {}
+
+                    takesRefCallable("bump");',
+            ],
             'byReferenceCallableParamAcceptsByReferenceCallee' => [
                 'code' => '<?php
                     /** @param callable(int &$i): void $closure */
@@ -2860,6 +2889,89 @@ final class CallableTest extends TestCase
     public static function providerInvalidCodeParse(): iterable
     {
         return [
+            'byReferenceFunctionNameIsNotCallableWithValue' => [
+                'code' => '<?php
+                    /** @param callable(int): int $closure */
+                    function takesClosure($closure): int {
+                        return $closure(123);
+                    }
+                    function takesIntByRef(int &$i): int {
+                        return $i ** 2;
+                    }
+                    takesClosure("takesIntByRef");',
+                'error_message' => 'CallableByReferenceMismatch',
+            ],
+            'byReferenceCallableParamRejectsValueCallee' => [
+                'code' => '<?php
+                    /** @param callable(int &$i): void $closure */
+                    function takesRefCallable(callable $closure): void {}
+                    /** @param callable(int): void $closure */
+                    function takesValueCallable(callable $closure): void {}
+                    /** @param callable(int &$i): void $closure */
+                    function forward(callable $closure): void {
+                        takesValueCallable($closure);
+                    }',
+                'error_message' => 'CallableByReferenceMismatch',
+            ],
+            'byReferenceVariadicFunctionNameIsNotCallableWithValue' => [
+                'code' => '<?php
+                    function bump(int &...$numbers): void {
+                        foreach ($numbers as &$number) {
+                            $number++;
+                        }
+                    }
+
+                    /** @param callable(int): void $closure */
+                    function takesValueCallable(callable $closure): void {}
+
+                    takesValueCallable("bump");',
+                'error_message' => 'CallableByReferenceMismatch - src' . DIRECTORY_SEPARATOR . 'somefile.php:11:40',
+            ],
+            'byReferenceVariadicClosureIsNotCallableWithValue' => [
+                'code' => '<?php
+                    /** @param callable(int): void $closure */
+                    function takesValueCallable(callable $closure): void {}
+
+                    takesValueCallable(function (int &...$numbers): void {});',
+                'error_message' => 'CallableByReferenceMismatch - src' . DIRECTORY_SEPARATOR . 'somefile.php:5:40',
+            ],
+            'byReferenceClosureIsNotCallableWithValue' => [
+                'code' => '<?php
+                    /** @param callable(int): void $closure */
+                    function takesClosure(callable $closure): void {}
+                    takesClosure(function (int &$i): void {});',
+                'error_message' => 'CallableByReferenceMismatch',
+            ],
+            'byReferenceClosureGivenToUsortIsNotCallableWithValues' => [
+                'code' => '<?php
+                    /** @param list<int> $numbers */
+                    function sorted(array $numbers): void {
+                        usort($numbers, function (int &$a, int &$b): int {
+                            return $a <=> $b;
+                        });
+                    }',
+                'error_message' => 'CallableByReferenceMismatch',
+            ],
+            'byReferenceClosureGivenToArrayMapIsNotCallableWithValues' => [
+                'code' => '<?php
+                    /** @param list<int> $numbers */
+                    function doubled(array $numbers): array {
+                        return array_map(function (int &$n): int {
+                            return $n * 2;
+                        }, $numbers);
+                    }',
+                'error_message' => 'CallableByReferenceMismatch',
+            ],
+            'byReferenceVariadicGivenWhereTwoValuesAreExpectedIsNotCallableWithValues' => [
+                'code' => '<?php
+                    function bump(int &...$numbers): void {}
+
+                    /** @param callable(int, int): void $closure */
+                    function takesValueCallable(callable $closure): void {}
+
+                    takesValueCallable("bump");',
+                'error_message' => 'CallableByReferenceMismatch',
+            ],
             'stringNamingAFunctionForClosureParamOnly' => [
                 'code' => <<<'PHP'
                     <?php
@@ -2958,59 +3070,6 @@ final class CallableTest extends TestCase
 
                     foo(A::class . "::barr");',
                 'error_message' => 'UndefinedMethod',
-            ],
-            'byReferenceFunctionNameIsNotCallableWithValue' => [
-                'code' => '<?php
-                    /** @param callable(int): int $closure */
-                    function takesClosure($closure): int {
-                        return $closure(123);
-                    }
-                    function takesIntByRef(int &$i): int {
-                        return $i ** 2;
-                    }
-                    takesClosure("takesIntByRef");',
-                'error_message' => 'InvalidArgument',
-            ],
-            'byReferenceCallableParamRejectsValueCallee' => [
-                'code' => '<?php
-                    /** @param callable(int &$i): void $closure */
-                    function takesRefCallable(callable $closure): void {}
-                    /** @param callable(int): void $closure */
-                    function takesValueCallable(callable $closure): void {}
-                    /** @param callable(int &$i): void $closure */
-                    function forward(callable $closure): void {
-                        takesValueCallable($closure);
-                    }',
-                'error_message' => 'InvalidArgument',
-            ],
-            'byReferenceVariadicFunctionNameIsNotCallableWithValue' => [
-                'code' => '<?php
-                    function bump(int &...$numbers): void {
-                        foreach ($numbers as &$number) {
-                            $number++;
-                        }
-                    }
-
-                    /** @param callable(int): void $closure */
-                    function takesValueCallable(callable $closure): void {}
-
-                    takesValueCallable("bump");',
-                'error_message' => 'InvalidArgument - src' . DIRECTORY_SEPARATOR . 'somefile.php:11:40',
-            ],
-            'byReferenceVariadicClosureIsNotCallableWithValue' => [
-                'code' => '<?php
-                    /** @param callable(int): void $closure */
-                    function takesValueCallable(callable $closure): void {}
-
-                    takesValueCallable(function (int &...$numbers): void {});',
-                'error_message' => 'InvalidArgument - src' . DIRECTORY_SEPARATOR . 'somefile.php:5:40',
-            ],
-            'byReferenceClosureIsNotCallableWithValue' => [
-                'code' => '<?php
-                    /** @param callable(int): void $closure */
-                    function takesClosure(callable $closure): void {}
-                    takesClosure(function (int &$i): void {});',
-                'error_message' => 'InvalidArgument',
             ],
             'undefinedCallableMethodArray' => [
                 'code' => '<?php

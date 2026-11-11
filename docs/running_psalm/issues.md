@@ -5,6 +5,7 @@
  - [AmbiguousConstantInheritance](issues/AmbiguousConstantInheritance.md)
  - [ArgumentTypeCoercion](issues/ArgumentTypeCoercion.md)
  - [AssignmentToVoid](issues/AssignmentToVoid.md)
+ - [CallableByReferenceMismatch](issues/CallableByReferenceMismatch.md)
  - [CheckType](issues/CheckType.md)
  - [CircularReference](issues/CircularReference.md)
  - [ClassMustBeFinal](issues/ClassMustBeFinal.md)
