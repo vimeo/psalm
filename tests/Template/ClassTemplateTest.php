@@ -57,31 +57,29 @@ final class ClassTemplateTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
-            'conditionalConstructorParamBeforeTheTemplateParam' => [
+            'listParamInheritedFromATemplatedParentAcceptsAList' => [
                 'code' => '<?php
-                    /**
-                     * @template T of self::*
-                     */
-                    class SomeTemplatedClass {
-                        public const TYPE1 = "type1";
-                        public const TYPE2 = "type2";
+                    /** @template T */
+                    abstract class P {
+                        /** @param list<string> $x */
+                        abstract public function f(array $x): void;
 
-                        /**
-                         * @param (T is self::TYPE1 ? string : null) $someParam
-                         * @param T $type
-                         */
-                        public function __construct(
-                            private ?string $someParam,
-                            private string $type,
-                        ) {}
+                        /** @param non-empty-list<string> $x */
+                        abstract public function g(array $x): void;
+                    }
 
-                        /**
-                         * @return self<self::TYPE1>
-                         */
-                        public static function type1(): self {
-                            return new self("some-string", self::TYPE1);
-                        }
-                    }',
+                    /** @extends P<string> */
+                    final class C extends P {
+                        /** @inheritDoc */
+                        public function f(array $x): void {}
+
+                        /** @inheritDoc */
+                        public function g(array $x): void {}
+                    }
+
+                    $c = new C();
+                    $c->f(["a", "b"]);
+                    $c->g(["a", "b"]);',
             ],
             'sameTypeFromTwoConstructionsOfAGenericClassIsOneType' => [
                 'code' => '<?php
@@ -5974,6 +5972,32 @@ final class ClassTemplateTest extends TestCase
                 'ignored_issues' => [],
                 'php_version' => '8.0',
             ],
+            'conditionalConstructorParamBeforeTheTemplateParam' => [
+                'code' => '<?php
+                    /**
+                     * @template T of self::*
+                     */
+                    class SomeTemplatedClass {
+                        public const TYPE1 = "type1";
+                        public const TYPE2 = "type2";
+
+                        /**
+                         * @param (T is self::TYPE1 ? string : null) $someParam
+                         * @param T $type
+                         */
+                        public function __construct(
+                            private ?string $someParam,
+                            private string $type,
+                        ) {}
+
+                        /**
+                         * @return self<self::TYPE1>
+                         */
+                        public static function type1(): self {
+                            return new self("some-string", self::TYPE1);
+                        }
+                    }',
+            ],
         ];
     }
 
@@ -5984,6 +6008,23 @@ final class ClassTemplateTest extends TestCase
     public static function providerInvalidCodeParse(): iterable
     {
         return [
+            'listParamInheritedFromATemplatedParentRejectsAWrongList' => [
+                'code' => '<?php
+                    /** @template T */
+                    abstract class P {
+                        /** @param list<string> $x */
+                        abstract public function f(array $x): void;
+                    }
+
+                    /** @extends P<string> */
+                    final class C extends P {
+                        /** @inheritDoc */
+                        public function f(array $x): void {}
+                    }
+
+                    (new C())->f(["a", 1]);',
+                'error_message' => 'InvalidArgument',
+            ],
             'differentTypesFromTwoConstructionsOfAGenericClassAreNotOneType' => [
                 'code' => '<?php
                     class one {}
