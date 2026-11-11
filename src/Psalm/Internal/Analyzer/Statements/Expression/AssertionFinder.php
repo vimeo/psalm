@@ -26,6 +26,7 @@ use Psalm\Internal\Analyzer\ClassLikeAnalyzer;
 use Psalm\Internal\Analyzer\ClassLikeNameOptions;
 use Psalm\Internal\Analyzer\MethodAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\Fetch\ArrayFetchAnalyzer;
+use Psalm\Internal\Analyzer\Statements\Expression\Fetch\ConstFetchAnalyzer;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\Internal\Analyzer\TraitAnalyzer;
 use Psalm\Internal\Codebase\InternalCallMapHandler;
@@ -46,6 +47,7 @@ use Psalm\Node\Expr\BinaryOp\VirtualIdentical;
 use Psalm\Node\Expr\BinaryOp\VirtualNotIdentical;
 use Psalm\Node\Expr\VirtualArrayDimFetch;
 use Psalm\Storage\Assertion;
+use Psalm\Storage\Assertion\Any;
 use Psalm\Storage\Assertion\ArrayKeyExists;
 use Psalm\Storage\Assertion\DoesNotHaveAtLeastCount;
 use Psalm\Storage\Assertion\DoesNotHaveExactCount;
@@ -97,6 +99,7 @@ use Psalm\Type\Atomic\TMixed;
 use Psalm\Type\Atomic\TNamedObject;
 use Psalm\Type\Atomic\TNull;
 use Psalm\Type\Atomic\TObject;
+use Psalm\Type\Atomic\TObjectWithProperties;
 use Psalm\Type\Atomic\TResource;
 use Psalm\Type\Atomic\TTemplateParam;
 use Psalm\Type\Atomic\TTemplateParamClass;
@@ -106,7 +109,6 @@ use Psalm\Type\Reconciler;
 use Psalm\Type\Union;
 use UnexpectedValueException;
 
-use function array_key_exists;
 use function array_map;
 use function assert;
 use function count;
@@ -119,8 +121,8 @@ use function ltrim;
 use function preg_match;
 use function sprintf;
 use function str_ends_with;
-use function str_replace;
 use function str_starts_with;
+use function strlen;
 use function strpos;
 use function strtolower;
 use function substr;
@@ -191,6 +193,17 @@ final class AssertionFinder
             }
 
             return $if_types ? [$if_types] : [];
+        }
+
+        // the value of `$a ??= $b` is the value `$a` has afterwards
+        if ($conditional instanceof PhpParser\Node\Expr\AssignOp\Coalesce) {
+            $coalesce_var_name = ExpressionIdentifier::getExtendedVarId(
+                $conditional->var,
+                $this_class_name,
+                $source,
+            );
+
+            return $coalesce_var_name !== null ? [[$coalesce_var_name => [[new Truthy()]]]] : [];
         }
 
         $var_name = ExpressionIdentifier::getExtendedVarId(
@@ -875,6 +888,15 @@ final class AssertionFinder
             if ($first_var_name) {
                 $if_types[$first_var_name] = [[new NonEmptyCountable(true)]];
             }
+        } elseif ($expr->name instanceof PhpParser\Node\Name
+            && strtolower($expr->name->getFirst()) === 'defined'
+            && isset($expr->getArgs()[0])
+            && $expr->getArgs()[0]->value instanceof PhpParser\Node\Scalar\String_
+            && ConstFetchAnalyzer::isConstVarId($expr->getArgs()[0]->value->value)
+        ) {
+            // says nothing about the type of the constant, but puts it into the clause, so that
+            // `!defined('X') || !is_string(X)` narrows X where it is false
+            $if_types[$expr->getArgs()[0]->value->value] = [[new Any()]];
         } else {
             return self::processCustomAssertion($expr, $this_class_name, $source);
         }
@@ -1107,29 +1129,7 @@ final class AssertionFinder
             foreach ($if_true_assertions as $assertion) {
                 $if_types = [];
 
-                $newRules = [];
-
-                foreach ($assertion->rule as $rule) {
-                    $rule_type = $rule->getAtomicType();
-
-                    if ($rule_type instanceof TClassConstant) {
-                        $codebase = $source->getCodebase();
-
-                        $newRules[] = $rule->setAtomicType(
-                            TypeExpander::expandAtomic(
-                                $codebase,
-                                $rule_type,
-                                null,
-                                null,
-                                null,
-                            )[0],
-                        );
-                    } else {
-                        $newRules []= $rule;
-                    }
-                }
-
-                $assertion = new Possibilities($assertion->var_id, $newRules);
+                $assertion = self::expandClassConstantsOfRules($assertion, $source->getCodebase());
 
                 if (is_int($assertion->var_id) && isset($expr->getArgs()[$assertion->var_id])) {
                     if ($assertion->var_id === 0) {
@@ -1183,52 +1183,16 @@ final class AssertionFinder
                     $property = $exploded_id[1] ?? null;
 
                     if (is_numeric($var_id) && null !== $property && !$is_function) {
-                        $var_id_int = (int) $var_id;
-                        assert($var_id_int >= 0);
-                        $args = $expr->getArgs();
+                        $assertion_var_id = self::getAssertedArgumentPropertyVarId(
+                            $expr,
+                            $expr->getArgs(),
+                            $source,
+                            $assertion->var_id,
+                        );
 
-                        if (!array_key_exists($var_id_int, $args)) {
-                            IssueBuffer::maybeAdd(
-                                new InvalidDocblock(
-                                    'Variable '.$var_id.' is not an argument so cannot be asserted',
-                                    new CodeLocation($source, $expr),
-                                ),
-                            );
+                        if ($assertion_var_id === null) {
                             continue;
                         }
-
-                        $arg_value = $args[$var_id_int]->value;
-
-                        $arg_var_id = ExpressionIdentifier::getExtendedVarId($arg_value, null, $source);
-
-                        if (null === $arg_var_id) {
-                            IssueBuffer::maybeAdd(
-                                new InvalidDocblock(
-                                    'Variable being asserted as argument ' . ($var_id+1) .  ' cannot be found
-                                    in local scope',
-                                    new CodeLocation($source, $expr),
-                                ),
-                            );
-                            continue;
-                        }
-
-                        if (count($exploded_id) === 2) {
-                            $failedMessage = self::isPropertyImmutableOnArgument(
-                                $property,
-                                $source->getNodeTypeProvider()->getType($arg_value),
-                                $source->getCodebase()->classlike_storage_provider,
-                                $arg_var_id,
-                            );
-
-                            if (null !== $failedMessage) {
-                                IssueBuffer::maybeAdd(
-                                    new InvalidDocblock($failedMessage, new CodeLocation($source, $expr)),
-                                );
-                                continue;
-                            }
-                        }
-
-                        $assertion_var_id = str_replace($var_id, $arg_var_id, $assertion->var_id);
                     } elseif (!$expr instanceof PhpParser\Node\Expr\FuncCall) {
                         $assertion_var_id = $assertion->var_id;
 
@@ -1257,29 +1221,7 @@ final class AssertionFinder
             foreach ($if_false_assertions as $assertion) {
                 $if_types = [];
 
-                $newRules = [];
-
-                foreach ($assertion->rule as $rule) {
-                    $rule_type = $rule->getAtomicType();
-
-                    if ($rule_type instanceof TClassConstant) {
-                        $codebase = $source->getCodebase();
-
-                        $newRules []= $rule->setAtomicType(
-                            TypeExpander::expandAtomic(
-                                $codebase,
-                                $rule_type,
-                                null,
-                                null,
-                                null,
-                            )[0],
-                        );
-                    } else {
-                        $newRules []= $rule;
-                    }
-                }
-
-                $assertion = new Possibilities($assertion->var_id, $newRules);
+                $assertion = self::expandClassConstantsOfRules($assertion, $source->getCodebase());
 
                 if (is_int($assertion->var_id) && isset($expr->getArgs()[$assertion->var_id])) {
                     if ($assertion->var_id === 0) {
@@ -1326,50 +1268,16 @@ final class AssertionFinder
                     $property = $exploded_id[1] ?? null;
 
                     if (is_numeric($var_id) && null !== $property && !$is_function) {
-                        $args = $expr->getArgs();
-                        $var_id_int = (int) $var_id;
+                        $assertion_var_id = self::getAssertedArgumentPropertyVarId(
+                            $expr,
+                            $expr->getArgs(),
+                            $source,
+                            $assertion->var_id,
+                        );
 
-                        if (!array_key_exists($var_id_int, $args)) {
-                            IssueBuffer::maybeAdd(
-                                new InvalidDocblock(
-                                    'Variable '.$var_id.' is not an argument so cannot be asserted',
-                                    new CodeLocation($source, $expr),
-                                ),
-                            );
+                        if ($assertion_var_id === null) {
                             continue;
                         }
-                        $arg_value = $args[$var_id_int]->value;
-
-                        $arg_var_id = ExpressionIdentifier::getExtendedVarId($arg_value, null, $source);
-
-                        if (null === $arg_var_id) {
-                            IssueBuffer::maybeAdd(
-                                new InvalidDocblock(
-                                    'Variable being asserted as argument ' . ($var_id+1) .  ' cannot be found
-                                     in local scope',
-                                    new CodeLocation($source, $expr),
-                                ),
-                            );
-                            continue;
-                        }
-
-                        if (count($exploded_id) === 2) {
-                            $failedMessage = self::isPropertyImmutableOnArgument(
-                                $property,
-                                $source->getNodeTypeProvider()->getType($arg_value),
-                                $source->getCodebase()->classlike_storage_provider,
-                                $arg_var_id,
-                            );
-
-                            if (null !== $failedMessage) {
-                                IssueBuffer::maybeAdd(
-                                    new InvalidDocblock($failedMessage, new CodeLocation($source, $expr)),
-                                );
-                                continue;
-                            }
-                        }
-
-                        $assertion_var_id = str_replace($var_id, $arg_var_id, $assertion->var_id);
 
                         $if_types[$assertion_var_id] = self::getNegatedAlternatives($assertion->rule);
                     } elseif (!$expr instanceof PhpParser\Node\Expr\FuncCall) {
@@ -1395,6 +1303,83 @@ final class AssertionFinder
         }
 
         return $anded_types;
+    }
+
+    /**
+     * The id of the property of an argument that an `@psalm-assert-if-*` of `N->property` is about, or null, after
+     * reporting why it can't be asserted
+     *
+     * @param list<PhpParser\Node\Arg> $args
+     */
+    public static function getAssertedArgumentPropertyVarId(
+        PhpParser\NodeAbstract $expr,
+        array $args,
+        StatementsAnalyzer $source,
+        string $assertion_id,
+    ): ?string {
+        $exploded_id = explode('->', $assertion_id);
+        $var_id = $exploded_id[0];
+        $property = $exploded_id[1] ?? null;
+
+        if (!is_numeric($var_id) || !isset($args[(int) $var_id]) || $property === null) {
+            IssueBuffer::maybeAdd(
+                new InvalidDocblock(
+                    'Variable '.$var_id.' is not an argument so cannot be asserted',
+                    new CodeLocation($source, $expr),
+                ),
+            );
+
+            return null;
+        }
+
+        $arg_value = $args[(int) $var_id]->value;
+
+        $arg_var_id = ExpressionIdentifier::getExtendedVarId($arg_value, null, $source);
+
+        if (null === $arg_var_id) {
+            IssueBuffer::maybeAdd(
+                new InvalidDocblock(
+                    'Variable being asserted as argument ' . ((int) $var_id + 1) . ' cannot be found in local scope',
+                    new CodeLocation($source, $expr),
+                ),
+            );
+
+            return null;
+        }
+
+        if (count($exploded_id) === 2) {
+            $failedMessage = self::isPropertyImmutableOnArgument(
+                $property,
+                $source->getNodeTypeProvider()->getType($arg_value),
+                $source->getCodebase()->classlike_storage_provider,
+                $arg_var_id,
+            );
+
+            if (null !== $failedMessage) {
+                IssueBuffer::maybeAdd(
+                    new InvalidDocblock($failedMessage, new CodeLocation($source, $expr)),
+                );
+
+                return null;
+            }
+        }
+
+        return $arg_var_id . substr($assertion_id, strlen($var_id));
+    }
+
+    private static function expandClassConstantsOfRules(Possibilities $assertion, Codebase $codebase): Possibilities
+    {
+        $rules = [];
+
+        foreach ($assertion->rule as $rule) {
+            $rule_type = $rule->getAtomicType();
+
+            $rules[] = $rule_type instanceof TClassConstant
+                ? $rule->setAtomicType(TypeExpander::expandAtomic($codebase, $rule_type, null, null, null)[0])
+                : $rule;
+        }
+
+        return new Possibilities($assertion->var_id, $rules);
     }
 
     /**
@@ -2086,6 +2071,8 @@ final class AssertionFinder
             } elseif ($first_var_type
                 && $codebase
                 && $assertion_type instanceof IsType
+                // a string passing a ctype check is of the type, but a string of the type may not pass it ("-5")
+                && !str_starts_with($function_name, 'ctype_')
             ) {
                 self::processIrreconcilableFunctionCall(
                     $first_var_type,
@@ -4673,6 +4660,18 @@ final class AssertionFinder
         }
 
         foreach ($type->getAtomicTypes() as $type) {
+            if ($type instanceof TObjectWithProperties) {
+                if (!isset($type->properties[$property])) {
+                    return sprintf(
+                        'Property %s is not defined on variable %s so the assertion cannot be applied',
+                        $property,
+                        $name,
+                    );
+                }
+
+                continue;
+            }
+
             if (!$type instanceof TNamedObject) {
                 return 'Variable ' . $name . ' is not an object so the assertion cannot be applied';
             }

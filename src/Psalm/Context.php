@@ -1140,6 +1140,14 @@ final class Context
         $this->check_methods = $this->check_methods && $op_context->check_methods;
         $this->check_functions = $this->check_functions && $op_context->check_functions;
         $this->check_consts = $this->check_consts && $op_context->check_consts;
+
+        // `!defined('A') || !defined('B')`: both are defined where the condition is false
+        foreach ($op_context->constants as $const_name => $const_type) {
+            if (!isset($this->constants[$const_name])) {
+                $this->constants[$const_name] = $const_type;
+                $this->vars_in_scope[$const_name] = $const_type;
+            }
+        }
     }
 
     /**
