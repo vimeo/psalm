@@ -1634,6 +1634,30 @@ final class TypeAlgebraTest extends TestCase
                         return A::$x->y;
                     }',
             ],
+            'offsetKnownBeforeAnArrayUnionAssignmentIsKeptAfterTheIf' => [
+                'code' => '<?php
+                    /** @param mixed $extra */
+                    function widget(bool $a, bool $b, $extra): string {
+                        $variables = ["style" => "s", "uri" => "public://x"];
+                        $key = $variables["uri"] . ".dims";
+
+                        if ($a) {
+                            $variables["width"] = 1;
+                        } elseif ($b) {
+                            $variables += $extra;
+                        } else {
+                            $variables["width"] = null;
+                        }
+
+                        $uri = $variables["uri"];
+                        /** @psalm-check-type-exact $uri = "public://x" */
+
+                        return $uri . $key;
+                    }',
+                'assertions' => [],
+                'ignored_issues' => ['MixedAssignment', 'MixedOperand'],
+                'php_version' => '8.0',
+            ],
             'offsetKnownFromTheConditionIsForgottenWhenTheArrayIsReassigned' => [
                 'code' => '<?php
                     $dummy = ["test" => ""];

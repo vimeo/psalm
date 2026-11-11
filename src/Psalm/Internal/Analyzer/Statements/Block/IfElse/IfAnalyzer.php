@@ -480,6 +480,11 @@ final class IfAnalyzer
         // a variable is assigned as a whole where no offset or property of it is assigned next to it (writing
         // an offset of a property also lists the property)
         foreach ($assigned_var_ids as $var_id => $_) {
+            // `$a += [...]` keeps the offsets `$a` had
+            if (isset($if_context->array_union_assigned_var_ids[$var_id])) {
+                continue;
+            }
+
             foreach ($assigned_var_ids as $other_var_id => $_other) {
                 if (str_starts_with($other_var_id, $var_id . '[') || str_starts_with($other_var_id, $var_id . '->')) {
                     continue 2;

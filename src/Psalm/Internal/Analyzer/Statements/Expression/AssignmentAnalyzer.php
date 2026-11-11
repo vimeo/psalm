@@ -219,6 +219,7 @@ final class AssignmentAnalyzer
             unset($context->cond_referenced_var_ids[$extended_var_id]);
             $context->assigned_var_ids[$extended_var_id] = (int) $assign_var->getAttribute('startFilePos');
             $context->possibly_assigned_var_ids[$extended_var_id] = true;
+            unset($context->array_union_assigned_var_ids[$extended_var_id]);
         }
 
         $root_expr = $assign_var;
@@ -1060,8 +1061,26 @@ final class AssignmentAnalyzer
 
         $statements_analyzer->node_data = clone $statements_analyzer->node_data;
 
+        // `$a += $b` with an array `$a` keeps the offsets it had, whatever `$b` is
+        $union_var_id = $stmt instanceof PhpParser\Node\Expr\AssignOp\Plus
+            ? ExpressionIdentifier::getExtendedVarId(
+                $stmt->var,
+                $statements_analyzer->getFQCLN(),
+                $statements_analyzer,
+            )
+            : null;
+        $array_union_var_id = $union_var_id !== null
+            && isset($context->vars_in_scope[$union_var_id])
+            && $context->vars_in_scope[$union_var_id]->isArray()
+                ? $union_var_id
+                : null;
+
         if (ExpressionAnalyzer::analyze($statements_analyzer, $fake_assignment, $context) === false) {
             return false;
+        }
+
+        if ($array_union_var_id !== null) {
+            $context->array_union_assigned_var_ids[$array_union_var_id] = true;
         }
 
         $old_node_data->setType(
