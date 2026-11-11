@@ -12,6 +12,7 @@ use Psalm\CodeLocation;
 use Psalm\Codebase;
 use Psalm\Context;
 use Psalm\Internal\FileManipulation\FileManipulationBuffer;
+use Psalm\Internal\MethodIdentifier;
 use Psalm\Internal\Provider\NodeDataProvider;
 use Psalm\Internal\Type\Comparator\UnionTypeComparator;
 use Psalm\Internal\Type\PurityArguments;
@@ -175,6 +176,9 @@ abstract class ClassLikeAnalyzer extends SourceAnalyzer
         }
     }
 
+    /**
+     * @param string $method_name the name the method is called by, which can be the alias of a trait method
+     */
     public function getMethodMutations(
         string $method_name,
         Context $context,
@@ -182,66 +186,106 @@ abstract class ClassLikeAnalyzer extends SourceAnalyzer
         $project_analyzer = $this->getFileAnalyzer()->project_analyzer;
         $codebase = $project_analyzer->getCodebase();
 
+        // only the method PHP calls is analyzed: not the one of the class when an alias of a trait method is
+        // called, nor the one of a trait when the class overrides it
+        $called_method_id = $codebase->methods->getDeclaringMethodId(
+            new MethodIdentifier($context->self ?: $this->fq_class_name, strtolower($method_name)),
+        );
+        $actual_method_name = $called_method_id !== null ? $called_method_id->method_name : $method_name;
+
         foreach ($this->class->stmts as $stmt) {
             if ($stmt instanceof PhpParser\Node\Stmt\ClassMethod &&
-                strtolower($stmt->name->name) === strtolower($method_name)
+                strtolower($stmt->name->name) === strtolower($actual_method_name)
             ) {
+                if ($called_method_id !== null
+                    && strtolower($called_method_id->fq_class_name) !== strtolower($this->fq_class_name)
+                ) {
+                    continue;
+                }
+
                 $method_analyzer = new MethodAnalyzer($stmt, $this);
 
                 $method_analyzer->analyze($context, new NodeDataProvider(), null, true);
 
                 $context->clauses = [];
             } elseif ($stmt instanceof PhpParser\Node\Stmt\TraitUse) {
-                foreach ($stmt->traits as $trait) {
-                    $fq_trait_name = $codebase->classlikes->getUnAliasedName(
-                        self::getFQCLNFromNameObject($trait, $this->source->getAliases()),
+                $this->getTraitUseMethodMutations(
+                    $stmt,
+                    $this->source->getAliases(),
+                    $actual_method_name,
+                    $called_method_id,
+                    $context,
+                );
+            }
+        }
+    }
+
+    /**
+     * Collects the mutations of a method defined by a trait used in the class, or by a trait that trait uses
+     */
+    private function getTraitUseMethodMutations(
+        PhpParser\Node\Stmt\TraitUse $stmt,
+        Aliases $aliases,
+        string $method_name,
+        ?MethodIdentifier $called_method_id,
+        Context $context,
+    ): void {
+        $project_analyzer = $this->getFileAnalyzer()->project_analyzer;
+        $codebase = $project_analyzer->getCodebase();
+
+        foreach ($stmt->traits as $trait) {
+            $fq_trait_name = $codebase->classlikes->getUnAliasedName(
+                self::getFQCLNFromNameObject($trait, $aliases),
+            );
+
+            $trait_file_analyzer = $project_analyzer->getFileAnalyzerForClassLike($fq_trait_name);
+            $trait_node = $codebase->classlikes->getTraitNode($fq_trait_name);
+            $trait_storage = $codebase->classlike_storage_provider->get($fq_trait_name);
+            $trait_aliases = $trait_storage->aliases;
+
+            if ($trait_aliases === null) {
+                continue;
+            }
+
+            $trait_analyzer = new TraitAnalyzer(
+                $trait_node,
+                $trait_file_analyzer,
+                $fq_trait_name,
+                $trait_aliases,
+            );
+
+            foreach ($trait_node->stmts as $trait_stmt) {
+                if ($trait_stmt instanceof PhpParser\Node\Stmt\TraitUse) {
+                    $this->getTraitUseMethodMutations(
+                        $trait_stmt,
+                        $trait_aliases,
+                        $method_name,
+                        $called_method_id,
+                        $context,
                     );
+                } elseif ($trait_stmt instanceof PhpParser\Node\Stmt\ClassMethod &&
+                    strtolower($trait_stmt->name->name) === strtolower($method_name)
+                ) {
+                    $method_analyzer = new MethodAnalyzer($trait_stmt, $trait_analyzer);
 
-                    $trait_file_analyzer = $project_analyzer->getFileAnalyzerForClassLike($fq_trait_name);
-                    $trait_node = $codebase->classlikes->getTraitNode($fq_trait_name);
-                    $trait_storage = $codebase->classlike_storage_provider->get($fq_trait_name);
-                    $trait_aliases = $trait_storage->aliases;
-
-                    if ($trait_aliases === null) {
+                    // only the method PHP calls is analyzed: a class that overrides the method of a trait
+                    // doesn't run the one of the trait
+                    if ($called_method_id !== null
+                        && (string) $method_analyzer->getMethodId() !== (string) $called_method_id
+                    ) {
                         continue;
                     }
 
-                    $trait_analyzer = new TraitAnalyzer(
-                        $trait_node,
-                        $trait_file_analyzer,
-                        $fq_trait_name,
-                        $trait_aliases,
+                    $method_analyzer->analyze(
+                        $context,
+                        new NodeDataProvider(),
+                        null,
+                        true,
                     );
-
-                    foreach ($trait_node->stmts as $trait_stmt) {
-                        if ($trait_stmt instanceof PhpParser\Node\Stmt\ClassMethod &&
-                            strtolower($trait_stmt->name->name) === strtolower($method_name)
-                        ) {
-                            $method_analyzer = new MethodAnalyzer($trait_stmt, $trait_analyzer);
-
-                            $actual_method_id = $method_analyzer->getMethodId();
-
-                            if ($context->self && $context->self !== $this->fq_class_name) {
-                                $analyzed_method_id = $method_analyzer->getMethodId($context->self);
-                                $declaring_method_id = $codebase->methods->getDeclaringMethodId($analyzed_method_id);
-
-                                if ((string) $actual_method_id !== (string) $declaring_method_id) {
-                                    break;
-                                }
-                            }
-
-                            $method_analyzer->analyze(
-                                $context,
-                                new NodeDataProvider(),
-                                null,
-                                true,
-                            );
-                        }
-                    }
-
-                    $trait_file_analyzer->clearSourceBeforeDestruction();
                 }
             }
+
+            $trait_file_analyzer->clearSourceBeforeDestruction();
         }
     }
 
@@ -259,6 +303,19 @@ abstract class ClassLikeAnalyzer extends SourceAnalyzer
         }
 
         return null;
+    }
+
+    /**
+     * Whether the name is one of the type names that can't be a class name
+     *
+     * @psalm-pure
+     */
+    public static function isReservedClassName(string $fq_class_name): bool
+    {
+        return (bool) preg_match(
+            '/(^|\\\)(int|float|bool|string|void|null|false|true|object|mixed)$/i',
+            $fq_class_name,
+        ) || strtolower($fq_class_name) === 'resource';
     }
 
     /**
@@ -299,11 +356,7 @@ abstract class ClassLikeAnalyzer extends SourceAnalyzer
             return true;
         }
 
-        if (preg_match(
-            '/(^|\\\)(int|float|bool|string|void|null|false|true|object|mixed)$/i',
-            $fq_class_name,
-        ) || strtolower($fq_class_name) === 'resource'
-        ) {
+        if (self::isReservedClassName($fq_class_name)) {
             $class_name_parts = explode('\\', $fq_class_name);
             $class_name = array_pop($class_name_parts);
 
