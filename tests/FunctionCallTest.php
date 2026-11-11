@@ -24,6 +24,51 @@ final class FunctionCallTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'propertyExistsOfAnUnknownOrDynamicPropertyIsNotReported' => [
+                'code' => '<?php
+                    class Page {
+                        public string $title = "";
+                    }
+
+                    function check(Page $page, object $object, string $name): void {
+                        if (property_exists($page, "missing")) {
+                            echo "dynamic";
+                        }
+
+                        if (property_exists($page, $name)) {
+                            echo "named";
+                        }
+
+                        if (property_exists($object, "title")) {
+                            echo "object";
+                        }
+
+                        if (property_exists(Page::class, "title") || property_exists("Other", "title")) {
+                            echo "class name";
+                        }
+                    }',
+            ],
+            'arrayFilterWithAStringCallableNarrowsTheResultOfACall' => [
+                'code' => '<?php
+                    /** @return list<object|null> */
+                    function objects(): array {
+                        return [];
+                    }
+
+                    /** @return list<int|string|null> */
+                    function scalars(): array {
+                        return [];
+                    }
+
+                    $objects = array_values(array_filter(objects(), "is_object"));
+                    $ints = array_filter(scalars(), "is_int");
+                    $unchanged = array_filter(objects(), "boolval");',
+                'assertions' => [
+                    '$objects===' => 'list<object>',
+                    '$ints===' => 'array<int<0, max>, int>',
+                    '$unchanged===' => 'array<int<0, max>, null|object>',
+                ],
+            ],
             'fcloseTakesTheStandardStreamConstants' => [
                 'code' => '<?php
                     fclose(STDIN);
@@ -84,6 +129,56 @@ final class FunctionCallTest extends TestCase
                 'code' => '<?php
                     function startsWithGreeting(string $s): bool {
                         return str_starts_with($s, "здравствуй");
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'classHierarchyFunctionsOfAnObjectNeverReturnFalse' => [
+                'code' => '<?php
+                    /** @var mixed $mixed */
+                    $mixed = null;
+                    /** @var object $object */
+                    $object = new stdClass();
+                    /** @var string $string */
+                    $string = "";
+                    /** @var object|string $either */
+                    $either = "";
+                    /** @var bool $autoload */
+                    $autoload = true;
+
+                    if (!is_object($mixed)) {
+                        throw new Exception();
+                    }
+
+                    $parents = class_parents($mixed);
+                    $interfaces = class_implements($object, $autoload);
+                    $traits = class_uses(object_or_class: $object, autoload: false);
+                    $parents_of_name = class_parents($string);
+                    $interfaces_of_name = class_implements($string, false);
+                    $traits_of_name = class_uses($string);
+                    $parents_of_either = class_parents($either);',
+                'assertions' => [
+                    '$parents===' => 'array<class-string, class-string>',
+                    '$interfaces===' => 'array<interface-string, interface-string>',
+                    '$traits===' => 'array<trait-string, trait-string>',
+                    '$parents_of_name===' => 'array<class-string, class-string>|false',
+                    '$interfaces_of_name===' => 'array<interface-string, interface-string>|false',
+                    '$traits_of_name===' => 'array<trait-string, trait-string>|false',
+                    '$parents_of_either===' => 'array<class-string, class-string>|false',
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'classHierarchyFunctionsOfAClassNameAreNotPossiblyFalseArguments' => [
+                'code' => '<?php
+                    interface I {}
+
+                    /** @param class-string $class */
+                    function f(string $class): bool {
+                        return in_array(I::class, class_implements($class), true)
+                            || in_array(I::class, class_parents($class), true)
+                            || in_array(I::class, class_uses($class), true);
                     }',
                 'assertions' => [],
                 'ignored_issues' => [],
@@ -830,6 +925,62 @@ final class FunctionCallTest extends TestCase
                     }
 
                     a(["a" => "hello"]);',
+            ],
+            'functionExistsGuardsTheRightOperandInsideAnotherNarrowingCondition' => [
+                'code' => '<?php
+                    function a(int $arg): void {
+                        if ($arg) {
+                            if (function_exists("do_something_a") && rand(0, 1)) {
+                                do_something_a("hello");
+                            }
+                        }
+                    }
+
+                    function b(int $arg): void {
+                        if (!empty($arg)) {
+                            if (function_exists("do_something_b") && do_something_b("hello")) {
+                                echo 1;
+                            }
+                        }
+                    }
+
+                    function c(int $arg): void {
+                        if ($arg) {
+                            if (defined("SOME_MISSING_CONSTANT") && SOME_MISSING_CONSTANT) {
+                                echo 1;
+                            }
+                        }
+                    }',
+            ],
+            'functionExistsGuardsOnlyTheFunctionsItNames' => [
+                'code' => '<?php
+                    function callable_string(int $arg): void {
+                        if (function_exists("guarded_callback")) {
+                            array_map("guarded_callback", [1]);
+                        }
+                    }
+
+                    function namespaced_name(int $arg): void {
+                        if ($arg) {
+                            if (function_exists("\\guarded_root") && \guarded_root()) {
+                                echo 1;
+                            }
+                        }
+                    }
+
+                    function guarded_class(int $arg): void {
+                        if ($arg) {
+                            if (class_exists("GuardedClass") && GuardedClass::run()) {
+                                echo 1;
+                            }
+                        }
+                    }
+
+                    function guarded_class_body(): void {
+                        if (class_exists("GuardedBodyClass") && rand(0, 1)) {
+                            GuardedBodyClass::run();
+                        }
+                    }',
             ],
             'getenv' => [
                 'code' => '<?php
@@ -2968,6 +3119,73 @@ final class FunctionCallTest extends TestCase
     public static function providerInvalidCodeParse(): iterable
     {
         return [
+            'propertyExistsOfADeclaredPropertyIsAlwaysTrue' => [
+                'code' => '<?php
+                    class Page {
+                        public string $title = "";
+                    }
+
+                    function check(Page $page): void {
+                        if (property_exists($page, "title")) {
+                            echo "has title";
+                        }
+                    }',
+                'error_message' => 'RedundantCondition - src' . DIRECTORY_SEPARATOR . 'somefile.php:7:29 - Operand of type true is always truthy',
+            ],
+            'negatedPropertyExistsOfAnInheritedPropertyIsAlwaysFalse' => [
+                'code' => '<?php
+                    class Page {
+                        public string $title = "";
+                    }
+
+                    final class Post extends Page {}
+
+                    function check(Post $post): void {
+                        if (!property_exists($post, "title")) {
+                            echo "no title";
+                        }
+                    }',
+                'error_message' => 'TypeDoesNotContainType - src' . DIRECTORY_SEPARATOR . 'somefile.php:9:29 - Operand of type false is always falsy',
+            ],
+            'functionExistsDoesNotGuardAnotherFunctionInsideAnotherNarrowingCondition' => [
+                'code' => '<?php
+                    function run(int $arg): void {
+                        if ($arg) {
+                            if (function_exists("strlen") && unknown_function()) {
+                                echo 1;
+                            }
+                        }
+                    }',
+                'error_message' => 'UndefinedFunction - src' . DIRECTORY_SEPARATOR . 'somefile.php:4:62 - Function unknown_function does not exist',
+            ],
+            'functionExistsDoesNotGuardAnotherFunctionInTheSameCondition' => [
+                'code' => '<?php
+                    function run(): void {
+                        if (function_exists("strlen") && unknown_function()) {
+                            echo 1;
+                        }
+                    }',
+                'error_message' => 'UndefinedFunction - src' . DIRECTORY_SEPARATOR . 'somefile.php:3:58 - Function unknown_function does not exist',
+            ],
+            'functionExistsDoesNotGuardAnotherFunctionInItsBody' => [
+                'code' => '<?php
+                    function run(): void {
+                        if (function_exists("guarded_function")) {
+                            guarded_function();
+                            unknown_function();
+                        }
+                    }',
+                'error_message' => 'UndefinedFunction - src' . DIRECTORY_SEPARATOR . 'somefile.php:5:29 - Function unknown_function does not exist',
+            ],
+            'functionExistsDoesNotGuardAnotherCallableString' => [
+                'code' => '<?php
+                    function run(): void {
+                        if (function_exists("guarded_callback")) {
+                            array_map("unknown_callback", [1]);
+                        }
+                    }',
+                'error_message' => 'UndefinedFunction',
+            ],
             'builtInByReferenceParameterRejectsAConstant' => [
                 'code' => '<?php
                     const NUMBERS = [3, 1, 2];
