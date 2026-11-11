@@ -5,8 +5,13 @@ declare(strict_types=1);
 namespace Psalm\Tests;
 
 use Override;
+use Psalm\Context;
+use Psalm\Internal\Analyzer\IssueData;
+use Psalm\IssueBuffer;
 use Psalm\Tests\Traits\InvalidCodeAnalysisTestTrait;
 use Psalm\Tests\Traits\ValidCodeAnalysisTestTrait;
+
+use function array_map;
 
 use const DIRECTORY_SEPARATOR;
 
@@ -15,6 +20,72 @@ final class EnumTest extends TestCase
     use ValidCodeAnalysisTestTrait;
     use InvalidCodeAnalysisTestTrait;
 
+    private const BINARY_ENUM_CODE = '<?php
+        enum Bom: string {
+            case Utf16Le = "\xFF\xFE";
+        }
+
+        abstract class AbstractCsv {
+            protected ?Bom $bom = null;
+
+            public function getBom(): string {
+                return $this->bom->value ?? "";
+            }
+        }
+
+        final class Reader extends AbstractCsv {}
+
+        function read(Reader $reader): string {
+            return $reader->getBom();
+        }';
+
+    public function testInheritedMethodReturningBinaryEnumValueWithTaintAnalysis(): void
+    {
+        $this->project_analyzer->trackTaintedInputs();
+        $this->testValidCode(self::BINARY_ENUM_CODE, [], [], '8.1');
+    }
+
+    public function testAMixedPartOfTheReceiverDoesNotMakeTheValueOfTheEnumPartMixed(): void
+    {
+        $this->testConfig->throw_exception = false;
+        $this->project_analyzer->setPhpVersion('8.1', 'tests');
+        $file_path = self::$src_dir_path . 'somefile.php';
+
+        $this->addFile(
+            $file_path,
+            '<?php
+                enum Suit: string {
+                    case Hearts = "h";
+                    case Spades = "s";
+                }
+
+                function collect(array $items, mixed $first): array {
+                    $keys = [];
+                    $suit = $first;
+
+                    foreach ($items as $_) {
+                        $keys[$suit->value] = true;
+                        $suit = Suit::Spades;
+                    }
+
+                    return $keys;
+                }',
+        );
+
+        $this->analyzeFile($file_path, new Context());
+
+        self::assertSame(
+            [
+                [9, 'MixedAssignment'],
+                [12, 'MixedPropertyFetch'],
+            ],
+            array_map(
+                static fn(IssueData $issue): array => [$issue->line_from, $issue->type],
+                IssueBuffer::getIssuesDataForFile($file_path),
+            ),
+        );
+    }
+
     /**
      * @psalm-pure
      */
@@ -22,6 +93,146 @@ final class EnumTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'inheritedMethodReturningBinaryEnumValue' => [
+                'code' => self::BINARY_ENUM_CODE,
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
+            'enumDeclaredInAConditional' => [
+                'code' => '<?php
+                    if (PHP_VERSION_ID >= 80100) {
+                        enum Suit {
+                            case Hearts;
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
+            'valueOfAConstantOfAnEnum' => [
+                'code' => '<?php
+                    enum Level: int {
+                        case Low = 1;
+                        case High = 2;
+
+                        const NAMES = [1 => "low", 2 => "high"];
+
+                        /** @return value-of<self::NAMES> */
+                        public function getName(): string {
+                            return match ($this) {
+                                self::Low => "low",
+                                self::High => "high",
+                            };
+                        }
+                    }
+
+                    /** @param value-of<Level::NAMES> $name */
+                    function f(string $name): void {
+                        $result = $name;
+                    }
+
+                    /** @param value-of<Level> $value */
+                    function g(int $value): void {
+                        $backing = $value;
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
+            'enumPropertiesOfUnionsOfSeveralEnums' => [
+                'code' => <<<'PHP'
+                    <?php
+                    enum Letter: string {
+                        case A = 'a';
+                        case B = 'b';
+                        case C = 'c';
+                    }
+
+                    enum Number: int {
+                        case A = 10;
+                        case X = 20;
+                    }
+
+                    /** @var Letter::B|Letter::C|Number::X $cases */
+                    $cases = Number::X;
+                    $caseValue = $cases->value;
+                    $caseName = $cases->name;
+
+                    /** @var Letter|Number::X $bare */
+                    $bare = Number::X;
+                    $bareValue = $bare->value;
+                    $bareName = $bare->name;
+
+                    /** @var Letter::A|Number::A $same */
+                    $same = Number::A;
+                    $sameName = $same->name;
+                    $sameValue = $same->value;
+
+                    /**
+                     * @template T of Letter
+                     * @param T $letter
+                     */
+                    function templated(Letter $letter): void {
+                        $value = $letter->value;
+                        $name = $letter->name;
+                        echo $value, $name;
+                    }
+                    PHP,
+                'assertions' => [
+                    '$caseValue===' => "'b'|'c'|20",
+                    '$caseName===' => "'B'|'C'|'X'",
+                    '$bareValue===' => "'a'|'b'|'c'|20",
+                    '$bareName===' => "'A'|'B'|'C'|'X'",
+                    '$sameName===' => "'A'",
+                    '$sameValue===' => "'a'|10",
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
+            'enumPropertiesOfNullableAndUnionedEnums' => [
+                'code' => <<<'PHP'
+                    <?php
+                    enum Letter: string {
+                        case A = 'a';
+                        case B = 'b';
+                    }
+
+                    enum Digit: string {
+                        case One = '1';
+                    }
+
+                    function nullable(?Letter $letter): void {
+                        $value = $letter->value ?? 'none';
+                        $name = $letter->name ?? 'none';
+                        if (isset($letter->value)) {
+                            echo $letter->value;
+                        }
+                        echo $value, $name;
+                    }
+
+                    function viaInterface(?BackedEnum $enum): void {
+                        echo $enum->value ?? 'none';
+                        echo $enum->name ?? 'none';
+                    }
+
+                    /** @var Letter|Digit $either */
+                    $either = Digit::One;
+                    $value = $either->value;
+                    $name = $either->name;
+
+                    /** @var Letter|Digit|null $maybe */
+                    $maybe = null;
+                    $maybeValue = $maybe->value ?? 'none';
+                    PHP,
+                'assertions' => [
+                    '$value===' => "'1'|'a'|'b'",
+                    '$name===' => "'A'|'B'|'One'",
+                    '$maybeValue===' => "'1'|'a'|'b'|'none'",
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
             'enumInterfaceMethodRetainsDocumentaryReturn' => [
                 'code' => '<?php
                     enum Status: string implements JsonSerializable {
@@ -974,6 +1185,22 @@ final class EnumTest extends TestCase
                     }
                 ',
                 'error_message' => 'Trace - src' . DIRECTORY_SEPARATOR . 'somefile.php:16:29 - $suit: enum(Suit::Hearts)|enum(Suit::Spades',
+                'error_levels' => [],
+                'php_version' => '8.1',
+            ],
+            'valueOfAConstantOfAnEnumRejectsAnotherValue' => [
+                'code' => '<?php
+                    enum Level: int {
+                        case Low = 1;
+
+                        const NAMES = [1 => "low"];
+
+                        /** @return value-of<self::NAMES> */
+                        public function getName(): string {
+                            return "high";
+                        }
+                    }',
+                'error_message' => 'InvalidReturnStatement',
                 'error_levels' => [],
                 'php_version' => '8.1',
             ],
