@@ -77,6 +77,35 @@ final class FunctionTemplateTest extends TestCase
                     '$one===' => '1|null',
                 ],
             ],
+            'classStringTemplateOfAParamUsedInAConditionalReturnType' => [
+                'code' => '<?php
+                    class Container {
+                        /**
+                         * @template T of object
+                         * @param null|class-string<T> $type
+                         * @return ($type is class-string ? T : null)
+                         */
+                        public function get(string|null $type = null): object|null {
+                            if ($type === null) {
+                                return null;
+                            }
+
+                            return $this->make($type);
+                        }
+
+                        /**
+                         * @template T of object
+                         * @param class-string<T> $class
+                         * @return T
+                         */
+                        public function make(string $class): object {
+                            return new $class();
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => ['MixedMethodCall'],
+                'php_version' => '8.0',
+            ],
             'negatedInstanceofNarrowsTheBoundOfATemplateParam' => [
                 'code' => '<?php
                     class File {
@@ -1971,7 +2000,7 @@ final class FunctionTemplateTest extends TestCase
                     );
 
                     $test = $list->sortByArr(
-                        /** 
+                        /**
                          * @return list{0: mixed, 1: mixed}
                          */
                         static fn ($item): array => [$item, $item],
