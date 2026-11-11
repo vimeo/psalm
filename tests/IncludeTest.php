@@ -125,6 +125,19 @@ final class IncludeTest extends TestCase
                     (string) getcwd() . DIRECTORY_SEPARATOR . 'a' . DIRECTORY_SEPARATOR . 'script.php',
                 ],
             ],
+            'requireOfAResolvedPathCheckedByFileExistsInAnAndCondition' => [
+                'files' => [
+                    (string) getcwd() . DIRECTORY_SEPARATOR . 'a' . DIRECTORY_SEPARATOR . 'script.php' => '<?php
+                        function load(bool $flag): void {
+                            if ($flag && is_file(__DIR__ . "/optional.php")) {
+                                require __DIR__ . "/optional.php";
+                            }
+                        }',
+                ],
+                'files_to_check' => [
+                    (string) getcwd() . DIRECTORY_SEPARATOR . 'a' . DIRECTORY_SEPARATOR . 'script.php',
+                ],
+            ],
             'requireGuardedByIsFileWithDotSegments' => [
                 'files' => [
                     (string) getcwd() . DIRECTORY_SEPARATOR . 'a' . DIRECTORY_SEPARATOR . 'script.php' => '<?php
@@ -780,6 +793,20 @@ final class IncludeTest extends TestCase
                     (string) getcwd() . DIRECTORY_SEPARATOR . 'a' . DIRECTORY_SEPARATOR . 'script.php' => '<?php
                         if (file_exists(__DIR__ . "/../optional.php")) {
                             require __DIR__ . "/../other.php";
+                        }',
+                ],
+                'files_to_check' => [
+                    (string) getcwd() . DIRECTORY_SEPARATOR . 'a' . DIRECTORY_SEPARATOR . 'script.php',
+                ],
+                'error_message' => 'MissingFile',
+            ],
+            'requireOfAResolvedPathCheckedByANegatedFileExistsInAnAndCondition' => [
+                'files' => [
+                    (string) getcwd() . DIRECTORY_SEPARATOR . 'a' . DIRECTORY_SEPARATOR . 'script.php' => '<?php
+                        function load(bool $flag): void {
+                            if ($flag && !is_file(__DIR__ . "/missing.php")) {
+                                require __DIR__ . "/missing.php";
+                            }
                         }',
                 ],
                 'files_to_check' => [
