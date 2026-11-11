@@ -23,24 +23,23 @@ final class DoTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
-            'counterOfDoWhileIsNotAZeroInItsFirstPassForTheIssues' => [
-                'code' => <<<'PHP'
-                    <?php
-                    /** @param list<string> $existing */
-                    function nextId(array $existing): string {
-                        $counter = 0;
-
-                        do {
-                            $id = rand(0, 1) . ($counter === 0 ? '' : '-' . (string) $counter);
-                            $counter++;
-                        } while (in_array($id, $existing, true));
-
-                        return $id;
+            'doWhileConditionOnUnsetPropertyIsNotRedundant' => [
+                'code' => '<?php
+                    class Options {
+                        public bool $foo = false;
                     }
-                    PHP,
-                'assertions' => [],
-                'ignored_issues' => [],
-                'php_version' => '8.1',
+
+                    $options = new Options();
+
+                    if (random_int(0, 1)) {
+                        $options->foo = true;
+                    }
+
+                    $i = 0;
+                    do {
+                        echo $i;
+                        $i++;
+                    } while ($options->foo && $i < 3);',
             ],
             'doWhileConditionAfterContinueBeforeAssignment' => [
                 'code' => '<?php
@@ -418,6 +417,25 @@ final class DoTest extends TestCase
                         echo "here";
                     } while ($code === 1);',
             ],
+            'counterOfDoWhileIsNotAZeroInItsFirstPassForTheIssues' => [
+                'code' => <<<'PHP'
+                    <?php
+                    /** @param list<string> $existing */
+                    function nextId(array $existing): string {
+                        $counter = 0;
+
+                        do {
+                            $id = rand(0, 1) . ($counter === 0 ? '' : '-' . (string) $counter);
+                            $counter++;
+                        } while (in_array($id, $existing, true));
+
+                        return $id;
+                    }
+                    PHP,
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
         ];
     }
 
@@ -428,19 +446,20 @@ final class DoTest extends TestCase
     public static function providerInvalidCodeParse(): iterable
     {
         return [
-            'issueInTheBodyOfDoWhileIsStillReported' => [
-                'code' => <<<'PHP'
-                    <?php
-                    function f(int $i): void {
-                        do {
-                            $i++;
-                            echo $undefined;
-                        } while ($i < 3);
+            'doWhileConditionOnNarrowedPropertyIsRedundant' => [
+                'code' => '<?php
+                    class Options {
+                        public bool $foo = false;
                     }
-                    PHP,
-                'error_message' => 'UndefinedVariable',
-                'error_levels' => [],
-                'php_version' => '8.1',
+
+                    $options = new Options();
+                    $options->foo = true;
+
+                    $i = 0;
+                    do {
+                        $i++;
+                    } while ($options->foo && $i < 3);',
+                'error_message' => 'RedundantCondition',
             ],
             'doWhileVarWithPossibleBreakWithoutDefining' => [
                 'code' => '<?php
@@ -492,6 +511,20 @@ final class DoTest extends TestCase
                     } while (rand(0, 1));',
                 'error_message' => 'PossiblyUndefinedGlobalVariable - src' . DIRECTORY_SEPARATOR . 'somefile.php:3:25 - Possibly undefined ' .
                     'global variable $array, first seen on line 3',
+            ],
+            'issueInTheBodyOfDoWhileIsStillReported' => [
+                'code' => <<<'PHP'
+                    <?php
+                    function f(int $i): void {
+                        do {
+                            $i++;
+                            echo $undefined;
+                        } while ($i < 3);
+                    }
+                    PHP,
+                'error_message' => 'UndefinedVariable',
+                'error_levels' => [],
+                'php_version' => '8.1',
             ],
         ];
     }

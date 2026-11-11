@@ -22,6 +22,47 @@ final class CallableTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'byReferenceCallableParamAcceptsByReferenceCallee' => [
+                'code' => '<?php
+                    /** @param callable(int &$i): void $closure */
+                    function takesRefCallable(callable $closure): void {
+                        $v = 1;
+                        $closure($v);
+                    }
+                    function incr(int &$i): void {
+                        ++$i;
+                    }
+                    takesRefCallable("incr");
+                    takesRefCallable(function (int &$i): void {
+                        ++$i;
+                    });',
+                'assertions' => [],
+            ],
+            'byReferenceCallableParamAcceptsByValueCallee' => [
+                'code' => '<?php
+                    /** @param callable(int &$i): void $closure */
+                    function takesRefCallable(callable $closure): void {
+                        $v = 1;
+                        $closure($v);
+                    }
+                    function show(int $i): void {
+                        echo $i;
+                    }
+                    takesRefCallable("show");
+                    takesRefCallable(function (int $i): void {
+                        echo $i;
+                    });',
+                'assertions' => [],
+            ],
+            'namedOptionalCallableParam' => [
+                'code' => '<?php
+                    /** @param callable(int $i=): void $closure */
+                    function takesOptional(callable $closure): void {
+                        $closure();
+                    }
+                    takesOptional(function (int $i = 0): void {});',
+                'assertions' => [],
+            ],
             'stringNamingAFunctionForClosureOrStringParam' => [
                 'code' => <<<'PHP'
                     <?php
