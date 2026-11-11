@@ -1314,6 +1314,46 @@ final class IssetTest extends TestCase
                         }
                     }',
             ],
+            'comparisonOfAnItemWithAUnionKeyKeepsTheTypesOfItemsOfOtherTypes' => [
+                'code' => <<<'PHP'
+                    <?php
+                    /**
+                     * @param array{a: int, b: string} $p
+                     * @param 'a'|'b' $key
+                     */
+                    function comparison(array $p, string $key): int {
+                        if ($p[$key] === $p[$key]) {
+                            /** @psalm-check-type-exact $p = array{a: int, b: string} */
+                            return 1;
+                        }
+
+                        return 0;
+                    }
+
+                    /**
+                     * @param array{a: int, b: string} $p
+                     * @param 'a'|'b' $key
+                     */
+                    function issetOf(array $p, string $key): void {
+                        if (isset($p[$key])) {
+                            /** @psalm-check-type-exact $p = array{a: int, b: string} */
+                        }
+                    }
+
+                    /**
+                     * @param array{a: int, b: string} $p
+                     * @param 'a'|'b' $key
+                     */
+                    function isInt(array $p, string $key): void {
+                        if (is_int($p[$key])) {
+                            /** @psalm-check-type-exact $p = array{a: int, b: string} */
+                        }
+                    }
+                    PHP,
+                'assertions' => [],
+                'ignored_issues' => ['RedundantCondition', 'RedundantConditionGivenDocblockType', 'TypeDoesNotContainType'],
+                'php_version' => '8.1',
+            ],
             'comparisonOfAnItemWithAUnionKeyKeepsTheOtherItemsDefined' => [
                 'code' => <<<'PHP'
                     <?php
