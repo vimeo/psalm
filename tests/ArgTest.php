@@ -584,6 +584,30 @@ final class ArgTest extends TestCase
                 'error_levels' => [],
                 'php_version' => '8.0',
             ],
+            'unpackedListAfterPositionalArgumentsBeyondTheParametersIsCheckedAgainstTheVariadic' => [
+                'code' => '<?php
+                    function test(int $a, int $b, int ...$rest): void {
+                        echo $a, $b, count($rest);
+                    }
+
+                    test(1, 2, 3, ...["bad"]);',
+                'error_message' => 'InvalidScalarArgument - src' . DIRECTORY_SEPARATOR . 'somefile.php:6:38 - Argument 4 of test expects int',
+                'error_levels' => [],
+                'php_version' => '8.0',
+            ],
+            'unpackedListBeyondTheParametersOfAMethodIsCheckedAgainstTheVariadic' => [
+                'code' => '<?php
+                    final class C {
+                        public function m(int $a, int ...$rest): void {
+                            echo $a, count($rest);
+                        }
+                    }
+
+                    (new C())->m(...[1, 2], ...["bad"]);',
+                'error_message' => 'InvalidScalarArgument - src' . DIRECTORY_SEPARATOR . 'somefile.php:8:48 - Argument 3 of C::m expects int',
+                'error_levels' => [],
+                'php_version' => '8.0',
+            ],
             'secondUnpackedListIsCheckedAgainstTheNextParameter' => [
                 'code' => '<?php
                     function test(int $a, int $b, array $c): void {
