@@ -100,7 +100,7 @@ final class ClosureTest extends TestCase
                     };
 
                     if (false) {}',
-                ['UndefinedVariable', 'TypeDoesNotContainType', 'TypeDoesNotContainType'],
+                ['TypeDoesNotContainType', 'TypeDoesNotContainType'],
             ],
             'possiblyUndefinedVariable' => [
                 '<?php
@@ -189,6 +189,39 @@ final class ClosureTest extends TestCase
                     '$other' => 'int',
                 ],
             ],
+            'byRefUseOfAVariableThatIsNotDefinedYet' => [
+                'code' => '<?php
+                    function collect(): int {
+                        $add = function (int $i) use (&$total): void {
+                            $total = $i;
+                        };
+                        $add(1);
+
+                        return $total;
+                    }',
+                'assertions' => [],
+                'ignored_issues' => ['MixedReturnStatement', 'MixedInferredReturnType'],
+            ],
+            'closureCapturingTheVariableItIsAssignedToByReferenceInAnArgument' => [
+                'code' => '<?php
+                    function verifyNegative(callable $callable): void {
+                        $triggered = 0;
+
+                        $prevHandler = set_error_handler(function () use (&$prevHandler, &$triggered): bool {
+                            ++$triggered;
+
+                            return $prevHandler === null;
+                        });
+
+                        $callable();
+
+                        if ($triggered > 0) {
+                            echo "oops";
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+            ],
             'byRefUseVarUnsetInClosure' => [
                 'code' => '<?php
                     function reserve(): Closure {
@@ -204,7 +237,7 @@ final class ClosureTest extends TestCase
                     $doNotContaminate = 123;
 
                     $test = 123;
-                    
+
                     $testBefore = $test;
 
                     $testInsideBefore = null;
@@ -230,14 +263,14 @@ final class ClosureTest extends TestCase
             'byRefUseSelf' => [
                 'code' => '<?php
                     $external = random_int(0, 1);
-                    
+
                     $v = function (bool $callMe) use (&$v, $external): void {
                         echo($external.PHP_EOL);
                         if ($callMe) {
                             $v(false);
                         }
                     };
-                    
+
                     $v(true);',
             ],
             'byRefUseVarChangeType' => [
@@ -1884,6 +1917,13 @@ final class ClosureTest extends TestCase
     public static function providerInvalidCodeParse(): iterable
     {
         return [
+            'byValueUseOfAVariableThatIsNotDefinedYet' => [
+                'code' => '<?php
+                    $f = function () use ($total): int {
+                        return 1;
+                    };',
+                'error_message' => 'UndefinedVariable',
+            ],
             'wrongArg' => [
                 'code' => '<?php
                     $bar = ["foo", "bar"];

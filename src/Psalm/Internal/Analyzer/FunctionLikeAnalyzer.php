@@ -2665,6 +2665,14 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
         return $this->is_static;
     }
 
+    /**
+     * @psalm-mutation-free
+     */
+    public function isArrowFunction(): bool
+    {
+        return $this->function instanceof ArrowFunction;
+    }
+
     #[Override]
     public function getCodebase(): Codebase
     {
@@ -2906,7 +2914,7 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
             ) {
                 IssueBuffer::maybeAdd(
                     new MissingOverrideAttribute(
-                        'Method ' . $method_id . ' should have the "Override" attribute',
+                        'Method ' . $cased_method_id . ' should have the "Override" attribute',
                         $codeLocation,
                     ),
                     $this->getSuppressedIssues(),
