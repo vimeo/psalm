@@ -40,7 +40,8 @@ const BASE_IMAGE_PACKAGES = [
 const EXTENSIONS = [
     'memcached', 'grpc', 'soap', 'swoole', 'zookeeper',
     'amqp', 'apcu', 'zmq', 'ds', 'event', 'ev', 'redis', 'mongodb', 'imagick', 'pcntl',
-    'pgsql', 'intl', 'gmp', 'mbstring', 'pdo_mysql', 'xml', 'dom', 'iconv', 'zip', 'igbinary', 'gd', 'bcmath',
+    'pgsql', 'intl', 'gmp', 'mbstring', 'mysqli', 'pdo_mysql', 'pdo_pgsql',
+    'snmp', 'tidy', 'xsl', 'xml', 'dom', 'iconv', 'zip', 'igbinary', 'gd', 'bcmath',
 ];
 
 /** Extensions added on top of EXTENSIONS for specific versions. */
@@ -174,7 +175,12 @@ const SOURCES = [
     'intl' => 'php',
     'gmp' => 'php',
     'mbstring' => 'php',
+    'mysqli' => 'php',
     'pdo_mysql' => 'php',
+    'pdo_pgsql' => 'php',
+    'snmp' => 'php',
+    'tidy' => 'php',
+    'xsl' => 'php',
     'xml' => 'php',
     'dom' => 'php',
     'iconv' => 'php',
@@ -192,13 +198,20 @@ function fail(string $message): never
     exit(1);
 }
 
-/** Run a command, streaming output; abort on failure. */
-function run(string $cmd): void
+/** Run a command, streaming output; retry transient failures (registry and download 5xx), abort if all fail. */
+function run(string $cmd, int $attempts = 3): void
 {
-    echo "> $cmd\n";
-    passthru($cmd, $exit);
-    if ($exit !== 0) {
-        exit($exit);
+    for ($attempt = 1;; $attempt++) {
+        echo "> $cmd\n";
+        passthru($cmd, $exit);
+        if ($exit === 0) {
+            return;
+        }
+        if ($attempt === $attempts) {
+            exit($exit);
+        }
+        echo "Attempt $attempt of $attempts failed with exit code $exit, retrying in 30 s\n";
+        sleep(30);
     }
 }
 
@@ -576,7 +589,7 @@ function pieStep(array $pieInstalls, string $cflags): string
     }
     $pieVersion = PIE_VERSION;
     return "\nRUN case \"\$(uname -m)\" in aarch64) arch=ARM64 ;; *) arch=X64 ;; esac && \\\n"
-        . "    curl -fsSL -o /usr/local/bin/pie https://github.com/php/pie/releases/download/$pieVersion/pie-Linux-\$arch && \\\n"
+        . "    curl -fsSL --retry 5 --retry-delay 2 -o /usr/local/bin/pie https://github.com/php/pie/releases/download/$pieVersion/pie-Linux-\$arch && \\\n"
         . "    chmod +x /usr/local/bin/pie && \\\n"
         . '    apk add --no-cache $PHPIZE_DEPS libtool ' . implode(' ', array_unique($packages)) . " && \\\n    "
         . implode(" && \\\n    ", $commands) . "\n";
@@ -664,6 +677,24 @@ if ($arg === '--excludes') {
 
 if ($arg === '--versions-plain') {
     echo implode(' ', VERSIONS) . PHP_EOL;
+    exit(0);
+}
+
+if ($arg === '--extensions-plain') {
+    $version = $argv[2] ?? fail('Usage: build_docker.php --extensions-plain <version>');
+    if (!in_array($version, VERSIONS, true)) {
+        fail("Unsupported version '$version'.");
+    }
+    echo implode(' ', array_map(
+        static fn(string $extension): string => explode('-', $extension, 2)[0],
+        extensionsFor($version),
+    )) . PHP_EOL;
+    exit(0);
+}
+
+if ($arg === '--external-extensions') {
+    // Only bundled extensions follow PHP's version history; separately released extensions need their overrides kept.
+    echo json_encode(array_keys(array_filter(SOURCES, static fn(string $source): bool => $source !== 'php'))) . PHP_EOL;
     exit(0);
 }
 

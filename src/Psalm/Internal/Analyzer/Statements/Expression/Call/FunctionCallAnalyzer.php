@@ -450,11 +450,13 @@ final class FunctionCallAnalyzer extends CallAnalyzer
         );
 
         if ($function_call_info->function_storage) {
-            if ($function_call_info->function_storage->assertions && $function_name instanceof PhpParser\Node\Name) {
+            $function_storage = $function_call_info->function_storage;
+
+            if ($function_storage->assertions && $function_name instanceof PhpParser\Node\Name) {
                 self::applyAssertionsToContext(
                     $function_name,
                     null,
-                    $function_call_info->function_storage->assertions,
+                    self::getAssertionsOnArgs($function_storage->assertions, $function_storage, $stmt->getArgs()),
                     $stmt->getArgs(),
                     $template_result,
                     $context,
@@ -462,24 +464,32 @@ final class FunctionCallAnalyzer extends CallAnalyzer
                 );
             }
 
-            if ($function_call_info->function_storage->if_true_assertions) {
+            if ($function_storage->if_true_assertions) {
                 $statements_analyzer->node_data->setIfTrueAssertions(
                     $stmt,
                     array_map(
                         static fn(Possibilities $assertion): Possibilities =>
                             $assertion->getUntemplatedCopy($template_result, null, $codebase),
-                        $function_call_info->function_storage->if_true_assertions,
+                        self::getAssertionsOnArgs(
+                            $function_storage->if_true_assertions,
+                            $function_storage,
+                            $stmt->getArgs(),
+                        ),
                     ),
                 );
             }
 
-            if ($function_call_info->function_storage->if_false_assertions) {
+            if ($function_storage->if_false_assertions) {
                 $statements_analyzer->node_data->setIfFalseAssertions(
                     $stmt,
                     array_map(
                         static fn(Possibilities $assertion): Possibilities =>
                             $assertion->getUntemplatedCopy($template_result, null, $codebase),
-                        $function_call_info->function_storage->if_false_assertions,
+                        self::getAssertionsOnArgs(
+                            $function_storage->if_false_assertions,
+                            $function_storage,
+                            $stmt->getArgs(),
+                        ),
                     ),
                 );
             }
@@ -760,30 +770,32 @@ final class FunctionCallAnalyzer extends CallAnalyzer
             $is_predefined = isset($predefined_functions[strtolower($original_function_id)])
                 || isset($predefined_functions[strtolower($function_call_info->function_id)]);
 
-            if ($context->check_functions) {
-                if (self::checkFunctionExists(
+            $function_is_missing = $context->check_functions
+                ? self::checkFunctionExists(
                     $statements_analyzer,
                     $function_call_info->function_id,
                     $code_location,
                     $is_maybe_root_function,
                     $context,
-                ) === false) {
-                    if ($args) {
-                        ArgumentsAnalyzer::analyze(
-                            $statements_analyzer,
-                            $args,
-                            null,
-                            null,
-                            true,
-                            $context,
-                        );
-                    }
+                ) === false
+                : !$function_call_info->function_exists;
 
-                    return $function_call_info;
+            if ($function_is_missing) {
+                if ($args) {
+                    ArgumentsAnalyzer::analyze(
+                        $statements_analyzer,
+                        $args,
+                        null,
+                        null,
+                        true,
+                        $context,
+                    );
                 }
 
-                $function_call_info->function_exists = true;
+                return $function_call_info;
             }
+
+            $function_call_info->function_exists = true;
         } else {
             $function_call_info->function_exists = true;
         }
@@ -803,64 +815,62 @@ final class FunctionCallAnalyzer extends CallAnalyzer
             );
         }
 
-        if ($function_call_info->function_exists) {
-            if ($dynamic_function_storage) {
-                $function_call_info->function_storage = $dynamic_function_storage;
-                $function_call_info->function_params = $dynamic_function_storage->params;
-                $function_call_info->allow_named_args = $dynamic_function_storage->allow_named_arg_calls;
-                $function_call_info->defined_constants = $dynamic_function_storage->defined_constants;
-            } elseif (!$function_call_info->in_call_map || $function_call_info->is_stubbed) {
-                try {
-                    $function_call_info->function_storage = $function_storage = $codebase_functions->getStorage(
-                        $statements_analyzer,
-                        strtolower($function_call_info->function_id),
-                    );
-
-                    $function_call_info->function_params = $function_call_info->function_storage->params;
-
-                    if (!$function_storage->allow_named_arg_calls) {
-                        $function_call_info->allow_named_args = false;
-                    }
-
-                    if (!$is_predefined) {
-                        $function_call_info->defined_constants = $function_storage->defined_constants;
-                    }
-                } catch (UnexpectedValueException) {
-                    $function_call_info->function_params = [
-                        new FunctionLikeParameter('args', false, null, null, null, null, false, false, true),
-                    ];
-                }
-            } else {
-                $function_callable = InternalCallMapHandler::getCallableFromCallMapById(
-                    $codebase,
-                    $function_call_info->function_id,
-                    $args,
-                    $statements_analyzer->node_data,
-                );
-
-                $function_call_info->function_params = $function_callable->params;
-            }
-
-            if ($codebase->functions->params_provider->has($function_call_info->function_id)) {
-                $function_call_info->function_params = $codebase->functions->params_provider->getFunctionParams(
+        if ($dynamic_function_storage) {
+            $function_call_info->function_storage = $dynamic_function_storage;
+            $function_call_info->function_params = $dynamic_function_storage->params;
+            $function_call_info->allow_named_args = $dynamic_function_storage->allow_named_arg_calls;
+            $function_call_info->defined_constants = $dynamic_function_storage->defined_constants;
+        } elseif (!$function_call_info->in_call_map || $function_call_info->is_stubbed) {
+            try {
+                $function_call_info->function_storage = $function_storage = $codebase_functions->getStorage(
                     $statements_analyzer,
-                    $function_call_info->function_id,
-                    $args,
-                    $context,
-                    $code_location,
+                    strtolower($function_call_info->function_id),
                 );
-            }
 
-            if ($codebase->store_node_types
-                && !$context->collect_initializations
-                && !$context->collect_mutations
-            ) {
-                $codebase->analyzer->addNodeReference(
-                    $statements_analyzer->getFilePath(),
-                    $function_name,
-                    $function_call_info->function_id . '()',
-                );
+                $function_call_info->function_params = $function_call_info->function_storage->params;
+
+                if (!$function_storage->allow_named_arg_calls) {
+                    $function_call_info->allow_named_args = false;
+                }
+
+                if (!$is_predefined) {
+                    $function_call_info->defined_constants = $function_storage->defined_constants;
+                }
+            } catch (UnexpectedValueException) {
+                $function_call_info->function_params = [
+                    new FunctionLikeParameter('args', false, null, null, null, null, false, false, true),
+                ];
             }
+        } else {
+            $function_callable = InternalCallMapHandler::getCallableFromCallMapById(
+                $codebase,
+                $function_call_info->function_id,
+                $args,
+                $statements_analyzer->node_data,
+            );
+
+            $function_call_info->function_params = $function_callable->params;
+        }
+
+        if ($codebase->functions->params_provider->has($function_call_info->function_id)) {
+            $function_call_info->function_params = $codebase->functions->params_provider->getFunctionParams(
+                $statements_analyzer,
+                $function_call_info->function_id,
+                $args,
+                $context,
+                $code_location,
+            );
+        }
+
+        if ($codebase->store_node_types
+            && !$context->collect_initializations
+            && !$context->collect_mutations
+        ) {
+            $codebase->analyzer->addNodeReference(
+                $statements_analyzer->getFilePath(),
+                $function_name,
+                $function_call_info->function_id . '()',
+            );
         }
 
         return $function_call_info;

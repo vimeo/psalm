@@ -9,6 +9,7 @@ use LogicException;
 use Psalm\Internal\Analyzer\ProjectAnalyzer;
 use Psalm\Internal\DataFlow\DataFlowNode;
 use Psalm\Internal\Type\Comparator\AtomicTypeComparator;
+use Psalm\Internal\Type\Comparator\TypeComparisonResult;
 use Psalm\Internal\Type\Comparator\UnionTypeComparator;
 use Psalm\Internal\Type\IntMask;
 use Psalm\Internal\Type\StringRefinement;
@@ -860,26 +861,28 @@ abstract class Type
 
             //if a type is contained by the other, the intersection is the narrowest type
             if (!$intersection_performed) {
+                $comparison_result_1_in_2 = new TypeComparisonResult();
+                $comparison_result_2_in_1 = new TypeComparisonResult();
                 $type_1_in_2 = UnionTypeComparator::isContainedBy(
                     $codebase,
                     $type_1,
                     $type_2,
                     false,
                     false,
-                    null,
+                    $comparison_result_1_in_2,
                     $allow_interface_equality,
                     $allow_float_int_equality,
-                );
+                ) && !$comparison_result_1_in_2->to_string_cast;
                 $type_2_in_1 = UnionTypeComparator::isContainedBy(
                     $codebase,
                     $type_2,
                     $type_1,
                     false,
                     false,
-                    null,
+                    $comparison_result_2_in_1,
                     $allow_interface_equality,
                     $allow_float_int_equality,
-                );
+                ) && !$comparison_result_2_in_1->to_string_cast;
                 if ($type_1_in_2) {
                     $intersection_performed = true;
                     $combined_type = $type_1->getBuilder();
@@ -1026,13 +1029,18 @@ abstract class Type
 
         if (null === $intersection_atomic) {
             try {
+                $comparison_result_2_in_1 = new TypeComparisonResult();
+                $comparison_result_1_in_2 = new TypeComparisonResult();
+
+                // an object that is only castable to string is not contained by string
                 if (AtomicTypeComparator::isContainedBy(
                     $codebase,
                     $type_2_atomic,
                     $type_1_atomic,
                     $allow_interface_equality,
                     $allow_float_int_equality,
-                )) {
+                    $comparison_result_2_in_1,
+                ) && !$comparison_result_2_in_1->to_string_cast) {
                     $intersection_atomic = $type_2_atomic;
                     $wider_type = $type_1_atomic;
                     $intersection_performed = true;
@@ -1042,7 +1050,8 @@ abstract class Type
                     $type_2_atomic,
                     $allow_interface_equality,
                     $allow_float_int_equality,
-                )) {
+                    $comparison_result_1_in_2,
+                ) && !$comparison_result_1_in_2->to_string_cast) {
                     $intersection_atomic = $type_1_atomic;
                     $wider_type = $type_2_atomic;
                     $intersection_performed = true;
@@ -1122,10 +1131,7 @@ abstract class Type
             }
         }
 
-        if (self::mayHaveIntersection($type_1_atomic, $codebase)
-            && self::mayHaveIntersection($type_2_atomic, $codebase)
-        ) {
-            /** @psalm-suppress TypeDoesNotContainType */
+        if (self::mayIntersect($type_1_atomic, $type_2_atomic, $codebase)) {
             if ($type_1_atomic instanceof TNamedObject && $type_2_atomic instanceof TNamedObject) {
                 try {
                     $first = $codebase->classlike_storage_provider->get($type_1_atomic->value);
@@ -1179,6 +1185,25 @@ abstract class Type
         }
 
         return $intersection_atomic;
+    }
+
+    /**
+     * Both types support intersection, and a template whose bound no object can satisfy (e.g. `string`)
+     * isn't intersected with a class
+     */
+    private static function mayIntersect(Atomic $type_1, Atomic $type_2, Codebase $codebase): bool
+    {
+        if (!self::mayHaveIntersection($type_1, $codebase) || !self::mayHaveIntersection($type_2, $codebase)) {
+            return false;
+        }
+
+        if ($type_2 instanceof TTemplateParam) {
+            [$type_1, $type_2] = [$type_2, $type_1];
+        }
+
+        return !($type_1 instanceof TTemplateParam
+            && $type_2 instanceof TNamedObject
+            && !UnionTypeComparator::canExpressionTypesBeIdentical($codebase, $type_1->as, new Union([$type_2])));
     }
 
     /**

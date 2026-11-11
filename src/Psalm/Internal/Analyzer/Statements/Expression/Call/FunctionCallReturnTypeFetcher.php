@@ -120,7 +120,7 @@ final class FunctionCallReturnTypeFetcher
                         if (!isset($template_result->lower_bounds[$template_name])) {
                             if ($template_name === 'TFunctionArgCount') {
                                 $template_result->lower_bounds[$template_name] = [
-                                    'fn-' . $function_id => [
+                                    'fn-' . strtolower($function_id) => [
                                         new TemplateBound(
                                             Type::getInt(false, count($stmt->getArgs())),
                                         ),
@@ -128,7 +128,7 @@ final class FunctionCallReturnTypeFetcher
                                 ];
                             } elseif ($template_name === 'TPhpMajorVersion') {
                                 $template_result->lower_bounds[$template_name] = [
-                                    'fn-' . $function_id => [
+                                    'fn-' . strtolower($function_id) => [
                                         new TemplateBound(
                                             Type::getInt(false, $codebase->getMajorAnalysisPhpVersion()),
                                         ),
@@ -136,7 +136,7 @@ final class FunctionCallReturnTypeFetcher
                                 ];
                             } elseif ($template_name === 'TPhpVersionId') {
                                 $template_result->lower_bounds[$template_name] = [
-                                    'fn-' . $function_id => [
+                                    'fn-' . strtolower($function_id) => [
                                         new TemplateBound(
                                             Type::getInt(
                                                 false,
@@ -147,7 +147,7 @@ final class FunctionCallReturnTypeFetcher
                                 ];
                             } else {
                                 $template_result->lower_bounds[$template_name] = [
-                                    'fn-' . $function_id => [
+                                    'fn-' . strtolower($function_id) => [
                                         new TemplateBound(
                                             Type::getNever(),
                                         ),
@@ -1099,7 +1099,7 @@ final class FunctionCallReturnTypeFetcher
      * The storage of a closure from its id (see ClosureAnalyzer::getClosureId()), which starts with the
      * path of the file it is in.
      */
-    private static function getClosureStorage(
+    public static function getClosureStorage(
         StatementsAnalyzer $statements_analyzer,
         string $closure_id,
     ): ?FunctionLikeStorage {
@@ -1488,6 +1488,47 @@ final class FunctionCallReturnTypeFetcher
         return true;
     }
 
+    /**
+     * The taints a call removes because of the arguments it is given (`@psalm-taint-escape ($escape is true ? "html" :
+     * null)`): a condition the arguments can't decide removes nothing
+     */
+    public static function getConditionallyRemovedTaints(
+        Codebase $codebase,
+        FunctionLikeStorage $storage,
+        TemplateResult $template_result,
+    ): int {
+        $conditionally_removed_taints = 0;
+
+        foreach ($storage->conditionally_removed_taints as $conditionally_removed_taint) {
+            $conditionally_removed_taint = TemplateInferredTypeReplacer::replace(
+                $conditionally_removed_taint,
+                $template_result,
+                $codebase,
+            );
+
+            $expanded_type = TypeExpander::expandUnion(
+                $codebase,
+                $conditionally_removed_taint,
+                null,
+                null,
+                null,
+                true,
+                true,
+            );
+
+            if (!$expanded_type->isNullable()) {
+                foreach ($expanded_type->getLiteralStrings() as $literal_string) {
+                    $taint = $codebase->getOrRegisterTaint($literal_string->value, $storage->location);
+                    if ($taint !== null) {
+                        $conditionally_removed_taints |= $taint;
+                    }
+                }
+            }
+        }
+
+        return $conditionally_removed_taints;
+    }
+
     private static function taintReturnType(
         StatementsAnalyzer $statements_analyzer,
         PhpParser\Node\Expr\FuncCall $stmt,
@@ -1527,34 +1568,11 @@ final class FunctionCallReturnTypeFetcher
 
         $codebase = $statements_analyzer->getCodebase();
 
-        $conditionally_removed_taints = 0;
-
-        foreach ($function_storage->conditionally_removed_taints as $conditionally_removed_taint) {
-            $conditionally_removed_taint = TemplateInferredTypeReplacer::replace(
-                $conditionally_removed_taint,
-                $template_result,
-                $codebase,
-            );
-
-            $expanded_type = TypeExpander::expandUnion(
-                $codebase,
-                $conditionally_removed_taint,
-                null,
-                null,
-                null,
-                true,
-                true,
-            );
-
-            if (!$expanded_type->isNullable()) {
-                foreach ($expanded_type->getLiteralStrings() as $literal_string) {
-                    $taint = $codebase->getOrRegisterTaint($literal_string->value, $function_storage->location);
-                    if ($taint !== null) {
-                        $conditionally_removed_taints |= $taint;
-                    }
-                }
-            }
-        }
+        $conditionally_removed_taints = self::getConditionallyRemovedTaints(
+            $codebase,
+            $function_storage,
+            $template_result,
+        );
 
         if ($conditionally_removed_taints) {
             // a node of this call's own: what it removes depends on its arguments, and $function_call_node may be
