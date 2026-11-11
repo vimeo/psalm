@@ -70,6 +70,7 @@ use Psalm\Type\Atomic\TTemplateParam;
 use ReflectionProperty;
 use UnexpectedValueException;
 
+use function array_key_first;
 use function array_keys;
 use function array_merge;
 use function array_pop;
@@ -245,6 +246,7 @@ class Reconciler
                 $has_empty,
                 $inside_loop,
                 $has_object_array_access,
+                $statements_analyzer,
             );
 
             if ($result_type && $result_type->isUnionEmpty()) {
@@ -266,8 +268,12 @@ class Reconciler
 
                         if ($new_type_part_part instanceof NotNestedAssertions) {
                             $nested_negated = !$negated;
+                            // the negation is in the assertions now: what they are reconciled for is unchanged
+                            $data = self::negateNestedAssertions($data);
+                            $data_negated = $negated;
                         } else {
                             $nested_negated = $negated;
+                            $data_negated = $negated;
                         }
 
                         [$existing_types, $_] = self::reconcileKeyedTypes(
@@ -281,7 +287,7 @@ class Reconciler
                             $template_type_map,
                             $inside_loop,
                             $code_location,
-                            $nested_negated,
+                            $data_negated,
                         );
 
                         $new_type_part_part = $nested_negated ? new Falsy() : new Truthy();
@@ -747,6 +753,7 @@ class Reconciler
         bool $has_empty,
         bool $inside_loop,
         bool &$has_object_array_access,
+        ?StatementsAnalyzer $statements_analyzer = null,
     ): ?Union {
         $key_parts = self::breakUpPathIntoParts($key);
 
@@ -766,8 +773,23 @@ class Reconciler
             $property_name = array_shift($key_parts);
             $base_key .= '::$' . $property_name;
 
+            // the class of `self::$p` and `static::$p` is the one the code is in, that of `parent::$p` its parent
+            $relative_class = match (strtolower($fq_class_name)) {
+                'self', 'static' => $statements_analyzer?->getFQCLN(),
+                'parent' => $statements_analyzer?->getParentFQCLN(),
+                default => null,
+            };
+            $fq_class_name = $relative_class ?? $fq_class_name;
+
             if (!isset($existing_keys[$base_key])) {
-                $static_property_type = self::getStaticPropertyType($codebase, $fq_class_name, $property_name);
+                // the trait that is analysed for each class using it: what it declares for the property, with
+                // `static` still standing for the class that uses it
+                $static_property_type = $relative_class !== null
+                    && $codebase->classlike_storage_provider->has($fq_class_name)
+                    && $codebase->classlike_storage_provider->get($fq_class_name)->is_trait
+                    ? $codebase->classlike_storage_provider->get($fq_class_name)->properties[$property_name]->type
+                        ?? null
+                    : self::getStaticPropertyType($codebase, $fq_class_name, $property_name);
 
                 if (!$static_property_type) {
                     return null;
@@ -811,6 +833,17 @@ class Reconciler
 
                 if (!isset($existing_keys[$new_base_key])) {
                     $new_base_type = null;
+
+                    // a variable holding one literal is that literal as a key
+                    $lookup_key = $array_key;
+
+                    if ($array_key[0] === '$' && isset($existing_keys[$array_key])) {
+                        if ($existing_keys[$array_key]->isSingleStringLiteral()) {
+                            $lookup_key = '\'' . $existing_keys[$array_key]->getSingleStringLiteral()->value . '\'';
+                        } elseif ($existing_keys[$array_key]->isSingleIntLiteral()) {
+                            $lookup_key = (string) $existing_keys[$array_key]->getSingleIntLiteral()->value;
+                        }
+                    }
 
                     $atomic_types = $existing_keys[$base_key]->getAtomicTypes();
 
@@ -879,8 +912,10 @@ class Reconciler
                             return null;
                         } elseif (!$existing_key_type_part instanceof TKeyedArray) {
                             return Type::getMixed();
-                        } elseif ($array_key[0] === '$'
-                            || ($array_key[0] !== '\'' && ArrayAnalyzer::getLiteralArrayKeyInt($array_key) === false)) {
+                        } elseif ($lookup_key[0] === '$'
+                            || ($lookup_key[0] !== '\''
+                                && ArrayAnalyzer::getLiteralArrayKeyInt($lookup_key) === false)
+                        ) {
                             if ($has_empty) {
                                 return null;
                             }
@@ -889,9 +924,9 @@ class Reconciler
                         } else {
                             $array_properties = $existing_key_type_part->properties;
 
-                            $key_parts_key = $array_key;
-                            if ($array_key[0] === '\'' || $array_key[0] === '"') {
-                                $key_parts_key = substr($array_key, 1, -1);
+                            $key_parts_key = $lookup_key;
+                            if ($lookup_key[0] === '\'' || $lookup_key[0] === '"') {
+                                $key_parts_key = substr($lookup_key, 1, -1);
                             }
 
                             if (!isset($array_properties[$key_parts_key])) {
@@ -1426,6 +1461,30 @@ class Reconciler
                 $changed_var_ids[$base_key] = true;
             }
         }
+    }
+
+    /**
+     * The negation of a single assertion on a single key is the negated assertion on that key. The negation of
+     * several is an alternative, which says nothing of each of them.
+     *
+     * @param array<string, list<list<Assertion>>> $assertions
+     * @return array<string, list<list<Assertion>>>
+     * @psalm-pure
+     */
+    private static function negateNestedAssertions(array $assertions): array
+    {
+        if (count($assertions) !== 1) {
+            return [];
+        }
+
+        $key = array_key_first($assertions);
+        $key_assertions = $assertions[$key];
+
+        if (count($key_assertions) !== 1 || count($key_assertions[0]) !== 1) {
+            return [];
+        }
+
+        return [$key => [[$key_assertions[0][0]->getNegation()]]];
     }
 
     /**
