@@ -44,6 +44,7 @@ use Psalm\Type\Union;
 
 use function array_all;
 use function array_any;
+use function array_diff_key;
 use function array_merge;
 use function array_values;
 use function assert;
@@ -1021,6 +1022,35 @@ final class AtomicTypeComparator
                 $type1_part->type_params[1],
                 $type2_part->type_params[1],
             );
+        }
+
+        // arrays of the same keys can be identical when every pair of their items can, as list{int|string} and
+        // list{string|bool}: neither contains the other
+        if ($type1_part instanceof TKeyedArray
+            && $type2_part instanceof TKeyedArray
+            && $type1_part->fallback_params === null
+            && $type2_part->fallback_params === null
+            && count($type1_part->properties) === count($type2_part->properties)
+            && array_diff_key($type1_part->properties, $type2_part->properties) === []
+        ) {
+            $only_defined_items = true;
+
+            foreach ($type1_part->properties as $key => $property_1) {
+                $property_2 = $type2_part->properties[$key];
+
+                if ($property_1->possibly_undefined || $property_2->possibly_undefined) {
+                    $only_defined_items = false;
+                    break;
+                }
+
+                if (!UnionTypeComparator::canExpressionTypesBeIdentical($codebase, $property_1, $property_2)) {
+                    return false;
+                }
+            }
+
+            if ($only_defined_items) {
+                return true;
+            }
         }
 
         $first_comparison_result = new TypeComparisonResult();

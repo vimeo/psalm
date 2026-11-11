@@ -68,6 +68,7 @@ use Psalm\Type\Atomic\TTypeVariable;
 use Psalm\Type\Reconciler;
 use Psalm\Type\Union;
 
+use function array_diff_key;
 use function array_intersect_key;
 use function array_keys;
 use function array_merge;
@@ -695,6 +696,50 @@ final class AssertionReconciler extends Reconciler
     }
 
     /**
+     * Two arrays of the same keys overlap when every pair of their items does, e.g. list{int, true} and list{0, bool}
+     */
+    private static function intersectKeyedArrays(
+        Codebase $codebase,
+        TKeyedArray $array_1,
+        TKeyedArray $array_2,
+        bool &$any_scalar_type_match_found,
+    ): ?Atomic {
+        if ($array_1->fallback_params !== null
+            || $array_2->fallback_params !== null
+            || count($array_1->properties) !== count($array_2->properties)
+            || array_diff_key($array_1->properties, $array_2->properties) !== []
+        ) {
+            return null;
+        }
+
+        $properties = [];
+
+        foreach ($array_1->properties as $key => $property_1) {
+            $property_2 = $array_2->properties[$key];
+
+            if ($property_1->possibly_undefined || $property_2->possibly_undefined) {
+                return null;
+            }
+
+            $property = self::filterTypeWithAnother($codebase, $property_1, $property_2, $any_scalar_type_match_found);
+
+            if ($property === null) {
+                return null;
+            }
+
+            $properties[$key] = $property;
+        }
+
+        return TKeyedArray::make(
+            $properties,
+            $array_1->class_strings,
+            null,
+            $array_1->is_list && $array_2->is_list,
+            $array_1->from_docblock && $array_2->from_docblock,
+        );
+    }
+
+    /**
      * The object half of an iterable is a Traversable, which can be narrowed to any of its subclasses
      *
      * @return array{Atomic, Atomic}
@@ -982,6 +1027,18 @@ final class AssertionReconciler extends Reconciler
                 ? $filtered_atomic_type->setIsCallable($type_1_atomic->is_callable)
                 : $filtered_atomic_type;
             $atomic_comparison_results->type_coerced = true;
+        }
+
+        if ($matching_atomic_type === null
+            && $type_1_atomic instanceof TKeyedArray
+            && $type_2_atomic instanceof TKeyedArray
+        ) {
+            $matching_atomic_type = self::intersectKeyedArrays(
+                $codebase,
+                $type_1_atomic,
+                $type_2_atomic,
+                $any_scalar_type_match_found,
+            );
         }
 
         //These partial match wouldn't have been handled by AtomicTypeComparator
