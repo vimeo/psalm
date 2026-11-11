@@ -66,12 +66,16 @@ final class CoalesceAnalyzer
             // an untracked offset is evaluated unconditionally, so its assignments belong to the real context
             $cloned = $has_untracked_offset ? $context : clone $context;
             $was_inside_isset = $cloned->inside_isset;
+            $was_inside_general_use = $cloned->inside_general_use;
             $cloned->inside_isset = true;
+            // the value of the left operand decides which side is taken
+            $cloned->inside_general_use = true;
 
             ExpressionAnalyzer::analyze($statements_analyzer, $left_expr, $cloned);
 
             if ($has_untracked_offset) {
                 $context->inside_isset = $was_inside_isset;
+                $context->inside_general_use = $was_inside_general_use;
             }
 
             if ($root_expr !== $left_expr) {
