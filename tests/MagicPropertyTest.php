@@ -1038,6 +1038,37 @@ final class MagicPropertyTest extends TestCase
                 'ignored_issues' => [],
                 'php_version' => '8.1',
             ],
+            'propertyTypesWithSpacesAroundPipe' => [
+                'code' => '<?php
+                    final class B {}
+
+                    /**
+                     * @property B |null $a
+                     * @property-read B | null $b
+                     * @psalm-property B  |  null $c
+                     * @property B
+                     *     |null $d
+                     */
+                    class A {
+                        public function __get(string $name) {
+                            return null;
+                        }
+
+                        /** @param mixed $value */
+                        public function __set(string $name, $value): void {}
+                    }
+
+                    $a = (new A)->a;
+                    $b = (new A)->b;
+                    $c = (new A)->c;
+                    $d = (new A)->d;',
+                'assertions' => [
+                    '$a' => 'B|null',
+                    '$b' => 'B|null',
+                    '$c' => 'B|null',
+                    '$d' => 'B|null',
+                ],
+            ],
         ];
     }
 
@@ -1534,6 +1565,25 @@ final class MagicPropertyTest extends TestCase
                         }
                     }',
                 'error_message' => 'MixedReturnStatement',
+            ],
+            'propertyWriteTypeWithSpaceBeforePipe' => [
+                'code' => '<?php
+                    /**
+                     * @property-write string |null $foo
+                     */
+                    class A {
+                        public function __get(string $name): ?string {
+                            return null;
+                        }
+
+                        /** @param mixed $value */
+                        public function __set(string $name, $value): void {
+                        }
+                    }
+
+                    $a = new A();
+                    $a->foo = 5;',
+                'error_message' => 'InvalidPropertyAssignmentValue',
             ],
         ];
     }
