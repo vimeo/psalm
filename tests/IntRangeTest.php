@@ -11,6 +11,8 @@ use Psalm\Tests\Traits\ValidCodeAnalysisTestTrait;
 use Psalm\Type\Atomic\TIntRange;
 use Psalm\Type\Atomic\TLiteralInt;
 
+use const DIRECTORY_SEPARATOR;
+
 final class IntRangeTest extends TestCase
 {
     use InvalidCodeAnalysisTestTrait;
@@ -32,6 +34,44 @@ final class IntRangeTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'comparisonsNarrowTheRangeNextToItsBounds' => [
+                'code' => '<?php
+                    /**
+                     * @param int<1, 5> $a
+                     * @param int<1, 5> $b
+                     * @param int<1, 5> $c
+                     * @param int<1, 5> $d
+                     * @param int<1, 5> $e
+                     */
+                    function scope(int $a, int $b, int $c, int $d, int $e): void {
+                        if ($a > 1) {
+                            /** @psalm-check-type-exact $a = int<2, 5> */;
+                        }
+                        if ($b >= 2) {
+                            /** @psalm-check-type-exact $b = int<2, 5> */;
+                        }
+                        if ($c < 5) {
+                            /** @psalm-check-type-exact $c = int<1, 4> */;
+                        }
+                        if ($d <= 4) {
+                            /** @psalm-check-type-exact $d = int<1, 4> */;
+                        }
+                        if ($e > 1 && $e < 4) {
+                            /** @psalm-check-type-exact $e = int<2, 3> */;
+                        }
+                    }',
+            ],
+            'comparisonWithPhpIntMaxAndMinKeepsTheNonIntTypes' => [
+                'code' => '<?php
+                    /** @param int|string $value */
+                    function f($value): string {
+                        if ($value > 9223372036854775807 || $value < -9223372036854775807 - 1) {
+                            return $value;
+                        }
+
+                        return "";
+                    }',
+            ],
             'randOfUnboundedIntsIsInt' => [
                 'code' => '<?php
                     function getInt(): int{return 0;}
@@ -1106,6 +1146,55 @@ final class IntRangeTest extends TestCase
     public static function providerInvalidCodeParse(): iterable
     {
         return [
+            'greaterThanPhpIntMaxIsImpossibleForInt' => [
+                'code' => '<?php
+                    function f(int $value): void {
+                        if ($value > 9223372036854775807) {
+                            echo $value;
+                        }
+                    }',
+                'error_message' => 'TypeDoesNotContainType - src' . DIRECTORY_SEPARATOR . 'somefile.php:3:29 - Type int for $value is never >9223372036854775807',
+            ],
+            'greaterThanPhpIntMaxIsImpossibleForIntRangeAndLiteral' => [
+                'code' => '<?php
+                    /** @param int<1, 5>|7 $value */
+                    function f(int $value): void {
+                        if ($value > 9223372036854775807) {
+                            echo $value;
+                        }
+                    }',
+                'error_message' => 'DocblockTypeContradiction - src' . DIRECTORY_SEPARATOR . 'somefile.php:4:29 - Docblock-defined type int<1, 7> for $value is never >= 9223372036854775807',
+            ],
+            'lessThanPhpIntMinIsImpossibleForInt' => [
+                'code' => '<?php
+                    function f(int $value): void {
+                        if ($value < -9223372036854775807 - 1) {
+                            echo $value;
+                        }
+                    }',
+                'error_message' => 'TypeDoesNotContainType - src' . DIRECTORY_SEPARATOR . 'somefile.php:3:29 - Type int for $value is never <-9223372036854775808',
+            ],
+            'lessThanPhpIntMinIsImpossibleForIntRangeAndLiteral' => [
+                'code' => '<?php
+                    /** @param int<-5, 5>|7 $value */
+                    function f(int $value): void {
+                        if ($value < -9223372036854775807 - 1) {
+                            echo $value;
+                        }
+                    }',
+                'error_message' => 'DocblockTypeContradiction - src' . DIRECTORY_SEPARATOR . 'somefile.php:4:29 - Docblock-defined type int<-5, 7> for $value is never <= -9223372036854775808',
+            ],
+            'notGreaterThanPhpIntMaxIsRedundantForInt' => [
+                'code' => '<?php
+                    function f(int $value): void {
+                        if ($value >= 0) {
+                            echo $value;
+                        } elseif ($value <= 9223372036854775807) {
+                            echo $value;
+                        }
+                    }',
+                'error_message' => 'RedundantCondition - src' . DIRECTORY_SEPARATOR . 'somefile.php:5:35 - Type int<min, -1> for $value is never >= 9223372036854775807',
+            ],
             'intRangeNotContained' => [
                 'code' => '<?php
                     /**
@@ -1135,6 +1224,46 @@ final class IntRangeTest extends TestCase
                      */
                     function scope(int $a): void{
                         assert($a < 10);
+                    }',
+                'error_message' => 'RedundantConditionGivenDocblockType',
+            ],
+            'assertRedundantGreaterAtLowerBound' => [
+                'code' => '<?php
+                    /**
+                     * @param int<1, 5> $a
+                     */
+                    function scope(int $a): void{
+                        assert($a > 0);
+                    }',
+                'error_message' => 'RedundantConditionGivenDocblockType',
+            ],
+            'assertRedundantGreaterOrEqualAtLowerBound' => [
+                'code' => '<?php
+                    /**
+                     * @param int<1, 5> $a
+                     */
+                    function scope(int $a): void{
+                        assert($a >= 1);
+                    }',
+                'error_message' => 'RedundantConditionGivenDocblockType',
+            ],
+            'assertRedundantLessAtUpperBound' => [
+                'code' => '<?php
+                    /**
+                     * @param int<1, 5> $a
+                     */
+                    function scope(int $a): void{
+                        assert($a < 6);
+                    }',
+                'error_message' => 'RedundantConditionGivenDocblockType',
+            ],
+            'assertRedundantLessOrEqualAtUpperBound' => [
+                'code' => '<?php
+                    /**
+                     * @param int<1, 5> $a
+                     */
+                    function scope(int $a): void{
+                        assert($a <= 5);
                     }',
                 'error_message' => 'RedundantConditionGivenDocblockType',
             ],

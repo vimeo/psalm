@@ -11,10 +11,12 @@ use Psalm\Codebase;
 use Psalm\Config;
 use Psalm\Context;
 use Psalm\FileManipulation;
+use Psalm\Internal\Analyzer\ClassAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\Call\ByRefArgumentAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\Call\CallPurityResolver;
 use Psalm\Internal\Analyzer\Statements\Expression\Call\ClassTemplateParamCollector;
 use Psalm\Internal\Analyzer\Statements\Expression\Call\Method\MethodCallProhibitionAnalyzer;
+use Psalm\Internal\Analyzer\Statements\Expression\Call\Method\MethodCallPurityAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\Call\NewAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\Call\NoDiscardAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\Call\StaticCallAnalyzer;
@@ -98,13 +100,13 @@ final class ExistingAtomicStaticCallAnalyzer
         ) {
             $appearing_method_id = $codebase->methods->getAppearingMethodId($method_id);
 
-            if (!$appearing_method_id) {
-                return;
-            }
+            // a method no class defines (declared by an interface or an abstract class) has no body to collect from
+            $appearing_method_class_name = $appearing_method_id?->fq_class_name;
 
-            $appearing_method_class_name = $appearing_method_id->fq_class_name;
-
-            if ($codebase->classExtends($context->self, $appearing_method_class_name)) {
+            if ($appearing_method_id !== null
+                && $appearing_method_class_name !== null
+                && $codebase->classExtends($context->self, $appearing_method_class_name)
+            ) {
                 $old_context_include_location = $context->include_location;
                 $old_self = $context->self;
                 $context->include_location = new CodeLocation($statements_analyzer->getSource(), $stmt);
@@ -168,6 +170,22 @@ final class ExistingAtomicStaticCallAnalyzer
             $template_result->lower_bounds += $inferred_template_result->lower_bounds;
         }
 
+        // a static call naming a class does not forward the late static binding: `static` is that class
+        $static_is_called_class = $stmt->class instanceof PhpParser\Node\Name
+            && !in_array(strtolower($stmt->class->getFirst()), ['self', 'static', 'parent'], true)
+            && $codebase->methods->getStorage(
+                $codebase->methods->getDeclaringMethodId($method_id) ?? $method_id,
+                true,
+            )->is_static;
+
+        // the arguments, the hints of closure params and the conditionals of the return type are read with `static` of
+        // the call only when it is that class: forwarding calls and template classes keep `static` as declared, and so
+        // does a call in a trait, whose closures every class using it shares
+        if ($static_is_called_class && !CallAnalyzer::isInTrait($statements_analyzer)) {
+            $template_result->static_class_type = $method_id->fq_class_name;
+            $template_result->static_class_is_final = true;
+        }
+
         if (CallAnalyzer::checkMethodArgs(
             $method_id,
             $args,
@@ -175,6 +193,7 @@ final class ExistingAtomicStaticCallAnalyzer
             $context,
             new CodeLocation($statements_analyzer->getSource(), $stmt),
             $statements_analyzer,
+            $static_is_called_class,
         ) === false) {
             return;
         }
@@ -267,6 +286,13 @@ final class ExistingAtomicStaticCallAnalyzer
 
             $call_args = $stmt->isFirstClassCallable() ? [] : $stmt->getArgs();
 
+            MethodCallPurityAnalyzer::markStaticCallReturningThis(
+                $statements_analyzer,
+                $stmt,
+                $method_id,
+                $method_storage,
+            );
+
             // what the purity templates of the method are bound to here
             $template_capabilities = CallPurityResolver::getCallCapabilities(
                 $statements_analyzer,
@@ -324,6 +350,41 @@ final class ExistingAtomicStaticCallAnalyzer
                 'method ' . $cased_method_id,
             );
 
+            $declared_return_type = $method_storage->return_type;
+            $signature_return_type = $method_storage->signature_return_type;
+
+            if ($codebase->find_unused_variables
+                && !$stmt->isFirstClassCallable()
+                && !$context->inside_conditional
+                && !$context->inside_general_use
+                && !$context->inside_throw
+                && !$context->inside_assignment
+                && !$context->inside_call
+                && !$context->inside_return
+                && !$context->inside_unset
+                && $method_storage->is_static
+                && $method_storage->isMutationFree()
+                && ($declared_return_type === null
+                    || !($declared_return_type->isVoid() || $declared_return_type->isNever()))
+                && ($signature_return_type === null
+                    || !($signature_return_type->isVoid() || $signature_return_type->isNever()))
+                && Capabilities::allowsAnyOf(Capabilities::MUTATION_FREE, $call_capabilities)
+                && !$method_storage->assertions
+                && !$method_storage->if_true_assertions
+                && !$method_storage->if_false_assertions
+                && !$method_storage->throws
+                && !MethodCallPurityAnalyzer::isCalledForItsTemplatesEffects($method_storage)
+            ) {
+                IssueBuffer::maybeAdd(
+                    new UnusedMethodCall(
+                        'The call to ' . $cased_method_id . ' is not used',
+                        new CodeLocation($statements_analyzer, $stmt_name),
+                        (string) $method_id,
+                    ),
+                    $statements_analyzer->getSuppressedIssues(),
+                );
+            }
+
             if (NoDiscardAnalyzer::isDiscardReported(
                 $context,
                 $method_storage,
@@ -350,7 +411,7 @@ final class ExistingAtomicStaticCallAnalyzer
                 CallAnalyzer::applyAssertionsToContext(
                     $stmt_name,
                     null,
-                    $assertions,
+                    CallAnalyzer::getAssertionsOnArgs($assertions, $method_storage, $stmt->getArgs()),
                     $stmt->getArgs(),
                     $template_result,
                     $context,
@@ -364,7 +425,11 @@ final class ExistingAtomicStaticCallAnalyzer
                     array_map(
                         static fn(Possibilities $assertion): Possibilities =>
                             $assertion->getUntemplatedCopy($template_result, null, $codebase),
-                        $method_storage->if_true_assertions,
+                        CallAnalyzer::getAssertionsOnArgs(
+                            $method_storage->if_true_assertions,
+                            $method_storage,
+                            $stmt->getArgs(),
+                        ),
                     ),
                 );
             }
@@ -375,7 +440,11 @@ final class ExistingAtomicStaticCallAnalyzer
                     array_map(
                         static fn(Possibilities $assertion): Possibilities =>
                             $assertion->getUntemplatedCopy($template_result, null, $codebase),
-                        $method_storage->if_false_assertions,
+                        CallAnalyzer::getAssertionsOnArgs(
+                            $method_storage->if_false_assertions,
+                            $method_storage,
+                            $stmt->getArgs(),
+                        ),
                     ),
                 );
             }
@@ -646,7 +715,7 @@ final class ExistingAtomicStaticCallAnalyzer
      * What `static` stands for in the signature of the method $stmt calls on $fq_class_name, and whether it is that
      * class exactly
      *
-     * @return array{string|TTemplateParam|null, bool}
+     * @return array{string|TNamedObject|TTemplateParam|null, bool}
      */
     public static function getStaticClassType(
         Codebase $codebase,
@@ -675,8 +744,9 @@ final class ExistingAtomicStaticCallAnalyzer
             && $lhs_type_part instanceof TNamedObject
             && $context->self
         ) {
-            $static_type = $context->self;
-            $context_final = $codebase->classlike_storage_provider->get($context->self)->final;
+            $self_storage = $codebase->classlike_storage_provider->get($context->self);
+            $static_type = ClassAnalyzer::getThisObjectType($self_storage, $context->self);
+            $context_final = $self_storage->final;
         } elseif ($context->calling_method_id !== null) {
             // differentiate between these cases:
             //   1. "static" comes from the CALLED static method - use $fq_class_name.
@@ -691,10 +761,12 @@ final class ExistingAtomicStaticCallAnalyzer
 
         return [
             $static_type,
-            is_string($static_type)
-            && ($static_type !== $context->self
-                || $class_storage->final
-                || $context_final),
+            $static_type instanceof TNamedObject
+                ? $class_storage->final || $context_final
+                : is_string($static_type)
+                    && ($static_type !== $context->self
+                        || $class_storage->final
+                        || $context_final),
         ];
     }
 
