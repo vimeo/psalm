@@ -61126,7 +61126,7 @@ return array (
   array (
     -1 => 'bool',
     'signal_no' => 'int',
-    'callback=' => 'callable[impure]|null',
+    'callback=' => 'callable[impure]|int|null',
   ),
   'swoole\\process::start' => 
   array (
