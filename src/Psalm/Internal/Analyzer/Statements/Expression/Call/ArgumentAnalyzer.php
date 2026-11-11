@@ -760,7 +760,6 @@ final class ArgumentAnalyzer
      * expanding the declared one (the receiver keeps its type arguments in it) and whether it is that class exactly
      *
      * @psalm-capabilities read-props
-     *
      * @return array{ClassLikeStorage|null, ClassLikeStorage|null, TNamedObject|string|null, bool}
      */
     private static function getClassesOfCall(
