@@ -1170,16 +1170,25 @@ final class AtomicTypeComparator
 
         // far-fetched keys are not worth checking one by one
         for ($key = 0; $key < min($highest_required_key ?? 0, 256); $key++) {
-            if (isset($other->properties[$key])) {
-                continue;
-            }
+            // the list has the item, and so must the other one: of a type both can have
+            $list_item = $list->properties[$key] ?? $list->fallback_params[1] ?? null;
 
-            if ($other->fallback_params === null
-                || !UnionTypeComparator::canExpressionTypesBeIdentical(
+            if (isset($other->properties[$key])) {
+                $other_item = $other->properties[$key];
+            } elseif ($other->fallback_params !== null
+                && UnionTypeComparator::canExpressionTypesBeIdentical(
                     $codebase,
                     new Union([new TLiteralInt($key)]),
                     $other->fallback_params[0],
                 )
+            ) {
+                $other_item = $other->fallback_params[1];
+            } else {
+                return false;
+            }
+
+            if ($list_item !== null
+                && !UnionTypeComparator::canExpressionTypesBeIdentical($codebase, $list_item, $other_item)
             ) {
                 return false;
             }

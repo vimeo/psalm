@@ -1957,6 +1957,17 @@ final class RedundantConditionTest extends TestCase
                     }',
                 'error_message' => 'TypeDoesNotContainType - src' . DIRECTORY_SEPARATOR . 'somefile.php:7:32',
             ],
+            'identicalComparisonOfAListWithAShapeWhoseSkippedItemIsOfAnotherTypeIsImpossible' => [
+                'code' => '<?php
+                    /**
+                     * @param non-empty-list<int> $list
+                     * @param array{0: int, 1?: string, 2: int} $shape
+                     */
+                    function f(array $list, array $shape): bool {
+                        return $list === $shape;
+                    }',
+                'error_message' => 'TypeDoesNotContainType - src' . DIRECTORY_SEPARATOR . 'somefile.php:7:32',
+            ],
             'identicalComparisonOfAShapeWithAShorterOneIsImpossible' => [
                 'code' => '<?php
                     function f(): bool {
