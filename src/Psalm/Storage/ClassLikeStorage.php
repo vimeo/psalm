@@ -14,6 +14,7 @@ use Psalm\Internal\MethodIdentifier;
 use Psalm\Internal\Type\TypeAlias\ClassTypeAlias;
 use Psalm\Issue\CodeIssue;
 use Psalm\Issue\DeprecatedClass;
+use Psalm\Type\Atomic\TGenericObject;
 use Psalm\Type\Atomic\TNamedObject;
 use Psalm\Type\Atomic\TTemplateParam;
 use Psalm\Type\Union;
@@ -194,6 +195,21 @@ final class ClassLikeStorage implements HasAttributesInterface
      * @var array<string, string>
      */
     public array $trait_alias_map_cased = [];
+
+    /**
+     * The trait an alias is qualified with (`use A { A::f as g; }`), by the alias name
+     *
+     * @var array<lowercase-string, lowercase-string>
+     */
+    public array $trait_alias_trait_map = [];
+
+    /**
+     * The traits whose method is not used because of `insteadof` (`use A, B { B::f insteadof A; }`),
+     * by the method name
+     *
+     * @var array<lowercase-string, array<lowercase-string, true>>
+     */
+    public array $trait_excluded_methods = [];
 
     /**
      * @var array<lowercase-string, bool>
@@ -489,6 +505,18 @@ final class ClassLikeStorage implements HasAttributesInterface
     public bool $enforce_template_inheritance = false;
 
     public ?string $extension_requirement = null;
+
+    /**
+     * The type arguments of the class `@psalm-require-extends` names, in the templates of the trait
+     */
+    public ?TGenericObject $extension_requirement_type = null;
+
+    /**
+     * The type arguments of the interfaces `@psalm-require-implements` names, in the templates of the trait
+     *
+     * @var array<string, TGenericObject>
+     */
+    public array $implementation_requirement_types = [];
 
     /**
      * @var array<int, string>
