@@ -64,7 +64,6 @@ use Psalm\Type\Union;
 
 use function array_filter;
 use function array_reverse;
-use function array_values;
 use function count;
 use function in_array;
 use function strtolower;
@@ -582,12 +581,12 @@ final class AtomicStaticCallAnalyzer
                         // Pass the source and context like the non-callable path does: params
                         // providers may need them.
                         $closure = new TClosure(
-                            array_values($codebase->methods->getMethodParams(
+                            $codebase->methods->getMethodParams(
                                 $method_id,
                                 $statements_analyzer,
                                 null,
                                 $context,
-                            )),
+                            ),
                             $codebase->getMethodReturnType($method_id, $self_fq_class_name),
                             $declaring_method_storage->capabilities,
                         );
@@ -1480,6 +1479,7 @@ final class AtomicStaticCallAnalyzer
      * Capabilities of the __callStatic a magic static call dispatches through, read from the
      * declaring class because an inherited __callStatic has no storage on the subclass.
      *
+     * @return CapabilitySet
      * @psalm-capabilities read-props
      */
     private static function getCallStaticCapabilities(Codebase $codebase, string $fq_class_name): int
