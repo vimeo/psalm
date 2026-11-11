@@ -1581,6 +1581,33 @@ final class TraitTest extends TestCase
                 'ignored_issues' => [],
                 'php_version' => '8.1',
             ],
+            'traitReadsAClassConstantWithTheLiteralTheUsingClassesGiveIt' => [
+                'code' => '<?php
+                    /** @param positive-int $i */
+                    function takesPositive(int $i): void {}
+
+                    trait TestTrait {
+                        public function run(): void {
+                            takesPositive(self::VALUE);
+                            takesPositive(static::VALUE);
+                        }
+                    }
+
+                    final class ClassOne {
+                        use TestTrait;
+
+                        public const VALUE = 1;
+                    }
+
+                    final class ClassTwo {
+                        use TestTrait;
+
+                        public const VALUE = 2;
+                    }
+
+                    (new ClassOne())->run();
+                    (new ClassTwo())->run();',
+            ],
             'traitReadsAClassConstantEachUsingClassDefinesDifferently' => [
                 'code' => '<?php
                     trait TestTrait {
