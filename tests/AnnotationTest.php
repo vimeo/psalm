@@ -184,18 +184,6 @@ final class AnnotationTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
-            'suppressDocblockInFrontOfAnArgument' => [
-                'code' => '<?php
-                    /**
-                     * @psalm-mutation-free
-                     */
-                    function describe(): void {
-                        throw new RuntimeException(
-                            /** @psalm-suppress ImpureFunctionCall the last error is part of the message */
-                            sprintf("code: %d", preg_last_error()),
-                        );
-                    }',
-            ],
             'psalmVarOverridesPhpstanVarOnProperty' => [
                 'code' => '<?php
                     class Foo {}
@@ -1922,6 +1910,18 @@ final class AnnotationTest extends TestCase
                         return $foo;
                     }',
             ],
+            'suppressDocblockInFrontOfAnArgument' => [
+                'code' => '<?php
+                    /**
+                     * @psalm-mutation-free
+                     */
+                    function describe(): void {
+                        throw new RuntimeException(
+                            /** @psalm-suppress ImpureFunctionCall the last error is part of the message */
+                            sprintf("code: %d", preg_last_error()),
+                        );
+                    }',
+            ],
         ];
     }
 
@@ -1932,30 +1932,37 @@ final class AnnotationTest extends TestCase
     public static function providerInvalidCodeParse(): iterable
     {
         return [
-            'suppressDocblockInFrontOfAnArgumentOnlyCoversThatArgument' => [
-                'code' => '<?php
-                    /**
-                     * @psalm-mutation-free
-                     */
-                    function describe(): void {
-                        echo sprintf(
-                            "%d %d",
-                            /** @psalm-suppress ImpureFunctionCall */
-                            preg_last_error(),
-                            preg_last_error(),
-                        );
-                    }',
-                'error_message' => 'ImpureFunctionCall - src' . DIRECTORY_SEPARATOR . 'somefile.php:10:29',
+            'removedSelfAccessingCallableWithParamsIsInvalid' => [
+                'code' => <<<'PHP'
+                    <?php
+                    /** @param self-accessing-callable(): int $f */
+                    function f(callable $f): void {}
+                    PHP,
+                'error_message' => 'InvalidDocblock',
             ],
-            'unusedSuppressDocblockInFrontOfAnArgument' => [
-                'code' => '<?php
-                    function describe(): void {
-                        echo strlen(
-                            /** @psalm-suppress ImpureFunctionCall */
-                            "text",
-                        );
-                    }',
-                'error_message' => 'UnusedPsalmSuppress',
+            'removedSelfMutatingCallableWithParamsIsInvalid' => [
+                'code' => <<<'PHP'
+                    <?php
+                    /** @param self-mutating-callable(): int $f */
+                    function f(callable $f): void {}
+                    PHP,
+                'error_message' => 'InvalidDocblock',
+            ],
+            'removedSelfAccessingClosureWithParamsIsInvalid' => [
+                'code' => <<<'PHP'
+                    <?php
+                    /** @param self-accessing-Closure(): int $f */
+                    function f(callable $f): void {}
+                    PHP,
+                'error_message' => 'InvalidDocblock',
+            ],
+            'removedSelfMutatingClosureWithParamsIsInvalid' => [
+                'code' => <<<'PHP'
+                    <?php
+                    /** @param self-mutating-Closure(): int $f */
+                    function f(callable $f): void {}
+                    PHP,
+                'error_message' => 'InvalidDocblock',
             ],
             'psalmVarWithTooManyTemplateParamsOnProperty' => [
                 'code' => '<?php
@@ -2766,6 +2773,31 @@ final class AnnotationTest extends TestCase
                 'error_message' => 'InvalidDocblock',
                 'error_levels' => [],
                 'php_version' => '8.0',
+            ],
+            'suppressDocblockInFrontOfAnArgumentOnlyCoversThatArgument' => [
+                'code' => '<?php
+                    /**
+                     * @psalm-mutation-free
+                     */
+                    function describe(): void {
+                        echo sprintf(
+                            "%d %d",
+                            /** @psalm-suppress ImpureFunctionCall */
+                            preg_last_error(),
+                            preg_last_error(),
+                        );
+                    }',
+                'error_message' => 'ImpureFunctionCall - src' . DIRECTORY_SEPARATOR . 'somefile.php:10:29',
+            ],
+            'unusedSuppressDocblockInFrontOfAnArgument' => [
+                'code' => '<?php
+                    function describe(): void {
+                        echo strlen(
+                            /** @psalm-suppress ImpureFunctionCall */
+                            "text",
+                        );
+                    }',
+                'error_message' => 'UnusedPsalmSuppress',
             ],
         ];
     }

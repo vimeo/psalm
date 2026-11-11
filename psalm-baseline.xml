@@ -2319,7 +2319,6 @@
       <code><![CDATA[$file_changes]]></code>
       <code><![CDATA[self::$parser->parse($file_contents, $error_handler)]]></code>
       <code><![CDATA[self::$parser->parse($file_contents, $error_handler)]]></code>
-      <code><![CDATA[strpos($file_path, 'vendor')]]></code>
     </RiskyTruthyFalsyComparison>
   </file>
   <file src="src/Psalm/Internal/Scanner/DocblockParser.php">
