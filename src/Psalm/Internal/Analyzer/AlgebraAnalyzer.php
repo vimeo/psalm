@@ -25,6 +25,24 @@ use function implode;
 final class AlgebraAnalyzer
 {
     /**
+     * `in-array-X` doesn't say which array the value was looked up in: two equal ones are not a repetition
+     *
+     * @psalm-pure
+     */
+    private static function hasInArrayPossibility(Clause $clause): bool
+    {
+        foreach ($clause->possibilities as $keyed_possibilities) {
+            foreach ($keyed_possibilities as $possibility) {
+                if ($possibility instanceof InArray || $possibility instanceof NotInArray) {
+                    return true;
+                }
+            }
+        }
+
+        return false;
+    }
+
+    /**
      * This looks to see if there are any clauses in one formula that contradict
      * clauses in another formula, or clauses that duplicate previous clauses
      *
@@ -65,6 +83,7 @@ final class AlgebraAnalyzer
                 && $formula_2_clause->reconcilable
                 && (isset($formula_1_hashes[$hash]) || isset($formula_2_hashes[$hash]))
                 && !array_intersect_key($new_assigned_var_ids, $formula_2_clause->possibilities)
+                && !self::hasInArrayPossibility($formula_2_clause)
             ) {
                 IssueBuffer::maybeAdd(
                     new RedundantCondition(
@@ -79,11 +98,17 @@ final class AlgebraAnalyzer
             $formula_2_hashes[$hash] = true;
         }
 
-        // remove impossible types
+        // the condition is impossible when the established clauses imply every clause of its negation
+        $implying_clause_count = 0;
+        $negated_clause_count = 0;
+        $first_implication = null;
+
         foreach ($negated_formula2 as $negated_clause_2) {
             if (!$negated_clause_2->reconcilable || $negated_clause_2->wedge) {
                 continue;
             }
+
+            ++$negated_clause_count;
 
             foreach ($formula_1 as $clause_1) {
                 if ($negated_clause_2 === $clause_1 || !$clause_1->reconcilable || $clause_1->wedge) {
@@ -111,32 +136,41 @@ final class AlgebraAnalyzer
                 }
 
                 if ($negated_clause_2_contains_1_possibilities) {
-                    $mini_formula_2 = Algebra::negateFormula([$negated_clause_2]);
+                    ++$implying_clause_count;
+                    $first_implication ??= [$negated_clause_2, $clause_1];
 
-                    if (!$mini_formula_2[0]->wedge) {
-                        if (count($mini_formula_2) > 1) {
-                            $paradox_message = 'Condition ((' . implode(') && (', $mini_formula_2) . '))'
-                                . ' contradicts a previously-established condition (' . $clause_1 . ')';
-                        } else {
-                            $paradox_message = 'Condition (' . $mini_formula_2[0] . ')'
-                                . ' contradicts a previously-established condition (' . $clause_1 . ')';
-                        }
-                    } else {
-                        $paradox_message = 'Condition not(' . $negated_clause_2 . ')'
-                            . ' contradicts a previously-established condition (' . $clause_1 . ')';
-                    }
-
-                    IssueBuffer::maybeAdd(
-                        new ParadoxicalCondition(
-                            $paradox_message,
-                            new CodeLocation($statements_analyzer, $stmt),
-                        ),
-                        $statements_analyzer->getSuppressedIssues(),
-                    );
-
-                    return;
+                    break;
                 }
             }
         }
+
+        if ($first_implication === null || $implying_clause_count !== $negated_clause_count) {
+            return;
+        }
+
+        [$negated_clause_2, $clause_1] = $first_implication;
+
+        $mini_formula_2 = Algebra::negateFormula([$negated_clause_2]);
+
+        if (!$mini_formula_2[0]->wedge) {
+            if (count($mini_formula_2) > 1) {
+                $paradox_message = 'Condition ((' . implode(') && (', $mini_formula_2) . '))'
+                    . ' contradicts a previously-established condition (' . $clause_1 . ')';
+            } else {
+                $paradox_message = 'Condition (' . $mini_formula_2[0] . ')'
+                    . ' contradicts a previously-established condition (' . $clause_1 . ')';
+            }
+        } else {
+            $paradox_message = 'Condition not(' . $negated_clause_2 . ')'
+                . ' contradicts a previously-established condition (' . $clause_1 . ')';
+        }
+
+        IssueBuffer::maybeAdd(
+            new ParadoxicalCondition(
+                $paradox_message,
+                new CodeLocation($statements_analyzer, $stmt),
+            ),
+            $statements_analyzer->getSuppressedIssues(),
+        );
     }
 }

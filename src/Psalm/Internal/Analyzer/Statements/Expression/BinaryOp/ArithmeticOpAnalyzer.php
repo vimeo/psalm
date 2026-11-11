@@ -11,6 +11,7 @@ use Psalm\Config;
 use Psalm\Context;
 use Psalm\Internal\Analyzer\FunctionLikeAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\Assignment\ArrayAssignmentAnalyzer;
+use Psalm\Internal\Analyzer\Statements\Expression\ExpressionIdentifier;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\Internal\Analyzer\TraitAnalyzer;
 use Psalm\Internal\Provider\NodeDataProvider;
@@ -58,13 +59,21 @@ use function is_numeric;
 use function max;
 use function min;
 use function preg_match;
+use function strrpos;
 use function strtolower;
+use function substr;
 
 /**
  * @internal
  */
 final class ArithmeticOpAnalyzer
 {
+    /** @var array<lowercase-string, string> classes whose instances overload the arithmetic operators */
+    private const OPERATOR_OVERLOADING_CLASSES = [
+        'decimal\\decimal' => 'Decimal\\Decimal',
+        'bcmath\\number' => 'BcMath\\Number',
+    ];
+
     public static function analyze(
         ?StatementsSource $statements_source,
         NodeDataProvider $nodes,
@@ -206,8 +215,10 @@ final class ArithmeticOpAnalyzer
             $has_valid_right_operand = false;
             $has_string_increment = false;
 
-            foreach ($left_type->getAtomicTypes() as $left_type_part) {
-                foreach ($right_type->getAtomicTypes() as $right_type_part) {
+            $right_type_parts = self::expandNumericTemplates($right_type);
+
+            foreach (self::expandNumericTemplates($left_type) as $left_type_part) {
+                foreach ($right_type_parts as $right_type_part) {
                     $candidate_result_type = self::analyzeOperands(
                         $statements_source,
                         $codebase,
@@ -290,6 +301,43 @@ final class ArithmeticOpAnalyzer
     }
 
     /**
+     * A template whose bound is only ints and floats is the sum of the results for each of them
+     *
+     * @psalm-pure
+     * @return list<Atomic>
+     */
+    private static function expandNumericTemplates(Union $type): array
+    {
+        $parts = [];
+
+        foreach ($type->getAtomicTypes() as $part) {
+            if ($part instanceof TTemplateParam && self::isNumeric($part->as)) {
+                foreach ($part->as->getAtomicTypes() as $bound_part) {
+                    $parts[] = $bound_part;
+                }
+            } else {
+                $parts[] = $part;
+            }
+        }
+
+        return $parts;
+    }
+
+    /**
+     * @psalm-pure
+     */
+    private static function isNumeric(Union $type): bool
+    {
+        foreach ($type->getAtomicTypes() as $part) {
+            if (!$part instanceof TInt && !$part instanceof TFloat) {
+                return false;
+            }
+        }
+
+        return true;
+    }
+
+    /**
      * @psalm-pure
      */
     private static function getNumericalType(int|float $result): Union
@@ -326,16 +374,17 @@ final class ArithmeticOpAnalyzer
         if (($left_type_part instanceof TLiteralInt || $left_type_part instanceof TLiteralFloat)
             && ($right_type_part instanceof TLiteralInt || $right_type_part instanceof TLiteralFloat)
             && (
-                //we don't try to do arithmetics on variables in loops
+                //we don't try to do arithmetics on what a loop can change in loops: variables, items, properties
                 $context === null
                 || $context->inside_loop === false
-                || (!$left instanceof PhpParser\Node\Expr\Variable && !$right instanceof PhpParser\Node\Expr\Variable)
+                || (!self::isChangeableByLoop($left, $context) && !self::isChangeableByLoop($right, $context))
             )
         ) {
             // get_class is fine here because both classes are final.
             if ($statements_source !== null
                 && $config->strict_binary_operands
                 && $left_type_part::class !== $right_type_part::class
+                && !$parent instanceof PhpParser\Node\Expr\BinaryOp\Pow
             ) {
                 IssueBuffer::maybeAdd(
                     new InvalidOperand(
@@ -714,31 +763,37 @@ final class ArithmeticOpAnalyzer
             || $parent instanceof PhpParser\Node\Expr\BinaryOp\Mod
             || $parent instanceof PhpParser\Node\Expr\BinaryOp\Pow
         ) {
-            $non_decimal_type = null;
-            if ($left_type_part instanceof TNamedObject
-                && strtolower($left_type_part->value) === "decimal\\decimal"
-            ) {
-                $non_decimal_type = $right_type_part;
-            } elseif ($right_type_part instanceof TNamedObject
-                && strtolower($right_type_part->value) === "decimal\\decimal"
-            ) {
-                $non_decimal_type = $left_type_part;
+            $overloading_operand = null;
+            foreach (self::OPERATOR_OVERLOADING_CLASSES as $class_lc => $class_name) {
+                if ($left_type_part instanceof TNamedObject && strtolower($left_type_part->value) === $class_lc) {
+                    $overloading_operand = [$class_name, $right_type_part];
+                    break;
+                }
+
+                if ($right_type_part instanceof TNamedObject && strtolower($right_type_part->value) === $class_lc) {
+                    $overloading_operand = [$class_name, $left_type_part];
+                    break;
+                }
             }
-            if ($non_decimal_type !== null) {
-                if ($non_decimal_type instanceof TInt
-                    || $non_decimal_type instanceof TNumericString
-                    || $non_decimal_type instanceof TNamedObject
-                        && strtolower($non_decimal_type->value) === "decimal\\decimal"
+
+            if ($overloading_operand !== null) {
+                [$operator_class, $other_operand_type] = $overloading_operand;
+
+                if ($other_operand_type instanceof TInt
+                    || $other_operand_type instanceof TNumericString
+                    || $other_operand_type instanceof TLiteralString && is_numeric($other_operand_type->value)
+                    || $other_operand_type instanceof TNamedObject
+                        && strtolower($other_operand_type->value) === strtolower($operator_class)
                 ) {
                     $result_type = Type::combineUnionTypes(
-                        new Union([new TNamedObject("Decimal\\Decimal")]),
+                        new Union([new TNamedObject($operator_class)]),
                         $result_type,
                     );
                 } else {
                     if ($statements_source) {
                         IssueBuffer::maybeAdd(
                             new InvalidOperand(
-                                "Cannot add Decimal\\Decimal to {$non_decimal_type->getId()}",
+                                "Cannot add {$operator_class} to {$other_operand_type->getId()}",
                                 new CodeLocation($statements_source, $parent),
                             ),
                             $statements_source->getSuppressedIssues(),
@@ -770,7 +825,7 @@ final class ArithmeticOpAnalyzer
             if (($left_type_part instanceof TNumeric || $right_type_part instanceof TNumeric)
                 && ($left_type_part->isNumericType() && $right_type_part->isNumericType())
             ) {
-                if ($config->strict_binary_operands) {
+                if ($config->strict_binary_operands && !$parent instanceof PhpParser\Node\Expr\BinaryOp\Pow) {
                     if ($statements_source) {
                         IssueBuffer::maybeAdd(
                             new InvalidOperand(
@@ -923,7 +978,7 @@ final class ArithmeticOpAnalyzer
             if (($left_type_part instanceof TFloat && $right_type_part instanceof TInt)
                 || ($left_type_part instanceof TInt && $right_type_part instanceof TFloat)
             ) {
-                if ($config->strict_binary_operands) {
+                if ($config->strict_binary_operands && !$parent instanceof PhpParser\Node\Expr\BinaryOp\Pow) {
                     if ($statements_source) {
                         IssueBuffer::maybeAdd(
                             new InvalidOperand(
@@ -949,7 +1004,7 @@ final class ArithmeticOpAnalyzer
             }
 
             if ($left_type_part->isNumericType() && $right_type_part->isNumericType()) {
-                if ($config->strict_binary_operands) {
+                if ($config->strict_binary_operands && !$parent instanceof PhpParser\Node\Expr\BinaryOp\Pow) {
                     if ($statements_source) {
                         IssueBuffer::maybeAdd(
                             new InvalidOperand(
@@ -1075,6 +1130,42 @@ final class ArithmeticOpAnalyzer
         }
 
         return $calculated_type;
+    }
+
+    /**
+     * What a loop can change: any variable, and an item or property of one the loop assigns or passes to a call
+     */
+    private static function isChangeableByLoop(PhpParser\Node\Expr $expr, ?Context $context): bool
+    {
+        if ($expr instanceof PhpParser\Node\Expr\Variable) {
+            return true;
+        }
+
+        if (!$expr instanceof PhpParser\Node\Expr\ArrayDimFetch
+            && !$expr instanceof PhpParser\Node\Expr\PropertyFetch
+            && !$expr instanceof PhpParser\Node\Expr\StaticPropertyFetch
+        ) {
+            return false;
+        }
+
+        $root_var_id = $context !== null ? ExpressionIdentifier::getRootVarId($expr, $context->self) : null;
+
+        if ($root_var_id === null || $context?->loop_scope === null) {
+            return true;
+        }
+
+        // passing `$a` to a call or assigning `$a->b` changes what `$a->b->c` reads
+        while (!isset($context->loop_scope->assigned_root_var_ids[$root_var_id])) {
+            $property_separator = strrpos($root_var_id, '->');
+
+            if ($property_separator === false) {
+                return false;
+            }
+
+            $root_var_id = substr($root_var_id, 0, $property_separator);
+        }
+
+        return true;
     }
 
     /**
@@ -1458,7 +1549,7 @@ final class ArithmeticOpAnalyzer
         TIntRange $right_type_part,
     ): void {
         //If Pow first operand is negative, the result could be positive or negative, else it will be positive
-        //If Pow second operand is negative, the result will be float, if it's 0, it will be 1/-1, else positive
+        //If Pow second operand is negative, the result will be float, if it's 0, it will be 1, else positive
         if ($left_type_part->isPositive()) {
             if ($right_type_part->isPositive()) {
                 $new_result_type = Type::getIntRange(1, null);
@@ -1484,7 +1575,7 @@ final class ArithmeticOpAnalyzer
             } elseif ($right_type_part->isNegative()) {
                 $new_result_type = Type::getFloat();
             } elseif ($right_type_part->min_bound === 0 && $right_type_part->max_bound === 0) {
-                $new_result_type = Type::getInt(true, -1);
+                $new_result_type = Type::getInt(true, 1);
             } else {
                 //$right_type_part may be a mix of positive, negative and 0
                 $new_result_type = new Union([new TInt(), new TFloat()]);

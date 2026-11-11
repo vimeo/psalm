@@ -13,6 +13,8 @@ final class CallableParamTree extends ParseTree
 {
     public bool $variadic = false;
 
+    public bool $by_ref = false;
+
     public bool $has_default = false;
 
     /**
