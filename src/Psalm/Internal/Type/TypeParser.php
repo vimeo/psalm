@@ -129,6 +129,8 @@ use function strtolower;
 use function strtr;
 use function substr;
 
+use const PHP_INT_MAX;
+
 /**
  * @psalm-suppress InaccessibleProperty Allowed during construction
  * @internal
@@ -2849,7 +2851,9 @@ final class TypeParser
                 } elseif (isset($match[2]) && $match[2] !== '') {
                     $value .= chr((int) hexdec($match[2]));
                 } else {
-                    $code_point = (int) hexdec($match[3] ?? '0');
+                    // checked before the conversion: more digits than the largest code point has overflow an int
+                    $hex_digits = ltrim($match[3] ?? '0', '0');
+                    $code_point = strlen($hex_digits) > 6 ? PHP_INT_MAX : (int) hexdec($hex_digits);
 
                     // as PHP: always UTF-8, a surrogate is encoded like any other code point
                     if ($code_point > 0x10FFFF) {

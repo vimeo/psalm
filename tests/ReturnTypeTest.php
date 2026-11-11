@@ -66,6 +66,13 @@ final class ReturnTypeTest extends TestCase
                         return \'\\\\\\\\\';
                     }',
             ],
+            'docblockStringLiteralWithAUnicodeEscapeWithLeadingZeros' => [
+                'code' => '<?php
+                    /** @return "\u{0000000000e9}" */
+                    function leadingZeros(): string {
+                        return "é";
+                    }',
+            ],
             'docblockStringLiteralWithNonAsciiUnicodeEscapes' => [
                 'code' => '<?php
                     /** @return "\u{e9}\u{20AC}\u{1F600}" */
@@ -2210,6 +2217,14 @@ final class ReturnTypeTest extends TestCase
     public static function providerInvalidCodeParse(): iterable
     {
         return [
+            'docblockStringLiteralWithAUnicodeEscapeThatOverflowsAnInt' => [
+                'code' => '<?php
+                    /** @return "\u{FFFFFFFFFFFFFFFF}" */
+                    function overflow(): string {
+                        return "";
+                    }',
+                'error_message' => 'InvalidDocblock',
+            ],
             'docblockStringLiteralWithATooLargeUnicodeEscape' => [
                 'code' => '<?php
                     /** @return "\u{110000}" */
