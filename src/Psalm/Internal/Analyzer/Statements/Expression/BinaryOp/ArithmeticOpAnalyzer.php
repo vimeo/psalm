@@ -577,9 +577,7 @@ final class ArithmeticOpAnalyzer
                     || $left_type_part instanceof TKeyedArray
                 ) {
                     $has_valid_left_operand = true;
-                } elseif ($right_type_part instanceof TArray
-                    || $right_type_part instanceof TKeyedArray
-                ) {
+                } else {
                     $has_valid_right_operand = true;
                 }
 
