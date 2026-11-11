@@ -1181,6 +1181,26 @@ final class ConstantTest extends TestCase
                     A::foo(2);
                     A::foo(3);',
             ],
+            'constantDeclaredWithClassConstantWildcardTypeAcceptsItsValues' => [
+                'code' => '<?php
+                    class Foo
+                    {
+                        public const BAR_A = "a";
+                        public const BAR_B = "b";
+
+                        /** @var self::BAR_* */
+                        public const ONE = self::BAR_A;
+
+                        /** @var array<self::BAR_*, self::BAR_*> */
+                        public const BARS = [
+                            self::BAR_A => self::BAR_A,
+                            self::BAR_B => self::BAR_B,
+                        ];
+
+                        /** @var Foo::BAR_* */
+                        public const OTHER = "b";
+                    }',
+            ],
             'tooLongArrayInvalidConstantAssignmentValueFalsePositiveWithArray' => [
                 'code' => '<?php
                     class TestInvalidConstantAssignmentValueFalsePositiveWithArray {
@@ -2548,6 +2568,88 @@ final class ConstantTest extends TestCase
                     class FooBar implements FooInterface, BarInterface {}
                     PHP,
             ],
+            'constantDefinedByANegatedDefinedGuardInANamespace' => [
+                'code' => '<?php
+                    namespace App\\TextUI;
+
+                    final class Application {
+                        public function run(): int {
+                            if (!defined("APPLICATION_BOOTSTRAP_FILE")) {
+                                return 1;
+                            }
+
+                            $bootstrapFile = APPLICATION_BOOTSTRAP_FILE;
+
+                            return $bootstrapFile === "" ? 1 : 0;
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => ['MixedAssignment'],
+            ],
+            'constantsDefinedByANegatedDefinedGuardOfSeveralOperands' => [
+                'code' => '<?php
+                    function check(): int {
+                        if (!defined("FIRST") || !defined("SECOND")) {
+                            return 1;
+                        }
+
+                        return FIRST + SECOND;
+                    }',
+                'assertions' => [],
+                'ignored_issues' => ['MixedOperand', 'MixedReturnStatement'],
+            ],
+            'constantNarrowedByATypeCheckAfterADefinedCheckInANamespace' => [
+                'code' => '<?php
+                    namespace App\\Util;
+
+                    function path(): string {
+                        if (defined("APP_PHAR_ROOT") && is_string(APP_PHAR_ROOT)) {
+                            $root = APP_PHAR_ROOT;
+                            /** @psalm-check-type-exact $root = string */
+                            return $root . "/";
+                        }
+
+                        return "";
+                    }',
+            ],
+            'constantNarrowedByANegatedDefinedGuardWithATypeCheck' => [
+                'code' => '<?php
+                    namespace App\\Util;
+
+                    function path(): string {
+                        if (!defined("APP_PHAR_ROOT") || !is_string(APP_PHAR_ROOT)) {
+                            return "";
+                        }
+
+                        return APP_PHAR_ROOT . "/";
+                    }
+
+                    function wrapped(): string {
+                        if (!(defined("APP_PHAR") && is_string(APP_PHAR))) {
+                            return "";
+                        }
+
+                        return APP_PHAR . "/";
+                    }
+
+                    function inTheElse(): string {
+                        if (!defined("APP_PREFIX") || !is_string(APP_PREFIX)) {
+                            return "";
+                        } else {
+                            return APP_PREFIX . "/";
+                        }
+                    }',
+            ],
+            'constantDefinedByANegatedDefinedGuardWithAnExit' => [
+                'code' => '<?php
+                    if (!defined("ABSPATH")) {
+                        exit;
+                    }
+
+                    echo ABSPATH;',
+                'assertions' => [],
+                'ignored_issues' => ['MixedArgument'],
+            ],
             'staticClassConstantComparedWithNullIsNarrowedInTheBranch' => [
                 'code' => '<?php
                     function greet(string $name = "default"): void {
@@ -2575,6 +2677,24 @@ final class ConstantTest extends TestCase
 
                     Child::ternary();',
             ],
+            'finalConstantFetchedOnNarrowedInstance' => [
+                'code' => '<?php
+                    class Clazz {
+                        /** @var string */
+                        final public const NAME = "string";
+
+                        public function test(object $c): int {
+                            if (!$c instanceof Clazz) {
+                                return 0;
+                            }
+
+                            return strlen($c::NAME);
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
         ];
     }
 
@@ -2585,6 +2705,18 @@ final class ConstantTest extends TestCase
     public static function providerInvalidCodeParse(): iterable
     {
         return [
+            'constantDeclaredWithClassConstantWildcardTypeRejectsOtherValues' => [
+                'code' => '<?php
+                    class Foo
+                    {
+                        public const BAR_A = "a";
+                        public const BAR_B = "b";
+
+                        /** @var self::BAR_* */
+                        public const ONE = "c";
+                    }',
+                'error_message' => 'InvalidConstantAssignmentValue',
+            ],
             'classConstantFromANegativeShiftIsNever' => [
                 'code' => '<?php
                     enum Color: int
@@ -3234,6 +3366,48 @@ final class ConstantTest extends TestCase
                 'error_levels' => [],
                 'php_version' => '8.2',
             ],
+            'undefinedConstantAfterANegatedDefinedCheck' => [
+                'code' => '<?php
+                    if (!defined("AAA")) {
+                        define("NOT_DEFINED", 1);
+                    }
+
+                    echo ZZZ;',
+                'error_message' => 'UndefinedConstant - src' . DIRECTORY_SEPARATOR . 'somefile.php:6:26 - Const ZZZ is not defined',
+            ],
+            'repeatedTypeCheckOfAConstantAfterADefinedCheck' => [
+                'code' => '<?php
+                    function path(): string {
+                        if (defined("APP_ROOT") && is_string(APP_ROOT) && is_string(APP_ROOT)) {
+                            return APP_ROOT;
+                        }
+
+                        return "";
+                    }',
+                'error_message' => 'RedundantCondition - src' . DIRECTORY_SEPARATOR . 'somefile.php:3:75 - Type string for APP_ROOT is always string',
+            ],
+            'typeCheckOfAConstantDoesNotNarrowItAfterTheIf' => [
+                'code' => '<?php
+                    function path(): string {
+                        if (defined("APP_ROOT") && is_string(APP_ROOT)) {
+                            echo APP_ROOT;
+                        }
+
+                        return APP_ROOT . "/";
+                    }',
+                'error_message' => 'MixedOperand - src' . DIRECTORY_SEPARATOR . 'somefile.php:7:32',
+            ],
+            'typeCheckOfAnUndefinedConstantWithoutADefinedCheck' => [
+                'code' => '<?php
+                    function path(): string {
+                        if (is_string(APP_ROOT)) {
+                            return APP_ROOT;
+                        }
+
+                        return "";
+                    }',
+                'error_message' => 'UndefinedConstant - src' . DIRECTORY_SEPARATOR . 'somefile.php:3:39',
+            ],
             'narrowingAStaticClassConstantDoesNotNarrowSelf' => [
                 'code' => '<?php
                     function greet(string $name): void {
@@ -3267,6 +3441,23 @@ final class ConstantTest extends TestCase
                         }
                     }',
                 'error_message' => 'PossiblyNullArgument - src' . DIRECTORY_SEPARATOR . 'somefile.php:11:35',
+            ],
+            'nonFinalConstantFetchedOnNarrowedInstanceIsMixed' => [
+                'code' => '<?php
+                    class Clazz {
+                        public const NAME = "string";
+
+                        public function test(object $c): int {
+                            if (!$c instanceof Clazz) {
+                                return 0;
+                            }
+
+                            return strlen($c::NAME);
+                        }
+                    }',
+                'error_message' => 'MixedArgument',
+                'error_levels' => ['MissingClassConstType'],
+                'php_version' => '8.1',
             ],
         ];
     }

@@ -1458,10 +1458,10 @@ final class ClassAnalyzer extends ClassLikeAnalyzer
                     $fq_class_name,
                     $template_params,
                     false,
-                    !$storage->final,
+                    true,
                 );
             } else {
-                $this_atomic_object_type = new TNamedObject($fq_class_name, !$storage->final);
+                $this_atomic_object_type = new TNamedObject($fq_class_name, true);
             }
 
             $method_context->vars_in_scope['$this'] = new Union([$this_atomic_object_type]);
@@ -1726,6 +1726,7 @@ final class ClassAnalyzer extends ClassLikeAnalyzer
                         $storage->name . ' is marked ' . Capabilities::toClassAnnotation($storage->capabilities)
                             . ' but ' . $fq_trait_name . ' is not',
                         new CodeLocation($previous_trait_analyzer ?? $this, $trait_name),
+                        $fq_trait_name,
                     ),
                     $storage->suppressed_issues + $this->getSuppressedIssues(),
                 );
@@ -2452,6 +2453,7 @@ final class ClassAnalyzer extends ClassLikeAnalyzer
                             . Capabilities::toClassAnnotation($interface_storage->capabilities) . ', but '
                         . $fq_class_name . ' is not',
                         $code_location,
+                        $fq_interface_name,
                     ),
                     $storage->suppressed_issues + $this->getSuppressedIssues(),
                 );
@@ -2696,6 +2698,7 @@ final class ClassAnalyzer extends ClassLikeAnalyzer
                             . Capabilities::toClassAnnotation($parent_class_storage->capabilities) . ', but '
                         . $fq_class_name . ' is not',
                         $code_location,
+                        $parent_fq_class_name,
                     ),
                     $storage->suppressed_issues + $this->getSuppressedIssues(),
                 );
@@ -2706,6 +2709,7 @@ final class ClassAnalyzer extends ClassLikeAnalyzer
                             . Capabilities::toClassAnnotation($storage->capabilities) . ', but parent class '
                         . $parent_fq_class_name . ' is not',
                         $code_location,
+                        $parent_fq_class_name,
                     ),
                     $storage->suppressed_issues + $this->getSuppressedIssues(),
                 );
@@ -2718,6 +2722,7 @@ final class ClassAnalyzer extends ClassLikeAnalyzer
                         $parent_fq_class_name . ' is marked with @psalm-taint-specialize, but '
                             . $fq_class_name . ' is not',
                         $code_location,
+                        $parent_fq_class_name,
                     ),
                     $storage->suppressed_issues + $this->getSuppressedIssues(),
                 );
