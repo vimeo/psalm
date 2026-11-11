@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Psalm\Internal\Cli;
 
+use Composer\Autoload\ClassLoader;
 use LanguageServerProtocol\MessageType;
 use Psalm\Config;
 use Psalm\Internal\CliUtils;
@@ -285,7 +286,12 @@ final class LanguageServer
             // phpcs:ignore SlevomatCodingStandard.Namespaces.ReferenceUsedNamesOnly.ReferenceViaFullyQualifiedName
             /** @return list<ClassLoader> */
             static fn(): array =>
-                CliUtils::requireAutoloaders($current_dir, isset($options['r']), $vendor_dir),
+                CliUtils::requireAutoloaders(
+                    $current_dir,
+                    isset($options['r']),
+                    $vendor_dir,
+                    !array_key_exists('v', $options),
+                ),
         );
 
         if (array_key_exists('v', $options)) {
