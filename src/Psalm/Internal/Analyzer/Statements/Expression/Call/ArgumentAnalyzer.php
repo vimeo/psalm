@@ -607,8 +607,7 @@ final class ArgumentAnalyzer
                 } elseif ($unpacked_atomic_array instanceof TClassStringMap) {
                     $arg_value_type = Type::getMixed();
                 } else {
-                    // keys that may be ints (`array-key`) are no proof of a named argument
-                    if (!$allow_named_args && !$unpacked_atomic_array->type_params[0]->hasInt()) {
+                    if (!$allow_named_args && !$unpacked_atomic_array->type_params[0]->isInt()) {
                         $arg_key_allowed = false;
                     }
                     $arg_value_type = $unpacked_atomic_array->type_params[1];

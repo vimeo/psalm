@@ -3319,18 +3319,6 @@ final class ArrayFunctionCallTest extends TestCase
                 ],
                 'ignored_issues' => ['RiskyTruthyFalsyComparison'],
             ],
-            'arrayMergeSpreadOfAnArrayThatMayHaveIntKeys' => [
-                'code' => '<?php
-                    /** @param array<array-key, array<int, int>> $lists */
-                    function merge(array $lists): array {
-                        return array_merge(...$lists);
-                    }
-
-                    /** @param array<array-key, array<int, int>> $lists */
-                    function mergeWithAnother(array $lists): array {
-                        return array_merge([], ...$lists);
-                    }',
-            ],
             'arrayMergeSpreadOfAListBuiltWithUnshiftOfMixed' => [
                 'code' => '<?php
                     function merge(callable $get): array {
@@ -4408,6 +4396,22 @@ final class ArrayFunctionCallTest extends TestCase
                 'code' => '<?php
                     array_combine(["a", "b"], [1, 2, 3]);',
                 'error_message' => 'InvalidArgument',
+            ],
+            'arrayMergeSpreadOfAnArrayThatMayHaveStringKeys' => [
+                'code' => '<?php
+                    /** @param array<array-key, array<int, int>> $lists */
+                    function merge(array $lists): array {
+                        return array_merge(...$lists);
+                    }',
+                'error_message' => 'NamedArgumentNotAllowed',
+            ],
+            'arrayMergeSpreadAfterAnotherArgumentOfAnArrayThatMayHaveStringKeys' => [
+                'code' => '<?php
+                    /** @param array<array-key, array<int, int>> $lists */
+                    function merge(array $lists): array {
+                        return array_merge([], ...$lists);
+                    }',
+                'error_message' => 'NamedArgumentNotAllowed',
             ],
             'arrayMergeNoNamed' => [
                 'code' => '<?php
