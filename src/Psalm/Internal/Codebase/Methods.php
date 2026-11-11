@@ -1072,6 +1072,8 @@ final class Methods
     /**
      * The storage of a method a class takes from a trait is shared by every class using the trait, so it can't say
      * whether the method inherits the return type of the method its class documents it by (see Populator)
+     *
+     * @psalm-capabilities read-props
      */
     public function inheritsReturnTypeOfDocumentingMethod(
         MethodStorage $storage,
