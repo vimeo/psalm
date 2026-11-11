@@ -5,8 +5,14 @@ declare(strict_types=1);
 namespace Psalm\Tests;
 
 use Override;
+use Psalm\Context;
+use Psalm\Internal\Analyzer\IssueData;
+use Psalm\IssueBuffer;
 use Psalm\Tests\Traits\InvalidCodeAnalysisTestTrait;
 use Psalm\Tests\Traits\ValidCodeAnalysisTestTrait;
+
+use function array_filter;
+use function array_values;
 
 use const DIRECTORY_SEPARATOR;
 
@@ -14,6 +20,40 @@ final class ClassTest extends TestCase
 {
     use InvalidCodeAnalysisTestTrait;
     use ValidCodeAnalysisTestTrait;
+
+    public function testAnUndefinedClassOfTheSameNativeAndDocblockTypeIsReportedOnce(): void
+    {
+        $this->testConfig->throw_exception = false;
+        $file_path = self::$src_dir_path . 'somefile.php';
+
+        $this->addFile(
+            $file_path,
+            '<?php
+                /**
+                 * @param UndefinedClass $a
+                 */
+                function foo(UndefinedClass $a): void {
+                    echo 1;
+                }
+
+                final class A {
+                    /** @var UndefinedClass */
+                    public UndefinedClass $a;
+                }',
+        );
+
+        $this->analyzeFile($file_path, new Context());
+
+        $issues = array_values(array_filter(
+            IssueBuffer::getIssuesDataForFile($file_path),
+            static fn(IssueData $issue): bool => $issue->type === 'UndefinedClass',
+        ));
+
+        // once for the parameter, and once for the property: at its docblock or at its native type
+        self::assertCount(2, $issues);
+        self::assertSame(3, $issues[0]->line_from);
+        self::assertContains($issues[1]->line_from, [10, 11]);
+    }
 
     /**
      * @psalm-capabilities read-props|write-this-props|write-props
@@ -54,6 +94,131 @@ final class ClassTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'newStaticOfAClassImplementingAnInterfaceWithAConstructor' => [
+                'code' => '<?php
+                    interface Buildable {
+                        public function __construct();
+                    }
+
+                    interface Product extends Buildable {}
+
+                    abstract class Base implements Buildable {
+                        public function __construct() {}
+
+                        public static function build(): static {
+                            return new static();
+                        }
+                    }
+
+                    class Item implements Product {
+                        public function __construct() {}
+
+                        public static function create(): static {
+                            return new static();
+                        }
+                    }
+
+                    /** @param class-string<Item> $class */
+                    function instantiate(string $class): Item {
+                        return new $class();
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'newStaticWithArgumentsTheConstructorOfTheInterfaceAccepts' => [
+                'code' => '<?php
+                    interface Buildable {
+                        public function __construct(int $x, string ...$names);
+                    }
+
+                    abstract class Base implements Buildable {
+                        public function __construct(int|string $x, string ...$names) {}
+
+                        public static function build(): static {
+                            return new static(5, "a", "b");
+                        }
+                    }
+
+                    abstract class WithoutItsOwnConstructor implements Buildable {
+                        public static function build(): static {
+                            return new static(5);
+                        }
+                    }
+
+                    /** @param class-string<Base> $class */
+                    function instantiate(string $class): Base {
+                        return new $class(5);
+                    }
+
+                    /** @param class-string<Base> $class */
+                    function instantiateWith(string $class, int $x): Base {
+                        return new $class($x, "a");
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'consistentConstructorClassUsingATraitConstructorKeepsTheOneOfTheTrait' => [
+                'code' => '<?php
+                    trait HasName {
+                        public function __construct(public string $name, public int $age) {}
+                    }
+
+                    class Base {
+                        public function __construct(bool $flag) {}
+                    }
+
+                    /**
+                     * @psalm-consistent-constructor
+                     */
+                    class Child extends Base {
+                        use HasName;
+                    }
+
+                    $child = new Child("name", 5);',
+            ],
+            'consistentConstructorClassKeepsTheConstructorOfItsParent' => [
+                'code' => '<?php
+                    class Base {
+                        public function __construct(string $name) {}
+                    }
+
+                    /**
+                     * @psalm-consistent-constructor
+                     */
+                    class Child extends Base {
+                        public static function create(): static {
+                            return new static("hello");
+                        }
+                    }
+
+                    $direct = new Child("direct");
+                    $created = Child::create();
+
+                    /**
+                     * @psalm-consistent-constructor
+                     */
+                    class Failure extends ErrorException {}
+
+                    $native = new ErrorException("message", 0, E_WARNING, "file.php", 1);
+                    $failure = new Failure("message", 0, E_WARNING, "file.php", 1);',
+            ],
+            'childOfAConsistentConstructorClassMatchesTheConstructorItInherits' => [
+                'code' => '<?php
+                    class Base {
+                        public function __construct(string $name) {}
+                    }
+
+                    /**
+                     * @psalm-consistent-constructor
+                     */
+                    class Child extends Base {}
+
+                    class GrandChild extends Child {
+                        public function __construct(string $name, int $optional = 0) {}
+                    }',
+            ],
             'classesOfBothBranchesOfAnUnknownAnd' => [
                 'code' => '<?php
                     if (rand(0, 1) && rand(0, 1)) {
@@ -1276,6 +1441,179 @@ final class ClassTest extends TestCase
     public static function providerInvalidCodeParse(): iterable
     {
         return [
+            'newStaticOfAClassImplementingAnInterfaceWithoutAConstructor' => [
+                'code' => '<?php
+                    interface Marker {}
+
+                    class Item implements Marker {
+                        public function __construct() {}
+
+                        public static function create(): static {
+                            return new static();
+                        }
+                    }',
+                'error_message' => 'UnsafeInstantiation - src' . DIRECTORY_SEPARATOR . 'somefile.php:8:36',
+            ],
+            'newStaticWithAnArgumentTheConstructorOfTheInterfaceDoesNotDeclare' => [
+                'code' => '<?php
+                    interface Buildable {
+                        public function __construct();
+                    }
+
+                    abstract class Base implements Buildable {
+                        public function __construct(int $x = 0) {}
+
+                        public static function build(): static {
+                            return new static(5);
+                        }
+                    }',
+                'error_message' => 'UnsafeInstantiation - src' . DIRECTORY_SEPARATOR . 'somefile.php:10:36',
+                'error_levels' => [],
+                'php_version' => '8.0',
+            ],
+            'newStaticWithAnArgumentOfATypeTheConstructorOfTheInterfaceDoesNotAccept' => [
+                'code' => '<?php
+                    interface Buildable {
+                        public function __construct(int $x);
+                    }
+
+                    abstract class Base implements Buildable {
+                        public function __construct(int|string $x) {}
+
+                        public static function build(): static {
+                            return new static("a");
+                        }
+                    }',
+                'error_message' => 'UnsafeInstantiation - src' . DIRECTORY_SEPARATOR . 'somefile.php:10:36',
+                'error_levels' => [],
+                'php_version' => '8.0',
+            ],
+            'newStaticWithFewerArgumentsThanTheConstructorOfTheInterfaceRequires' => [
+                'code' => '<?php
+                    interface Buildable {
+                        public function __construct(int $x, int $y);
+                    }
+
+                    abstract class Base implements Buildable {
+                        public function __construct(int $x, int $y = 0) {}
+
+                        public static function build(): static {
+                            return new static(5);
+                        }
+                    }',
+                'error_message' => 'UnsafeInstantiation - src' . DIRECTORY_SEPARATOR . 'somefile.php:10:36',
+                'error_levels' => [],
+                'php_version' => '8.0',
+            ],
+            'newStaticWithANamedArgumentOfTheConstructorOfTheInterface' => [
+                'code' => '<?php
+                    interface Buildable {
+                        public function __construct(int $x);
+                    }
+
+                    abstract class Base implements Buildable {
+                        public function __construct(int $x) {}
+
+                        public static function build(): static {
+                            return new static(x: 5);
+                        }
+                    }',
+                'error_message' => 'UnsafeInstantiation - src' . DIRECTORY_SEPARATOR . 'somefile.php:10:36',
+                'error_levels' => [],
+                'php_version' => '8.0',
+            ],
+            'newOfAClassStringWithAnArgumentTheConstructorOfTheInterfaceDoesNotDeclare' => [
+                'code' => '<?php
+                    interface Buildable {
+                        public function __construct();
+                    }
+
+                    abstract class Base implements Buildable {
+                        public function __construct(int $x = 0) {}
+                    }
+
+                    /** @param class-string<Base> $class */
+                    function instantiate(string $class): Base {
+                        return new $class(5);
+                    }',
+                'error_message' => 'UnsafeInstantiation - src' . DIRECTORY_SEPARATOR . 'somefile.php:12:32',
+                'error_levels' => [],
+                'php_version' => '8.0',
+            ],
+            'consistentConstructorClassUsingATraitConstructorDoesNotTakeTheOneOfTheParent' => [
+                'code' => '<?php
+                    trait HasName {
+                        public function __construct(public string $name, public int $age) {}
+                    }
+
+                    class Base {
+                        public function __construct(bool $flag) {}
+                    }
+
+                    /**
+                     * @psalm-consistent-constructor
+                     */
+                    class Child extends Base {
+                        use HasName;
+                    }
+
+                    $child = new Child(true);',
+                'error_message' => 'InvalidScalarArgument',
+            ],
+            'consistentConstructorClassWithoutAParentConstructorTakesNoArguments' => [
+                'code' => '<?php
+                    class Base {}
+
+                    /**
+                     * @psalm-consistent-constructor
+                     */
+                    class Child extends Base {
+                        public static function create(): static {
+                            return new static("hello");
+                        }
+                    }',
+                'error_message' => 'TooManyArguments',
+            ],
+            'undefinedClassParamWithTemplateDocblock' => [
+                'code' => '<?php
+                    /**
+                     * @template T
+                     * @param T $a
+                     */
+                    function foo(UndefinedClass $a): void {
+                        echo 1;
+                    }',
+                'error_message' => 'UndefinedClass',
+            ],
+            'undefinedClassParamWithMixedDocblock' => [
+                'code' => '<?php
+                    /**
+                     * @param mixed $a
+                     */
+                    function foo(UndefinedClass $a): void {
+                        echo 1;
+                    }',
+                'error_message' => 'UndefinedClass',
+            ],
+            'undefinedClassPropertyWithMixedDocblock' => [
+                'code' => '<?php
+                    final class A {
+                        /** @var mixed */
+                        public UndefinedClass $a;
+                    }',
+                'error_message' => 'UndefinedClass',
+            ],
+            'undefinedClassPropertyWithTemplateDocblock' => [
+                'code' => '<?php
+                    /**
+                     * @template T
+                     */
+                    final class A {
+                        /** @var T */
+                        public UndefinedClass $a;
+                    }',
+                'error_message' => 'UndefinedClass',
+            ],
             'elseOfAKnownTrueAndIsNotDeclared' => [
                 'code' => '<?php
                     if (function_exists("strlen") && function_exists("strpos")) {
