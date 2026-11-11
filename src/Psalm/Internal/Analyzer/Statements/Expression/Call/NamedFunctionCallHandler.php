@@ -212,7 +212,14 @@ final class NamedFunctionCallHandler
             );
 
             if ($path_to_file) {
-                $context->phantom_files[IncludeAnalyzer::normalizeFilePath($path_to_file)] = true;
+                $normalized_path = IncludeAnalyzer::normalizeFilePath($path_to_file);
+                $context->phantom_files[$normalized_path] = true;
+
+                if ($context->inside_negation) {
+                    $context->negated_phantom_files[$normalized_path] = true;
+                } else {
+                    unset($context->negated_phantom_files[$normalized_path]);
+                }
             }
 
             return;
