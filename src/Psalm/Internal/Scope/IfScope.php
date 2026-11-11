@@ -40,6 +40,13 @@ final class IfScope
     public array $possibly_assigned_var_ids = [];
 
     /**
+     * The variables a branch assigned as a whole (not only an offset or a property of them)
+     *
+     * @var array<string, bool>
+     */
+    public array $reassigned_var_ids = [];
+
+    /**
      * @var array<string, Union>
      */
     public array $possibly_redefined_vars = [];
