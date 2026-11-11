@@ -528,6 +528,82 @@ final class ArgTest extends TestCase
                 'ignored_issues' => [],
                 'php_version' => '8.0',
             ],
+            'unpackedListBeyondTheDeclaredParametersFitsTheVariadic' => [
+                'code' => '<?php
+                    function test(int $a, int $b, int ...$rest): void {
+                        echo $a, $b, count($rest);
+                    }
+
+                    test(...[1, 2, 3], ...[4]);',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'secondUnpackedListStartsAfterTheParametersOfTheFirst' => [
+                'code' => '<?php
+                    function test(int $a, int $b, array $c): void {
+                        echo $a, $b, count($c);
+                    }
+
+                    test(...[1, 2], ...[[3]]);',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'twoUnpackedShapesPassTheirOwnParameters' => [
+                'code' => '<?php
+                    function test(string $a, int $b): void {
+                        echo $a, $b;
+                    }
+
+                    $arg1 = ["a" => "string"];
+                    $arg2 = ["b" => 9];
+
+                    test(...$arg1, ...$arg2);',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'twoUnpackedListsPassTheirOwnParameters' => [
+                'code' => '<?php
+                    function test(string $a, int $b): void {
+                        echo $a, $b;
+                    }
+
+                    $list1 = ["string"];
+                    $list2 = [9];
+
+                    test(...$list1, ...$list2);',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'unpackedShapeAndNamedArgument' => [
+                'code' => '<?php
+                    function add(int $a, int $b): int {
+                        return $a + $b;
+                    }
+
+                    $args = ["a" => 7];
+
+                    echo add(...$args, b: 8);',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'unpackedListAndNamedArgument' => [
+                'code' => '<?php
+                    function add(int $a, int $b): int {
+                        return $a + $b;
+                    }
+
+                    $list = [7];
+
+                    echo add(...$list, b: 8);',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
         ];
     }
 
@@ -1187,6 +1263,118 @@ final class ArgTest extends TestCase
 
                     caller("foo");',
                 'error_message' => 'InvalidArgument',
+            ],
+            'unpackedListBeyondTheDeclaredParametersIsCheckedAgainstTheVariadic' => [
+                'code' => '<?php
+                    function test(int $a, int $b, int ...$rest): void {
+                        echo $a, $b, count($rest);
+                    }
+
+                    test(...[1, 2, 3], ...["bad"]);',
+                'error_message' => 'InvalidScalarArgument',
+                'error_levels' => [],
+                'php_version' => '8.0',
+            ],
+            'unpackedListAfterPositionalArgumentsBeyondTheParametersIsCheckedAgainstTheVariadic' => [
+                'code' => '<?php
+                    function test(int $a, int $b, int ...$rest): void {
+                        echo $a, $b, count($rest);
+                    }
+
+                    test(1, 2, 3, ...["bad"]);',
+                'error_message' => 'InvalidScalarArgument - src' . DIRECTORY_SEPARATOR . 'somefile.php:6:38 - Argument 4 of test expects int',
+                'error_levels' => [],
+                'php_version' => '8.0',
+            ],
+            'unpackedListBeyondTheParametersOfAMethodIsCheckedAgainstTheVariadic' => [
+                'code' => '<?php
+                    final class C {
+                        public function m(int $a, int ...$rest): void {
+                            echo $a, count($rest);
+                        }
+                    }
+
+                    (new C())->m(...[1, 2], ...["bad"]);',
+                'error_message' => 'InvalidScalarArgument - src' . DIRECTORY_SEPARATOR . 'somefile.php:8:48 - Argument 3 of C::m expects int',
+                'error_levels' => [],
+                'php_version' => '8.0',
+            ],
+            'secondUnpackedListIsCheckedAgainstTheNextParameter' => [
+                'code' => '<?php
+                    function test(int $a, int $b, array $c): void {
+                        echo $a, $b, count($c);
+                    }
+
+                    test(...[1, 2], ...["bad"]);',
+                'error_message' => 'Argument 3 of test expects array',
+                'error_levels' => [],
+                'php_version' => '8.0',
+            ],
+            'unpackedVariadicIsCheckedNextToANamedArgumentOfTheSameName' => [
+                'code' => '<?php
+                    function test(int ...$args): void {
+                        echo count($args);
+                    }
+
+                    test(...["bad"], args: 1);',
+                'error_message' => 'InvalidScalarArgument',
+                'error_levels' => [],
+                'php_version' => '8.0',
+            ],
+            'unpackedShapeStillChecksTheTypeOfItsOwnParameter' => [
+                'code' => '<?php
+                    function test(string $a, int $b): void {
+                        echo $a, $b;
+                    }
+
+                    $arg1 = ["a" => 5];
+                    $arg2 = ["b" => 9];
+
+                    test(...$arg1, ...$arg2);',
+                'error_message' => 'InvalidScalarArgument',
+                'error_levels' => [],
+                'php_version' => '8.0',
+            ],
+            'unpackedListStillChecksTheTypeOfItsOwnParameter' => [
+                'code' => '<?php
+                    function test(string $a, int $b): void {
+                        echo $a, $b;
+                    }
+
+                    $list1 = [5];
+                    $list2 = [9];
+
+                    test(...$list1, ...$list2);',
+                'error_message' => 'InvalidScalarArgument',
+                'error_levels' => [],
+                'php_version' => '8.0',
+            ],
+            'unpackedShapeAndNamedArgumentWithBadType' => [
+                'code' => '<?php
+                    function add(int $a, int $b): int {
+                        return $a + $b;
+                    }
+
+                    $args = ["a" => 7];
+
+                    echo add(...$args, b: "x");',
+                'error_message' => 'InvalidScalarArgument',
+                'error_levels' => [],
+                'php_version' => '8.0',
+            ],
+            'unpackedArrayStillChecksTheParamsNotPassedByName' => [
+                'code' => '<?php
+                    function f(int $a, int $b, int $c): int {
+                        return $a + $b + $c;
+                    }
+
+                    /** @var array<string, string> $args */
+                    $args = [];
+
+                    echo f(...$args, c: 3);',
+                'error_message' => 'InvalidScalarArgument',
+                'error_levels' => [],
+                'php_version' => '8.0',
             ],
         ];
     }
