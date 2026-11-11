@@ -1069,11 +1069,27 @@ final class AssignmentAnalyzer
                 $statements_analyzer,
             )
             : null;
+        // only where no full assignment of it came before in the branch, whichever union follows
         $array_union_var_id = $union_var_id !== null
             && isset($context->vars_in_scope[$union_var_id])
             && $context->vars_in_scope[$union_var_id]->isArray()
+            && (!isset($context->assigned_var_ids[$union_var_id])
+                || isset($context->array_union_assigned_var_ids[$union_var_id]))
                 ? $union_var_id
                 : null;
+
+        // what is known of the offsets of the array before the union holds after it
+        $kept_offsets = [];
+
+        if ($stmt instanceof PhpParser\Node\Expr\AssignOp\Plus && $array_union_var_id !== null) {
+            foreach ($context->vars_in_scope as $offset_var_id => $offset_type) {
+                if (str_starts_with($offset_var_id, $array_union_var_id . '[')
+                    || str_starts_with($offset_var_id, $array_union_var_id . '->')
+                ) {
+                    $kept_offsets[$offset_var_id] = $offset_type;
+                }
+            }
+        }
 
         if (ExpressionAnalyzer::analyze($statements_analyzer, $fake_assignment, $context) === false) {
             return false;
@@ -1081,6 +1097,10 @@ final class AssignmentAnalyzer
 
         if ($array_union_var_id !== null) {
             $context->array_union_assigned_var_ids[$array_union_var_id] = true;
+
+            foreach ($kept_offsets as $offset_var_id => $offset_type) {
+                $context->vars_in_scope[$offset_var_id] ??= $offset_type;
+            }
         }
 
         $old_node_data->setType(
