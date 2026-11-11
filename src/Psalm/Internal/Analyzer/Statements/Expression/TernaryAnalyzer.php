@@ -52,6 +52,9 @@ final class TernaryAnalyzer
         $if_scope = new IfScope();
 
         try {
+            $reassigned_var_ids = FormulaGenerator::getVarsAssignedByOredRightSides($stmt->cond, $context->self);
+            $pre_condition_context = $reassigned_var_ids ? clone $context : null;
+
             $if_conditional_scope = IfConditionalAnalyzer::analyze(
                 $statements_analyzer,
                 $stmt->cond,
@@ -212,12 +215,15 @@ final class TernaryAnalyzer
 
         $t_else_context = clone $context;
 
-        IfAnalyzer::rederiveReassignedVars(
-            $statements_analyzer,
-            $stmt->cond,
-            $t_else_context,
-            FormulaGenerator::getVarsAssignedByOredRightSides($stmt->cond, $context->self),
-        );
+        if ($pre_condition_context !== null) {
+            IfAnalyzer::rederiveReassignedVars(
+                $statements_analyzer,
+                $stmt->cond,
+                $pre_condition_context,
+                $t_else_context,
+                $reassigned_var_ids,
+            );
+        }
 
         if ($stmt->if) {
             if (ExpressionAnalyzer::analyze($statements_analyzer, $stmt->if, $if_context) === false) {

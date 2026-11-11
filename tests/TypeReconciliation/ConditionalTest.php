@@ -21,6 +21,27 @@ final class ConditionalTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'sideEffectOfTheRightSideOfAnOrRunsOnceInTheElse' => [
+                'code' => '<?php
+                    function plain(bool $flag): void {
+                        $i = 0;
+
+                        if ($flag || ($i = $i + 1) > rand()) {
+                            echo 1;
+                        } else {
+                            /** @psalm-check-type-exact $i = 1 */;
+                        }
+                    }
+
+                    /** @psalm-return 1 */
+                    function ternary(bool $flag): int {
+                        $i = 0;
+
+                        return $flag || ($i = $i + 1) > rand() ? 1 : $i;
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+            ],
             'orWhoseRightSideReassignsWhatTheLeftOneTestedInATernaryElse' => [
                 'code' => '<?php
                     function viaTernary(?string $s): string {

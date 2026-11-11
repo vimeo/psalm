@@ -101,6 +101,9 @@ final class IfElseAnalyzer
 
         $pre_cond_reconciled_clauses = $context->reconciled_expression_clauses;
 
+        $reassigned_var_ids = FormulaGenerator::getVarsAssignedByOredRightSides($stmt->cond, $context->self);
+        $pre_condition_context = $reassigned_var_ids ? clone $context : null;
+
         try {
             $if_conditional_scope = IfConditionalAnalyzer::analyze(
                 $statements_analyzer,
@@ -294,12 +297,13 @@ final class IfElseAnalyzer
         $scope_to_clone = $if_scope->post_leaving_if_context ?? $post_if_context;
         $else_context = clone $scope_to_clone;
 
-        if ($if_scope->post_leaving_if_context === null) {
+        if ($if_scope->post_leaving_if_context === null && $pre_condition_context !== null) {
             IfAnalyzer::rederiveReassignedVars(
                 $statements_analyzer,
                 $stmt->cond,
+                $pre_condition_context,
                 $else_context,
-                FormulaGenerator::getVarsAssignedByOredRightSides($stmt->cond, $context->self),
+                $reassigned_var_ids,
             );
         }
         $else_context->clauses = Algebra::simplifyCNF(
