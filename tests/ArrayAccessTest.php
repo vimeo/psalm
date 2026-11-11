@@ -619,6 +619,41 @@ final class ArrayAccessTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'coalesceOnAnIntKeyThatMayBeMissingKeepsTheFoundType' => [
+                'code' => '<?php
+                    $a = [1 => "Hello"];
+                    $s = $a[rand(0, 1) ? 1 : 0] ?? "World";',
+                'assertions' => [
+                    '$s===' => "'Hello'|'World'",
+                ],
+            ],
+            'coalesceOnAStringKeyThatMayBeMissingKeepsTheFoundType' => [
+                'code' => '<?php
+                    $a = ["x" => 5];
+                    $s = $a[rand(0, 1) ? "x" : "y"] ?? 0;',
+                'assertions' => [
+                    '$s===' => '0|5',
+                ],
+            ],
+            'issetOnAKeyThatMayBeMissingIsNotRedundant' => [
+                'code' => '<?php
+                    $a = [1 => "Hello"];
+                    if (isset($a[rand(0, 1) ? 1 : 0])) {
+                        $s = $a[1];
+                    } else {
+                        $s = null;
+                    }',
+                'assertions' => [
+                    '$s===' => "'Hello'|null",
+                ],
+            ],
+            'coalesceOnAKeyOfOneShapeOfAUnionKeepsItsType' => [
+                'code' => '<?php
+                    /** @param array{a: int}|array{b: string} $x */
+                    function f(array $x): int {
+                        return $x["a"] ?? 0;
+                    }',
+            ],
             'appendToASplDoublyLinkedList' => [
                 'code' => '<?php
                     /** @var SplDoublyLinkedList<int> $dll */
@@ -1717,6 +1752,12 @@ final class ArrayAccessTest extends TestCase
                     $x = ["a"];
                     $y = $x["b"];',
                 'error_message' => 'InvalidArrayOffset',
+            ],
+            'possiblyInvalidArrayOffsetWithTernaryKeyOutsideIsset' => [
+                'code' => '<?php
+                    $a = [1 => "Hello"];
+                    $s = $a[rand(0, 1) ? 1 : 0];',
+                'error_message' => 'PossiblyInvalidArrayOffset',
             ],
             'possiblyInvalidArrayOffsetWithInt' => [
                 'code' => '<?php
