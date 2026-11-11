@@ -445,6 +445,8 @@ final class ClosureAnalyzer extends FunctionLikeAnalyzer
             if (!$codebase->classlike_storage_provider->has($atomic_type->value)
                 || !$codebase->properties->hasStorage($property_id)
                 || !$codebase->properties->getStorage($property_id)->readonly
+                // a private method of the class may still write it
+                || $codebase->properties->getStorage($property_id)->allow_private_mutation
             ) {
                 return false;
             }
