@@ -22,6 +22,7 @@ use Psalm\Internal\Provider\MethodExistenceProvider;
 use Psalm\Internal\Provider\MethodParamsProvider;
 use Psalm\Internal\Provider\MethodReturnTypeProvider;
 use Psalm\Internal\Provider\MethodVisibilityProvider;
+use Psalm\Internal\Type\Comparator\TypeComparisonResult;
 use Psalm\Internal\Type\Comparator\UnionTypeComparator;
 use Psalm\Internal\Type\TemplateInferredTypeReplacer;
 use Psalm\Internal\Type\TemplateResult;
@@ -41,6 +42,8 @@ use Psalm\Type\Atomic\TNamedObject;
 use Psalm\Type\Atomic\TNull;
 use Psalm\Type\Atomic\TString;
 use Psalm\Type\Atomic\TTemplateParam;
+use Psalm\Type\Atomic\TTemplateValueOf;
+use Psalm\Type\Atomic\TValueOf;
 use Psalm\Type\Union;
 use UnexpectedValueException;
 
@@ -281,6 +284,7 @@ final class Methods
         ?StatementsSource $source = null,
         ?array $args = null,
         ?Context $context = null,
+        ?CodeLocation $code_location = null,
     ): array {
         $fq_class_name = $method_id->fq_class_name;
         $method_name = $method_id->method_name;
@@ -292,6 +296,7 @@ final class Methods
                 $args,
                 $source,
                 $context,
+                $code_location,
             );
 
             if ($method_params !== null) {
@@ -365,7 +370,10 @@ final class Methods
                 return $params;
             }
 
-            $appearing_method_id = $this->getAppearingMethodId($declaring_method_id);
+            // a trait method appears in the class using it, which holds the docblock it inherits
+            $appearing_method_id = $this->classlike_storage_provider->get($declaring_method_id->fq_class_name)->is_trait
+                ? $this->getAppearingMethodId($method_id)
+                : $this->getAppearingMethodId($declaring_method_id);
 
             if (!$appearing_method_id) {
                 return $params;
@@ -597,6 +605,21 @@ final class Methods
                 && isset($args[0])
                 && ($first_arg_type = $source_analyzer->getNodeTypeProvider()->getType($args[0]->value))
             ) {
+                $arg_atomic_types = [];
+                foreach ($first_arg_type->getAtomicTypes() as $arg_atomic_type) {
+                    if ($arg_atomic_type instanceof TTemplateValueOf) {
+                        $arg_atomic_type = new TValueOf($arg_atomic_type->as);
+                    }
+
+                    $arg_atomic_types[] = $arg_atomic_type;
+                }
+                $first_arg_type = TypeExpander::expandUnion(
+                    $codebase,
+                    new Union($arg_atomic_types),
+                    null,
+                    null,
+                    null,
+                );
                 $types = [];
                 foreach ($original_class_storage->enum_cases as $case_name => $case_storage) {
                     $case_value = $case_storage->getValue($this->classlikes);
@@ -687,11 +710,13 @@ final class Methods
             return $candidate_type;
         }
 
-        if ($storage->inherited_return_type
-            && isset($class_storage->documenting_method_ids[$appearing_method_name])
-        ) {
-            $overridden_method_id = $class_storage->documenting_method_ids[$appearing_method_name];
+        $overridden_method_id = $class_storage->documenting_method_ids[$appearing_method_name] ?? null;
+        $overridden_storage = $overridden_method_id !== null ? $this->getStorage($overridden_method_id) : null;
 
+        if ($overridden_method_id !== null
+            && $overridden_storage !== null
+            && $this->inheritsReturnTypeOfDocumentingMethod($storage, $declaring_method_id, $overridden_storage)
+        ) {
             // special override to allow inference of Iterator types
             if ($overridden_method_id->fq_class_name === 'Iterator'
                 && $storage->return_type
@@ -699,8 +724,6 @@ final class Methods
             ) {
                 return $storage->return_type;
             }
-
-            $overridden_storage = $this->getStorage($overridden_method_id);
 
             if ($overridden_storage->return_type) {
                 // a docblock `@return null` stands for void, a native `null` return type is a type of its own
@@ -742,11 +765,15 @@ final class Methods
                     $overridden_storage_return_type,
                 );
 
+                $overridden_to_candidate_result = new TypeComparisonResult();
                 $new_contained_by_old = UnionTypeComparator::isContainedBy(
                     $codebase,
                     $overridden_storage_return_type,
                     $candidate_type,
-                );
+                    false,
+                    false,
+                    $overridden_to_candidate_result,
+                ) && !$overridden_to_candidate_result->to_string_cast;
 
                 if ((!$old_contained_by_new && !$new_contained_by_old)
                     || ($old_contained_by_new && $new_contained_by_old)
@@ -860,17 +887,37 @@ final class Methods
                 $self_class = $overridden_class_storage->name;
 
                 if ($candidate_type && $source_analyzer && !$candidate_type->isMixed()) {
+                    $candidate_to_overridden_result = new TypeComparisonResult();
                     $old_contained_by_new = UnionTypeComparator::isContainedBy(
                         $codebase,
                         $candidate_type,
                         $overridden_return_type,
-                    );
+                        false,
+                        false,
+                        $candidate_to_overridden_result,
+                    ) && !$candidate_to_overridden_result->to_string_cast;
 
+                    $overridden_to_candidate_result = new TypeComparisonResult();
                     $new_contained_by_old = UnionTypeComparator::isContainedBy(
                         $codebase,
                         $overridden_return_type,
                         $candidate_type,
-                    );
+                        false,
+                        false,
+                        $overridden_to_candidate_result,
+                    ) && !$overridden_to_candidate_result->to_string_cast;
+
+                    // a type that is only castable to the other one doesn't win over it
+                    if (!$old_contained_by_new && !$new_contained_by_old) {
+                        if ($overridden_to_candidate_result->to_string_cast) {
+                            continue;
+                        }
+
+                        if ($candidate_to_overridden_result->to_string_cast) {
+                            $candidate_type = $overridden_return_type;
+                            continue;
+                        }
+                    }
 
                     if ((!$old_contained_by_new && !$new_contained_by_old)
                         || ($old_contained_by_new && $new_contained_by_old)
@@ -1020,6 +1067,25 @@ final class Methods
         }
 
         return null;
+    }
+
+    /**
+     * The storage of a method a class takes from a trait is shared by every class using the trait, so it can't say
+     * whether the method inherits the return type of the method its class documents it by (see Populator)
+     */
+    public function inheritsReturnTypeOfDocumentingMethod(
+        MethodStorage $storage,
+        MethodIdentifier $declaring_method_id,
+        MethodStorage $documenting_storage,
+    ): bool {
+        if ($storage->inherited_return_type) {
+            return true;
+        }
+
+        return $this->classlike_storage_provider->get($declaring_method_id->fq_class_name)->is_trait
+            && !$storage->has_docblock_return_type
+            && $documenting_storage->has_docblock_return_type
+            && !Populator::returnUsesTemplateOfRedocumentedParams($storage, $documenting_storage);
     }
 
     /**

@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Psalm\Internal\Type;
 
 use Psalm\CodeLocation;
+use Psalm\Codebase;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\Internal\Analyzer\TraitAnalyzer;
 use Psalm\Internal\Type\Comparator\AtomicTypeComparator;
@@ -39,8 +40,7 @@ use Psalm\Type\MutableUnion;
 use Psalm\Type\Reconciler;
 use Psalm\Type\Union;
 
-use function array_merge;
-use function array_values;
+use function array_filter;
 use function count;
 use function strtolower;
 
@@ -203,9 +203,9 @@ final class NegatedAssertionReconciler extends Reconciler
         }
 
         if (!$is_equality && $assertion_type instanceof TNamedObject) {
-            foreach ($existing_var_type->getAtomicTypes() as $key => $type) {
+            foreach ($existing_var_type->getAtomicTypes() as $atomic_key => $type) {
                 if ($type instanceof TEnumCase && $type->value === $assertion_type->value) {
-                    $existing_var_type->removeType($key);
+                    $existing_var_type->removeType($atomic_key);
                 }
             }
         }
@@ -249,6 +249,7 @@ final class NegatedAssertionReconciler extends Reconciler
             && $existing_var_type->hasNamedObjectType()
             && $assertion_type instanceof TNamedObject
             && isset($existing_var_type->getAtomicTypes()[$assertion_type->getKey()])
+            && !self::isEnum($codebase, $assertion_type->value)
         ) {
             // checking if two types share a common parent is not enough to guarantee children are instanceof each other
             // fall through
@@ -256,45 +257,45 @@ final class NegatedAssertionReconciler extends Reconciler
             && ($assertion->getAtomicType() instanceof TArray
                 || $assertion->getAtomicType() instanceof TKeyedArray)
         ) {
-            //if both types are arrays, try to combine them
-            $combined_type = TypeCombiner::combine(
-                array_merge(array_values($existing_var_type->getAtomicTypes()), [$assertion->getAtomicType()]),
-                $codebase,
-            );
-            $existing_var_type->removeType('array');
-            if ($combined_type->isSingle()) {
-                $existing_var_type->addType($combined_type->getSingleAtomic());
-            }
+            // an array that isn't of the asserted array type is of the existing one
         } elseif (!$is_equality) {
             $assertion_type = $assertion->getAtomicType();
 
-            // if there wasn't a direct hit, go deeper, eliminating subtypes
-            if ($assertion_type && !$existing_var_type->removeType($assertion_type->getKey())) {
+            // a wider type of the same key is no direct hit: `string` stays where `lowercase-string` is negated
+            $same_key_type = $assertion_type
+                ? $existing_var_type->getAtomicTypes()[$assertion_type->getKey()] ?? null
+                : null;
+
+            $is_direct_hit = $assertion_type
+                && (!$same_key_type
+                    || $same_key_type::class === $assertion_type::class
+                    || AtomicTypeComparator::isContainedBy($codebase, $same_key_type, $assertion_type))
+                && $existing_var_type->removeType($assertion_type->getKey());
+
+            // go deeper than the direct hit, eliminating subtypes
+            if ($assertion_type) {
                 if ($assertion_type instanceof TNamedObject) {
                     foreach ($existing_var_type->getAtomicTypes() as $part_name => $existing_var_type_part) {
-                        if ($existing_var_type_part instanceof TTemplateParam
-                            && !$existing_var_type_part->as->isMixed()
-                        ) {
-                            $bound_failed_reconciliation = 0;
-
-                            $narrowed_as = self::reconcile(
-                                $statements_analyzer,
-                                $assertion,
-                                $existing_var_type_part->as,
-                                $existing_var_type_part->as->getId(),
-                                null,
-                                false,
-                                null,
-                                $suppressed_issues,
-                                $bound_failed_reconciliation,
-                                $inside_loop,
+                        if ($existing_var_type_part instanceof TTemplateParam) {
+                            // the objects the assertion excludes can't be what the template is bound to either
+                            $remaining_as_types = array_filter(
+                                $existing_var_type_part->as->getAtomicTypes(),
+                                static fn(Atomic $as_part): bool => !($as_part instanceof TNamedObject
+                                    && AtomicTypeComparator::isContainedBy(
+                                        $codebase,
+                                        $as_part,
+                                        $assertion_type,
+                                    )),
                             );
 
-                            if (!$bound_failed_reconciliation
-                                && $narrowed_as->getId() !== $existing_var_type_part->as->getId()
-                            ) {
+                            if (count($remaining_as_types) !== count($existing_var_type_part->as->getAtomicTypes())) {
                                 $existing_var_type->removeType($part_name);
-                                $existing_var_type->addType($existing_var_type_part->replaceAs($narrowed_as));
+
+                                if ($remaining_as_types) {
+                                    $existing_var_type->addType(
+                                        $existing_var_type_part->replaceAs(new Union($remaining_as_types)),
+                                    );
+                                }
 
                                 continue;
                             }
@@ -325,14 +326,16 @@ final class NegatedAssertionReconciler extends Reconciler
                             ) {
                                 $existing_var_type->removeType($part_name);
                             }
-                        } elseif (AtomicTypeComparator::isContainedBy(
-                            $codebase,
-                            $assertion_type,
-                            $existing_var_type_part,
-                            false,
-                            false,
-                            $reverse_comparison_result,
-                        )) {
+                        } elseif (!$is_direct_hit
+                            && AtomicTypeComparator::isContainedBy(
+                                $codebase,
+                                $assertion_type,
+                                $existing_var_type_part,
+                                false,
+                                false,
+                                $reverse_comparison_result,
+                            )
+                        ) {
                             if (!$reverse_comparison_result->type_variable_lower_bounds
                                 && !$reverse_comparison_result->type_variable_upper_bounds
                             ) {
@@ -551,10 +554,16 @@ final class NegatedAssertionReconciler extends Reconciler
                 if ($existing_var_type->getLiteralStrings()) {
                     $did_match_literal_type = true;
 
-                    if ($existing_var_type->removeType($assertion_type->getKey())) {
+                    if ($existing_var_type->removeType($assertion_type->getKey())
+                        || UnionTypeComparator::canExpressionTypesBeIdentical(
+                            $statements_analyzer->getCodebase(),
+                            $existing_var_type->freeze(),
+                            new Union([$assertion_type]),
+                        )
+                    ) {
                         $redundant = false;
                     }
-                } elseif ($assertion_type->value === "" && $existing_var_type->hasType('string')) {
+                } elseif ($assertion_type->value === ""&& $existing_var_type->hasType('string')) {
                     $string_type = $existing_var_type->getAtomicTypes()['string'];
                     if ($string_type::class === TString::class) {
                         $existing_var_type->addType(new TNonEmptyString());
@@ -658,5 +667,16 @@ final class NegatedAssertionReconciler extends Reconciler
         }
 
         return $existing_var_type;
+    }
+
+    /**
+     * An enum has no child that an instanceof check of itself could leave out
+     *
+     * @psalm-capabilities read-props
+     */
+    private static function isEnum(Codebase $codebase, string $fq_class_name): bool
+    {
+        return $codebase->classlike_storage_provider->has($fq_class_name)
+            && $codebase->classlike_storage_provider->get($fq_class_name)->is_enum;
     }
 }
