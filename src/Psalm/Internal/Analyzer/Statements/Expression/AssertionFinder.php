@@ -26,6 +26,7 @@ use Psalm\Internal\Analyzer\ClassLikeAnalyzer;
 use Psalm\Internal\Analyzer\ClassLikeNameOptions;
 use Psalm\Internal\Analyzer\MethodAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\Fetch\ArrayFetchAnalyzer;
+use Psalm\Internal\Analyzer\Statements\Expression\Fetch\ConstFetchAnalyzer;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\Internal\Analyzer\TraitAnalyzer;
 use Psalm\Internal\Codebase\InternalCallMapHandler;
@@ -46,6 +47,7 @@ use Psalm\Node\Expr\BinaryOp\VirtualIdentical;
 use Psalm\Node\Expr\BinaryOp\VirtualNotIdentical;
 use Psalm\Node\Expr\VirtualArrayDimFetch;
 use Psalm\Storage\Assertion;
+use Psalm\Storage\Assertion\Any;
 use Psalm\Storage\Assertion\ArrayKeyExists;
 use Psalm\Storage\Assertion\DoesNotHaveAtLeastCount;
 use Psalm\Storage\Assertion\DoesNotHaveExactCount;
@@ -97,6 +99,7 @@ use Psalm\Type\Atomic\TMixed;
 use Psalm\Type\Atomic\TNamedObject;
 use Psalm\Type\Atomic\TNull;
 use Psalm\Type\Atomic\TObject;
+use Psalm\Type\Atomic\TObjectWithProperties;
 use Psalm\Type\Atomic\TResource;
 use Psalm\Type\Atomic\TTemplateParam;
 use Psalm\Type\Atomic\TTemplateParamClass;
@@ -869,6 +872,15 @@ final class AssertionFinder
             if ($first_var_name) {
                 $if_types[$first_var_name] = [[new NonEmptyCountable(true)]];
             }
+        } elseif ($expr->name instanceof PhpParser\Node\Name
+            && strtolower($expr->name->getFirst()) === 'defined'
+            && isset($expr->getArgs()[0])
+            && $expr->getArgs()[0]->value instanceof PhpParser\Node\Scalar\String_
+            && ConstFetchAnalyzer::isConstVarId($expr->getArgs()[0]->value->value)
+        ) {
+            // says nothing about the type of the constant, but puts it into the clause, so that
+            // `!defined('X') || !is_string(X)` narrows X where it is false
+            $if_types[$expr->getArgs()[0]->value->value] = [[new Any()]];
         } else {
             return self::processCustomAssertion($expr, $this_class_name, $source);
         }
@@ -4542,6 +4554,18 @@ final class AssertionFinder
         }
 
         foreach ($type->getAtomicTypes() as $type) {
+            if ($type instanceof TObjectWithProperties) {
+                if (!isset($type->properties[$property])) {
+                    return sprintf(
+                        'Property %s is not defined on variable %s so the assertion cannot be applied',
+                        $property,
+                        $name,
+                    );
+                }
+
+                continue;
+            }
+
             if (!$type instanceof TNamedObject) {
                 return 'Variable ' . $name . ' is not an object so the assertion cannot be applied';
             }
