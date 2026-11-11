@@ -443,7 +443,7 @@ final class TypeTokenizer
 
             // a key of a shape, optional or not
             if (isset($type_tokens[$i + 1])
-                && isset($type_tokens[$i - 1])
+                && $i > 0
                 && ($type_tokens[$i - 1][0] === '{' || $type_tokens[$i - 1][0] === ',')
                 && ($type_tokens[$i + 1][0] === ':'
                     || ($type_tokens[$i + 1][0] === '?'
