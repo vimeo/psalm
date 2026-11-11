@@ -86,6 +86,7 @@ final class MatchAnalyzer
                     || $stmt->cond->name->getParts() === ['get_debug_type']
                     || $stmt->cond->name->getParts() === ['count']
                     || $stmt->cond->name->getParts() === ['sizeof'])
+                && !$stmt->cond->isPartialFunctionApplication()
                 && $stmt->cond->getArgs()
             ) {
                 $first_arg = $stmt->cond->getArgs()[0];
@@ -147,10 +148,12 @@ final class MatchAnalyzer
             }
 
             foreach ($arm->conds as $cond) {
+                // conditions that share their attributes would share the clause key of an expression
+                // that is not a variable
                 $flattened_arms[] = new PhpParser\Node\MatchArm(
                     [$cond],
                     $arm->body,
-                    $arm->getAttributes(),
+                    $cond->getAttributes(),
                 );
             }
         }
@@ -218,6 +221,9 @@ final class MatchAnalyzer
             $statements_analyzer->addSuppressedIssues(['RedundantConditionGivenDocblockType']);
         }
 
+        // the arms narrow the subject for what follows the match, but its exhaustiveness is judged on the type it had
+        $subject_type_before_arms = $switch_var_id !== null ? ($context->vars_in_scope[$switch_var_id] ?? null) : null;
+
         $v = ExpressionAnalyzer::analyze($statements_analyzer, $ternary, $context);
 
         if (!isset($suppressed_issues['RedundantCondition'])) {
@@ -283,10 +289,16 @@ final class MatchAnalyzer
             if ($reconcilable_types) {
                 $changed_var_ids = [];
 
+                $vars_in_scope_before_arms = $context->vars_in_scope;
+
+                if ($subject_type_before_arms) {
+                    $vars_in_scope_before_arms[$switch_var_id] = $subject_type_before_arms;
+                }
+
                 [$vars_in_scope_reconciled, $_] = Reconciler::reconcileKeyedTypes(
                     $reconcilable_types,
                     [],
-                    $context->vars_in_scope,
+                    $vars_in_scope_before_arms,
                     $context->references_in_scope,
                     $changed_var_ids,
                     [],

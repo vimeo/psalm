@@ -300,7 +300,7 @@ trait GenericTrait
             );
 
             if ($this instanceof TArray && $offset === 0) {
-                $type_param = $type_param->isMixed()
+                $type_param = $type_param->hasMixed()
                     ? Type::getArrayKey()
                     : ArrayAnalyzer::castArrayKeyType($type_param);
             }
