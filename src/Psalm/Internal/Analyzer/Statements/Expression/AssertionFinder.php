@@ -109,7 +109,6 @@ use Psalm\Type\Reconciler;
 use Psalm\Type\Union;
 use UnexpectedValueException;
 
-use function array_map;
 use function assert;
 use function count;
 use function explode;

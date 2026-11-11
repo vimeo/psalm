@@ -945,7 +945,7 @@ final class AssertAnnotationTest extends TestCase
                     '$int===' => 'int',
                     '$string===' => 'string',
                     '$string_or_null===' => 'null|string',
-                    '$empty_or_int===' => "''|int|null",
+                    '$empty_or_int===' => "''|int",
                 ],
                 'ignored_issues' => [],
                 'php_version' => '8.0',
