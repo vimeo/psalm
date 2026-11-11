@@ -1460,6 +1460,30 @@ final class AnnotationTest extends TestCase
     public function providerInvalidCodeParse(): iterable
     {
         return [
+            'invalidTypeInPromotedPropertyDocblock' => [
+                'code' => '<?php
+                    class Foo {
+                        public function __construct(
+                            /** @var array<int, > */
+                            public array $bar,
+                        ) {}
+                    }',
+                'error_message' => 'InvalidDocblock - src' . DIRECTORY_SEPARATOR . 'somefile.php:5:29',
+                'error_levels' => [],
+                'php_version' => '8.1',
+            ],
+            'misplacedVariableInPromotedPropertyDocblock' => [
+                'code' => '<?php
+                    class Foo {
+                        public function __construct(
+                            /** @var $bar string[] */
+                            public array $bar,
+                        ) {}
+                    }',
+                'error_message' => 'MissingDocblockType - src' . DIRECTORY_SEPARATOR . 'somefile.php:5:29 - Misplaced variable in docblock for Foo::__construct',
+                'error_levels' => [],
+                'php_version' => '8.1',
+            ],
             'invalidClassMethodReturn' => [
                 'code' => '<?php
                     class C {
