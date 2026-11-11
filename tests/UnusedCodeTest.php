@@ -519,31 +519,27 @@ final class UnusedCodeTest extends TestCase
     public static function providerValidCodeParse(): array
     {
         return [
-            'variableReadThroughAVariableVariableIsUsed' => [
-                'code' => <<<'PHP'
-                    <?php
+            'preIncrementAsArrayAssignmentKey' => [
+                'code' => '<?php
                     /** @psalm-api */
-                    function read(): void {
-                        $demo = 'hello world!';
-                        $name = 'demo';
+                    function f(): array {
+                        $row = 1;
+                        $array = [];
+                        $array[$row] = "1";
+                        $array[++$row] = "2";
+                        $array[++$row] = "3";
 
-                        echo (string) $$name;
-                    }
-                    PHP,
-                'ignored_issues' => ['MixedAssignment'],
+                        return $array;
+                    }',
             ],
-            'variableReadThroughABracedVariableVariableIsUsed' => [
-                'code' => <<<'PHP'
-                    <?php
+            'preDecrementAsArrayLiteralKey' => [
+                'code' => '<?php
                     /** @psalm-api */
-                    function read(): void {
-                        $demo = 'hello world!';
-                        $name = 'demo';
+                    function f(): array {
+                        $i = 3;
 
-                        echo (string) ${$name};
-                    }
-                    PHP,
-                'ignored_issues' => ['MixedAssignment'],
+                        return [--$i => 1];
+                    }',
             ],
             'classExistsGuardedStaticFirstClassCallable' => [
                 'code' => '<?php
@@ -2432,6 +2428,32 @@ final class UnusedCodeTest extends TestCase
                     (new Base())->run();
                     (new Child())->other();',
             ],
+            'variableReadThroughAVariableVariableIsUsed' => [
+                'code' => <<<'PHP'
+                    <?php
+                    /** @psalm-api */
+                    function read(): void {
+                        $demo = 'hello world!';
+                        $name = 'demo';
+
+                        echo (string) $$name;
+                    }
+                    PHP,
+                'ignored_issues' => ['MixedAssignment'],
+            ],
+            'variableReadThroughABracedVariableVariableIsUsed' => [
+                'code' => <<<'PHP'
+                    <?php
+                    /** @psalm-api */
+                    function read(): void {
+                        $demo = 'hello world!';
+                        $name = 'demo';
+
+                        echo (string) ${$name};
+                    }
+                    PHP,
+                'ignored_issues' => ['MixedAssignment'],
+            ],
         ];
     }
 
@@ -2442,6 +2464,25 @@ final class UnusedCodeTest extends TestCase
     public static function providerInvalidCodeParse(): array
     {
         return [
+            'postIncrementAsArrayKeyIsAnUnusedAssignment' => [
+                'code' => '<?php
+                    /** @psalm-api */
+                    function f(): array {
+                        $i = 0;
+
+                        return [$i++ => 1];
+                    }',
+                'error_message' => 'UnusedVariable',
+            ],
+            'preIncrementStatementIsAnUnusedAssignment' => [
+                'code' => '<?php
+                    /** @psalm-api */
+                    function f(): void {
+                        $i = 0;
+                        ++$i;
+                    }',
+                'error_message' => 'UnusedVariable',
+            ],
             'undefinedClassStaticFirstClassCallable' => [
                 'code' => '<?php
                     $callable = Nope::stat(...);',
