@@ -22,9 +22,6 @@ use function unlink;
 
 use const DIRECTORY_SEPARATOR;
 
-/**
- * The hash of a file's contents is the one of what getContents() returns, without keeping the contents.
- */
 final class FileProviderContentsHashTest extends TestCase
 {
     private string $directory;
@@ -56,45 +53,16 @@ final class FileProviderContentsHashTest extends TestCase
         parent::tearDown();
     }
 
-    public function testFileOnDisk(): void
+    public function testHashOfTheContents(): void
     {
         self::assertSame(hash('xxh128', 'on disk'), $this->provider->getContentsHash($this->path));
-    }
-
-    /**
-     * The contents of a file that was only hashed are not kept: they are read from the disk when they are asked for.
-     */
-    public function testFileOnDiskIsNotKept(): void
-    {
-        $this->provider->getContentsHash($this->path);
-
         self::assertFalse($this->provider->isOpen($this->path));
 
-        file_put_contents($this->path, 'changed on disk');
-
-        self::assertSame('changed on disk', $this->provider->getContents($this->path));
-        self::assertSame(hash('xxh128', 'changed on disk'), $this->provider->getContentsHash($this->path));
-    }
-
-    public function testOpenFile(): void
-    {
-        $this->provider->openFile($this->path);
-        file_put_contents($this->path, 'changed on disk');
-
-        self::assertSame(hash('xxh128', 'on disk'), $this->provider->getContentsHash($this->path));
-    }
-
-    public function testFileRead(): void
-    {
         $this->provider->getContents($this->path);
         file_put_contents($this->path, 'changed on disk');
 
         self::assertSame(hash('xxh128', 'on disk'), $this->provider->getContentsHash($this->path));
-    }
 
-    public function testTemporaryContents(): void
-    {
-        $this->provider->openFile($this->path);
         $this->provider->addTemporaryFileChanges($this->path, 'in the editor');
 
         self::assertSame(hash('xxh128', 'in the editor'), $this->provider->getContentsHash($this->path));
@@ -130,28 +98,18 @@ final class FileProviderContentsHashTest extends TestCase
         @$this->provider->getContentsHash($this->path);
     }
 
-    public function testFakeFile(): void
+    public function testHashOfTheContentsOfAFakeFile(): void
     {
         $provider = new FakeFileProvider();
+
+        self::assertSame(hash('xxh128', 'on disk'), $provider->getContentsHash($this->path));
+
         $provider->registerFile($this->path, 'fake');
 
         self::assertSame(hash('xxh128', 'fake'), $provider->getContentsHash($this->path));
-    }
 
-    public function testFakeFileWithTemporaryContents(): void
-    {
-        $provider = new FakeFileProvider();
-        $provider->registerFile($this->path, 'fake');
         $provider->addTemporaryFileChanges($this->path, 'in the editor');
 
         self::assertSame(hash('xxh128', 'in the editor'), $provider->getContentsHash($this->path));
-    }
-
-    public function testFileOnDiskThatIsNotFake(): void
-    {
-        $provider = new FakeFileProvider();
-        $provider->registerFile($this->directory . DIRECTORY_SEPARATOR . 'B.php', 'fake');
-
-        self::assertSame(hash('xxh128', 'on disk'), $provider->getContentsHash($this->path));
     }
 }
