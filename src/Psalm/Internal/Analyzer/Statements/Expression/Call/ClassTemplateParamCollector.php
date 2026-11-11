@@ -138,7 +138,29 @@ final class ClassTemplateParamCollector
                 );
             }
             foreach ($template_types as $type_name => $_) {
-                if (isset($class_template_params[$type_name])) {
+                // the templates of the classes documenting the method resolve against the receiver as well
+                foreach ($candidate_class_storages as $candidate_class_storage) {
+                    if ($candidate_class_storage !== $class_storage
+                        && $candidate_class_storage !== $static_class_storage
+                        && $template_result !== null
+                        && isset($e[$candidate_class_storage->name][$type_name])
+                        && !isset($class_template_params[$type_name][$candidate_class_storage->name])
+                    ) {
+                        $resolved_type = self::resolveTemplateParam(
+                            $codebase,
+                            $e[$candidate_class_storage->name][$type_name],
+                            $static_class_storage,
+                            $lhs_type_part,
+                            $template_result,
+                        );
+
+                        if ($resolved_type !== null) {
+                            $class_template_params[$type_name][$candidate_class_storage->name] = $resolved_type;
+                        }
+                    }
+                }
+
+                if (isset($class_template_params[$type_name][$class_storage->name])) {
                     continue;
                 }
 
@@ -155,11 +177,10 @@ final class ClassTemplateParamCollector
                         $template_result,
                     );
 
-                    $class_template_params[$type_name] = [
-                        $class_storage->name => $output_type_extends ?? Type::getMixed(),
-                    ];
+                    $class_template_params[$type_name][$class_storage->name]
+                        = $output_type_extends ?? Type::getMixed();
                 } else {
-                    $class_template_params[$type_name] = [$class_storage->name => Type::getMixed()];
+                    $class_template_params[$type_name][$class_storage->name] = Type::getMixed();
                 }
             }
         }
@@ -171,15 +192,41 @@ final class ClassTemplateParamCollector
                         && isset($e[$candidate_class_storage->name][$type_name])
                         && !isset($class_template_params[$type_name][$candidate_class_storage->name])
                     ) {
-                        $class_template_params[$type_name][$candidate_class_storage->name] = new Union(
-                            self::expandType(
+                        // the arguments the object was created with replace the templates of its own class
+                        $resolved_type = null;
+
+                        if ($lhs_type_part instanceof TGenericObject
+                            && $static_class_storage->template_types !== null
+                        ) {
+                            $own_params = self::collect(
+                                $codebase,
+                                $static_class_storage,
+                                $static_class_storage,
+                                null,
+                                $lhs_type_part,
+                            );
+
+                            $resolved_type = self::resolveTemplateParam(
                                 $codebase,
                                 $e[$candidate_class_storage->name][$type_name],
-                                $e,
-                                $static_class_storage->name,
-                                $static_class_storage->template_types,
-                            ),
-                        );
+                                $static_class_storage,
+                                $lhs_type_part,
+                                $own_params !== null
+                                    ? new TemplateResult($static_class_storage->template_types, $own_params)
+                                    : null,
+                            );
+                        }
+
+                        $class_template_params[$type_name][$candidate_class_storage->name] = $resolved_type
+                            ?? new Union(
+                                self::expandType(
+                                    $codebase,
+                                    $e[$candidate_class_storage->name][$type_name],
+                                    $e,
+                                    $static_class_storage->name,
+                                    $static_class_storage->template_types,
+                                ),
+                            );
                     }
                 }
 

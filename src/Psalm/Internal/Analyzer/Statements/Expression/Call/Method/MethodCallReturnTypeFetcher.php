@@ -998,7 +998,9 @@ final class MethodCallReturnTypeFetcher
             $bindable_template_types = $return_type_candidate->getTemplateTypes();
 
             foreach ($bindable_template_types as $template_type) {
+                // the template of a class-string-map belongs to the type, not to the call
                 if ($template_type->defining_class !== $method_id->fq_class_name
+                    && $template_type->defining_class !== 'class-string-map'
                     && !isset(
                         $template_result->lower_bounds
                             [$template_type->param_name]
