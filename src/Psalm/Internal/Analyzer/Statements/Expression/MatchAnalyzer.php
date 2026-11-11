@@ -86,6 +86,7 @@ final class MatchAnalyzer
                     || $stmt->cond->name->getParts() === ['get_debug_type']
                     || $stmt->cond->name->getParts() === ['count']
                     || $stmt->cond->name->getParts() === ['sizeof'])
+                && !$stmt->cond->isPartialFunctionApplication()
                 && $stmt->cond->getArgs()
             ) {
                 $first_arg = $stmt->cond->getArgs()[0];
@@ -147,10 +148,12 @@ final class MatchAnalyzer
             }
 
             foreach ($arm->conds as $cond) {
+                // conditions that share their attributes would share the clause key of an expression
+                // that is not a variable
                 $flattened_arms[] = new PhpParser\Node\MatchArm(
                     [$cond],
                     $arm->body,
-                    $arm->getAttributes(),
+                    $cond->getAttributes(),
                 );
             }
         }
