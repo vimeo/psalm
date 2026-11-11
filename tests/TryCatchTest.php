@@ -20,6 +20,40 @@ final class TryCatchTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'variableAssignedAfterABreakOfANestedLoopInADoWhileInATryIsDefinedAfterIt' => [
+                'code' => '<?php
+                    function f(): string {
+                        try {
+                            do {
+                                foreach ([1, 2] as $_) {
+                                    if (rand(0, 1)) {
+                                        break;
+                                    }
+                                }
+
+                                $foo = "bar";
+                            } while (false);
+                        } finally {
+                            echo "finally";
+                        }
+
+                        return $foo;
+                    }',
+            ],
+            'variableAssignedInADoWhileInATryWithAFinallyIsDefinedAfterIt' => [
+                'code' => '<?php
+                    function f(): string {
+                        try {
+                            do {
+                                $foo = "bar";
+                            } while (false);
+                        } finally {
+                            echo "finally";
+                        }
+
+                        return $foo;
+                    }',
+            ],
             'variableAssignedByEveryCaseOfASwitchInTry' => [
                 'code' => '<?php
                     function inTryAndCatch(string $s): int {
@@ -230,6 +264,24 @@ final class TryCatchTest extends TestCase
                         }
 
                         return 0;
+                    }',
+            ],
+            'typesOfAllCatchesWhenTryAlwaysReturns' => [
+                'code' => '<?php
+                    function f(): string {
+                        try {
+                            return "a";
+                        } catch (\RuntimeException $e) {
+                            $m = "x";
+                        } catch (Throwable $e) {
+                            $m = "y";
+                        }
+
+                        if ($m === "x") {
+                            return "first";
+                        }
+
+                        return "second";
                     }',
             ],
             'addThrowableInterfaceType' => [
@@ -717,6 +769,68 @@ final class TryCatchTest extends TestCase
     public static function providerInvalidCodeParse(): iterable
     {
         return [
+            'variableAssignedAfterABreakTwoLevelsOutOfANestedLoopIsPossiblyUndefined' => [
+                'code' => '<?php
+                    function f(): string {
+                        try {
+                            do {
+                                foreach ([1, 2] as $_) {
+                                    if (rand(0, 1)) {
+                                        break 2;
+                                    }
+                                }
+
+                                $foo = "bar";
+                            } while (false);
+                        } finally {
+                            echo "finally";
+                        }
+
+                        return $foo;
+                    }',
+                'error_message' => 'PossiblyUndefinedVariable',
+            ],
+            'variableAssignedAfterAContinueTwoLevelsOutOfANestedSwitchIsPossiblyUndefined' => [
+                'code' => '<?php
+                    function f(int $i): string {
+                        try {
+                            do {
+                                switch ($i) {
+                                    case 1:
+                                        foreach ([1, 2] as $_) {
+                                            continue 3;
+                                        }
+                                }
+
+                                $foo = "bar";
+                            } while (false);
+                        } finally {
+                            echo "finally";
+                        }
+
+                        return $foo;
+                    }',
+                'error_message' => 'PossiblyUndefinedVariable',
+            ],
+            'variableAssignedAfterABreakInADoWhileInATryIsPossiblyUndefined' => [
+                'code' => '<?php
+                    function f(): string {
+                        try {
+                            do {
+                                if (rand(0, 1)) {
+                                    break;
+                                }
+
+                                $foo = "bar";
+                            } while (false);
+                        } finally {
+                            echo "finally";
+                        }
+
+                        return $foo;
+                    }',
+                'error_message' => 'PossiblyUndefinedVariable',
+            ],
             'variableNotAssignedByEveryCaseOfASwitchInTry' => [
                 'code' => '<?php
                     function f(string $s): int {

@@ -6,6 +6,7 @@ namespace Psalm;
 
 use Amp\Serialization\NativeSerializer;
 use Amp\Serialization\Serializer;
+use Closure;
 use Composer\Autoload\ClassLoader;
 use Composer\Semver\Constraint\Constraint;
 use Composer\Semver\VersionParser;
@@ -56,12 +57,14 @@ use Psalm\Issue\PropertyIssue;
 use Psalm\Issue\VariableIssue;
 use Psalm\Plugin\PluginEntryPointInterface;
 use Psalm\Plugin\PluginFileExtensionsInterface;
+use Psalm\Plugin\PluginFixableIssuesInterface;
 use Psalm\Plugin\PluginInterface;
 use Psalm\Progress\Progress;
 use Psalm\Progress\VoidProgress;
 use Psalm\Type\TaintKind;
 use RecursiveDirectoryIterator;
 use RecursiveIteratorIterator;
+use ReflectionClass;
 use RuntimeException;
 use SimpleXMLElement;
 use SplFileInfo;
@@ -95,6 +98,7 @@ use function file_get_contents;
 use function flock;
 use function fopen;
 use function function_exists;
+use function get_debug_type;
 use function get_defined_constants;
 use function get_defined_functions;
 use function getcwd;
@@ -197,7 +201,6 @@ final class Config
         'symfony/framework-bundle' => 'Psalm\SymfonyPsalmPlugin\Plugin',
         'laravel/framework' => 'Psalm\LaravelPlugin\Plugin',
         'orchestra/testbench' => 'Psalm\LaravelPlugin\Plugin',
-        'sabre/event' => 'Psalm\SabreEventPlugin\Plugin',
     ];
 
     /**
@@ -446,9 +449,13 @@ final class Config
 
     public bool $ensure_array_int_offsets_exist = false;
 
+    public bool $strict_optional_callable_params = false;
+
     public bool $ensure_override_attribute = true;
 
     public bool $suggest_purity_annotations = false;
+
+    public bool $assume_getters_mutation_free = true;
 
     /**
      * @var array<lowercase-string, bool>
@@ -541,6 +548,9 @@ final class Config
 
     public string $hash = '';
 
+    /** Whether loading a config adds the paths passed on the command line to its project files */
+    private static bool $add_command_line_paths = false;
+
     public ?string $error_baseline = null;
 
     public bool $include_php_versions_in_error_baseline = false;
@@ -610,6 +620,7 @@ final class Config
     public array $php_extensions = [
         "amqp" => null,
         "apcu" => null,
+        "curl" => null,
         "decimal" => null,
         "dom" => null,
         "ds" => null,
@@ -618,9 +629,12 @@ final class Config
         "gmp" => null,
         "ibm_db2" => null,
         "imagick" => null,
+        "intl" => null,
+        "ldap" => null,
         "memcached" => null,
         "mongodb" => null,
         "mysqli" => null,
+        "openssl" => null,
         "pdo" => null,
         "random" => null,
         "rdkafka" => null,
@@ -628,6 +642,7 @@ final class Config
         "simplexml" => null,
         "soap" => null,
         "xdebug" => null,
+        "zip" => null,
         "zstd" => null,
     ];
 
@@ -1121,8 +1136,10 @@ final class Config
             'includePhpVersionsInErrorBaseline' => 'include_php_versions_in_error_baseline',
             'ensureArrayStringOffsetsExist' => 'ensure_array_string_offsets_exist',
             'ensureArrayIntOffsetsExist' => 'ensure_array_int_offsets_exist',
+            'strictOptionalCallableParams' => 'strict_optional_callable_params',
             'ensureOverrideAttribute' => 'ensure_override_attribute',
             'suggestPurityAnnotations' => 'suggest_purity_annotations',
+            'assumeGettersMutationFree' => 'assume_getters_mutation_free',
             'reportMixedIssues' => 'show_mixed_issues',
             'skipChecksOnUnresolvableIncludes' => 'skip_checks_on_unresolvable_includes',
             'sealAllMethods' => 'seal_all_methods',
@@ -1354,7 +1371,15 @@ final class Config
         }
 
         if (isset($config_xml->projectFiles)) {
-            $config->project_files = ProjectFileFilter::loadFromXMLElement($config_xml->projectFiles, $base_dir, true);
+            $project_files_xml = $config_xml->projectFiles;
+            $config->project_files = self::loadWithContext(
+                '<projectFiles>',
+                static fn(): ProjectFileFilter => ProjectFileFilter::loadFromXMLElement(
+                    $project_files_xml,
+                    $base_dir,
+                    true,
+                ),
+            );
         }
 
         // any paths passed via CLI should be added to the projectFiles
@@ -1365,9 +1390,11 @@ final class Config
 
         global $argv;
 
+        // Only the CLI entry points read the arguments of the process: a host that loads a config as a library
+        // (PHPUnit, ParaTest, a Symfony console) has arguments of its own, and CliUtils exits on one it can't resolve.
         // Hack for Symfonys own argv resolution.
         // @see https://github.com/vimeo/psalm/issues/10465
-        if (!isset($argv[0]) || basename($argv[0]) !== 'psalm-plugin') {
+        if (self::$add_command_line_paths && basename($argv[0] ?? '') !== 'psalm-plugin') {
             $paths_to_check = CliUtils::getPathsToCheck(null);
         }
 
@@ -1419,23 +1446,39 @@ final class Config
                     $child->addAttribute('name', $path);
                 }
 
-                $config->project_files = ProjectFileFilter::loadFromXMLElement(
-                    $config_xml->projectFiles,
-                    $base_dir,
-                    true,
+                $project_files_xml = $config_xml->projectFiles;
+                $config->project_files = self::loadWithContext(
+                    '<projectFiles>',
+                    static fn(): ProjectFileFilter => ProjectFileFilter::loadFromXMLElement(
+                        $project_files_xml,
+                        $base_dir,
+                        true,
+                    ),
                 );
             }
         }
 
         if (isset($config_xml->extraFiles)) {
-            $config->extra_files = ProjectFileFilter::loadFromXMLElement($config_xml->extraFiles, $base_dir, true);
+            $extra_files_xml = $config_xml->extraFiles;
+            $config->extra_files = self::loadWithContext(
+                '<extraFiles>',
+                static fn(): ProjectFileFilter => ProjectFileFilter::loadFromXMLElement(
+                    $extra_files_xml,
+                    $base_dir,
+                    true,
+                ),
+            );
         }
 
         if (isset($config_xml->taintAnalysis->ignoreFiles)) {
-            $config->taint_analysis_ignored_files = TaintAnalysisFileFilter::loadFromXMLElement(
-                $config_xml->taintAnalysis->ignoreFiles,
-                $base_dir,
-                false,
+            $taint_ignore_files_xml = $config_xml->taintAnalysis->ignoreFiles;
+            $config->taint_analysis_ignored_files = self::loadWithContext(
+                '<taintAnalysis><ignoreFiles>',
+                static fn(): TaintAnalysisFileFilter => TaintAnalysisFileFilter::loadFromXMLElement(
+                    $taint_ignore_files_xml,
+                    $base_dir,
+                    false,
+                ),
             );
         }
 
@@ -1612,18 +1655,21 @@ final class Config
                 $issue_handler_children = $issue_handlers->children();
                 if ($issue_handler_children) {
                     foreach ($issue_handler_children as $key => $issue_handler) {
-                        if ($key === 'PluginIssue') {
-                            $custom_class_name = (string)$issue_handler['name'];
-                            /** @var string $key */
-                            $config->issue_handlers[$custom_class_name] = IssueHandler::loadFromXMLElement(
-                                $issue_handler,
-                                $base_dir,
+                        $handled_issue = $key === 'PluginIssue' ? (string) $issue_handler['name'] : $key;
+
+                        $loaded_handler = self::loadWithContext(
+                            $key === 'PluginIssue' ? '<PluginIssue name="' . $handled_issue . '">' : '<' . $key . '>',
+                            static fn(): IssueHandler => IssueHandler::loadFromXMLElement($issue_handler, $base_dir),
+                        );
+
+                        // an issue named twice keeps what both elements say
+                        if (isset($config->issue_handlers[$handled_issue])) {
+                            $config->issue_handlers[$handled_issue]->mergeLater(
+                                $loaded_handler,
+                                isset($issue_handler['errorLevel']),
                             );
                         } else {
-                            $config->issue_handlers[$key] = IssueHandler::loadFromXMLElement(
-                                $issue_handler,
-                                $base_dir,
-                            );
+                            $config->issue_handlers[$handled_issue] = $loaded_handler;
                         }
                     }
                 }
@@ -1668,6 +1714,16 @@ final class Config
     public function setComposerClassLoader(array $autoloaders): void
     {
         $this->autoloaders = $autoloaders;
+    }
+
+    /**
+     * The CLI entry points set this while they load the config
+     *
+     * @psalm-capabilities write-globals
+     */
+    public static function setAddCommandLinePaths(bool $add): void
+    {
+        self::$add_command_line_paths = $add;
     }
 
     /** @return array<string, IssueHandler> */
@@ -1848,6 +1904,58 @@ final class Config
         foreach ($socket->getAdditionalFileTypeAnalyzers() as $extension => $className) {
             $this->filetype_analyzers[$extension] = $className;
         }
+    }
+
+    /**
+     * The types of the issues the plugins can fix (see PluginFixableIssuesInterface)
+     *
+     * @internal
+     * @return list<string>
+     */
+    public function getPluginFixableIssueTypes(ProjectAnalyzer $project_analyzer): array
+    {
+        $issue_types = [];
+
+        foreach ($this->plugin_classes as $plugin_class_entry) {
+            $plugin_class_name = $plugin_class_entry['class'];
+            $plugin = $this->loadPlugin($project_analyzer, $plugin_class_name);
+            if (!$plugin instanceof PluginFixableIssuesInterface) {
+                continue;
+            }
+
+            try {
+                foreach ($plugin->getFixableIssues($plugin_class_entry['config']) as $issue_class) {
+                    $issue_types[] = self::getFixableIssueType($issue_class);
+                }
+            } catch (Throwable $t) {
+                throw new ConfigException(
+                    'Failed to get the fixable issues of plugin ' . $plugin_class_name,
+                    1_635_800_583,
+                    $t,
+                );
+            }
+        }
+
+        return $issue_types;
+    }
+
+    /**
+     * @param mixed $issue_class what a plugin declares, which Psalm may not have analysed
+     * @psalm-pure
+     */
+    private static function getFixableIssueType(mixed $issue_class): string
+    {
+        if (!is_string($issue_class)
+            || !is_a($issue_class, CodeIssue::class, true)
+            || (new ReflectionClass($issue_class))->isAbstract()
+        ) {
+            throw new UnexpectedValueException(
+                (is_string($issue_class) ? $issue_class : get_debug_type($issue_class))
+                . ' is not a concrete ' . CodeIssue::class . ' class',
+            );
+        }
+
+        return $issue_class::getIssueType();
     }
 
     /**
@@ -3289,6 +3397,23 @@ final class Config
     {
         if ($this->cache_directory !== null) {
             $this->cache_directory .= '-s';
+        }
+    }
+
+    /**
+     * Names the element of psalm.xml that a config error comes from
+     *
+     * @psalm-pure
+     * @template T
+     * @param Closure[_](): T $load
+     * @return T
+     */
+    private static function loadWithContext(string $element, Closure $load): mixed
+    {
+        try {
+            return $load();
+        } catch (ConfigException $e) {
+            throw new ConfigException('In ' . $element . ': ' . $e->getMessage(), 0, $e);
         }
     }
 

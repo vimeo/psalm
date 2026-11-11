@@ -50,6 +50,21 @@ final class IssueHandler
         return $handler;
     }
 
+    /**
+     * Takes over what a later element of the same issue in the config says: its file, class, ... levels are added
+     * to the ones read so far, and its own `errorLevel` replaces the level when it has one
+     *
+     * @psalm-capabilities read-props|write-this-props|write-refs
+     */
+    public function mergeLater(self $later, bool $later_has_error_level): void
+    {
+        $this->custom_levels = [...$this->custom_levels, ...$later->custom_levels];
+
+        if ($later_has_error_level) {
+            $this->error_level = $later->error_level;
+        }
+    }
+
     /** @return list<ErrorLevelFileFilter> */
     public function getFilters(): array
     {
@@ -194,7 +209,6 @@ final class IssueHandler
                 && $issue_name !== 'ClassIssue'
                 && $issue_name !== 'CodeIssue'
                 && $issue_name !== 'PsalmInternalError'
-                && $issue_name !== 'ParseError'
                 && $issue_name !== 'PluginIssue'
                 && $issue_name !== 'MixedIssue'
                 && $issue_name !== 'MixedIssueTrait'

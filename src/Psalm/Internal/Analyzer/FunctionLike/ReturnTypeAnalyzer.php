@@ -290,12 +290,6 @@ final class ReturnTypeAnalyzer
         if (count($inferred_return_type_parts_with_never) > 1
             && !$function_always_exits
             && $inferred_return_type_parts_with_never !== $inferred_return_type_parts) {
-
-            /**
-             * see https://github.com/vimeo/psalm/issues/9045
-             *
-             * @psalm-suppress InvalidArgument
-             */
             $inferred_return_type_with_never = Type::combineUnionTypeArray(
                 $inferred_return_type_parts_with_never,
                 $codebase,
@@ -566,7 +560,9 @@ final class ReturnTypeAnalyzer
                 }
             }
 
+            // never is a subtype of void: a void function that never ends (an infinite loop, an exit) is correct
             if (!$declared_return_type->isNever()
+                && !$declared_return_type->isVoid()
                 && $function_always_exits
                 // a generator function returns its Generator even if its body never ends
                 && !$function_like_storage?->has_yield
