@@ -120,6 +120,8 @@ use function substr;
  */
 final class ClassAnalyzer extends ClassLikeAnalyzer
 {
+    /** @var array<string, true> */
+    private static array $anonymous_classes_in_analysis = [];
     /** Set on the call of the constructor that stands for it when the initialization of properties is checked */
     public const FAKE_CONSTRUCTOR_CALL_ATTRIBUTE = 'fake_constructor_call';
 
@@ -179,6 +181,30 @@ final class ClassAnalyzer extends ClassLikeAnalyzer
     public function analyze(
         ?Context $class_context = null,
         ?Context $global_context = null,
+    ): void {
+        // an anonymous class using a trait whose method creates it again is analysed while it already is
+        if (!$this->class instanceof PhpParser\Node\Stmt\Class_ || $this->class->name !== null) {
+            $this->analyzeClass($class_context, $global_context);
+
+            return;
+        }
+
+        if (isset(self::$anonymous_classes_in_analysis[$this->fq_class_name])) {
+            return;
+        }
+
+        self::$anonymous_classes_in_analysis[$this->fq_class_name] = true;
+
+        try {
+            $this->analyzeClass($class_context, $global_context);
+        } finally {
+            unset(self::$anonymous_classes_in_analysis[$this->fq_class_name]);
+        }
+    }
+
+    private function analyzeClass(
+        ?Context $class_context,
+        ?Context $global_context,
     ): void {
         $class = $this->class;
 
@@ -1433,10 +1459,10 @@ final class ClassAnalyzer extends ClassLikeAnalyzer
                     $fq_class_name,
                     $template_params,
                     false,
-                    !$storage->final,
+                    true,
                 );
             } else {
-                $this_atomic_object_type = new TNamedObject($fq_class_name, !$storage->final);
+                $this_atomic_object_type = new TNamedObject($fq_class_name, true);
             }
 
             $method_context->vars_in_scope['$this'] = new Union([$this_atomic_object_type]);
@@ -1701,6 +1727,7 @@ final class ClassAnalyzer extends ClassLikeAnalyzer
                         $storage->name . ' is marked ' . Capabilities::toClassAnnotation($storage->capabilities)
                             . ' but ' . $fq_trait_name . ' is not',
                         new CodeLocation($previous_trait_analyzer ?? $this, $trait_name),
+                        $fq_trait_name,
                     ),
                     $storage->suppressed_issues + $this->getSuppressedIssues(),
                 );
@@ -2427,6 +2454,7 @@ final class ClassAnalyzer extends ClassLikeAnalyzer
                             . Capabilities::toClassAnnotation($interface_storage->capabilities) . ', but '
                         . $fq_class_name . ' is not',
                         $code_location,
+                        $fq_interface_name,
                     ),
                     $storage->suppressed_issues + $this->getSuppressedIssues(),
                 );
@@ -2671,6 +2699,7 @@ final class ClassAnalyzer extends ClassLikeAnalyzer
                             . Capabilities::toClassAnnotation($parent_class_storage->capabilities) . ', but '
                         . $fq_class_name . ' is not',
                         $code_location,
+                        $parent_fq_class_name,
                     ),
                     $storage->suppressed_issues + $this->getSuppressedIssues(),
                 );
@@ -2681,6 +2710,7 @@ final class ClassAnalyzer extends ClassLikeAnalyzer
                             . Capabilities::toClassAnnotation($storage->capabilities) . ', but parent class '
                         . $parent_fq_class_name . ' is not',
                         $code_location,
+                        $parent_fq_class_name,
                     ),
                     $storage->suppressed_issues + $this->getSuppressedIssues(),
                 );
@@ -2693,6 +2723,7 @@ final class ClassAnalyzer extends ClassLikeAnalyzer
                         $parent_fq_class_name . ' is marked with @psalm-taint-specialize, but '
                             . $fq_class_name . ' is not',
                         $code_location,
+                        $parent_fq_class_name,
                     ),
                     $storage->suppressed_issues + $this->getSuppressedIssues(),
                 );
