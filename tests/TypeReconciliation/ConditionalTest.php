@@ -1080,6 +1080,54 @@ final class ConditionalTest extends TestCase
                         }
                     }',
             ],
+            'negatedInstanceofStaticNarrowsAfterAnEarlyReturn' => [
+                'code' => '<?php
+                    interface Equatable {
+                        public function equals(Equatable $other): bool;
+                    }
+
+                    final class Money implements Equatable {
+                        public function __construct(private string $id) {}
+
+                        public function equals(Equatable $other): bool {
+                            if (!$other instanceof static) {
+                                return false;
+                            }
+
+                            /** @psalm-check-type-exact $other = Money&static */
+                            return $this->id === $other->id;
+                        }
+                    }',
+            ],
+            'negatedInstanceofThisNarrowsInTheElseBranch' => [
+                'code' => '<?php
+                    interface Equatable {}
+
+                    class Money implements Equatable {
+                        public function check(Equatable $other): void {
+                            if (!$other instanceof $this) {
+                                /** @psalm-check-type-exact $other = Equatable */
+                                return;
+                            } else {
+                                /** @psalm-check-type-exact $other = Money&static */
+                                return;
+                            }
+                        }
+                    }',
+            ],
+            'negatedInstanceofStaticKeepsTheTypeOfANonStaticValue' => [
+                'code' => '<?php
+                    class Money {
+                        public function check(Money $other): void {
+                            if (!$other instanceof static) {
+                                /** @psalm-check-type-exact $other = Money */
+                                return;
+                            }
+
+                            /** @psalm-check-type-exact $other = Money&static */
+                        }
+                    }',
+            ],
             'isaStaticClass' => [
                 'code' => '<?php
                     abstract class Foo {
