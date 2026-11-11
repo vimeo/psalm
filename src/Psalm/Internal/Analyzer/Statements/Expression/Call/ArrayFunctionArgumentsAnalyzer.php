@@ -778,7 +778,7 @@ final class ArrayFunctionArgumentsAnalyzer
     }
 
     /**
-     * @param  (TArray|null)[] $array_arg_types
+     * @param  array<int, TArray|null> $array_arg_types
      */
     private static function checkClosureType(
         StatementsAnalyzer $statements_analyzer,
@@ -942,7 +942,7 @@ final class ArrayFunctionArgumentsAnalyzer
 
     /**
      * @param  TClosure|TCallable $closure_type
-     * @param  (TArray|null)[] $array_arg_types
+     * @param  array<int, TArray|null> $array_arg_types
      */
     private static function checkClosureTypeArgs(
         StatementsAnalyzer $statements_analyzer,
@@ -1023,12 +1023,16 @@ final class ArrayFunctionArgumentsAnalyzer
             return;
         }
 
-        foreach ($closure_params as $i => $closure_param) {
-            if (!isset($array_arg_types[$i])) {
+        $last_closure_param = $closure_params ? $closure_params[count($closure_params) - 1] : null;
+
+        foreach ($array_arg_types as $i => $array_arg_type) {
+            // every array beyond the parameters is passed to the variadic one
+            $closure_param = $closure_params[$i]
+                ?? ($last_closure_param !== null && $last_closure_param->is_variadic ? $last_closure_param : null);
+
+            if ($closure_param === null || $array_arg_type === null) {
                 continue;
             }
-
-            $array_arg_type = $array_arg_types[$i];
 
             $input_type = $array_arg_type->type_params[1];
 

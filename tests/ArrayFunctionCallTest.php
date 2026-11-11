@@ -3929,6 +3929,18 @@ final class ArrayFunctionCallTest extends TestCase
                 'assertions' => [],
                 'ignored_issues' => ['MixedAssignment', 'MixedArgument'],
             ],
+            'arrayMapWithATypedVariadicCallbackAndSeveralArrays' => [
+                'code' => '<?php
+                    /**
+                     * @param list<int> $x
+                     * @param list<int> $y
+                     * @param list<int> $z
+                     * @return list<int>
+                     */
+                    function sums(array $x, array $y, array $z): array {
+                        return array_map(static fn (int ...$values): int => array_sum($values), $x, $y, $z);
+                    }',
+            ],
             'arrayMapWithAVariadicCallbackAndSeveralArrays' => [
                 'code' => '<?php
                     /**
@@ -4591,6 +4603,29 @@ final class ArrayFunctionCallTest extends TestCase
                         return array_pop($a[0]);
                     }',
                 'error_message' => 'InvalidReturnStatement',
+            ],
+            'arrayMapWithATypedVariadicCallbackChecksEveryArray' => [
+                'code' => '<?php
+                    /**
+                     * @param list<int> $x
+                     * @param list<string> $y
+                     */
+                    function sums(array $x, array $y): array {
+                        return array_map(static fn (int ...$values): int => array_sum($values), $x, $y);
+                    }',
+                'error_message' => 'InvalidArgument - src' . DIRECTORY_SEPARATOR . 'somefile.php:7:42 - Parameter 2 of closure passed to function array_map expects int',
+            ],
+            'arrayMapWithATypedVariadicCallbackChecksTheThirdArray' => [
+                'code' => '<?php
+                    /**
+                     * @param list<int> $x
+                     * @param list<int> $y
+                     * @param list<string> $z
+                     */
+                    function sums(array $x, array $y, array $z): array {
+                        return array_map(static fn (int $first, int ...$rest): int => $first + array_sum($rest), $x, $y, $z);
+                    }',
+                'error_message' => 'InvalidArgument - src' . DIRECTORY_SEPARATOR . 'somefile.php:8:42 - Parameter 3 of closure passed to function array_map expects int',
             ],
             'arrayMapWithACallbackTakingFewerParametersThanArrays' => [
                 'code' => '<?php
