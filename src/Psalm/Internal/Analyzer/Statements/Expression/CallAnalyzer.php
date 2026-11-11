@@ -353,11 +353,14 @@ abstract class CallAnalyzer
 
             $method_storage = $codebase->methods->getStorage($declaring_method_id);
 
+            // the class using a trait holds the docblock its method inherits
+            $documenting_class_storage = $declaring_class_storage->is_trait ? $class_storage : $declaring_class_storage;
+
             if ($declaring_class_storage->user_defined
                 && !$method_storage->has_docblock_param_types
-                && isset($declaring_class_storage->documenting_method_ids[$method_name])
+                && isset($documenting_class_storage->documenting_method_ids[$method_name])
             ) {
-                $documenting_method_id = $declaring_class_storage->documenting_method_ids[$method_name];
+                $documenting_method_id = $documenting_class_storage->documenting_method_ids[$method_name];
 
                 $documenting_method_storage = $codebase->methods->getStorage($documenting_method_id);
 

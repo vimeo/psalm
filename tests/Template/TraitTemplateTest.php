@@ -21,7 +21,7 @@ final class TraitTemplateTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
-            'traitMethodWithoutDocblockInheritsTheDocblockOfTheParent' => [
+            'traitMethodWithoutDocblockImplementsTemplatedParent' => [
                 'code' => '<?php
                     /** @template T */
                     abstract class A
@@ -45,8 +45,139 @@ final class TraitTemplateTest extends TestCase
                     class C extends A
                     {
                         use LetsTrait;
+                    }
+
+                    $result = (new C())->someMethod("x");',
+                'assertions' => ['$result' => 'string'],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'traitMethodWithoutDocblockImplementsTemplatedParentOfTheIssue' => [
+                'code' => '<?php
+                    /** @psalm-template T */
+                    abstract class A
+                    {
+                        /**
+                         * @psalm-param T $s
+                         * @psalm-return T
+                         */
+                        abstract public function someMethod($s): mixed;
+                    }
+
+                    /** @extends A<string> */
+                    class B extends A
+                    {
+                        public function someMethod($s): mixed
+                        {
+                            return $s;
+                        }
+                    }
+
+                    /** @extends A<string> */
+                    class C extends A
+                    {
+                        use LetsTrait;
+                    }
+
+                    trait LetsTrait
+                    {
+                        public function someMethod($s): mixed
+                        {
+                            return $s;
+                        }
                     }',
                 'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'traitMethodWithoutDocblockImplementsTemplatedInterface' => [
+                'code' => '<?php
+                    /** @template T */
+                    interface I
+                    {
+                        /** @return T */
+                        public function get(): mixed;
+                    }
+
+                    trait GetTrait
+                    {
+                        public function get(): mixed
+                        {
+                            return "a";
+                        }
+                    }
+
+                    /** @implements I<string> */
+                    class C implements I
+                    {
+                        use GetTrait;
+                    }
+
+                    $result = (new C())->get();',
+                'assertions' => ['$result' => 'string'],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'traitMethodWithoutDocblockImplementsParentWithOnlyAReturnTag' => [
+                'code' => '<?php
+                    /** @template T */
+                    abstract class A
+                    {
+                        /** @return T */
+                        abstract public function get(): mixed;
+                    }
+
+                    trait GetTrait
+                    {
+                        public function get(): mixed
+                        {
+                            return "a";
+                        }
+                    }
+
+                    /** @extends A<string> */
+                    class C extends A
+                    {
+                        use GetTrait;
+                    }
+
+                    $result = (new C())->get();',
+                'assertions' => ['$result' => 'string'],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'traitMethodWithoutDocblockUsedByClassesWithDifferentTemplateArguments' => [
+                'code' => '<?php
+                    /** @template T */
+                    abstract class A
+                    {
+                        /** @return T */
+                        abstract public function get(): mixed;
+                    }
+
+                    trait GetTrait
+                    {
+                        public function get(): mixed
+                        {
+                            throw new Exception();
+                        }
+                    }
+
+                    /** @extends A<string> */
+                    class C extends A
+                    {
+                        use GetTrait;
+                    }
+
+                    /** @extends A<int> */
+                    class D extends A
+                    {
+                        use GetTrait;
+                    }
+
+                    $c = (new C())->get();
+                    $d = (new D())->get();',
+                'assertions' => ['$c' => 'string', '$d' => 'int'],
                 'ignored_issues' => [],
                 'php_version' => '8.0',
             ],
@@ -611,7 +742,94 @@ final class TraitTemplateTest extends TestCase
                     {
                         use LetsTrait;
                     }',
-                'error_message' => 'LessSpecificImplementedReturnType',
+                'error_message' => "The inherited return type 'string' for A::someMethod",
+                'error_levels' => [],
+                'php_version' => '8.0',
+            ],
+            'traitMethodWithoutDocblockCalledWithAnArgumentOfTheWrongType' => [
+                'code' => '<?php
+                    /** @template T */
+                    abstract class A
+                    {
+                        /**
+                         * @param T $s
+                         * @return T
+                         */
+                        abstract public function someMethod(mixed $s): mixed;
+                    }
+
+                    trait LetsTrait
+                    {
+                        public function someMethod(mixed $s): mixed
+                        {
+                            return $s;
+                        }
+                    }
+
+                    /** @extends A<string> */
+                    class C extends A
+                    {
+                        use LetsTrait;
+                    }
+
+                    (new C())->someMethod(5);',
+                'error_message' => 'Argument 1 of C::someMethod expects string, but 5 provided',
+                'error_levels' => [],
+                'php_version' => '8.0',
+            ],
+            'traitMethodWithoutDocblockReturningNullForATemplatedParent' => [
+                'code' => '<?php
+                    /** @template T */
+                    abstract class A
+                    {
+                        /** @return T */
+                        abstract public function get(): mixed;
+                    }
+
+                    trait GetTrait
+                    {
+                        public function get(): ?string
+                        {
+                            return null;
+                        }
+                    }
+
+                    /** @extends A<string> */
+                    class C extends A
+                    {
+                        use GetTrait;
+                    }',
+                'error_message' => 'InvalidNullableReturnType',
+                'error_levels' => [],
+                'php_version' => '8.0',
+            ],
+            'traitMethodWithoutDocblockImplementingTwoInterfacesDocumentingTheMethod' => [
+                'code' => '<?php
+                    interface I1
+                    {
+                        /** @return non-empty-string */
+                        public function f(): string;
+                    }
+
+                    interface I2
+                    {
+                        /** @return numeric-string */
+                        public function f(): string;
+                    }
+
+                    trait T
+                    {
+                        public function f(): string
+                        {
+                            return "1";
+                        }
+                    }
+
+                    final class E implements I1, I2
+                    {
+                        use T;
+                    }',
+                'error_message' => "The inherited return type 'non-empty-string' for I1::f",
                 'error_levels' => [],
                 'php_version' => '8.0',
             ],
