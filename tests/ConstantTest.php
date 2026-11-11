@@ -280,6 +280,49 @@ final class ConstantTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'staticConstantMapOffsetWithANullDefaultOfDestructuredValues' => [
+                'code' => '<?php
+                    class Handler
+                    {
+                        protected const MAP = [
+                            "view" => ["read", "show"],
+                            "revert" => ["write", "update"],
+                        ];
+
+                        public function check(string $operation): string
+                        {
+                            [$permission, $entity_operation] = static::MAP[$operation] ?? [null, null];
+
+                            if ($permission) {
+                                return $permission . ($entity_operation ?? "");
+                            }
+
+                            return "";
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => ['MissingClassConstType'],
+            ],
+            'staticConstantMapOffsetAfterAnIssetOfTheSameOffset' => [
+                'code' => '<?php
+                    class Handler
+                    {
+                        protected const MAP = [
+                            "view" => ["read", "show"],
+                        ];
+
+                        public function check(string $operation): string
+                        {
+                            if (!isset(static::MAP[$operation])) {
+                                return "";
+                            }
+
+                            return static::MAP[$operation][0];
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => ['MissingClassConstType'],
+            ],
             'defineInSeveralSwitchBranchesWithoutDefault' => [
                 'code' => '<?php
                     switch (random_int(1, 3)) {
@@ -2505,6 +2548,33 @@ final class ConstantTest extends TestCase
                     class FooBar implements FooInterface, BarInterface {}
                     PHP,
             ],
+            'staticClassConstantComparedWithNullIsNarrowedInTheBranch' => [
+                'code' => '<?php
+                    function greet(string $name = "default"): void {
+                        echo $name;
+                    }
+
+                    abstract class Base {
+                        /** @var string|null */
+                        const NAME = null;
+
+                        public static function ternary(): void {
+                            static::NAME !== null ? greet(static::NAME) : greet();
+                        }
+
+                        public static function branch(): void {
+                            if (static::NAME !== null) {
+                                greet(static::NAME);
+                            }
+                        }
+                    }
+
+                    final class Child extends Base {
+                        const NAME = "child";
+                    }
+
+                    Child::ternary();',
+            ],
         ];
     }
 
@@ -3163,6 +3233,40 @@ final class ConstantTest extends TestCase
                 'error_message' => 'ParseError',
                 'error_levels' => [],
                 'php_version' => '8.2',
+            ],
+            'narrowingAStaticClassConstantDoesNotNarrowSelf' => [
+                'code' => '<?php
+                    function greet(string $name): void {
+                        echo $name;
+                    }
+
+                    abstract class Base {
+                        /** @var string|null */
+                        const NAME = null;
+
+                        public static function run(): void {
+                            if (static::NAME !== null) {
+                                greet(self::NAME);
+                            }
+                        }
+                    }',
+                'error_message' => 'NullArgument - src' . DIRECTORY_SEPARATOR . 'somefile.php:12:39',
+            ],
+            'staticClassConstantIsNullableOutsideTheCheck' => [
+                'code' => '<?php
+                    function greet(string $name): void {
+                        echo $name;
+                    }
+
+                    abstract class Base {
+                        /** @var string|null */
+                        const NAME = null;
+
+                        public static function run(): void {
+                            greet(static::NAME);
+                        }
+                    }',
+                'error_message' => 'PossiblyNullArgument - src' . DIRECTORY_SEPARATOR . 'somefile.php:11:35',
             ],
         ];
     }
