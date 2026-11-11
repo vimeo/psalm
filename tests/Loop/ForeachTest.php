@@ -23,38 +23,26 @@ final class ForeachTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
-            'variableDefinedBeforeBreakOfLoopInsideAnotherLoop' => [
-                'code' => <<<'PHP'
-                    <?php
-                    /** @param non-empty-list<string> $candidates */
-                    function foreachInForeach(array $candidates): void {
-                        foreach ([1, 2] as $_) {
-                            foreach ($candidates as $candidate) {
-                                $picked = $candidate;
-                                if ($picked !== 'x') {
-                                    break;
-                                }
-                            }
-                            echo $picked;
+            'foreachOverListKeepsTheEmptyStringOfAnEmptyOrNumericString' => [
+                'code' => '<?php
+                    /** @var list<array{foo: ""|numeric-string}> $rows */
+                    $rows = [];
+                    $row = ["foo" => "1"];
+                    foreach ($rows as $row) {
+                        if ("" === $row["foo"]) {
+                            throw new Exception("empty");
                         }
                     }
 
-                    function whileInWhile(): void {
-                        $outer = 0;
-                        while ($outer++ < 2) {
-                            while (true) {
-                                $found = rand();
-                                if ($found > 1) {
-                                    break;
-                                }
-                            }
-                            echo $found;
-                        }
-                    }
-                    PHP,
-                'assertions' => [],
-                'ignored_issues' => [],
-                'php_version' => '8.1',
+                    /** @var non-empty-list<""|numeric-string> $values */
+                    $values = ["1"];
+                    $value = "1";
+                    foreach ($values as $value) {
+                    }',
+                'assertions' => [
+                    '$row===' => "array{foo: numeric-string}",
+                    '$value===' => "''|numeric-string",
+                ],
             ],
             'postDecrementInTheConditionOfAnIfThatBreaksOverAConcreteArray' => [
                 'code' => '<?php
@@ -1680,41 +1668,11 @@ final class ForeachTest extends TestCase
                 'ignored_issues' => [],
                 'php_version' => '8.0',
             ],
-        ];
-    }
-
-    /**
-     * @psalm-pure
-     */
-    #[Override]
-    public static function providerInvalidCodeParse(): iterable
-    {
-        return [
-            'variableMaybeNotDefinedAtBreakOfLoopInsideAnotherLoop' => [
+            'variableDefinedBeforeBreakOfLoopInsideAnotherLoop' => [
                 'code' => <<<'PHP'
                     <?php
                     /** @param non-empty-list<string> $candidates */
-                    function f(array $candidates): void {
-                        foreach ([1, 2] as $_) {
-                            foreach ($candidates as $candidate) {
-                                if ($candidate !== 'x') {
-                                    break;
-                                }
-                                $picked = $candidate;
-                            }
-                            echo $picked;
-                        }
-                    }
-                    PHP,
-                'error_message' => 'PossiblyUndefinedVariable',
-                'error_levels' => [],
-                'php_version' => '8.1',
-            ],
-            'variableMaybeNotDefinedWhenLoopInsideAnotherLoopMayBeEmpty' => [
-                'code' => <<<'PHP'
-                    <?php
-                    /** @param list<string> $candidates */
-                    function f(array $candidates): void {
+                    function foreachInForeach(array $candidates): void {
                         foreach ([1, 2] as $_) {
                             foreach ($candidates as $candidate) {
                                 $picked = $candidate;
@@ -1725,11 +1683,34 @@ final class ForeachTest extends TestCase
                             echo $picked;
                         }
                     }
+
+                    function whileInWhile(): void {
+                        $outer = 0;
+                        while ($outer++ < 2) {
+                            while (true) {
+                                $found = rand();
+                                if ($found > 1) {
+                                    break;
+                                }
+                            }
+                            echo $found;
+                        }
+                    }
                     PHP,
-                'error_message' => 'PossiblyUndefinedVariable',
-                'error_levels' => [],
+                'assertions' => [],
+                'ignored_issues' => [],
                 'php_version' => '8.1',
             ],
+        ];
+    }
+
+    /**
+     * @psalm-pure
+     */
+    #[Override]
+    public static function providerInvalidCodeParse(): iterable
+    {
+        return [
             'iteratorCurrentNullStaysWhenTheTemplateValueIsNullable' => [
                 'code' => '<?php
                     class Foo {
@@ -2068,6 +2049,46 @@ final class ForeachTest extends TestCase
                     foreach ($gen as $i) {}
                 PHP,
                 'error_message' => 'InvalidIterator',
+            ],
+            'variableMaybeNotDefinedAtBreakOfLoopInsideAnotherLoop' => [
+                'code' => <<<'PHP'
+                    <?php
+                    /** @param non-empty-list<string> $candidates */
+                    function f(array $candidates): void {
+                        foreach ([1, 2] as $_) {
+                            foreach ($candidates as $candidate) {
+                                if ($candidate !== 'x') {
+                                    break;
+                                }
+                                $picked = $candidate;
+                            }
+                            echo $picked;
+                        }
+                    }
+                    PHP,
+                'error_message' => 'PossiblyUndefinedVariable',
+                'error_levels' => [],
+                'php_version' => '8.1',
+            ],
+            'variableMaybeNotDefinedWhenLoopInsideAnotherLoopMayBeEmpty' => [
+                'code' => <<<'PHP'
+                    <?php
+                    /** @param list<string> $candidates */
+                    function f(array $candidates): void {
+                        foreach ([1, 2] as $_) {
+                            foreach ($candidates as $candidate) {
+                                $picked = $candidate;
+                                if ($picked !== 'x') {
+                                    break;
+                                }
+                            }
+                            echo $picked;
+                        }
+                    }
+                    PHP,
+                'error_message' => 'PossiblyUndefinedVariable',
+                'error_levels' => [],
+                'php_version' => '8.1',
             ],
         ];
     }
