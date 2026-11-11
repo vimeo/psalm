@@ -1332,6 +1332,7 @@ final class Populator
         $this->populateInterfaceData($storage, $parent_interface_storage, $storage_provider, $dependent_classlikes);
 
         $this->inheritMethodsFromParent($storage, $parent_interface_storage);
+        $this->inheritPropertiesFromParent($storage, $parent_interface_storage);
 
         $storage->pseudo_methods += $parent_interface_storage->pseudo_methods;
         $storage->declaring_pseudo_method_ids += $parent_interface_storage->declaring_pseudo_method_ids;
