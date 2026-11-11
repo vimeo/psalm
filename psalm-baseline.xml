@@ -96,7 +96,6 @@
     </PossiblyNullReference>
     <PropertyTypeCoercion>
       <code><![CDATA[$this]]></code>
-      <code><![CDATA[$this]]></code>
     </PropertyTypeCoercion>
     <RiskyTruthyFalsyComparison>
       <code><![CDATA[!$config_path]]></code>
@@ -565,12 +564,6 @@
       <code><![CDATA[$var_type]]></code>
       <code><![CDATA[$var_type]]></code>
     </ImplicitToStringCast>
-    <InvalidOperand>
-      <code><![CDATA[$var_id+1]]></code>
-      <code><![CDATA[$var_id+1]]></code>
-      <code><![CDATA[$var_id+1]]></code>
-      <code><![CDATA[$var_id+1]]></code>
-    </InvalidOperand>
     <PossiblyUndefinedIntArrayOffset>
       <code><![CDATA[$count_expr->getArgs()[0]]]></code>
       <code><![CDATA[$count_expr->getArgs()[0]]]></code>
@@ -880,7 +873,6 @@
       <code><![CDATA[$cased_method_id ?: $method_id]]></code>
       <code><![CDATA[$cased_method_id ?: $method_id]]></code>
       <code><![CDATA[$cased_method_id ?: $method_id]]></code>
-      <code><![CDATA[$cased_method_id ?: $method_id]]></code>
     </ImplicitToStringCast>
     <RiskyTruthyFalsyComparison>
       <code><![CDATA[!$context->self]]></code>
@@ -1121,7 +1113,6 @@
       <code><![CDATA[$callable_arg->items[1]]]></code>
     </PossiblyUndefinedIntArrayOffset>
     <RiskyTruthyFalsyComparison>
-      <code><![CDATA[!$arg_var_id]]></code>
       <code><![CDATA[$arg_var_id]]></code>
       <code><![CDATA[$assertion_var_id]]></code>
       <code><![CDATA[$calling_class_storage->template_extended_params]]></code>
@@ -2320,7 +2311,6 @@
       <code><![CDATA[$file_changes]]></code>
       <code><![CDATA[self::$parser->parse($file_contents, $error_handler)]]></code>
       <code><![CDATA[self::$parser->parse($file_contents, $error_handler)]]></code>
-      <code><![CDATA[strpos($file_path, 'vendor')]]></code>
     </RiskyTruthyFalsyComparison>
   </file>
   <file src="src/Psalm/Internal/Scanner/DocblockParser.php">
