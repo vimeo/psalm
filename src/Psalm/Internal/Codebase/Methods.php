@@ -284,6 +284,21 @@ final class Methods
         ?Context $context = null,
         ?CodeLocation $code_location = null,
     ): array {
+        return $this->findMethodParams($method_id, $source, $args, $context, $code_location)
+            ?? throw new UnexpectedValueException('Cannot get method params for ' . $method_id);
+    }
+
+    /**
+     * @param  list<PhpParser\Node\Arg> $args
+     * @return list<FunctionLikeParameter>|null null when neither a params provider nor any storage knows the method
+     */
+    public function findMethodParams(
+        MethodIdentifier $method_id,
+        ?StatementsSource $source = null,
+        ?array $args = null,
+        ?Context $context = null,
+        ?CodeLocation $code_location = null,
+    ): ?array {
         $fq_class_name = $method_id->fq_class_name;
         $method_name = $method_id->method_name;
 
@@ -422,7 +437,7 @@ final class Methods
             return $params;
         }
 
-        throw new UnexpectedValueException('Cannot get method params for ' . $method_id);
+        return null;
     }
 
     public static function localizeType(

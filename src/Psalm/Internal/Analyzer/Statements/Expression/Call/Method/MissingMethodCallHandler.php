@@ -28,6 +28,7 @@ use Psalm\Storage\MethodStorage;
 use Psalm\Type;
 use Psalm\Type\Atomic;
 use Psalm\Type\Atomic\TClosure;
+use Psalm\Type\Atomic\TGenericObject;
 use Psalm\Type\Union;
 
 use function array_map;
@@ -105,6 +106,7 @@ final class MissingMethodCallHandler
                 $stmt,
                 $context,
                 new CodeLocation($statements_analyzer->getSource(), $stmt->name),
+                $lhs_type_part instanceof TGenericObject ? $lhs_type_part->type_params : null,
             );
 
             if ($return_type_candidate) {
