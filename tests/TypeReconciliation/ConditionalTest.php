@@ -21,109 +21,76 @@ final class ConditionalTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
-            'andWhoseRightSideReassignsWhatTheLeftOneTestedUsesTheAssignedValue' => [
+            'mixedStaysMixedAfterAStackedTernaryOnItsType' => [
                 'code' => '<?php
-                    function getDefaultName(): ?string {
-                        return null;
+                    /** @var mixed $a */
+                    $a = 1;
+                    $result = is_array($a) ? 1 : (is_int($a) ? 2 : (is_callable($a) ? 3 : 4));
+                    $copy = $a;',
+                'assertions' => [
+                    '$copy' => 'mixed',
+                ],
+                'ignored_issues' => ['MixedAssignment'],
+            ],
+            'nonEmptyMixedStaysNonEmptyMixedAfterATernaryOnItsType' => [
+                'code' => '<?php
+                    /** @var mixed $a */
+                    $a = 1;
+
+                    if (!$a) {
+                        throw new Exception("empty");
                     }
 
-                    function test(?string $name): int {
-                        if (null === $name && null !== $name = getDefaultName()) {
-                            return strlen($name);
-                        }
-
-                        return 0;
-                    }',
+                    $result = is_int($a) ? 1 : 2;
+                    $copy = $a;',
+                'assertions' => [
+                    '$copy===' => 'non-empty-mixed',
+                ],
+                'ignored_issues' => ['MixedAssignment'],
             ],
-            'logicalAndWhoseRightSideReassignsWhatTheLeftOneTestedUsesTheAssignedValue' => [
+            'mixedStaysMixedAfterAShortTernaryOnItsType' => [
                 'code' => '<?php
-                    function getDefaultName(): ?string {
-                        return null;
-                    }
-
-                    function test(?string $name): int {
-                        if (null === $name and null !== $name = getDefaultName()) {
-                            return strlen($name);
-                        }
-
-                        return 0;
-                    }',
+                    /** @var mixed $a */
+                    $a = 1;
+                    $result = is_int($a) ?: 2;
+                    $copy = $a;',
+                'assertions' => [
+                    '$copy' => 'mixed',
+                ],
+                'ignored_issues' => ['MixedAssignment'],
             ],
-            'andWhoseRightSideAssignsAnotherVariableKeepsWhatTheLeftOneTested' => [
+            'mixedAssignedInABranchOfATernaryIsTheAssignedTypeOrMixed' => [
                 'code' => '<?php
-                    function test(?string $s): int {
-                        if ($s !== null && ($n = strlen($s)) > 5) {
-                            return strlen($s) + $n;
-                        }
-
-                        return 0;
-                    }',
+                    /** @var mixed $a */
+                    $a = 1;
+                    $result = is_int($a) ? ($a = "five") : 2;
+                    $copy = $a;',
+                'assertions' => [
+                    '$copy' => 'mixed|string',
+                ],
+                'ignored_issues' => ['MixedAssignment'],
             ],
-            'negatedAndWhoseRightSideAssignsAnotherOffsetKeepsWhatTheLeftOneTestedOfAnOffset' => [
+            'mixedStaysMixedAfterAnAssignedTernaryOnItsType' => [
                 'code' => '<?php
-                    /** @param array{x?: int, y?: string} $a */
-                    function test(array $a): int {
-                        if (!(isset($a["y"]) && ($a["x"] = 5) > 0)) {
-                            return 0;
-                        }
-
-                        return strlen($a["y"]);
-                    }',
+                    /** @var mixed $a */
+                    $a = 1;
+                    $result = is_int($a) ? "int" : "other";
+                    $copy = $a;',
+                'assertions' => [
+                    '$copy' => 'mixed',
+                ],
+                'ignored_issues' => ['MixedAssignment'],
             ],
-            'andWhoseRightSideAssignsAnotherOffsetKeepsWhatTheLeftOneTestedOfAnOffsetAfterTheIf' => [
+            'mixedStaysMixedAfterATernaryOnItsTypeInAStatement' => [
                 'code' => '<?php
-                    /** @param array{x?: int, y?: string} $a */
-                    function test(array $a): int {
-                        if (isset($a["y"]) && ($a["x"] = 5) > 0) {
-                        } else {
-                            return 0;
-                        }
-
-                        return strlen($a["y"]);
-                    }',
-            ],
-            'andWhoseRightSideAssignsAnotherOffsetKeepsAnOrredClauseOfTheLeftOneOnAnOffset' => [
-                'code' => '<?php
-                    /** @param array{x?: int, y?: string} $a */
-                    function test(array $a, bool $b): int {
-                        if ((isset($a["y"]) || $b) && ($a["x"] = 5) > 0) {
-                            if (!$b) {
-                                return strlen($a["y"]);
-                            }
-                        }
-
-                        return 0;
-                    }',
-            ],
-            'andWhoseRightSideAssignsAnotherPropertyKeepsAnOrredClauseOfTheLeftOneOnAProperty' => [
-                'code' => '<?php
-                    final class A {
-                        public ?string $q = null;
-                        public int $p = 0;
-                    }
-
-                    function test(A $o, bool $b): int {
-                        if (($o->q !== null || $b) && ($o->p = 5) > 0) {
-                            if (!$b) {
-                                return strlen($o->q);
-                            }
-                        }
-
-                        return 0;
-                    }',
-            ],
-            'nonFinalClassCanBeIdenticalToIterable' => [
-                'code' => <<<'PHP'
-                    <?php
-                    class Foo {}
-
-                    function f(Foo $x, iterable $i): bool {
-                        return $x === $i;
-                    }
-                    PHP,
-                'assertions' => [],
-                'ignored_issues' => [],
-                'php_version' => '8.1',
+                    /** @var mixed $a */
+                    $a = 1;
+                    is_array($a) ? true : false;
+                    $copy = $a;',
+                'assertions' => [
+                    '$copy' => 'mixed',
+                ],
+                'ignored_issues' => ['MixedAssignment'],
             ],
             'identicalKeyedArraysWithTheSameKeysInAnotherOrder' => [
                 'code' => '<?php
@@ -203,6 +170,19 @@ final class ConditionalTest extends TestCase
                         if (!$isRoot || $isSimple) {
                             echo "not the root, or simple";
                         }
+                    }
+                    PHP,
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
+            'nonFinalClassCanBeIdenticalToIterable' => [
+                'code' => <<<'PHP'
+                    <?php
+                    class Foo {}
+
+                    function f(Foo $x, iterable $i): bool {
+                        return $x === $i;
                     }
                     PHP,
                 'assertions' => [],
@@ -4033,6 +4013,235 @@ final class ConditionalTest extends TestCase
                         public function onlyB(): void {}
                     }',
             ],
+            'privateMethodAnalysedFromTheConstructorIgnoresTheConditionsOfItsCaller' => [
+                'code' => '<?php
+                    declare(strict_types=1);
+
+                    class Test {
+                        private string $pattern;
+
+                        public function __construct(string $pattern) {
+                            $this->captureErrors(fn(): bool => random_int(0, 1) ? true : false);
+                            $this->pattern = $pattern;
+                        }
+
+                        private function captureErrors(\\Closure $function): void {
+                            if ($function() === false) {
+                                throw new \\RuntimeException($this->formatPcreError(random_int(0, 1)));
+                            }
+
+                            $errorCode = preg_last_error();
+
+                            if ($errorCode !== 0) {
+                                throw new \\RuntimeException($this->formatPcreError($errorCode));
+                            }
+                        }
+
+                        private function formatPcreError(int $errorCode): string {
+                            if ($errorCode === 0) {
+                                return "Is Zero";
+                            }
+
+                            return "Not Zero";
+                        }
+                    }',
+            ],
+            'privateMethodOfATraitFollowedFromTheConstructorKeepsTheConditionsOfItsCaller' => [
+                'code' => '<?php
+                    final class Y {
+                        public function foo(): int {
+                            return 1;
+                        }
+                    }
+
+                    trait T {
+                        private function init(): void {
+                            $this->n = 1;
+                        }
+                    }
+
+                    final class C {
+                        use T;
+
+                        public int $n;
+                        public int $m;
+
+                        public function __construct(?Y $x, ?Y $y) {
+                            if ($x === null && $y === null) {
+                                throw new Exception();
+                            }
+
+                            $this->init();
+
+                            if ($x === null) {
+                                $this->m = $y->foo();
+                            } else {
+                                $this->m = $x->foo();
+                            }
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'privateMethodFollowedFromTheConstructorKeepsTheConditionsOfItsCaller' => [
+                'code' => '<?php
+                    final class Y {
+                        public function foo(): int {
+                            return 1;
+                        }
+                    }
+
+                    final class C {
+                        public int $n;
+                        public int $m;
+
+                        private function init(): void {
+                            $this->n = 1;
+                        }
+
+                        public function __construct(?Y $x, ?Y $y) {
+                            if ($x === null && $y === null) {
+                                throw new Exception();
+                            }
+
+                            $this->init();
+
+                            if ($x === null) {
+                                $this->m = $y->foo();
+                            } else {
+                                $this->m = $x->foo();
+                            }
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'finalMethodAnalysedFromTheConstructorIgnoresTheConditionsOfItsCaller' => [
+                'code' => '<?php
+                    declare(strict_types=1);
+
+                    class Test {
+                        private string $pattern;
+
+                        public function __construct(string $pattern) {
+                            $this->captureErrors(fn(): bool => random_int(0, 1) ? true : false);
+                            $this->pattern = $pattern;
+                        }
+
+                        final public function captureErrors(\\Closure $function): void {
+                            if ($function() === false) {
+                                throw new \\RuntimeException($this->formatPcreError(random_int(0, 1)));
+                            }
+
+                            $errorCode = preg_last_error();
+
+                            if ($errorCode !== 0) {
+                                throw new \\RuntimeException($this->formatPcreError($errorCode));
+                            }
+                        }
+
+                        final public function formatPcreError(int $errorCode): string {
+                            if ($errorCode === 0) {
+                                return "Is Zero";
+                            }
+
+                            return "Not Zero";
+                        }
+                    }',
+            ],
+            'andWhoseRightSideReassignsWhatTheLeftOneTestedUsesTheAssignedValue' => [
+                'code' => '<?php
+                    function getDefaultName(): ?string {
+                        return null;
+                    }
+
+                    function test(?string $name): int {
+                        if (null === $name && null !== $name = getDefaultName()) {
+                            return strlen($name);
+                        }
+
+                        return 0;
+                    }',
+            ],
+            'logicalAndWhoseRightSideReassignsWhatTheLeftOneTestedUsesTheAssignedValue' => [
+                'code' => '<?php
+                    function getDefaultName(): ?string {
+                        return null;
+                    }
+
+                    function test(?string $name): int {
+                        if (null === $name and null !== $name = getDefaultName()) {
+                            return strlen($name);
+                        }
+
+                        return 0;
+                    }',
+            ],
+            'andWhoseRightSideAssignsAnotherVariableKeepsWhatTheLeftOneTested' => [
+                'code' => '<?php
+                    function test(?string $s): int {
+                        if ($s !== null && ($n = strlen($s)) > 5) {
+                            return strlen($s) + $n;
+                        }
+
+                        return 0;
+                    }',
+            ],
+            'negatedAndWhoseRightSideAssignsAnotherOffsetKeepsWhatTheLeftOneTestedOfAnOffset' => [
+                'code' => '<?php
+                    /** @param array{x?: int, y?: string} $a */
+                    function test(array $a): int {
+                        if (!(isset($a["y"]) && ($a["x"] = 5) > 0)) {
+                            return 0;
+                        }
+
+                        return strlen($a["y"]);
+                    }',
+            ],
+            'andWhoseRightSideAssignsAnotherOffsetKeepsWhatTheLeftOneTestedOfAnOffsetAfterTheIf' => [
+                'code' => '<?php
+                    /** @param array{x?: int, y?: string} $a */
+                    function test(array $a): int {
+                        if (isset($a["y"]) && ($a["x"] = 5) > 0) {
+                        } else {
+                            return 0;
+                        }
+
+                        return strlen($a["y"]);
+                    }',
+            ],
+            'andWhoseRightSideAssignsAnotherOffsetKeepsAnOrredClauseOfTheLeftOneOnAnOffset' => [
+                'code' => '<?php
+                    /** @param array{x?: int, y?: string} $a */
+                    function test(array $a, bool $b): int {
+                        if ((isset($a["y"]) || $b) && ($a["x"] = 5) > 0) {
+                            if (!$b) {
+                                return strlen($a["y"]);
+                            }
+                        }
+
+                        return 0;
+                    }',
+            ],
+            'andWhoseRightSideAssignsAnotherPropertyKeepsAnOrredClauseOfTheLeftOneOnAProperty' => [
+                'code' => '<?php
+                    final class A {
+                        public ?string $q = null;
+                        public int $p = 0;
+                    }
+
+                    function test(A $o, bool $b): int {
+                        if (($o->q !== null || $b) && ($o->p = 5) > 0) {
+                            if (!$b) {
+                                return strlen($o->q);
+                            }
+                        }
+
+                        return 0;
+                    }',
+            ],
         ];
     }
 
@@ -4043,31 +4252,6 @@ final class ConditionalTest extends TestCase
     public static function providerInvalidCodeParse(): iterable
     {
         return [
-            'andWhoseRightSideReassignsAnObjectForgetsAnOrredClauseOfTheLeftOneOnItsProperty' => [
-                'code' => '<?php
-                    final class P {
-                        public ?string $r = null;
-                    }
-
-                    final class A {
-                        public P $p;
-
-                        public function __construct() {
-                            $this->p = new P();
-                        }
-                    }
-
-                    function test(A $o, bool $b): int {
-                        if (($o->p->r !== null || $b) && ($o->p = new P()) instanceof P) {
-                            if (!$b) {
-                                return strlen($o->p->r);
-                            }
-                        }
-
-                        return 0;
-                    }',
-                'error_message' => 'PossiblyNullArgument',
-            ],
             'identicalKeyedArraysWithAnOptionalKeyOfOverlappingTypesAreAKnownLimit' => [
                 'code' => '<?php
                     /** @param array{a?: int|string} $x */
@@ -4668,6 +4852,31 @@ final class ConditionalTest extends TestCase
                         echo $i;
                     }',
                 'error_message' => 'TypeDoesNotContainType',
+            ],
+            'andWhoseRightSideReassignsAnObjectForgetsAnOrredClauseOfTheLeftOneOnItsProperty' => [
+                'code' => '<?php
+                    final class P {
+                        public ?string $r = null;
+                    }
+
+                    final class A {
+                        public P $p;
+
+                        public function __construct() {
+                            $this->p = new P();
+                        }
+                    }
+
+                    function test(A $o, bool $b): int {
+                        if (($o->p->r !== null || $b) && ($o->p = new P()) instanceof P) {
+                            if (!$b) {
+                                return strlen($o->p->r);
+                            }
+                        }
+
+                        return 0;
+                    }',
+                'error_message' => 'PossiblyNullArgument',
             ],
         ];
     }
