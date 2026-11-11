@@ -29,6 +29,8 @@ use Psalm\Internal\Scanner\UnresolvedConstant\UnresolvedBitwiseXor;
 use Psalm\Internal\Scanner\UnresolvedConstant\UnresolvedConcatOp;
 use Psalm\Internal\Scanner\UnresolvedConstant\UnresolvedDivisionOp;
 use Psalm\Internal\Scanner\UnresolvedConstant\UnresolvedMultiplicationOp;
+use Psalm\Internal\Scanner\UnresolvedConstant\UnresolvedShiftLeft;
+use Psalm\Internal\Scanner\UnresolvedConstant\UnresolvedShiftRight;
 use Psalm\Internal\Scanner\UnresolvedConstant\UnresolvedSubtractionOp;
 use Psalm\Internal\Scanner\UnresolvedConstant\UnresolvedTernary;
 use Psalm\Internal\Scanner\UnresolvedConstantComponent;
@@ -39,11 +41,30 @@ use function array_merge;
 use function array_values;
 use function assert;
 use function class_exists;
+use function constant;
+use function defined;
+use function enum_exists;
+use function file_get_contents;
 use function function_exists;
 use function get_defined_constants;
 use function in_array;
 use function interface_exists;
+use function is_array;
+use function ltrim;
+use function strrpos;
 use function strtolower;
+use function substr;
+use function token_get_all;
+
+use const T_CLASS;
+use const T_COMMENT;
+use const T_DOC_COMMENT;
+use const T_DOUBLE_COLON;
+use const T_INTERFACE;
+use const T_NEW;
+use const T_STRING;
+use const T_TRAIT;
+use const T_WHITESPACE;
 
 /**
  * @internal
@@ -105,6 +126,14 @@ final class ExpressionResolver
 
             if ($stmt instanceof PhpParser\Node\Expr\BinaryOp\BitwiseAnd) {
                 return new UnresolvedBitwiseAnd($left, $right);
+            }
+
+            if ($stmt instanceof PhpParser\Node\Expr\BinaryOp\ShiftLeft) {
+                return new UnresolvedShiftLeft($left, $right);
+            }
+
+            if ($stmt instanceof PhpParser\Node\Expr\BinaryOp\ShiftRight) {
+                return new UnresolvedShiftRight($left, $right);
             }
         }
 
@@ -453,19 +482,7 @@ final class ExpressionResolver
                 $string_value = (string) $function->getArgs()[0]->value->class->getAttribute('resolvedName');
             }
 
-            if ($string_value && class_exists($string_value)) {
-                $reflection_class = new ReflectionClass($string_value);
-
-                if ($reflection_class->getFileName() !== $file_path) {
-                    $codebase->scanner->queueClassLikeForScanning(
-                        $string_value,
-                    );
-
-                    return true;
-                }
-            }
-
-            return false;
+            return self::isDefinedElsewhere($codebase, $string_value, $file_path, 'class');
         }
 
         if ($function->name->getParts() === ['interface_exists']
@@ -483,19 +500,7 @@ final class ExpressionResolver
                 $string_value = (string) $function->getArgs()[0]->value->class->getAttribute('resolvedName');
             }
 
-            if ($string_value && interface_exists($string_value)) {
-                $reflection_class = new ReflectionClass($string_value);
-
-                if ($reflection_class->getFileName() !== $file_path) {
-                    $codebase->scanner->queueClassLikeForScanning(
-                        $string_value,
-                    );
-
-                    return true;
-                }
-            }
-
-            return false;
+            return self::isDefinedElsewhere($codebase, $string_value, $file_path, 'interface');
         }
 
         if ($function->name->getParts() === ['enum_exists']
@@ -513,21 +518,7 @@ final class ExpressionResolver
                 $string_value = (string) $function->getArgs()[0]->value->class->getAttribute('resolvedName');
             }
 
-            // We're using class_exists here because enum_exists doesn't exist on old versions of PHP
-            // Not sure what happens if we try to autoload or reflect on an enum on an old version of PHP though...
-            if ($string_value && class_exists($string_value)) {
-                $reflection_class = new ReflectionClass($string_value);
-
-                if ($reflection_class->getFileName() !== $file_path) {
-                    $codebase->scanner->queueClassLikeForScanning(
-                        $string_value,
-                    );
-
-                    return true;
-                }
-            }
-
-            return false;
+            return self::isDefinedElsewhere($codebase, $string_value, $file_path, 'enum');
         }
 
         if ($function->name->getParts() === ['defined']
@@ -544,5 +535,106 @@ final class ExpressionResolver
         }
 
         return null;
+    }
+
+    /**
+     * Whether the class, interface or enum is defined by something other than the file being scanned: a symbol
+     * Psalm's own process has loaded, or one Composer finds a file for that declares it with the guarded kind.
+     * The autoloader is never run, as it would execute the analyzed code (and any `exit` of it).
+     *
+     * @param 'class'|'interface'|'enum' $kind
+     */
+    private static function isDefinedElsewhere(
+        Codebase $codebase,
+        ?string $name,
+        string $file_path,
+        string $kind,
+    ): bool {
+        $name = $name === null ? '' : ltrim($name, '\\');
+
+        if ($name === '') {
+            return false;
+        }
+
+        // class_exists() is also true for enums, but not for interfaces and traits
+        if ($kind === 'interface'
+            ? interface_exists($name, false)
+            : ($kind === 'enum' ? enum_exists($name, false) : class_exists($name, false))
+        ) {
+            /** @var class-string $name */
+            $defining_file = (new ReflectionClass($name))->getFileName();
+        } else {
+            $defining_file = $codebase->config->getComposerFilePathForClassLike($name);
+
+            if ($defining_file === false || !self::fileDeclaresKind($defining_file, $name, $kind)) {
+                return false;
+            }
+        }
+
+        if ($defining_file === $file_path) {
+            return false;
+        }
+
+        $codebase->scanner->queueClassLikeForScanning($name);
+
+        return true;
+    }
+
+    /**
+     * Composer's class map only says which file defines a name, so the declaration keyword is read from the file.
+     * A file whose declaration can't be found is taken to match.
+     *
+     * @param 'class'|'interface'|'enum' $kind
+     */
+    private static function fileDeclaresKind(string $file_path, string $name, string $kind): bool
+    {
+        $contents = @file_get_contents($file_path);
+
+        if ($contents === false) {
+            return true;
+        }
+
+        $short_name = strtolower(($pos = strrpos($name, '\\')) === false ? $name : substr($name, $pos + 1));
+
+        $declaration_tokens = [T_CLASS => 'class', T_INTERFACE => 'interface', T_TRAIT => 'trait'];
+
+        if (defined('T_ENUM')) {
+            $declaration_tokens[constant('T_ENUM')] = 'enum';
+        }
+
+        $declared = null;
+        $previous = null;
+        $keyword = null;
+
+        foreach (token_get_all($contents) as $token) {
+            if (is_array($token) && in_array($token[0], [T_WHITESPACE, T_COMMENT, T_DOC_COMMENT], true)) {
+                continue;
+            }
+
+            if ($keyword !== null) {
+                if (is_array($token) && $token[0] === T_STRING && strtolower($token[1]) === $short_name) {
+                    $declared = $keyword;
+                    break;
+                }
+
+                $keyword = null;
+            }
+
+            // `Foo::class` and `new class` are not declarations
+            if (is_array($token)
+                && isset($declaration_tokens[$token[0]])
+                && !($previous !== null && ($previous === T_DOUBLE_COLON || $previous === T_NEW))
+            ) {
+                $keyword = $declaration_tokens[$token[0]];
+            }
+
+            $previous = is_array($token) ? $token[0] : null;
+        }
+
+        if ($declared === null) {
+            return true;
+        }
+
+        return $kind === 'class' ? ($declared === 'class' || $declared === 'enum') : $declared === $kind;
     }
 }
