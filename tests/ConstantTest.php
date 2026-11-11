@@ -3032,7 +3032,7 @@ final class ConstantTest extends TestCase
 
                     /** @param int-mask<NO_SUCH_CONSTANT> $flags */
                     function encode(int $flags): void {}',
-                'error_message' => 'UndefinedConstant - src/somefile.php:4:32 - Const NO_SUCH_CONSTANT is not defined',
+                'error_message' => 'UndefinedConstant - src' . DIRECTORY_SEPARATOR . 'somefile.php:4:32 - Const NO_SUCH_CONSTANT is not defined',
             ],
             'intMaskWithUndefinedGlobalConstantInPropertyType' => [
                 'code' => '<?php
@@ -3042,7 +3042,7 @@ final class ConstantTest extends TestCase
                         /** @var int-mask<NO_SUCH_CONSTANT> */
                         public int $flags = 0;
                     }',
-                'error_message' => 'UndefinedConstant - src/somefile.php:5:34 - Const NO_SUCH_CONSTANT is not defined',
+                'error_message' => 'UndefinedConstant - src' . DIRECTORY_SEPARATOR . 'somefile.php:5:34 - Const NO_SUCH_CONSTANT is not defined',
             ],
             'intMaskWithNonIntGlobalConstant' => [
                 'code' => '<?php
@@ -3052,7 +3052,7 @@ final class ConstantTest extends TestCase
 
                     /** @param int-mask<MODE> $flags */
                     function encode(int $flags): void {}',
-                'error_message' => 'InvalidDocblock - src/somefile.php:6:32 - int-mask types must all be integer values, MODE is',
+                'error_message' => 'InvalidDocblock - src' . DIRECTORY_SEPARATOR . 'somefile.php:6:32 - int-mask types must all be integer values, MODE is',
             ],
             'globalConstantWildcardBadValue' => [
                 'code' => '<?php
