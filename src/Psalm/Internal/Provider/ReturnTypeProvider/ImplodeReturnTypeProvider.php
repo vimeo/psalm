@@ -33,7 +33,6 @@ use function implode;
  * A non-falsy piece, or a non-falsy separator between two pieces, makes it a non-falsy string
  *
  * @internal
- * @psalm-immutable
  */
 final class ImplodeReturnTypeProvider implements FunctionReturnTypeProviderInterface
 {
@@ -47,9 +46,6 @@ final class ImplodeReturnTypeProvider implements FunctionReturnTypeProviderInter
         return ['implode', 'join'];
     }
 
-    /**
-     * @psalm-mutation-free
-     */
     #[Override]
     public static function getFunctionReturnType(FunctionReturnTypeProviderEvent $event): ?Union
     {
@@ -119,7 +115,11 @@ final class ImplodeReturnTypeProvider implements FunctionReturnTypeProviderInter
             // a non-falsy result of known literals is that literal: a literal string is not a non-falsy one otherwise
             $joined = $is_non_falsy ? self::joinLiterals($separator_type, $array_type) : null;
 
-            return new Union([$joined !== null ? new TLiteralString($joined) : new TNonEmptyNonspecificLiteralString()]);
+            return new Union([
+                $joined !== null
+                    ? Type::getAtomicStringFromLiteral($joined)
+                    : new TNonEmptyNonspecificLiteralString(),
+            ]);
         }
 
         return $is_non_falsy ? Type::getNonFalsyString() : Type::getNonEmptyString();
