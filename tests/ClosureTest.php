@@ -14,7 +14,6 @@ use Psalm\Tests\Traits\ValidCodeAnalysisTestTrait;
 
 use function array_column;
 use function array_filter;
-use function count;
 
 use const DIRECTORY_SEPARATOR;
 
@@ -53,12 +52,12 @@ final class ClosureTest extends TestCase
         $this->analyzeFile($file_path, new Context());
 
         // the closure is analysed again with the type it leaves behind: one report for the mixed `$labels`
-        self::assertSame(
+        self::assertCount(
             1,
-            count(array_filter(
+            array_filter(
                 IssueBuffer::getIssuesDataForFile($file_path),
                 static fn(IssueData $issue): bool => $issue->type === 'MixedArgument' && $issue->line_from === 8,
-            )),
+            ),
         );
     }
 
