@@ -282,7 +282,7 @@ final class CloneAnalyzer
                             $codebase,
                             $context,
                             $clone_method_id,
-                            $statements_analyzer->getNamespace(),
+                            $statements_analyzer->getFullyQualifiedFunctionMethodOrNamespaceName(),
                             $location,
                             $statements_analyzer->getSuppressedIssues(),
                         );
