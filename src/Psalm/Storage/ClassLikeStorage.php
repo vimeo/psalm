@@ -286,6 +286,20 @@ final class ClassLikeStorage implements HasAttributesInterface
      */
     public array $pseudo_static_methods = [];
 
+    /**
+     * Every `@method` of a name declared more than once, in the order of the docblock
+     *
+     * @var array<lowercase-string, non-empty-list<MethodStorage>>
+     */
+    public array $pseudo_method_overloads = [];
+
+    /**
+     * Same as $pseudo_method_overloads, for the static `@method`s
+     *
+     * @var array<lowercase-string, non-empty-list<MethodStorage>>
+     */
+    public array $pseudo_static_method_overloads = [];
+
     public bool $has_children = false;
 
     /**
