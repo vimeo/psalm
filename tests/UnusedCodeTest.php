@@ -519,82 +519,27 @@ final class UnusedCodeTest extends TestCase
     public static function providerValidCodeParse(): array
     {
         return [
-            'assignmentInABranchThatBreaksIsSeenAfterTheLoop' => [
+            'preIncrementAsArrayAssignmentKey' => [
                 'code' => '<?php
-                    function test(bool $b): string {
-                        $test = "test";
+                    /** @psalm-api */
+                    function f(): array {
+                        $row = 1;
+                        $array = [];
+                        $array[$row] = "1";
+                        $array[++$row] = "2";
+                        $array[++$row] = "3";
 
-                        foreach ([1, 2] as $_) {
-                            try {
-                                if ($b) {
-                                    $test = "broke";
-                                    break;
-                                }
-                            } catch (Exception $e) {
-                            }
-                        }
-
-                        return $test;
-                    }
-
-                    echo test(true);',
+                        return $array;
+                    }',
             ],
-            'assignmentInABranchThatThrowsIsSeenAfterTheCatch' => [
+            'preDecrementAsArrayLiteralKey' => [
                 'code' => '<?php
-                    function test(bool $b): string {
-                        $test = "test";
+                    /** @psalm-api */
+                    function f(): array {
+                        $i = 3;
 
-                        try {
-                            if ($b) {
-                                $test .= " true";
-                                throw new Exception();
-                            }
-                        } catch (Exception $e) {
-                        }
-
-                        return $test . "\n";
-                    }
-
-                    echo test(false);
-                    echo test(true);',
-            ],
-            'assignmentInABranchThatThrowsIsSeenInTheCatch' => [
-                'code' => '<?php
-                    function test(bool $b): void {
-                        $test = "test";
-
-                        try {
-                            if ($b) {
-                                $test = "thrown";
-                                throw new Exception();
-                            }
-                        } catch (Exception $e) {
-                            echo $test;
-                        }
-                    }
-
-                    test(true);',
-            ],
-            'assignmentInABranchThatThrowsInANestedTryIsSeenAfterTheOuterTry' => [
-                'code' => '<?php
-                    function test(bool $b): string {
-                        $test = "test";
-
-                        try {
-                            try {
-                                if ($b) {
-                                    $test = "thrown";
-                                    throw new Exception();
-                                }
-                            } catch (InvalidArgumentException $e) {
-                            }
-                        } catch (Exception $e) {
-                        }
-
-                        return $test;
-                    }
-
-                    echo test(true);',
+                        return [--$i => 1];
+                    }',
             ],
             'classExistsGuardedStaticFirstClassCallable' => [
                 'code' => '<?php
@@ -2483,6 +2428,83 @@ final class UnusedCodeTest extends TestCase
                     (new Base())->run();
                     (new Child())->other();',
             ],
+            'assignmentInABranchThatBreaksIsSeenAfterTheLoop' => [
+                'code' => '<?php
+                    function test(bool $b): string {
+                        $test = "test";
+
+                        foreach ([1, 2] as $_) {
+                            try {
+                                if ($b) {
+                                    $test = "broke";
+                                    break;
+                                }
+                            } catch (Exception $e) {
+                            }
+                        }
+
+                        return $test;
+                    }
+
+                    echo test(true);',
+            ],
+            'assignmentInABranchThatThrowsIsSeenAfterTheCatch' => [
+                'code' => '<?php
+                    function test(bool $b): string {
+                        $test = "test";
+
+                        try {
+                            if ($b) {
+                                $test .= " true";
+                                throw new Exception();
+                            }
+                        } catch (Exception $e) {
+                        }
+
+                        return $test . "\n";
+                    }
+
+                    echo test(false);
+                    echo test(true);',
+            ],
+            'assignmentInABranchThatThrowsIsSeenInTheCatch' => [
+                'code' => '<?php
+                    function test(bool $b): void {
+                        $test = "test";
+
+                        try {
+                            if ($b) {
+                                $test = "thrown";
+                                throw new Exception();
+                            }
+                        } catch (Exception $e) {
+                            echo $test;
+                        }
+                    }
+
+                    test(true);',
+            ],
+            'assignmentInABranchThatThrowsInANestedTryIsSeenAfterTheOuterTry' => [
+                'code' => '<?php
+                    function test(bool $b): string {
+                        $test = "test";
+
+                        try {
+                            try {
+                                if ($b) {
+                                    $test = "thrown";
+                                    throw new Exception();
+                                }
+                            } catch (InvalidArgumentException $e) {
+                            }
+                        } catch (Exception $e) {
+                        }
+
+                        return $test;
+                    }
+
+                    echo test(true);',
+            ],
         ];
     }
 
@@ -2493,139 +2515,24 @@ final class UnusedCodeTest extends TestCase
     public static function providerInvalidCodeParse(): array
     {
         return [
-            'assignmentBeforeAnUncaughtThrowInATryFinallyIsNotSeenAfterTheTry' => [
+            'postIncrementAsArrayKeyIsAnUnusedAssignment' => [
                 'code' => '<?php
-                    function test(bool $b): string {
-                        $test = "test";
+                    /** @psalm-api */
+                    function f(): array {
+                        $i = 0;
 
-                        try {
-                            if ($b) {
-                                $test = "thrown";
-                                throw new RuntimeException();
-                            }
-                        } finally {
-                            echo "done";
-                        }
-
-                        return $test;
-                    }
-
-                    echo test(true);',
+                        return [$i++ => 1];
+                    }',
                 'error_message' => 'UnusedVariable',
-                'error_levels' => [],
             ],
-            'assignmentBeforeAThrowThatNoCatchTakesIsNotSeenAfterTheTry' => [
+            'preIncrementStatementIsAnUnusedAssignment' => [
                 'code' => '<?php
-                    function test(bool $b): string {
-                        $test = "test";
-
-                        try {
-                            if ($b) {
-                                $test = "thrown";
-                                throw new RuntimeException();
-                            }
-                        } catch (LogicException $e) {
-                        }
-
-                        return $test;
-                    }
-
-                    echo test(true);',
+                    /** @psalm-api */
+                    function f(): void {
+                        $i = 0;
+                        ++$i;
+                    }',
                 'error_message' => 'UnusedVariable',
-                'error_levels' => [],
-            ],
-            'assignmentBeforeAThrowThatOnlyTheOuterTryCatchesIsNotSeenAfterTheInnerTry' => [
-                'code' => '<?php
-                    function test(bool $b): string {
-                        $test = "test";
-
-                        try {
-                            try {
-                                if ($b) {
-                                    $test = "thrown";
-                                    throw new RuntimeException();
-                                }
-                            } catch (LogicException $e) {
-                            }
-
-                            return $test;
-                        } catch (RuntimeException $e) {
-                            return "caught";
-                        }
-                    }
-
-                    echo test(true);',
-                'error_message' => 'UnusedVariable',
-                'error_levels' => [],
-            ],
-            'assignmentInABranchThatReturnsIsNotSeenAfterTheTry' => [
-                'code' => '<?php
-                    function test(bool $b): string {
-                        $test = "test";
-
-                        try {
-                            if ($b) {
-                                $test = "returned";
-                                return "early";
-                            }
-                        } catch (Exception $e) {
-                        }
-
-                        return $test;
-                    }
-
-                    echo test(true);',
-                'error_message' => 'UnusedVariable',
-                'error_levels' => [],
-            ],
-            'assignmentInABranchThatReturnsAndOneThatThrowsInTheSameTry' => [
-                'code' => '<?php
-                    function test(int $b): string {
-                        $test = "test";
-
-                        try {
-                            if ($b === 1) {
-                                $test = "returned";
-                                return "early";
-                            }
-
-                            if ($b === 2) {
-                                $test = "thrown";
-                                throw new Exception();
-                            }
-                        } catch (Exception $e) {
-                        }
-
-                        $test = "done";
-
-                        return $test;
-                    }
-
-                    echo test(1);',
-                'error_message' => 'UnusedVariable',
-                'error_levels' => [],
-            ],
-            'assignmentInABranchThatThrowsIsOverwrittenAfterTheTry' => [
-                'code' => '<?php
-                    function test(bool $b): string {
-                        $test = "test";
-
-                        try {
-                            if ($b) {
-                                $test = "thrown";
-                                throw new Exception();
-                            }
-                        } catch (Exception $e) {
-                        }
-
-                        $test = "done";
-
-                        return $test;
-                    }
-
-                    echo test(true);',
-                'error_message' => 'UnusedVariable',
-                'error_levels' => [],
             ],
             'undefinedClassStaticFirstClassCallable' => [
                 'code' => '<?php
@@ -3688,6 +3595,140 @@ final class UnusedCodeTest extends TestCase
 
                     (new Factory())->run();',
                 'error_message' => 'Cannot find any calls to method Factory::__callStatic',
+            ],
+            'assignmentBeforeAnUncaughtThrowInATryFinallyIsNotSeenAfterTheTry' => [
+                'code' => '<?php
+                    function test(bool $b): string {
+                        $test = "test";
+
+                        try {
+                            if ($b) {
+                                $test = "thrown";
+                                throw new RuntimeException();
+                            }
+                        } finally {
+                            echo "done";
+                        }
+
+                        return $test;
+                    }
+
+                    echo test(true);',
+                'error_message' => 'UnusedVariable',
+                'error_levels' => [],
+            ],
+            'assignmentBeforeAThrowThatNoCatchTakesIsNotSeenAfterTheTry' => [
+                'code' => '<?php
+                    function test(bool $b): string {
+                        $test = "test";
+
+                        try {
+                            if ($b) {
+                                $test = "thrown";
+                                throw new RuntimeException();
+                            }
+                        } catch (LogicException $e) {
+                        }
+
+                        return $test;
+                    }
+
+                    echo test(true);',
+                'error_message' => 'UnusedVariable',
+                'error_levels' => [],
+            ],
+            'assignmentBeforeAThrowThatOnlyTheOuterTryCatchesIsNotSeenAfterTheInnerTry' => [
+                'code' => '<?php
+                    function test(bool $b): string {
+                        $test = "test";
+
+                        try {
+                            try {
+                                if ($b) {
+                                    $test = "thrown";
+                                    throw new RuntimeException();
+                                }
+                            } catch (LogicException $e) {
+                            }
+
+                            return $test;
+                        } catch (RuntimeException $e) {
+                            return "caught";
+                        }
+                    }
+
+                    echo test(true);',
+                'error_message' => 'UnusedVariable',
+                'error_levels' => [],
+            ],
+            'assignmentInABranchThatReturnsIsNotSeenAfterTheTry' => [
+                'code' => '<?php
+                    function test(bool $b): string {
+                        $test = "test";
+
+                        try {
+                            if ($b) {
+                                $test = "returned";
+                                return "early";
+                            }
+                        } catch (Exception $e) {
+                        }
+
+                        return $test;
+                    }
+
+                    echo test(true);',
+                'error_message' => 'UnusedVariable',
+                'error_levels' => [],
+            ],
+            'assignmentInABranchThatReturnsAndOneThatThrowsInTheSameTry' => [
+                'code' => '<?php
+                    function test(int $b): string {
+                        $test = "test";
+
+                        try {
+                            if ($b === 1) {
+                                $test = "returned";
+                                return "early";
+                            }
+
+                            if ($b === 2) {
+                                $test = "thrown";
+                                throw new Exception();
+                            }
+                        } catch (Exception $e) {
+                        }
+
+                        $test = "done";
+
+                        return $test;
+                    }
+
+                    echo test(1);',
+                'error_message' => 'UnusedVariable',
+                'error_levels' => [],
+            ],
+            'assignmentInABranchThatThrowsIsOverwrittenAfterTheTry' => [
+                'code' => '<?php
+                    function test(bool $b): string {
+                        $test = "test";
+
+                        try {
+                            if ($b) {
+                                $test = "thrown";
+                                throw new Exception();
+                            }
+                        } catch (Exception $e) {
+                        }
+
+                        $test = "done";
+
+                        return $test;
+                    }
+
+                    echo test(true);',
+                'error_message' => 'UnusedVariable',
+                'error_levels' => [],
             ],
         ];
     }
