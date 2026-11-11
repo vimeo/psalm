@@ -50,6 +50,7 @@
         <xs:attribute name="strictOptionalCallableParams" type="xs:boolean" default="false" />
         <xs:attribute name="ensureOverrideAttribute" type="xs:boolean" default="true" />
         <xs:attribute name="suggestPurityAnnotations" type="xs:boolean" default="false" />
+        <xs:attribute name="assumeGettersMutationFree" type="xs:boolean" default="true" />
         <xs:attribute name="findUnusedCode" type="xs:boolean" default="true" />
         <xs:attribute name="disallowLiteralKeysOnUnshapedArrays" type="xs:boolean" default="false" />
         <xs:attribute name="allFunctionsGlobal" type="xs:boolean" default="false" />
