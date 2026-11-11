@@ -1710,6 +1710,27 @@ final class TypeParseTest extends TestCase
         Type::parseString('int-mask<A::*>');
     }
 
+    public function testIntMaskWithGenericObject(): void
+    {
+        $this->expectException(TypeParseTreeException::class);
+
+        Type::parseString('int-mask<MY_FLAG<int>>');
+    }
+
+    public function testIntMaskWithIntersectionOfNames(): void
+    {
+        $this->expectException(TypeParseTreeException::class);
+
+        Type::parseString('int-mask<MY_FLAG&MY_OTHER_FLAG>');
+    }
+
+    public function testIntMaskWithGlobalConstantWildcard(): void
+    {
+        $this->expectException(TypeParseTreeException::class);
+
+        Type::parseString('int-mask<PHP_URL_*>');
+    }
+
     public function testIntMaskOfWithValidClassConstant(): void
     {
         $docblock_type = Type::parseString('int-mask-of<A::*>');

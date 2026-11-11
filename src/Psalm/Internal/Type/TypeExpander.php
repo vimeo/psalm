@@ -345,14 +345,7 @@ final class TypeExpander
 
         if ($return_type instanceof TGlobalConstant) {
             if ($evaluate_class_constants) {
-                $const_types = ConstFetchAnalyzer::getGlobalConstTypesByWildcard($codebase, $return_type->const_name);
-
-                if ($const_types === [] && $return_type->fallback_const_name !== null) {
-                    $const_types = ConstFetchAnalyzer::getGlobalConstTypesByWildcard(
-                        $codebase,
-                        $return_type->fallback_const_name,
-                    );
-                }
+                $const_types = ConstFetchAnalyzer::getGlobalConstTypesByType($codebase, $return_type);
 
                 $const_atomic_types = [];
 

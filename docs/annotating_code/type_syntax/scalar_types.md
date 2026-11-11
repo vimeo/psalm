@@ -25,6 +25,17 @@ Examples:
 
 Represents the type that is the result of a bitmask combination of its parameters.  
 `int-mask<1, 2, 4>` corresponds to `0|1|2|3|4|5|6|7`.  
+The parameters may also be integer constants (built-in, defined in your code, or class constants such as `Flag::A`). In a namespace, an unqualified constant name resolves as in PHP: to the constant of the namespace if there is one, otherwise to the global constant. Constants imported with `use const` are not supported yet, so name them fully qualified instead.
+
+```php
+<?php
+namespace App;
+
+final class Encoder {
+    /** @param int-mask<JSON_PRETTY_PRINT, JSON_UNESCAPED_SLASHES> $flags */
+    public function encode(int $flags = 0): void {}
+}
+```
 
 ## int-mask-of&lt;MyClass::CLASS_CONSTANT_*&gt;
 

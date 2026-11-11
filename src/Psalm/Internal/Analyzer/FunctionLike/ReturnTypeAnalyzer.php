@@ -866,7 +866,7 @@ final class ReturnTypeAnalyzer
             return null;
         }
 
-        TypeChecker::checkDeferredIntersections(
+        TypeChecker::checkDeferredTypes(
             $storage->return_type,
             $function_like_analyzer,
             $storage->return_type_location,

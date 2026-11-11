@@ -1358,6 +1358,61 @@ final class ConstantTest extends TestCase
                     A::foo(2);
                     A::foo(3);',
             ],
+            'intMaskWithUnqualifiedGlobalConstantsInNamespace' => [
+                'code' => '<?php
+                    namespace App;
+
+                    final class Encoder {
+                        /** @param int-mask<JSON_PRETTY_PRINT, JSON_UNESCAPED_SLASHES> $flags */
+                        public function encode(int $flags = 0): void {
+                            /** @psalm-check-type-exact $flags = 0|64|128|192 */;
+                        }
+
+                        /** @param int-mask<\JSON_PRETTY_PRINT, \JSON_UNESCAPED_SLASHES> $flags */
+                        public function encodeQualified(int $flags = 0): void {
+                            /** @psalm-check-type-exact $flags = 0|64|128|192 */;
+                        }
+                    }',
+            ],
+            'intMaskWithConstantsOfTheNamespace' => [
+                'code' => '<?php
+                    namespace Lib;
+
+                    const READ = 1;
+                    const WRITE = 4;
+                    const JSON_PRETTY_PRINT = 3;
+
+                    /** @return int-mask<READ, WRITE> */
+                    function mode(): int { return 0; }
+
+                    /** @return int-mask<JSON_PRETTY_PRINT> */
+                    function shadowed(): int { return 0; }
+
+                    /** @return int-mask<\JSON_PRETTY_PRINT> */
+                    function unshadowed(): int { return 0; }
+
+                    $a = mode();
+                    $b = shadowed();
+                    $c = unshadowed();',
+                'assertions' => [
+                    '$a===' => '0|1|4|5',
+                    '$b===' => '0|3',
+                    '$c===' => '0|128',
+                ],
+            ],
+            'intMaskWithGlobalConstantsOfTheCodebase' => [
+                'code' => '<?php
+                    const MY_A = 1;
+                    define("MY_B", 2);
+
+                    /** @return int-mask<MY_A, MY_B> */
+                    function f(): int { return 0; }
+
+                    $a = f();',
+                'assertions' => [
+                    '$a===' => '0|1|2|3',
+                ],
+            ],
             'globalConstantWildcard' => [
                 'code' => '<?php
                     namespace Ns;
@@ -2677,6 +2732,24 @@ final class ConstantTest extends TestCase
 
                     A::foo(A::D_4);',
                 'error_message' => 'InvalidArgument',
+            ],
+            'intMaskWithUndefinedGlobalConstant' => [
+                'code' => '<?php
+                    namespace App;
+
+                    /** @param int-mask<NO_SUCH_CONSTANT> $flags */
+                    function encode(int $flags): void {}',
+                'error_message' => 'UndefinedConstant - src/somefile.php:4:32 - Const NO_SUCH_CONSTANT is not defined',
+            ],
+            'intMaskWithNonIntGlobalConstant' => [
+                'code' => '<?php
+                    namespace App;
+
+                    const MODE = "r";
+
+                    /** @param int-mask<MODE> $flags */
+                    function encode(int $flags): void {}',
+                'error_message' => 'InvalidDocblock - src/somefile.php:6:32 - int-mask types must all be integer values, MODE is',
             ],
             'globalConstantWildcardBadValue' => [
                 'code' => '<?php

@@ -23,6 +23,7 @@ use Psalm\Issue\UndefinedConstant;
 use Psalm\IssueBuffer;
 use Psalm\Plugin\EventHandler\Event\AddRemoveTaintsEvent;
 use Psalm\Type;
+use Psalm\Type\Atomic\TGlobalConstant;
 use Psalm\Type\Union;
 use ReflectionProperty;
 
@@ -259,7 +260,7 @@ final class ConstFetchAnalyzer
     }
 
     /**
-     * The types of the global constants whose names match a wildcard (`PHP_URL_*`), by name
+     * The types of the global constants whose names match a wildcard (`PHP_URL_*`) or an exact name, by name
      *
      * @return array<string, Union>
      */
@@ -267,6 +268,23 @@ final class ConstFetchAnalyzer
     {
         return $codebase->global_constant_types_by_wildcard[$pattern]
             ??= self::findGlobalConstTypesByWildcard($codebase, $pattern);
+    }
+
+    /**
+     * The types of the global constants a type refers to, by name: those of its namespace, or else the global
+     * constants an unqualified name falls back to, as in PHP
+     *
+     * @return array<string, Union>
+     */
+    public static function getGlobalConstTypesByType(Codebase $codebase, TGlobalConstant $type): array
+    {
+        $const_types = self::getGlobalConstTypesByWildcard($codebase, $type->const_name);
+
+        if ($const_types === [] && $type->fallback_const_name !== null) {
+            $const_types = self::getGlobalConstTypesByWildcard($codebase, $type->fallback_const_name);
+        }
+
+        return $const_types;
     }
 
     /**

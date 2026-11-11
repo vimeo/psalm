@@ -1744,7 +1744,7 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
                 $param_type = $function_param->type;
 
                 if ($function_param->type_location) {
-                    TypeChecker::checkDeferredIntersections(
+                    TypeChecker::checkDeferredTypes(
                         $param_type,
                         $this,
                         $function_param->type_location,

@@ -39,6 +39,7 @@ use Psalm\Type\Atomic;
 use Psalm\Type\Atomic\TClassConstant;
 use Psalm\Type\Atomic\TGenericObject;
 use Psalm\Type\Atomic\TGlobalConstant;
+use Psalm\Type\Atomic\TIntMask;
 use Psalm\Type\Atomic\TIntersection;
 use Psalm\Type\Atomic\TNamedObject;
 use Psalm\Type\Atomic\TResource;
@@ -57,6 +58,7 @@ use function array_slice;
 use function array_values;
 use function count;
 use function explode;
+use function reset;
 use function str_contains;
 use function str_starts_with;
 use function strtolower;
@@ -148,6 +150,8 @@ final class TypeChecker extends TypeVisitor
             $this->checkResource($type);
         } elseif ($type instanceof TIntersection) {
             $this->checkIntersection($type);
+        } elseif ($type instanceof TIntMask) {
+            $this->checkIntMask($type);
         }
 
         /** @psalm-suppress InaccessibleProperty Doesn't affect anything else */
@@ -495,24 +499,60 @@ final class TypeChecker extends TypeVisitor
 
     private function checkGlobalConstant(TGlobalConstant $atomic): void
     {
-        $codebase = $this->source->getCodebase();
-
-        if (ConstFetchAnalyzer::getGlobalConstTypesByWildcard($codebase, $atomic->const_name) !== []
-            || ($atomic->fallback_const_name !== null
-                && ConstFetchAnalyzer::getGlobalConstTypesByWildcard($codebase, $atomic->fallback_const_name) !== [])
-        ) {
+        if (ConstFetchAnalyzer::getGlobalConstTypesByType($this->source->getCodebase(), $atomic) !== []) {
             return;
         }
 
         $this->has_errors = true;
 
+        $const_name = $atomic->fallback_const_name ?? $atomic->const_name;
+
         IssueBuffer::maybeAdd(
             new UndefinedConstant(
-                'No constant matches ' . ($atomic->fallback_const_name ?? $atomic->const_name),
+                str_contains($const_name, '*')
+                    ? 'No constant matches ' . $const_name
+                    : 'Const ' . $const_name . ' is not defined',
                 $this->code_location,
             ),
             $this->source->getSuppressedIssues(),
         );
+    }
+
+    /**
+     * Checks the global constants of an int-mask, deferred until the constants of the codebase are known: expanding
+     * the type replaces the int-mask with the ints it may be, so that checking the expanded type doesn't check them
+     */
+    private function checkIntMask(TIntMask $atomic): void
+    {
+        $codebase = $this->source->getCodebase();
+
+        foreach ($atomic->values as $value) {
+            if (!$value instanceof TGlobalConstant) {
+                continue;
+            }
+
+            $const_types = ConstFetchAnalyzer::getGlobalConstTypesByType($codebase, $value);
+
+            if ($const_types === []) {
+                $this->checkGlobalConstant($value);
+                continue;
+            }
+
+            $const_type = reset($const_types);
+
+            if (!$const_type->hasInt() && !$const_type->hasMixed()) {
+                $this->has_errors = true;
+
+                IssueBuffer::maybeAdd(
+                    new InvalidDocblock(
+                        'int-mask types must all be integer values, '
+                            . ($value->fallback_const_name ?? $value->const_name) . ' is ' . $const_type->getId(),
+                        $this->code_location,
+                    ),
+                    $this->suppressed_issues,
+                );
+            }
+        }
     }
 
     public function checkTemplateParam(TTemplateParam $atomic): void
@@ -557,25 +597,26 @@ final class TypeChecker extends TypeVisitor
     }
 
     /**
-     * Checks the intersections of a declared type that were deferred until the class constants and type aliases they
-     * refer to are known: expanding the type replaces them, so that checking the expanded type doesn't check them
+     * Checks the parts of a declared type that were deferred until the class constants, global constants and type
+     * aliases they refer to are known (intersections, int-masks of global constants): expanding the type replaces
+     * them, so that checking the expanded type doesn't check them
      *
      * @param array<string> $suppressed_issues
      * @psalm-capabilities read-props
      */
-    public static function checkDeferredIntersections(
+    public static function checkDeferredTypes(
         Union $type,
         StatementsSource $source,
         CodeLocation $code_location,
         array $suppressed_issues,
         ?Context $context = null,
     ): void {
-        $collector = new DeferredIntersectionCollector();
+        $collector = new DeferredTypeCollector();
         $collector->traverseArray($type->getAtomicTypes());
 
-        foreach ($collector->getIntersections() as $intersection) {
+        foreach ($collector->getTypes() as $deferred_type) {
             (new self($source, $code_location, $suppressed_issues, [], false, false, false, $context))
-                ->traverse($intersection);
+                ->traverse($deferred_type);
         }
     }
 
