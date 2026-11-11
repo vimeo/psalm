@@ -485,6 +485,15 @@ final class ClassLikeNodeScanner
                                 continue;
                             }
 
+                            // a class named only in the bound (`@template TArr of array{a: stdClass}`) is read where
+                            // the template is read through its bound
+                            /** @psalm-suppress UnusedMethodCall */
+                            $template_type->queueClassLikesForScanning(
+                                $this->codebase,
+                                $this->file_storage,
+                                $storage->template_types ?: [],
+                            );
+
                             $storage->template_types[$template_name] = [
                                 $fq_classlike_name => $template_type,
                             ];
