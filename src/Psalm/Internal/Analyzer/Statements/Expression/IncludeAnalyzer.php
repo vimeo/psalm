@@ -16,13 +16,18 @@ use Psalm\Internal\Analyzer\Statements\ExpressionAnalyzer;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\Internal\DataFlow\DataFlowNode;
 use Psalm\Internal\Provider\NodeDataProvider;
+use Psalm\Internal\Type\Comparator\UnionTypeComparator;
 use Psalm\Issue\MissingFile;
 use Psalm\Issue\UnresolvableInclude;
 use Psalm\IssueBuffer;
 use Psalm\Plugin\EventHandler\Event\AddRemoveTaintsEvent;
+use Psalm\Type\Atomic;
+use Psalm\Type\Atomic\TNamedObject;
 use Psalm\Type\TaintKind;
+use Psalm\Type\Union;
 use Symfony\Component\Filesystem\Path;
 
+use function array_map;
 use function constant;
 use function defined;
 use function dirname;
@@ -218,11 +223,31 @@ final class IncludeAnalyzer
                     $include_file_analyzer->addParentFilePath($parent_file_path);
                 }
 
+                $this_type = $context->vars_in_scope['$this'] ?? null;
+
                 try {
                     $include_file_analyzer->analyze(
                         $context,
                         $global_context,
                     );
+
+                    // the included code can't make `$this` another object: what it checks about it narrows the type
+                    // (`$this instanceof Child`), anything else is not what `$this` is
+                    if ($this_type !== null
+                        && isset($context->vars_in_scope['$this'])
+                        && !UnionTypeComparator::isContainedBy(
+                            $codebase,
+                            $context->vars_in_scope['$this'],
+                            new Union(array_map(
+                                static fn(Atomic $atomic): Atomic => $atomic instanceof TNamedObject
+                                    ? $atomic->setIsStatic(false)
+                                    : $atomic,
+                                $this_type->getAtomicTypes(),
+                            )),
+                        )
+                    ) {
+                        $context->vars_in_scope['$this'] = $this_type;
+                    }
                 } catch (UnpreparedAnalysisException) {
                     if ($config->skip_checks_on_unresolvable_includes) {
                         $context->check_classes = false;
@@ -252,7 +277,8 @@ final class IncludeAnalyzer
                 return true;
             }
 
-            $var_id = ExpressionIdentifier::getExtendedVarId($stmt->expr, null);
+            $var_id = ExpressionIdentifier::getExtendedVarId($stmt->expr, null)
+                ?? self::getConstantPhantomFileId($stmt->expr);
             if ($var_id && isset($context->phantom_files[$var_id])) {
                 return true;
             }
@@ -267,7 +293,8 @@ final class IncludeAnalyzer
                 $source->getSuppressedIssues(),
             );
         } else {
-            $var_id = ExpressionIdentifier::getExtendedVarId($stmt->expr, null);
+            $var_id = ExpressionIdentifier::getExtendedVarId($stmt->expr, null)
+                ?? self::getConstantPhantomFileId($stmt->expr);
 
             if (!$var_id || !isset($context->phantom_files[$var_id])) {
                 $source = $statements_analyzer->getSource();
@@ -484,5 +511,17 @@ final class IncludeAnalyzer
         }
 
         return $path_to_file;
+    }
+
+    /**
+     * The id under which a file named by a constant that file_exists() or is_file() checked is remembered
+     *
+     * @psalm-capabilities read-props
+     */
+    public static function getConstantPhantomFileId(PhpParser\Node\Expr $expr): ?string
+    {
+        return $expr instanceof PhpParser\Node\Expr\ConstFetch
+            ? 'const ' . $expr->name->toString()
+            : null;
     }
 }

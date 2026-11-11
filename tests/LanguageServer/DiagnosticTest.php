@@ -6,6 +6,7 @@ namespace Psalm\Tests\LanguageServer;
 
 use Amp\DeferredFuture;
 use Amp\TimeoutCancellation;
+use LanguageServerProtocol\ClientCapabilities;
 use Override;
 use Psalm\Codebase;
 use Psalm\Internal\Analyzer\IssueData;
@@ -29,7 +30,10 @@ use Psalm\Tests\TestConfig;
 use function Amp\delay;
 use function defined;
 use function getcwd;
+use function json_encode;
 use function rand;
+
+use const JSON_THROW_ON_ERROR;
 
 final class DiagnosticTest extends AsyncTestCase
 {
@@ -117,6 +121,86 @@ final class DiagnosticTest extends AsyncTestCase
         });
 
         $deferred->getFuture()->await(new TimeoutCancellation(5));
+    }
+
+    public function testTheCapabilitiesHaveNoNullField(): void
+    {
+        $server = new LanguageServer(
+            new MockProtocolStream(),
+            new MockProtocolStream(),
+            $this->project_analyzer,
+            $this->codebase,
+            new ClientConfiguration(),
+            new Progress,
+            new PathMapper((string) getcwd(), (string) getcwd()),
+        );
+
+        $result = json_encode($server->initialize(new ClientCapabilities()), JSON_THROW_ON_ERROR);
+
+        $this->assertStringContainsString('"hoverProvider":true', $result);
+        $this->assertStringNotContainsString('null', $result);
+    }
+
+    public function testADiagnosticHasNoNullField(): void
+    {
+        if (defined('PHP_WINDOWS_VERSION_MAJOR')) {
+            $this->markTestSkipped('Flaky on Windows');
+        }
+
+        $deferred = new DeferredFuture;
+
+        $this->codebase->config->throw_exception = false;
+
+        $clientConfiguration = new ClientConfiguration();
+        $clientConfiguration->onChangeDebounceMs = 100;
+        $clientConfiguration->provideDiagnostics = true;
+
+        $read = new MockProtocolStream();
+        $write = new MockProtocolStream();
+
+        $array = $this->generateInitializeRequest();
+        /** @psalm-suppress MixedArrayAssignment */
+        $array['params']['capabilities']['textDocument']['publishDiagnostics']['codeDescriptionSupport'] = true;
+        $read->write(new Message(MessageBody::parseArray($array)));
+        $array = $this->generateDidChangeRequest();
+        /** @psalm-suppress MixedArrayAssignment */
+        $array['params']['contentChanges'][0]['text'] = '<?php
+            class SomeClass
+            {
+                public function f(): void
+                {
+                    echo $undefined;
+                }
+            }';
+        $read->write(new Message(MessageBody::parseArray($array)));
+
+        $server = new LanguageServer(
+            $read,
+            $write,
+            $this->project_analyzer,
+            $this->codebase,
+            $clientConfiguration,
+            new Progress,
+            new PathMapper((string) getcwd(), (string) getcwd()),
+        );
+
+        $write->on('message', function (Message $message) use ($deferred): void {
+            /** @psalm-suppress PossiblyNullPropertyFetch,UndefinedPropertyFetch */
+            if ($message->body->method === 'textDocument/publishDiagnostics') {
+                $body = (string) $message->body;
+
+                $this->assertStringContainsString('UndefinedVariable', $body);
+                $this->assertStringContainsString('"codeDescription"', $body);
+                $this->assertStringNotContainsString('null', $body);
+                $deferred->complete(null);
+            }
+        });
+
+        delay(0.5); // Wait for debounce
+
+        $deferred->getFuture()->await(new TimeoutCancellation(5));
+
+        $this->assertTrue($server->client->clientConfiguration->provideDiagnostics);
     }
 
     public function testOnChangeDebounceMs(): void
