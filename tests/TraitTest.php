@@ -22,27 +22,45 @@ final class TraitTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
-            'anonymousClassUsingTheTraitThatCreatesIt' => [
-                'code' => '<?php
-                    class Operator {}
-
-                    interface SupportsOperator {
-                        public function operator(): Operator;
+            'selfReturnOfTraitMethodIsTheClassUsingTheTrait' => [
+                'code' => <<<'PHP'
+                    <?php
+                    interface SomeInterface
+                    {
+                        public function duplicate(): self;
                     }
 
-                    trait NestsOperatorTrait {
-                        public function operator(): Operator&SupportsOperator {
-                            return new class extends Operator implements SupportsOperator {
-                                use NestsOperatorTrait;
-                            };
+                    trait SomeTrait
+                    {
+                        public function duplicate(): self
+                        {
+                            return new self();
                         }
                     }
 
-                    final class NestingBuilder implements SupportsOperator {
-                        use NestsOperatorTrait;
+                    class Concrete implements SomeInterface
+                    {
+                        use SomeTrait;
                     }
 
-                    echo get_class((new NestingBuilder())->operator());',
+                    class ConcreteChild extends Concrete
+                    {
+                        public function duplicate(): self
+                        {
+                            return new self();
+                        }
+                    }
+
+                    class Other implements SomeInterface
+                    {
+                        use SomeTrait;
+
+                        public function duplicate(): self
+                        {
+                            return new self();
+                        }
+                    }
+                    PHP,
                 'assertions' => [],
                 'ignored_issues' => [],
                 'php_version' => '8.1',
@@ -1538,6 +1556,31 @@ final class TraitTest extends TestCase
 
                     test(function(string ...$args): void {});',
             ],
+            'anonymousClassUsingTheTraitThatCreatesIt' => [
+                'code' => '<?php
+                    class Operator {}
+
+                    interface SupportsOperator {
+                        public function operator(): Operator;
+                    }
+
+                    trait NestsOperatorTrait {
+                        public function operator(): Operator&SupportsOperator {
+                            return new class extends Operator implements SupportsOperator {
+                                use NestsOperatorTrait;
+                            };
+                        }
+                    }
+
+                    final class NestingBuilder implements SupportsOperator {
+                        use NestsOperatorTrait;
+                    }
+
+                    echo get_class((new NestingBuilder())->operator());',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
         ];
     }
 
@@ -1548,6 +1591,42 @@ final class TraitTest extends TestCase
     public static function providerInvalidCodeParse(): iterable
     {
         return [
+            'selfReturnOfTraitMethodRejectsTheParentOfTheClassUsingTheTrait' => [
+                'code' => <<<'PHP'
+                    <?php
+                    trait SomeTrait
+                    {
+                        public function duplicate(): self
+                        {
+                            return new self();
+                        }
+                    }
+
+                    class Concrete
+                    {
+                        use SomeTrait;
+                    }
+
+                    class ConcreteChild extends Concrete
+                    {
+                        public function duplicate(): self
+                        {
+                            return new self();
+                        }
+                    }
+
+                    class GrandChild extends ConcreteChild
+                    {
+                        public function duplicate(): Concrete
+                        {
+                            return new Concrete();
+                        }
+                    }
+                    PHP,
+                'error_message' => 'Method GrandChild::duplicate with return type',
+                'error_levels' => [],
+                'php_version' => '8.1',
+            ],
             'constructorCallsMethodOfNestedTraitThatDoesNotInitializeProperty' => [
                 'code' => '<?php
                     class MyClass {
