@@ -157,7 +157,20 @@ final class ArrayMapReturnTypeProvider implements FunctionReturnTypeProviderInte
         $array_arg_type = null;
 
         if ($array_arg_union_type = $statements_source->node_data->getType($array_arg->value)) {
-            $arg_types = $array_arg_union_type->getAtomicTypes();
+            // a template stands for its bound, which may overlap an atomic of the union (`array<string, int>|T`)
+            $expanded_arg_type = null;
+
+            foreach ($array_arg_union_type->getAtomicTypes() as $arg_atomic_type) {
+                $arg_type_part = $arg_atomic_type instanceof TTemplateParam
+                    ? $arg_atomic_type->as
+                    : new Union([$arg_atomic_type]);
+
+                $expanded_arg_type = $expanded_arg_type === null
+                    ? $arg_type_part
+                    : Type::combineUnionTypes($expanded_arg_type, $arg_type_part, $statements_source->getCodebase());
+            }
+
+            $arg_types = $expanded_arg_type->getAtomicTypes();
 
             if (isset($arg_types['array'])) {
                 $array_arg_atomic_type = $arg_types['array'];

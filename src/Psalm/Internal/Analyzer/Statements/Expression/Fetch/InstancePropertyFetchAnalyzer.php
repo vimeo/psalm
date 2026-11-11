@@ -28,13 +28,14 @@ use Psalm\Issue\UninitializedProperty;
 use Psalm\IssueBuffer;
 use Psalm\Storage\Capabilities;
 use Psalm\Type;
-use Psalm\Type\Atomic\TEnumCase;
 use Psalm\Type\Atomic\TNamedObject;
 use Psalm\Type\Atomic\TNull;
 use Psalm\Type\Atomic\TTemplateParam;
+use Psalm\Type\Union;
 
 use function array_merge;
 use function array_shift;
+use function array_values;
 use function rtrim;
 use function strtolower;
 
@@ -261,24 +262,11 @@ final class InstancePropertyFetchAnalyzer
         $has_valid_fetch_type = false;
 
         $var_atomic_types = $stmt_var_type->getAtomicTypes();
-        $reads_enum_cases = $prop_name === 'name' || $prop_name === 'value';
-        $analyzed_enums = [];
 
         while ($lhs_type_part = array_shift($var_atomic_types)) {
             if ($lhs_type_part instanceof TTemplateParam) {
                 $var_atomic_types = array_merge($var_atomic_types, $lhs_type_part->as->getAtomicTypes());
                 continue;
-            }
-
-            // the fetch on an enum reads the cases of every atomic of that enum in the receiver at once
-            if ($reads_enum_cases && $lhs_type_part instanceof TEnumCase) {
-                $enum_key = strtolower($lhs_type_part->value);
-
-                if (isset($analyzed_enums[$enum_key])) {
-                    continue;
-                }
-
-                $analyzed_enums[$enum_key] = true;
             }
 
             AtomicPropertyFetchAnalyzer::analyze(
@@ -353,11 +341,58 @@ final class InstancePropertyFetchAnalyzer
             }
         }
 
-        if ($var_id) {
+        // a fetch that was reported as a property of an interface does not make the property known: only isset() does
+        if ($var_id
+            && ($context->inside_isset
+                || !($stmt->name instanceof PhpParser\Node\Identifier
+                    && self::isUndeclaredInterfaceProperty($codebase, $stmt_var_type, $stmt->name->name)))
+        ) {
             $context->vars_in_scope[$var_id] = $statements_analyzer->node_data->getType($stmt) ?? Type::getMixed();
         }
 
         return true;
+    }
+
+    /**
+     * Whether the type is an interface, intersected only with interfaces, that none of declares the property
+     */
+    private static function isUndeclaredInterfaceProperty(
+        Codebase $codebase,
+        Union $object_type,
+        string $property_name,
+    ): bool {
+        foreach ($object_type->getAtomicTypes() as $atomic_type) {
+            if (!$atomic_type instanceof TNamedObject) {
+                continue;
+            }
+
+            $has_interface = false;
+            $declares_property = false;
+
+            foreach ([$atomic_type, ...array_values($atomic_type->getIntersectionTypes() ?: [])] as $part) {
+                if (!$part instanceof TNamedObject) {
+                    continue;
+                }
+
+                if ($codebase->classExists($part->value)) {
+                    $declares_property = true;
+                } elseif ($codebase->interfaceExists($part->value)) {
+                    $has_interface = true;
+
+                    if (isset($codebase->classlike_storage_provider->get($part->value)
+                        ->declaring_property_ids[$property_name])
+                    ) {
+                        $declares_property = true;
+                    }
+                }
+            }
+
+            if ($has_interface && !$declares_property) {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     private static function handleScopedProperty(
@@ -427,7 +462,7 @@ final class InstancePropertyFetchAnalyzer
                         && $context->vars_in_scope[$var_id]->isNullable()
                     )
                 ) {
-                    $stmt_type = $stmt_type->setProperties(['initialized' => true]);
+                    $stmt_type = $stmt_type->setProperties(['initialized' => true, 'ignore_isset' => true]);
                     $statements_analyzer->node_data->setType($stmt, $stmt_type);
                     $context->vars_in_scope[$var_id] = $stmt_type;
                 } else {
