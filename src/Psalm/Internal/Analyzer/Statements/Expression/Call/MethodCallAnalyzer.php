@@ -234,7 +234,12 @@ final class MethodCallAnalyzer extends CallAnalyzer
             && !$stmt->getArgs()
             && $lhs_var_id && $stmt->name instanceof PhpParser\Node\Identifier
         ) {
-            if ($codebase->config->memoize_method_calls || $result->can_memoize) {
+            // the initialization and mutation passes skip the purity analysis that decides it,
+            // so they rely on what the normal pass of this call found
+            $was_memoizable = ($context->collect_initializations || $context->collect_mutations)
+                && $stmt->getAttribute('memoizable', false);
+
+            if ($codebase->config->memoize_method_calls || $result->can_memoize || $was_memoizable) {
                 $method_var_id = $lhs_var_id . '->' . strtolower($stmt->name->name) . '()';
 
                 if (isset($context->vars_in_scope[$method_var_id])) {
@@ -256,6 +261,20 @@ final class MethodCallAnalyzer extends CallAnalyzer
             $class_type = array_reduce(
                 $possible_new_class_types,
                 static fn(?Union $type_1, Union $type_2): Union => Type::combineUnionTypes($type_1, $type_2, $codebase),
+            );
+        }
+
+        $magic_args_analyzed = null;
+
+        // issues from the arguments precede the issues of the call itself
+        if ($result->non_existent_magic_method_ids && !$result->existent_method_ids && !$stmt->isFirstClassCallable()) {
+            $magic_args_analyzed = self::checkMethodArgs(
+                null,
+                $stmt->getArgs(),
+                new TemplateResult([], []),
+                $context,
+                new CodeLocation($statements_analyzer->getSource(), $stmt),
+                $statements_analyzer,
             );
         }
 
@@ -414,14 +433,14 @@ final class MethodCallAnalyzer extends CallAnalyzer
         }
 
         if (!$result->existent_method_ids) {
-            return $stmt->isFirstClassCallable() || self::checkMethodArgs(
+            return $stmt->isFirstClassCallable() || ($magic_args_analyzed ?? self::checkMethodArgs(
                 null,
                 $stmt->getArgs(),
                 new TemplateResult([], []),
                 $context,
                 new CodeLocation($statements_analyzer->getSource(), $stmt),
                 $statements_analyzer,
-            );
+            ));
         }
 
         // if we called a method on this nullable variable, remove the nullable status here

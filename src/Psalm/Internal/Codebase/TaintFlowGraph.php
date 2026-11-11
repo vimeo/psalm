@@ -50,9 +50,11 @@ use function array_pop;
 use function array_unshift;
 use function count;
 use function end;
+use function get_object_vars;
 use function implode;
 use function ksort;
 use function min;
+use function spl_object_id;
 use function strcmp;
 use function strlen;
 use function strpos;
@@ -61,6 +63,7 @@ use function substr;
 use const SORT_STRING;
 
 /**
+ * @psalm-import-type SerializedNode from DataFlowNode
  * @internal
  */
 final class TaintFlowGraph extends DataFlowGraph
@@ -647,6 +650,161 @@ final class TaintFlowGraph extends DataFlowGraph
     }
 
     /**
+     * The graph of a forked worker goes back to the main process serialized. Nodes share CodeLocation objects, and
+     * PHP's own unserialize() finds the object a back-reference to one points to by walking its list of the values
+     * read so far from the start, 1018 at a time: with hundreds of thousands of nodes that takes minutes. So each
+     * node is written as a list of its fields, with its location as an index into one list of the graph's
+     * locations, and nothing in the nodes is shared. A node of the sources, sinks or generator sent nodes that is
+     * also the node of its id is written as null.
+     *
+     * @return array<string, mixed>
+     * @psalm-capabilities read-props
+     */
+    public function __serialize(): array
+    {
+        $locations = [];
+        $location_indexes = [];
+
+        $data = get_object_vars($this);
+        $data['nodes'] = self::serializeNodes($this->nodes, null, $locations, $location_indexes);
+        $data['sources'] = self::serializeNodes($this->sources, $this->nodes, $locations, $location_indexes);
+        $data['sinks'] = self::serializeNodes($this->sinks, $this->nodes, $locations, $location_indexes);
+        $data['generator_sent_nodes'] = self::serializeNodes(
+            $this->generator_sent_nodes,
+            $this->nodes,
+            $locations,
+            $location_indexes,
+        );
+        $data['locations'] = $locations;
+
+        return $data;
+    }
+
+    /**
+     * @param array{
+     *     nodes: array<string, SerializedNode>,
+     *     sources: array<string, SerializedNode|null>,
+     *     sinks: array<string, SerializedNode|null>,
+     *     generator_sent_nodes: array<string, SerializedNode|null>,
+     *     locations: list<CodeLocation>,
+     *     ...<string, mixed>
+     * } $data
+     * @psalm-capabilities read-props|write-this-props|write-refs
+     */
+    public function __unserialize(array $data): void
+    {
+        $locations = $data['locations'];
+
+        $nodes = [];
+        foreach ($data['nodes'] as $id => $fields) {
+            $nodes[$id] = self::unserializeNode($fields, $locations);
+        }
+
+        $this->nodes = $nodes;
+        $this->sources = self::unserializeNodes($data['sources'], $nodes, $locations);
+        $this->sinks = self::unserializeNodes($data['sinks'], $nodes, $locations);
+        $this->generator_sent_nodes = self::unserializeNodes($data['generator_sent_nodes'], $nodes, $locations);
+
+        unset($data['nodes'], $data['sources'], $data['sinks'], $data['generator_sent_nodes'], $data['locations']);
+
+        /** @psalm-suppress MixedAssignment */
+        foreach ($data as $property => $value) {
+            $this->$property = $value;
+        }
+    }
+
+    /**
+     * @param array<string, DataFlowNode> $nodes
+     * @param array<string, DataFlowNode>|null $all_nodes a node of $nodes that is the node of its id here is null
+     * @param list<CodeLocation> $locations
+     * @param array<int, int> $location_indexes
+     * @param-out list<CodeLocation> $locations
+     * @param-out array<int, int> $location_indexes
+     * @return array<string, SerializedNode|null>
+     * @psalm-capabilities read-props|write-refs
+     */
+    private static function serializeNodes(
+        array $nodes,
+        ?array $all_nodes,
+        array &$locations,
+        array &$location_indexes,
+    ): array {
+        $serialized = [];
+
+        foreach ($nodes as $id => $node) {
+            $serialized[$id] = $all_nodes !== null && ($all_nodes[$id] ?? null) === $node
+                ? null
+                : self::serializeNode($node, $locations, $location_indexes);
+        }
+
+        return $serialized;
+    }
+
+    /**
+     * @param list<CodeLocation> $locations
+     * @param array<int, int> $location_indexes
+     * @param-out list<CodeLocation> $locations
+     * @param-out array<int, int> $location_indexes
+     * @return SerializedNode
+     * @psalm-capabilities read-props|write-refs
+     */
+    private static function serializeNode(DataFlowNode $node, array &$locations, array &$location_indexes): array
+    {
+        $location_index = null;
+
+        if ($node->code_location !== null) {
+            $object_id = spl_object_id($node->code_location);
+            $location_index = $location_indexes[$object_id] ?? null;
+
+            if ($location_index === null) {
+                $location_index = count($locations);
+                $location_indexes[$object_id] = $location_index;
+                $locations[] = $node->code_location;
+            }
+        }
+
+        return $node->toSerializedFields(
+            $location_index,
+            $node->taintSource === null ? null : self::serializeNode($node->taintSource, $locations, $location_indexes),
+        );
+    }
+
+    /**
+     * @param array<string, SerializedNode|null> $serialized
+     * @param array<string, DataFlowNode> $all_nodes
+     * @param list<CodeLocation> $locations
+     * @return array<string, DataFlowNode>
+     * @psalm-pure
+     */
+    private static function unserializeNodes(array $serialized, array $all_nodes, array $locations): array
+    {
+        $nodes = [];
+
+        foreach ($serialized as $id => $fields) {
+            $nodes[$id] = $fields === null ? $all_nodes[$id] : self::unserializeNode($fields, $locations);
+        }
+
+        return $nodes;
+    }
+
+    /**
+     * @param SerializedNode $fields
+     * @param list<CodeLocation> $locations
+     * @psalm-pure
+     */
+    private static function unserializeNode(array $fields, array $locations): DataFlowNode
+    {
+        /** @var SerializedNode|null $taint_source */
+        $taint_source = $fields[6];
+
+        return DataFlowNode::fromSerializedFields(
+            $fields,
+            $fields[4] === null ? null : $locations[$fields[4]] ?? null,
+            $taint_source === null ? null : self::unserializeNode($taint_source, $locations),
+        );
+    }
+
+    /**
      * @psalm-external-mutation-free
      */
     public function addGraph(self $other): void
@@ -844,9 +1002,10 @@ final class TaintFlowGraph extends DataFlowGraph
      * Which function-likes a generator can come from is only known once the whole graph is built: they
      * are the generator function-likes whose return nodes reach the parent nodes of the generator. The
      * search for them goes backwards from those parent nodes, matching the calls it leaves through
-     * their arguments with the ones it entered through their returns, as the resolution walk does. It
-     * stops at the first such return node of each path: a generator a generator yields is not linked,
-     * nor one from a function-like without a body (unknown origin).
+     * their arguments with the ones it entered through their returns, as the resolution walk does. A
+     * link made during the search gives a node already searched from a new predecessor: the search goes
+     * on from it matching any call. It stops at the first such return node of each path: a generator a
+     * generator yields is not linked, nor one from a function-like without a body (unknown origin).
      *
      * What is sent to the generator of a specialized call goes into its specialization, so that it only
      * reaches that call's body walk.
@@ -869,6 +1028,7 @@ final class TaintFlowGraph extends DataFlowGraph
             $queue = [];
             $visited = [];
             $stacks_per_node = [];
+            $searched = [];
 
             foreach ($generator_ids as $generator_id => $_) {
                 $queue[] = [$generator_id, []];
@@ -877,11 +1037,26 @@ final class TaintFlowGraph extends DataFlowGraph
 
             while ($queue) {
                 [$id, $calls] = array_pop($queue);
+                $searched[$id] = true;
 
                 [$unspecialized_id, $specialization_key] = self::splitSpecializedId($id);
 
                 if (isset($this->generator_sent_nodes[$unspecialized_id])) {
-                    $this->linkGeneratorSend($reverse, $send_node, $unspecialized_id, $specialization_key);
+                    $new_predecessors = $this->linkGeneratorSend(
+                        $reverse,
+                        $send_node,
+                        $unspecialized_id,
+                        $specialization_key,
+                    );
+
+                    foreach ($new_predecessors as $linked_id => $from_id) {
+                        // reached from $linked_id with any of its call stacks: any call matches
+                        if (isset($searched[$linked_id]) && !isset($visited[$from_id . "\0"])) {
+                            $visited[$from_id . "\0"] = true;
+                            $stacks_per_node[$from_id] = ($stacks_per_node[$from_id] ?? 0) + 1;
+                            $queue[] = [$from_id, []];
+                        }
+                    }
 
                     continue;
                 }
@@ -938,6 +1113,7 @@ final class TaintFlowGraph extends DataFlowGraph
      *
      * @param array<string, array<string, true>> $reverse see getReverseEdges()
      * @param-out array<string, array<string, true>> $reverse
+     * @return array<string, string> the nodes that got a new predecessor in $reverse => that predecessor
      * @psalm-capabilities read-props|write-this-props|write-props|write-refs
      */
     private function linkGeneratorSend(
@@ -945,23 +1121,36 @@ final class TaintFlowGraph extends DataFlowGraph
         DataFlowNode $send_node,
         string $return_node_id,
         ?string $specialization_key,
-    ): void {
+    ): array {
         $sent_node = $this->generator_sent_nodes[$return_node_id];
+        $new_predecessors = [];
 
         if ($specialization_key !== null) {
+            $unspecialized_id = $sent_node->id;
+
             $sent_node = $sent_node->withSpecialization(
-                $sent_node->id . self::SPECIALIZATION_SEPARATOR . $specialization_key,
-                $sent_node->id,
+                $unspecialized_id . self::SPECIALIZATION_SEPARATOR . $specialization_key,
+                $unspecialized_id,
                 $specialization_key,
                 null,
             );
+
+            if (!isset($reverse[$unspecialized_id][$sent_node->id])) {
+                $new_predecessors[$unspecialized_id] = $sent_node->id;
+            }
 
             $this->addNode($sent_node);
             self::linkSpecialization($reverse, $sent_node->id);
         }
 
         $this->addPath($send_node, $sent_node, 'generator-send');
-        $reverse[$sent_node->id][$send_node->id] = true;
+
+        if (!isset($reverse[$sent_node->id][$send_node->id])) {
+            $reverse[$sent_node->id][$send_node->id] = true;
+            $new_predecessors[$sent_node->id] = $send_node->id;
+        }
+
+        return $new_predecessors;
     }
 
     /**
