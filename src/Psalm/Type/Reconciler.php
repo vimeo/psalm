@@ -12,6 +12,7 @@ use Psalm\Internal\Analyzer\Statements\Expression\ArrayAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\Assignment\ArrayAssignmentAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\Call\ClassTemplateParamCollector;
 use Psalm\Internal\Analyzer\Statements\Expression\Call\Method\MethodCallReturnTypeFetcher;
+use Psalm\Internal\Analyzer\Statements\Expression\Fetch\ConstFetchAnalyzer;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\Internal\DataFlow\DataFlowNode;
 use Psalm\Internal\MethodIdentifier;
@@ -182,6 +183,11 @@ class Reconciler
                 && !strpos($key, '[')
                 && !str_starts_with($key, 'static::')
             ) {
+                continue;
+            }
+
+            // an undeclared constant has a type to narrow only where `defined()` recorded it
+            if (!isset($existing_types[$key]) && ConstFetchAnalyzer::isConstVarId($key)) {
                 continue;
             }
 

@@ -30,6 +30,7 @@ use function array_key_exists;
 use function array_pop;
 use function explode;
 use function implode;
+use function in_array;
 use function preg_match;
 use function preg_quote;
 use function str_contains;
@@ -381,6 +382,43 @@ final class ConstFetchAnalyzer
 
         return self::getGlobalConstType($codebase, $fq_const_name, $const_name)
             ?? self::getGlobalConstType($codebase, $const_name, $const_name);
+    }
+
+    /**
+     * The id under which `defined()` records a constant without a declaration, so that a check of it
+     * (`defined('X') && is_string(X)`) narrows it; declared constants have their own type and no id
+     */
+    public static function getUndeclaredConstVarId(
+        PhpParser\Node\Expr\ConstFetch $stmt,
+        StatementsAnalyzer $statements_analyzer,
+    ): ?string {
+        if (!$stmt->name->isUnqualified() && !$stmt->name->isFullyQualified()) {
+            return null;
+        }
+
+        $const_name = $stmt->name->toString();
+
+        if (in_array(strtolower($const_name), ['true', 'false', 'null'], true)
+            || self::getConstType(
+                $statements_analyzer,
+                $const_name,
+                $stmt->name->isFullyQualified(),
+                null,
+            ) !== null
+        ) {
+            return null;
+        }
+
+        return $const_name;
+    }
+
+    /**
+     * @psalm-pure
+     */
+    public static function isConstVarId(string $var_id): bool
+    {
+        return $var_id !== Context::PHP_VERSION_ID_VAR_ID
+            && preg_match('/^[a-zA-Z_\x80-\xff][\w\x80-\xff]*(\\\\[a-zA-Z_\x80-\xff][\w\x80-\xff]*)*$/', $var_id) === 1;
     }
 
     /**

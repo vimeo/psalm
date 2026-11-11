@@ -2578,6 +2578,48 @@ final class ConstantTest extends TestCase
                 'assertions' => [],
                 'ignored_issues' => ['MixedOperand', 'MixedReturnStatement'],
             ],
+            'constantNarrowedByATypeCheckAfterADefinedCheckInANamespace' => [
+                'code' => '<?php
+                    namespace App\\Util;
+
+                    function path(): string {
+                        if (defined("APP_PHAR_ROOT") && is_string(APP_PHAR_ROOT)) {
+                            $root = APP_PHAR_ROOT;
+                            /** @psalm-check-type-exact $root = string */
+                            return $root . "/";
+                        }
+
+                        return "";
+                    }',
+            ],
+            'constantNarrowedByANegatedDefinedGuardWithATypeCheck' => [
+                'code' => '<?php
+                    namespace App\\Util;
+
+                    function path(): string {
+                        if (!defined("APP_PHAR_ROOT") || !is_string(APP_PHAR_ROOT)) {
+                            return "";
+                        }
+
+                        return APP_PHAR_ROOT . "/";
+                    }
+
+                    function wrapped(): string {
+                        if (!(defined("APP_PHAR") && is_string(APP_PHAR))) {
+                            return "";
+                        }
+
+                        return APP_PHAR . "/";
+                    }
+
+                    function inTheElse(): string {
+                        if (!defined("APP_PREFIX") || !is_string(APP_PREFIX)) {
+                            return "";
+                        } else {
+                            return APP_PREFIX . "/";
+                        }
+                    }',
+            ],
             'constantDefinedByANegatedDefinedGuardWithAnExit' => [
                 'code' => '<?php
                     if (!defined("ABSPATH")) {
@@ -3282,6 +3324,39 @@ final class ConstantTest extends TestCase
 
                     echo ZZZ;',
                 'error_message' => 'UndefinedConstant - src' . DIRECTORY_SEPARATOR . 'somefile.php:6:26 - Const ZZZ is not defined',
+            ],
+            'repeatedTypeCheckOfAConstantAfterADefinedCheck' => [
+                'code' => '<?php
+                    function path(): string {
+                        if (defined("APP_ROOT") && is_string(APP_ROOT) && is_string(APP_ROOT)) {
+                            return APP_ROOT;
+                        }
+
+                        return "";
+                    }',
+                'error_message' => 'RedundantCondition - src' . DIRECTORY_SEPARATOR . 'somefile.php:3:75 - Type string for APP_ROOT is always string',
+            ],
+            'typeCheckOfAConstantDoesNotNarrowItAfterTheIf' => [
+                'code' => '<?php
+                    function path(): string {
+                        if (defined("APP_ROOT") && is_string(APP_ROOT)) {
+                            echo APP_ROOT;
+                        }
+
+                        return APP_ROOT . "/";
+                    }',
+                'error_message' => 'MixedOperand - src' . DIRECTORY_SEPARATOR . 'somefile.php:7:32',
+            ],
+            'typeCheckOfAnUndefinedConstantWithoutADefinedCheck' => [
+                'code' => '<?php
+                    function path(): string {
+                        if (is_string(APP_ROOT)) {
+                            return APP_ROOT;
+                        }
+
+                        return "";
+                    }',
+                'error_message' => 'UndefinedConstant - src' . DIRECTORY_SEPARATOR . 'somefile.php:3:39',
             ],
             'narrowingAStaticClassConstantDoesNotNarrowSelf' => [
                 'code' => '<?php
