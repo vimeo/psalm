@@ -7,6 +7,10 @@ namespace Psalm\Tests;
 use Override;
 use Psalm\Tests\Traits\InvalidCodeAnalysisTestTrait;
 use Psalm\Tests\Traits\ValidCodeAnalysisTestTrait;
+use Psalm\Type;
+use Psalm\Type\Atomic\TLiteralString;
+
+use function mb_internal_encoding;
 
 use const DIRECTORY_SEPARATOR;
 
@@ -21,6 +25,23 @@ final class ReturnTypeTest extends TestCase
         $this->testInvalidCode('<?php function f(void $p): void {}', 'ParseError');
     }
 
+    public function testUnicodeEscapeOfADocblockStringLiteralIsNotTheInternalEncoding(): void
+    {
+        $encoding = mb_internal_encoding();
+        mb_internal_encoding('ISO-8859-1');
+
+        try {
+            $type = Type::parseString('"\u{e9}\u{1F600}"');
+        } finally {
+            mb_internal_encoding($encoding);
+        }
+
+        $atomic = $type->getSingleAtomic();
+
+        self::assertInstanceOf(TLiteralString::class, $atomic);
+        self::assertSame("\u{e9}\u{1F600}", $atomic->value);
+    }
+
     /**
      * @psalm-pure
      */
@@ -28,71 +49,85 @@ final class ReturnTypeTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
-            'finalClassOverridesAGenericStaticReturnType' => [
-                'code' => <<<'PHP'
-                    <?php
-                    /** @template T of object */
-                    final class Box
-                    {
-                        /** @param T $value */
-                        public function __construct(public readonly object $value) {}
+            'docblockStringLiteralWithEscapedBackslashes' => [
+                'code' => '<?php
+                    /** @return "\\\\t" */
+                    function backslashAndLetter(): string {
+                        return "\\\\t";
                     }
 
-                    class Base
-                    {
-                        /** @return Box<static> */
-                        public function box(): Box
-                        {
-                            return new Box($this);
-                        }
+                    /** @return "\\\\\\\\" */
+                    function twoBackslashes(): string {
+                        return "\\\\\\\\";
                     }
 
-                    final class Leaf extends Base
-                    {
-                        /** @return Box<static> */
-                        #[\Override]
-                        public function box(): Box
-                        {
-                            return parent::box();
-                        }
-                    }
-                    PHP,
-                'assertions' => [],
-                'ignored_issues' => [],
-                'php_version' => '8.3',
+                    /** @return \'\\\\\\\\\' */
+                    function twoBackslashesSingleQuoted(): string {
+                        return \'\\\\\\\\\';
+                    }',
             ],
-            'finalClassOverridesAGenericThisReturnType' => [
-                'code' => <<<'PHP'
-                    <?php
-                    /** @template T of object */
-                    final class Box
-                    {
-                        /** @param T $value */
-                        public function __construct(public readonly object $value) {}
+            'docblockStringLiteralWithAUnicodeEscapeWithLeadingZeros' => [
+                'code' => '<?php
+                    /** @return "\u{0000000000e9}" */
+                    function leadingZeros(): string {
+                        return "é";
+                    }',
+            ],
+            'docblockStringLiteralWithNonAsciiUnicodeEscapes' => [
+                'code' => '<?php
+                    /** @return "\u{e9}\u{20AC}\u{1F600}" */
+                    function nonAscii(): string {
+                        return "é€😀";
+                    }',
+            ],
+            'docblockStringLiteralWithEscapeSequences' => [
+                'code' => '<?php
+                    /** @return "\t" */
+                    function tab(): string {
+                        return "\t";
                     }
 
-                    class Base
-                    {
-                        /** @return Box<static> */
-                        public function box(): Box
-                        {
-                            return new Box($this);
-                        }
+                    /** @return "a\nb" */
+                    function newline(): string {
+                        return "a\nb";
                     }
 
-                    final class Leaf extends Base
-                    {
-                        /** @return Box<$this> */
-                        #[\Override]
-                        public function box(): Box
-                        {
-                            return parent::box();
-                        }
+                    /** @return "\x41\101\u{42}" */
+                    function numeric(): string {
+                        return "AAB";
                     }
-                    PHP,
-                'assertions' => [],
-                'ignored_issues' => [],
-                'php_version' => '8.3',
+
+                    /** @return "\$x" */
+                    function dollar(): string {
+                        return \'$x\';
+                    }
+
+                    /** @return "say \"hi\"" */
+                    function quotes(): string {
+                        return \'say "hi"\';
+                    }',
+            ],
+            'docblockStringLiteralKeepsWhatIsNotAnEscapeSequence' => [
+                'code' => '<?php
+                    /** @return "\d+" */
+                    function regex(): string {
+                        return "\\d+";
+                    }
+
+                    /** @return "\\d" */
+                    function backslash(): string {
+                        return "\\d";
+                    }
+
+                    /** @return \'a\\\\b\' */
+                    function single(): string {
+                        return \'a\\\\b\';
+                    }
+
+                    /** @return \'it\\\'s\' */
+                    function apostrophe(): string {
+                        return "it\'s";
+                    }',
             ],
             'generatorReturnTypeAllowsAnImplicitReturnOfNull' => [
                 'code' => '<?php
@@ -2172,17 +2207,7 @@ final class ReturnTypeTest extends TestCase
                 'assertions' => [],
                 'ignored_issues' => ['MissingThrowsDocblock'],
             ],
-        ];
-    }
-
-    /**
-     * @psalm-pure
-     */
-    #[Override]
-    public static function providerInvalidCodeParse(): iterable
-    {
-        return [
-            'finalClassOverridesAGenericStaticReturnTypeWithAnotherType' => [
+            'finalClassOverridesAGenericStaticReturnType' => [
                 'code' => <<<'PHP'
                     <?php
                     /** @template T of object */
@@ -2201,21 +2226,86 @@ final class ReturnTypeTest extends TestCase
                         }
                     }
 
-                    final class Other {}
-
                     final class Leaf extends Base
                     {
-                        /** @return Box<Other> */
+                        /** @return Box<static> */
                         #[\Override]
                         public function box(): Box
                         {
-                            return new Box(new Other());
+                            return parent::box();
                         }
                     }
                     PHP,
-                'error_message' => 'ImplementedReturnTypeMismatch',
-                'error_levels' => [],
+                'assertions' => [],
+                'ignored_issues' => [],
                 'php_version' => '8.3',
+            ],
+            'finalClassOverridesAGenericThisReturnType' => [
+                'code' => <<<'PHP'
+                    <?php
+                    /** @template T of object */
+                    final class Box
+                    {
+                        /** @param T $value */
+                        public function __construct(public readonly object $value) {}
+                    }
+
+                    class Base
+                    {
+                        /** @return Box<static> */
+                        public function box(): Box
+                        {
+                            return new Box($this);
+                        }
+                    }
+
+                    final class Leaf extends Base
+                    {
+                        /** @return Box<$this> */
+                        #[\Override]
+                        public function box(): Box
+                        {
+                            return parent::box();
+                        }
+                    }
+                    PHP,
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.3',
+            ],
+        ];
+    }
+
+    /**
+     * @psalm-pure
+     */
+    #[Override]
+    public static function providerInvalidCodeParse(): iterable
+    {
+        return [
+            'docblockStringLiteralWithAUnicodeEscapeThatOverflowsAnInt' => [
+                'code' => '<?php
+                    /** @return "\u{FFFFFFFFFFFFFFFF}" */
+                    function overflow(): string {
+                        return "";
+                    }',
+                'error_message' => 'InvalidDocblock',
+            ],
+            'docblockStringLiteralWithATooLargeUnicodeEscape' => [
+                'code' => '<?php
+                    /** @return "\u{110000}" */
+                    function tooLarge(): string {
+                        return "";
+                    }',
+                'error_message' => 'InvalidDocblock',
+            ],
+            'docblockStringLiteralWithEscapeSequenceIsNotTheBackslashAndLetter' => [
+                'code' => '<?php
+                    /** @return "\t" */
+                    function tab(): string {
+                        return "\\\\t";
+                    }',
+                'error_message' => 'InvalidReturnStatement',
             ],
             'generatorReturnsImplicitlyOnAPath' => [
                 'code' => '<?php
@@ -2942,6 +3032,41 @@ final class ReturnTypeTest extends TestCase
                     }
                     PHP,
                 'error_message' => 'InvalidReturnStatement',
+            ],
+            'finalClassOverridesAGenericStaticReturnTypeWithAnotherType' => [
+                'code' => <<<'PHP'
+                    <?php
+                    /** @template T of object */
+                    final class Box
+                    {
+                        /** @param T $value */
+                        public function __construct(public readonly object $value) {}
+                    }
+
+                    class Base
+                    {
+                        /** @return Box<static> */
+                        public function box(): Box
+                        {
+                            return new Box($this);
+                        }
+                    }
+
+                    final class Other {}
+
+                    final class Leaf extends Base
+                    {
+                        /** @return Box<Other> */
+                        #[\Override]
+                        public function box(): Box
+                        {
+                            return new Box(new Other());
+                        }
+                    }
+                    PHP,
+                'error_message' => 'ImplementedReturnTypeMismatch',
+                'error_levels' => [],
+                'php_version' => '8.3',
             ],
         ];
     }
