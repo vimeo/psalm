@@ -100,32 +100,36 @@ final class ArrayFunctionCallTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
-            'arrayMergeRecursiveOfShapesWithoutSharedKeys' => [
-                'code' => '<?php
-                    /**
-                     * @param array{name: string} $a
-                     * @param array{age: int} $b
-                     * @return array{name: string, age: int}
-                     */
-                    function merge(array $a, array $b): array {
-                        return array_merge_recursive($a, $b);
-                    }
+            'arrayPopOfAListWithAnOptionalLastItem' => [
+                'code' => <<<'PHP'
+                    <?php
+                    function pop(bool $one, bool $two): void {
+                        $always = [0, 1];
+                        array_pop($always);
 
-                    $a = ["name" => "a"];
-                    $b = ["age" => 1];
-                    $merged = array_merge_recursive($a, $b);',
-                'assertions' => [
-                    '$merged===' => "array{age: 1, name: 'a'}",
-                ],
-            ],
-            'arrayMergeRecursiveOfShapesWithSharedKeysStaysGeneric' => [
-                'code' => '<?php
-                    $a = ["name" => "a"];
-                    $b = ["name" => "b", "age" => 1];
-                    $merged = array_merge_recursive($a, $b);',
-                'assertions' => [
-                    '$merged===' => "array<'age'|'name', 'a'|'b'|1>",
-                ],
+                        $maybe = [0];
+                        if ($one) {
+                            $maybe[] = 2;
+                        }
+                        array_pop($maybe);
+
+                        $maybe_twice = [0];
+                        if ($one) {
+                            $maybe_twice[] = 2;
+                        }
+                        if ($two) {
+                            $maybe_twice[] = 3;
+                        }
+                        array_pop($maybe_twice);
+
+                        /** @psalm-check-type-exact $always = list{0: 0} */
+                        /** @psalm-check-type-exact $maybe = list{0?: 0} */
+                        /** @psalm-check-type-exact $maybe_twice = list{0?: 0, 1?: 2|3} */
+                    }
+                    PHP,
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
             ],
             'arrayUdiffKeepsTheTypeOfTheFirstArray' => [
                 'code' => '<?php
@@ -3824,6 +3828,33 @@ final class ArrayFunctionCallTest extends TestCase
                 'ignored_issues' => [],
                 'php_version' => '8.4',
             ],
+            'arrayMergeRecursiveOfShapesWithoutSharedKeys' => [
+                'code' => '<?php
+                    /**
+                     * @param array{name: string} $a
+                     * @param array{age: int} $b
+                     * @return array{name: string, age: int}
+                     */
+                    function merge(array $a, array $b): array {
+                        return array_merge_recursive($a, $b);
+                    }
+
+                    $a = ["name" => "a"];
+                    $b = ["age" => 1];
+                    $merged = array_merge_recursive($a, $b);',
+                'assertions' => [
+                    '$merged===' => "array{age: 1, name: 'a'}",
+                ],
+            ],
+            'arrayMergeRecursiveOfShapesWithSharedKeysStaysGeneric' => [
+                'code' => '<?php
+                    $a = ["name" => "a"];
+                    $b = ["name" => "b", "age" => 1];
+                    $merged = array_merge_recursive($a, $b);',
+                'assertions' => [
+                    '$merged===' => "array<'age'|'name', 'a'|'b'|1>",
+                ],
+            ],
         ];
     }
 
@@ -3834,6 +3865,21 @@ final class ArrayFunctionCallTest extends TestCase
     public static function providerInvalidCodeParse(): iterable
     {
         return [
+            'arrayPopOfAListWithAnOptionalLastItemMayEmptyIt' => [
+                'code' => '<?php
+                    /** @param non-empty-list<int> $a */
+                    function foo(array $a): void {}
+
+                    function bar(bool $one): void {
+                        $d = [0];
+                        if ($one) {
+                            $d[] = 2;
+                        }
+                        array_pop($d);
+                        foo($d);
+                    }',
+                'error_message' => 'InvalidArgument',
+            ],
             'arrayColumnIndexColumnOfAnObjectIsNotAnArrayKey' => [
                 'code' => '<?php
                     $result = array_column([[new stdClass, 1]], 1, 0);',
