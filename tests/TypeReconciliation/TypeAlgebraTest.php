@@ -21,6 +21,282 @@ final class TypeAlgebraTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'coalesceAssignmentInConditionNarrowsTheVariable' => [
+                'code' => <<<'PHP'
+                    <?php
+                    function make(): ?object { return null; }
+
+                    function negated(?object $s): object {
+                        if (!($s ??= make())) {
+                            exit;
+                        }
+
+                        return $s;
+                    }
+
+                    function branches(?object $s): void {
+                        if ($s ??= make()) {
+                            /** @psalm-check-type-exact $s = object */;
+                        } else {
+                            /** @psalm-check-type-exact $s = null */;
+                        }
+                    }
+
+                    /** @param array{k?: object|null} $arr */
+                    function arrayItem(array $arr): object {
+                        if (!($arr['k'] ??= make())) {
+                            exit;
+                        }
+
+                        return $arr['k'];
+                    }
+
+                    final class Holder {
+                        private ?object $item = null;
+                        public ?self $child = null;
+
+                        public function item(): object {
+                            if (!($this->item ??= make())) {
+                                throw new Exception();
+                            }
+
+                            return $this->item;
+                        }
+
+                        public function untracked(): void {
+                            if ($this->self()->child ??= null) {
+                                echo 1;
+                            }
+                        }
+
+                        public function self(): self {
+                            return $this;
+                        }
+                    }
+                    PHP,
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
+            'coalesceAssignmentOnTheRightOfAndKeepsTheAssignmentAfterTheIf' => [
+                'code' => <<<'PHP'
+                    <?php
+                    final class A {}
+
+                    function make(): ?A {
+                        return rand(0, 1) ? new A() : null;
+                    }
+
+                    /** @param list<string> $names */
+                    function export(array $names): void {
+                        $class = null;
+
+                        foreach ($names as $name) {
+                            if ($name === 'self' && $class ??= make()) {
+                                echo get_class($class);
+                            }
+                        }
+
+                        /** @psalm-check-type-exact $class = A|null */;
+                    }
+                    PHP,
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
+            'coalesceAssignmentAssignedToAVariableOnTheLeftOfOr' => [
+                'code' => <<<'PHP'
+                    <?php
+                    interface I {}
+                    final class Lazy implements I {}
+                    final class Real implements I {}
+
+                    function make(): ?I {
+                        return rand(0, 1) ? new Lazy() : null;
+                    }
+
+                    final class Builder {
+                        private ?I $instantiator = null;
+
+                        public function isReal(): bool {
+                            return !($proxy = $this->instantiator ??= make()) || $proxy instanceof Real;
+                        }
+                    }
+                    PHP,
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
+            'instanceofStoredInVariableNarrowsInIfBody' => [
+                'code' => '<?php
+                    interface Foo {}
+                    interface Bar {
+                        public function bar(): void;
+                    }
+
+                    function f(Foo $obj): void {
+                        $isBar = $obj instanceof Bar;
+
+                        if ($isBar) {
+                            $obj->bar();
+                        }
+                    }',
+            ],
+            'instanceofStoredInVariableNarrowsAfterEarlyReturn' => [
+                'code' => '<?php
+                    interface Foo {}
+                    interface Bar {
+                        public function bar(): void;
+                    }
+
+                    function f(Foo $obj): void {
+                        $isBar = $obj instanceof Bar;
+
+                        if (!$isBar) {
+                            return;
+                        }
+
+                        $obj->bar();
+                    }',
+            ],
+            'nullsafeCallFalsyResultDoesNotNarrowReceiver' => [
+                'code' => <<<'PHP'
+                    <?php
+                    final class Box
+                    {
+                        public function get(): ?string { return null; }
+                        public function name(): string { return ''; }
+                    }
+
+                    function makeBox(): ?Box { return null; }
+
+                    function plain(?Box $box): void {
+                        if ($box?->get()) {
+                            /** @psalm-check-type-exact $box = Box */;
+                        } else {
+                            /** @psalm-check-type-exact $box = Box|null */;
+                        }
+                        /** @psalm-check-type-exact $box = Box|null */;
+                    }
+
+                    function negated(?Box $box): void {
+                        if (!$box?->get()) {
+                            /** @psalm-check-type-exact $box = Box|null */;
+                        } else {
+                            /** @psalm-check-type-exact $box = Box */;
+                        }
+                    }
+
+                    function assigned(?Box $box): void {
+                        if ($value = $box?->get()) {
+                            echo $value;
+                            /** @psalm-check-type-exact $box = Box */;
+                        } else {
+                            /** @psalm-check-type-exact $box = Box|null */;
+                        }
+                        /** @psalm-check-type-exact $box = Box|null */;
+                    }
+
+                    function elvis(?Box $box): string {
+                        return $box?->get() ?: $box?->name() ?? "";
+                    }
+
+                    function conjunction(?Box $box): void {
+                        if ($box?->get() && $box->name()) {
+                            echo 1;
+                        }
+                    }
+
+                    function untracked(): void {
+                        if (makeBox()?->get()) {
+                            echo 1;
+                        } else {
+                            echo 2;
+                        }
+                    }
+                    PHP,
+                'assertions' => [],
+                'ignored_issues' => ['RiskyTruthyFalsyComparison'],
+                'php_version' => '8.1',
+            ],
+            'boolVarIdenticalToFalseNarrowsItsConjuncts' => [
+                'code' => <<<'PHP'
+                    <?php
+                    final class U {
+                        public int $id = 1;
+                    }
+
+                    function f(?U $v, ?U $e): int {
+                        $c = $v !== null && $e === $v;
+                        if ($c === false) {
+                            return 0;
+                        }
+                        return $v->id;
+                    }
+                    PHP,
+            ],
+            'boolVarIdenticalToTrueNarrowsItsConjuncts' => [
+                'code' => <<<'PHP'
+                    <?php
+                    final class U {
+                        public int $id = 1;
+                    }
+
+                    function f(?U $v, ?U $e): int {
+                        $c = $v !== null && $e === $v;
+                        if ($c === true) {
+                            return $v->id;
+                        }
+                        return 0;
+                    }
+                    PHP,
+            ],
+            'boolVarNotIdenticalToFalseNarrowsItsConjuncts' => [
+                'code' => <<<'PHP'
+                    <?php
+                    final class U {
+                        public int $id = 1;
+                    }
+
+                    function f(?U $v, ?U $e): int {
+                        $c = $v !== null && $e === $v;
+                        if ($c !== false) {
+                            return $v->id;
+                        }
+                        return 0;
+                    }
+                    PHP,
+            ],
+            'boolVarNotIdenticalToTrueNarrowsItsConjuncts' => [
+                'code' => <<<'PHP'
+                    <?php
+                    final class U {
+                        public int $id = 1;
+                    }
+
+                    function f(?U $v, ?U $e): int {
+                        $c = $v !== null && $e === $v;
+                        if ($c !== true) {
+                            return 0;
+                        }
+                        return $v->id;
+                    }
+                    PHP,
+            ],
+            'identityWithFalseOfNonBoolVarStillNarrows' => [
+                'code' => <<<'PHP'
+                    <?php
+                    function f(int|false $x): int {
+                        if ($x === false) {
+                            return 0;
+                        }
+                        return $x;
+                    }
+                    PHP,
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
             'booleanVariableNarrowingSurvivesOrWithItAsLeftOperand' => [
                 'code' => <<<'PHP'
                     <?php
@@ -68,6 +344,39 @@ final class TypeAlgebraTest extends TestCase
                 'assertions' => [],
                 'ignored_issues' => [],
                 'php_version' => '8.1',
+            ],
+            'inArrayWithAValueAnEarlierConditionExcludedIsNotParadoxical' => [
+                'code' => '<?php
+                    const A = "a";
+                    const ALL = [A, "b", "c"];
+
+                    function test(string $value): int {
+                        if ($value === A) {
+                            return 1;
+                        }
+
+                        if (in_array($value, ALL, true)) {
+                            return 2;
+                        }
+
+                        return 3;
+                    }',
+                'assertions' => [],
+            ],
+            'orOfAValueAnEarlierConditionExcludedAndAnotherIsNotParadoxical' => [
+                'code' => '<?php
+                    function test(string $value): int {
+                        if ($value === "a") {
+                            return 1;
+                        }
+
+                        if ($value === "a" || $value === "b") {
+                            return 2;
+                        }
+
+                        return 3;
+                    }',
+                'assertions' => [],
             ],
             'twoVarLogicSimple' => [
                 'code' => '<?php
@@ -1406,6 +1715,42 @@ final class TypeAlgebraTest extends TestCase
     public static function providerInvalidCodeParse(): iterable
     {
         return [
+            'instanceofStoredInVariableIsForgottenWhenTheVariableIsReassigned' => [
+                'code' => '<?php
+                    interface Foo {}
+                    interface Bar {
+                        public function bar(): void;
+                    }
+                    class Baz implements Foo {}
+
+                    function f(Foo $obj): void {
+                        $isBar = $obj instanceof Bar;
+                        $obj = new Baz();
+
+                        if ($isBar) {
+                            $obj->bar();
+                        }
+                    }',
+                'error_message' => 'UndefinedMethod',
+            ],
+            'instanceofStoredInVariableDoesNotNarrowTheElseBranch' => [
+                'code' => '<?php
+                    interface Foo {}
+                    interface Bar {
+                        public function bar(): void;
+                    }
+
+                    function f(Foo $obj): void {
+                        $isBar = $obj instanceof Bar;
+
+                        if ($isBar) {
+                            echo "bar";
+                        } else {
+                            $obj->bar();
+                        }
+                    }',
+                'error_message' => 'UndefinedInterfaceMethod',
+            ],
             'booleanVariableNarrowingNotKeptInElseOfOr' => [
                 'code' => <<<'PHP'
                     <?php
@@ -1448,6 +1793,21 @@ final class TypeAlgebraTest extends TestCase
                 'error_message' => 'PossiblyNullReference',
                 'error_levels' => [],
                 'php_version' => '8.1',
+            ],
+            'conditionOfOnlyValuesAnEarlierConditionExcludedIsParadoxical' => [
+                'code' => '<?php
+                    function test(string $value): int {
+                        if ($value === "a" || $value === "b") {
+                            return 1;
+                        }
+
+                        if ($value === "a" || $value === "b") {
+                            return 2;
+                        }
+
+                        return 3;
+                    }',
+                'error_message' => 'ParadoxicalCondition',
             ],
             'staticPropertyNarrowedToDeclaredTypeAfterEarlyReturn' => [
                 'code' => '<?php
@@ -1702,7 +2062,7 @@ final class TypeAlgebraTest extends TestCase
                     }',
                 'error_message' => 'PossiblyNullReference',
             ],
-            'stillNullAfterNullsafeMethodCall' => [
+            'possiblyNullAfterFalsyNullsafeMethodCall' => [
                 'code' => '<?php
                     interface X {
                         public function a(): bool;
@@ -1714,7 +2074,7 @@ final class TypeAlgebraTest extends TestCase
                             echo $x->b();
                         }
                     }',
-                'error_message' => 'NullReference',
+                'error_message' => 'PossiblyNullReference',
                 'error_levels' => [],
                 'php_version' => '8.1',
             ],

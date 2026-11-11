@@ -75,6 +75,7 @@ use Psalm\Type\Atomic\TClassStringMap;
 use Psalm\Type\Atomic\TFalse;
 use Psalm\Type\Atomic\TFloat;
 use Psalm\Type\Atomic\TInt;
+use Psalm\Type\Atomic\TIntRange;
 use Psalm\Type\Atomic\TKeyedArray;
 use Psalm\Type\Atomic\TLiteralClassString;
 use Psalm\Type\Atomic\TLiteralFloat;
@@ -1977,6 +1978,7 @@ final class ArrayFetchAnalyzer
 
         if ($key_values) {
             $properties = $type->properties;
+            $missing_key_in_isset = false;
             foreach ($key_values as $key_value) {
                 $string_to_int = ArrayAnalyzer::getLiteralArrayKeyInt($key_value->value);
                 $key_value = $string_to_int === false ? $key_value : new TLiteralInt($string_to_int);
@@ -2096,8 +2098,16 @@ final class ArrayFetchAnalyzer
 
                     $expected_offset_types[] = $key_string;
 
-                    $array_access_type = Type::getMixed();
+                    if ($context->inside_isset) {
+                        $missing_key_in_isset = true;
+                    } else {
+                        $array_access_type = Type::getMixed();
+                    }
                 }
+            }
+
+            if ($missing_key_in_isset && $array_access_type === null) {
+                $array_access_type = Type::getMixed();
             }
 
             $type = $type->setProperties($properties);
@@ -2207,9 +2217,42 @@ final class ArrayFetchAnalyzer
                     $expected_offset_types[] = $generic_key_type->getId();
                 }
 
+                // an offset range that only partly lies within the keys is possibly valid
+                if (self::offsetRangeOverlapsKeys($offset_type->freeze(), $key_type)) {
+                    $has_valid_offset = true;
+                }
+
                 $array_access_type = Type::getMixed();
             }
         }
+    }
+
+    /**
+     * Whether an int range among the offset types has an int in common with the int keys
+     *
+     * @psalm-pure
+     */
+    private static function offsetRangeOverlapsKeys(Union $offset_type, Union $key_type): bool
+    {
+        foreach ($offset_type->getAtomicTypes() as $offset_atomic) {
+            if (!$offset_atomic instanceof TIntRange) {
+                continue;
+            }
+
+            foreach ($key_type->getAtomicTypes() as $key_atomic) {
+                if ($key_atomic instanceof TIntRange
+                    && TIntRange::intersectIntRanges($offset_atomic, $key_atomic) !== null
+                ) {
+                    return true;
+                }
+
+                if ($key_atomic instanceof TLiteralInt && $offset_atomic->contains($key_atomic->value)) {
+                    return true;
+                }
+            }
+        }
+
+        return false;
     }
 
     public static function validateArrayOffset(
