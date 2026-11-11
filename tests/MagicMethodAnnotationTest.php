@@ -4,13 +4,23 @@ declare(strict_types=1);
 
 namespace Psalm\Tests;
 
+use ErrorException;
 use Override;
 use Psalm\Config;
 use Psalm\Context;
 use Psalm\Exception\CodeException;
+use Psalm\Internal\Analyzer\ClassLikeAnalyzer;
+use Psalm\Plugin\EventHandler\AfterClassLikeVisitInterface;
+use Psalm\Plugin\EventHandler\Event\AfterClassLikeVisitEvent;
+use Psalm\PluginRegistrationSocket;
+use Psalm\Storage\MethodStorage;
 use Psalm\Tests\Traits\InvalidCodeAnalysisTestTrait;
 use Psalm\Tests\Traits\InvalidCodeAnalysisWithIssuesTestTrait;
 use Psalm\Tests\Traits\ValidCodeAnalysisTestTrait;
+use Psalm\Type;
+
+use function restore_error_handler;
+use function set_error_handler;
 
 use const DIRECTORY_SEPARATOR;
 
@@ -253,6 +263,133 @@ final class MagicMethodAnnotationTest extends TestCase
         $this->analyzeFile('somefile.php', $context);
     }
 
+    public function testPseudoMethodOfAStubbedParentOverridesItsInheritedMethod(): void
+    {
+        $this->addFile(
+            'Base.php',
+            '<?php
+                class Base {
+                    public function foo(): int|string {
+                        return 1;
+                    }
+                }',
+        );
+
+        $this->addStubFile(
+            'base.phpstub',
+            '<?php
+                /** @method int foo() */
+                class Base {
+                    public function foo(): int|string {}
+                }',
+        );
+
+        $this->addFile(
+            'somefile.php',
+            '<?php
+                class Child extends Base {}
+
+                $foo = (new Child)->foo();',
+        );
+
+        $this->project_analyzer->setPhpVersion('8.0', 'tests');
+
+        $context = new Context();
+
+        $this->analyzeFile('somefile.php', $context);
+
+        $this->assertSame('int', (string) $context->vars_in_scope['$foo']);
+    }
+
+    public function testPseudoMethodOfAStubbedParentReplacesTheOneOfTheOverriddenClass(): void
+    {
+        $this->addFile(
+            'Base.php',
+            '<?php
+                /** @method static int foo() */
+                class Base {
+                    public static function __callStatic(string $name, array $args) {
+                        return null;
+                    }
+                }',
+        );
+
+        $this->addStubFile(
+            'base.phpstub',
+            '<?php
+                /** @method static string foo() */
+                class Base {}',
+        );
+
+        $this->addFile(
+            'somefile.php',
+            '<?php
+                class Child extends Base {}
+
+                $foo = Child::foo();',
+        );
+
+        $context = new Context();
+
+        $this->analyzeFile('somefile.php', $context);
+
+        $this->assertSame('string', (string) $context->vars_in_scope['$foo']);
+    }
+
+    public function testPseudoMethodAPluginAddsWithoutDeclaringIdIsInherited(): void
+    {
+        $hook = new class implements AfterClassLikeVisitInterface {
+            /**
+             * @return void
+             * @phpcsSuppress SlevomatCodingStandard.TypeHints.ReturnTypeHint
+             */
+            #[Override]
+            public static function afterClassLikeVisit(AfterClassLikeVisitEvent $event)
+            {
+                $storage = $event->getStorage();
+
+                if ($storage->name === 'Base') {
+                    $method_storage = new MethodStorage();
+                    $method_storage->cased_name = 'foo';
+                    $method_storage->visibility = ClassLikeAnalyzer::VISIBILITY_PUBLIC;
+                    $method_storage->return_type = Type::getString();
+                    $storage->pseudo_methods['foo'] = $method_storage;
+                }
+            }
+        };
+        $codebase = $this->project_analyzer->getCodebase();
+        (new PluginRegistrationSocket($codebase->config, $codebase))->registerHooksFromClass($hook::class);
+
+        $this->addFile(
+            'somefile.php',
+            '<?php
+                class Base {
+                    public function __call(string $name, array $args) {
+                        return null;
+                    }
+                }
+
+                class Child extends Base {}
+
+                $foo = (new Child)->foo();',
+        );
+
+        $context = new Context();
+
+        // as the CLI does, so that reading the missing id fails the test
+        set_error_handler(static function (int $errno, string $errstr): never {
+            throw new ErrorException($errstr, 0, $errno);
+        });
+
+        try {
+            $this->analyzeFile('somefile.php', $context);
+        } finally {
+            restore_error_handler();
+        }
+
+        $this->assertSame('string', (string) $context->vars_in_scope['$foo']);
+    }
+
     /**
      * @psalm-pure
      */
@@ -260,6 +397,191 @@ final class MagicMethodAnnotationTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'magicMethodOverloadsAreChosenByTheTypeOfTheArgument' => [
+                'code' => '<?php
+                    interface Query {}
+                    final class LimitedQuery implements Query {}
+                    final class UnlimitedQuery implements Query {}
+
+                    final class PagedResult {
+                        public function getPageCount(): int {
+                            return 1;
+                        }
+                    }
+
+                    final class PlainResult {
+                        public function getAllRecords(): array {
+                            return [];
+                        }
+                    }
+
+                    /**
+                     * @method PagedResult search(LimitedQuery $q)
+                     * @method PlainResult search(UnlimitedQuery $q)
+                     */
+                    final class Searcher {
+                        public function __call(string $name, array $args): object {
+                            return new PlainResult();
+                        }
+                    }
+
+                    $searcher = new Searcher();
+
+                    $paged = $searcher->search(new LimitedQuery());
+                    $plain = $searcher->search(new UnlimitedQuery());',
+                'assertions' => [
+                    '$paged===' => 'PagedResult',
+                    '$plain===' => 'PlainResult',
+                ],
+            ],
+            'magicMethodOverloadsAreChosenByTheNumberOfArguments' => [
+                'code' => '<?php
+                    /**
+                     * @method int pick(string $a)
+                     * @method string pick(int $a, int $b)
+                     * @method float pick(int $a, int $b, int $c, int ...$more)
+                     */
+                    final class Many {
+                        public function __call(string $name, array $args): mixed {
+                            return null;
+                        }
+                    }
+
+                    $many = new Many();
+
+                    $one = $many->pick("a");
+                    $two = $many->pick(1, 2);
+                    $many_args = $many->pick(1, 2, 3, 4, 5);',
+                'assertions' => [
+                    '$one===' => 'int',
+                    '$two===' => 'string',
+                    '$many_args===' => 'float',
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
+            'staticMagicMethodOverloadsAreChosenByTheTypeOfTheArgument' => [
+                'code' => '<?php
+                    /**
+                     * @method static int load(string $id)
+                     * @method static string load(int $id)
+                     */
+                    final class Repository {
+                        public static function __callStatic(string $name, array $args): mixed {
+                            return null;
+                        }
+                    }
+
+                    $byName = Repository::load("a");
+                    $byId = Repository::load(1);',
+                'assertions' => [
+                    '$byName===' => 'int',
+                    '$byId===' => 'string',
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
+            'psalmMethodOverloadsReplaceTheMethodsOfTheSameName' => [
+                'code' => '<?php
+                    /**
+                     * @method bool pick(float $a)
+                     * @psalm-method int pick(string $a)
+                     * @psalm-method string pick(int $a)
+                     */
+                    final class Many {
+                        public function __call(string $name, array $args): mixed {
+                            return null;
+                        }
+                    }
+
+                    $many = new Many();
+
+                    $byString = $many->pick("a");
+                    $byInt = $many->pick(1);',
+                'assertions' => [
+                    '$byString===' => 'int',
+                    '$byInt===' => 'string',
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
+            'magicMethodOverloadsAreChosenByTheNamesOfTheArguments' => [
+                'code' => '<?php
+                    /**
+                     * @method int pick(string $name)
+                     * @method string pick(int $id)
+                     */
+                    final class Many {
+                        public function __call(string $name, array $args): mixed {
+                            return null;
+                        }
+                    }
+
+                    $many = new Many();
+
+                    $byName = $many->pick(name: "a");
+                    $byId = $many->pick(id: 5);',
+                'assertions' => [
+                    '$byName===' => 'int',
+                    '$byId===' => 'string',
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
+            'magicMethodOverloadWithAVariadicTypesTheNamesNoParameterHas' => [
+                'code' => '<?php
+                    /**
+                     * @method int pick(int ...$values)
+                     * @method string pick(string $name)
+                     */
+                    final class Many {
+                        public function __call(string $name, array $args): mixed {
+                            return null;
+                        }
+                    }
+
+                    $many = new Many();
+
+                    $byName = $many->pick(name: "hello");
+                    $byValues = $many->pick(first: 1, second: 2);',
+                'assertions' => [
+                    '$byName===' => 'string',
+                    '$byValues===' => 'int',
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
+            'magicMethodOverloadDoesNotLoseTheNarrowingOfAnArgument' => [
+                'code' => '<?php
+                    final class Foo {
+                        public function bar(): int {
+                            return 1;
+                        }
+                    }
+
+                    /**
+                     * @method int pick(string $a)
+                     * @method string pick(int $a)
+                     */
+                    final class Many {
+                        public function __call(string $name, array $args): mixed {
+                            return null;
+                        }
+                    }
+
+                    function check(Many $many, mixed $x): int {
+                        if ($x instanceof Foo) {
+                            $many->pick($x->bar());
+
+                            return $x->bar();
+                        }
+
+                        return 0;
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
             'conditionalReturnTypeOfAMethodTagIsResolvedByTheArguments' => [
                 'code' => <<<'PHP'
                     <?php
@@ -1550,6 +1872,271 @@ final class MagicMethodAnnotationTest extends TestCase
                     '$m' => 'A|null',
                 ],
             ],
+            'traitPseudoMethodYieldsToMethodOfAnotherTraitOrOfTheClass' => [
+                'code' => '<?php
+                    /**
+                     * @method static foo(int $x)
+                     * @method static string bar()
+                     */
+                    trait PseudoTrait {}
+
+                    trait RealTrait {
+                        public function foo(?int $x = null): int {
+                            return 1;
+                        }
+                    }
+
+                    class A {
+                        use PseudoTrait, RealTrait;
+                    }
+
+                    class B {
+                        use RealTrait, PseudoTrait;
+                    }
+
+                    class C {
+                        use PseudoTrait;
+
+                        public function foo(?int $x = null): int {
+                            return 1;
+                        }
+
+                        public static function bar(): int {
+                            return 1;
+                        }
+                    }
+
+                    $a = (new A)->foo();
+                    $b = (new B)->foo();
+                    $c = (new C)->foo();
+                    $d = C::bar();',
+                'assertions' => [
+                    '$a===' => 'int',
+                    '$b===' => 'int',
+                    '$c===' => 'int',
+                    '$d===' => 'int',
+                ],
+            ],
+            'parentPseudoMethodYieldsToMethodOfATraitOfTheChild' => [
+                'code' => '<?php
+                    /** @method static foo(int $x) */
+                    class ParentClass {}
+
+                    trait RealTrait {
+                        public function foo(?int $x = null): int {
+                            return 1;
+                        }
+                    }
+
+                    class Child extends ParentClass {
+                        use RealTrait;
+                    }
+
+                    $a = (new Child)->foo();',
+                'assertions' => [
+                    '$a===' => 'int',
+                ],
+            ],
+            'parentInterfacePseudoMethodYieldsToMethodOfTheInterface' => [
+                'code' => '<?php
+                    /** @method string foo() */
+                    interface ParentInterface {}
+
+                    interface ChildInterface extends ParentInterface {
+                        public function foo(): int;
+                    }
+
+                    function f(ChildInterface $i): int {
+                        return $i->foo();
+                    }',
+            ],
+            'staticPseudoMethodOfAParentOrInterfaceYieldsToMethodOfTheClass' => [
+                'code' => '<?php
+                    /** @method static string foo() */
+                    class ParentClass {}
+
+                    /** @method static string foo() */
+                    interface SomeInterface {}
+
+                    trait RealTrait {
+                        public static function foo(): int {
+                            return 1;
+                        }
+                    }
+
+                    class A extends ParentClass {
+                        use RealTrait;
+                    }
+
+                    class B extends ParentClass {
+                        public static function foo(): int {
+                            return 1;
+                        }
+                    }
+
+                    class C implements SomeInterface {
+                        use RealTrait;
+                    }
+
+                    $a = A::foo();
+                    $b = B::foo();
+                    $c = C::foo();',
+                'assertions' => [
+                    '$a===' => 'int',
+                    '$b===' => 'int',
+                    '$c===' => 'int',
+                ],
+            ],
+            'pseudoMethodStillDescribesANonPublicMethodReachedThroughMagicMethods' => [
+                'code' => '<?php
+                    /**
+                     * @method string foo(string $x)
+                     * @method static string bar()
+                     */
+                    trait PseudoTrait {}
+
+                    abstract class A {
+                        use PseudoTrait;
+
+                        abstract protected function foo(string $x): int;
+
+                        abstract protected static function bar(): int;
+
+                        public function __call(string $name, array $args) {
+                            return null;
+                        }
+
+                        public static function __callStatic(string $name, array $args) {
+                            return null;
+                        }
+                    }
+
+                    /** @method static string baz() */
+                    abstract class ParentClass {
+                        public static function __callStatic(string $name, array $args) {
+                            return null;
+                        }
+                    }
+
+                    abstract class Child extends ParentClass {
+                        abstract protected static function baz(): int;
+                    }
+
+                    abstract class GrandParentClass {
+                        abstract protected static function qux(): int;
+
+                        public static function __callStatic(string $name, array $args) {
+                            return null;
+                        }
+                    }
+
+                    /** @method static string qux() */
+                    interface SomeInterface {}
+
+                    abstract class GrandChild extends GrandParentClass implements SomeInterface {}
+
+                    function foo(A $a): string {
+                        return $a->foo("x");
+                    }
+
+                    function bar(): string {
+                        return A::bar();
+                    }
+
+                    function baz(): string {
+                        return Child::baz();
+                    }
+
+                    function qux(): string {
+                        return GrandChild::qux();
+                    }',
+            ],
+            'methodOfAParentInterfaceWinsOverPseudoMethodOfAnother' => [
+                'code' => '<?php
+                    /** @method string foo() */
+                    interface PseudoInterface {}
+
+                    interface RealInterface {
+                        public function foo(): int;
+                    }
+
+                    interface ChildInterface extends PseudoInterface, RealInterface {}
+
+                    interface GrandParentInterface {
+                        public function bar(): int|string;
+                    }
+
+                    /** @method int bar() */
+                    interface ParentInterface extends GrandParentInterface {}
+
+                    interface GrandChildInterface extends ParentInterface {}
+
+                    function foo(ChildInterface $i): int {
+                        return $i->foo();
+                    }
+
+                    function bar(GrandChildInterface $i): int {
+                        return $i->bar();
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'pseudoMethodOfTheClassOrOfItsTraitWinsOverOneOfTheParent' => [
+                'code' => '<?php
+                    /** @method int foo() */
+                    class ParentClass {
+                        public function __call(string $name, array $args) {
+                            return null;
+                        }
+                    }
+
+                    /** @method string foo() */
+                    trait PseudoTrait {}
+
+                    /** @method string foo() */
+                    class A extends ParentClass {}
+
+                    class B extends ParentClass {
+                        use PseudoTrait;
+                    }
+
+                    $a = (new A)->foo();
+                    $b = (new B)->foo();',
+                'assertions' => [
+                    '$a===' => 'string',
+                    '$b===' => 'string',
+                ],
+            ],
+            'pseudoMethodOfATraitOrOfTheParentStillOverridesMethodOfTheGrandparent' => [
+                'code' => '<?php
+                    class GrandParentClass {
+                        public function foo(?int $x = null): int|string {
+                            return 1;
+                        }
+                    }
+
+                    /** @method int foo(?int $x = null) */
+                    trait PseudoTrait {}
+
+                    class A extends GrandParentClass {
+                        use PseudoTrait;
+                    }
+
+                    /** @method int foo(?int $x = null) */
+                    class ParentClass extends GrandParentClass {}
+
+                    class B extends ParentClass {}
+
+                    $a = (new A)->foo();
+                    $b = (new B)->foo();',
+                'assertions' => [
+                    '$a===' => 'int',
+                    '$b===' => 'int',
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
         ];
     }
 
@@ -1560,6 +2147,49 @@ final class MagicMethodAnnotationTest extends TestCase
     public static function providerInvalidCodeParse(): iterable
     {
         return [
+            'magicMethodOverloadReportsAMethodOfAnotherResult' => [
+                'code' => '<?php
+                    final class PagedResult {
+                        public function getPageCount(): int {
+                            return 1;
+                        }
+                    }
+
+                    final class PlainResult {
+                        public function getAllRecords(): array {
+                            return [];
+                        }
+                    }
+
+                    /**
+                     * @method PagedResult search(int $page)
+                     * @method PlainResult search(string $query)
+                     */
+                    final class Searcher {
+                        public function __call(string $name, array $args): object {
+                            return new PlainResult();
+                        }
+                    }
+
+                    (new Searcher())->search(1)->getAllRecords();',
+                'error_message' => 'UndefinedMethod - src' . DIRECTORY_SEPARATOR . 'somefile.php:24:50 - '
+                    . 'Method PagedResult::getAllRecords does not exist',
+            ],
+            'magicMethodOverloadWithoutAMatchingOneReportsTheLastDeclared' => [
+                'code' => '<?php
+                    /**
+                     * @method int pick(string $a)
+                     * @method string pick(int $a)
+                     */
+                    final class Many {
+                        public function __call(string $name, array $args): mixed {
+                            return null;
+                        }
+                    }
+
+                    (new Many())->pick(1.5);',
+                'error_message' => 'InvalidArgument - src' . DIRECTORY_SEPARATOR . 'somefile.php:12:40',
+            ],
             'invalidMagicMethodKeepsItsNameInTheMessage' => [
                 'code' => '<?php
                     /**
