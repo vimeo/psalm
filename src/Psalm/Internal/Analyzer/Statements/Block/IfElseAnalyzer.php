@@ -294,7 +294,7 @@ final class IfElseAnalyzer
 
         // this has to go on a separate line because the phar compactor messes with precedence
         $scope_to_clone = $if_scope->post_leaving_if_context ?? $post_if_context;
-        $else_context = clone $scope_to_clone;
+        $else_context = $scope_to_clone->forkBranch();
 
         // the else runs when every operand of an `||` was evaluated and falsy, so what they assigned is known there
         if (!$if_scope->post_leaving_if_context

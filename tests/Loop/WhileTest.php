@@ -21,6 +21,51 @@ final class WhileTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'whileConditionAfterOffsetUnsetInIf' => [
+                'code' => '<?php
+                    function f(int $k): void {
+                        $xs = [1, 2];
+                        while ($xs !== []) {
+                            if (rand(0, 1)) {
+                                unset($xs[$k]);
+                            }
+                        }
+                    }',
+            ],
+            'whileConditionAfterOffsetUnsetInIfInTryAndForeach' => [
+                'code' => '<?php
+                    final class Job {
+                        public function isStarted(): bool {
+                            return false;
+                        }
+
+                        public function start(): void {}
+
+                        public function isTerminated(): bool {
+                            return false;
+                        }
+                    }
+
+                    function f(): void {
+                        $fibers = [new Job(), new Job()];
+
+                        try {
+                            while ($fibers !== []) {
+                                foreach ($fibers as $key => $fiber) {
+                                    if (!$fiber->isStarted()) {
+                                        $fiber->start();
+                                    }
+
+                                    if ($fiber->isTerminated()) {
+                                        unset($fibers[$key]);
+                                    }
+                                }
+                            }
+                        } finally {
+                            echo "done";
+                        }
+                    }',
+            ],
             'variableAssignedInTheConditionOfAnIfThatBreaks' => [
                 'code' => '<?php
                     final class Link {

@@ -211,7 +211,7 @@ final class TernaryAnalyzer
             );
         }
 
-        $t_else_context = clone $context;
+        $t_else_context = $context->forkBranch();
 
         // the else runs when every operand of an `||` was evaluated and falsy, so what they assigned is known there
         if (array_filter($assigned_in_conditional_var_ids) !== [] && $pre_condition_context !== null) {
@@ -228,6 +228,8 @@ final class TernaryAnalyzer
             if (ExpressionAnalyzer::analyze($statements_analyzer, $stmt->if, $if_context) === false) {
                 return false;
             }
+
+            $context->mergeBranchRemovals($if_context);
 
             $context->cond_referenced_var_ids = [
                 ...$context->cond_referenced_var_ids,
@@ -261,6 +263,8 @@ final class TernaryAnalyzer
         if (ExpressionAnalyzer::analyze($statements_analyzer, $stmt->else, $t_else_context) === false) {
             return false;
         }
+
+        $context->mergeBranchRemovals($t_else_context);
 
         // a branch that never finishes (throw, exit) leaves the other one as the only way past the ternary
         $if_type = $stmt->if ? $statements_analyzer->node_data->getType($stmt->if) : null;

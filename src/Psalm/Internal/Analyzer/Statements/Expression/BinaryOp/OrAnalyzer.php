@@ -104,7 +104,7 @@ final class OrAnalyzer
 
             $post_leaving_if_context = clone $context;
 
-            $left_context = clone $context;
+            $left_context = $context->forkBranch();
             $left_context->if_body_context = null;
             $left_context->assigned_var_ids = [];
 
@@ -112,9 +112,7 @@ final class OrAnalyzer
                 return false;
             }
 
-            foreach ($left_context->parent_remove_vars as $var_id => $_) {
-                $context->removeVarFromConflictingClauses($var_id);
-            }
+            $context->mergeBranchRemovals($left_context);
 
             IfConditionalAnalyzer::handleParadoxicalCondition($statements_analyzer, $stmt->left);
 
@@ -208,7 +206,7 @@ final class OrAnalyzer
 
         $changed_var_ids = [];
 
-        $right_context = clone $context;
+        $right_context = $context->forkBranch();
 
         if ($stmt->left instanceof PhpParser\Node\Expr\BinaryOp\BooleanOr
             && $left_assigned_var_ids
@@ -277,6 +275,8 @@ final class OrAnalyzer
         if (ExpressionAnalyzer::analyze($statements_analyzer, $stmt->right, $right_context) === false) {
             return false;
         }
+
+        $context->mergeBranchRemovals($right_context);
 
         IfConditionalAnalyzer::handleParadoxicalCondition($statements_analyzer, $stmt->right);
 
