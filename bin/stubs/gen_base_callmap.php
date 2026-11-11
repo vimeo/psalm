@@ -15,6 +15,12 @@ foreach (explode(' ', $argv[2] ?? '') as $extension) {
     }
 }
 
+// The stubs downloaded below come from the commit the lock pins, so they change only with the lock.
+$phpstormStubs = $argv[3] ?? '';
+if (!preg_match('/^[0-9a-f]{40}$/', $phpstormStubs)) {
+    throw new RuntimeException('Expected a phpstorm-stubs commit, got ' . var_export($phpstormStubs, true));
+}
+
 $callmap = [];
 // the extension of each entry: gen_callmap.php keeps the overrides of the extensions a version's image lacks
 $extensions = [];
@@ -122,7 +128,7 @@ foreach ([
     if ($stub === 'ibm_db2/ibm_db2.php' && PHP_MAJOR_VERSION < 8) {
         continue;
     }
-    $stub = file_get_contents("https://github.com/JetBrains/phpstorm-stubs/raw/refs/heads/master/$stub");
+    $stub = file_get_contents("https://github.com/JetBrains/phpstorm-stubs/raw/$phpstormStubs/$stub");
     if ($stub === false) {
         throw new RuntimeException('Cannot download the extension stub');
     }

@@ -7,19 +7,29 @@ use Composer\Semver\Semver;
 use Composer\Semver\VersionParser;
 
 /**
- * Generates the stub Dockerfile for a single PHP version on the fly and builds &
- * pushes it, reusing a persistent buildx registry cache.
+ * Generates the stub image Dockerfile of a PHP version from the committed lock (image_lock.php), and builds and
+ * pushes the image, reusing a persistent buildx registry cache.
  *
- * The cache is invalidated (via the CACHEBUST build arg) whenever PHP itself or
- * the resolved version of ANY installed extension changes. To do that exactly,
- * the cache key folds in, per extension, the version from that extension's real
- * source (see SOURCES): the PHP base image for bundled extensions, Packagist for
- * extensions installed with PIE, PECL for the other PECL extensions, and the
- * upstream git commit for extensions installed from a branch.
+ * The lock pins every input of an image: the PHP base image digest, the install-php-extensions release and its hash,
+ * and the version (or commit) of every separately released extension. The last layer of an image fails the build
+ * unless PHP and those extensions have their locked versions. Images are tagged with a hash of their Dockerfile, so
+ * each is built once per namespace.
+ *
+ * New versions are only resolved (from the base image registry, Packagist, GitHub, and a probe build for the
+ * versions install-php-extensions picks itself) for the inputs the lock lacks, or for all of them with --refresh.
  *
  * Usage:
- *   php build_docker.php <version>   build & push ghcr.io/$ACTOR/psalm:internal_stubs_<version>
- *   php build_docker.php --versions  print the supported versions as a JSON array
+ *   php build_docker.php [--refresh] <version>    resolve what the lock lacks, then build & push ghcr.io/$ACTOR/psalm:<tag>
+ *   php build_docker.php [--refresh] --globals    resolve the installer release and the phpstorm-stubs commit
+ *   php build_docker.php --dockerfile <version>   print the Dockerfile generated from the lock
+ *   php build_docker.php --tag <version>          print the image tag
+ *   php build_docker.php --phpstorm-stubs         print the locked phpstorm-stubs commit
+ *   php build_docker.php --stale                  print the versions whose reflected callmaps don't match the lock (JSON)
+ *   php build_docker.php --stale-plain            the same, space separated
+ *   php build_docker.php --record <version>...    stamp the reflected callmaps of versions as matching the lock
+ *   php build_docker.php --lock-part [<version>]  print the installer, phpstorm-stubs and version entries of the lock (JSON)
+ *   php build_docker.php --merge-lock <dir>       merge the JSON lock parts in a directory into the lock
+ *   php build_docker.php --versions               print the supported versions as a JSON array
  */
 
 /** PHP versions we build stub images for. Single source of truth (also drives the CI matrix). */
@@ -146,12 +156,10 @@ const PIE_PACKAGES = [
 ];
 
 /**
- * Where install-php-extensions gets each extension's version from, keyed by the
- * base extension name (without any "-<stability>" suffix). Used to build a cache
- * key that changes exactly when the installed version would change:
- *   'php'                  bundled with PHP itself -> tracked by the base image digest
- *   'pecl'                 resolved from PECL       -> newest release on PECL of the wanted stability
- *   'git:<owner>/<repo>@<ref>'  installed from a git branch/tag with no version -> upstream commit
+ * Where each extension comes from, keyed by the base extension name (without any "-<stability>" suffix):
+ *   'php'                       bundled with PHP itself: pinned by the base image digest
+ *   'pecl'                      a PECL release: the lock pins the PIE release, or the one install-php-extensions picks
+ *   'git:<owner>/<repo>@<ref>'  installed from git: the lock pins the commit <ref> pointed to
  */
 const SOURCES = [
     'memcached' => 'pecl',
@@ -190,7 +198,49 @@ const SOURCES = [
     'ffi' => 'php',
 ];
 
-const INSTALLER_URL = 'https://github.com/mlocati/docker-php-extension-installer/releases/latest/download/install-php-extensions';
+const INSTALLER_REPOSITORY = 'mlocati/docker-php-extension-installer';
+const PHPSTORM_STUBS_REPOSITORY = 'JetBrains/phpstorm-stubs';
+
+/** The exact inputs of every image. Committed; only this script changes it. */
+const IMAGE_LOCK = __DIR__ . '/image_lock.php';
+
+/** Per version, the stamp (see stamp()) of the committed reflected callmaps. */
+const CALLMAP_INPUTS = __DIR__ . '/../../dictionaries/autogen/CallMapInputs.php';
+
+/**
+ * The lock's values end up in Dockerfiles and shell commands, so anything else is rejected. Extension specs are
+ * "pecl@<version>", "pie@<package>:<version>" or "git@<commit>:<version>".
+ */
+const LOCK_PATTERNS = [
+    'installer' => '~^\d+\.\d+\.\d+@sha256:[0-9a-f]{64}$~',
+    'phpstorm-stubs' => '~^[0-9a-f]{40}$~',
+    'php' => '~^\d+\.\d+\.\d+[A-Za-z0-9.]*@sha256:[0-9a-f]{64}$~',
+    'extension' => '~^(pecl@\d[A-Za-z0-9.]*|pie@[a-z0-9_.-]+/[a-z0-9_.-]+:v?\d[A-Za-z0-9.-]*|git@[0-9a-f]{40}:\d[A-Za-z0-9.]*)$~',
+];
+
+/** A version an extension reports that install-php-extensions takes back (<extension>-<version>). */
+const REPORTED_VERSION = '~^\d[A-Za-z0-9.]*$~';
+
+const CACHE_KEY_LABEL = 'dev.psalm.stubs.cache-key';
+const COMPONENTS_LABEL = 'dev.psalm.stubs.components';
+
+// Both run on the PHP of the images, 7.0 included. The first fails the build unless PHP and every separately
+// released extension have their locked versions.
+const VERIFY_SCRIPT = '$failed = PHP_VERSION !== $argv[1];'
+    . ' if ($failed) { fwrite(STDERR, "php: locked " . $argv[1] . ", installed " . PHP_VERSION . "\n"); }'
+    . ' foreach (array_slice($argv, 2) as $locked) {'
+    . ' list($extension, $version) = explode("=", $locked, 2);'
+    . ' $installed = phpversion($extension);'
+    . ' if ($installed !== $version) {'
+    . ' $failed = true;'
+    . ' fwrite(STDERR, $extension . ": locked " . $version . ", installed " . var_export($installed, true) . "\n");'
+    . ' }'
+    . ' }'
+    . ' exit($failed ? 1 : 0);';
+const PROBE_SCRIPT = 'foreach (array_slice($argv, 1) as $extension) {'
+    . ' $version = phpversion($extension);'
+    . ' echo $extension, "=", $version === false ? "" : $version, "\n";'
+    . ' }';
 
 function fail(string $message): never
 {
@@ -226,15 +276,66 @@ function capture(string $cmd): string
     return implode("\n", $out);
 }
 
-/** Fetch a URL as a string (with retries), aborting on persistent failure. */
-function fetch(string $url, array $headers = []): string
+/** A curl command fetching a URL (with retries). */
+function curl(string $url, array $headers = []): string
 {
     $cmd = 'curl --fail --silent --show-error --location --max-time 30 --retry 5 --retry-all-errors --retry-delay 2';
     foreach ($headers as $header) {
         $cmd .= ' -H ' . escapeshellarg($header);
     }
-    $cmd .= ' ' . escapeshellarg($url);
-    return capture($cmd);
+    return $cmd . ' ' . escapeshellarg($url);
+}
+
+/** Fetch a URL as a string (with retries), aborting on persistent failure. */
+function fetch(string $url, array $headers = []): string
+{
+    return capture(curl($url, $headers));
+}
+
+/** The sha256 of the file at a URL (fetch() would drop its trailing whitespace). */
+function fetchHash(string $url): string
+{
+    $file = tempnam(sys_get_temp_dir(), 'psalm-stub-');
+    capture(curl($url) . ' --output ' . escapeshellarg($file));
+    $hash = hash_file('sha256', $file);
+    unlink($file);
+    return $hash;
+}
+
+/** Headers for the GitHub API, authenticated when GITHUB_TOKEN is set. */
+function githubHeaders(string $accept): array
+{
+    $headers = ['Accept: ' . $accept];
+    if (($token = getenv('GITHUB_TOKEN')) !== false && $token !== '') {
+        $headers[] = 'Authorization: Bearer ' . $token;
+    }
+    return $headers;
+}
+
+/** The commit a branch of a GitHub repository points to. */
+function gitCommit(string $repository, string $ref): string
+{
+    $sha = trim(fetch("https://api.github.com/repos/$repository/commits/$ref", githubHeaders('application/vnd.github.sha')));
+    if (!preg_match('/^[0-9a-f]{40}$/', $sha)) {
+        fail("Could not resolve the commit of $repository@$ref (got '$sha').");
+    }
+    return $sha;
+}
+
+function installerUrl(string $release): string
+{
+    return 'https://github.com/' . INSTALLER_REPOSITORY . "/releases/download/$release/install-php-extensions";
+}
+
+function supportedVersion(?string $version, string $usage): string
+{
+    if ($version === null) {
+        fail("Usage: build_docker.php $usage");
+    }
+    if (!in_array($version, VERSIONS, true)) {
+        fail("Unsupported version '$version'. Supported: " . implode(', ', VERSIONS));
+    }
+    return $version;
 }
 
 /** The list of extensions installed for a given version, after includes/excludes. */
@@ -261,43 +362,28 @@ function extensionsFor(string $version): array
     return $extensions;
 }
 
-/** Resolve the version identifier for one extension from its real source. */
-function extensionVersion(string $extension, string $phpBaseDigest): string
+/**
+ * The separately released extensions of a version, whose versions the lock pins.
+ *
+ * @return array<string, string> base name => name in extensionsFor()
+ */
+function lockedExtensions(string $version): array
 {
-    $base = explode('-', $extension, 2)[0];
-    $source = SOURCES[$base];
+    $extensions = [];
+    foreach (extensionsFor($version) as $extension) {
+        $base = explode('-', $extension, 2)[0];
+        if (SOURCES[$base] !== 'php') {
+            $extensions[$base] = $extension;
+        }
+    }
+    ksort($extensions);
+    return $extensions;
+}
 
-    if ($source === 'php') {
-        // Bundled with PHP: its version is the PHP version, already covered by the base image digest.
-        return 'bundled@' . $phpBaseDigest;
-    }
-    if ($source === 'pecl') {
-        $suffix = explode('-', $extension, 2)[1] ?? '';
-        if (preg_match('/^\d/', $suffix)) {
-            // pinned to a version
-            return 'pecl@' . $suffix;
-        }
-        // The query string gets past the PECL CDN, which can serve these files days out of date.
-        $stability = $suffix === '' ? 'stable' : $suffix;
-        $resolved = trim(fetch("https://pecl.php.net/rest/r/$base/$stability.txt?" . time()));
-        if (!preg_match('/^\d[\w.]*$/', $resolved)) {
-            fail("Could not parse the $stability version of PECL extension '$base'.");
-        }
-        return 'pecl@' . $resolved;
-    }
-    if (preg_match('#^git:([^@]+)@(.+)$#', $source, $m)) {
-        [, $repo, $ref] = $m;
-        $headers = ['Accept: application/vnd.github.sha'];
-        if (($token = getenv('GITHUB_TOKEN')) !== false && $token !== '') {
-            $headers[] = 'Authorization: Bearer ' . $token;
-        }
-        $sha = trim(fetch("https://api.github.com/repos/$repo/commits/$ref", $headers));
-        if (!preg_match('/^[0-9a-f]{40}$/', $sha)) {
-            fail("Could not resolve commit for git source '$source' (got '$sha').");
-        }
-        return "git@$sha";
-    }
-    fail("Unknown source '$source' for extension '$base'.");
+/** @return array{string, string}|null the repository and ref of an extension installed from git */
+function gitSource(string $base): ?array
+{
+    return preg_match('#^git:([^@]+)@(.+)$#', SOURCES[$base], $m) ? [$m[1], $m[2]] : null;
 }
 
 /** The PHP base image of a version. */
@@ -317,16 +403,16 @@ function phpBaseDigest(string $version): string
     return $m[1];
 }
 
-/** The PHP version of the PHP base image for a version, e.g. 8.4.14. */
-function phpBaseVersion(string $version): string
+/** The PHP version of a PHP base image, e.g. 8.4.14. */
+function phpBaseVersion(string $image): string
 {
-    $config = imageConfig(phpBaseImage($version)) ?? [];
+    $config = imageConfig($image) ?? [];
     foreach ($config['Env'] ?? $config['env'] ?? [] as $env) {
         if (is_string($env) && str_starts_with($env, 'PHP_VERSION=')) {
             return substr($env, strlen('PHP_VERSION='));
         }
     }
-    fail('Could not determine the PHP version of ' . phpBaseImage($version) . '.');
+    fail("Could not determine the PHP version of $image.");
 }
 
 /** Composer's stabilities, most stable first, under their Composer and PECL names. */
@@ -378,60 +464,6 @@ function pieInstalls(array $extensions, string $phpVersion): array
 }
 
 /**
- * Resolve the cache-busting components for a version: the PHP base image digest,
- * the installer, and every extension's real version, as an ordered list of
- * "name=version" strings. The CACHEBUST key is a hash of exactly this list, so
- * the list also explains *why* the key (and thus the image) changed.
- *
- * @param array<string, string> $pieInstalls
- * @return list<string>
- */
-function resolveComponents(string $version, array $extensions, array $pieInstalls, string $phpBaseDigest): array
-{
-    $installerSha = hash('sha256', fetch(INSTALLER_URL));
-
-    $components = [
-        'php=' . $phpBaseDigest,
-        'install-php-extensions=' . $installerSha,
-        'pie=' . PIE_VERSION,
-    ];
-    $versions = [];
-    foreach ($extensions as $extension) {
-        $versions[$extension] = isset($pieInstalls[$extension])
-            ? 'pie@' . PIE_PACKAGES[explode('-', $extension, 2)[0]]['package'] . ':' . $pieInstalls[$extension]
-            : extensionVersion($extension, $phpBaseDigest);
-    }
-    ksort($versions);
-    echo "Resolved versions for PHP $version:\n";
-    echo "  php = $phpBaseDigest\n";
-    echo "  install-php-extensions = $installerSha\n";
-    foreach ($versions as $extension => $resolved) {
-        echo "  $extension = $resolved\n";
-        $components[] = "$extension=$resolved";
-    }
-    return $components;
-}
-
-/** @param list<string> $components */
-function cacheKeyFromComponents(array $components): string
-{
-    return hash('sha256', implode("\n", $components));
-}
-
-/**
- * Build the cache-busting key for a version: PHP base image + every extension's real version.
- *
- * @param array<string, string> $pieInstalls
- */
-function cacheKey(string $version, array $extensions, array $pieInstalls, string $phpBaseDigest): string
-{
-    return cacheKeyFromComponents(resolveComponents($version, $extensions, $pieInstalls, $phpBaseDigest));
-}
-
-const CACHE_KEY_LABEL = 'dev.psalm.stubs.cache-key';
-const COMPONENTS_LABEL = 'dev.psalm.stubs.components';
-
-/**
  * Read the config of an image in a registry, without pulling its layers.
  * Returns null when the image does not exist (or cannot be inspected).
  */
@@ -464,109 +496,393 @@ function imageConfig(string $image): ?array
     return is_array($config) ? $config : [];
 }
 
-/**
- * Read the labels of an image already in the registry, without pulling its
- * layers. Returns null when the image does not exist (or cannot be inspected).
- *
- * @return array<string, string>|null
- */
-function imageLabels(string $image): ?array
+// --- The lock and the stamps ---------------------------------------------------
+
+function loadPhpData(string $path): array
 {
-    $config = imageConfig($image);
-    if ($config === null) {
+    $data = require $path;
+    if (!is_array($data)) {
+        fail("$path does not return an array.");
+    }
+    return $data;
+}
+
+function writePhpData(string $path, array $data): void
+{
+    if (file_put_contents($path, "<?php // phpcs:ignoreFile\n\nreturn " . var_export($data, true) . ";\n") === false) {
+        fail("Could not write $path.");
+    }
+}
+
+/**
+ * Validate lock data, in the order it is committed in. Entries of versions no longer built are dropped.
+ *
+ * @return array{installer?: string, phpstorm-stubs?: string, versions: array<string, array{php: string, extensions: array<string, string>}>}
+ */
+function validLock(array $data, string $source): array
+{
+    $lock = [];
+    foreach (['installer', 'phpstorm-stubs'] as $key) {
+        if (!isset($data[$key])) {
+            continue;
+        }
+        if (!is_string($data[$key]) || !preg_match(LOCK_PATTERNS[$key], $data[$key])) {
+            fail("$source: invalid $key " . var_export($data[$key], true) . '.');
+        }
+        $lock[$key] = $data[$key];
+    }
+    $versions = $data['versions'] ?? [];
+    if (!is_array($versions)) {
+        fail("$source: invalid versions.");
+    }
+    $lock['versions'] = [];
+    foreach (VERSIONS as $version) {
+        if (!isset($versions[$version])) {
+            continue;
+        }
+        $entry = $versions[$version];
+        if (!is_array($entry)
+            || !is_string($entry['php'] ?? null)
+            || !preg_match(LOCK_PATTERNS['php'], $entry['php'])
+            || !str_starts_with($entry['php'], "$version.")
+            || !is_array($entry['extensions'] ?? null)
+        ) {
+            fail("$source: invalid entry for PHP $version.");
+        }
+        $extensions = $entry['extensions'];
+        foreach ($extensions as $extension => $spec) {
+            if (!preg_match('/^[a-z0-9_]+$/', (string) $extension)
+                || !is_string($spec)
+                || !preg_match(LOCK_PATTERNS['extension'], $spec)
+            ) {
+                fail("$source: invalid spec " . var_export($spec, true) . " of $extension for PHP $version.");
+            }
+        }
+        ksort($extensions);
+        $lock['versions'][$version] = ['php' => $entry['php'], 'extensions' => $extensions];
+    }
+    return $lock;
+}
+
+function loadLock(): array
+{
+    return validLock(loadPhpData(IMAGE_LOCK), IMAGE_LOCK);
+}
+
+function writeLock(array $lock): void
+{
+    writePhpData(IMAGE_LOCK, validLock($lock, 'the resolved lock'));
+}
+
+/** Whether a locked spec still installs an extension the way the constants above ask for. */
+function specMatches(string $extension, string $spec): bool
+{
+    [$base, $suffix] = array_pad(explode('-', $extension, 2), 2, '');
+    if (gitSource($base) !== null) {
+        return str_starts_with($spec, 'git@');
+    }
+    if (preg_match('/^\d/', $suffix)) {
+        return $spec === "pecl@$suffix";
+    }
+    if (str_starts_with($spec, 'pie@')) {
+        return isset(PIE_PACKAGES[$base]) && str_starts_with($spec, 'pie@' . PIE_PACKAGES[$base]['package'] . ':');
+    }
+    return str_starts_with($spec, 'pecl@');
+}
+
+/**
+ * The lock entry of a version, if the lock pins every input of its image.
+ *
+ * @return array{php: string, extensions: array<string, string>}|null
+ */
+function lockEntry(array $lock, string $version): ?array
+{
+    $entry = $lock['versions'][$version] ?? null;
+    if ($entry === null || !isset($lock['installer'], $lock['phpstorm-stubs'])) {
         return null;
     }
-
-    $labels = $config['Labels'] ?? $config['labels'] ?? [];
-    if (!is_array($labels)) {
-        return [];
+    $extensions = lockedExtensions($version);
+    if (array_keys($extensions) !== array_keys($entry['extensions'])) {
+        return null;
     }
-
-    $result = [];
-    foreach ($labels as $key => $value) {
-        if (is_string($key) && is_string($value)) {
-            $result[$key] = $value;
+    foreach ($extensions as $base => $extension) {
+        if (!specMatches($extension, $entry['extensions'][$base])) {
+            return null;
         }
     }
-    return $result;
+    return $entry;
+}
+
+/** The version an extension installed from a locked spec reports. */
+function specVersion(string $spec): string
+{
+    [$type, $value] = explode('@', $spec, 2);
+    return match ($type) {
+        'pecl' => $value,
+        'pie' => preg_replace('/^v/', '', explode(':', $value, 2)[1]),
+        'git' => explode(':', $value, 2)[1],
+    };
+}
+
+/** Resolve the installer release and the phpstorm-stubs commit, if the lock lacks them or with $refresh. */
+function resolveGlobals(array $lock, bool $refresh): array
+{
+    $resolved = $lock;
+    if ($refresh || !isset($lock['installer'])) {
+        $release = json_decode(fetch(
+            'https://api.github.com/repos/' . INSTALLER_REPOSITORY . '/releases/latest',
+            githubHeaders('application/vnd.github+json'),
+        ), true);
+        $tag = is_array($release) ? ($release['tag_name'] ?? null) : null;
+        if (!is_string($tag) || !preg_match('/^\d+\.\d+\.\d+$/', $tag)) {
+            fail('Could not resolve the latest release of ' . INSTALLER_REPOSITORY . '.');
+        }
+        $resolved['installer'] = "$tag@sha256:" . fetchHash(installerUrl($tag));
+    }
+    if ($refresh || !isset($lock['phpstorm-stubs'])) {
+        $resolved['phpstorm-stubs'] = gitCommit(PHPSTORM_STUBS_REPOSITORY, 'master');
+    }
+    foreach (['installer', 'phpstorm-stubs'] as $key) {
+        if (($lock[$key] ?? null) !== $resolved[$key]) {
+            echo "::notice title=Stub image lock::$key: " . ($lock[$key] ?? '(none)') . " -> $resolved[$key]\n";
+        }
+    }
+    return $resolved;
 }
 
 /**
- * Parse a "name=version" component list into a map.
+ * Resolve the inputs of a version's image the lock lacks or the constants above changed (all of them with
+ * $refresh): the base image, the PIE release of the extensions installed with PIE, the commit of the ones installed
+ * from git, and the versions install-php-extensions picks for the others. It pins old versions for old PHP, so those
+ * are read from a probe build, never predicted.
+ */
+function resolveVersion(array $lock, string $version, bool $refresh): array
+{
+    $old = $lock['versions'][$version] ?? ['php' => null, 'extensions' => []];
+    if ($refresh || $old['php'] === null) {
+        $digest = phpBaseDigest($version);
+        $php = phpBaseVersion(phpBaseImage($version) . "@$digest") . "@$digest";
+    } else {
+        $php = $old['php'];
+    }
+
+    $specs = [];
+    $probes = [];
+    foreach (lockedExtensions($version) as $base => $extension) {
+        $locked = $refresh ? null : ($old['extensions'][$base] ?? null);
+        if ($locked !== null && specMatches($extension, $locked)) {
+            $specs[$base] = $locked;
+            continue;
+        }
+        $suffix = explode('-', $extension, 2)[1] ?? '';
+        $git = gitSource($base);
+        if ($git !== null) {
+            $commit = gitCommit($git[0], $git[1]);
+            $probes[$base] = ["$git[0]@$commit", "git@$commit:"];
+        } elseif (preg_match('/^\d/', $suffix)) {
+            $specs[$base] = "pecl@$suffix";
+        } elseif (($pie = pieInstalls([$extension], explode('@', $php, 2)[0])) !== []) {
+            $specs[$base] = 'pie@' . PIE_PACKAGES[$base]['package'] . ':' . $pie[$extension];
+        } else {
+            $probes[$base] = [$extension, 'pecl@'];
+        }
+    }
+    if ($probes !== []) {
+        $reported = probe($version, $lock['installer'], $php, array_map(static fn(array $probe): string => $probe[0], $probes));
+        foreach ($probes as $base => [, $prefix]) {
+            if (!preg_match(REPORTED_VERSION, $reported[$base] ?? '')) {
+                fail("PHP $version: $base reports the version " . var_export($reported[$base] ?? null, true) . ', which cannot be pinned.');
+            }
+            $specs[$base] = $prefix . $reported[$base];
+        }
+    }
+    ksort($specs);
+
+    if ($php !== $old['php']) {
+        echo "::notice title=Stub image lock::PHP $version: php " . ($old['php'] ?? '(none)') . " -> $php\n";
+    }
+    foreach (array_keys($old['extensions'] + $specs) as $base) {
+        if (($old['extensions'][$base] ?? null) !== ($specs[$base] ?? null)) {
+            echo "::notice title=Stub image lock::PHP $version: $base " . ($old['extensions'][$base] ?? '(none)')
+                . ' -> ' . ($specs[$base] ?? '(none)') . "\n";
+        }
+    }
+
+    $lock['versions'][$version] = ['php' => $php, 'extensions' => $specs];
+    return validLock($lock, "the lock resolved for PHP $version");
+}
+
+/**
+ * Build extensions with install-php-extensions alone, on the locked base image and installer, and return the version
+ * each reports.
  *
- * @param list<string> $components
+ * @param array<string, string> $installs base name => install-php-extensions argument
  * @return array<string, string>
  */
-function componentMap(array $components): array
+function probe(string $version, string $installer, string $php, array $installs): array
 {
-    $map = [];
-    foreach ($components as $component) {
-        [$name, $version] = array_pad(explode('=', $component, 2), 2, '');
-        $map[$name] = $version;
+    $dockerfile = fromStep($version, $php) . " AS probe\n"
+        . installerStep($version, $installer) . "\n"
+        . installStep($version, array_values($installs)) . "\n"
+        . 'RUN php -r ' . escapeshellarg(PROBE_SCRIPT) . ' -- ' . implode(' ', array_keys($installs)) . " > /versions.txt\n\n"
+        . "FROM scratch\nCOPY --from=probe /versions.txt /\n";
+    $context = buildContext($version, $dockerfile);
+    // the instructions name no versions, so a cached layer would hold the versions of an older build
+    run(sprintf(
+        'docker buildx build --no-cache --output %s -f %s %s',
+        escapeshellarg("type=local,dest=$context/out"),
+        escapeshellarg("$context/Dockerfile"),
+        escapeshellarg($context),
+    ));
+    $reported = [];
+    foreach (file("$context/out/versions.txt", FILE_IGNORE_NEW_LINES) ?: [] as $line) {
+        [$base, $installed] = array_pad(explode('=', $line, 2), 2, '');
+        $reported[$base] = $installed;
     }
-    return $map;
+    unlink("$context/out/versions.txt");
+    rmdir("$context/out");
+    removeContext($context);
+    return $reported;
 }
 
 /**
- * Log, before building, whether this run rebuilds the image and — when it does —
- * exactly which resolved component changed the CACHEBUST key. Prints GitHub
- * Actions `::notice::` annotations so the reason is visible in the run summary,
- * not just buried in the buildx layer log.
+ * The stamp of a version's reflected callmaps: a hash of every input of the reflection (the image, the extraction
+ * script and the downloaded stubs), and hashes of the files it wrote. Null if the lock doesn't pin the image or a
+ * file is missing.
  *
- * @param list<string> $components
+ * @return array{inputs: string, files: array<string, string>}|null
  */
-function explainRebuild(string $image, string $cacheKey, array $components): void
+function stamp(string $version, array $lock): ?array
 {
-    $labels = imageLabels($image);
-
-    if ($labels === null) {
-        echo "::notice title=Stub image::Building $image from scratch: no image with this tag exists in the registry yet.\n";
-        return;
+    if (lockEntry($lock, $version) === null) {
+        return null;
     }
-
-    $oldKey = $labels[CACHE_KEY_LABEL] ?? null;
-
-    if ($oldKey === $cacheKey) {
-        echo "::notice title=Stub image::$image is up to date (cache key $cacheKey unchanged); "
-            . "the extension layer is reused and nothing is rebuilt.\n";
-        return;
+    $suffix = str_replace('.', '', $version);
+    $files = [];
+    foreach (["CallMap_$suffix.php", "CallMapExtensions_$suffix.php"] as $file) {
+        $path = dirname(CALLMAP_INPUTS) . "/$file";
+        if (!is_file($path)) {
+            return null;
+        }
+        $files[$file] = normalizedHash($path);
     }
+    return [
+        'inputs' => hash('sha256', implode("\n", [
+            generateDockerfile($version, $lock),
+            normalizedHash(__DIR__ . '/gen_base_callmap.php'),
+            $lock['phpstorm-stubs'],
+        ])),
+        'files' => $files,
+    ];
+}
 
-    echo "::notice title=Stub image::Rebuilding $image because the cache key changed"
-        . ($oldKey === null ? ' (the existing image predates cache-key labelling)' : '') . ".\n";
-    echo "  old cache key: " . ($oldKey ?? '(none)') . "\n";
-    echo "  new cache key: $cacheKey\n";
-
-    $encodedOld = $labels[COMPONENTS_LABEL] ?? '';
-    $decodedOld = $encodedOld === '' ? false : base64_decode($encodedOld, true);
-    if ($decodedOld === false) {
-        echo "  (the existing image has no component breakdown, so the individual change cannot be shown)\n";
-        return;
+/** A hash of a file that doesn't depend on the line endings of the checkout. */
+function normalizedHash(string $path): string
+{
+    $contents = file_get_contents($path);
+    if ($contents === false) {
+        fail("Could not read $path.");
     }
+    return hash('sha256', str_replace("\r\n", "\n", $contents));
+}
 
-    $oldMap = componentMap(explode("\n", $decodedOld));
-    $newMap = componentMap($components);
+/** @return list<string> the versions whose reflected callmaps weren't generated from the locked inputs */
+function staleVersions(array $lock): array
+{
+    $stamps = loadPhpData(CALLMAP_INPUTS);
+    return array_values(array_filter(
+        VERSIONS,
+        static fn(string $version): bool => ($stamps[$version] ?? null) !== (stamp($version, $lock) ?? false),
+    ));
+}
 
-    echo "  changed components (this is why the image is rebuilt):\n";
-    $any = false;
-    foreach ($newMap as $name => $version) {
-        if (!array_key_exists($name, $oldMap)) {
-            echo "    + $name = $version (added)\n";
-            $any = true;
-        } elseif ($oldMap[$name] !== $version) {
-            echo "    ~ $name: {$oldMap[$name]} -> $version\n";
-            $any = true;
+/** @param list<string> $versions */
+function record(array $versions, array $lock): void
+{
+    $stamps = loadPhpData(CALLMAP_INPUTS);
+    foreach ($versions as $version) {
+        $stamps[$version] = stamp($version, $lock)
+            ?? fail("Cannot stamp PHP $version: the lock doesn't pin its image, or a reflected callmap is missing.");
+    }
+    $ordered = [];
+    foreach (VERSIONS as $version) {
+        if (isset($stamps[$version])) {
+            $ordered[$version] = $stamps[$version];
         }
     }
-    foreach ($oldMap as $name => $version) {
-        if (!array_key_exists($name, $newMap)) {
-            echo "    - $name = $version (removed)\n";
-            $any = true;
+    writePhpData(CALLMAP_INPUTS, $ordered);
+}
+
+/** Merge the lock parts (see --lock-part) in a directory into the lock; parts must not contradict each other. */
+function mergeLock(array $lock, string $directory): array
+{
+    $files = glob("$directory/*.json") ?: [];
+    if ($files === []) {
+        fail("No lock parts in $directory.");
+    }
+    $merged = ['versions' => []];
+    foreach ($files as $file) {
+        $data = json_decode((string) file_get_contents($file), true);
+        $part = validLock(is_array($data) ? $data : fail("$file is not a lock part."), $file);
+        foreach ($part['versions'] as $version => $entry) {
+            if (isset($merged['versions'][$version]) && $merged['versions'][$version] !== $entry) {
+                fail("$file: the entry for PHP $version differs from that of another part.");
+            }
+            $merged['versions'][$version] = $entry;
+        }
+        unset($part['versions']);
+        foreach ($part as $key => $value) {
+            if (isset($merged[$key]) && $merged[$key] !== $value) {
+                fail("$file: its $key differs from that of another part.");
+            }
+            $merged[$key] = $value;
         }
     }
-    if (!$any) {
-        echo "    (no component version differs; the key changed for another reason, e.g. the key format itself)\n";
+    $merged['versions'] += $lock['versions'];
+    return validLock($merged + $lock, 'the merged lock');
+}
+
+// --- The Dockerfile ------------------------------------------------------------
+
+/** The FROM instruction of a version's image: the base image, by digest. */
+function fromStep(string $version, string $php): string
+{
+    return 'FROM ' . phpBaseImage($version) . '@' . explode('@', $php, 2)[1];
+}
+
+/** The locked install-php-extensions release, checked against its hash, and what it needs to run on the version. */
+function installerStep(string $version, string $installer): string
+{
+    [$release, $checksum] = explode('@', $installer, 2);
+    // The base images of a version with no release come without pecl, and install-php-extensions
+    // refuses a version it doesn't know yet: install PEAR, and let it treat the version like the
+    // ones it supports (else it falls back to pickle, which doesn't run on the new version either).
+    $supportStep = '';
+    if (isset(BASE_IMAGE_TAGS[$version])) {
+        $majorMinor = str_replace('.', '0', $version);
+        $supportStep = " && \\\n    sed -i -E '/^[[:space:]]*505 \\| 506 \\|/ s/\\) ;;\$/ | $majorMinor) ;;/'"
+            . ' /usr/local/bin/install-php-extensions'
+            . " && \\\n    curl -fsSL https://pear.php.net/install-pear-nozlib.phar -o /tmp/pear.phar"
+            . " && \\\n    php /tmp/pear.phar && rm /tmp/pear.phar";
     }
+    return "ADD --checksum=$checksum " . installerUrl($release) . " /usr/local/bin/\n\n"
+        . "RUN chmod +x /usr/local/bin/install-php-extensions{$supportStep}";
+}
+
+/** 8.6 dropped XtOffsetOf, an alias of offsetof, which imagick still uses */
+function cflags(string $version): string
+{
+    return isset(BASE_IMAGE_TAGS[$version]) ? "CFLAGS='-DXtOffsetOf=offsetof' " : '';
+}
+
+/** @param list<string> $arguments */
+function installStep(string $version, array $arguments): string
+{
+    $packages = BASE_IMAGE_PACKAGES[$version] ?? [];
+    $packageStep = $packages === []
+        ? ''
+        : 'apk add --no-cache ' . implode(' ', $packages) . " && \\\n    ";
+    return "RUN {$packageStep}" . cflags($version) . 'install-php-extensions ' . implode(' ', $arguments);
 }
 
 /**
@@ -595,31 +911,34 @@ function pieStep(array $pieInstalls, string $cflags): string
         . implode(" && \\\n    ", $commands) . "\n";
 }
 
-/** @param array<string, string> $pieInstalls */
-function generateDockerfile(string $version, array $extensions, array $pieInstalls): string
+function generateDockerfile(string $version, array $lock): string
 {
-    $installerUrl = INSTALLER_URL;
-    $baseImage = phpBaseImage($version);
+    $entry = lockEntry($lock, $version)
+        ?? fail("The lock doesn't pin every input of the PHP $version image: run php bin/stubs/build_docker.php $version.");
 
-    $extensionList = implode(' ', array_diff($extensions, array_keys($pieInstalls)));
-    // The base images of a version with no release come without pecl, and install-php-extensions
-    // refuses a version it doesn't know yet: install PEAR, and let it treat the version like the
-    // ones it supports (else it falls back to pickle, which doesn't run on the new version either).
-    $supportStep = '';
-    if (isset(BASE_IMAGE_TAGS[$version])) {
-        $majorMinor = str_replace('.', '0', $version);
-        $supportStep = " && \\\n    sed -i -E '/^[[:space:]]*505 \\| 506 \\|/ s/\\) ;;\$/ | $majorMinor) ;;/'"
-            . ' /usr/local/bin/install-php-extensions'
-            . " && \\\n    curl -fsSL https://pear.php.net/install-pear-nozlib.phar -o /tmp/pear.phar"
-            . " && \\\n    php /tmp/pear.phar && rm /tmp/pear.phar";
+    $arguments = [];
+    $pieInstalls = [];
+    $locked = [explode('@', $entry['php'], 2)[0]];
+    foreach (extensionsFor($version) as $extension) {
+        $base = explode('-', $extension, 2)[0];
+        $spec = $entry['extensions'][$base] ?? null;
+        if ($spec === null) {
+            // bundled with PHP
+            $arguments[] = $extension;
+            continue;
+        }
+        $locked[] = "$base=" . specVersion($spec);
+        [$type, $value] = explode('@', $spec, 2);
+        if ($type === 'pie') {
+            $pieInstalls[$extension] = explode(':', $value, 2)[1];
+        } elseif ($type === 'git') {
+            $arguments[] = gitSource($base)[0] . '@' . explode(':', $value, 2)[0];
+        } else {
+            $arguments[] = "$base-$value";
+        }
     }
-    // 8.6 dropped XtOffsetOf, an alias of offsetof, which imagick still uses
-    $cflags = isset(BASE_IMAGE_TAGS[$version]) ? "CFLAGS='-DXtOffsetOf=offsetof' " : '';
-    $packages = BASE_IMAGE_PACKAGES[$version] ?? [];
-    $packageStep = $packages === []
-        ? ''
-        : 'apk add --no-cache ' . implode(' ', $packages) . " && \\\n    ";
 
+    $cflags = cflags($version);
     // grpc takes the longest to build by far: it gets a layer of its own, before everything
     // else, which stays cached until the base image or the grpc version changes
     $ownLayerInstalls = array_filter(
@@ -630,32 +949,58 @@ function generateDockerfile(string $version, array $extensions, array $pieInstal
     $ownLayerStep = pieStep($ownLayerInstalls, $cflags);
     // after install-php-extensions, which installs igbinary for the memcached and redis serializers
     $pieStep = pieStep(array_diff_key($pieInstalls, $ownLayerInstalls), $cflags);
+    $fromStep = fromStep($version, $entry['php']);
+    $installerStep = installerStep($version, $lock['installer']);
+    $installStep = installStep($version, $arguments);
+    $verifyStep = 'RUN php -r ' . escapeshellarg(VERIFY_SCRIPT) . ' -- ' . implode(' ', $locked);
 
     return <<<DOCKERFILE
-        # Generated on the fly by bin/stubs/build_docker.php - do not commit.
-        FROM $baseImage
+        # Generated by bin/stubs/build_docker.php from bin/stubs/image_lock.php - do not commit.
+        {$fromStep}
         {$ownLayerStep}
-        ADD $installerUrl /usr/local/bin/
+        {$installerStep}
 
-        RUN chmod +x /usr/local/bin/install-php-extensions{$supportStep}
-
-        # CACHEBUST is a hash of the PHP base image digest and every installed
-        # extension's version, resolved from each extension's real source. It changes
-        # exactly when PHP or any extension version changes, rebuilding the layer below.
-        ARG CACHEBUST
-        RUN echo "cache key: \${CACHEBUST:-none}" && \\
-            {$packageStep}{$cflags}install-php-extensions $extensionList
+        {$installStep}
         {$pieStep}
         RUN echo 'zend_extension=opcache' > /usr/local/etc/php/php.ini
+
+        {$verifyStep}
         DOCKERFILE;
+}
+
+/** The tag of an image: a hash of its Dockerfile, which pins all its inputs. */
+function imageTag(string $version, string $dockerfile): string
+{
+    return "internal_stubs_$version-" . substr(hash('sha256', $dockerfile), 0, 16);
+}
+
+/** A throwaway build context (never inside the repo) holding just the Dockerfile. */
+function buildContext(string $version, string $dockerfile): string
+{
+    $context = sys_get_temp_dir() . '/psalm-stub-' . $version . '-' . bin2hex(random_bytes(6));
+    if (!mkdir($context, 0o700, true) && !is_dir($context)) {
+        fail("Could not create build context directory: $context");
+    }
+    file_put_contents("$context/Dockerfile", $dockerfile);
+    return $context;
+}
+
+function removeContext(string $context): void
+{
+    unlink("$context/Dockerfile");
+    rmdir($context);
 }
 
 // --- Entry point -------------------------------------------------------------
 
-$arg = $argv[1] ?? null;
-
-if ($arg === null) {
-    fail('Usage: build_docker.php <version>|--versions');
+$args = array_slice($argv, 1);
+$refresh = ($args[0] ?? null) === '--refresh';
+if ($refresh) {
+    array_shift($args);
+}
+$arg = $args[0] ?? fail('Usage: build_docker.php [--refresh] <version>|--globals, or see the header of build_docker.php');
+if ($refresh && $arg !== '--globals' && str_starts_with($arg, '--')) {
+    fail('--refresh only applies to <version> and --globals.');
 }
 
 if ($arg === '--versions') {
@@ -681,10 +1026,7 @@ if ($arg === '--versions-plain') {
 }
 
 if ($arg === '--extensions-plain') {
-    $version = $argv[2] ?? fail('Usage: build_docker.php --extensions-plain <version>');
-    if (!in_array($version, VERSIONS, true)) {
-        fail("Unsupported version '$version'.");
-    }
+    $version = supportedVersion($args[1] ?? null, '--extensions-plain <version>');
     echo implode(' ', array_map(
         static fn(string $extension): string => explode('-', $extension, 2)[0],
         extensionsFor($version),
@@ -699,86 +1041,98 @@ if ($arg === '--external-extensions') {
 }
 
 if ($arg === '--dockerfile') {
-    $version = $argv[2] ?? fail('Usage: build_docker.php --dockerfile <version>');
-    if (!in_array($version, VERSIONS, true)) {
-        fail("Unsupported version '$version'.");
-    }
-    $extensions = extensionsFor($version);
-    echo generateDockerfile($version, $extensions, pieInstalls($extensions, phpBaseVersion($version))) . PHP_EOL;
+    echo generateDockerfile(supportedVersion($args[1] ?? null, '--dockerfile <version>'), loadLock()) . PHP_EOL;
     exit(0);
 }
 
-if ($arg === '--cache-key') {
-    $version = $argv[2] ?? fail('Usage: build_docker.php --cache-key <version>');
-    if (!in_array($version, VERSIONS, true)) {
-        fail("Unsupported version '$version'.");
-    }
-    $extensions = extensionsFor($version);
-    $pieInstalls = pieInstalls($extensions, phpBaseVersion($version));
-    echo 'CACHEBUST = ' . cacheKey($version, $extensions, $pieInstalls, phpBaseDigest($version)) . PHP_EOL;
+if ($arg === '--tag') {
+    $version = supportedVersion($args[1] ?? null, '--tag <version>');
+    echo imageTag($version, generateDockerfile($version, loadLock())) . PHP_EOL;
     exit(0);
 }
 
-$version = $arg;
-if (!in_array($version, VERSIONS, true)) {
-    fail("Unsupported version '$version'. Supported: " . implode(', ', VERSIONS));
+if ($arg === '--phpstorm-stubs') {
+    echo (loadLock()['phpstorm-stubs'] ?? fail('The lock pins no phpstorm-stubs commit: run php bin/stubs/build_docker.php --globals.'))
+        . PHP_EOL;
+    exit(0);
 }
+
+if ($arg === '--stale') {
+    echo json_encode(staleVersions(loadLock())) . PHP_EOL;
+    exit(0);
+}
+
+if ($arg === '--stale-plain') {
+    echo implode(' ', staleVersions(loadLock())) . PHP_EOL;
+    exit(0);
+}
+
+if ($arg === '--record') {
+    $versions = array_slice($args, 1);
+    if ($versions === []) {
+        fail('Usage: build_docker.php --record <version>...');
+    }
+    record(array_map(static fn(string $version): string => supportedVersion($version, '--record <version>...'), $versions), loadLock());
+    exit(0);
+}
+
+if ($arg === '--lock-part') {
+    $part = loadLock();
+    $version = isset($args[1]) ? supportedVersion($args[1], '--lock-part [<version>]') : null;
+    $part['versions'] = $version === null
+        ? []
+        : [$version => $part['versions'][$version] ?? fail("The lock has no entry for PHP $version.")];
+    echo json_encode($part, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES | JSON_THROW_ON_ERROR) . PHP_EOL;
+    exit(0);
+}
+
+if ($arg === '--merge-lock') {
+    writeLock(mergeLock(loadLock(), $args[1] ?? fail('Usage: build_docker.php --merge-lock <dir>')));
+    exit(0);
+}
+
+if ($arg === '--globals') {
+    writeLock(resolveGlobals(loadLock(), $refresh));
+    exit(0);
+}
+
+$version = supportedVersion($arg, '[--refresh] <version>');
 
 $actor = getenv('ACTOR');
 if ($actor === false || $actor === '') {
     fail('The ACTOR environment variable (ghcr.io namespace) must be set.');
 }
 
-$extensions = extensionsFor($version);
-$phpBaseDigest = phpBaseDigest($version);
-$pieInstalls = pieInstalls($extensions, phpBaseVersion($version));
-$components = resolveComponents($version, $extensions, $pieInstalls, $phpBaseDigest);
-$cacheKey = cacheKeyFromComponents($components);
-echo "CACHEBUST = $cacheKey\n";
+$lock = resolveVersion(resolveGlobals(loadLock(), false), $version, $refresh);
+writeLock($lock);
 
-// Non-canonical builds (feature branches) push a branch-scoped tag so they never
-// clobber the shared canonical internal_stubs_<version> image that gen_callmap.sh
-// and other consumers pull. TAG_SUFFIX is empty for the canonical build.
-$tag = "internal_stubs_$version";
-$suffix = getenv('TAG_SUFFIX');
-if ($suffix !== false && $suffix !== '') {
-    $tag .= '-' . preg_replace('/[^A-Za-z0-9._-]+/', '-', $suffix);
+$dockerfile = generateDockerfile($version, $lock);
+$cacheKey = hash('sha256', $dockerfile);
+$image = "ghcr.io/$actor/psalm:" . imageTag($version, $dockerfile);
+if (imageConfig($image) !== null) {
+    echo "::notice title=Stub image::$image exists already, nothing to build.\n";
+    exit(0);
 }
-$image = "ghcr.io/$actor/psalm:$tag";
 
-// The layer cache is intentionally shared across branches (it is content-addressed
-// via CACHEBUST), so branches reuse each other's compiled extension layers.
+// The layer cache is shared by every image of a version, so a changed input only rebuilds the layers after it.
 $cacheRef = "ghcr.io/$actor/psalm:internal_stubs_{$version}_buildcache";
 
-// The Dockerfile is generated on the fly into a throwaway temp directory (never
-// inside the repo), which also serves as the - otherwise empty - build context.
-$context = sys_get_temp_dir() . '/psalm-stub-' . $version . '-' . bin2hex(random_bytes(6));
-if (!mkdir($context, 0o700, true) && !is_dir($context)) {
-    fail("Could not create build context directory: $context");
+$entry = $lock['versions'][$version];
+$components = ['php=' . $entry['php'], 'install-php-extensions=' . $lock['installer']];
+foreach ($entry['extensions'] as $extension => $spec) {
+    $components[] = "$extension=$spec";
 }
-file_put_contents("$context/Dockerfile", generateDockerfile($version, $extensions, $pieInstalls));
 
-// Explain, before building, whether this run rebuilds the image and why, by
-// diffing the resolved components against those labelled on the pushed image.
-explainRebuild($image, $cacheKey, $components);
-
-// Label the image with the cache key and the component breakdown so the next
-// build can report exactly what changed (base64 keeps the newline-joined list
-// safe as a single label value).
-$componentsLabel = base64_encode(implode("\n", $components));
-
-$command = sprintf(
-    'docker buildx build --push --pull %s -f %s -t %s --build-arg CACHEBUST=%s --label %s --label %s --cache-from %s --cache-to %s',
+$context = buildContext($version, $dockerfile);
+run(sprintf(
+    'docker buildx build --push %s -f %s -t %s --label %s --label %s --cache-from %s --cache-to %s',
     escapeshellarg($context),
     escapeshellarg("$context/Dockerfile"),
     escapeshellarg($image),
-    escapeshellarg($cacheKey),
     escapeshellarg(CACHE_KEY_LABEL . '=' . $cacheKey),
-    escapeshellarg(COMPONENTS_LABEL . '=' . $componentsLabel),
+    // base64 keeps the newline-joined list a single label value
+    escapeshellarg(COMPONENTS_LABEL . '=' . base64_encode(implode("\n", $components))),
     escapeshellarg("type=registry,ref=$cacheRef"),
     escapeshellarg("type=registry,ref=$cacheRef,mode=max,image-manifest=true,oci-mediatypes=true,ignore-error=true"),
-);
-run($command);
-
-unlink("$context/Dockerfile");
-rmdir($context);
+));
+removeContext($context);
