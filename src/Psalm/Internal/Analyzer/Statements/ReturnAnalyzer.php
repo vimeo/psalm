@@ -51,6 +51,7 @@ use Psalm\Type\Atomic\TClosure;
 use Psalm\Type\Atomic\TGenericObject;
 use Psalm\Type\Atomic\TIterable;
 use Psalm\Type\Atomic\TKeyedArray;
+use Psalm\Type\Atomic\TLiteralInt;
 use Psalm\Type\Atomic\TMixed;
 use Psalm\Type\Atomic\TNamedObject;
 use Psalm\Type\Atomic\TObject;
@@ -69,6 +70,87 @@ use function strtolower;
  */
 final class ReturnAnalyzer
 {
+    /**
+     * Inside `if ($a === 15)` the variable `$a` of type `T` is `T as 15`: returning the literal `15`
+     * returns the value of `$a`, which is a `T`. The bound of `T` must be `int`: `==` narrows the same way as `===`,
+     * and a string or a float can be loosely equal to the literal without being identical to it.
+     */
+    private static function getTemplateParamEqualToLiteral(
+        Union $literal_type,
+        Context $context,
+        StatementsAnalyzer $statements_analyzer,
+    ): ?Union {
+        $source = $statements_analyzer->getSource();
+
+        if (!$source instanceof FunctionLikeAnalyzer) {
+            return null;
+        }
+
+        $declared_return_type = $source->getFunctionLikeStorage($statements_analyzer)->return_type;
+
+        if ($declared_return_type === null) {
+            return null;
+        }
+
+        $template_type_map = $statements_analyzer->getTemplateTypeMap() ?? [];
+
+        if (!$literal_type->isSingle()) {
+            return null;
+        }
+
+        $literal = $literal_type->getSingleAtomic();
+
+        if (!$literal instanceof TLiteralInt) {
+            return null;
+        }
+
+        foreach ($context->vars_in_scope as $var_type) {
+            if ($var_type->isSingle()
+                && !$var_type->possibly_undefined
+                && ($template_param = $var_type->getSingleAtomic()) instanceof TTemplateParam
+                && $template_param->as->getId() === $literal_type->getId()
+                && ($bound = $template_type_map[$template_param->param_name][$template_param->defining_class] ?? null)
+                && $bound->isInt()
+            ) {
+                foreach ($declared_return_type->getAtomicTypes() as $declared_atomic) {
+                    if ($declared_atomic instanceof TTemplateParam
+                        && $declared_atomic->param_name === $template_param->param_name
+                        && $declared_atomic->defining_class === $template_param->defining_class
+                    ) {
+                        return $var_type;
+                    }
+                }
+            }
+        }
+
+        return null;
+    }
+
+    /**
+     * @param bool $substitute_template_param whether a literal equal to a template variable is that variable
+     */
+    private static function getReturnedType(
+        StatementsAnalyzer $statements_analyzer,
+        PhpParser\Node\Expr $expr,
+        Context $context,
+        bool $substitute_template_param,
+    ): ?Union {
+        $expr_type = $statements_analyzer->node_data->getType($expr);
+
+        if ($expr_type === null || !$substitute_template_param) {
+            return $expr_type;
+        }
+
+        $template_type = self::getTemplateParamEqualToLiteral($expr_type, $context, $statements_analyzer);
+
+        if ($template_type === null) {
+            return $expr_type;
+        }
+
+        // the value is the literal's, so is where it comes from: only its type is the variable's
+        return $template_type->setParentNodes($expr_type->parent_nodes);
+    }
+
     public static function analyze(
         StatementsAnalyzer $statements_analyzer,
         PhpParser\Node\Stmt\Return_ $stmt,
@@ -199,7 +281,7 @@ final class ReturnAnalyzer
                 return;
             }
 
-            $stmt_expr_type = $statements_analyzer->node_data->getType($stmt->expr);
+            $stmt_expr_type = self::getReturnedType($statements_analyzer, $stmt->expr, $context, !$var_comment_type);
 
             if ($var_comment_type) {
                 $stmt_type = $var_comment_type;

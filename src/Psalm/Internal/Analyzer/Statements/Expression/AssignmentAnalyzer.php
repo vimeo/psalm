@@ -45,6 +45,7 @@ use Psalm\Internal\Scanner\VarDocblockComment;
 use Psalm\Internal\Type\Comparator\UnionTypeComparator;
 use Psalm\Internal\Type\TypeExpander;
 use Psalm\Internal\TypeVisitor\TypeChecker;
+use Psalm\Internal\TypeVisitor\TypeVariableResolver;
 use Psalm\Issue\AssignmentToVoid;
 use Psalm\Issue\ImpureByReferenceAssignment;
 use Psalm\Issue\ImpureGlobalVariable;
@@ -219,6 +220,10 @@ final class AssignmentAnalyzer
             unset($context->cond_referenced_var_ids[$extended_var_id]);
             $context->assigned_var_ids[$extended_var_id] = (int) $assign_var->getAttribute('startFilePos');
             $context->possibly_assigned_var_ids[$extended_var_id] = true;
+
+            if (!$assign_var instanceof PhpParser\Node\Expr\ArrayDimFetch) {
+                $context->fully_assigned_var_ids[$extended_var_id] = true;
+            }
         }
 
         $root_expr = $assign_var;
@@ -379,6 +384,7 @@ final class AssignmentAnalyzer
                 && (!$not_ignored_docblock_var_ids || isset($not_ignored_docblock_var_ids[$extended_var_id]))
                 && $temp_assign_value_type->getId() === $comment_type->getId()
                 && !$comment_type->isMixed(true)
+                && !self::isTypeFromPhpstanVar($var_comments, $var_id)
             ) {
                 if ($codebase->alter_code
                     && isset($statements_analyzer->getProjectAnalyzer()->getIssuesToFix()['UnnecessaryVarAnnotation'])
@@ -840,6 +846,23 @@ final class AssignmentAnalyzer
         }
     }
 
+    /**
+     * @param list<VarDocblockComment> $var_comments
+     * @psalm-capabilities read-props
+     */
+    private static function isTypeFromPhpstanVar(array $var_comments, ?string $var_id): bool
+    {
+        $from_phpstan = false;
+
+        foreach ($var_comments as $var_comment) {
+            if ($var_comment->var_id === null || $var_comment->var_id === $var_id) {
+                $from_phpstan = $var_comment->from_phpstan;
+            }
+        }
+
+        return $from_phpstan;
+    }
+
     public static function assignTypeFromVarDocblock(
         StatementsAnalyzer $statements_analyzer,
         PhpParser\Node $stmt,
@@ -925,6 +948,7 @@ final class AssignmentAnalyzer
 
             if ($codebase->find_unused_variables
                 && $type_location
+                && !$var_comment->from_phpstan
                 && (!$not_ignored_docblock_var_ids || isset($not_ignored_docblock_var_ids[$var_comment->var_id]))
                 && isset($context->vars_in_scope[$var_comment->var_id])
                 && $context->vars_in_scope[$var_comment->var_id]->getId() === $var_comment_type->getId()
@@ -1060,8 +1084,46 @@ final class AssignmentAnalyzer
 
         $statements_analyzer->node_data = clone $statements_analyzer->node_data;
 
+        // `$a += $b` with an array `$a` keeps the offsets it had, whatever `$b` is
+        $union_var_id = $stmt instanceof PhpParser\Node\Expr\AssignOp\Plus
+            ? ExpressionIdentifier::getExtendedVarId(
+                $stmt->var,
+                $statements_analyzer->getFQCLN(),
+                $statements_analyzer,
+            )
+            : null;
+        // only where it was not assigned as a whole before in the branch, whichever union follows
+        $array_union_var_id = $union_var_id !== null
+            && isset($context->vars_in_scope[$union_var_id])
+            && $context->vars_in_scope[$union_var_id]->isArray()
+            && !isset($context->fully_assigned_var_ids[$union_var_id])
+                ? $union_var_id
+                : null;
+
+        // what is known of the offsets of the array before the union holds after it
+        $kept_offsets = [];
+
+        if ($stmt instanceof PhpParser\Node\Expr\AssignOp\Plus && $array_union_var_id !== null) {
+            foreach ($context->vars_in_scope as $offset_var_id => $offset_type) {
+                if (str_starts_with($offset_var_id, $array_union_var_id . '[')
+                    || str_starts_with($offset_var_id, $array_union_var_id . '->')
+                ) {
+                    $kept_offsets[$offset_var_id] = $offset_type;
+                }
+            }
+        }
+
         if (ExpressionAnalyzer::analyze($statements_analyzer, $fake_assignment, $context) === false) {
             return false;
+        }
+
+        if ($array_union_var_id !== null) {
+            // the union is not an assignment of the array as a whole
+            unset($context->fully_assigned_var_ids[$array_union_var_id]);
+
+            foreach ($kept_offsets as $offset_var_id => $offset_type) {
+                $context->vars_in_scope[$offset_var_id] ??= $offset_type;
+            }
         }
 
         $old_node_data->setType(
@@ -1080,7 +1142,15 @@ final class AssignmentAnalyzer
         Context $context,
         ?PhpParser\Node\Stmt $from_stmt,
     ): bool {
+        // Usage through a reference held by a property or array item can't be tracked, so the referenced
+        // variable counts as used, like the value of a regular assignment to one.
+        $was_inside_general_use = $context->inside_general_use;
+        $context->inside_general_use = $was_inside_general_use
+            || $stmt->var instanceof PropertyFetch
+            || $stmt->var instanceof PhpParser\Node\Expr\StaticPropertyFetch
+            || $stmt->var instanceof ArrayDimFetch;
         ExpressionAnalyzer::analyze($statements_analyzer, $stmt->expr, $context, false, null, null, null, true);
+        $context->inside_general_use = $was_inside_general_use;
 
         $lhs_var_id = ExpressionIdentifier::getExtendedVarId(
             $stmt->var,
@@ -1193,7 +1263,10 @@ final class AssignmentAnalyzer
         }
 
         $lhs_location = new CodeLocation($statements_analyzer->getSource(), $stmt->var);
-        if (!$stmt->var instanceof ArrayDimFetch && !$stmt->var instanceof PropertyFetch) {
+        if (!$stmt->var instanceof ArrayDimFetch
+            && !$stmt->var instanceof PropertyFetch
+            && !$stmt->var instanceof PhpParser\Node\Expr\StaticPropertyFetch
+        ) {
             // If left-hand-side is an array offset or object property, usage is too difficult to track,
             // so it's not registered as an unused variable (this mirrors behavior for non-references).
             $statements_analyzer->registerVariableAssignment(
@@ -1659,6 +1732,8 @@ final class AssignmentAnalyzer
         array $var_comments,
         int $removed_taints,
     ): void {
+        $assign_value_type = TypeVariableResolver::resolveTopLevel($assign_value_type, $codebase);
+
         if (!$assign_value_type->hasArray()
             && !$assign_value_type->isMixed()
             && !$assign_value_type->hasArrayAccessInterface($codebase)
