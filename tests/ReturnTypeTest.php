@@ -7,6 +7,10 @@ namespace Psalm\Tests;
 use Override;
 use Psalm\Tests\Traits\InvalidCodeAnalysisTestTrait;
 use Psalm\Tests\Traits\ValidCodeAnalysisTestTrait;
+use Psalm\Type;
+use Psalm\Type\Atomic\TLiteralString;
+
+use function mb_internal_encoding;
 
 use const DIRECTORY_SEPARATOR;
 
@@ -21,6 +25,23 @@ final class ReturnTypeTest extends TestCase
         $this->testInvalidCode('<?php function f(void $p): void {}', 'ParseError');
     }
 
+    public function testUnicodeEscapeOfADocblockStringLiteralIsNotTheInternalEncoding(): void
+    {
+        $encoding = mb_internal_encoding();
+        mb_internal_encoding('ISO-8859-1');
+
+        try {
+            $type = Type::parseString('"\u{e9}\u{1F600}"');
+        } finally {
+            mb_internal_encoding($encoding);
+        }
+
+        $atomic = $type->getSingleAtomic();
+
+        self::assertInstanceOf(TLiteralString::class, $atomic);
+        self::assertSame("\u{e9}\u{1F600}", $atomic->value);
+    }
+
     /**
      * @psalm-pure
      */
@@ -28,42 +49,84 @@ final class ReturnTypeTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
-            'overridableMethodThatThrowsAfterAnotherStatementKeepsItsDeclaredReturnType' => [
+            'docblockStringLiteralWithEscapedBackslashes' => [
                 'code' => '<?php
-                    class Logger {
-                        public static function log(string $method): void {}
+                    /** @return "\\\\t" */
+                    function backslashAndLetter(): string {
+                        return "\\\\t";
                     }
 
-                    abstract class Base {
-                        /** @return string */
-                        public function doSomething() {
-                            Logger::log(__METHOD__);
+                    /** @return "\\\\\\\\" */
+                    function twoBackslashes(): string {
+                        return "\\\\\\\\";
+                    }
 
-                            throw new Exception("Not supported.");
-                        }
+                    /** @return \'\\\\\\\\\' */
+                    function twoBackslashesSingleQuoted(): string {
+                        return \'\\\\\\\\\';
                     }',
             ],
-            'traitMethodOfAnOverridableClassThatThrowsAfterAnotherStatementKeepsTheReturnTypeOfTheInterface' => [
+            'docblockStringLiteralWithAUnicodeEscapeWithLeadingZeros' => [
                 'code' => '<?php
-                    final class Logger {
-                        public static function log(string $method): void {}
+                    /** @return "\u{0000000000e9}" */
+                    function leadingZeros(): string {
+                        return "é";
+                    }',
+            ],
+            'docblockStringLiteralWithNonAsciiUnicodeEscapes' => [
+                'code' => '<?php
+                    /** @return "\u{e9}\u{20AC}\u{1F600}" */
+                    function nonAscii(): string {
+                        return "é€😀";
+                    }',
+            ],
+            'docblockStringLiteralWithEscapeSequences' => [
+                'code' => '<?php
+                    /** @return "\t" */
+                    function tab(): string {
+                        return "\t";
                     }
 
-                    interface I {
-                        /** @return string */
-                        public function doSomething();
+                    /** @return "a\nb" */
+                    function newline(): string {
+                        return "a\nb";
                     }
 
-                    trait T {
-                        public function doSomething() {
-                            Logger::log(__METHOD__);
-
-                            throw new Exception("Not supported.");
-                        }
+                    /** @return "\x41\101\u{42}" */
+                    function numeric(): string {
+                        return "AAB";
                     }
 
-                    class C implements I {
-                        use T;
+                    /** @return "\$x" */
+                    function dollar(): string {
+                        return \'$x\';
+                    }
+
+                    /** @return "say \"hi\"" */
+                    function quotes(): string {
+                        return \'say "hi"\';
+                    }',
+            ],
+            'docblockStringLiteralKeepsWhatIsNotAnEscapeSequence' => [
+                'code' => '<?php
+                    /** @return "\d+" */
+                    function regex(): string {
+                        return "\\d+";
+                    }
+
+                    /** @return "\\d" */
+                    function backslash(): string {
+                        return "\\d";
+                    }
+
+                    /** @return \'a\\\\b\' */
+                    function single(): string {
+                        return \'a\\\\b\';
+                    }
+
+                    /** @return \'it\\\'s\' */
+                    function apostrophe(): string {
+                        return "it\'s";
                     }',
             ],
             'generatorReturnTypeAllowsAnImplicitReturnOfNull' => [
@@ -2144,33 +2207,22 @@ final class ReturnTypeTest extends TestCase
                 'assertions' => [],
                 'ignored_issues' => ['MissingThrowsDocblock'],
             ],
-        ];
-    }
-
-    /**
-     * @psalm-pure
-     */
-    #[Override]
-    public static function providerInvalidCodeParse(): iterable
-    {
-        return [
-            'finalMethodThatAlwaysThrowsAfterAnotherStatementIsNever' => [
+            'overridableMethodThatThrowsAfterAnotherStatementKeepsItsDeclaredReturnType' => [
                 'code' => '<?php
                     class Logger {
                         public static function log(string $method): void {}
                     }
 
-                    class Base {
+                    abstract class Base {
                         /** @return string */
-                        final public function doSomething() {
+                        public function doSomething() {
                             Logger::log(__METHOD__);
 
                             throw new Exception("Not supported.");
                         }
                     }',
-                'error_message' => 'InvalidReturnType',
             ],
-            'traitMethodOfAFinalClassThatAlwaysThrowsIsNeverForTheReturnTypeOfTheInterface' => [
+            'traitMethodOfAnOverridableClassThatThrowsAfterAnotherStatementKeepsTheReturnTypeOfTheInterface' => [
                 'code' => '<?php
                     final class Logger {
                         public static function log(string $method): void {}
@@ -2189,36 +2241,43 @@ final class ReturnTypeTest extends TestCase
                         }
                     }
 
-                    final class C implements I {
+                    class C implements I {
                         use T;
                     }',
-                'error_message' => 'InvalidReturnType',
             ],
-            'traitMethodOfAFinalClassThatAlwaysThrowsIsNeverForTheReturnTypeOfTheParent' => [
+        ];
+    }
+
+    /**
+     * @psalm-pure
+     */
+    #[Override]
+    public static function providerInvalidCodeParse(): iterable
+    {
+        return [
+            'docblockStringLiteralWithAUnicodeEscapeThatOverflowsAnInt' => [
                 'code' => '<?php
-                    final class Logger {
-                        public static function log(string $method): void {}
-                    }
-
-                    class P {
-                        /** @return string */
-                        public function doSomething() {
-                            return "a";
-                        }
-                    }
-
-                    trait T {
-                        public function doSomething() {
-                            Logger::log(__METHOD__);
-
-                            throw new Exception("Not supported.");
-                        }
-                    }
-
-                    final class C extends P {
-                        use T;
+                    /** @return "\u{FFFFFFFFFFFFFFFF}" */
+                    function overflow(): string {
+                        return "";
                     }',
-                'error_message' => 'InvalidReturnType',
+                'error_message' => 'InvalidDocblock',
+            ],
+            'docblockStringLiteralWithATooLargeUnicodeEscape' => [
+                'code' => '<?php
+                    /** @return "\u{110000}" */
+                    function tooLarge(): string {
+                        return "";
+                    }',
+                'error_message' => 'InvalidDocblock',
+            ],
+            'docblockStringLiteralWithEscapeSequenceIsNotTheBackslashAndLetter' => [
+                'code' => '<?php
+                    /** @return "\t" */
+                    function tab(): string {
+                        return "\\\\t";
+                    }',
+                'error_message' => 'InvalidReturnStatement',
             ],
             'generatorReturnsImplicitlyOnAPath' => [
                 'code' => '<?php
@@ -2945,6 +3004,72 @@ final class ReturnTypeTest extends TestCase
                     }
                     PHP,
                 'error_message' => 'InvalidReturnStatement',
+            ],
+            'finalMethodThatAlwaysThrowsAfterAnotherStatementIsNever' => [
+                'code' => '<?php
+                    class Logger {
+                        public static function log(string $method): void {}
+                    }
+
+                    class Base {
+                        /** @return string */
+                        final public function doSomething() {
+                            Logger::log(__METHOD__);
+
+                            throw new Exception("Not supported.");
+                        }
+                    }',
+                'error_message' => 'InvalidReturnType',
+            ],
+            'traitMethodOfAFinalClassThatAlwaysThrowsIsNeverForTheReturnTypeOfTheInterface' => [
+                'code' => '<?php
+                    final class Logger {
+                        public static function log(string $method): void {}
+                    }
+
+                    interface I {
+                        /** @return string */
+                        public function doSomething();
+                    }
+
+                    trait T {
+                        public function doSomething() {
+                            Logger::log(__METHOD__);
+
+                            throw new Exception("Not supported.");
+                        }
+                    }
+
+                    final class C implements I {
+                        use T;
+                    }',
+                'error_message' => 'InvalidReturnType',
+            ],
+            'traitMethodOfAFinalClassThatAlwaysThrowsIsNeverForTheReturnTypeOfTheParent' => [
+                'code' => '<?php
+                    final class Logger {
+                        public static function log(string $method): void {}
+                    }
+
+                    class P {
+                        /** @return string */
+                        public function doSomething() {
+                            return "a";
+                        }
+                    }
+
+                    trait T {
+                        public function doSomething() {
+                            Logger::log(__METHOD__);
+
+                            throw new Exception("Not supported.");
+                        }
+                    }
+
+                    final class C extends P {
+                        use T;
+                    }',
+                'error_message' => 'InvalidReturnType',
             ],
         ];
     }
