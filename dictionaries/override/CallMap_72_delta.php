@@ -1315,6 +1315,18 @@ return array (
         0 => 'int|null',
       ),
     ),
+    'mysqli_get_client_info' => 
+    array (
+      'old' => 
+      array (
+        0 => 'string',
+        'link' => 'mysqli|null',
+      ),
+      'new' => 
+      array (
+        0 => 'string',
+      ),
+    ),
     'openssl_pkcs7_verify' => 
     array (
       'old' => 

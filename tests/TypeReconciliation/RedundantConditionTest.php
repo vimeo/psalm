@@ -233,6 +233,35 @@ final class RedundantConditionTest extends TestCase
                     }',
                 'assertions' => [],
             ],
+            'noRedundantConditionForAnUnchangedArgumentInStrictTypes' => [
+                'code' => '<?php
+                    declare(strict_types=1);
+
+                    function foo(array $type): void {
+                        if (count($type) && is_object($type[0]) && rand(0, 1) && rand(0, 1)) {
+                            return;
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => ['PossiblyUndefinedIntArrayOffset'],
+            ],
+            'noRedundantConditionForAnUnchangedPropertyArgumentInStrictTypes' => [
+                'code' => '<?php
+                    declare(strict_types=1);
+
+                    final class Bag {
+                        /** @var array<int, mixed> */
+                        public array $items = [];
+                    }
+
+                    function foo(Bag $bag): void {
+                        if (count($bag->items) && is_object($bag->items[0]) && rand(0, 1) && rand(0, 1)) {
+                            return;
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => ['PossiblyUndefinedIntArrayOffset'],
+            ],
             'noRedundantConditionAfterDocblockTypeNullCheck' => [
                 'code' => '<?php
                     class A {
@@ -1182,6 +1211,26 @@ final class RedundantConditionTest extends TestCase
                         }
                     }',
                 'error_message' => 'RedundantCondition',
+            ],
+            'inequalityWithAnEmptyArrayOfANonEmptyArrayIsRedundant' => [
+                'code' => '<?php
+                    $a = [1, 2];
+                    array_shift($a);
+
+                    if ($a !== []) {
+                        echo 1;
+                    }',
+                'error_message' => 'RedundantCondition - src' . DIRECTORY_SEPARATOR . 'somefile.php:5:25 - list{2} can never be an empty array',
+            ],
+            'inequalityWithAnEmptyArrayOfADocblockNonEmptyArrayIsRedundant' => [
+                'code' => '<?php
+                    /** @var non-empty-list<int> $a */
+                    $a = [];
+
+                    if ($a !== []) {
+                        echo 1;
+                    }',
+                'error_message' => 'RedundantConditionGivenDocblockType - src' . DIRECTORY_SEPARATOR . 'somefile.php:5:25 - Docblock-defined type non-empty-list<int> can never be an empty array',
             ],
             'negatedTypeCheckOfAKnownTypeExplainsThatItCanNeverBeTrue' => [
                 'code' => '<?php
