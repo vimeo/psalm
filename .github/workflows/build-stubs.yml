@@ -1,8 +1,8 @@
 name: Build docker image for stubs
 
-# A newer push cancels a running build, except on master and 6.x: there it waits, so
-# that a build of a busy branch finishes and caches its slow extension layers. A
-# refresh has a group of its own, so a push never cancels it.
+# A newer push cancels a running build of the same branch, except on master and 6.x:
+# there it waits, so that a build of a busy branch finishes and caches its slow
+# extension layers. A refresh has a group of its own, so a push never cancels it.
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}${{ (github.event_name == 'schedule' || inputs.refresh) && '-refresh' || '' }}
   cancel-in-progress: ${{ github.event_name != 'schedule' && !inputs.refresh && github.ref != 'refs/heads/master' && github.ref != 'refs/heads/6.x' }}
@@ -35,7 +35,7 @@ jobs:
   pre_job:
     if: ${{ github.event_name != 'schedule' || github.repository == 'vimeo/psalm' }}
     permissions:
-      actions: write
+      actions: read
       contents: read
     runs-on: ubuntu-latest
     outputs:
@@ -45,7 +45,6 @@ jobs:
       - id: skip_check
         uses: fkirc/skip-duplicate-actions@b974a9395958c231af965b70070979a577efa578 # v5.3.2
         with:
-          cancel_others: ${{ github.ref != 'refs/heads/master' && github.ref != 'refs/heads/6.x' }}
           do_not_skip: '["workflow_dispatch", "schedule", "release"]'
 
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v6
