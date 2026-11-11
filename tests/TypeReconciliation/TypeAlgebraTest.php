@@ -5,14 +5,49 @@ declare(strict_types=1);
 namespace Psalm\Tests\TypeReconciliation;
 
 use Override;
+use Psalm\Context;
+use Psalm\IssueBuffer;
 use Psalm\Tests\TestCase;
 use Psalm\Tests\Traits\InvalidCodeAnalysisTestTrait;
 use Psalm\Tests\Traits\ValidCodeAnalysisTestTrait;
+
+use function array_column;
 
 final class TypeAlgebraTest extends TestCase
 {
     use InvalidCodeAnalysisTestTrait;
     use ValidCodeAnalysisTestTrait;
+
+    public function testOffsetOfAPropertyAssignedInTheIfIsKnownAfterIt(): void
+    {
+        $this->testConfig->throw_exception = false;
+        $file_path = self::$src_dir_path . 'somefile.php';
+        $this->addFile(
+            $file_path,
+            '<?php
+                final class Channels {
+                    /** @var array<string, object> */
+                    protected array $channels = [];
+
+                    /** @param mixed $channel */
+                    public function get($channel): object {
+                        if (!isset($this->channels[$channel])) {
+                            $this->channels[$channel] = new stdClass();
+                        }
+
+                        return $this->channels[$channel];
+                    }
+                }',
+        );
+
+        $this->analyzeFile($file_path, new Context(), false);
+
+        // the offset is mixed where it is tested and assigned, not again where it is read after the if
+        self::assertSame(
+            ['MixedArrayOffset', 'MixedArrayOffset', 'MixedPropertyTypeCoercion'],
+            array_column(IssueBuffer::getIssuesDataForFile($file_path), 'type'),
+        );
+    }
 
     /**
      * @psalm-pure

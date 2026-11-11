@@ -35,7 +35,6 @@ use function array_intersect;
 use function array_intersect_key;
 use function array_key_exists;
 use function array_keys;
-use function array_map;
 use function array_merge;
 use function array_reduce;
 use function count;
@@ -43,6 +42,7 @@ use function in_array;
 use function preg_match;
 use function preg_quote;
 use function spl_object_id;
+use function str_starts_with;
 
 /**
  * @internal
@@ -477,7 +477,17 @@ final class IfAnalyzer
         }
 
         $if_scope->possibly_assigned_var_ids += $possibly_assigned_var_ids;
-        $if_scope->reassigned_var_ids += array_map(static fn(int $_): bool => true, $assigned_var_ids);
+        // a variable is assigned as a whole where no offset or property of it is assigned next to it (writing
+        // an offset of a property also lists the property)
+        foreach ($assigned_var_ids as $var_id => $_) {
+            foreach ($assigned_var_ids as $other_var_id => $_other) {
+                if (str_starts_with($other_var_id, $var_id . '[') || str_starts_with($other_var_id, $var_id . '->')) {
+                    continue 2;
+                }
+            }
+
+            $if_scope->reassigned_var_ids[$var_id] = true;
+        }
 
         if ($if_scope->redefined_vars === null) {
             $if_scope->redefined_vars = $redefined_vars;
