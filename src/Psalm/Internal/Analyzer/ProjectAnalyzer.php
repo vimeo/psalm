@@ -1353,6 +1353,7 @@ final class ProjectAnalyzer
 
     /**
      * @internal
+     * @psalm-capabilities read-props|write-this-props|write-refs
      */
     public function clearStatementsForMutations(): void
     {
