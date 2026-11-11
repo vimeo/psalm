@@ -40,6 +40,16 @@ final class ClassTemplateParamCollector
         ?Atomic $lhs_type_part = null,
         bool $self_call = false,
     ): ?array {
+        // a trait method without a docblock takes the one of the parent method in the class using it, so its types
+        // are written with the templates of that class
+        if ($class_storage->is_trait
+            && $class_storage !== $static_class_storage
+            && $method_name !== null
+            && isset($static_class_storage->documenting_method_ids[$method_name])
+        ) {
+            $class_storage = $static_class_storage;
+        }
+
         $non_trait_class_storage = $class_storage->is_trait
             ? $static_class_storage
             : $class_storage;

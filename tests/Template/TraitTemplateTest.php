@@ -21,6 +21,37 @@ final class TraitTemplateTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'genericClassImplementingAnInterfaceThroughATraitTakesItsTypeArguments' => [
+                'code' => '<?php
+                    trait IsArrayAccess {
+                        public function offsetSet(mixed $offset, mixed $value): void {}
+                        public function offsetGet(mixed $offset): mixed { return null; }
+                        public function offsetExists(mixed $offset): bool { return false; }
+                        public function offsetUnset(mixed $offset): void {}
+                    }
+
+                    /**
+                     * @template TKey of array-key
+                     * @template TValue
+                     * @implements ArrayAccess<TKey, TValue>
+                     */
+                    final class ImmutableArray implements ArrayAccess {
+                        use IsArrayAccess;
+                    }
+
+                    final class ImmutableString {}
+
+                    /** @param ImmutableArray<array-key, ImmutableString> $suggestions */
+                    function f(ImmutableArray $suggestions): void {
+                        $suggestions["key"] = new ImmutableString();
+                        $suggestions[5] = new ImmutableString();
+                        $value = $suggestions["key"];
+                        echo isset($suggestions["other"]);
+                    }',
+                'assertions' => [],
+                'ignored_issues' => ['MixedAssignment'],
+                'php_version' => '8.0',
+            ],
             'traitMethodWithoutDocblockImplementsTemplatedParent' => [
                 'code' => '<?php
                     /** @template T */
@@ -713,6 +744,62 @@ final class TraitTemplateTest extends TestCase
     public static function providerInvalidCodeParse(): iterable
     {
         return [
+            'genericClassImplementingAnInterfaceThroughATraitChecksTheKeyType' => [
+                'code' => '<?php
+                    trait IsArrayAccess {
+                        public function offsetSet(mixed $offset, mixed $value): void {}
+                        public function offsetGet(mixed $offset): mixed { return null; }
+                        public function offsetExists(mixed $offset): bool { return false; }
+                        public function offsetUnset(mixed $offset): void {}
+                    }
+
+                    /**
+                     * @template TKey of array-key
+                     * @template TValue
+                     * @implements ArrayAccess<TKey, TValue>
+                     */
+                    final class ImmutableArray implements ArrayAccess {
+                        use IsArrayAccess;
+                    }
+
+                    final class ImmutableString {}
+
+                    /** @param ImmutableArray<string, ImmutableString> $suggestions */
+                    function f(ImmutableArray $suggestions): void {
+                        $suggestions[5] = new ImmutableString();
+                    }',
+                'error_message' => 'Argument 1 of ImmutableArray::offsetSet expects null|string, but 5 provided',
+                'error_levels' => [],
+                'php_version' => '8.0',
+            ],
+            'genericClassImplementingAnInterfaceThroughATraitChecksTheValueType' => [
+                'code' => '<?php
+                    trait IsArrayAccess {
+                        public function offsetSet(mixed $offset, mixed $value): void {}
+                        public function offsetGet(mixed $offset): mixed { return null; }
+                        public function offsetExists(mixed $offset): bool { return false; }
+                        public function offsetUnset(mixed $offset): void {}
+                    }
+
+                    /**
+                     * @template TKey of array-key
+                     * @template TValue
+                     * @implements ArrayAccess<TKey, TValue>
+                     */
+                    final class ImmutableArray implements ArrayAccess {
+                        use IsArrayAccess;
+                    }
+
+                    final class ImmutableString {}
+
+                    /** @param ImmutableArray<string, ImmutableString> $suggestions */
+                    function f(ImmutableArray $suggestions): void {
+                        $suggestions["key"] = "not an ImmutableString";
+                    }',
+                'error_message' => 'Argument 2 of ImmutableArray::offsetSet expects ImmutableString, but',
+                'error_levels' => [],
+                'php_version' => '8.0',
+            ],
             'traitMethodWithItsOwnDocblockIsComparedWithTheParent' => [
                 'code' => '<?php
                     /** @template T */
