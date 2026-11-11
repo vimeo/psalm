@@ -24,6 +24,64 @@ final class FunctionCallTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'zeroIsANonEmptyLowercaseString' => [
+                'code' => <<<'PHP'
+                    <?php
+                    /** @param non-empty-lowercase-string $s */
+                    function takesNonEmptyLowercase(string $s): void {}
+
+                    takesNonEmptyLowercase('0');
+                    takesNonEmptyLowercase('a');
+                    PHP,
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
+            'propertyExistsOfAnUnknownOrDynamicPropertyIsNotReported' => [
+                'code' => '<?php
+                    class Page {
+                        public string $title = "";
+                    }
+
+                    function check(Page $page, object $object, string $name): void {
+                        if (property_exists($page, "missing")) {
+                            echo "dynamic";
+                        }
+
+                        if (property_exists($page, $name)) {
+                            echo "named";
+                        }
+
+                        if (property_exists($object, "title")) {
+                            echo "object";
+                        }
+
+                        if (property_exists(Page::class, "title") || property_exists("Other", "title")) {
+                            echo "class name";
+                        }
+                    }',
+            ],
+            'arrayFilterWithAStringCallableNarrowsTheResultOfACall' => [
+                'code' => '<?php
+                    /** @return list<object|null> */
+                    function objects(): array {
+                        return [];
+                    }
+
+                    /** @return list<int|string|null> */
+                    function scalars(): array {
+                        return [];
+                    }
+
+                    $objects = array_values(array_filter(objects(), "is_object"));
+                    $ints = array_filter(scalars(), "is_int");
+                    $unchanged = array_filter(objects(), "boolval");',
+                'assertions' => [
+                    '$objects===' => 'list<object>',
+                    '$ints===' => 'array<int<0, max>, int>',
+                    '$unchanged===' => 'array<int<0, max>, null|object>',
+                ],
+            ],
             'fcloseTakesTheStandardStreamConstants' => [
                 'code' => '<?php
                     fclose(STDIN);
@@ -84,6 +142,56 @@ final class FunctionCallTest extends TestCase
                 'code' => '<?php
                     function startsWithGreeting(string $s): bool {
                         return str_starts_with($s, "здравствуй");
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'classHierarchyFunctionsOfAnObjectNeverReturnFalse' => [
+                'code' => '<?php
+                    /** @var mixed $mixed */
+                    $mixed = null;
+                    /** @var object $object */
+                    $object = new stdClass();
+                    /** @var string $string */
+                    $string = "";
+                    /** @var object|string $either */
+                    $either = "";
+                    /** @var bool $autoload */
+                    $autoload = true;
+
+                    if (!is_object($mixed)) {
+                        throw new Exception();
+                    }
+
+                    $parents = class_parents($mixed);
+                    $interfaces = class_implements($object, $autoload);
+                    $traits = class_uses(object_or_class: $object, autoload: false);
+                    $parents_of_name = class_parents($string);
+                    $interfaces_of_name = class_implements($string, false);
+                    $traits_of_name = class_uses($string);
+                    $parents_of_either = class_parents($either);',
+                'assertions' => [
+                    '$parents===' => 'array<class-string, class-string>',
+                    '$interfaces===' => 'array<interface-string, interface-string>',
+                    '$traits===' => 'array<trait-string, trait-string>',
+                    '$parents_of_name===' => 'array<class-string, class-string>|false',
+                    '$interfaces_of_name===' => 'array<interface-string, interface-string>|false',
+                    '$traits_of_name===' => 'array<trait-string, trait-string>|false',
+                    '$parents_of_either===' => 'array<class-string, class-string>|false',
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'classHierarchyFunctionsOfAClassNameAreNotPossiblyFalseArguments' => [
+                'code' => '<?php
+                    interface I {}
+
+                    /** @param class-string $class */
+                    function f(string $class): bool {
+                        return in_array(I::class, class_implements($class), true)
+                            || in_array(I::class, class_parents($class), true)
+                            || in_array(I::class, class_uses($class), true);
                     }',
                 'assertions' => [],
                 'ignored_issues' => [],
@@ -830,6 +938,73 @@ final class FunctionCallTest extends TestCase
                     }
 
                     a(["a" => "hello"]);',
+            ],
+            'getenvCalledWithOtherCasing' => [
+                'code' => '<?php
+                    $a = getEnv("some_key");
+                    $b = GETENV();
+                    $c = getenv("some_key", true);',
+                'assertions' => [
+                    '$a===' => 'false|string',
+                    '$b===' => 'array<string, string>',
+                    '$c===' => 'false|string',
+                ],
+            ],
+            'functionExistsGuardsTheRightOperandInsideAnotherNarrowingCondition' => [
+                'code' => '<?php
+                    function a(int $arg): void {
+                        if ($arg) {
+                            if (function_exists("do_something_a") && rand(0, 1)) {
+                                do_something_a("hello");
+                            }
+                        }
+                    }
+
+                    function b(int $arg): void {
+                        if (!empty($arg)) {
+                            if (function_exists("do_something_b") && do_something_b("hello")) {
+                                echo 1;
+                            }
+                        }
+                    }
+
+                    function c(int $arg): void {
+                        if ($arg) {
+                            if (defined("SOME_MISSING_CONSTANT") && SOME_MISSING_CONSTANT) {
+                                echo 1;
+                            }
+                        }
+                    }',
+            ],
+            'functionExistsGuardsOnlyTheFunctionsItNames' => [
+                'code' => '<?php
+                    function callable_string(int $arg): void {
+                        if (function_exists("guarded_callback")) {
+                            array_map("guarded_callback", [1]);
+                        }
+                    }
+
+                    function namespaced_name(int $arg): void {
+                        if ($arg) {
+                            if (function_exists("\\guarded_root") && \guarded_root()) {
+                                echo 1;
+                            }
+                        }
+                    }
+
+                    function guarded_class(int $arg): void {
+                        if ($arg) {
+                            if (class_exists("GuardedClass") && GuardedClass::run()) {
+                                echo 1;
+                            }
+                        }
+                    }
+
+                    function guarded_class_body(): void {
+                        if (class_exists("GuardedBodyClass") && rand(0, 1)) {
+                            GuardedBodyClass::run();
+                        }
+                    }',
             ],
             'getenv' => [
                 'code' => '<?php
@@ -2412,6 +2587,27 @@ final class FunctionCallTest extends TestCase
                         return $lines;
                     }',
             ],
+            'execOutputEmptyArrayIsListOfStrings' => [
+                'code' => '<?php
+                    $bar = array();
+                    exec("pwd", $bar);
+
+                    $baz = [];
+                    exec("pwd", $baz, $code);
+
+                    $foo = null;
+                    exec("pwd", $foo);
+
+                    /** @var array<string> $existing */
+                    $existing = [];
+                    exec("pwd", $existing);',
+                'assertions' => [
+                    '$bar===' => 'list<string>',
+                    '$baz===' => 'list<string>',
+                    '$foo===' => 'list<string>',
+                    '$existing===' => 'array<array-key, mixed>',
+                ],
+            ],
             'array_is_list' => [
                 'code' => '<?php
                     function getArray() : array {
@@ -2506,6 +2702,84 @@ final class FunctionCallTest extends TestCase
                     }',
                 'assertions' => [],
                 'ignored_issues' => ['ImplicitToStringCast'],
+                'php_version' => '8.1',
+            ],
+            'objectWithRefinedToStringReturnMatchesStringParameter' => [
+                'code' => '<?php
+                    final class LowercaseText {
+                        /** @return lowercase-string */
+                        public function __toString(): string {
+                            return "lowercase";
+                        }
+                    }
+
+                    /** @param lowercase-string $value */
+                    function acceptsLowercase(string $value): void {}
+
+                    /** @psalm-suppress ImplicitToStringCast */
+                    acceptsLowercase(new LowercaseText());',
+                'php_version' => '8.1',
+            ],
+            'genericObjectWithRefinedToStringReturnMatchesStringParameter' => [
+                'code' => '<?php
+                    /** @template T of string */
+                    final class Box {
+                        /** @param T $value */
+                        public function __construct(private string $value) {}
+
+                        /** @return T */
+                        public function __toString(): string {
+                            return $this->value;
+                        }
+                    }
+
+                    /** @param lowercase-string $value */
+                    function acceptsLowercase(string $value): void {}
+
+                    /** @var Box<lowercase-string> $box */
+                    $box = new Box("lowercase");
+
+                    /** @psalm-suppress ImplicitToStringCast */
+                    acceptsLowercase($box);',
+                'php_version' => '8.1',
+            ],
+            'stringConditionOnObjectPreservesObjectType' => [
+                'code' => '<?php
+                    final class Path {
+                        public function __toString(): string {
+                            return "path";
+                        }
+
+                        public function getElement(): string {
+                            return "element";
+                        }
+                    }
+
+                    function getElement(Path $path): string {
+                        if (str_starts_with($path, "p")) {
+                            return $path->getElement();
+                        }
+
+                        return "";
+                    }',
+                'ignored_issues' => ['ImplicitToStringCast'],
+                'php_version' => '8.1',
+            ],
+            'failedNestedStringCastDoesNotLeakFromArray' => [
+                'code' => '<?php
+                    final class Join {
+                        public function __toString(): string {
+                            return "join";
+                        }
+                    }
+
+                    /**
+                     * @param string|object|list<string>|array{join: array<int|string, object>} $part
+                     */
+                    function add(string|object|array $part): void {}
+
+                    add(["root" => new Join()]);',
+                'ignored_issues' => ['InvalidScalarArgument'],
                 'php_version' => '8.1',
             ],
             'strReplaceWithAsManyReplacementsAsSearches' => [
@@ -2903,6 +3177,19 @@ final class FunctionCallTest extends TestCase
                 'ignored_issues' => [],
                 'php_version' => '7.4',
             ],
+            'filterVarIpGlobalRangeFlag' => [
+                'code' => <<<'PHP'
+                    <?php
+                    /** @psalm-pure */
+                    function isGlobalIp(string $ip): bool
+                    {
+                        return filter_var($ip, FILTER_VALIDATE_IP, FILTER_FLAG_GLOBAL_RANGE) !== false;
+                    }
+                    PHP,
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.2',
+            ],
         ];
     }
 
@@ -2913,6 +3200,92 @@ final class FunctionCallTest extends TestCase
     public static function providerInvalidCodeParse(): iterable
     {
         return [
+            'streamSelectDoesNotTakeAContextBeforePhp86' => [
+                'code' => '<?php
+                    $read = [STDIN];
+                    $write = null;
+                    $except = null;
+
+                    stream_select($read, $write, $except, 0, 0, null);',
+                'error_message' => 'TooManyArguments',
+                'error_levels' => [],
+                'php_version' => '8.5',
+            ],
+            'emptyStringIsNotANonEmptyLowercaseString' => [
+                'code' => '<?php
+                    /** @param non-empty-lowercase-string $s */
+                    function takesNonEmptyLowercase(string $s): void {}
+
+                    takesNonEmptyLowercase("");',
+                'error_message' => 'InvalidArgument',
+            ],
+            'propertyExistsOfADeclaredPropertyIsAlwaysTrue' => [
+                'code' => '<?php
+                    class Page {
+                        public string $title = "";
+                    }
+
+                    function check(Page $page): void {
+                        if (property_exists($page, "title")) {
+                            echo "has title";
+                        }
+                    }',
+                'error_message' => 'RedundantCondition - src' . DIRECTORY_SEPARATOR . 'somefile.php:7:29 - Operand of type true is always truthy',
+            ],
+            'negatedPropertyExistsOfAnInheritedPropertyIsAlwaysFalse' => [
+                'code' => '<?php
+                    class Page {
+                        public string $title = "";
+                    }
+
+                    final class Post extends Page {}
+
+                    function check(Post $post): void {
+                        if (!property_exists($post, "title")) {
+                            echo "no title";
+                        }
+                    }',
+                'error_message' => 'TypeDoesNotContainType - src' . DIRECTORY_SEPARATOR . 'somefile.php:9:29 - Operand of type false is always falsy',
+            ],
+            'functionExistsDoesNotGuardAnotherFunctionInsideAnotherNarrowingCondition' => [
+                'code' => '<?php
+                    function run(int $arg): void {
+                        if ($arg) {
+                            if (function_exists("strlen") && unknown_function()) {
+                                echo 1;
+                            }
+                        }
+                    }',
+                'error_message' => 'UndefinedFunction - src' . DIRECTORY_SEPARATOR . 'somefile.php:4:62 - Function unknown_function does not exist',
+            ],
+            'functionExistsDoesNotGuardAnotherFunctionInTheSameCondition' => [
+                'code' => '<?php
+                    function run(): void {
+                        if (function_exists("strlen") && unknown_function()) {
+                            echo 1;
+                        }
+                    }',
+                'error_message' => 'UndefinedFunction - src' . DIRECTORY_SEPARATOR . 'somefile.php:3:58 - Function unknown_function does not exist',
+            ],
+            'functionExistsDoesNotGuardAnotherFunctionInItsBody' => [
+                'code' => '<?php
+                    function run(): void {
+                        if (function_exists("guarded_function")) {
+                            guarded_function();
+                            unknown_function();
+                        }
+                    }',
+                'error_message' => 'UndefinedFunction - src' . DIRECTORY_SEPARATOR . 'somefile.php:5:29 - Function unknown_function does not exist',
+            ],
+            'functionExistsDoesNotGuardAnotherCallableString' => [
+                'code' => '<?php
+                    function run(): void {
+                        if (function_exists("guarded_callback")) {
+                            array_map("unknown_callback", [1]);
+                        }
+                    }',
+                'error_message' => 'UndefinedFunction',
+            ],
             'builtInByReferenceParameterRejectsAConstant' => [
                 'code' => '<?php
                     const NUMBERS = [3, 1, 2];
@@ -3115,6 +3488,184 @@ final class FunctionCallTest extends TestCase
                     'MixedArrayAccess',
                     'RedundantConditionGivenDocblockType',
                 ],
+            ],
+            'objectToStringReturnDoesNotMatchLowercaseStringParameter' => [
+                'code' => '<?php
+                    final class UppercaseText {
+                        /** @return "AAA" */
+                        public function __toString(): string {
+                            return "AAA";
+                        }
+                    }
+
+                    /** @param lowercase-string $value */
+                    function acceptsLowercase(string $value): void {}
+
+                    /** @psalm-suppress ImplicitToStringCast */
+                    acceptsLowercase(new UppercaseText());',
+                'error_message' => 'InvalidArgument',
+                'error_levels' => [],
+                'php_version' => '8.1',
+            ],
+            'objectToStringReturnCoercesToLowercaseStringParameter' => [
+                'code' => '<?php
+                    final class Text {
+                        public function __toString(): string {
+                            return "text";
+                        }
+                    }
+
+                    /** @param lowercase-string $value */
+                    function acceptsLowercase(string $value): void {}
+
+                    /** @psalm-suppress ImplicitToStringCast */
+                    acceptsLowercase(new Text());',
+                'error_message' => 'ArgumentTypeCoercion',
+                'error_levels' => [],
+                'php_version' => '8.1',
+            ],
+            'objectToStringReturnCoercionReportsImplicitCast' => [
+                'code' => '<?php
+                    final class Text {
+                        public function __toString(): string {
+                            return "text";
+                        }
+                    }
+
+                    /** @param lowercase-string $value */
+                    function acceptsLowercase(string $value): void {}
+
+                    /** @psalm-suppress ArgumentTypeCoercion */
+                    acceptsLowercase(new Text());',
+                'error_message' => 'ImplicitToStringCast',
+                'error_levels' => [],
+                'php_version' => '8.1',
+            ],
+            'stringableUnionWithNonStringableObjectDoesNotCoerce' => [
+                'code' => '<?php
+                    final class Text {
+                        public function __toString(): string {
+                            return "text";
+                        }
+                    }
+
+                    final class Other {}
+
+                    /** @param lowercase-string $value */
+                    function acceptsLowercase(string $value): void {}
+
+                    /** @param Text|Other $value */
+                    function passObject($value): void {
+                        /** @psalm-suppress ImplicitToStringCast */
+                        acceptsLowercase($value);
+                    }',
+                'error_message' => 'InvalidArgument',
+                'error_levels' => [],
+                'php_version' => '8.1',
+            ],
+            'untypedObjectToStringReturnCoercesToLowercaseStringParameter' => [
+                'code' => '<?php
+                    final class Text {
+                        public function __toString() {
+                            return "text";
+                        }
+                    }
+
+                    /** @param lowercase-string $value */
+                    function acceptsLowercase(string $value): void {}
+
+                    /** @psalm-suppress ImplicitToStringCast */
+                    acceptsLowercase(new Text());',
+                'error_message' => 'ArgumentTypeCoercion',
+                'error_levels' => [],
+                'php_version' => '7.4',
+            ],
+            'objectToStringReturnCoercesToClassStringParameter' => [
+                'code' => '<?php
+                    final class Text {
+                        public function __toString(): string {
+                            return "text";
+                        }
+                    }
+
+                    /** @param class-string $value */
+                    function acceptsClassString(string $value): void {}
+
+                    /** @psalm-suppress ImplicitToStringCast */
+                    acceptsClassString(new Text());',
+                'error_message' => 'ArgumentTypeCoercion',
+                'error_levels' => [],
+                'php_version' => '8.1',
+            ],
+            'objectToStringReturnCoercesToNumericStringParameter' => [
+                'code' => '<?php
+                    final class Text {
+                        public function __toString(): string {
+                            return "text";
+                        }
+                    }
+
+                    /** @param numeric-string $value */
+                    function acceptsNumericString(string $value): void {}
+
+                    /** @psalm-suppress ImplicitToStringCast */
+                    acceptsNumericString(new Text());',
+                'error_message' => 'ArgumentTypeCoercion',
+                'error_levels' => [],
+                'php_version' => '8.1',
+            ],
+            'objectToStringReturnDoesNotMatchLiteralStringParameter' => [
+                'code' => '<?php
+                    final class Text {
+                        /** @return "AAA" */
+                        public function __toString(): string {
+                            return "AAA";
+                        }
+                    }
+
+                    /** @param "BBB"|"CCC" $value */
+                    function acceptsOtherLiterals(string $value): void {}
+
+                    /** @psalm-suppress ImplicitToStringCast */
+                    acceptsOtherLiterals(new Text());',
+                'error_message' => 'InvalidArgument',
+                'error_levels' => [],
+                'php_version' => '8.1',
+            ],
+            'objectToStringReturnDoesNotMatchNonEmptyStringParameter' => [
+                'code' => '<?php
+                    final class EmptyText {
+                        /** @return "" */
+                        public function __toString(): string {
+                            return "";
+                        }
+                    }
+
+                    /** @param non-empty-string $value */
+                    function acceptsNonEmpty(string $value): void {}
+
+                    /** @psalm-suppress ImplicitToStringCast */
+                    acceptsNonEmpty(new EmptyText());',
+                'error_message' => 'InvalidArgument',
+                'error_levels' => [],
+                'php_version' => '8.1',
+            ],
+            'objectToStringReturnCoercesToNonEmptyStringParameter' => [
+                'code' => '<?php
+                    final class Text {
+                        public function __toString(): string {
+                            return "text";
+                        }
+                    }
+
+                    /** @param non-empty-string $value */
+                    function acceptsNonEmpty(string $value): void {}
+
+                    /** @psalm-suppress ImplicitToStringCast */
+                    acceptsNonEmpty(new Text());',
+                'error_message' => 'ArgumentTypeCoercion',
+                'error_levels' => [],
+                'php_version' => '8.1',
             ],
             'clampIsUndefinedBeforePhp86' => [
                 'code' => '<?php
@@ -3350,6 +3901,38 @@ final class FunctionCallTest extends TestCase
                     preg_match(\'/adsf/\');',
                 'error_message' => 'TooFewArguments - src' . DIRECTORY_SEPARATOR . 'somefile.php:2:21 - Too few arguments for preg_match - expecting subject to be passed',
             ],
+            'tooFewArgsForCallableNamesTheCallable' => [
+                'code' => '<?php
+                    /** @param callable(mixed): bool $c */
+                    function f(callable $c): void {
+                        $c();
+                    }',
+                'error_message' => 'TooFewArguments - src' . DIRECTORY_SEPARATOR . 'somefile.php:4:25 - Too few arguments for callable(mixed) - expecting parameter #1 to be passed',
+            ],
+            'tooFewArgsForCallableCountsTheMissingParameterFromTheStart' => [
+                'code' => '<?php
+                    /** @param callable(int, string): void $c */
+                    function f(callable $c): void {
+                        $c(1);
+                    }',
+                'error_message' => 'TooFewArguments - src' . DIRECTORY_SEPARATOR . 'somefile.php:4:25 - Too few arguments for callable(int, string) - expecting parameter #2 to be passed',
+            ],
+            'tooFewArgsForCallableWithNamedParametersNamesTheParameter' => [
+                'code' => '<?php
+                    /** @param callable(int $a, string $b): void $c */
+                    function f(callable $c): void {
+                        $c(1);
+                    }',
+                'error_message' => 'TooFewArguments - src' . DIRECTORY_SEPARATOR . 'somefile.php:4:25 - Too few arguments for callable(int, string) - expecting b to be passed',
+            ],
+            'tooManyArgsForCallableNamesTheCallable' => [
+                'code' => '<?php
+                    /** @param callable(int, string): void $c */
+                    function f(callable $c): void {
+                        $c(1, "a", 3);
+                    }',
+                'error_message' => 'TooManyArguments - src' . DIRECTORY_SEPARATOR . 'somefile.php:4:25 - Too many arguments for callable(int, string) - expecting 2 but saw 3',
+            ],
             'compactUndefinedVariable' => [
                 'code' => '<?php
                     /**
@@ -3514,6 +4097,18 @@ final class FunctionCallTest extends TestCase
                         $a = count_chars("foo", $mode);
                     }',
                 'error_message' => 'ArgumentTypeCoercion',
+            ],
+            'getObjectVarsOfAStdClassIsAMixedCoercion' => [
+                'code' => '<?php
+                    /** @param array{i: int} $array */
+                    function takesAnArray(array $array): void {
+                        echo $array["i"];
+                    }
+
+                    $obj = new stdClass();
+
+                    takesAnArray(get_object_vars($obj));',
+                'error_message' => 'MixedArgumentTypeCoercion',
             ],
             'strReplaceWithFewerReplacementsThanSearches' => [
                 'code' => '<?php

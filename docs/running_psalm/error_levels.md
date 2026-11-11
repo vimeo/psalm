@@ -91,6 +91,7 @@ These issues have very low false-positive rates and indicate definite problems. 
  - [OverriddenPropertyAccess](issues/OverriddenPropertyAccess.md)
  - [ParadoxicalCondition](issues/ParadoxicalCondition.md)
  - [ParentNotFound](issues/ParentNotFound.md)
+ - [ParseError](issues/ParseError.md)
  - [TooFewArguments](issues/TooFewArguments.md)
  - [UndefinedAttributeClass](issues/UndefinedAttributeClass.md)
  - [UndefinedClass](issues/UndefinedClass.md)
@@ -233,6 +234,7 @@ These issues become info (non-blocking) at level 5 and higher.
 
  - [FalseOperand](issues/FalseOperand.md)
  - [ForbiddenCode](issues/ForbiddenCode.md)
+ - [HiddenGeneratorReturn](issues/HiddenGeneratorReturn.md)
  - [IfThisIsMismatch](issues/IfThisIsMismatch.md)
  - [ImplementedParamTypeMismatch](issues/ImplementedParamTypeMismatch.md)
  - [ImplementedReturnTypeMismatch](issues/ImplementedReturnTypeMismatch.md)

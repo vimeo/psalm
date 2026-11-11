@@ -5,13 +5,148 @@ declare(strict_types=1);
 namespace Psalm\Tests;
 
 use Override;
+use Psalm\Config;
+use Psalm\Context;
+use Psalm\Exception\CodeException;
 use Psalm\Tests\Traits\InvalidCodeAnalysisTestTrait;
 use Psalm\Tests\Traits\ValidCodeAnalysisTestTrait;
+
+use const DIRECTORY_SEPARATOR;
 
 final class CallableTest extends TestCase
 {
     use InvalidCodeAnalysisTestTrait;
     use ValidCodeAnalysisTestTrait;
+
+    public function testRequiredClosureParamIsAcceptedForAnOptionalCallableParamByDefault(): void
+    {
+        $this->addFile(
+            'somefile.php',
+            '<?php
+                /** @param callable(string=):string $callable */
+                function map(callable $callable): void {
+                    echo $callable();
+                }
+
+                map(fn(string $a): string => $a);',
+        );
+
+        $this->analyzeFile('somefile.php', new Context());
+    }
+
+    public function testStrictOptionalCallableParamsRejectsARequiredClosureParam(): void
+    {
+        $this->expectException(CodeException::class);
+        $this->expectExceptionMessage('InvalidArgument');
+
+        Config::getInstance()->strict_optional_callable_params = true;
+
+        $this->addFile(
+            'somefile.php',
+            '<?php
+                /** @param callable(string=):string $callable */
+                function map(callable $callable): void {
+                    echo $callable();
+                }
+
+                map(fn(string $a): string => $a);',
+        );
+
+        $this->analyzeFile('somefile.php', new Context());
+    }
+
+    public function testStrictOptionalCallableParamsRejectsARequiredSecondClosureParam(): void
+    {
+        $this->expectException(CodeException::class);
+        $this->expectExceptionMessage('InvalidScalarArgument');
+
+        Config::getInstance()->strict_optional_callable_params = true;
+
+        $this->addFile(
+            'somefile.php',
+            '<?php
+                /** @param callable(string, int=):string $callable */
+                function map(callable $callable): void {
+                    echo $callable("a");
+                }
+
+                map(fn(string $a, int $b): string => $a . $b);',
+        );
+
+        $this->analyzeFile('somefile.php', new Context());
+    }
+
+    public function testStrictOptionalCallableParamsAcceptsAnOptionalClosureParam(): void
+    {
+        Config::getInstance()->strict_optional_callable_params = true;
+
+        $this->addFile(
+            'somefile.php',
+            '<?php
+                /** @param callable(string=):string $callable */
+                function map(callable $callable): void {
+                    echo $callable();
+                }
+
+                map(fn(string $a = "d"): string => $a);',
+        );
+
+        $this->analyzeFile('somefile.php', new Context());
+    }
+
+    public function testStrictOptionalCallableParamsAcceptsAVariadicClosureParam(): void
+    {
+        Config::getInstance()->strict_optional_callable_params = true;
+
+        $this->addFile(
+            'somefile.php',
+            '<?php
+                /** @param callable(string=):string $callable */
+                function map(callable $callable): void {
+                    echo $callable();
+                }
+
+                map(fn(string ...$a): string => "x");',
+        );
+
+        $this->analyzeFile('somefile.php', new Context());
+    }
+
+    public function testStrictOptionalCallableParamsAcceptsAClosureWithoutParams(): void
+    {
+        Config::getInstance()->strict_optional_callable_params = true;
+
+        $this->addFile(
+            'somefile.php',
+            '<?php
+                /** @param callable(string=):string $callable */
+                function map(callable $callable): void {
+                    echo $callable();
+                }
+
+                map(fn(): string => "x");',
+        );
+
+        $this->analyzeFile('somefile.php', new Context());
+    }
+
+    public function testStrictOptionalCallableParamsKeepsARequiredContainerParamStrict(): void
+    {
+        Config::getInstance()->strict_optional_callable_params = true;
+
+        $this->addFile(
+            'somefile.php',
+            '<?php
+                /** @param callable(string):string $callable */
+                function map(callable $callable): void {
+                    echo $callable("a");
+                }
+
+                map(fn(string $a): string => $a);',
+        );
+
+        $this->analyzeFile('somefile.php', new Context());
+    }
 
     /**
      * @psalm-pure
@@ -20,6 +155,157 @@ final class CallableTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'byReferenceCallableParamAcceptsByReferenceCallee' => [
+                'code' => '<?php
+                    /** @param callable(int &$i): void $closure */
+                    function takesRefCallable(callable $closure): void {
+                        $v = 1;
+                        $closure($v);
+                    }
+                    function incr(int &$i): void {
+                        ++$i;
+                    }
+                    takesRefCallable("incr");
+                    takesRefCallable(function (int &$i): void {
+                        ++$i;
+                    });',
+                'assertions' => [],
+            ],
+            'byReferenceCallableParamAcceptsByValueCallee' => [
+                'code' => '<?php
+                    /** @param callable(int &$i): void $closure */
+                    function takesRefCallable(callable $closure): void {
+                        $v = 1;
+                        $closure($v);
+                    }
+                    function show(int $i): void {
+                        echo $i;
+                    }
+                    takesRefCallable("show");
+                    takesRefCallable(function (int $i): void {
+                        echo $i;
+                    });',
+                'assertions' => [],
+            ],
+            'namedOptionalCallableParam' => [
+                'code' => '<?php
+                    /** @param callable(int $i=): void $closure */
+                    function takesOptional(callable $closure): void {
+                        $closure();
+                    }
+                    takesOptional(function (int $i = 0): void {});',
+                'assertions' => [],
+            ],
+            'stringNamingAFunctionForClosureOrStringParam' => [
+                'code' => <<<'PHP'
+                    <?php
+                    function my_url(?string $path = null): string {
+                        return (string) $path;
+                    }
+
+                    /** @param (Closure(int): mixed)|string $column */
+                    function where($column): string {
+                        return is_string($column) ? $column : '';
+                    }
+
+                    echo where('my_url');
+                    echo where('unknown_name');
+                    PHP,
+            ],
+            'stringNamingAFunctionForClosureOrArrayKeyOrScalarParam' => [
+                'code' => <<<'PHP'
+                    <?php
+                    function my_url(?string $path = null): string {
+                        return (string) $path;
+                    }
+
+                    /** @param (Closure(int): mixed)|array-key $key */
+                    function byKey($key): void {}
+
+                    /** @param (Closure(int): mixed)|scalar $value */
+                    function byValue($value): void {}
+
+                    byKey('my_url');
+                    byValue('my_url');
+                    PHP,
+            ],
+            'stringNamingAGenericFunctionKeepsTheTemplatesOfACallableOrStringParam' => [
+                'code' => <<<'PHP'
+                    <?php
+                    /**
+                     * @template A
+                     * @param A $a
+                     * @return A
+                     */
+                    function identity($a) {
+                        return $a;
+                    }
+
+                    /**
+                     * @template U
+                     * @param (callable(int): U)|string $f
+                     * @return list<U>
+                     */
+                    function apply($f): array {
+                        return [];
+                    }
+
+                    $byName = apply('identity');
+                    $byFirstClassCallable = apply(identity(...));
+                    PHP,
+                'assertions' => [
+                    '$byName===' => 'list<int>',
+                    '$byFirstClassCallable===' => 'list<int>',
+                ],
+            ],
+            'arrayCallableOfAnIntersectionWithTheMethodInTheFirstPart' => [
+                'code' => '<?php
+                    interface A
+                    {
+                        public function doSomething(mixed $value): void;
+                    }
+
+                    interface B {}
+
+                    final class MyClass
+                    {
+                        public function __construct(private readonly A&B $ab)
+                        {
+                        }
+
+                        public function run(array $values): void
+                        {
+                            array_walk($values, [$this->ab, "doSomething"]);
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
+            'arrayCallableOfAnIntersectionWithTheMethodInAnyPart' => [
+                'code' => '<?php
+                    interface A {}
+
+                    interface B
+                    {
+                        public function doSomething(mixed $value): void;
+                    }
+
+                    final class MyClass
+                    {
+                        public function __construct(private readonly A&B $ab)
+                        {
+                        }
+
+                        public function run(array $values): void
+                        {
+                            array_walk($values, [$this->ab, "doSomething"]);
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
             'callableArrayToTraitMethodResolvesReturnType' => [
                 'code' => '<?php
                     /**
@@ -1605,7 +1891,7 @@ final class CallableTest extends TestCase
 
                         /**
                          * @psalm-mutation-free
-                         * 
+                         *
                          * @psalm-param callable():bool $callable
                          */
                         public function __construct(callable $callable) {
@@ -2697,6 +2983,29 @@ final class CallableTest extends TestCase
                         return call_user_func($var);
                     }',
             ],
+            'negatedIsStringKeepsArrayOfCallableOrArray' => [
+                'code' => '<?php
+                    /** @var string|callable|array $p */
+                    $p = $_GET["p"];
+                    $r = is_string($p) ? 0 : $p;
+                ',
+                'assertions' => [
+                    '$r===' => '0|array<array-key, mixed>|callable-object',
+                ],
+            ],
+            'callableCheckAfterIsStringOnCallableOrArray' => [
+                'code' => '<?php
+                    /** @param string|callable|array $param */
+                    function foo($param): void {
+                        if (is_string($param)) {
+                            return;
+                        }
+
+                        if (is_callable($param)) {
+                            return;
+                        }
+                    }',
+            ],
         ];
     }
 
@@ -2707,6 +3016,58 @@ final class CallableTest extends TestCase
     public static function providerInvalidCodeParse(): iterable
     {
         return [
+            'stringNamingAFunctionForClosureParamOnly' => [
+                'code' => <<<'PHP'
+                    <?php
+                    function my_url(?string $path = null): string {
+                        return (string) $path;
+                    }
+
+                    /** @param Closure(int): mixed $column */
+                    function where($column): void {}
+
+                    where('my_url');
+                    PHP,
+                'error_message' => 'InvalidScalarArgument - src' . DIRECTORY_SEPARATOR . 'somefile.php:9:7',
+            ],
+            'stringNamingAFunctionOfTheWrongSignatureForACallableOrLiteralsParam' => [
+                'code' => <<<'PHP'
+                    <?php
+                    function bad(array $a): int {
+                        return count($a);
+                    }
+
+                    /** @param (callable(int): mixed)|'asc'|'desc' $f */
+                    function sortBy($f): void {}
+
+                    sortBy('bad');
+                    PHP,
+                'error_message' => 'InvalidArgument - src' . DIRECTORY_SEPARATOR . 'somefile.php:9:8',
+            ],
+            'arrayCallableOfAnIntersectionWithoutTheMethod' => [
+                'code' => '<?php
+                    interface A {}
+
+                    interface B
+                    {
+                        public function doSomething(mixed $value): void;
+                    }
+
+                    final class MyClass
+                    {
+                        public function __construct(private readonly A&B $ab)
+                        {
+                        }
+
+                        public function run(array $values): void
+                        {
+                            array_walk($values, [$this->ab, "nope"]);
+                        }
+                    }',
+                'error_message' => 'InvalidArgument',
+                'error_levels' => [],
+                'php_version' => '8.1',
+            ],
             'undefinedCallableClass' => [
                 'code' => '<?php
                     class A {
