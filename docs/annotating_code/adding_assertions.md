@@ -110,6 +110,30 @@ function isNull($value): bool {
 }
 ```
 
+### Asserting that an array key exists
+
+`array-key-exists` asserts that the array in one parameter has the key held by another parameter. The same works with `@psalm-assert-if-true` and `@psalm-assert-if-false` (`!array-key-exists` asserts the opposite):
+
+```php
+<?php
+/**
+ * @psalm-assert array-key-exists $array[$key]
+ */
+function check(int|string $key, array $array): void {
+  if (!array_key_exists($key, $array)) {
+    throw new RuntimeException();
+  }
+}
+
+function f(array $array, int $key): void {
+  check(0, $array);
+  echo $array[0]; // no PossiblyUndefinedIntArrayOffset
+  check($key, $array);
+  echo $array[$key]; // no PossiblyUndefinedIntArrayOffset
+  check(strtoupper("a"), $array); // asserts nothing: the key is neither a literal nor a variable
+}
+```
+
 ### Asserting return values of methods
 
 You can also use the `@psalm-assert-if-true` and `@psalm-assert-if-false` annotations to assert return values of
