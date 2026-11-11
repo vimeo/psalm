@@ -1439,6 +1439,18 @@ return array (
         'asInt64=' => 'bool',
       ),
     ),
+    'mysqli_get_client_version' => 
+    array (
+      'old' => 
+      array (
+        0 => 'int',
+        'link' => 'mixed',
+      ),
+      'new' => 
+      array (
+        0 => 'int',
+      ),
+    ),
     'openssl_random_pseudo_bytes' => 
     array (
       'old' => 
@@ -1757,6 +1769,19 @@ return array (
         'data=' => 'mixed',
       ),
     ),
+    'splobserver::update' => 
+    array (
+      'old' => 
+      array (
+        0 => 'void',
+        'SplSubject' => 'SplSubject',
+      ),
+      'new' => 
+      array (
+        0 => 'void',
+        'subject' => 'SplSubject',
+      ),
+    ),
     'splpriorityqueue::compare' => 
     array (
       'old' => 
@@ -1796,6 +1821,32 @@ return array (
       array (
         0 => 'int',
         'mode' => 'int',
+      ),
+    ),
+    'splsubject::attach' => 
+    array (
+      'old' => 
+      array (
+        0 => 'void',
+        'SplObserver' => 'SplObserver',
+      ),
+      'new' => 
+      array (
+        0 => 'void',
+        'observer' => 'SplObserver',
+      ),
+    ),
+    'splsubject::detach' => 
+    array (
+      'old' => 
+      array (
+        0 => 'void',
+        'SplObserver' => 'SplObserver',
+      ),
+      'new' => 
+      array (
+        0 => 'void',
+        'observer' => 'SplObserver',
       ),
     ),
     'spltempfileobject::fwrite' => 
@@ -1847,6 +1898,56 @@ return array (
         'allowable_tags=' => 'list<non-empty-string>|string',
       ),
     ),
+    'tidy_get_head' => 
+    array (
+      'old' => 
+      array (
+        0 => 'null|tidyNode',
+      ),
+      'new' => 
+      array (
+        0 => 'null|tidyNode',
+        'object' => 'tidy',
+      ),
+    ),
+    'tidy_get_html' => 
+    array (
+      'old' => 
+      array (
+        0 => 'null|tidyNode',
+      ),
+      'new' => 
+      array (
+        0 => 'null|tidyNode',
+        'object' => 'tidy',
+      ),
+    ),
+    'tidy_get_root' => 
+    array (
+      'old' => 
+      array (
+        0 => 'null|tidyNode',
+      ),
+      'new' => 
+      array (
+        0 => 'null|tidyNode',
+        'object' => 'tidy',
+      ),
+    ),
+    'tidy_getopt' => 
+    array (
+      'old' => 
+      array (
+        0 => 'bool|int|string',
+        'option' => 'string',
+      ),
+      'new' => 
+      array (
+        0 => 'bool|int|string',
+        'object' => 'tidy',
+        'option' => 'string',
+      ),
+    ),
     'unserialize' => 
     array (
       'old' => 
@@ -1866,6 +1967,10 @@ return array (
   'removed' => 
   array (
     'reflectionfunctionabstract::export' => 
+    array (
+      0 => 'null|string',
+    ),
+    'reflector::export' => 
     array (
       0 => 'null|string',
     ),
