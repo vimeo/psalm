@@ -21,6 +21,226 @@ final class ConditionalTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'identicalKeyedArraysWithTheSameKeysInAnotherOrder' => [
+                'code' => '<?php
+                    /**
+                     * @param array{a: int|string, b: string} $x
+                     * @param array{b: string|int, a: int} $y
+                     */
+                    function f(array $x, array $y): void {
+                        if ($x === $y) {
+                            echo "same";
+                        }
+                    }',
+            ],
+            'identicalKeyedArraysOfOverlappingTypesNarrowTheArray' => [
+                'code' => '<?php
+                    $x = rand(0, 1);
+                    $b = (bool) rand(0, 1);
+                    $w = [$x, true];
+
+                    $narrowed = $w === [0, $b] ? $w : null;',
+                'assertions' => [
+                    '$narrowed===' => 'list{0, true}|null',
+                ],
+            ],
+            'identicalArraysOfItemsOfOverlappingTypes' => [
+                'code' => '<?php
+                    function f(int|string $a, string|bool $b, int|string $c, string|bool $d): bool {
+                        return [$a] === [$b] || [$a, 1] === [$d, 1] || ["a" => $c] === ["a" => $d];
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'identicalKeyedArrayAndArrayShapeOfItemsOfOverlappingTypes' => [
+                'code' => '<?php
+                    /** @param array{a: int|string} $x */
+                    function f(array $x, string|bool $s): bool {
+                        return $x === ["a" => $s];
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'matchOnAnArrayWithItemsOfOverlappingTypes' => [
+                'code' => '<?php
+                    function generateState(int $x, bool $breakOnZero = true): string {
+                        return match ([$x, true]) {
+                            [0, $breakOnZero] => "fail",
+                            [0, !$breakOnZero] => "state_0",
+                            default => "state_" . $x,
+                        };
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'chainedAssignmentOfAConditionIsFalseWhereTheConditionIsFalse' => [
+                'code' => <<<'PHP'
+                    <?php
+                    function f(?stdClass $definition): void {
+                        if ($isSimple = $isRoot = null === $definition) {
+                            return;
+                        }
+
+                        /** @psalm-check-type-exact $isSimple = false */
+                        /** @psalm-check-type-exact $isRoot = false */
+                        /** @psalm-check-type-exact $definition = stdClass */
+                    }
+
+                    function g(?stdClass $definition): void {
+                        if ($isSimple = $isRoot = null === $definition) {
+                            echo "root";
+                        } elseif ($definition instanceof stdClass) {
+                            echo "definition";
+                        }
+
+                        if (!$isRoot || $isSimple) {
+                            echo "not the root, or simple";
+                        }
+                    }
+                    PHP,
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
+            'nonFinalClassCanBeIdenticalToIterable' => [
+                'code' => <<<'PHP'
+                    <?php
+                    class Foo {}
+
+                    function f(Foo $x, iterable $i): bool {
+                        return $x === $i;
+                    }
+                    PHP,
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
+            'iterableTemplateInstanceOfGeneratorIsReturned' => [
+                'code' => <<<'PHP'
+                    <?php
+                    /**
+                     * @template TK
+                     * @template TV
+                     * @param callable(): iterable<TK, TV> $callback
+                     * @return Generator<TK, TV>
+                     */
+                    function asGenerator(callable $callback): Generator {
+                        $iter = $callback();
+
+                        if ($iter instanceof Generator) {
+                            return $iter;
+                        }
+
+                        return (function () use ($iter): Generator {
+                            foreach ($iter as $key => $value) {
+                                yield $key => $value;
+                            }
+                        })();
+                    }
+                    PHP,
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
+            'pureIterableInstanceOfGeneratorKeepsItsPurity' => [
+                'code' => <<<'PHP'
+                    <?php
+                    /** @param iterable[pure]<int, string> $t */
+                    function f(iterable $t): void {
+                        if (!$t instanceof Generator) {
+                            return;
+                        }
+
+                        /** @psalm-check-type-exact $t = Generator[pure]<int, string, mixed, mixed> */
+                    }
+                    PHP,
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
+            'iterableInstanceOfGeneratorKeepsTheTypeOfWhatIsIteratedOver' => [
+                'code' => <<<'PHP'
+                    <?php
+                    final class RawMessage {
+                        /** @param iterable<string>|string|resource $message */
+                        public function __construct(private $message) {}
+
+                        public function toIterable(): iterable {
+                            if (\is_string($this->message)) {
+                                yield $this->message;
+
+                                return;
+                            }
+
+                            if (\is_resource($this->message)) {
+                                return;
+                            }
+
+                            if ($this->message instanceof \Generator) {
+                                $copy = fopen('php://temp', 'w+');
+                                if ($copy === false) {
+                                    return;
+                                }
+
+                                foreach ($this->message as $chunk) {
+                                    fwrite($copy, $chunk);
+                                    yield $chunk;
+                                }
+                            }
+                        }
+                    }
+                    PHP,
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
+            'pureIterableInstanceOfArrayIteratorKeepsTheStoragePurityOfTheClass' => [
+                'code' => <<<'PHP'
+                    <?php
+                    /** @param iterable[pure]<int, string> $t */
+                    function f(iterable $t): void {
+                        if (!$t instanceof ArrayIterator) {
+                            return;
+                        }
+
+                        /** @psalm-check-type-exact $t = ArrayIterator[write-props]<int, string> */
+                    }
+                    PHP,
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
+            'iterableInstanceOfGeneratorKeepsItsParams' => [
+                'code' => <<<'PHP'
+                    <?php
+                    /** @return iterable<int, string> */
+                    function getIterable(): iterable {
+                        return [];
+                    }
+
+                    function narrow(): void {
+                        $positive = getIterable();
+                        $negative = getIterable();
+
+                        if (!$positive instanceof Generator) {
+                            return;
+                        }
+
+                        if ($negative instanceof Generator) {
+                            return;
+                        }
+
+                        /** @psalm-check-type-exact $positive = Generator[impure]<int, string, mixed, mixed> */
+                        /** @psalm-check-type-exact $negative = array<int, string>|Traversable<int, string> */
+                    }
+                    PHP,
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
             'negatedInstanceofRemovesTheClassFromTheBoundOfATemplateParam' => [
                 'code' => '<?php
                     /**
@@ -56,6 +276,18 @@ final class ConditionalTest extends TestCase
                 'assertions' => [],
                 'ignored_issues' => [],
                 'php_version' => '8.0',
+            ],
+            'identicalKeyedArraysWithStringKeysOfOverlappingTypes' => [
+                'code' => '<?php
+                    function f(int $x, string $s): int {
+                        $a = ["id" => $x, "name" => $s];
+
+                        if ($a === ["id" => 1, "name" => "a"]) {
+                            return $a["id"];
+                        }
+
+                        return 0;
+                    }',
             ],
             'orredClausesOfOneVariableAreAllKept' => [
                 'code' => '<?php
@@ -765,6 +997,54 @@ final class ConditionalTest extends TestCase
                         public static function getOne() {
                             $one = current(static::getArr());
                             return $one instanceof static ? $one : null;
+                        }
+                    }',
+            ],
+            'negatedInstanceofStaticNarrowsAfterAnEarlyReturn' => [
+                'code' => '<?php
+                    interface Equatable {
+                        public function equals(Equatable $other): bool;
+                    }
+
+                    final class Money implements Equatable {
+                        public function __construct(private string $id) {}
+
+                        public function equals(Equatable $other): bool {
+                            if (!$other instanceof static) {
+                                return false;
+                            }
+
+                            /** @psalm-check-type-exact $other = Money&static */
+                            return $this->id === $other->id;
+                        }
+                    }',
+            ],
+            'negatedInstanceofThisNarrowsInTheElseBranch' => [
+                'code' => '<?php
+                    interface Equatable {}
+
+                    class Money implements Equatable {
+                        public function check(Equatable $other): void {
+                            if (!$other instanceof $this) {
+                                /** @psalm-check-type-exact $other = Equatable */
+                                return;
+                            } else {
+                                /** @psalm-check-type-exact $other = Money&static */
+                                return;
+                            }
+                        }
+                    }',
+            ],
+            'negatedInstanceofStaticKeepsTheTypeOfANonStaticValue' => [
+                'code' => '<?php
+                    class Money {
+                        public function check(Money $other): void {
+                            if (!$other instanceof static) {
+                                /** @psalm-check-type-exact $other = Money */
+                                return;
+                            }
+
+                            /** @psalm-check-type-exact $other = Money&static */
                         }
                     }',
             ],
@@ -3551,6 +3831,117 @@ final class ConditionalTest extends TestCase
                 'ignored_issues' => [],
                 'php_version' => '8.0',
             ],
+            'firstClassCallableInCountComparison' => [
+                'code' => '<?php
+                    while (count(...) > 1) {}
+                    while (sizeof(...) <= 1) {}
+                    if (count(...) === 1) {}
+                    if (1 !== sizeof(...)) {}
+                    if (2 <= count(...)) {}
+                    if (3 > count(...)) {}
+                    if (count(...) == 1) {}
+                    if (1 != sizeof(...)) {}',
+                'assertions' => [],
+                'ignored_issues' => ['RedundantCondition', 'TypeDoesNotContainType'],
+                'php_version' => '8.1',
+            ],
+            'firstClassCallableInGettypeComparison' => [
+                'code' => '<?php
+                    if (gettype(...) === "x") {}
+                    if ("x" !== gettype(...)) {}
+                    if (get_debug_type(...) === "x") {}
+                    if ("x" != get_debug_type(...)) {}',
+                'assertions' => [],
+                'ignored_issues' => [
+                    'TypeDoesNotContainType',
+                    'RedundantCondition',
+                ],
+                'php_version' => '8.1',
+            ],
+            'firstClassCallableInGetClassComparison' => [
+                'code' => '<?php
+                    class A {
+                        public function f(): void {
+                            if (get_class(...) === A::class) {}
+                            if (A::class !== get_class(...)) {}
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [
+                    'TypeDoesNotContainType',
+                    'RedundantCondition',
+                ],
+                'php_version' => '8.1',
+            ],
+            'countWithModeArgumentNarrowsToNonEmpty' => [
+                'code' => '<?php
+                    /** @var array<int, string> $xs */
+                    $xs = [];
+                    $a = null;
+                    if (count($xs, COUNT_NORMAL) > 0) {
+                        $a = $xs;
+                    }',
+                'assertions' => [
+                    '$a===' => 'non-empty-array<int, string>|null',
+                ],
+            ],
+            'classConstOnNonNameClassExprNarrows' => [
+                'code' => '<?php
+                    final class T {}
+                    final class Holder {
+                        public object $value;
+                        public function __construct() {
+                            $this->value = new T();
+                        }
+                    }
+                    $holder = new Holder();
+                    if ($holder->value::class === T::class) {
+                        $fromProp = $holder->value;
+                    } else {
+                        $fromProp = new T();
+                    }
+
+                    /** @var array{value: object} $box */
+                    $box = ["value" => new T()];
+                    if ($box["value"]::class === T::class) {
+                        $fromBox = $box["value"];
+                    } else {
+                        $fromBox = new T();
+                    }',
+                'assertions' => [
+                    '$fromProp===' => 'T',
+                    '$fromBox===' => 'T',
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
+            'getClassWithoutArgumentsNarrowsThis' => [
+                'code' => '<?php
+                    class A {
+                        public function f(): void {
+                            if (get_class() === B::class) {
+                                $this->onlyB();
+                            }
+                        }
+                    }
+                    final class B extends A {
+                        public function onlyB(): void {}
+                    }',
+            ],
+            'getClassInequalityWithoutArgumentsNarrowsThis' => [
+                'code' => '<?php
+                    class A {
+                        public function f(): void {
+                            if (get_class() !== B::class) {
+                                return;
+                            }
+                            $this->onlyB();
+                        }
+                    }
+                    final class B extends A {
+                        public function onlyB(): void {}
+                    }',
+            ],
         ];
     }
 
@@ -3561,6 +3952,95 @@ final class ConditionalTest extends TestCase
     public static function providerInvalidCodeParse(): iterable
     {
         return [
+            'identicalKeyedArraysWithAnOptionalKeyOfOverlappingTypesAreAKnownLimit' => [
+                'code' => '<?php
+                    /** @param array{a?: int|string} $x */
+                    function f(array $x, string|bool $s): bool {
+                        return $x === ["a" => $s];
+                    }',
+                'error_message' => 'TypeDoesNotContainType',
+                'error_levels' => [],
+                'php_version' => '8.0',
+            ],
+            'identicalKeyedArraysWithAFallbackOfOverlappingTypesAreAKnownLimit' => [
+                'code' => '<?php
+                    /** @param array{a: int|string, ...<string, mixed>} $x */
+                    function f(array $x, string|bool $s): bool {
+                        return $x === ["a" => $s];
+                    }',
+                'error_message' => 'TypeDoesNotContainType',
+                'error_levels' => [],
+                'php_version' => '8.0',
+            ],
+            'identicalKeyedArraysOfDisjointTypes' => [
+                'code' => '<?php
+                    function f(int $x): void {
+                        $a = [$x, "a"];
+
+                        if ($a === [0, "b"]) {
+                            echo 1;
+                        }
+                    }',
+                'error_message' => 'TypeDoesNotContainType',
+            ],
+            'identicalKeyedArraysOfDifferentKeys' => [
+                'code' => '<?php
+                    function f(int $x): void {
+                        $a = ["a" => $x];
+
+                        if ($a === ["b" => 1]) {
+                            echo 1;
+                        }
+                    }',
+                'error_message' => 'TypeDoesNotContainType',
+            ],
+            'iterableIsNotInstanceOfAnEnum' => [
+                'code' => <<<'PHP'
+                    <?php
+                    enum Suit {
+                        case Hearts;
+                    }
+
+                    /** @param iterable<int, string> $t */
+                    function f(iterable $t): void {
+                        if ($t instanceof Suit) {
+                            echo "never a Traversable";
+                        }
+                    }
+                    PHP,
+                'error_message' => 'TypeDoesNotContainType',
+                'error_levels' => [],
+                'php_version' => '8.1',
+            ],
+            'iterableIsNotInstanceOfFinalClassThatIsNotTraversable' => [
+                'code' => <<<'PHP'
+                    <?php
+                    final class Fin {}
+
+                    /** @param iterable<int, string> $i */
+                    function f(iterable $i): void {
+                        if ($i instanceof Fin) {
+                            echo "never";
+                        }
+                    }
+                    PHP,
+                'error_message' => 'TypeDoesNotContainType',
+                'error_levels' => [],
+                'php_version' => '8.1',
+            ],
+            'finalClassCannotBeIdenticalToIterable' => [
+                'code' => <<<'PHP'
+                    <?php
+                    final class Fin {}
+
+                    function f(Fin $x, iterable $i): bool {
+                        return $x === $i;
+                    }
+                    PHP,
+                'error_message' => 'TypeDoesNotContainType',
+                'error_levels' => [],
+                'php_version' => '8.1',
+            ],
             'negatedInstanceofOfTheWholeBoundOfATemplateParamLeavesNoType' => [
                 'code' => '<?php
                     interface Foo {}
@@ -4064,6 +4544,14 @@ final class ConditionalTest extends TestCase
                     }
                 ',
                 'error_message' => 'RedundantCondition',
+            ],
+            'literalIntGreaterThanComparisonIsImpossible' => [
+                'code' => '<?php
+                    $i = 0;
+                    if ($i > 1) {
+                        echo $i;
+                    }',
+                'error_message' => 'TypeDoesNotContainType',
             ],
         ];
     }
