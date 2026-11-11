@@ -40,12 +40,16 @@ use Psalm\Node\VirtualIdentifier;
 use Psalm\Node\VirtualName;
 use Psalm\Node\VirtualNullableType;
 use Psalm\Node\VirtualParam;
+use Psalm\Node\VirtualUnionType;
 use Psalm\Type;
 use Psalm\Type\Union;
 
 use UnexpectedValueException;
+use function array_values;
+use function count;
 use function dirname;
 use function is_int;
+use function reset;
 use function rtrim;
 use function strpos;
 
@@ -308,20 +312,27 @@ final class StubsGenerator
     }
 
     /**
-     * @return PhpParser\Node\Identifier|PhpParser\Node\Name\FullyQualified|PhpParser\Node\NullableType|null
+     * @return PhpParser\Node\Identifier|PhpParser\Node\Name\FullyQualified|PhpParser\Node\NullableType
+     *     |PhpParser\Node\UnionType|null
      */
     public static function getParserTypeFromPsalmType(Union $type): ?PhpParser\NodeAbstract
     {
         $nullable = $type->isNullable();
+
+        /** @var array<string, PhpParser\Node\Identifier|PhpParser\Node\Name\FullyQualified> $nodes */
+        $nodes = [];
 
         foreach ($type->getAtomicTypes() as $atomic_type) {
             if ($atomic_type instanceof TNull) {
                 continue;
             }
 
-            // no PHP type stands for string|int|float|bool
             if ($atomic_type instanceof TScalar) {
-                return null;
+                foreach (['string', 'int', 'float', 'bool'] as $scalar_name) {
+                    $nodes[$scalar_name] = new VirtualIdentifier($scalar_name);
+                }
+
+                continue;
             }
 
             if ($atomic_type instanceof Scalar
@@ -336,27 +347,37 @@ final class StubsGenerator
                         $atomic_type->getId() . ' could not be converted to an identifier'
                     );
                 }
-                $identifier = new VirtualIdentifier($identifier_string);
 
-                if ($nullable) {
-                    return new VirtualNullableType($identifier);
-                }
+                $nodes[$identifier_string] = new VirtualIdentifier($identifier_string);
 
-                return $identifier;
+                continue;
             }
 
             if ($atomic_type instanceof TNamedObject) {
-                $name_node = new VirtualFullyQualified($atomic_type->value);
+                $nodes[$atomic_type->value] = new VirtualFullyQualified($atomic_type->value);
 
-                if ($nullable) {
-                    return new VirtualNullableType($name_node);
-                }
-
-                return $name_node;
+                continue;
             }
+
+            // no PHP type stands for this atomic, and leaving it out would narrow the type
+            return null;
         }
 
-        return null;
+        if (!$nodes) {
+            return null;
+        }
+
+        if (count($nodes) === 1) {
+            $node = reset($nodes);
+
+            return $nullable ? new VirtualNullableType($node) : $node;
+        }
+
+        if ($nullable) {
+            $nodes['null'] = new VirtualIdentifier('null');
+        }
+
+        return new VirtualUnionType(array_values($nodes));
     }
 
     public static function getExpressionFromType(Union $type) : PhpParser\Node\Expr
