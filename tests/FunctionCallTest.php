@@ -3177,6 +3177,19 @@ final class FunctionCallTest extends TestCase
                 'ignored_issues' => [],
                 'php_version' => '7.4',
             ],
+            'filterVarIpGlobalRangeFlag' => [
+                'code' => <<<'PHP'
+                    <?php
+                    /** @psalm-pure */
+                    function isGlobalIp(string $ip): bool
+                    {
+                        return filter_var($ip, FILTER_VALIDATE_IP, FILTER_FLAG_GLOBAL_RANGE) !== false;
+                    }
+                    PHP,
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.2',
+            ],
         ];
     }
 
@@ -3187,6 +3200,17 @@ final class FunctionCallTest extends TestCase
     public static function providerInvalidCodeParse(): iterable
     {
         return [
+            'streamSelectDoesNotTakeAContextBeforePhp86' => [
+                'code' => '<?php
+                    $read = [STDIN];
+                    $write = null;
+                    $except = null;
+
+                    stream_select($read, $write, $except, 0, 0, null);',
+                'error_message' => 'TooManyArguments',
+                'error_levels' => [],
+                'php_version' => '8.5',
+            ],
             'emptyStringIsNotANonEmptyLowercaseString' => [
                 'code' => '<?php
                     /** @param non-empty-lowercase-string $s */
@@ -4073,6 +4097,18 @@ final class FunctionCallTest extends TestCase
                         $a = count_chars("foo", $mode);
                     }',
                 'error_message' => 'ArgumentTypeCoercion',
+            ],
+            'getObjectVarsOfAStdClassIsAMixedCoercion' => [
+                'code' => '<?php
+                    /** @param array{i: int} $array */
+                    function takesAnArray(array $array): void {
+                        echo $array["i"];
+                    }
+
+                    $obj = new stdClass();
+
+                    takesAnArray(get_object_vars($obj));',
+                'error_message' => 'MixedArgumentTypeCoercion',
             ],
             'strReplaceWithFewerReplacementsThanSearches' => [
                 'code' => '<?php
