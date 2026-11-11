@@ -79,6 +79,7 @@ use Psalm\Storage\FunctionLikeStorage;
 use Psalm\Storage\FunctionStorage;
 use Psalm\Storage\MethodStorage;
 use Psalm\Type;
+use Psalm\Type\Atomic;
 use Psalm\Type\Atomic\TArray;
 use Psalm\Type\Atomic\TCapabilities;
 use Psalm\Type\Atomic\TClosure;
@@ -91,6 +92,7 @@ use UnexpectedValueException;
 
 use function array_combine;
 use function array_diff_key;
+use function array_filter;
 use function array_key_exists;
 use function array_keys;
 use function array_map;
@@ -123,6 +125,17 @@ use const SORT_NUMERIC;
  */
 abstract class FunctionLikeAnalyzer extends SourceAnalyzer
 {
+    private const MAGIC_METHODS_WITH_REQUIRED_PARAMS = [
+        '__call',
+        '__callstatic',
+        '__get',
+        '__set',
+        '__isset',
+        '__unset',
+        '__unserialize',
+        '__set_state',
+    ];
+
     protected Codebase $codebase;
 
     /**
@@ -1969,20 +1982,26 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
                 }
             }
 
-            if ($codebase->collect_locations) {
-                if ($function_param->type_location !== $function_param->signature_type_location &&
-                    $function_param->signature_type_location &&
-                    $function_param->signature_type
-                ) {
-                    if ($function_param->signature_type->check(
-                        $this->source,
-                        $function_param->signature_type_location,
-                        $this->suppressed_issues,
-                        [],
-                        false,
-                    ) === false) {
-                        $check_stmts = false;
-                    }
+            if ($function_param->type_location !== $function_param->signature_type_location
+                && $function_param->signature_type_location
+                && $function_param->signature_type
+                && $function_param->type?->getId() !== $function_param->signature_type->getId()
+            ) {
+                // only the classes: the docblock type replaces the native one everywhere else
+                $signature_classes = array_filter(
+                    $function_param->signature_type->getAtomicTypes(),
+                    static fn(Atomic $atomic): bool => $atomic instanceof TNamedObject
+                        && !ClassLikeAnalyzer::isReservedClassName($atomic->value),
+                );
+
+                if ($signature_classes && (new Union($signature_classes))->check(
+                    $this->source,
+                    $function_param->signature_type_location,
+                    $this->suppressed_issues,
+                    [],
+                    false,
+                ) === false) {
+                    $check_stmts = false;
                 }
             }
 
@@ -2627,6 +2646,14 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
         return $this->is_static;
     }
 
+    /**
+     * @psalm-mutation-free
+     */
+    public function isArrowFunction(): bool
+    {
+        return $this->function instanceof ArrowFunction;
+    }
+
     #[Override]
     public function getCodebase(): Codebase
     {
@@ -2868,7 +2895,7 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
             ) {
                 IssueBuffer::maybeAdd(
                     new MissingOverrideAttribute(
-                        'Method ' . $method_id . ' should have the "Override" attribute',
+                        'Method ' . $cased_method_id . ' should have the "Override" attribute',
                         $codeLocation,
                     ),
                     $this->getSuppressedIssues(),
@@ -3086,7 +3113,8 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
 
             $method_name_lc = strtolower($storage->cased_name);
 
-            if ($storage->abstract) {
+            // PHP requires these magic methods to take exactly the parameters they declare
+            if ($storage->abstract || in_array($method_name_lc, self::MAGIC_METHODS_WITH_REQUIRED_PARAMS, true)) {
                 continue;
             }
 
