@@ -27,6 +27,7 @@ use UnexpectedValueException;
 use function array_diff_key;
 use function array_filter;
 use function array_keys;
+use function array_map;
 use function array_merge;
 use function array_unique;
 use function array_values;
@@ -71,6 +72,9 @@ final class LoopAnalyzer
         $traverser->traverse(array_merge($pre_conditions, $stmts, $post_expressions));
 
         $assignment_map = $assignment_mapper->getAssignmentMap();
+
+        $loop_scope->assigned_root_var_ids = ($loop_parent_context->loop_scope?->assigned_root_var_ids ?? [])
+            + array_map(static fn(array $_): bool => true, $assignment_map);
 
         $assignment_depth = 0;
 
@@ -285,8 +289,9 @@ final class LoopAnalyzer
                         }
 
                         // if we're in a do block we don't want to remove vars before evaluating
-                        // the where conditional
-                        if (!$is_do) {
+                        // the where conditional, but a property or array offset it narrowed was not
+                        // in scope when the loop was entered
+                        if (!$is_do || !self::isLoopVar($var_id)) {
                             $vars_to_remove[] = $var_id;
                         }
                     }
