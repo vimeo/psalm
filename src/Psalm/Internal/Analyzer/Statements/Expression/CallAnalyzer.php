@@ -1173,11 +1173,11 @@ abstract class CallAnalyzer
                             );
                         }
 
-                        // the elements of an array of mixed say nothing about the type the callback takes, as for
+                        // elements that may be mixed say nothing about the type the callback takes, as for
                         // array_map(), whose callback is not checked against them either
                         if (!$is_contained_by
                             && $function_id === 'array_reduce'
-                            && $lower_bound_type->isMixed()
+                            && $lower_bound_type->hasMixed()
                         ) {
                             continue;
                         }
