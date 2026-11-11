@@ -1136,7 +1136,6 @@ final class IssetTest extends TestCase
                         }
                         /**
                          * @psalm-suppress PossiblyUndefinedVariable
-                         * @psalm-suppress MixedArgument
                          */
                         assert($dt);
                     }',
@@ -1380,6 +1379,24 @@ final class IssetTest extends TestCase
                             return self::$instance;
                         }
                         private function __construct() {}
+                    }',
+                'error_message' => 'RedundantPropertyInitializationCheck',
+            ],
+            'negatedIssetOnInstancePropertyOutsideConstructor' => [
+                'code' => '<?php
+                    class A {
+                        private string $s;
+
+                        public function __construct() {
+                            $this->s = "a";
+                        }
+
+                        public function get(): string {
+                            if (!isset($this->s)) {
+                                $this->s = "b";
+                            }
+                            return $this->s;
+                        }
                     }',
                 'error_message' => 'RedundantPropertyInitializationCheck',
             ],

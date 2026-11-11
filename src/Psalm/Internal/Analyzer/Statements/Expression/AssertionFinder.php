@@ -44,6 +44,7 @@ use Psalm\Issue\UnevaluatedCode;
 use Psalm\IssueBuffer;
 use Psalm\Node\Expr\BinaryOp\VirtualIdentical;
 use Psalm\Node\Expr\BinaryOp\VirtualNotIdentical;
+use Psalm\Node\Expr\VirtualArrayDimFetch;
 use Psalm\Storage\Assertion;
 use Psalm\Storage\Assertion\ArrayKeyExists;
 use Psalm\Storage\Assertion\DoesNotHaveAtLeastCount;
@@ -106,6 +107,7 @@ use Psalm\Type\Union;
 use UnexpectedValueException;
 
 use function array_key_exists;
+use function array_map;
 use function assert;
 use function count;
 use function explode;
@@ -114,6 +116,7 @@ use function is_int;
 use function is_numeric;
 use function is_string;
 use function ltrim;
+use function preg_match;
 use function sprintf;
 use function str_ends_with;
 use function str_replace;
@@ -982,6 +985,21 @@ final class AssertionFinder
     }
 
     /**
+     * For a `bool` operand `=== true` and `!== false` are plain truthiness, which is what the clauses
+     * of an assignment like `$c = $a && $b` are expressed in.
+     *
+     * @psalm-capabilities read-props
+     */
+    private static function isBoolVariable(PhpParser\Node\Expr $expr, FileSource $source): bool
+    {
+        if (!$source instanceof StatementsAnalyzer || !($type = $source->node_data->getType($expr))) {
+            return false;
+        }
+
+        return $type->getId() === 'bool' && !$type->possibly_undefined;
+    }
+
+    /**
      * The class named by a string literal or a `Foo::class` constant.
      */
     private static function getLiteralClassName(PhpParser\Node\Expr $expr): ?string
@@ -1138,7 +1156,7 @@ final class AssertionFinder
                     }
 
                     if ($var_name) {
-                        $if_types[$var_name] = [[$assertion->rule[0]]];
+                        $if_types[$var_name] = self::getAlternatives($assertion->rule);
                     }
                 } elseif ($assertion->var_id === '$this') {
                     if (!$expr instanceof PhpParser\Node\Expr\MethodCall) {
@@ -1158,7 +1176,18 @@ final class AssertionFinder
                     );
 
                     if ($var_id) {
-                        $if_types[$var_id] = [[$assertion->rule[0]]];
+                        $if_types[$var_id] = self::getAlternatives($assertion->rule);
+                    }
+                } elseif (is_string($assertion->var_id) && self::isArrayOffsetAssertionId($assertion->var_id)) {
+                    $offset_var_id = self::getArrayOffsetVarId(
+                        $assertion->var_id,
+                        $expr->getArgs(),
+                        $this_class_name,
+                        $source,
+                    );
+
+                    if ($offset_var_id !== null && $assertion->rule !== []) {
+                        $if_types[$offset_var_id] = [$assertion->rule];
                     }
                 } elseif (is_string($assertion->var_id)) {
                     $is_function = str_ends_with($assertion->var_id, '()');
@@ -1228,7 +1257,7 @@ final class AssertionFinder
                         );
                         continue;
                     }
-                    $if_types[$assertion_var_id] = [[$assertion->rule[0]]];
+                    $if_types[$assertion_var_id] = self::getAlternatives($assertion->rule);
                 }
 
                 if ($if_types) {
@@ -1277,7 +1306,7 @@ final class AssertionFinder
                     }
 
                     if ($var_name) {
-                        $if_types[$var_name] = [[$assertion->rule[0]->getNegation()]];
+                        $if_types[$var_name] = self::getNegatedAlternatives($assertion->rule);
                     }
                 } elseif ($assertion->var_id === '$this' && $expr instanceof PhpParser\Node\Expr\MethodCall) {
                     $var_id = ExpressionIdentifier::getExtendedVarId(
@@ -1287,7 +1316,21 @@ final class AssertionFinder
                     );
 
                     if ($var_id) {
-                        $if_types[$var_id] = [[$assertion->rule[0]->getNegation()]];
+                        $if_types[$var_id] = self::getNegatedAlternatives($assertion->rule);
+                    }
+                } elseif (is_string($assertion->var_id) && self::isArrayOffsetAssertionId($assertion->var_id)) {
+                    $offset_var_id = self::getArrayOffsetVarId(
+                        $assertion->var_id,
+                        $expr->getArgs(),
+                        $this_class_name,
+                        $source,
+                    );
+
+                    if ($offset_var_id !== null && $assertion->rule !== []) {
+                        $if_types[$offset_var_id] = [array_map(
+                            static fn(Assertion $rule): Assertion => $rule->getNegation(),
+                            $assertion->rule,
+                        )];
                     }
                 } elseif (is_string($assertion->var_id)) {
                     $is_function = str_ends_with($assertion->var_id, '()');
@@ -1339,17 +1382,15 @@ final class AssertionFinder
                             }
                         }
 
-                        $rule = $assertion->rule[0]->getNegation();
-
                         $assertion_var_id = str_replace($var_id, $arg_var_id, $assertion->var_id);
 
-                        $if_types[$assertion_var_id] = [[$rule]];
+                        $if_types[$assertion_var_id] = self::getNegatedAlternatives($assertion->rule);
                     } elseif (!$expr instanceof PhpParser\Node\Expr\FuncCall) {
                         $var_id = $assertion->var_id;
                         if (str_starts_with($var_id, 'self::')) {
                             $var_id = $this_class_name.'::'.substr($var_id, 6);
                         }
-                        $if_types[$var_id] = [[$assertion->rule[0]->getNegation()]];
+                        $if_types[$var_id] = self::getNegatedAlternatives($assertion->rule);
                     } else {
                         IssueBuffer::maybeAdd(
                             new InvalidDocblock(
@@ -1534,25 +1575,34 @@ final class AssertionFinder
     }
 
     /**
+     * @param list<string> $lowercase_names
+     */
+    private static function isFunctionCallToOneOf(
+        PhpParser\Node\Expr $expr,
+        array $lowercase_names,
+        int $min_args = 0,
+    ): bool {
+        return $expr instanceof PhpParser\Node\Expr\FuncCall
+            && $expr->name instanceof PhpParser\Node\Name
+            && !$expr->isPartialFunctionApplication()
+            && in_array(strtolower($expr->name->getFirst()), $lowercase_names, true)
+            && count($expr->getArgs()) >= $min_args;
+    }
+
+    /**
      * @param Identical|Equal|NotIdentical|NotEqual $conditional
      * @return false|int
      */
     private static function hasGetTypeCheck(
         PhpParser\Node\Expr\BinaryOp $conditional,
     ): bool|int {
-        if ($conditional->right instanceof PhpParser\Node\Expr\FuncCall
-            && $conditional->right->name instanceof PhpParser\Node\Name
-            && strtolower($conditional->right->name->getFirst()) === 'gettype'
-            && $conditional->right->getArgs()
+        if (self::isFunctionCallToOneOf($conditional->right, ['gettype'], 1)
             && $conditional->left instanceof PhpParser\Node\Scalar\String_
         ) {
             return self::ASSIGNMENT_TO_RIGHT;
         }
 
-        if ($conditional->left instanceof PhpParser\Node\Expr\FuncCall
-            && $conditional->left->name instanceof PhpParser\Node\Name
-            && strtolower($conditional->left->name->getFirst()) === 'gettype'
-            && $conditional->left->getArgs()
+        if (self::isFunctionCallToOneOf($conditional->left, ['gettype'], 1)
             && $conditional->right instanceof PhpParser\Node\Scalar\String_
         ) {
             return self::ASSIGNMENT_TO_LEFT;
@@ -1568,20 +1618,14 @@ final class AssertionFinder
     private static function hasGetDebugTypeCheck(
         PhpParser\Node\Expr\BinaryOp $conditional,
     ): bool|int {
-        if ($conditional->right instanceof PhpParser\Node\Expr\FuncCall
-            && $conditional->right->name instanceof PhpParser\Node\Name
-            && strtolower($conditional->right->name->getFirst()) === 'get_debug_type'
-            && $conditional->right->getArgs()
+        if (self::isFunctionCallToOneOf($conditional->right, ['get_debug_type'], 1)
             && ($conditional->left instanceof PhpParser\Node\Scalar\String_
                 || $conditional->left instanceof PhpParser\Node\Expr\ClassConstFetch)
         ) {
             return self::ASSIGNMENT_TO_RIGHT;
         }
 
-        if ($conditional->left instanceof PhpParser\Node\Expr\FuncCall
-            && $conditional->left->name instanceof PhpParser\Node\Name
-            && strtolower($conditional->left->name->getFirst()) === 'get_debug_type'
-            && $conditional->left->getArgs()
+        if (self::isFunctionCallToOneOf($conditional->left, ['get_debug_type'], 1)
             && ($conditional->right instanceof PhpParser\Node\Scalar\String_
                 || $conditional->right instanceof PhpParser\Node\Expr\ClassConstFetch)
         ) {
@@ -1603,9 +1647,7 @@ final class AssertionFinder
             return false;
         }
 
-        $right_get_class = $conditional->right instanceof PhpParser\Node\Expr\FuncCall
-            && $conditional->right->name instanceof PhpParser\Node\Name
-            && strtolower($conditional->right->name->getFirst()) === 'get_class';
+        $right_get_class = self::isFunctionCallToOneOf($conditional->right, ['get_class']);
 
         $right_static_class = $conditional->right instanceof PhpParser\Node\Expr\ClassConstFetch
             && $conditional->right->class instanceof PhpParser\Node\Name
@@ -1649,9 +1691,7 @@ final class AssertionFinder
             return self::ASSIGNMENT_TO_RIGHT;
         }
 
-        $left_get_class = $conditional->left instanceof PhpParser\Node\Expr\FuncCall
-            && $conditional->left->name instanceof PhpParser\Node\Name
-            && strtolower($conditional->left->name->getFirst()) === 'get_class';
+        $left_get_class = self::isFunctionCallToOneOf($conditional->left, ['get_class']);
 
         $left_static_class = $conditional->left instanceof PhpParser\Node\Expr\ClassConstFetch
             && $conditional->left->class instanceof PhpParser\Node\Name
@@ -1696,19 +1736,13 @@ final class AssertionFinder
         PhpParser\Node\Expr\BinaryOp $conditional,
         ?int &$min_count,
     ): bool|int {
-        if ($conditional->left instanceof PhpParser\Node\Expr\FuncCall
-            && $conditional->left->name instanceof PhpParser\Node\Name
-            && in_array(strtolower($conditional->left->name->getFirst()), ['count', 'sizeof'])
-            && $conditional->left->getArgs()
+        if (self::isFunctionCallToOneOf($conditional->left, ['count', 'sizeof'], 1)
             && ($conditional instanceof BinaryOp\Greater || $conditional instanceof BinaryOp\GreaterOrEqual)
         ) {
             $assignment_to = self::ASSIGNMENT_TO_RIGHT;
             $compare_to = $conditional->right;
             $comparison_adjustment = $conditional instanceof BinaryOp\Greater ? 1 : 0;
-        } elseif ($conditional->right instanceof PhpParser\Node\Expr\FuncCall
-            && $conditional->right->name instanceof PhpParser\Node\Name
-            && in_array(strtolower($conditional->right->name->getFirst()), ['count', 'sizeof'])
-            && $conditional->right->getArgs()
+        } elseif (self::isFunctionCallToOneOf($conditional->right, ['count', 'sizeof'], 1)
             && ($conditional instanceof BinaryOp\Smaller || $conditional instanceof BinaryOp\SmallerOrEqual)
         ) {
             $assignment_to = self::ASSIGNMENT_TO_LEFT;
@@ -1738,10 +1772,7 @@ final class AssertionFinder
         PhpParser\Node\Expr\BinaryOp $conditional,
         ?int &$max_count,
     ): bool|int {
-        $left_count = $conditional->left instanceof PhpParser\Node\Expr\FuncCall
-            && $conditional->left->name instanceof PhpParser\Node\Name
-            && in_array(strtolower($conditional->left->name->getFirst()), ['count', 'sizeof'])
-            && $conditional->left->getArgs();
+        $left_count = self::isFunctionCallToOneOf($conditional->left, ['count', 'sizeof'], 1);
 
         $operator_less_than_or_equal =
             $conditional instanceof PhpParser\Node\Expr\BinaryOp\SmallerOrEqual
@@ -1757,10 +1788,7 @@ final class AssertionFinder
             return self::ASSIGNMENT_TO_RIGHT;
         }
 
-        $right_count = $conditional->right instanceof PhpParser\Node\Expr\FuncCall
-            && $conditional->right->name instanceof PhpParser\Node\Name
-            && in_array(strtolower($conditional->right->name->getFirst()), ['count', 'sizeof'])
-            && $conditional->right->getArgs();
+        $right_count = self::isFunctionCallToOneOf($conditional->right, ['count', 'sizeof'], 1);
 
         $operator_greater_than_or_equal =
             $conditional instanceof PhpParser\Node\Expr\BinaryOp\GreaterOrEqual
@@ -1787,10 +1815,7 @@ final class AssertionFinder
         PhpParser\Node\Expr\BinaryOp $conditional,
         ?int &$count,
     ): bool|int {
-        $left_count = $conditional->left instanceof PhpParser\Node\Expr\FuncCall
-            && $conditional->left->name instanceof PhpParser\Node\Name
-            && in_array(strtolower($conditional->left->name->getFirst()), ['count', 'sizeof'])
-            && $conditional->left->getArgs();
+        $left_count = self::isFunctionCallToOneOf($conditional->left, ['count', 'sizeof'], 1);
 
         if ($left_count && $conditional->right instanceof PhpParser\Node\Scalar\Int_) {
             $count = $conditional->right->value;
@@ -1798,10 +1823,7 @@ final class AssertionFinder
             return self::ASSIGNMENT_TO_RIGHT;
         }
 
-        $right_count = $conditional->right instanceof PhpParser\Node\Expr\FuncCall
-            && $conditional->right->name instanceof PhpParser\Node\Name
-            && in_array(strtolower($conditional->right->name->getFirst()), ['count', 'sizeof'])
-            && $conditional->right->getArgs();
+        $right_count = self::isFunctionCallToOneOf($conditional->right, ['count', 'sizeof'], 1);
 
         if ($right_count && $conditional->left instanceof PhpParser\Node\Scalar\Int_) {
             $count = $conditional->left->value;
@@ -1941,9 +1963,7 @@ final class AssertionFinder
     private static function hasReconcilableNonEmptyCountEqualityCheck(
         PhpParser\Node\Expr\BinaryOp $conditional,
     ): bool|int {
-        $left_count = $conditional->left instanceof PhpParser\Node\Expr\FuncCall
-            && $conditional->left->name instanceof PhpParser\Node\Name
-            && in_array(strtolower($conditional->left->name->getFirst()), ['count', 'sizeof']);
+        $left_count = self::isFunctionCallToOneOf($conditional->left, ['count', 'sizeof']);
 
         $right_number = $conditional->right instanceof PhpParser\Node\Scalar\Int_
             && $conditional->right->value === (
@@ -2308,7 +2328,9 @@ final class AssertionFinder
         );
 
         if ($var_name) {
-            if ($conditional instanceof PhpParser\Node\Expr\BinaryOp\NotIdentical) {
+            if ($conditional instanceof PhpParser\Node\Expr\BinaryOp\NotIdentical
+                && !self::isBoolVariable($base_conditional, $source)
+            ) {
                 $if_types[$var_name] = [[new IsNotType(new TFalse())]];
             } else {
                 $if_types[$var_name] = [[new Truthy()]];
@@ -2437,7 +2459,9 @@ final class AssertionFinder
             );
 
             if ($var_name) {
-                if ($conditional instanceof PhpParser\Node\Expr\BinaryOp\NotIdentical) {
+                if ($conditional instanceof PhpParser\Node\Expr\BinaryOp\NotIdentical
+                    && !self::isBoolVariable($base_conditional, $source)
+                ) {
                     $if_types[$var_name] = [[new IsNotType(new TTrue())]];
                 } else {
                     $if_types[$var_name] = [[new Falsy()]];
@@ -2606,18 +2630,18 @@ final class AssertionFinder
                     if ($var_type->from_docblock) {
                         IssueBuffer::maybeAdd(
                             new RedundantConditionGivenDocblockType(
-                                'Docblock-defined type ' . $var_type->getId() . ' can never contain null',
+                                'Docblock-defined type ' . $var_type->getId() . ' can never be an empty array',
                                 new CodeLocation($source, $conditional),
-                                $var_type->getId() . ' null',
+                                $var_type->getId() . ' []',
                             ),
                             $source->getSuppressedIssues(),
                         );
                     } else {
                         IssueBuffer::maybeAdd(
                             new RedundantCondition(
-                                $var_type->getId() . ' can never contain null',
+                                $var_type->getId() . ' can never be an empty array',
                                 new CodeLocation($source, $conditional),
-                                $var_type->getId() . ' null',
+                                $var_type->getId() . ' []',
                             ),
                             $source->getSuppressedIssues(),
                         );
@@ -2774,7 +2798,7 @@ final class AssertionFinder
             throw new UnexpectedValueException('$getclass_position value');
         }
 
-        if ($getclass_expr instanceof PhpParser\Node\Expr\FuncCall) {
+        if ($getclass_expr instanceof PhpParser\Node\Expr\FuncCall && isset($getclass_expr->getArgs()[0])) {
             $var_name = ExpressionIdentifier::getExtendedVarId(
                 $getclass_expr->getArgs()[0]->value,
                 $this_class_name,
@@ -3037,7 +3061,9 @@ final class AssertionFinder
             );
 
             if ($var_name) {
-                if ($conditional instanceof PhpParser\Node\Expr\BinaryOp\Identical) {
+                if ($conditional instanceof PhpParser\Node\Expr\BinaryOp\Identical
+                    && !self::isBoolVariable($base_conditional, $source)
+                ) {
                     $if_types[$var_name] = [[new IsType(new TTrue())]];
                 } else {
                     $if_types[$var_name] = [[new Truthy()]];
@@ -3165,7 +3191,9 @@ final class AssertionFinder
             );
 
             if ($var_name) {
-                if ($conditional instanceof PhpParser\Node\Expr\BinaryOp\Identical) {
+                if ($conditional instanceof PhpParser\Node\Expr\BinaryOp\Identical
+                    && !self::isBoolVariable($base_conditional, $source)
+                ) {
                     $if_types[$var_name] = [[new IsType(new TFalse())]];
                 } else {
                     $if_types[$var_name] = [[new Falsy()]];
@@ -4012,20 +4040,23 @@ final class AssertionFinder
                     && $source instanceof StatementsAnalyzer
                     && ($first_var_type = $source->node_data->getType($expr->getArgs()[0]->value))
                 ) {
-                    foreach ($first_var_type->getLiteralStrings() as $array_literal_type) {
+                    // only one key is known to exist: it is not any of the keys of a union
+                    if ($first_var_type->isSingleStringLiteral()) {
+                        $array_literal_type = $first_var_type->getSingleStringLiteral();
                         $string_to_int = ArrayAnalyzer::getLiteralArrayKeyInt($array_literal_type->value);
                         $literal_key = $string_to_int === false
                             ? "'" . $array_literal_type->value . "'"
                             : $string_to_int;
                         $if_types[$array_root . "[" . $literal_key . "]"] = [[new ArrayKeyExists()]];
-                    }
-                    foreach ($first_var_type->getLiteralInts() as $array_literal_type) {
+                    } elseif ($first_var_type->isSingleIntLiteral()) {
+                        $array_literal_type = $first_var_type->getSingleIntLiteral();
                         $if_types[$array_root . "[" . $array_literal_type->value . "]"] = [[new ArrayKeyExists()]];
                     }
                 }
 
                 if ($first_var_name !== null
-                    && !strpos($first_var_name, '->')
+                    && (!strpos($first_var_name, '->')
+                        || $expr->getArgs()[0]->value instanceof PhpParser\Node\Expr\PropertyFetch)
                     && !strpos($first_var_name, '[')
                 ) {
                     $if_types[$array_root . '[' . $first_var_name . ']'] = [[new ArrayKeyExists()]];
@@ -4421,6 +4452,95 @@ final class AssertionFinder
                 }
             }
         }
+    }
+
+    /**
+     * The rules of a docblock assertion are alternatives: the variable satisfies at least one of them
+     *
+     * @param list<Assertion> $rules
+     * @return non-empty-list<non-empty-list<Assertion>>
+     * @psalm-pure
+     */
+    private static function getAlternatives(array $rules): array
+    {
+        assert($rules !== []);
+
+        return [$rules];
+    }
+
+    /**
+     * The negation of getAlternatives(): the variable satisfies none of the rules
+     *
+     * @param list<Assertion> $rules
+     * @return non-empty-list<non-empty-list<Assertion>>
+     * @psalm-pure
+     */
+    private static function getNegatedAlternatives(array $rules): array
+    {
+        assert($rules !== []);
+
+        return array_map(static fn(Assertion $rule): array => [$rule->getNegation()], $rules);
+    }
+
+    /**
+     * @psalm-pure
+     */
+    public static function isArrayOffsetAssertionId(string $var_id): bool
+    {
+        return preg_match('/^\d+:\w+\[\d+:\w+]$/', $var_id) === 1;
+    }
+
+    /**
+     * The id of the offset of the argument that an assertion on `<array index>:<array name>[<key index>:<key name>]`
+     * is about, such as `$c[0]` or `$c[$key]`: null if the arguments don't name one
+     *
+     * @param list<PhpParser\Node\Arg> $args
+     */
+    public static function getArrayOffsetVarId(
+        string $var_id,
+        array $args,
+        ?string $this_class_name,
+        FileSource $source,
+    ): ?string {
+        if (preg_match('/^(\d+):(\w+)\[(\d+):(\w+)]$/', $var_id, $matches) !== 1
+            || !isset($matches[1], $matches[2], $matches[3], $matches[4])
+        ) {
+            return null;
+        }
+
+        $array_arg = self::getArgumentOfParameter($args, (int) $matches[1], $matches[2]);
+        $key_arg = self::getArgumentOfParameter($args, (int) $matches[3], $matches[4]);
+
+        if ($array_arg === null || $key_arg === null) {
+            return null;
+        }
+
+        return ExpressionIdentifier::getExtendedVarId(
+            new VirtualArrayDimFetch($array_arg->value, $key_arg->value),
+            $this_class_name,
+            $source,
+        );
+    }
+
+    /**
+     * The argument passed for the parameter at $index called $name: by its name, or by its position if it isn't named
+     *
+     * @param list<PhpParser\Node\Arg> $args
+     * @psalm-capabilities read-props
+     */
+    private static function getArgumentOfParameter(array $args, int $index, string $name): ?PhpParser\Node\Arg
+    {
+        foreach ($args as $position => $arg) {
+            if ($arg->unpack) {
+                return null;
+            }
+
+            if ($arg->name !== null ? $arg->name->name === $name : $position === $index) {
+                return $arg;
+            }
+        }
+
+        return null;
     }
 
     /**
