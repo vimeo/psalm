@@ -7720,12 +7720,12 @@ return array (
     array (
       'old' => 
       array (
-        0 => 'array<array-key, mixed>',
+        0 => 'array<string, mixed>',
         'obj' => 'object',
       ),
       'new' => 
       array (
-        0 => 'array<array-key, mixed>',
+        0 => 'array<string, mixed>',
         'object' => 'object',
       ),
     ),

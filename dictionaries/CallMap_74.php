@@ -30585,7 +30585,7 @@ return array (
   ),
   'get_object_vars' => 
   array (
-    0 => 'array<array-key, mixed>',
+    0 => 'array<string, mixed>',
     'obj' => 'object',
     -2 => 'none',
   ),

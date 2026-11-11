@@ -27775,6 +27775,7 @@ return array (
   ),
   'get_object_vars' => 
   array (
+    0 => 'array<string, mixed>',
     -1 => 'array<array-key, mixed>',
     'object' => 'object',
   ),

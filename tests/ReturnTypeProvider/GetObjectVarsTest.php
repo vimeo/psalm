@@ -121,6 +121,26 @@ final class GetObjectVarsTest extends TestCase
             'assertions' => [],
         ];
 
+        yield 'propertiesOfAnObjectOfNoKnownClassKeepStringKeys' => [
+            'code' => '<?php
+                function f(object $o): void {
+                    $ret = get_object_vars($o);
+                    /** @psalm-check-type-exact $ret = array<string, mixed> */
+                }',
+            'assertions' => [],
+        ];
+
+        yield 'propertiesOfAClassWithoutDeclaredPropertiesKeepStringKeys' => [
+            'code' => '<?php
+                class Plain {}
+
+                function f(Plain $o): void {
+                    $ret = get_object_vars($o);
+                    /** @psalm-check-type-exact $ret = array<string, mixed> */
+                }',
+            'assertions' => [],
+        ];
+
         yield 'propertiesOfStdClassMayHaveIntKeys' => [
             'code' => '<?php
                 $ret = get_object_vars(new stdClass());',
