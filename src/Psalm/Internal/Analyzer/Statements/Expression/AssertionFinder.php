@@ -109,7 +109,6 @@ use Psalm\Type\Reconciler;
 use Psalm\Type\Union;
 use UnexpectedValueException;
 
-use function array_map;
 use function assert;
 use function count;
 use function explode;
@@ -1090,6 +1089,42 @@ final class AssertionFinder
     }
 
     /**
+     * What a call asserts where it returns true and where it returns false, when the latter isn't the negation of
+     * the former: when it asserts something where it returns false, and anything else
+     *
+     * @param  PhpParser\Node\Expr\FuncCall|PhpParser\Node\Expr\MethodCall|PhpParser\Node\Expr\StaticCall $expr
+     * @return array{
+     *     list<non-empty-array<string, non-empty-list<non-empty-list<Assertion>>>>,
+     *     non-empty-list<non-empty-array<string, non-empty-list<non-empty-list<Assertion>>>>
+     * }|null
+     */
+    public static function getCustomAssertionsByResult(
+        PhpParser\Node\Expr $expr,
+        ?string $this_class_name,
+        FileSource $source,
+    ): ?array {
+        if (!$source instanceof StatementsAnalyzer) {
+            return null;
+        }
+
+        $if_false_count = count($source->node_data->getIfFalseAssertions($expr) ?? []);
+
+        if ($if_false_count === 0
+            || $if_false_count + count($source->node_data->getIfTrueAssertions($expr) ?? []) < 2
+        ) {
+            return null;
+        }
+
+        [$if_true_assertions, $if_false_assertions] = self::getCustomAssertions($expr, $this_class_name, $source);
+
+        if ($if_false_assertions === [] || count($if_true_assertions) + count($if_false_assertions) < 2) {
+            return null;
+        }
+
+        return [$if_true_assertions, $if_false_assertions];
+    }
+
+    /**
      * @param  PhpParser\Node\Expr\FuncCall|PhpParser\Node\Expr\MethodCall|PhpParser\Node\Expr\StaticCall $expr
      * @return list<non-empty-array<string, non-empty-list<non-empty-list<Assertion>>>>
      */
@@ -1102,11 +1137,36 @@ final class AssertionFinder
             return [];
         }
 
+        [$anded_types, $if_false_anded_types] = self::getCustomAssertions($expr, $this_class_name, $source);
+
+        foreach ($if_false_anded_types as $if_types) {
+            $negated_types = Algebra::negateTypes($if_types);
+
+            if ($negated_types) {
+                $anded_types[] = $negated_types;
+            }
+        }
+
+        return $anded_types;
+    }
+
+    /**
+     * @param  PhpParser\Node\Expr\FuncCall|PhpParser\Node\Expr\MethodCall|PhpParser\Node\Expr\StaticCall $expr
+     * @return array{
+     *     list<non-empty-array<string, non-empty-list<non-empty-list<Assertion>>>>,
+     *     list<non-empty-array<string, non-empty-list<non-empty-list<Assertion>>>>
+     * }
+     */
+    private static function getCustomAssertions(
+        PhpParser\Node\Expr $expr,
+        ?string $this_class_name,
+        StatementsAnalyzer $source,
+    ): array {
         $if_true_assertions = $source->node_data->getIfTrueAssertions($expr);
         $if_false_assertions = $source->node_data->getIfFalseAssertions($expr);
 
         if ($if_true_assertions === null && $if_false_assertions === null) {
-            return [];
+            return [[], []];
         }
 
         $first_var_name = isset($expr->getArgs()[0]->value)
@@ -1118,6 +1178,7 @@ final class AssertionFinder
             : null;
 
         $anded_types = [];
+        $if_false_anded_types = [];
 
         if ($if_true_assertions) {
             foreach ($if_true_assertions as $assertion) {
@@ -1229,7 +1290,7 @@ final class AssertionFinder
                     }
 
                     if ($var_name) {
-                        $if_types[$var_name] = self::getNegatedAlternatives($assertion->rule);
+                        $if_types[$var_name] = self::getAlternatives($assertion->rule);
                     }
                 } elseif ($assertion->var_id === '$this' && $expr instanceof PhpParser\Node\Expr\MethodCall) {
                     $var_id = ExpressionIdentifier::getExtendedVarId(
@@ -1239,7 +1300,7 @@ final class AssertionFinder
                     );
 
                     if ($var_id) {
-                        $if_types[$var_id] = self::getNegatedAlternatives($assertion->rule);
+                        $if_types[$var_id] = self::getAlternatives($assertion->rule);
                     }
                 } elseif (is_string($assertion->var_id) && self::isArrayOffsetAssertionId($assertion->var_id)) {
                     $offset_var_id = self::getArrayOffsetVarId(
@@ -1250,10 +1311,7 @@ final class AssertionFinder
                     );
 
                     if ($offset_var_id !== null && $assertion->rule !== []) {
-                        $if_types[$offset_var_id] = [array_map(
-                            static fn(Assertion $rule): Assertion => $rule->getNegation(),
-                            $assertion->rule,
-                        )];
+                        $if_types[$offset_var_id] = [$assertion->rule];
                     }
                 } elseif (is_string($assertion->var_id)) {
                     $is_function = str_ends_with($assertion->var_id, '()');
@@ -1273,13 +1331,13 @@ final class AssertionFinder
                             continue;
                         }
 
-                        $if_types[$assertion_var_id] = self::getNegatedAlternatives($assertion->rule);
+                        $if_types[$assertion_var_id] = self::getAlternatives($assertion->rule);
                     } elseif (!$expr instanceof PhpParser\Node\Expr\FuncCall) {
                         $var_id = $assertion->var_id;
                         if (str_starts_with($var_id, 'self::')) {
                             $var_id = $this_class_name.'::'.substr($var_id, 6);
                         }
-                        $if_types[$var_id] = self::getNegatedAlternatives($assertion->rule);
+                        $if_types[$var_id] = self::getAlternatives($assertion->rule);
                     } else {
                         IssueBuffer::maybeAdd(
                             new InvalidDocblock(
@@ -1291,12 +1349,12 @@ final class AssertionFinder
                 }
 
                 if ($if_types) {
-                    $anded_types[] = $if_types;
+                    $if_false_anded_types[] = $if_types;
                 }
             }
         }
 
-        return $anded_types;
+        return [$anded_types, $if_false_anded_types];
     }
 
     /**
@@ -4434,20 +4492,6 @@ final class AssertionFinder
         assert($rules !== []);
 
         return [$rules];
-    }
-
-    /**
-     * The negation of getAlternatives(): the variable satisfies none of the rules
-     *
-     * @param list<Assertion> $rules
-     * @return non-empty-list<non-empty-list<Assertion>>
-     * @psalm-pure
-     */
-    private static function getNegatedAlternatives(array $rules): array
-    {
-        assert($rules !== []);
-
-        return array_map(static fn(Assertion $rule): array => [$rule->getNegation()], $rules);
     }
 
     /**
