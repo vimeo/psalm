@@ -23,37 +23,26 @@ final class ForeachTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
-            'foreachIteratedExpressionIsAnalysedOnce' => [
+            'foreachOverListKeepsTheEmptyStringOfAnEmptyOrNumericString' => [
                 'code' => '<?php
-                    class Entity {
-                        public ?int $id = null;
-
-                        /**
-                         * @psalm-mutation-free
-                         * @psalm-assert !null $this->id
-                         */
-                        public function getIdAssert(): int {
-                            return 1;
+                    /** @var list<array{foo: ""|numeric-string}> $rows */
+                    $rows = [];
+                    $row = ["foo" => "1"];
+                    foreach ($rows as $row) {
+                        if ("" === $row["foo"]) {
+                            throw new Exception("empty");
                         }
                     }
 
-                    function onlyValue(Entity $entity): void {
-                        foreach ([$entity->getIdAssert()] as $_) {
-                        }
-                    }
-
-                    function keyAndValue(Entity $entity): void {
-                        foreach ([$entity->getIdAssert()] as $_key => $_value) {
-                        }
-                    }
-
-                    function destructured(Entity $entity): void {
-                        foreach ([[$entity->getIdAssert()]] as [$_first]) {
-                        }
+                    /** @var non-empty-list<""|numeric-string> $values */
+                    $values = ["1"];
+                    $value = "1";
+                    foreach ($values as $value) {
                     }',
-                'assertions' => [],
-                'ignored_issues' => [],
-                'php_version' => '8.0',
+                'assertions' => [
+                    '$row===' => "array{foo: numeric-string}",
+                    '$value===' => "''|numeric-string",
+                ],
             ],
             'postDecrementInTheConditionOfAnIfThatBreaksOverAConcreteArray' => [
                 'code' => '<?php
@@ -1679,17 +1668,7 @@ final class ForeachTest extends TestCase
                 'ignored_issues' => [],
                 'php_version' => '8.0',
             ],
-        ];
-    }
-
-    /**
-     * @psalm-pure
-     */
-    #[Override]
-    public static function providerInvalidCodeParse(): iterable
-    {
-        return [
-            'foreachIteratedExpressionAssertedTwiceInTheLoop' => [
+            'foreachIteratedExpressionIsAnalysedOnce' => [
                 'code' => '<?php
                     class Entity {
                         public ?int $id = null;
@@ -1703,14 +1682,34 @@ final class ForeachTest extends TestCase
                         }
                     }
 
-                    function f(Entity $entity): void {
-                        foreach ([$entity->getIdAssert(), $entity->getIdAssert()] as $_) {
+                    function onlyValue(Entity $entity): void {
+                        foreach ([$entity->getIdAssert()] as $_) {
+                        }
+                    }
+
+                    function keyAndValue(Entity $entity): void {
+                        foreach ([$entity->getIdAssert()] as $_key => $_value) {
+                        }
+                    }
+
+                    function destructured(Entity $entity): void {
+                        foreach ([[$entity->getIdAssert()]] as [$_first]) {
                         }
                     }',
-                'error_message' => 'RedundantConditionGivenDocblockType',
-                'error_levels' => [],
+                'assertions' => [],
+                'ignored_issues' => [],
                 'php_version' => '8.0',
             ],
+        ];
+    }
+
+    /**
+     * @psalm-pure
+     */
+    #[Override]
+    public static function providerInvalidCodeParse(): iterable
+    {
+        return [
             'iteratorCurrentNullStaysWhenTheTemplateValueIsNullable' => [
                 'code' => '<?php
                     class Foo {
@@ -2049,6 +2048,28 @@ final class ForeachTest extends TestCase
                     foreach ($gen as $i) {}
                 PHP,
                 'error_message' => 'InvalidIterator',
+            ],
+            'foreachIteratedExpressionAssertedTwiceInTheLoop' => [
+                'code' => '<?php
+                    class Entity {
+                        public ?int $id = null;
+
+                        /**
+                         * @psalm-mutation-free
+                         * @psalm-assert !null $this->id
+                         */
+                        public function getIdAssert(): int {
+                            return 1;
+                        }
+                    }
+
+                    function f(Entity $entity): void {
+                        foreach ([$entity->getIdAssert(), $entity->getIdAssert()] as $_) {
+                        }
+                    }',
+                'error_message' => 'RedundantConditionGivenDocblockType',
+                'error_levels' => [],
+                'php_version' => '8.0',
             ],
         ];
     }
