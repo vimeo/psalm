@@ -5,6 +5,9 @@ declare(strict_types=1);
 namespace Psalm\Tests\TypeReconciliation;
 
 use Override;
+use Psalm\Config;
+use Psalm\Context;
+use Psalm\Exception\CodeException;
 use Psalm\Tests\TestCase;
 use Psalm\Tests\Traits\InvalidCodeAnalysisTestTrait;
 use Psalm\Tests\Traits\ValidCodeAnalysisTestTrait;
@@ -14,6 +17,63 @@ final class IssetTest extends TestCase
     use ValidCodeAnalysisTestTrait;
     use InvalidCodeAnalysisTestTrait;
 
+    public function testIssetNarrowingOfObjectShapeIsForgottenAfterACallWhenPropertiesAreForgotten(): void
+    {
+        Config::getInstance()->remember_property_assignments_after_call = false;
+
+        $this->addFile(
+            'somefile.php',
+            '<?php
+                /** @param object{bar?: string} $foo */
+                function check(object $foo): void {
+                    if (isset($foo->bar)) {
+                        clearBar($foo);
+                        requiresBar($foo);
+                    }
+                }
+
+                function clearBar(object $foo): void {
+                    unset($foo->bar);
+                }
+
+                /** @param object{bar: string} $foo */
+                function requiresBar(object $foo): void {
+                    echo $foo->bar;
+                }',
+        );
+
+        $this->expectException(CodeException::class);
+        $this->expectExceptionMessage('InvalidArgument');
+        $this->analyzeFile('somefile.php', new Context());
+    }
+
+    public function testDeclaredPropertyOfObjectShapeIsKeptAfterACallWhenPropertiesAreForgotten(): void
+    {
+        Config::getInstance()->remember_property_assignments_after_call = false;
+
+        $this->addFile(
+            'somefile.php',
+            '<?php
+                /** @param object{bar: string} $foo */
+                function check(object $foo): void {
+                    echo $foo->bar;
+                    addOther($foo);
+                    requiresBar($foo);
+                }
+
+                function addOther(object $foo): void {
+                    $foo->other = 1;
+                }
+
+                /** @param object{bar: string} $foo */
+                function requiresBar(object $foo): void {
+                    echo $foo->bar;
+                }',
+        );
+
+        $this->analyzeFile('somefile.php', new Context());
+    }
+
     /**
      * @psalm-pure
      */
@@ -21,56 +81,26 @@ final class IssetTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
-            'nullsafeCallCoalescedWithAFalsyValueNarrowsTheReceiver' => [
+            'issetOfAnOptionalKeyOfAnUnsealedShapeKeepsTheShape' => [
                 'code' => '<?php
-                    class Checker {
-                        public function isValid(): bool {
-                            return (bool) rand(0, 1);
-                        }
+                    /** @var array{name?: string, id: string, ...} $a */
+                    $a = ["id" => "x"];
 
-                        public function count(): int {
-                            return rand(0, 3);
-                        }
-                    }
+                    $name = $a["name"] ?? "";
+                    $afterCoalesce = $a;
 
-                    class Holder {
-                        public function __construct(private ?Checker $checker = null) {}
+                    $whenSet = isset($a["name"]) ? $a : null;
+                    $whenNotSet = isset($a["name"]) ? null : $a;
 
-                        public function fromProperty(): Checker {
-                            if ($this->checker?->isValid() ?? false) {
-                                return $this->checker;
-                            }
-
-                            throw new RuntimeException();
-                        }
-
-                        public function fromParameter(?Checker $checker): Checker {
-                            if ($checker?->isValid() ?? null) {
-                                return $checker;
-                            }
-
-                            throw new RuntimeException();
-                        }
-
-                        public function fromZero(?Checker $checker): Checker {
-                            if ($checker?->count() ?? 0) {
-                                return $checker;
-                            }
-
-                            throw new RuntimeException();
-                        }
-
-                        public function negated(?Checker $checker): Checker {
-                            if (!($checker?->isValid() ?? false)) {
-                                throw new RuntimeException();
-                            }
-
-                            return $checker;
-                        }
-                    }',
-                'assertions' => [],
-                'ignored_issues' => [],
-                'php_version' => '8.0',
+                    /** @var array{name?: string, ...} $b */
+                    $b = [];
+                    $onlyOptionalKey = isset($b["name"]) ? null : $b;',
+                'assertions' => [
+                    '$afterCoalesce===' => 'array{id: string, name?: string, ...<array-key, mixed>}',
+                    '$whenSet===' => 'array{id: string, name: string, ...<array-key, mixed>}|null',
+                    '$whenNotSet===' => 'array{id: string, name?: string, ...<array-key, mixed>}|null',
+                    '$onlyOptionalKey===' => 'array{name?: string, ...<array-key, mixed>}|null',
+                ],
             ],
             'variableAssertedNotSetAndThenDefinedStaysDefined' => [
                 'code' => '<?php
@@ -1193,6 +1223,117 @@ final class IssetTest extends TestCase
                         echo $test[0];
                     }',
             ],
+            'issetNarrowsObjectShapeAfterAnEarlyReturn' => [
+                'code' => '<?php
+                    /** @param object{bar?: string} $foo */
+                    function check(object $foo): void {
+                        if (!isset($foo->bar)) {
+                            return;
+                        }
+
+                        requiresBar($foo);
+                    }
+
+                    /** @param object{bar: string} $foo */
+                    function requiresBar(object $foo): void {
+                        echo $foo->bar;
+                    }',
+            ],
+            'declaredRequiredPropertyOfObjectShapeSurvivesAnUnrelatedUnset' => [
+                'code' => '<?php
+                    /** @param object{bar: string, baz?: string} $foo */
+                    function check(object $foo): void {
+                        if (isset($foo->baz)) {
+                            unset($foo->baz);
+                        }
+
+                        requiresBar($foo);
+                    }
+
+                    /** @param object{bar: string} $foo */
+                    function requiresBar(object $foo): void {
+                        echo $foo->bar;
+                    }',
+            ],
+            'issetNarrowsOptionalPropertyOfObjectShape' => [
+                'code' => '<?php
+                    /** @param object{bar?: string} $foo */
+                    function takesRequired(object $foo): void {
+                        if (isset($foo->bar)) {
+                            requiresBar($foo);
+                        }
+                    }
+
+                    /** @param object{bar: string} $foo */
+                    function requiresBar(object $foo): void {
+                        echo $foo->bar;
+                    }',
+            ],
+            'issetNarrowsNestedOptionalPropertiesOfObjectShape' => [
+                'code' => '<?php
+                    /** @param object{bar?: object{baz?: string}}|null $foo */
+                    function testSparse($foo): void {
+                        if (isset($foo->bar->baz)) {
+                            testConcrete($foo);
+                        }
+                    }
+
+                    /** @param object{bar: object{baz: string}} $foo */
+                    function testConcrete(object $foo): void {
+                        echo $foo->bar->baz;
+                    }',
+            ],
+            'nullsafeCallCoalescedWithAFalsyValueNarrowsTheReceiver' => [
+                'code' => '<?php
+                    class Checker {
+                        public function isValid(): bool {
+                            return (bool) rand(0, 1);
+                        }
+
+                        public function count(): int {
+                            return rand(0, 3);
+                        }
+                    }
+
+                    class Holder {
+                        public function __construct(private ?Checker $checker = null) {}
+
+                        public function fromProperty(): Checker {
+                            if ($this->checker?->isValid() ?? false) {
+                                return $this->checker;
+                            }
+
+                            throw new RuntimeException();
+                        }
+
+                        public function fromParameter(?Checker $checker): Checker {
+                            if ($checker?->isValid() ?? null) {
+                                return $checker;
+                            }
+
+                            throw new RuntimeException();
+                        }
+
+                        public function fromZero(?Checker $checker): Checker {
+                            if ($checker?->count() ?? 0) {
+                                return $checker;
+                            }
+
+                            throw new RuntimeException();
+                        }
+
+                        public function negated(?Checker $checker): Checker {
+                            if (!($checker?->isValid() ?? false)) {
+                                throw new RuntimeException();
+                            }
+
+                            return $checker;
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
         ];
     }
 
@@ -1203,25 +1344,6 @@ final class IssetTest extends TestCase
     public static function providerInvalidCodeParse(): iterable
     {
         return [
-            'nullsafeCallCoalescedWithATruthyValueDoesNotNarrowTheReceiver' => [
-                'code' => '<?php
-                    class Checker {
-                        public function isValid(): bool {
-                            return (bool) rand(0, 1);
-                        }
-                    }
-
-                    function check(?Checker $checker): Checker {
-                        if ($checker?->isValid() ?? true) {
-                            return $checker;
-                        }
-
-                        throw new RuntimeException();
-                    }',
-                'error_message' => 'NullableReturnStatement',
-                'error_levels' => [],
-                'php_version' => '8.0',
-            ],
             'variableNotSetByTheEmptyBranchOfAnIssetCheckIsPossiblyUndefinedAfterIt' => [
                 'code' => '<?php
 
@@ -1418,6 +1540,140 @@ final class IssetTest extends TestCase
                         }
                     }',
                 'error_message' => 'ReferenceConstraintViolation',
+            ],
+            'issetNarrowingOfNestedObjectShapeIsForgottenAfterUnsetOfTheInnerProperty' => [
+                'code' => '<?php
+                    /** @param object{bar?: object{baz?: string}} $foo */
+                    function check(object $foo): void {
+                        if (isset($foo->bar->baz)) {
+                            unset($foo->bar->baz);
+                            requiresBaz($foo);
+                        }
+                    }
+
+                    /** @param object{bar: object{baz: string}} $foo */
+                    function requiresBaz(object $foo): void {
+                        echo $foo->bar->baz;
+                    }',
+                'error_message' => 'InvalidArgument',
+            ],
+            'issetNarrowingOfNestedObjectShapeIsForgottenAfterAssigningTheInnerProperty' => [
+                'code' => '<?php
+                    /** @param object{bar?: object{baz?: string}} $foo */
+                    function check(object $foo): void {
+                        if (isset($foo->bar->baz)) {
+                            $foo->bar->baz = null;
+                            requiresBaz($foo);
+                        }
+                    }
+
+                    /** @param object{bar: object{baz: string}} $foo */
+                    function requiresBaz(object $foo): void {
+                        echo $foo->bar->baz;
+                    }',
+                'error_message' => 'InvalidArgument',
+            ],
+            'issetNarrowingOfObjectShapeIsForgottenAfterUnset' => [
+                'code' => '<?php
+                    /** @param object{bar?: string} $foo */
+                    function check(object $foo): void {
+                        if (isset($foo->bar)) {
+                            unset($foo->bar);
+                            requiresBar($foo);
+                        }
+                    }
+
+                    /** @param object{bar: string} $foo */
+                    function requiresBar(object $foo): void {
+                        echo $foo->bar;
+                    }',
+                'error_message' => 'InvalidArgument',
+            ],
+            'issetNarrowingOfObjectShapeIsForgottenAfterAssigningTheProperty' => [
+                'code' => '<?php
+                    /** @param object{bar?: string} $foo */
+                    function check(object $foo): void {
+                        if (isset($foo->bar)) {
+                            $foo->bar = null;
+                            requiresBar($foo);
+                        }
+                    }
+
+                    /** @param object{bar: string} $foo */
+                    function requiresBar(object $foo): void {
+                        echo $foo->bar;
+                    }',
+                'error_message' => 'InvalidArgument',
+            ],
+            'issetNarrowingOfObjectShapeIsForgottenAfterTheBranch' => [
+                'code' => '<?php
+                    /** @param object{bar?: string} $foo */
+                    function check(object $foo): void {
+                        if (isset($foo->bar)) {
+                            echo 1;
+                        }
+
+                        requiresBar($foo);
+                    }
+
+                    /** @param object{bar: string} $foo */
+                    function requiresBar(object $foo): void {
+                        echo $foo->bar;
+                    }',
+                'error_message' => 'InvalidArgument',
+            ],
+            'typeNarrowingOfObjectShapePropertyIsForgottenAfterTheBranch' => [
+                'code' => '<?php
+                    /** @param object{bar: ?string} $foo */
+                    function check(object $foo): void {
+                        if ($foo->bar !== null) {
+                            echo 1;
+                        }
+
+                        requiresBar($foo);
+                    }
+
+                    /** @param object{bar: string} $foo */
+                    function requiresBar(object $foo): void {
+                        echo $foo->bar;
+                    }',
+                'error_message' => 'ArgumentTypeCoercion',
+            ],
+            'issetOfOptionalPropertyOfObjectShapeDoesNotLeakOutOfTheBranch' => [
+                'code' => '<?php
+                    /** @param object{bar?: string} $foo */
+                    function check(object $foo): void {
+                        if (isset($foo->bar)) {
+                            echo $foo->bar;
+                        }
+
+                        requiresBar($foo);
+                    }
+
+                    /** @param object{bar: string} $foo */
+                    function requiresBar(object $foo): void {
+                        echo $foo->bar;
+                    }',
+                'error_message' => 'InvalidArgument',
+            ],
+            'nullsafeCallCoalescedWithATruthyValueDoesNotNarrowTheReceiver' => [
+                'code' => '<?php
+                    class Checker {
+                        public function isValid(): bool {
+                            return (bool) rand(0, 1);
+                        }
+                    }
+
+                    function check(?Checker $checker): Checker {
+                        if ($checker?->isValid() ?? true) {
+                            return $checker;
+                        }
+
+                        throw new RuntimeException();
+                    }',
+                'error_message' => 'NullableReturnStatement',
+                'error_levels' => [],
+                'php_version' => '8.0',
             ],
         ];
     }
