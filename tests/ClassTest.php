@@ -58,6 +58,51 @@ final class ClassTest extends TestCase
     /**
      * @psalm-capabilities read-props|write-this-props|write-props
      */
+    public function testClassExistsInAnArgumentOfANegatedCallChecksTheClassWhereItIsUsed(): void
+    {
+        $this->project_analyzer->getConfig()->throw_exception = false;
+        $this->project_analyzer->setPhpVersion('8.2', 'tests');
+        $file_path = self::$src_dir_path . 'somefile.php';
+
+        $this->addFile(
+            $file_path,
+            '<?php
+                namespace App;
+
+                use Vendor\\Validation\\MessageIdValidation;
+                use Vendor\\Validation\\RfcValidation;
+                use Vendor\\Validator;
+
+                final class Address {
+                    private static Validator $validator;
+
+                    private static function check(string $address): bool {
+                        if (!self::$validator->isValid(
+                            $address,
+                            class_exists(MessageIdValidation::class) ? new MessageIdValidation() : new RfcValidation(),
+                        )) {
+                            return false;
+                        }
+
+                        return true;
+                    }
+                }',
+        );
+        $this->analyzeFile($file_path, new Context());
+
+        $undefined_classes = [];
+
+        foreach (IssueBuffer::getIssuesDataForFile($file_path) as $issue) {
+            if ($issue->type === 'UndefinedClass') {
+                $undefined_classes[] = $issue->message;
+            }
+        }
+
+        // the class that class_exists() checks is not undefined where it is used, although the call is negated
+        $this->assertCount(3, $undefined_classes);
+        $this->assertStringNotContainsString('MessageIdValidation', implode(' ', $undefined_classes));
+    }
+
     public function testExtendsMysqli(): void
     {
         $this->addFile(
