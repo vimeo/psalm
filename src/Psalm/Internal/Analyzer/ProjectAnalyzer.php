@@ -372,15 +372,15 @@ final class ProjectAnalyzer
         $this->initExtraFiles();
         $this->initProjectFiles();
 
+        $server->logInfo("Initializing: Initialize Plugins...");
+        $this->config->initializePlugins($this);
+
         $server->logInfo("Initializing: Visiting Autoload Files...");
         $this->visitAutoloadFiles();
         $this->codebase->diff_methods = true;
         $server->logInfo("Initializing: Loading Reference Cache...");
         $this->file_reference_provider->loadReferenceCache();
         $this->codebase->enterServerMode();
-
-        $server->logInfo("Initializing: Initialize Plugins...");
-        $this->config->initializePlugins($this);
 
         $this->codebase->scanner->addFilesToShallowScan($this->extra_files);
 
@@ -495,13 +495,12 @@ final class ProjectAnalyzer
             || count($diff_files) > 200
         ) {
             $this->config->visitPreloadedStubFiles($this->codebase, $this->progress);
+            $this->config->initializePlugins($this);
             $this->visitAutoloadFiles();
 
             $this->codebase->scanner->addFilesToShallowScan($this->extra_files);
             $this->codebase->scanner->addFilesToDeepScan($this->project_files);
             $this->codebase->analyzer->addFilesToAnalyze($this->project_files);
-
-            $this->config->initializePlugins($this);
 
             $this->codebase->scanFiles($this->scanThreads);
 
@@ -521,11 +520,10 @@ final class ProjectAnalyzer
 
                 if ($file_list) {
                     $this->config->visitPreloadedStubFiles($this->codebase, $this->progress);
+                    $this->config->initializePlugins($this);
                     $this->visitAutoloadFiles();
 
                     $this->checkDiffFilesWithConfig($this->config, $file_list);
-
-                    $this->config->initializePlugins($this);
 
                     $this->codebase->scanFiles($this->scanThreads);
                 } else {
