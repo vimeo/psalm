@@ -315,6 +315,7 @@ final class ScanTimeIssuesCacheTest extends TestCase
                 'PrivateFinalMethod A.php:3:5',
                 'UndefinedClass A.php:5:26',
                 'PrivateFinalMethod A.php:6:5',
+                'UndefinedClass A.php:8:21',
                 'MissingClassConstType A.php:9:18',
                 'DuplicateConstant A.php:10:18',
             ],
