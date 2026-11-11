@@ -1149,6 +1149,24 @@ final class RedundantConditionTest extends TestCase
                 'ignored_issues' => ['RiskyTruthyFalsyComparison'],
                 'php_version' => '8.1',
             ],
+            'identicalComparisonOfAListWithAShapeWhoseGapItCanFill' => [
+                'code' => '<?php
+                    /**
+                     * @param non-empty-list<int> $list
+                     * @param array{0: int, 2: int, ...<int, int>} $shape
+                     */
+                    function f(array $list, array $shape): bool {
+                        return $list === $shape;
+                    }
+
+                    /**
+                     * @param non-empty-list<int> $list
+                     * @param array{0: int, 1?: int, 2: int} $shape
+                     */
+                    function g(array $list, array $shape): bool {
+                        return $list === $shape;
+                    }',
+            ],
             'identicalComparisonOfAShapeWithAListOfARangeOfItsValues' => [
                 'code' => '<?php
                     /** @param list<int<1, max>> $ints */
@@ -1927,6 +1945,17 @@ final class RedundantConditionTest extends TestCase
                         return ["id" => $i] === $map;
                     }',
                 'error_message' => 'TypeDoesNotContainType - src' . DIRECTORY_SEPARATOR . 'somefile.php:4:32 - array{id: int} cannot be identical to array<string, string',
+            ],
+            'identicalComparisonOfAListWithAShapeThatSkipsAnIndexIsImpossible' => [
+                'code' => '<?php
+                    /**
+                     * @param non-empty-list<int> $list
+                     * @param array{0: int, 2: int} $shape
+                     */
+                    function f(array $list, array $shape): bool {
+                        return $list === $shape;
+                    }',
+                'error_message' => 'TypeDoesNotContainType - src' . DIRECTORY_SEPARATOR . 'somefile.php:7:32',
             ],
             'identicalComparisonOfAShapeWithAShorterOneIsImpossible' => [
                 'code' => '<?php

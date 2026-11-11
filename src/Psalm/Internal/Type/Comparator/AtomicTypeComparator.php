@@ -55,6 +55,7 @@ use function array_values;
 use function assert;
 use function count;
 use function is_int;
+use function min;
 use function reset;
 use function strtolower;
 
@@ -1141,7 +1142,50 @@ final class AtomicTypeComparator
     private static function canKeyedArraysBeIdentical(Codebase $codebase, TKeyedArray $first, TKeyedArray $second): bool
     {
         return self::keyedArrayRequirementsFit($codebase, $first, $second)
-            && self::keyedArrayRequirementsFit($codebase, $second, $first);
+            && self::keyedArrayRequirementsFit($codebase, $second, $first)
+            && self::listCanHaveTheRequiredKeysOf($codebase, $first, $second)
+            && self::listCanHaveTheRequiredKeysOf($codebase, $second, $first);
+    }
+
+    /**
+     * A list has every key below the highest it has, so it can only be identical to a shape that allows all the
+     * keys below the highest int key the shape requires (`array{0: int, 2: int}` is not a list).
+     */
+    private static function listCanHaveTheRequiredKeysOf(
+        Codebase $codebase,
+        TKeyedArray $list,
+        TKeyedArray $other,
+    ): bool {
+        if (!$list->is_list) {
+            return true;
+        }
+
+        $highest_required_key = null;
+
+        foreach ($other->properties as $key => $property) {
+            if (!$property->possibly_undefined && is_int($key) && ($highest_required_key ?? $key) <= $key) {
+                $highest_required_key = $key;
+            }
+        }
+
+        // far-fetched keys are not worth checking one by one
+        for ($key = 0; $key < min($highest_required_key ?? 0, 256); $key++) {
+            if (isset($other->properties[$key])) {
+                continue;
+            }
+
+            if ($other->fallback_params === null
+                || !UnionTypeComparator::canExpressionTypesBeIdentical(
+                    $codebase,
+                    new Union([new TLiteralInt($key)]),
+                    $other->fallback_params[0],
+                )
+            ) {
+                return false;
+            }
+        }
+
+        return true;
     }
 
     private static function keyedArrayRequirementsFit(
