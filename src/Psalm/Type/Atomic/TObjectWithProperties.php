@@ -36,12 +36,14 @@ final class TObjectWithProperties extends TObject
      * @param array<string|int, Union> $properties
      * @param array<lowercase-string, string> $methods
      * @param array<string, TNamedObject|TTemplateParam|TIterable|TObjectWithProperties|TCallableObject> $extra_types
+     * @param array<string|int, Union> $narrowed_from the declared type of each property that a condition narrowed
      */
     public function __construct(
         public array $properties,
         public array $methods = [],
         array $extra_types = [],
         bool $from_docblock = false,
+        public array $narrowed_from = [],
     ) {
         $this->extra_types = $extra_types;
 
@@ -64,6 +66,20 @@ final class TObjectWithProperties extends TObject
 
         $cloned->is_stringable_object_only =
             $cloned->properties === [] && $cloned->methods === ['__tostring' => 'string'];
+
+        return $cloned;
+    }
+
+    /**
+     * @param array<string|int, Union> $narrowed_from
+     */
+    public function setNarrowedFrom(array $narrowed_from): self
+    {
+        if ($narrowed_from === $this->narrowed_from) {
+            return $this;
+        }
+        $cloned = clone $this;
+        $cloned->narrowed_from = $narrowed_from;
 
         return $cloned;
     }
