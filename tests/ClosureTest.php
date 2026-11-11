@@ -2164,6 +2164,65 @@ final class ClosureTest extends TestCase
                         return fn($number) => fn($text) => $text . $number;
                     }',
             ],
+            'narrowedPropertyOfAMutationFreeClassHoldsInAnArrowFunction' => [
+                'code' => '<?php
+                    /** @psalm-mutation-free */
+                    final class Box {
+                        public ?string $value = null;
+                    }
+
+                    function f(Box $box): void {
+                        if ($box->value === null) {
+                            return;
+                        }
+
+                        $arrow = fn (): string => $box->value;
+
+                        echo $arrow();
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
+            'narrowedReadonlyPropertyHoldsInAnArrowFunction' => [
+                'code' => '<?php
+                    final class Box {
+                        public function __construct(public readonly ?string $value = null) {}
+                    }
+
+                    function f(Box $box): void {
+                        if ($box->value === null) {
+                            return;
+                        }
+
+                        $arrow = fn (): string => $box->value;
+
+                        echo $arrow();
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
+            'narrowedPropertyOfAnImmutableObjectHoldsInAClosure' => [
+                'code' => '<?php
+                    /** @psalm-immutable */
+                    final class Imm {
+                        public function __construct(public ?string $value = null) {}
+                    }
+
+                    function f(Imm $imm): void {
+                        if ($imm->value === null) {
+                            return;
+                        }
+
+                        $closure = function () use ($imm): string {
+                            return $imm->value;
+                        };
+                        $arrow = fn (): string => $imm->value;
+
+                        echo $closure() . $arrow();
+                    }',
+            ],
         ];
     }
 
@@ -2752,6 +2811,73 @@ final class ClosureTest extends TestCase
                         return fn($number) => fn($text) => $text;
                     }',
                 'error_message' => 'InvalidReturnStatement',
+            ],
+            'narrowedReadonlyPropertyThatAllowsPrivateMutationIsNotKnownInAnArrowFunction' => [
+                'code' => '<?php
+                    final class Box {
+                        /** @psalm-readonly-allow-private-mutation */
+                        public ?string $value = null;
+
+                        public function reset(): void {
+                            $this->value = null;
+                        }
+                    }
+
+                    function f(Box $box): void {
+                        if ($box->value === null) {
+                            return;
+                        }
+
+                        $arrow = fn (): string => $box->value;
+
+                        echo $arrow();
+                    }',
+                'error_message' => 'NullableReturnStatement',
+                'error_levels' => [],
+                'php_version' => '8.1',
+            ],
+            'narrowedMutablePropertyIsNotKnownInAnArrowFunction' => [
+                'code' => '<?php
+                    final class Box {
+                        public ?string $value = null;
+                    }
+
+                    function f(Box $box): void {
+                        if ($box->value === null) {
+                            return;
+                        }
+
+                        $arrow = fn (): string => $box->value;
+
+                        echo $arrow();
+                    }',
+                'error_message' => 'NullableReturnStatement',
+                'error_levels' => [],
+                'php_version' => '8.1',
+            ],
+            'narrowedPropertyOfAMutableObjectInAnImmutableOneIsNotKnownInAnArrowFunction' => [
+                'code' => '<?php
+                    final class Child {
+                        public ?string $value = null;
+                    }
+
+                    /** @psalm-immutable */
+                    final class Box {
+                        public function __construct(public Child $child) {}
+                    }
+
+                    function f(Box $box): void {
+                        if ($box->child->value === null) {
+                            return;
+                        }
+
+                        $arrow = fn (): string => $box->child->value;
+
+                        echo $arrow();
+                    }',
+                'error_message' => 'NullableReturnStatement',
+                'error_levels' => [],
+                'php_version' => '8.1',
             ],
         ];
     }
