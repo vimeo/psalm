@@ -1679,36 +1679,6 @@ final class AnnotationTest extends TestCase
                     class Foo {}',
                 'assertions' => [],
             ],
-            'keyOfAndValueOfOfImportedTypeAlias' => [
-                'code' => '<?php
-                    /**
-                     * @psalm-type ATTRIBUTES=array{a: int, b: string}
-                     */
-                    class Foo {}
-
-                    /**
-                     * @psalm-import-type ATTRIBUTES from Foo as ATTRS
-                     */
-                    class Bar {
-                        /** @return key-of<ATTRS> */
-                        public static function key() {
-                            return "a";
-                        }
-
-                        /** @return value-of<ATTRS> */
-                        public static function value() {
-                            return 1;
-                        }
-                    }
-
-                    $key = Bar::key();
-                    $value = Bar::value();
-                    echo $key, $value;',
-                'assertions' => [
-                    '$key===' => "'a'|'b'",
-                    '$value===' => 'int|string',
-                ],
-            ],
             'sinceTagNonPhpVersion' => [
                 'code' => '<?php
                     class Foo {
@@ -1940,17 +1910,7 @@ final class AnnotationTest extends TestCase
                         return $foo;
                     }',
             ],
-        ];
-    }
-
-    /**
-     * @psalm-pure
-     */
-    #[Override]
-    public static function providerInvalidCodeParse(): iterable
-    {
-        return [
-            'keyOfImportedTypeAliasRejectsUnknownKey' => [
+            'keyOfAndValueOfOfImportedTypeAlias' => [
                 'code' => '<?php
                     /**
                      * @psalm-type ATTRIBUTES=array{a: int, b: string}
@@ -1961,30 +1921,66 @@ final class AnnotationTest extends TestCase
                      * @psalm-import-type ATTRIBUTES from Foo as ATTRS
                      */
                     class Bar {
-                        /** @param key-of<ATTRS> $key */
-                        public static function set($key): void {}
+                        /** @return key-of<ATTRS> */
+                        public static function key() {
+                            return "a";
+                        }
+
+                        /** @return value-of<ATTRS> */
+                        public static function value() {
+                            return 1;
+                        }
                     }
 
-                    Bar::set("zzz");',
-                'error_message' => 'InvalidArgument',
+                    $key = Bar::key();
+                    $value = Bar::value();
+                    echo $key, $value;',
+                'assertions' => [
+                    '$key===' => "'a'|'b'",
+                    '$value===' => 'int|string',
+                ],
             ],
-            'valueOfImportedTypeAliasRejectsWrongValue' => [
-                'code' => '<?php
-                    /**
-                     * @psalm-type ATTRIBUTES=array{a: int, b: int}
-                     */
-                    class Foo {}
+        ];
+    }
 
-                    /**
-                     * @psalm-import-type ATTRIBUTES from Foo as ATTRS
-                     */
-                    class Bar {
-                        /** @param value-of<ATTRS> $value */
-                        public static function set($value): void {}
-                    }
-
-                    Bar::set("str");',
-                'error_message' => 'InvalidArgument',
+    /**
+     * @psalm-pure
+     */
+    #[Override]
+    public static function providerInvalidCodeParse(): iterable
+    {
+        return [
+            'removedSelfAccessingCallableWithParamsIsInvalid' => [
+                'code' => <<<'PHP'
+                    <?php
+                    /** @param self-accessing-callable(): int $f */
+                    function f(callable $f): void {}
+                    PHP,
+                'error_message' => 'InvalidDocblock',
+            ],
+            'removedSelfMutatingCallableWithParamsIsInvalid' => [
+                'code' => <<<'PHP'
+                    <?php
+                    /** @param self-mutating-callable(): int $f */
+                    function f(callable $f): void {}
+                    PHP,
+                'error_message' => 'InvalidDocblock',
+            ],
+            'removedSelfAccessingClosureWithParamsIsInvalid' => [
+                'code' => <<<'PHP'
+                    <?php
+                    /** @param self-accessing-Closure(): int $f */
+                    function f(callable $f): void {}
+                    PHP,
+                'error_message' => 'InvalidDocblock',
+            ],
+            'removedSelfMutatingClosureWithParamsIsInvalid' => [
+                'code' => <<<'PHP'
+                    <?php
+                    /** @param self-mutating-Closure(): int $f */
+                    function f(callable $f): void {}
+                    PHP,
+                'error_message' => 'InvalidDocblock',
             ],
             'psalmVarWithTooManyTemplateParamsOnProperty' => [
                 'code' => '<?php
@@ -2795,6 +2791,42 @@ final class AnnotationTest extends TestCase
                 'error_message' => 'InvalidDocblock',
                 'error_levels' => [],
                 'php_version' => '8.0',
+            ],
+            'keyOfImportedTypeAliasRejectsUnknownKey' => [
+                'code' => '<?php
+                    /**
+                     * @psalm-type ATTRIBUTES=array{a: int, b: string}
+                     */
+                    class Foo {}
+
+                    /**
+                     * @psalm-import-type ATTRIBUTES from Foo as ATTRS
+                     */
+                    class Bar {
+                        /** @param key-of<ATTRS> $key */
+                        public static function set($key): void {}
+                    }
+
+                    Bar::set("zzz");',
+                'error_message' => 'InvalidArgument',
+            ],
+            'valueOfImportedTypeAliasRejectsWrongValue' => [
+                'code' => '<?php
+                    /**
+                     * @psalm-type ATTRIBUTES=array{a: int, b: int}
+                     */
+                    class Foo {}
+
+                    /**
+                     * @psalm-import-type ATTRIBUTES from Foo as ATTRS
+                     */
+                    class Bar {
+                        /** @param value-of<ATTRS> $value */
+                        public static function set($value): void {}
+                    }
+
+                    Bar::set("str");',
+                'error_message' => 'InvalidArgument',
             ],
         ];
     }
