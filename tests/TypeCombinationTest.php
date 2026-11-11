@@ -271,6 +271,20 @@ final class TypeCombinationTest extends TestCase
                     'Error',
                 ],
             ],
+            'objectShapesWithOptionalProperty' => [
+                'object{bar?:string}',
+                [
+                    'object{bar: string}',
+                    'object{bar?: string}',
+                ],
+            ],
+            'objectShapeInObject' => [
+                'object',
+                [
+                    'object{a: int}',
+                    'object',
+                ],
+            ],
             'complexArrayFallback1' => [
                 'array{other_references: list<Psalm\Internal\Analyzer\DataFlowNodeData>|null, taint_trace: list<array<array-key, mixed>>|null, ...<string, mixed>}',
                 [
