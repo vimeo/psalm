@@ -804,8 +804,6 @@ final class MethodComparator
     /**
      * A method with no docblock of its own is documented by the one it inherits it from (see Populator), and a
      * method overriding it is compared with the param type of that docblock
-     *
-     * @psalm-capabilities read-props
      */
     private static function getDocumentedGuideParam(
         Codebase $codebase,
@@ -830,10 +828,15 @@ final class MethodComparator
 
         $documenting_param = $codebase->methods->getStorage($documenting_method_id)->params[$i] ?? null;
 
-        // its templates are the ones of the class it is declared in
+        // its templates are the ones of the class it is declared in; a type that is only the native one of the
+        // inherited method documents nothing, and a docblock type broader than the native type of the method
+        // itself does not widen what overriding methods may declare
         if ($documenting_param === null
             || $documenting_param->type === null
+            || !$documenting_param->has_docblock_type
             || $documenting_param->type->hasTemplate()
+            || ($guide_param->type !== null
+                && !UnionTypeComparator::isContainedBy($codebase, $documenting_param->type, $guide_param->type))
         ) {
             return $guide_param;
         }
