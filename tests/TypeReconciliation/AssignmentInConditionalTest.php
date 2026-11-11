@@ -591,7 +591,6 @@ final class AssignmentInConditionalTest extends TestCase
                         if (!$b || !($a = $b->c)) {
                             // do something
                         } else {
-                            /** @psalm-suppress MixedMethodCall */
                             $a->foo();
                         }
                     }',
