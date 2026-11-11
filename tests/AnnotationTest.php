@@ -2836,6 +2836,38 @@ final class AnnotationTest extends TestCase
                     global $title;',
                 'error_message' => 'InvalidGlobal',
             ],
+            'keyOfImportedTypeAliasOfANonArrayIsInvalid' => [
+                'code' => '<?php
+                    /**
+                     * @psalm-type NUMBER=int
+                     */
+                    class Foo {}
+
+                    /**
+                     * @psalm-import-type NUMBER from Foo
+                     */
+                    class Bar {
+                        /** @param key-of<NUMBER> $key */
+                        public static function set($key): void {}
+                    }',
+                'error_message' => 'InvalidDocblock - src' . DIRECTORY_SEPARATOR . 'somefile.php:11:36 - Untemplated key-of param int should be an array',
+            ],
+            'valueOfImportedTypeAliasOfANonArrayIsInvalid' => [
+                'code' => '<?php
+                    /**
+                     * @psalm-type NUMBER=int
+                     */
+                    class Foo {}
+
+                    /**
+                     * @psalm-import-type NUMBER from Foo
+                     */
+                    class Bar {
+                        /** @param value-of<NUMBER> $value */
+                        public static function set($value): void {}
+                    }',
+                'error_message' => 'InvalidDocblock - src' . DIRECTORY_SEPARATOR . 'somefile.php:11:36 - Untemplated value-of param int should be an array',
+            ],
             'keyOfImportedTypeAliasRejectsUnknownKey' => [
                 'code' => '<?php
                     /**
