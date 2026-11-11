@@ -37,6 +37,89 @@ final class CapabilitiesTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'parentCallOfATraitMethodReturnsThisInEveryClassUsingTheTrait' => [
+                'code' => <<<'PHP'
+                    <?php
+                    class FirstBase {
+                        /** @return $this */
+                        public function f(): static {
+                            return $this;
+                        }
+                    }
+
+                    class SecondBase {
+                        /** @return $this */
+                        public function f(): static {
+                            return $this;
+                        }
+                    }
+
+                    class ThirdBase {
+                        /** @return $this */
+                        public function f(): static {
+                            return $this;
+                        }
+                    }
+
+                    trait ForwardsToParent {
+                        /** @return $this */
+                        public function f(): static {
+                            return parent::f();
+                        }
+                    }
+
+                    final class First extends FirstBase {
+                        use ForwardsToParent;
+                    }
+
+                    final class Second extends SecondBase {
+                        use ForwardsToParent;
+                    }
+
+                    final class Third extends ThirdBase {
+                        use ForwardsToParent;
+                    }
+                    PHP,
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
+            'parentSelfAndStaticCallsOfMethodReturningThisReturnThis' => [
+                'code' => <<<'PHP'
+                    <?php
+                    class Base {
+                        /** @return $this */
+                        public function f(): static {
+                            return $this;
+                        }
+                    }
+
+                    final class Child extends Base {
+                        #[Override]
+                        public function f(): static {
+                            return parent::f();
+                        }
+
+                        /** @return $this */
+                        public function viaSelf(): static {
+                            return self::f();
+                        }
+
+                        /** @return $this */
+                        public function viaStatic(): static {
+                            return static::f();
+                        }
+
+                        /** @return $this */
+                        public function chained(): static {
+                            return parent::f()->f();
+                        }
+                    }
+                    PHP,
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
             'staticReturnOfASubclassOfAPurityTemplatedClassIsTheCalledClass' => [
                 'code' => '<?php
                     /**
@@ -320,6 +403,23 @@ final class CapabilitiesTest extends TestCase
                             $sum += $value;
                         }
                         return $sum;
+                    }',
+            ],
+            'itemOfAnIntersectionWithArrayAccessPassedByReference' => [
+                'code' => '<?php
+                    interface Marker {}
+
+                    /** @param Marker&ArrayAccess<int, int|null> $o */
+                    function castFirst(Marker $o): bool {
+                        return settype($o[0], "int");
+                    }',
+            ],
+            'itemOfAFreshArrayObjectPassedByReferenceIsPure' => [
+                'code' => '<?php
+                    /** @psalm-pure */
+                    function sortFirst(): bool {
+                        $object = new ArrayObject([[2, 1]]);
+                        return sort($object[0]);
                     }',
             ],
             'splHeapsAndFixedArraysOnlyRequireWritingTheirOwnContents' => [
@@ -2863,6 +2963,211 @@ final class CapabilitiesTest extends TestCase
     public static function providerInvalidCodeParse(): iterable
     {
         return [
+            'impureToStringCalledImplicitlyByAnArgument' => [
+                'code' => '<?php
+                    final class Imp {
+                        private int $n = 0;
+
+                        public function __toString(): string {
+                            $this->n++;
+
+                            return (string) $this->n;
+                        }
+                    }
+
+                    /** @psalm-pure */
+                    function takesString(string $s): string {
+                        return $s;
+                    }
+
+                    /** @psalm-pure */
+                    function f(Imp $o): string {
+                        return takesString($o);
+                    }',
+                'error_message' => 'ImpureMethodCall',
+                'error_levels' => ['ImplicitToStringCast'],
+            ],
+            'staticCallOfMethodNotReturningThisIsNotThis' => [
+                'code' => <<<'PHP'
+                    <?php
+                    class Base {
+                        public function copy(): static {
+                            return clone $this;
+                        }
+                    }
+
+                    final class Child extends Base {
+                        /** @return $this */
+                        public function f(): static {
+                            return parent::copy();
+                        }
+                    }
+                    PHP,
+                'error_message' => 'InvalidReturnStatement',
+                'error_levels' => [],
+                'php_version' => '8.1',
+            ],
+            'itemOfAnArrayObjectPassedByReferenceWritesIt' => [
+                'code' => '<?php
+                    /**
+                     * @param ArrayObject<int, list<int>> $object
+                     * @psalm-pure
+                     */
+                    function sortFirst(ArrayObject $object): bool {
+                        return sort($object[0]);
+                    }',
+                'error_message' => 'ImpureMethodCall - src' . DIRECTORY_SEPARATOR . 'somefile.php:7:37 - The context is pure but method ArrayObject::offsetSet requires write-props',
+            ],
+            'itemOfAnArrayObjectPassedByReferenceWritesItWhenReadingProps' => [
+                'code' => '<?php
+                    /**
+                     * @param ArrayObject<string, array<array-key, string>> $object
+                     * @psalm-capabilities read-props
+                     */
+                    function matchInto(ArrayObject $object): void {
+                        preg_match("/x/", "x", $object["m"]);
+                    }',
+                'error_message' => 'ImpureMethodCall - src' . DIRECTORY_SEPARATOR . 'somefile.php:7:48 - The context is read-props but method ArrayObject::offsetSet requires write-props',
+            ],
+            'itemOfAnArrayObjectPassedByReferenceForgetsMemoizedResultsOfItsMethods' => [
+                'code' => '<?php
+                    /**
+                     * @extends ArrayObject<int, list<int>>
+                     * @psalm-capabilities read-props|write-this-props
+                     */
+                    final class Lists extends ArrayObject {
+                        /** @psalm-capabilities read-props */
+                        public function first(): int {
+                            return $this[0][0];
+                        }
+                    }
+
+                    /** @return 2 */
+                    function firstAfterSorting(Lists $o): int {
+                        if ($o->first() !== 2) {
+                            return 2;
+                        }
+
+                        sort($o[0]);
+                        return $o->first();
+                    }',
+                'error_message' => 'LessSpecificReturnStatement - src' . DIRECTORY_SEPARATOR . 'somefile.php:20:32',
+            ],
+            'itemOfAnArrayObjectPassedByReferenceForgetsMemoizedResultsOfOtherObjects' => [
+                'code' => '<?php
+                    final class Holder {
+                        public function __construct(private ?string $x) {}
+
+                        /** @psalm-mutation-free */
+                        public function getX(): ?string {
+                            return $this->x;
+                        }
+                    }
+
+                    function sortedX(Holder $h): string {
+                        if ($h->getX() === null) {
+                            return "";
+                        }
+
+                        /** @var ArrayObject<int, list<int>> */
+                        $o = new ArrayObject($h);
+                        sort($o[0]);
+                        return $h->getX();
+                    }',
+                'error_message' => 'NullableReturnStatement - src' . DIRECTORY_SEPARATOR . 'somefile.php:19:32',
+                'error_levels' => [],
+                'php_version' => '8.0',
+            ],
+            'itemOfAnObjectWithoutOffsetSetPassedByReference' => [
+                'code' => '<?php
+                    /** @psalm-capabilities read-props */
+                    final class ReadOnlyBox {
+                        /**
+                         * @return list<int>
+                         * @psalm-pure
+                         */
+                        public function offsetGet(int $key): array {
+                            return [2, 1];
+                        }
+                    }
+
+                    /** @psalm-pure */
+                    function sortFirst(ReadOnlyBox $o): bool {
+                        return sort($o[0]);
+                    }',
+                'error_message' => 'UndefinedMethod - src' . DIRECTORY_SEPARATOR . 'somefile.php:15:37 - Method ReadOnlyBox::offsetSet does not exist',
+            ],
+            'itemOfAnIntersectionWithArrayObjectPassedByReferenceWritesIt' => [
+                'code' => '<?php
+                    /**
+                     * @param Countable&ArrayObject<int, list<int>> $object
+                     * @psalm-pure
+                     */
+                    function sortFirst($object): bool {
+                        return sort($object[0]);
+                    }',
+                'error_message' => 'ImpureMethodCall - src' . DIRECTORY_SEPARATOR . 'somefile.php:7:37 - The context is pure but method ArrayObject::offsetSet requires write-props',
+            ],
+            'itemOfAnObjectWithAPrivateOffsetSetPassedByReference' => [
+                'code' => '<?php
+                    final class ReadOnlyBox {
+                        /** @return list<int> */
+                        public function offsetGet(int $key): array {
+                            return [2, 1];
+                        }
+
+                        private function offsetSet(int $key, ?array $value): void {}
+                    }
+
+                    function sortFirst(ReadOnlyBox $o): bool {
+                        return sort($o[0]);
+                    }',
+                'error_message' => 'InaccessibleMethod - src' . DIRECTORY_SEPARATOR . 'somefile.php:12:37',
+            ],
+            'itemOfAnObjectWithMagicMethodsPassedByReference' => [
+                'code' => '<?php
+                    final class MagicBox {
+                        /** @return list<int> */
+                        public function offsetGet(int $key): array {
+                            return [1];
+                        }
+
+                        public function __call(string $name, array $args): mixed {
+                            return null;
+                        }
+                    }
+
+                    function sortFirst(MagicBox $o): bool {
+                        return sort($o[0]);
+                    }',
+                'error_message' => 'UndefinedMagicMethod - src' . DIRECTORY_SEPARATOR . 'somefile.php:14:37 - Magic method MagicBox::offsetset does not exist',
+                'error_levels' => [],
+                'php_version' => '8.0',
+            ],
+            'itemOfThisArrayObjectPassedByReferenceWritesWhatAnAssignmentWould' => [
+                'code' => '<?php
+                    /**
+                     * @extends ArrayObject<int, list<int>>
+                     * @psalm-capabilities read-props|write-this-props
+                     */
+                    final class Lists extends ArrayObject {
+                        /** @psalm-capabilities read-props|write-this-props */
+                        public function sortFirst(): bool {
+                            return sort($this[0]);
+                        }
+                    }',
+                'error_message' => 'ImpureMethodCall - src' . DIRECTORY_SEPARATOR . 'somefile.php:9:41 - The context is read-props|write-this-props but method Lists::offsetSet requires write-this-props|write-props',
+            ],
+            'itemOfAnArrayObjectBackedByAnObjectPassedByReferenceWritesIt' => [
+                'code' => '<?php
+                    /** @psalm-pure */
+                    function wrap(stdClass $storage): int {
+                        $object = new ArrayObject($storage);
+                        settype($object["key"], "int");
+                        return count($object);
+                    }',
+                'error_message' => 'ImpureMethodCall - src' . DIRECTORY_SEPARATOR . 'somefile.php:5:33 - The context is pure but method ArrayObject::offsetSet requires write-props',
+            ],
             'conditionalCapabilitiesOfAFunctionCalledWithoutTheArgument' => [
                 'code' => '<?php
                     /** @psalm-capabilities ($seed is null ? io : pure) */
@@ -6217,6 +6522,30 @@ final class CapabilitiesTest extends TestCase
                     }
                     Magic::noop();
                     return $a->x;
+                }',
+        );
+
+        $this->analyzeFile('somefile.php', new Context());
+    }
+
+    public function testItemOfAnArrayObjectPassedByReferenceForgetsPropertyRefinements(): void
+    {
+        $this->expectException(CodeException::class);
+        $this->expectExceptionMessage('NullableReturnStatement');
+        Config::getInstance()->remember_property_assignments_after_call = false;
+
+        $this->addFile(
+            'somefile.php',
+            '<?php
+                final class Holder { public ?string $x = null; }
+
+                /** @param ArrayObject<string, mixed> $o */
+                function matchedX(ArrayObject $o, Holder $h): string {
+                    if ($h->x === null) {
+                        return "";
+                    }
+                    preg_match("/x/", "s", $o["x"]);
+                    return $h->x;
                 }',
         );
 
