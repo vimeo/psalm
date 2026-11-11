@@ -194,6 +194,69 @@ final class TypeCombinationTest extends TestCase
     public static function providerTestValidTypeCombination(): iterable
     {
         return [
+            'unsealedArrayKeyDeclaredInOneAndMissingInTheOtherTakesTheFallback' => [
+                'array{age?: int|mixed, name?: mixed|string, ...<array-key, mixed>}',
+                [
+                    'array{age: int, ...<array-key, mixed>}',
+                    'array{name: string, ...<array-key, mixed>}',
+                ],
+            ],
+            'unsealedArrayKeyDeclaredInOneAndOptionalInTheOtherKeepsItsType' => [
+                'array{age?: int, ...<array-key, mixed>}',
+                [
+                    'array{age: int, ...<array-key, mixed>}',
+                    'array{age?: int, ...<array-key, mixed>}',
+                ],
+            ],
+            'unsealedArrayKeyDeclaredOptionalInBothKeepsItsType' => [
+                'array{age?: int, name: string, ...<array-key, mixed>}',
+                [
+                    'array{age?: int, name: string, ...<array-key, mixed>}',
+                    'array{age?: int, name: \'x\', ...<array-key, mixed>}',
+                ],
+            ],
+            'objectShapesWithAnExtraPropertyKeepOnlyTheCommonOnes' => [
+                'object{a:string}',
+                [
+                    'object{a: string}',
+                    'object{a: string, b: int}',
+                ],
+            ],
+            'objectShapesKeepAnOptionalPropertyBothDeclare' => [
+                'object{a:string, b?:int}',
+                [
+                    'object{a: string, b?: int}',
+                    'object{a: string, b: int}',
+                ],
+            ],
+            'objectShapesWithDisjointPropertiesShareNone' => [
+                'object{}',
+                [
+                    'object{a: string}',
+                    'object{b: int}',
+                ],
+            ],
+            'objectShapesWithTheSameProperty' => [
+                'object{a:int|string}',
+                [
+                    'object{a: string}',
+                    'object{a: int}',
+                ],
+            ],
+            'objectShapesKeepTheirCommonIntersection' => [
+                'object{a:string}&Iterator',
+                [
+                    'object{a: string}&Iterator',
+                    'object{a: string, b: int}&Iterator&Countable',
+                ],
+            ],
+            'objectAbsorbsObjectShapes' => [
+                'object',
+                [
+                    'object',
+                    'object{a: string}',
+                ],
+            ],
             'objectWithPropertiesKeepsNamedObjects' => [
                 'Error|object{foo:string}',
                 [
@@ -208,11 +271,46 @@ final class TypeCombinationTest extends TestCase
                     'Error',
                 ],
             ],
+            'objectShapesWithOptionalProperty' => [
+                'object{bar?:string}',
+                [
+                    'object{bar: string}',
+                    'object{bar?: string}',
+                ],
+            ],
+            'objectShapeInObject' => [
+                'object',
+                [
+                    'object{a: int}',
+                    'object',
+                ],
+            ],
             'complexArrayFallback1' => [
                 'array{other_references: list<Psalm\Internal\Analyzer\DataFlowNodeData>|null, taint_trace: list<array<array-key, mixed>>|null, ...<string, mixed>}',
                 [
                     'array{other_references: list<Psalm\Internal\Analyzer\DataFlowNodeData>|null, taint_trace: null}&array<string, mixed>',
                     'array{other_references: list<Psalm\Internal\Analyzer\DataFlowNodeData>|null, taint_trace: list<array<array-key, mixed>>}&array<string, mixed>',
+                ],
+            ],
+            'optionalKeyOfAnUnsealedShapeKeepsItsTypeWhenCombinedWithTheSameKeyRequired' => [
+                'array{id: string, name?: string, ...<array-key, mixed>}',
+                [
+                    'array{id: string, name: string, ...<array-key, mixed>}',
+                    'array{id: string, name?: string, ...<array-key, mixed>}',
+                ],
+            ],
+            'keyOfAnUnsealedShapeIsOptionalWhenAnotherShapeLacksItButItsFallbackMayHoldIt' => [
+                'array{id: string, name?: int|string, ...<string, int|string>}',
+                [
+                    'array{id: string, name: string, ...<string, string>}',
+                    'array{id: string, ...<string, int>}',
+                ],
+            ],
+            'keyOfASealedShapeIsOptionalWhenAnotherShapeDeclaresItOptional' => [
+                'array{a?: int|string, ...<string, mixed>}',
+                [
+                    'array{a: int, ...<string, mixed>}',
+                    'array{a?: string}',
                 ],
             ],
             'complexArrayFallback2' => [
@@ -706,6 +804,21 @@ final class TypeCombinationTest extends TestCase
                 [
                     'non-falsy-string&numeric-string',
                     "'abc'",
+                ],
+            ],
+            'combineEmptyLiteralWithRepeatedNumericString' => [
+                "''|numeric-string",
+                [
+                    "''",
+                    'numeric-string',
+                    'numeric-string',
+                ],
+            ],
+            'combineNumericStringWithEmptyLiteral' => [
+                "''|numeric-string",
+                [
+                    'numeric-string',
+                    "''",
                 ],
             ],
             'combineLowercaseNumericStringWithUppercaseNumericLiteral' => [

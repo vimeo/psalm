@@ -4,6 +4,7 @@ namespace Ds;
 
 use ArrayAccess;
 use Countable;
+use IteratorAggregate;
 use JsonSerializable;
 use OutOfBoundsException;
 use OutOfRangeException;
@@ -13,9 +14,10 @@ use UnderflowException;
 /**
  * @template-covariant TKey
  * @template-covariant TValue
- * @extends Traversable<TKey, TValue>
+ * @psalm-purity-template TPurity(impure)
+ * @extends IteratorAggregate[TPurity]<TKey, TValue>
  */
-interface Collection extends Traversable, Countable, JsonSerializable
+interface Collection extends IteratorAggregate, Countable, JsonSerializable
 {
     /**
      * @return Collection<TKey, TValue>
@@ -58,6 +60,14 @@ final class Deque implements Sequence
      * @psalm-mutation-free
      */
     public function copy(): Deque
+    {
+    }
+
+    /**
+     * @return Traversable[pure]<int, TValue>
+     * @psalm-capabilities read-props
+     */
+    public function getIterator(): Traversable
     {
     }
 
@@ -288,6 +298,14 @@ final class Map implements Collection, ArrayAccess
      * @psalm-mutation-free
      */
     public function copy(): Map
+    {
+    }
+
+    /**
+     * @return Traversable[pure]<TKey, TValue>
+     * @psalm-capabilities read-props
+     */
+    public function getIterator(): Traversable
     {
     }
 
@@ -841,6 +859,14 @@ final class Vector implements Sequence
     }
 
     /**
+     * @return Traversable[pure]<int, TValue>
+     * @psalm-capabilities read-props
+     */
+    public function getIterator(): Traversable
+    {
+    }
+
+    /**
      * @return list<TValue>
      * @psalm-mutation-free
      */
@@ -1052,6 +1078,14 @@ final class Set implements Collection, ArrayAccess
      * @psalm-mutation-free
      */
     public function copy(): Set
+    {
+    }
+
+    /**
+     * @return Traversable[pure]<int, TValue>
+     * @psalm-capabilities read-props
+     */
+    public function getIterator(): Traversable
     {
     }
 
@@ -1274,6 +1308,16 @@ final class Stack implements Collection, ArrayAccess
     }
 
     /**
+     * Iterating it removes its values
+     *
+     * @return Traversable<int, TValue>
+     * @psalm-capabilities write-this-props
+     */
+    public function getIterator(): Traversable
+    {
+    }
+
+    /**
      * @return list<TValue>
      * @psalm-mutation-free
      */
@@ -1357,6 +1401,16 @@ final class Queue implements Collection, ArrayAccess
     }
 
     /**
+     * Iterating it removes its values
+     *
+     * @return Traversable<int, TValue>
+     * @psalm-capabilities write-this-props
+     */
+    public function getIterator(): Traversable
+    {
+    }
+
+    /**
      * @return list<TValue>
      * @psalm-mutation-free
      */
@@ -1428,6 +1482,16 @@ final class PriorityQueue implements Collection
      * @psalm-mutation-free
      */
     public function copy(): PriorityQueue
+    {
+    }
+
+    /**
+     * Iterating it removes its values
+     *
+     * @return Traversable<int, TValue>
+     * @psalm-capabilities write-this-props
+     */
+    public function getIterator(): Traversable
     {
     }
 
