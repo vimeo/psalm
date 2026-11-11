@@ -212,14 +212,14 @@ const CALLMAP_INPUTS = __DIR__ . '/../../dictionaries/autogen/CallMapInputs.php'
  * "pecl@<version>", "pie@<package>:<version>" or "git@<commit>:<version>".
  */
 const LOCK_PATTERNS = [
-    'installer' => '~^\d+\.\d+\.\d+@sha256:[0-9a-f]{64}$~',
-    'phpstorm-stubs' => '~^[0-9a-f]{40}$~',
-    'php' => '~^\d+\.\d+\.\d+[A-Za-z0-9.]*@sha256:[0-9a-f]{64}$~',
-    'extension' => '~^(pecl@\d[A-Za-z0-9.]*|pie@[a-z0-9_.-]+/[a-z0-9_.-]+:v?\d[A-Za-z0-9.-]*|git@[0-9a-f]{40}:\d[A-Za-z0-9.]*)$~',
+    'installer' => '~^\d+\.\d+\.\d+@sha256:[0-9a-f]{64}$~D',
+    'phpstorm-stubs' => '~^[0-9a-f]{40}$~D',
+    'php' => '~^\d+\.\d+\.\d+[A-Za-z0-9.]*@sha256:[0-9a-f]{64}$~D',
+    'extension' => '~^(pecl@\d[A-Za-z0-9.]*|pie@[a-z0-9_.-]+/[a-z0-9_.-]+:v?\d[A-Za-z0-9.-]*|git@[0-9a-f]{40}:\d[A-Za-z0-9.]*)$~D',
 ];
 
 /** A version an extension reports that install-php-extensions takes back (<extension>-<version>). */
-const REPORTED_VERSION = '~^\d[A-Za-z0-9.]*$~';
+const REPORTED_VERSION = '~^\d[A-Za-z0-9.]*$~D';
 
 const CACHE_KEY_LABEL = 'dev.psalm.stubs.cache-key';
 const COMPONENTS_LABEL = 'dev.psalm.stubs.components';
@@ -316,7 +316,7 @@ function githubHeaders(string $accept): array
 function gitCommit(string $repository, string $ref): string
 {
     $sha = trim(fetch("https://api.github.com/repos/$repository/commits/$ref", githubHeaders('application/vnd.github.sha')));
-    if (!preg_match('/^[0-9a-f]{40}$/', $sha)) {
+    if (!preg_match('/^[0-9a-f]{40}$/D', $sha)) {
         fail("Could not resolve the commit of $repository@$ref (got '$sha').");
     }
     return $sha;
@@ -351,7 +351,7 @@ function extensionsFor(string $version): array
     );
 
     foreach ($extensions as $extension) {
-        if (!preg_match('/^[A-Za-z0-9._-]+$/', $extension)) {
+        if (!preg_match('/^[A-Za-z0-9._-]+$/D', $extension)) {
             fail("Invalid extension name: $extension");
         }
         $base = explode('-', $extension, 2)[0];
@@ -452,7 +452,7 @@ function pieInstalls(array $extensions, string $phpVersion): array
             }
             if (Semver::satisfies($phpVersion, $release['require']['php'] ?? '*')) {
                 // it ends up in the Dockerfile's shell commands
-                if (!preg_match('/^v?\d[\w.-]*$/', $release['version'])) {
+                if (!preg_match('/^v?\d[\w.-]*$/D', $release['version'])) {
                     fail("Unexpected version '{$release['version']}' of PIE package '$package'.");
                 }
                 $installs[$extension] = $release['version'];
@@ -551,7 +551,7 @@ function validLock(array $data, string $source): array
         }
         $extensions = $entry['extensions'];
         foreach ($extensions as $extension => $spec) {
-            if (!preg_match('/^[a-z0-9_]+$/', (string) $extension)
+            if (!preg_match('/^[a-z0-9_]+$/D', (string) $extension)
                 || !is_string($spec)
                 || !preg_match(LOCK_PATTERNS['extension'], $spec)
             ) {
@@ -634,7 +634,7 @@ function resolveGlobals(array $lock, bool $refresh): array
             githubHeaders('application/vnd.github+json'),
         ), true);
         $tag = is_array($release) ? ($release['tag_name'] ?? null) : null;
-        if (!is_string($tag) || !preg_match('/^\d+\.\d+\.\d+$/', $tag)) {
+        if (!is_string($tag) || !preg_match('/^\d+\.\d+\.\d+$/D', $tag)) {
             fail('Could not resolve the latest release of ' . INSTALLER_REPOSITORY . '.');
         }
         $resolved['installer'] = "$tag@sha256:" . fetchHash(installerUrl($tag));
@@ -662,6 +662,9 @@ function resolveVersion(array $lock, string $version, bool $refresh): array
     if ($refresh || $old['php'] === null) {
         $digest = phpBaseDigest($version);
         $php = phpBaseVersion(phpBaseImage($version) . "@$digest") . "@$digest";
+        if (!preg_match(LOCK_PATTERNS['php'], $php) || !str_starts_with($php, "$version.")) {
+            fail("Unexpected base image of PHP $version: '$php'.");
+        }
     } else {
         $php = $old['php'];
     }

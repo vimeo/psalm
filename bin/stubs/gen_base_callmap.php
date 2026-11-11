@@ -17,7 +17,7 @@ foreach (explode(' ', $argv[2] ?? '') as $extension) {
 
 // The stubs downloaded below come from the commit the lock pins, so they change only with the lock.
 $phpstormStubs = $argv[3] ?? '';
-if (!preg_match('/^[0-9a-f]{40}$/', $phpstormStubs)) {
+if (!preg_match('/^[0-9a-f]{40}$/D', $phpstormStubs)) {
     throw new RuntimeException('Expected a phpstorm-stubs commit, got ' . var_export($phpstormStubs, true));
 }
 
