@@ -586,7 +586,27 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
             foreach ($byref_uses as $var_id => $_) {
                 // unsetting the variable only drops the closure's own reference to it: what the
                 // closure wrote through the reference before is not known anymore
-                $byref_type = $ref_context->vars_in_scope[$var_id] ?? Type::getMixed();
+                $end_type = $ref_context->vars_in_scope[$var_id] ?? null;
+
+                // the closure leaves through its returns: where it also has no end, nothing else is possible
+                $types_at_return = $this instanceof ClosureAnalyzer
+                    ? $this->captured_by_ref_types_at_return[$var_id] ?? []
+                    : [];
+
+                if ($types_at_return !== []) {
+                    $path_types = $end_type !== null ? [$end_type, ...$types_at_return] : $types_at_return;
+                    $byref_type = Type::combineUnionTypeArray($path_types, $codebase);
+
+                    // a path on which the closure left the variable as it was (mixed in the closure) makes it mixed
+                    foreach ($path_types as $path_type) {
+                        if ($path_type->isMixed()) {
+                            $byref_type = Type::getMixed();
+                            break;
+                        }
+                    }
+                } else {
+                    $byref_type = $end_type ?? Type::getMixed();
+                }
 
                 $byref_vars[$var_id] = $byref_type;
                 $context->vars_in_scope[$var_id] = $byref_type;
