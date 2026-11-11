@@ -13,6 +13,8 @@ use Psalm\Issue\ContinueOutsideLoop;
 use Psalm\IssueBuffer;
 use Psalm\Type;
 
+use function array_filter;
+use function array_slice;
 use function count;
 use function end;
 
@@ -72,6 +74,52 @@ final class BreakAnalyzer
                             $type,
                             $loop_scope->possibly_defined_loop_parent_vars[$var_id] ?? null,
                         );
+                    }
+                }
+            }
+
+            // `break 2` or more also leaves the loops around the innermost one, up to the one it targets
+            $break_depth = $stmt->num instanceof PhpParser\Node\Scalar\Int_ ? $stmt->num->value : 1;
+            $target_index = count($context->break_types) - $break_depth;
+
+            if ($break_depth > 1
+                && $target_index >= 0
+                && $context->break_types[$target_index] === 'loop'
+            ) {
+                $loops_between = count(array_filter(
+                    array_slice($context->break_types, $target_index + 1),
+                    static fn(string $break_type): bool => $break_type === 'loop',
+                ));
+
+                $target_scope = $loop_scope;
+
+                for ($i = 0; $i < $loops_between && $target_scope; $i++) {
+                    $target_scope = $target_scope->loop_parent_context->loop_scope;
+                }
+
+                if ($target_scope && $target_scope !== $loop_scope) {
+                    $target_scope->final_actions[] = ScopeAnalyzer::ACTION_BREAK;
+
+                    $target_redefined_vars = $context->getRedefinedVars(
+                        $target_scope->loop_parent_context->vars_in_scope,
+                    );
+
+                    foreach ($target_redefined_vars as $var => $type) {
+                        $target_scope->possibly_redefined_loop_parent_vars[$var] = Type::combineUnionTypes(
+                            $type,
+                            $target_scope->possibly_redefined_loop_parent_vars[$var] ?? null,
+                        );
+                    }
+
+                    if ($target_scope->iteration_count === 0) {
+                        foreach ($context->vars_in_scope as $var_id => $type) {
+                            if (!isset($target_scope->loop_parent_context->vars_in_scope[$var_id])) {
+                                $target_scope->possibly_defined_loop_parent_vars[$var_id] = Type::combineUnionTypes(
+                                    $type,
+                                    $target_scope->possibly_defined_loop_parent_vars[$var_id] ?? null,
+                                );
+                            }
+                        }
                     }
                 }
             }
