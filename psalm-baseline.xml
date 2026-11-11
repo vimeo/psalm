@@ -96,7 +96,6 @@
     </PossiblyNullReference>
     <PropertyTypeCoercion>
       <code><![CDATA[$this]]></code>
-      <code><![CDATA[$this]]></code>
     </PropertyTypeCoercion>
     <RiskyTruthyFalsyComparison>
       <code><![CDATA[!$config_path]]></code>
@@ -883,7 +882,6 @@
   </file>
   <file src="src/Psalm/Internal/Analyzer/Statements/Expression/Call/ArgumentsAnalyzer.php">
     <ImplicitToStringCast>
-      <code><![CDATA[$cased_method_id ?: $method_id]]></code>
       <code><![CDATA[$cased_method_id ?: $method_id]]></code>
       <code><![CDATA[$cased_method_id ?: $method_id]]></code>
       <code><![CDATA[$cased_method_id ?: $method_id]]></code>
@@ -2327,7 +2325,6 @@
       <code><![CDATA[$file_changes]]></code>
       <code><![CDATA[self::$parser->parse($file_contents, $error_handler)]]></code>
       <code><![CDATA[self::$parser->parse($file_contents, $error_handler)]]></code>
-      <code><![CDATA[strpos($file_path, 'vendor')]]></code>
     </RiskyTruthyFalsyComparison>
   </file>
   <file src="src/Psalm/Internal/Scanner/DocblockParser.php">

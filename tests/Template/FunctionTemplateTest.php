@@ -23,112 +23,62 @@ final class FunctionTemplateTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
-            'templateOrStringIsNotBoundToALiteralString' => [
+            'typePredicatesOnATemplateBoundedByATemplate' => [
                 'code' => '<?php
                     /**
                      * @template T
-                     * @param T|string $arg
-                     * @return T
+                     * @template U of T
+                     * @param U $v
                      */
-                    function notString($arg) {
-                        if (is_string($arg)) {
-                            throw new Exception();
+                    function f($v): int {
+                        $count = 0;
+
+                        if (is_string($v)) {
+                            $count++;
                         }
 
-                        return $arg;
-                    }
+                        if (is_int($v)) {
+                            $count++;
+                        }
 
-                    $foo = random_int(0, 1) ? "foobar" : [];
-                    $bar = notString($foo);',
-                'assertions' => [
-                    '$bar===' => 'array<never, never>',
-                ],
-            ],
-            'templateOrIntIsNotBoundToALiteralInt' => [
-                'code' => '<?php
-                    /**
-                     * @template T
-                     * @param T|int $arg
-                     * @return T
-                     */
-                    function notInt($arg) { throw new Exception(); }
+                        if (is_float($v)) {
+                            $count++;
+                        }
 
-                    $r = notInt(random_int(0, 1) ? 5 : "x");',
-                'assertions' => [
-                    '$r===' => "'x'",
-                ],
-            ],
-            'templateOrStringStillTakesTheOtherTypesOfTheArgument' => [
-                'code' => '<?php
-                    /**
-                     * @template T
-                     * @param T|string $arg
-                     * @return T
-                     */
-                    function notString($arg) { throw new Exception(); }
+                        if (is_numeric($v)) {
+                            $count++;
+                        }
 
-                    /** @var int|"lit"|null $v */
-                    $v = 1;
-                    $r = notString($v);',
-                'assertions' => [
-                    '$r===' => 'int|null',
-                ],
-            ],
-            'templateOrStringIsBoundToTheLiteralStringsWhenNothingElseIsLeft' => [
-                'code' => '<?php
-                    /**
-                     * @template T
-                     * @param T|string $arg
-                     * @return ArrayObject<int, T>
-                     */
-                    function wrap($arg) { throw new Exception(); }
+                        if (is_scalar($v)) {
+                            $count++;
+                        }
 
-                    $w = wrap(random_int(0, 1) ? "a" : "b");',
-                'assertions' => [
-                    '$w===' => "ArrayObject<int, 'a'|'b'>",
-                ],
-            ],
-            'stringOrClassStringOfTheTemplateIsBoundByTheClassStringOfTheArgument' => [
-                'code' => '<?php
-                    /**
-                     * @template T of object
-                     * @param string|class-string<T> $abstract
-                     * @return ($abstract is class-string<T> ? T : mixed)
-                     */
-                    function make($abstract) { throw new Exception(); }
+                        if (is_bool($v)) {
+                            $count++;
+                        }
 
-                    /** @var ArrayObject|class-string<ArrayObject> $h */
-                    $h = ArrayObject::class;
-                    $r = make($h);',
-                'assertions' => [
-                    '$r===' => 'ArrayObject[write-props]<array-key, mixed>',
-                ],
-                'ignored_issues' => ['PossiblyInvalidArgument'],
-            ],
-            'templateOrIterableOfTheTemplateIsBoundByTheIterablesOfTheArgument' => [
-                'code' => '<?php
-                    /**
-                     * @template TKey of array-key
-                     * @template TValue
-                     * @implements IteratorAggregate<TKey, TValue>
-                     */
-                    final class Coll implements IteratorAggregate {
-                        public function getIterator(): Iterator { throw new Exception(); }
+                        if ($v === true) {
+                            $count++;
+                        }
 
-                        /**
-                         * @template TWrapValue
-                         * @param iterable<array-key, TWrapValue>|TWrapValue $value
-                         * @return Coll<array-key, TWrapValue>
-                         */
-                        public static function wrap($value): Coll { throw new Exception(); }
-                    }
+                        if ($v === false) {
+                            $count++;
+                        }
 
-                    /** @var Coll<array-key, mixed>|array<array-key, mixed> $in */
-                    $in = [];
-                    $w = Coll::wrap($in);',
-                'assertions' => [
-                    '$w===' => 'Coll<array-key, mixed>',
-                ],
+                        if (is_object($v)) {
+                            $count++;
+                        }
+
+                        if (is_array($v)) {
+                            $count++;
+                        }
+
+                        if (is_callable($v)) {
+                            $count++;
+                        }
+
+                        return $count;
+                    }',
             ],
             'classStringTemplateOfAParamUsedInAConditionalReturnType' => [
                 'code' => '<?php
@@ -2615,6 +2565,113 @@ final class FunctionTemplateTest extends TestCase
                     }',
                 'assertions' => [],
             ],
+            'templateOrStringIsNotBoundToALiteralString' => [
+                'code' => '<?php
+                    /**
+                     * @template T
+                     * @param T|string $arg
+                     * @return T
+                     */
+                    function notString($arg) {
+                        if (is_string($arg)) {
+                            throw new Exception();
+                        }
+
+                        return $arg;
+                    }
+
+                    $foo = random_int(0, 1) ? "foobar" : [];
+                    $bar = notString($foo);',
+                'assertions' => [
+                    '$bar===' => 'array<never, never>',
+                ],
+            ],
+            'templateOrIntIsNotBoundToALiteralInt' => [
+                'code' => '<?php
+                    /**
+                     * @template T
+                     * @param T|int $arg
+                     * @return T
+                     */
+                    function notInt($arg) { throw new Exception(); }
+
+                    $r = notInt(random_int(0, 1) ? 5 : "x");',
+                'assertions' => [
+                    '$r===' => "'x'",
+                ],
+            ],
+            'templateOrStringStillTakesTheOtherTypesOfTheArgument' => [
+                'code' => '<?php
+                    /**
+                     * @template T
+                     * @param T|string $arg
+                     * @return T
+                     */
+                    function notString($arg) { throw new Exception(); }
+
+                    /** @var int|"lit"|null $v */
+                    $v = 1;
+                    $r = notString($v);',
+                'assertions' => [
+                    '$r===' => 'int|null',
+                ],
+            ],
+            'templateOrStringIsBoundToTheLiteralStringsWhenNothingElseIsLeft' => [
+                'code' => '<?php
+                    /**
+                     * @template T
+                     * @param T|string $arg
+                     * @return ArrayObject<int, T>
+                     */
+                    function wrap($arg) { throw new Exception(); }
+
+                    $w = wrap(random_int(0, 1) ? "a" : "b");',
+                'assertions' => [
+                    '$w===' => "ArrayObject<int, 'a'|'b'>",
+                ],
+            ],
+            'stringOrClassStringOfTheTemplateIsBoundByTheClassStringOfTheArgument' => [
+                'code' => '<?php
+                    /**
+                     * @template T of object
+                     * @param string|class-string<T> $abstract
+                     * @return ($abstract is class-string<T> ? T : mixed)
+                     */
+                    function make($abstract) { throw new Exception(); }
+
+                    /** @var ArrayObject|class-string<ArrayObject> $h */
+                    $h = ArrayObject::class;
+                    $r = make($h);',
+                'assertions' => [
+                    '$r===' => 'ArrayObject[write-props]<array-key, mixed>',
+                ],
+                'ignored_issues' => ['PossiblyInvalidArgument'],
+            ],
+            'templateOrIterableOfTheTemplateIsBoundByTheIterablesOfTheArgument' => [
+                'code' => '<?php
+                    /**
+                     * @template TKey of array-key
+                     * @template TValue
+                     * @implements IteratorAggregate<TKey, TValue>
+                     */
+                    final class Coll implements IteratorAggregate {
+                        public function getIterator(): Iterator { throw new Exception(); }
+
+                        /**
+                         * @template TWrapValue
+                         * @param iterable<array-key, TWrapValue>|TWrapValue $value
+                         * @return Coll<array-key, TWrapValue>
+                         */
+                        public static function wrap($value): Coll { throw new Exception(); }
+                    }
+
+                    /** @var Coll<array-key, mixed>|array<array-key, mixed> $in */
+                    $in = [];
+                    $w = Coll::wrap($in);',
+                'assertions' => [
+                    '$w===' => 'Coll<array-key, mixed>',
+                ],
+            ],
         ];
     }
 
@@ -2625,6 +2682,20 @@ final class FunctionTemplateTest extends TestCase
     public static function providerInvalidCodeParse(): iterable
     {
         return [
+            'typePredicateImpossibleForATemplateBoundedByATemplate' => [
+                'code' => '<?php
+                    /**
+                     * @template T of string
+                     * @template U of T
+                     * @param U $v
+                     */
+                    function f($v): void {
+                        if (is_int($v)) {
+                            echo 1;
+                        }
+                    }',
+                'error_message' => 'DocblockTypeContradiction',
+            ],
             'templateBoundedByMixedIsBoundedByMixedAgainAfterABranchNarrowingIt' => [
                 'code' => '<?php
                     function takesInt(int $i): void {}
