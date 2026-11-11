@@ -7,11 +7,13 @@ namespace Psalm\Tests;
 use Override;
 use PHPUnit\Framework\Attributes\DataProvider;
 use Psalm\Context;
+use Psalm\Internal\Analyzer\IssueData;
 use Psalm\IssueBuffer;
 use Psalm\Tests\Traits\InvalidCodeAnalysisTestTrait;
 use Psalm\Tests\Traits\ValidCodeAnalysisTestTrait;
 
 use function array_column;
+use function array_filter;
 
 use const DIRECTORY_SEPARATOR;
 
@@ -19,6 +21,45 @@ final class ClosureTest extends TestCase
 {
     use InvalidCodeAnalysisTestTrait;
     use ValidCodeAnalysisTestTrait;
+
+    public function testACapturedByReferenceVariableLeftAsItWasOnAReturnPathStaysMixedAfterTheClosure(): void
+    {
+        $this->testConfig->throw_exception = false;
+        $file_path = self::$src_dir_path . 'somefile.php';
+
+        $this->addFile(
+            $file_path,
+            '<?php
+                function g(string $style, string $string): string {
+                    static $labels = [];
+
+                    $style = preg_replace_callback("/x/", function (array $m) use ($string, &$labels) {
+                        if (trim($m[0]) === "a") {
+                            if (!isset($labels[$string])) {
+                                $labels[$string] = "c" . count($labels);
+                            }
+
+                            return $labels[$string];
+                        }
+
+                        return $m[0];
+                    }, $style);
+
+                    return (string) $style;
+                }',
+        );
+
+        $this->analyzeFile($file_path, new Context());
+
+        // the closure is analysed again with the type it leaves behind: one report for the mixed `$labels`
+        self::assertCount(
+            1,
+            array_filter(
+                IssueBuffer::getIssuesDataForFile($file_path),
+                static fn(IssueData $issue): bool => $issue->type === 'MixedArgument' && $issue->line_from === 8,
+            ),
+        );
+    }
 
     /**
      * @param list<string> $expected_issue_types
@@ -88,157 +129,83 @@ final class ClosureTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
-            'fromCallableOfAClassStringMethodReturningStaticIsTheClassItself' => [
+            'closureByRefWriteBeforeAnEarlyReturnIsKept' => [
                 'code' => '<?php
-                    class P {
-                        /** @return static */
-                        public static function make() {
-                            return new static();
-                        }
-                    }
+                    $hasOne = false;
 
-                    $viaArray = Closure::fromCallable([P::class, "make"]);
-                    $viaString = Closure::fromCallable("P::make");
-                    $direct = P::make(...);',
+                    $f = static function (int $x) use (&$hasOne): int {
+                        if ($x === 1) {
+                            $hasOne = true;
+
+                            return 0;
+                        }
+
+                        return $x;
+                    };',
                 'assertions' => [
-                    '$viaArray===' => 'Closure[impure]():P',
-                    '$viaString===' => 'Closure[impure]():P',
-                    '$direct===' => 'Closure[impure]():P',
+                    '$hasOne' => 'bool',
                 ],
-                'ignored_issues' => ['MissingReturnType', 'UnsafeInstantiation'],
-                'php_version' => '8.1',
             ],
-            'firstClassCallableOfMethodWithParamConditionalReturn' => [
-                'code' => <<<'PHP'
-                    <?php
-                    final class C {
-                        /** @return ($x is string ? int : bool) */
-                        public function m(string|int $x): int|bool {
-                            return is_string($x) ? 1 : true;
+            'closureByRefWriteBeforeEachReturnIsKept' => [
+                'code' => '<?php
+                    $count = 0;
+
+                    $f = static function (int $x) use (&$count): int {
+                        if ($x === 1) {
+                            $count = 5;
+
+                            return 0;
                         }
 
-                        /** @return ($x is string ? int : bool) */
-                        public static function s(string|int $x): int|bool {
-                            return is_string($x) ? 1 : true;
+                        if ($x === 2) {
+                            $count = 7;
+
+                            return 1;
                         }
-                    }
 
-                    function check(C $c): void {
-                        $method = $c->m(...);
-                        $viaMethod = $method('a');
-                        /** @psalm-check-type-exact $viaMethod = bool|int */
-
-                        $static = C::s(...);
-                        $viaStatic = $static('a');
-                        /** @psalm-check-type-exact $viaStatic = bool|int */
-
-                        $fromCallable = Closure::fromCallable([$c, 'm']);
-                        $viaFromCallable = $fromCallable('a');
-                        /** @psalm-check-type-exact $viaFromCallable = bool|int */
-                    }
-                    PHP,
-                'assertions' => [],
-                'ignored_issues' => [],
-                'php_version' => '8.1',
+                        return $x;
+                    };',
+                'assertions' => [
+                    '$count===' => '0|5|7',
+                ],
             ],
-            'methodCallableOfAStringAndOfAnArrayWithParamConditionalReturn' => [
-                'code' => <<<'PHP'
-                    <?php
-                    final class C {
-                        /** @return ($x is string ? int : bool) */
-                        public function m(string|int $x): int|bool {
-                            return is_string($x) ? 1 : true;
+            'closureByRefVariableNotWrittenBeforeAReturnKeepsItsType' => [
+                'code' => '<?php
+                    $flag = false;
+                    $other = 1;
+
+                    $f = static function (int $x) use (&$flag, &$other): int {
+                        if ($x === 1) {
+                            $other = 2;
+
+                            return 0;
                         }
 
-                        /** @return ($x is string ? int : bool) */
-                        public static function s(string|int $x): int|bool {
-                            return is_string($x) ? 1 : true;
-                        }
-                    }
-
-                    /**
-                     * @template A
-                     * @template U
-                     * @param callable(A): U $c
-                     * @param A $a
-                     * @return U
-                     */
-                    function run(callable $c, $a) {
-                        return $c($a);
-                    }
-
-                    function check(C $c): void {
-                        $string = Closure::fromCallable('C::s');
-                        $viaString = $string('a');
-                        /** @psalm-check-type-exact $viaString = bool|int */
-
-                        $viaArray = run([$c, 'm'], 'a');
-                        /** @psalm-check-type-exact $viaArray = bool|int */
-
-                        $viaClassArray = run([C::class, 's'], 'a');
-                        /** @psalm-check-type-exact $viaClassArray = bool|int */
-
-                        $viaStringTemplate = run('C::s', 'a');
-                        /** @psalm-check-type-exact $viaStringTemplate = bool|int */
-                    }
-                    PHP,
-                'assertions' => [],
-                'ignored_issues' => [],
-                'php_version' => '8.1',
+                        return $x;
+                    };',
+                'assertions' => [
+                    '$flag' => 'false',
+                    '$other' => 'int',
+                ],
             ],
-            'paramOutOfMethodClosureResolvesSelfAndStatic' => [
-                'code' => <<<'PHP'
-                    <?php
-                    class A {
-                        public function name(): string {
-                            return 'a';
-                        }
-                    }
+            'closureByRefVariablePartlyMixedAtTheReturnKeepsItsKnownPart' => [
+                'code' => '<?php
+                    final class C {}
 
-                    class B extends A {
-                        /** @param-out self $out */
-                        public function setSelf(?self &$out): void {
-                            $out = $this;
+                    /** @var mixed $list */
+                    $list = json_decode("[]", true);
+
+                    $f = function (string $k) use (&$list): int {
+                        if (!$list[$k] instanceof C) {
+                            $list[$k] = new C();
                         }
 
-                        /** @param-out static $out */
-                        public function setStatic(?self &$out): void {
-                            $out = $this;
-                        }
-
-                        public function viaMethod(): string {
-                            $setSelf = $this->setSelf(...);
-                            $self = null;
-                            $setSelf($self);
-
-                            $setStatic = $this->setStatic(...);
-                            $static = null;
-                            $setStatic($static);
-
-                            return $self->name() . $static->name();
-                        }
-                    }
-
-                    class C extends B {
-                        public function viaStaticCall(): string {
-                            $setSelf = self::setSelf(...);
-                            $self = null;
-                            $setSelf($self);
-
-                            $setStatic = self::setStatic(...);
-                            $static = null;
-                            $setStatic($static);
-
-                            /** @psalm-check-type-exact $self = B */
-                            /** @psalm-check-type-exact $static = C&static */
-
-                            return $self->name() . $static->name();
-                        }
-                    }
-                    PHP,
-                'assertions' => [],
-                'ignored_issues' => [],
-                'php_version' => '8.1',
+                        return 0;
+                    };',
+                'assertions' => [
+                    '$list===' => 'mixed|non-empty-array<string, C>',
+                ],
+                'ignored_issues' => ['MixedArrayAccess', 'MixedArrayAssignment'],
             ],
             'byRefUseOfAVariableThatIsNotDefinedYet' => [
                 'code' => '<?php
@@ -1956,6 +1923,158 @@ final class ClosureTest extends TestCase
                     '$c===' => 'S',
                 ],
                 'ignored_issues' => ['UnsafeInstantiation'],
+                'php_version' => '8.1',
+            ],
+            'fromCallableOfAClassStringMethodReturningStaticIsTheClassItself' => [
+                'code' => '<?php
+                    class P {
+                        /** @return static */
+                        public static function make() {
+                            return new static();
+                        }
+                    }
+
+                    $viaArray = Closure::fromCallable([P::class, "make"]);
+                    $viaString = Closure::fromCallable("P::make");
+                    $direct = P::make(...);',
+                'assertions' => [
+                    '$viaArray===' => 'Closure[impure]():P',
+                    '$viaString===' => 'Closure[impure]():P',
+                    '$direct===' => 'Closure[impure]():P',
+                ],
+                'ignored_issues' => ['MissingReturnType', 'UnsafeInstantiation'],
+                'php_version' => '8.1',
+            ],
+            'firstClassCallableOfMethodWithParamConditionalReturn' => [
+                'code' => <<<'PHP'
+                    <?php
+                    final class C {
+                        /** @return ($x is string ? int : bool) */
+                        public function m(string|int $x): int|bool {
+                            return is_string($x) ? 1 : true;
+                        }
+
+                        /** @return ($x is string ? int : bool) */
+                        public static function s(string|int $x): int|bool {
+                            return is_string($x) ? 1 : true;
+                        }
+                    }
+
+                    function check(C $c): void {
+                        $method = $c->m(...);
+                        $viaMethod = $method('a');
+                        /** @psalm-check-type-exact $viaMethod = bool|int */
+
+                        $static = C::s(...);
+                        $viaStatic = $static('a');
+                        /** @psalm-check-type-exact $viaStatic = bool|int */
+
+                        $fromCallable = Closure::fromCallable([$c, 'm']);
+                        $viaFromCallable = $fromCallable('a');
+                        /** @psalm-check-type-exact $viaFromCallable = bool|int */
+                    }
+                    PHP,
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
+            'methodCallableOfAStringAndOfAnArrayWithParamConditionalReturn' => [
+                'code' => <<<'PHP'
+                    <?php
+                    final class C {
+                        /** @return ($x is string ? int : bool) */
+                        public function m(string|int $x): int|bool {
+                            return is_string($x) ? 1 : true;
+                        }
+
+                        /** @return ($x is string ? int : bool) */
+                        public static function s(string|int $x): int|bool {
+                            return is_string($x) ? 1 : true;
+                        }
+                    }
+
+                    /**
+                     * @template A
+                     * @template U
+                     * @param callable(A): U $c
+                     * @param A $a
+                     * @return U
+                     */
+                    function run(callable $c, $a) {
+                        return $c($a);
+                    }
+
+                    function check(C $c): void {
+                        $string = Closure::fromCallable('C::s');
+                        $viaString = $string('a');
+                        /** @psalm-check-type-exact $viaString = bool|int */
+
+                        $viaArray = run([$c, 'm'], 'a');
+                        /** @psalm-check-type-exact $viaArray = bool|int */
+
+                        $viaClassArray = run([C::class, 's'], 'a');
+                        /** @psalm-check-type-exact $viaClassArray = bool|int */
+
+                        $viaStringTemplate = run('C::s', 'a');
+                        /** @psalm-check-type-exact $viaStringTemplate = bool|int */
+                    }
+                    PHP,
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
+            'paramOutOfMethodClosureResolvesSelfAndStatic' => [
+                'code' => <<<'PHP'
+                    <?php
+                    class A {
+                        public function name(): string {
+                            return 'a';
+                        }
+                    }
+
+                    class B extends A {
+                        /** @param-out self $out */
+                        public function setSelf(?self &$out): void {
+                            $out = $this;
+                        }
+
+                        /** @param-out static $out */
+                        public function setStatic(?self &$out): void {
+                            $out = $this;
+                        }
+
+                        public function viaMethod(): string {
+                            $setSelf = $this->setSelf(...);
+                            $self = null;
+                            $setSelf($self);
+
+                            $setStatic = $this->setStatic(...);
+                            $static = null;
+                            $setStatic($static);
+
+                            return $self->name() . $static->name();
+                        }
+                    }
+
+                    class C extends B {
+                        public function viaStaticCall(): string {
+                            $setSelf = self::setSelf(...);
+                            $self = null;
+                            $setSelf($self);
+
+                            $setStatic = self::setStatic(...);
+                            $static = null;
+                            $setStatic($static);
+
+                            /** @psalm-check-type-exact $self = B */
+                            /** @psalm-check-type-exact $static = C&static */
+
+                            return $self->name() . $static->name();
+                        }
+                    }
+                    PHP,
+                'assertions' => [],
+                'ignored_issues' => [],
                 'php_version' => '8.1',
             ],
         ];
