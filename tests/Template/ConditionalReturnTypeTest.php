@@ -21,6 +21,67 @@ final class ConditionalReturnTypeTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'conditionalOnNeverOfAnOptionalKeyIsTheKeyTypeWhenSet' => [
+                'code' => '<?php
+                    /**
+                     * @template TReturnOpt as "string"|"int"|"float"
+                     * @param array{ret?: TReturnOpt} $opts
+                     * @return (TReturnOpt is never ? "stringEmpty" : TReturnOpt)
+                     */
+                    function test(array $opts = []): string {
+                        return "stringEmpty";
+                    }
+
+                    $unset = test();
+                    $set = test(["ret" => "int"]);',
+                'assertions' => [
+                    '$unset===' => "'stringEmpty'",
+                    '$set===' => "'int'",
+                ],
+            ],
+            'conditionalOnNeverIsOnlyTrueForNever' => [
+                'code' => '<?php
+                    /**
+                     * @template T as string|int
+                     * @param T $t
+                     * @return (T is never ? "e" : T)
+                     */
+                    function f($t) { return $t; }
+
+                    $zero = f(0);
+                    $text = f("abc");',
+                'assertions' => [
+                    '$zero===' => '0',
+                    '$text===' => "'abc'",
+                ],
+            ],
+            'conditionalOnNotNeverKeepsTheTypeOfAValue' => [
+                'code' => '<?php
+                    /**
+                     * @template T as string|int
+                     * @param T $t
+                     * @return (T is not never ? T : "e")
+                     */
+                    function f($t) { return $t; }
+
+                    $zero = f(0);
+                    $text = f("abc");',
+                'assertions' => [
+                    '$zero===' => '0',
+                    '$text===' => "'abc'",
+                ],
+            ],
+            'arrayAccessOnAParamWithAConditionalType' => [
+                'code' => '<?php
+                    /**
+                     * @template T of string|null
+                     * @param T $str
+                     * @param (T is null ? non-empty-list<string> : list<string>) $items
+                     */
+                    function test(array $items, ?string $str = null): string {
+                        return $str ?? $items[0] ?? "";
+                    }',
+            ],
             'conditionalReturnTypeSimple' => [
                 'code' => '<?php
 
@@ -1610,6 +1671,702 @@ final class ConditionalReturnTypeTest extends TestCase
                 'ignored_issues' => [],
                 'php_version' => '8.2',
             ],
+            'paramConditionalOnTypedCallableOfThisOrStatic' => [
+                'code' => '<?php
+                    final class Box {
+                        /**
+                         * @param (callable($this): mixed)|null $callback
+                         * @return ($callback is null ? int : $this)
+                         */
+                        public function tapThis(?callable $callback = null) {
+                            throw new RuntimeException();
+                        }
+
+                        /**
+                         * @param (callable(static): mixed)|null $callback
+                         * @return ($callback is null ? int : static)
+                         */
+                        public static function tapStatic(?callable $callback = null) {
+                            throw new RuntimeException();
+                        }
+                    }
+
+                    $box = new Box();
+                    $this_ = $box->tapThis(fn (Box $_b): int => 1);
+                    $null = $box->tapThis(null);
+                    $none = $box->tapThis();
+                    $instance = $box->tapStatic(fn (Box $_b): int => 1);
+                    $static = Box::tapStatic(fn (Box $_b): int => 1);
+                    $staticNone = Box::tapStatic();',
+                'assertions' => [
+                    '$this_===' => 'Box',
+                    '$null===' => 'int',
+                    '$none===' => 'int',
+                    '$instance===' => 'Box',
+                    '$static===' => 'Box',
+                    '$staticNone===' => 'int',
+                ],
+            ],
+            'paramConditionalOnTypedCallableOfStaticOnSubclassReceiver' => [
+                'code' => '<?php
+                    class Base {
+                        /**
+                         * @param (callable($this): mixed)|null $callback
+                         * @return ($callback is null ? int : $this)
+                         */
+                        public function tap(?callable $callback = null) {
+                            throw new RuntimeException();
+                        }
+
+                        /**
+                         * @param (callable(static): mixed)|null $callback
+                         * @return ($callback is null ? int : static)
+                         */
+                        public static function stap(?callable $callback = null) {
+                            throw new RuntimeException();
+                        }
+                    }
+
+                    final class FinalChild extends Base {}
+
+                    class OpenChild extends Base {}
+
+                    function openChild(): OpenChild {
+                        return new OpenChild();
+                    }
+
+                    $final = (new FinalChild())->tap(fn (FinalChild $_x): int => 1);
+                    $finalByBase = (new FinalChild())->tap(fn (Base $_x): int => 1);
+                    $open = openChild()->tap(fn (OpenChild $_x): int => 1);
+                    $finalStatic = FinalChild::stap(fn (FinalChild $_x): int => 1);
+                    $openStatic = OpenChild::stap(fn (OpenChild $_x): int => 1);',
+                'assertions' => [
+                    '$final===' => 'FinalChild',
+                    '$finalByBase===' => 'FinalChild',
+                    '$open===' => 'OpenChild&static',
+                    '$finalStatic===' => 'FinalChild',
+                    '$openStatic===' => 'OpenChild',
+                ],
+            ],
+            'paramConditionalOnTypedCallableOfThisKeepsTheTypeArgumentsOfTheReceiver' => [
+                'code' => '<?php
+                    /** @template T */
+                    class Coll {
+                        /**
+                         * @param (callable($this): mixed)|null $callback
+                         * @return ($callback is null ? int : $this)
+                         */
+                        public function tap(?callable $callback = null) {
+                            throw new RuntimeException();
+                        }
+                    }
+
+                    /** @var Coll<int> */
+                    $coll = new Coll();
+                    $tapped = $coll->tap(fn (Coll $_c): int => 1);',
+                'assertions' => [
+                    '$tapped===' => 'Coll<int>&static',
+                ],
+            ],
+            'paramConditionalOnStaticParam' => [
+                'code' => '<?php
+                    class Node {
+                        /**
+                         * @param static|null $other
+                         * @return ($other is null ? int : string)
+                         */
+                        public function cmp(?self $other = null) {
+                            throw new RuntimeException();
+                        }
+
+                        /**
+                         * @param array<static>|null $others
+                         * @return ($others is null ? int : string)
+                         */
+                        public function cmpAll(?array $others = null) {
+                            throw new RuntimeException();
+                        }
+                    }
+
+                    final class Leaf extends Node {}
+
+                    $leaf = new Leaf();
+                    $one = $leaf->cmp($leaf);
+                    $all = $leaf->cmpAll([$leaf]);
+                    $none = $leaf->cmp();
+                    $allNone = $leaf->cmpAll(null);',
+                'assertions' => [
+                    '$one===' => 'string',
+                    '$all===' => 'string',
+                    '$none===' => 'int',
+                    '$allNone===' => 'int',
+                ],
+            ],
+            'paramConditionalOnCallableOfStaticInConstructorAndSelfOut' => [
+                'code' => '<?php
+                    /** @template T */
+                    final class Gen {
+                        /**
+                         * @param (callable(static): mixed)|null $callback
+                         * @return ($callback is null ? Gen<int> : Gen<string>)
+                         */
+                        public function __construct(?callable $callback = null) {}
+                    }
+
+                    /** @template T */
+                    final class Mut {
+                        /**
+                         * @param (callable(static): mixed)|null $callback
+                         * @psalm-self-out ($callback is null ? Mut<int> : Mut<string>)
+                         */
+                        public function set(?callable $callback = null): void {}
+                    }
+
+                    $gen = new Gen(fn (Gen $_g): int => 1);
+                    $genNone = new Gen();
+
+                    /** @var Mut<bool> */
+                    $mut = new Mut();
+                    $mut->set(fn (Mut $_m): int => 1);
+
+                    /** @var Mut<bool> */
+                    $mutNone = new Mut();
+                    $mutNone->set();',
+                'assertions' => [
+                    '$gen===' => 'Gen<string>',
+                    '$genNone===' => 'Gen<int>',
+                    '$mut===' => 'Mut<string>',
+                    '$mutNone===' => 'Mut<int>',
+                ],
+            ],
+            'untypedClosureParamOfCallableOfStaticIsTheCalledClass' => [
+                'code' => '<?php
+                    class Base {
+                        /**
+                         * @param (callable($this): mixed)|null $callback
+                         * @return ($callback is null ? int : $this)
+                         */
+                        public function tap(?callable $callback = null) {
+                            throw new RuntimeException();
+                        }
+
+                        /** @param callable(static): mixed $callback */
+                        public function each(callable $callback): void {}
+                    }
+
+                    final class Items extends Base {}
+
+                    final class Consumer {
+                        public function run(Items $items): void {
+                            $items->each(function ($item): void {
+                                /** @psalm-check-type-exact $item = Items */
+                            });
+                        }
+                    }
+
+                    function run(Items $items): void {
+                        $items->each(function ($item): void {
+                            /** @psalm-check-type-exact $item = Items */
+                        });
+                    }
+
+                    $tapped = (new Items())->tap(fn ($_i): int => 1);',
+                'assertions' => [
+                    '$tapped===' => 'Items',
+                ],
+            ],
+            'paramConditionalKeepsTheStaticOfTheCallerInTheBound' => [
+                'code' => '<?php
+                    class Base {
+                        public function run(Child $child): void {
+                            $templated = $child->choose($this);
+                            /** @psalm-check-type-exact $templated = int|string */
+                        }
+                    }
+
+                    class Child extends Base {
+                        /**
+                         * @template T
+                         * @param T $value
+                         * @return ($value is Child ? int : string)
+                         */
+                        public function choose($value) {
+                            throw new RuntimeException();
+                        }
+                    }',
+            ],
+            'paramConditionalOnStaticParamWithNonFinalReceiver' => [
+                'code' => '<?php
+                    class Node {
+                        /**
+                         * @param static|null $other
+                         * @return ($other is null ? int : string)
+                         */
+                        public function cmp(?self $other = null) {
+                            throw new RuntimeException();
+                        }
+                    }
+
+                    $node = new Node();
+                    $result = $node->cmp($node);',
+                'assertions' => [
+                    '$result===' => 'int|string',
+                ],
+                'ignored_issues' => ['ArgumentTypeCoercion'],
+            ],
+            'untypedClosureParamOfCallableOfStaticKeepsTheTypeArgumentsOfTheReceiver' => [
+                'code' => '<?php
+                    /** @template TValue */
+                    final class FinalColl {
+                        /**
+                         * @template U
+                         * @param callable(static): U $callback
+                         * @return U
+                         */
+                        public function pipe(callable $callback) {
+                            throw new RuntimeException();
+                        }
+                    }
+
+                    /** @template TValue */
+                    class Coll {
+                        /**
+                         * @template U
+                         * @param callable(static): U $callback
+                         * @return U
+                         */
+                        public function pipe(callable $callback) {
+                            throw new RuntimeException();
+                        }
+                    }
+
+                    /** @var FinalColl<int> */
+                    $final = new FinalColl();
+                    /** @var Coll<int> */
+                    $open = new Coll();
+                    $finalResult = $final->pipe(fn ($x) => $x);
+                    $openResult = $open->pipe(fn ($x) => $x);',
+                'assertions' => [
+                    '$finalResult===' => 'FinalColl<int>',
+                    '$openResult===' => 'Coll<int>&static',
+                ],
+                'ignored_issues' => ['MixedArgumentTypeCoercion'],
+            ],
+            'untypedClosureParamOfCallableOfStaticOnTemplateReceiverKeepsTheTemplate' => [
+                'code' => '<?php
+                    class Box {
+                        /**
+                         * @template U
+                         * @param callable(static): U $callback
+                         * @return U
+                         */
+                        public function pipe(callable $callback) {
+                            throw new RuntimeException();
+                        }
+
+                        /**
+                         * @param (callable(static): mixed)|null $callback
+                         * @return ($callback is null ? int : static)
+                         */
+                        public function tap(?callable $callback = null) {
+                            throw new RuntimeException();
+                        }
+                    }
+
+                    /**
+                     * @template T of Box
+                     * @param T $box
+                     * @return T
+                     */
+                    function identity(Box $box): Box {
+                        $result = $box->pipe(fn ($value) => $value);
+                        /** @psalm-check-type-exact $result = T */;
+
+                        return $box->tap(fn ($_value): int => 1);
+                    }',
+                'ignored_issues' => ['InvalidArgument'],
+            ],
+            'untypedClosureParamOfCallableOfStaticOnStaticCallOfTemplateClassKeepsTheTemplate' => [
+                'code' => '<?php
+                    class Box {
+                        /**
+                         * @template U
+                         * @param callable(static): U $callback
+                         * @return U
+                         */
+                        public static function pipe(callable $callback) {
+                            throw new RuntimeException();
+                        }
+                    }
+
+                    /**
+                     * @template T of Box
+                     * @param class-string<T> $class
+                     * @return T
+                     */
+                    function identity(string $class): Box {
+                        $result = $class::pipe(fn ($value) => $value);
+                        /** @psalm-check-type-exact $result = T */;
+
+                        return $result;
+                    }',
+                'ignored_issues' => ['InvalidArgument'],
+            ],
+            'untypedClosureParamOfCallableOfStaticInForwardingCallKeepsMastersHint' => [
+                'code' => '<?php
+                    class Base {
+                        /** @param callable(static): mixed $callback */
+                        public function each(callable $callback): void {}
+                    }
+
+                    class Child extends Base {
+                        public function onlyChild(): void {}
+
+                        public function run(): void {
+                            parent::each(function ($item): void {
+                                /** @psalm-check-type-exact $item = Child&static */;
+                                $item->onlyChild();
+                            });
+                        }
+                    }',
+                'ignored_issues' => ['InvalidArgument'],
+            ],
+            'paramConditionalOnStaticParamOfNamedStaticCallFromAnotherClass' => [
+                'code' => '<?php
+                    class Node {
+                        /**
+                         * @param static|null $other
+                         * @return ($other is null ? int : string)
+                         */
+                        public static function cmp(?self $other = null) {
+                            throw new RuntimeException();
+                        }
+                    }
+
+                    class Leaf extends Node {}
+
+                    final class Other {
+                        public static function run(Leaf $leaf): void {
+                            $result = Leaf::cmp($leaf);
+                            /** @psalm-check-type-exact $result = string */;
+                        }
+                    }',
+            ],
+            'paramConditionalOnUntypedCallableOfStaticOnIntersectionReceiver' => [
+                'code' => '<?php
+                    interface HasName {}
+
+                    class IBox {
+                        /**
+                         * @param (callable(static): mixed)|null $callback
+                         * @return ($callback is null ? int : static)
+                         */
+                        public function tap(?callable $callback = null) {
+                            throw new RuntimeException();
+                        }
+                    }
+
+                    /** @return IBox&HasName */
+                    function named(): IBox {
+                        throw new RuntimeException();
+                    }
+
+                    $tapped = named()->tap(fn ($_x): int => 1);',
+                'assertions' => [
+                    '$tapped===' => 'IBox&HasName',
+                ],
+                'ignored_issues' => ['InvalidArgument', 'MissingClosureParamType'],
+            ],
+            'paramConditionalOnUntypedCallableOfStaticThroughMixinKeepsMastersResult' => [
+                'code' => '<?php
+                    class MixTarget {
+                        /**
+                         * @param (callable(static): mixed)|null $callback
+                         * @return ($callback is null ? int : static)
+                         */
+                        public function tap(?callable $callback = null) {
+                            throw new RuntimeException();
+                        }
+                    }
+
+                    /** @mixin MixTarget */
+                    class MixUser {
+                        /**
+                         * @param list<mixed> $args
+                         * @return mixed
+                         */
+                        public function __call(string $name, array $args) {
+                            throw new RuntimeException();
+                        }
+                    }
+
+                    $tapped = (new MixUser())->tap(fn ($_t): int => 1);',
+                'assertions' => [
+                    '$tapped===' => 'MixUser&static',
+                ],
+                'ignored_issues' => ['InvalidArgument', 'MissingClosureParamType'],
+            ],
+            'typedClosureParamOfCallableOfStaticInTraitKeepsItsDeclaredType' => [
+                'code' => '<?php
+                    class Model {}
+
+                    trait BuildsQueries {
+                        public function paginate(): void {
+                            $add = function (self $builder, int $i) use (&$add): void {
+                                $builder->where(function (self $second) use ($add, $i): void {
+                                    $add($second, $i + 1);
+                                });
+                            };
+
+                            $add($this, 0);
+                        }
+                    }
+
+                    /** @template TModel of Model */
+                    class EloquentBuilder {
+                        use BuildsQueries;
+
+                        /**
+                         * @param (Closure(static): mixed)|string $column
+                         * @return $this
+                         */
+                        public function where($column) {
+                            return $this;
+                        }
+                    }
+
+                    class QueryBuilder {
+                        use BuildsQueries;
+
+                        /**
+                         * @param Closure|string $column
+                         * @return $this
+                         */
+                        public function where($column) {
+                            return $this;
+                        }
+                    }',
+                'ignored_issues' => ['InvalidArgument'],
+            ],
+            'paramConditionalOnClosureOfSupertypeParamKeepsMastersResult' => [
+                'code' => '<?php
+                    final class Box {
+                        /**
+                         * @param (callable(static): mixed)|null $callback
+                         * @return ($callback is null ? int : static)
+                         */
+                        public function tap(?callable $callback = null) {
+                            throw new RuntimeException();
+                        }
+                    }
+
+                    $box = new Box();
+                    $object = $box->tap(fn (object $_x): int => 1);
+                    $mixed = $box->tap(fn (mixed $_x): int => 1);',
+                'assertions' => [
+                    '$object===' => 'Box',
+                    '$mixed===' => 'Box',
+                ],
+                'ignored_issues' => ['InvalidArgument'],
+                'php_version' => '8.0',
+            ],
+            'paramConditionalOnClosureOfSupertypeParamInLoopKeepsMastersResult' => [
+                'code' => '<?php
+                    final class Box {
+                        /**
+                         * @param (callable(static): mixed)|null $callback
+                         * @return ($callback is null ? int : static)
+                         */
+                        public function tap(?callable $callback = null) {
+                            throw new RuntimeException();
+                        }
+                    }
+
+                    /** @param list<Box> $boxes */
+                    function tapAll(array $boxes): void {
+                        foreach ($boxes as $box) {
+                            $tapped = $box->tap(fn (object $x): object => $x);
+                            /** @psalm-check-type-exact $tapped = Box */;
+                        }
+                    }',
+                'ignored_issues' => ['InvalidArgument'],
+            ],
+            'conditionalTrueBranchTemplateTakesTheBoundOfItsCondition' => [
+                'code' => '<?php
+                    interface Animal {}
+
+                    /** @template TModel of Animal */
+                    final class Zoo
+                    {
+                        /**
+                         * @template TVal
+                         * @param callable(): TVal $cb
+                         * @return (TVal is Animal ? self<TVal> : string)
+                         */
+                        public function map(callable $cb): mixed {
+                            throw new RuntimeException();
+                        }
+
+                        /**
+                         * @template TVal of Countable
+                         * @param callable(): TVal $cb
+                         * @return (TVal is Animal ? self<TVal> : string)
+                         */
+                        public function mapCountable(callable $cb): mixed {
+                            throw new RuntimeException();
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
+            'paramConditionalOnStringKeepsStringableObjectInElseBranch' => [
+                'code' => '<?php
+                    final class H {
+                        public function __toString(): string {
+                            return "";
+                        }
+                    }
+
+                    /**
+                     * @param string|H $str
+                     * @psalm-return ($str is string ? string : H)
+                     */
+                    function strip($str) {
+                        return $str;
+                    }
+
+                    /** @param string|H $x */
+                    function f($x): ?string {
+                        $y = strip($x);
+                        if (!($y instanceof H)) {
+                            return $y;
+                        }
+
+                        return null;
+                    }
+
+                    $obj = strip(new H());
+                    $str = strip("a");',
+                'assertions' => [
+                    '$obj===' => 'H',
+                    '$str===' => 'string',
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'templateConditionalOnStringTreatsStringableObjectAsNotString' => [
+                'code' => '<?php
+                    class Model implements Stringable {
+                        public function __toString(): string {
+                            return "";
+                        }
+                    }
+
+                    /**
+                     * @template T
+                     * @param T $v
+                     * @return (T is string ? string : int)
+                     */
+                    function isString(mixed $v): string|int {
+                        throw new RuntimeException();
+                    }
+
+                    /**
+                     * @template T
+                     * @param T $v
+                     * @return (T is \'\'|\'0\' ? never : T)
+                     */
+                    function unlessFalsyString(mixed $v): mixed {
+                        return $v;
+                    }
+
+                    /**
+                     * @template T
+                     * @param T $v
+                     * @return (T is scalar ? "scalar" : "other")
+                     */
+                    function isScalar(mixed $v): string {
+                        throw new RuntimeException();
+                    }
+
+                    $model = new Model();
+                    $a = isString($model);
+                    $b = isString("x");
+                    $c = unlessFalsyString($model);
+                    $d = isScalar($model);
+                    $e = isScalar("x");',
+                'assertions' => [
+                    '$a===' => 'int',
+                    '$b===' => 'string',
+                    '$c===' => 'Model',
+                    '$d===' => '\'other\'',
+                    '$e===' => '\'scalar\'',
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'templateConditionalOnStringableStillMatchesObjects' => [
+                'code' => '<?php
+                    class Model implements Stringable {
+                        public function __toString(): string {
+                            return "";
+                        }
+                    }
+
+                    /**
+                     * @template T
+                     * @param T $v
+                     * @return (T is Stringable ? "yes" : "no")
+                     */
+                    function isStringable(mixed $v): string {
+                        throw new RuntimeException();
+                    }
+
+                    $a = isStringable(new Model());
+                    $b = isStringable("x");',
+                'assertions' => [
+                    '$a===' => '\'yes\'',
+                    '$b===' => '\'no\'',
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'conditionalReturnTypeMakesATemplateArrayNonEmpty' => [
+                'code' => '<?php
+                    /**
+                     * @template A
+                     * @param A $a
+                     * @return (A is array ? non-empty-array<key-of<A>, value-of<A>> : (A is string ? non-empty-string : A))
+                     */
+                    function notEmpty($a) {
+                        if ($a === [] || $a === "") {
+                            throw new InvalidArgumentException("empty");
+                        }
+
+                        return $a;
+                    }
+
+                    /** @var array<string, bool> $map */
+                    $map = [];
+                    /** @var array{a: int, b?: string} $shape */
+                    $shape = ["a" => 1];
+                    /** @var string $string */
+                    $string = "";
+                    /** @var int $int */
+                    $int = 0;
+
+                    $fromMap = notEmpty($map);
+                    $fromShape = notEmpty($shape);
+                    $fromString = notEmpty($string);
+                    $fromInt = notEmpty($int);',
+                'assertions' => [
+                    '$fromMap===' => 'non-empty-array<string, bool>',
+                    '$fromShape===' => "non-empty-array<'a'|'b', int|string>",
+                    '$fromString===' => 'non-empty-string',
+                    '$fromInt===' => 'int',
+                ],
+            ],
         ];
     }
 
@@ -1620,6 +2377,42 @@ final class ConditionalReturnTypeTest extends TestCase
     public static function providerInvalidCodeParse(): iterable
     {
         return [
+            'classTemplateBoundedByStringConditionalOnNonFinalStringableClass' => [
+                'code' => '<?php
+                    class Mdl implements Stringable {
+                        public function __toString(): string {
+                            return "";
+                        }
+                    }
+
+                    function sink(int $_a): void {}
+
+                    /**
+                     * @template T of string
+                     * @template U of object
+                     */
+                    class Pg {
+                        /** @return (T is Mdl ? list<T> : array<T>) */
+                        public function strings(): array {
+                            return [];
+                        }
+
+                        /** @return (U is Mdl ? list<U> : array<U>) */
+                        public function objects(): array {
+                            return [];
+                        }
+
+                        public function run(): void {
+                            $a = [$this->strings(), $this->objects()];
+                            sink($a);
+                        }
+                    }',
+                // only the object bound still intersects with the class
+                'error_message' => 'Argument 1 of sink expects int, but list{array<array-key, T:Pg as string>,'
+                    . ' array<array-key, (U:Pg as object)&Mdl|(U:Pg as object)>} provided',
+                'error_levels' => [],
+                'php_version' => '8.0',
+            ],
             'conditionalReturnTypeWithoutIsTypeIsReportedInsteadOfCrashing' => [
                 'code' => '<?php
                     /**
@@ -1630,6 +2423,80 @@ final class ConditionalReturnTypeTest extends TestCase
                         return $key === null ? "a" : $key;
                     }',
                 'error_message' => 'InvalidDocblock',
+            ],
+            'typedClosureParamOfCallableOfStaticKeepsItsDeclaredType' => [
+                'code' => '<?php
+                    class Base {
+                        /** @param callable(static): mixed $callback */
+                        public function each(callable $callback): void {
+                            $callback($this);
+                        }
+
+                        public function run(Base $other): void {
+                            $other->each(function (Base $x): static {
+                                return $x;
+                            });
+                        }
+                    }',
+                'error_message' => 'LessSpecificReturnStatement',
+            ],
+            'untypedClosureParamOfCallableOfStaticInTraitIsNotSharedWithOtherUsers' => [
+                'code' => '<?php
+                    trait Filters {
+                        public function run(): void {
+                            $this->where(function ($query): void {
+                                $query->extra();
+                            });
+                        }
+                    }
+
+                    final class EloquentBuilder {
+                        use Filters;
+
+                        /**
+                         * @param (Closure(static): mixed)|string $column
+                         * @return $this
+                         */
+                        public function where($column) {
+                            return $this;
+                        }
+
+                        public function extra(): void {}
+                    }
+
+                    final class QueryBuilder {
+                        use Filters;
+
+                        /**
+                         * @param Closure|string $column
+                         * @return $this
+                         */
+                        public function where($column) {
+                            return $this;
+                        }
+                    }',
+                'error_message' => 'Method QueryBuilder::extra does not exist',
+                'error_levels' => ['InvalidArgument'],
+            ],
+            'conditionalElseBranchTemplateKeepsItsBound' => [
+                'code' => '<?php
+                    interface Animal {}
+
+                    /** @template TModel of Animal */
+                    final class Zoo
+                    {
+                        /**
+                         * @template TVal
+                         * @param callable(): TVal $cb
+                         * @return (TVal is Animal ? string : self<TVal>)
+                         */
+                        public function map(callable $cb): mixed {
+                            throw new RuntimeException();
+                        }
+                    }',
+                'error_message' => 'InvalidTemplateParam',
+                'error_levels' => [],
+                'php_version' => '8.1',
             ],
         ];
     }

@@ -31,8 +31,10 @@ use function array_key_exists;
 use function array_pop;
 use function explode;
 use function implode;
+use function in_array;
 use function preg_match;
 use function preg_quote;
+use function str_contains;
 use function str_ends_with;
 use function str_replace;
 use function strtolower;
@@ -351,6 +353,7 @@ final class ConstFetchAnalyzer
         ?Context $context,
     ): ?Union {
         $aliased_constants = $statements_analyzer->getAliases()->constants;
+        $is_unqualified = !$is_fully_qualified && !str_contains($const_name, '\\');
 
         if (isset($aliased_constants[$const_name])) {
             $fq_const_name = $aliased_constants[$const_name];
@@ -376,6 +379,12 @@ final class ConstFetchAnalyzer
 
         if ($context && $context->hasVariable($fq_const_name)) {
             return $context->vars_in_scope[$fq_const_name];
+        }
+
+        // an unqualified constant of a namespace is the constant of the global namespace where the namespace has none,
+        // which is what `defined('X')` was told about
+        if ($context && $is_unqualified && $context->hasVariable($const_name)) {
+            return $context->vars_in_scope[$const_name];
         }
 
         $file_path = $statements_analyzer->getRootFilePath();
@@ -490,6 +499,43 @@ final class ConstFetchAnalyzer
             ),
             $statements_analyzer->getSuppressedIssues(),
         );
+    }
+
+    /**
+     * The id under which `defined()` records a constant without a declaration, so that a check of it
+     * (`defined('X') && is_string(X)`) narrows it; declared constants have their own type and no id
+     */
+    public static function getUndeclaredConstVarId(
+        PhpParser\Node\Expr\ConstFetch $stmt,
+        StatementsAnalyzer $statements_analyzer,
+    ): ?string {
+        if (!$stmt->name->isUnqualified() && !$stmt->name->isFullyQualified()) {
+            return null;
+        }
+
+        $const_name = $stmt->name->toString();
+
+        if (in_array(strtolower($const_name), ['true', 'false', 'null'], true)
+            || self::getConstType(
+                $statements_analyzer,
+                $const_name,
+                $stmt->name->isFullyQualified(),
+                null,
+            ) !== null
+        ) {
+            return null;
+        }
+
+        return $const_name;
+    }
+
+    /**
+     * @psalm-pure
+     */
+    public static function isConstVarId(string $var_id): bool
+    {
+        return $var_id !== Context::PHP_VERSION_ID_VAR_ID
+            && preg_match('/^[a-zA-Z_\x80-\xff][\w\x80-\xff]*(\\\\[a-zA-Z_\x80-\xff][\w\x80-\xff]*)*$/', $var_id) === 1;
     }
 
     /**

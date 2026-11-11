@@ -5,8 +5,12 @@ declare(strict_types=1);
 namespace Psalm\Tests;
 
 use Override;
+use Psalm\Context;
+use Psalm\IssueBuffer;
 use Psalm\Tests\Traits\InvalidCodeAnalysisTestTrait;
 use Psalm\Tests\Traits\ValidCodeAnalysisTestTrait;
+
+use function array_column;
 
 use const DIRECTORY_SEPARATOR;
 
@@ -15,6 +19,41 @@ final class SwitchTypeTest extends TestCase
     use InvalidCodeAnalysisTestTrait;
     use ValidCodeAnalysisTestTrait;
 
+    public function testVariablesAreDefinedAfterASwitchWithAnImpossibleDefault(): void
+    {
+        $this->project_analyzer->getConfig()->throw_exception = false;
+        $this->project_analyzer->setPhpVersion('8.1', 'tests');
+
+        $file_path = self::$src_dir_path . 'somefile.php';
+        $this->addFile(
+            $file_path,
+            '<?php
+                enum Type { case A; case B; }
+
+                function f(Type $input): string {
+                    switch ($input) {
+                        case Type::A:
+                            $output = "A";
+                            break;
+                        case Type::B:
+                            $output = "B";
+                            break;
+                        default:
+                            $output = "new type";
+                    }
+
+                    return $output;
+                }',
+        );
+
+        $this->analyzeFile($file_path, new Context(), false);
+
+        self::assertSame(
+            ['ParadoxicalCondition'],
+            array_column(IssueBuffer::getIssuesDataForFile($file_path), 'type'),
+        );
+    }
+
     /**
      * @psalm-pure
      */
@@ -22,6 +61,20 @@ final class SwitchTypeTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'switchTrueCaseThatCanMatch' => [
+                'code' => '<?php
+                    class Foo {}
+                    class Bar extends Foo {}
+
+                    function f(Foo $a): int {
+                        switch (true) {
+                            case $a instanceof Bar:
+                                return 1;
+                            default:
+                                return 2;
+                        }
+                    }',
+            ],
             'switchNarrowsAnArrayKeyToTheNonNumericStringsOfItsCases' => [
                 'code' => '<?php
                     /** @return array-key */
@@ -1147,6 +1200,21 @@ final class SwitchTypeTest extends TestCase
     public static function providerInvalidCodeParse(): iterable
     {
         return [
+            'switchTrueCaseThatCannotMatch' => [
+                'code' => '<?php
+                    class Foo {}
+                    class Bar {}
+
+                    function f(Foo $a): int {
+                        switch (true) {
+                            case $a instanceof Bar:
+                                return 1;
+                            default:
+                                return 2;
+                        }
+                    }',
+                'error_message' => 'TypeDoesNotContainType - src' . DIRECTORY_SEPARATOR . 'somefile.php:7:34 - Cannot resolve types for $a - Foo does not contain Bar',
+            ],
             'switchReturnTypeWithFallthroughAndBreak' => [
                 'code' => '<?php
                     class A {
