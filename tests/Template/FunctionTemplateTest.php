@@ -23,36 +23,61 @@ final class FunctionTemplateTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
-            'literalReturnedWhereATemplateVariableIsIdenticalToIt' => [
+            'typePredicatesOnATemplateBoundedByATemplate' => [
                 'code' => '<?php
                     /**
-                     * @template T of int
-                     * @param T $a
-                     * @return T
+                     * @template T
+                     * @template U of T
+                     * @param U $v
                      */
-                    function run($a): int {
-                        if ($a === 15) {
-                            return 15;
+                    function f($v): int {
+                        $count = 0;
+
+                        if (is_string($v)) {
+                            $count++;
                         }
 
-                        return $a;
-                    }',
-            ],
-            'literalReturnedForTheTemplateOfTheReturnTypeWhenAnotherOneIsIdenticalToItToo' => [
-                'code' => '<?php
-                    /**
-                     * @template T of int
-                     * @template U of int
-                     * @param U $a
-                     * @param T $b
-                     * @return T
-                     */
-                    function run($a, $b): int {
-                        if ($a === 15 && $b === 15) {
-                            return 15;
+                        if (is_int($v)) {
+                            $count++;
                         }
 
-                        return $b;
+                        if (is_float($v)) {
+                            $count++;
+                        }
+
+                        if (is_numeric($v)) {
+                            $count++;
+                        }
+
+                        if (is_scalar($v)) {
+                            $count++;
+                        }
+
+                        if (is_bool($v)) {
+                            $count++;
+                        }
+
+                        if ($v === true) {
+                            $count++;
+                        }
+
+                        if ($v === false) {
+                            $count++;
+                        }
+
+                        if (is_object($v)) {
+                            $count++;
+                        }
+
+                        if (is_array($v)) {
+                            $count++;
+                        }
+
+                        if (is_callable($v)) {
+                            $count++;
+                        }
+
+                        return $count;
                     }',
             ],
             'classStringTemplateOfAParamUsedInAConditionalReturnType' => [
@@ -2540,6 +2565,38 @@ final class FunctionTemplateTest extends TestCase
                     }',
                 'assertions' => [],
             ],
+            'literalReturnedWhereATemplateVariableIsIdenticalToIt' => [
+                'code' => '<?php
+                    /**
+                     * @template T of int
+                     * @param T $a
+                     * @return T
+                     */
+                    function run($a): int {
+                        if ($a === 15) {
+                            return 15;
+                        }
+
+                        return $a;
+                    }',
+            ],
+            'literalReturnedForTheTemplateOfTheReturnTypeWhenAnotherOneIsIdenticalToItToo' => [
+                'code' => '<?php
+                    /**
+                     * @template T of int
+                     * @template U of int
+                     * @param U $a
+                     * @param T $b
+                     * @return T
+                     */
+                    function run($a, $b): int {
+                        if ($a === 15 && $b === 15) {
+                            return 15;
+                        }
+
+                        return $b;
+                    }',
+            ],
         ];
     }
 
@@ -2550,55 +2607,19 @@ final class FunctionTemplateTest extends TestCase
     public static function providerInvalidCodeParse(): iterable
     {
         return [
-            'otherLiteralReturnedWhereATemplateVariableIsIdenticalToALiteral' => [
+            'typePredicateImpossibleForATemplateBoundedByATemplate' => [
                 'code' => '<?php
                     /**
-                     * @template T of int
-                     * @param T $a
-                     * @return T
+                     * @template T of string
+                     * @template U of T
+                     * @param U $v
                      */
-                    function run($a): int {
-                        if ($a === 15) {
-                            return 16;
+                    function f($v): void {
+                        if (is_int($v)) {
+                            echo 1;
                         }
-
-                        return $a;
                     }',
-                'error_message' => 'InvalidReturnStatement',
-            ],
-            'literalReturnedWhereATemplateVariableIsLooselyEqualToIt' => [
-                'code' => '<?php
-                    /**
-                     * @template T of int|string
-                     * @param T $a
-                     * @return T
-                     */
-                    function run($a) {
-                        if ($a == 15) {
-                            return 15;
-                        }
-
-                        return $a;
-                    }',
-                'error_message' => 'InvalidReturnStatement',
-            ],
-            'literalReturnedAsAnotherTemplate' => [
-                'code' => '<?php
-                    /**
-                     * @template T of int
-                     * @template U of int
-                     * @param T $a
-                     * @param U $b
-                     * @return U
-                     */
-                    function run($a, $b) {
-                        if ($a === 15) {
-                            return 15;
-                        }
-
-                        return $b;
-                    }',
-                'error_message' => 'InvalidReturnStatement',
+                'error_message' => 'DocblockTypeContradiction',
             ],
             'templateBoundedByMixedIsBoundedByMixedAgainAfterABranchNarrowingIt' => [
                 'code' => '<?php
@@ -3292,6 +3313,56 @@ final class FunctionTemplateTest extends TestCase
                         throw new Exception();
                     }',
                 'error_message' => 'UndefinedClass - src' . DIRECTORY_SEPARATOR . 'somefile.php:3:24 - Class, interface or enum named Missing does not exist',
+            ],
+            'otherLiteralReturnedWhereATemplateVariableIsIdenticalToALiteral' => [
+                'code' => '<?php
+                    /**
+                     * @template T of int
+                     * @param T $a
+                     * @return T
+                     */
+                    function run($a): int {
+                        if ($a === 15) {
+                            return 16;
+                        }
+
+                        return $a;
+                    }',
+                'error_message' => 'InvalidReturnStatement',
+            ],
+            'literalReturnedWhereATemplateVariableIsLooselyEqualToIt' => [
+                'code' => '<?php
+                    /**
+                     * @template T of int|string
+                     * @param T $a
+                     * @return T
+                     */
+                    function run($a) {
+                        if ($a == 15) {
+                            return 15;
+                        }
+
+                        return $a;
+                    }',
+                'error_message' => 'InvalidReturnStatement',
+            ],
+            'literalReturnedAsAnotherTemplate' => [
+                'code' => '<?php
+                    /**
+                     * @template T of int
+                     * @template U of int
+                     * @param T $a
+                     * @param U $b
+                     * @return U
+                     */
+                    function run($a, $b) {
+                        if ($a === 15) {
+                            return 15;
+                        }
+
+                        return $b;
+                    }',
+                'error_message' => 'InvalidReturnStatement',
             ],
         ];
     }
