@@ -240,32 +240,23 @@ final class ClosureTest extends TestCase
                 'assertions' => [],
                 'ignored_issues' => [],
             ],
-            'closureWithSelfParamCalledInATrait' => [
+            'closureWithSelfParamFromATraitPassedToAnotherClass' => [
                 'code' => '<?php
-                    trait Walks {
-                        public function direct(): void {
-                            $f = function (self $other): void {};
-                            $f($this);
-                        }
-
-                        public function recursive(): void {
-                            $f = null;
-                            $f = function (self $other, int $depth) use (&$f): void {
-                                if ($depth > 0) {
-                                    $f($other, $depth - 1);
-                                }
-                            };
-                            $f($this, 3);
-                        }
-
-                        public function arrow(): int {
-                            $f = fn (self $other): int => 1;
-                            return $f($this);
+                    trait Hands {
+                        public function handOver(Taker $t): void {
+                            $t->take(function (self $other): void {});
                         }
                     }
 
-                    final class Walker {
-                        use Walks;
+                    final class Giver {
+                        use Hands;
+                    }
+
+                    final class Taker {
+                        /** @param Closure(Giver): void $f */
+                        public function take(Closure $f): void {
+                            $f(new Giver());
+                        }
                     }',
             ],
             'byRefUseVarUnsetInClosure' => [
@@ -1982,7 +1973,27 @@ final class ClosureTest extends TestCase
                     final class Walker {
                         use Walks;
                     }',
-                'error_message' => 'InvalidArgument',
+                'error_message' => 'InvalidArgument - src' . DIRECTORY_SEPARATOR . 'somefile.php:5:32 - Argument 1 expects Walker',
+            ],
+            'closureWithSelfParamFromATraitIsTheUsingClassInAnotherClass' => [
+                'code' => '<?php
+                    trait Hands {
+                        public function handOver(Taker $t): void {
+                            $t->take(function (self $other): void {});
+                        }
+                    }
+
+                    final class Giver {
+                        use Hands;
+                    }
+
+                    final class Taker {
+                        /** @param Closure(Taker): void $f */
+                        public function take(Closure $f): void {
+                            $f($this);
+                        }
+                    }',
+                'error_message' => 'expects Closure[impure](Taker):void, but Closure[pure](Giver):void provided',
             ],
             'wrongArg' => [
                 'code' => '<?php
