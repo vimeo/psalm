@@ -21,49 +21,76 @@ final class ConditionalTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
-            'instanceofClassStringIsNotRedundantForTheBound' => [
-                'code' => <<<'PHP'
-                    <?php
-                    class Foo {}
-                    class Bar extends Foo {}
+            'mixedStaysMixedAfterAStackedTernaryOnItsType' => [
+                'code' => '<?php
+                    /** @var mixed $a */
+                    $a = 1;
+                    $result = is_array($a) ? 1 : (is_int($a) ? 2 : (is_callable($a) ? 3 : 4));
+                    $copy = $a;',
+                'assertions' => [
+                    '$copy' => 'mixed',
+                ],
+                'ignored_issues' => ['MixedAssignment'],
+            ],
+            'nonEmptyMixedStaysNonEmptyMixedAfterATernaryOnItsType' => [
+                'code' => '<?php
+                    /** @var mixed $a */
+                    $a = 1;
 
-                    /** @param class-string<Foo> $class */
-                    function sameType(Foo $input, string $class): void {
-                        if ($input instanceof $class) {
-                            /** @psalm-check-type-exact $input = Foo */;
-                        } else {
-                            /** @psalm-check-type-exact $input = Foo */;
-                        }
+                    if (!$a) {
+                        throw new Exception("empty");
                     }
 
-                    /** @param class-string<Foo> $class */
-                    function narrower(Bar $input, string $class): void {
-                        if ($input instanceof $class) {
-                            /** @psalm-check-type-exact $input = Bar */;
-                        }
-                    }
-
-                    /** @param class-string<Foo> $class */
-                    function wider(object $input, string $class): void {
-                        if ($input instanceof $class) {
-                            /** @psalm-check-type-exact $input = Foo */;
-                        } else {
-                            /** @psalm-check-type-exact $input = object */;
-                        }
-                    }
-
-                    /** @param class-string<Foo> $class */
-                    function union(int|Foo $input, string $class): void {
-                        if ($input instanceof $class) {
-                            /** @psalm-check-type-exact $input = Foo */;
-                        } else {
-                            /** @psalm-check-type-exact $input = Foo|int */;
-                        }
-                    }
-                    PHP,
-                'assertions' => [],
-                'ignored_issues' => [],
-                'php_version' => '8.1',
+                    $result = is_int($a) ? 1 : 2;
+                    $copy = $a;',
+                'assertions' => [
+                    '$copy===' => 'non-empty-mixed',
+                ],
+                'ignored_issues' => ['MixedAssignment'],
+            ],
+            'mixedStaysMixedAfterAShortTernaryOnItsType' => [
+                'code' => '<?php
+                    /** @var mixed $a */
+                    $a = 1;
+                    $result = is_int($a) ?: 2;
+                    $copy = $a;',
+                'assertions' => [
+                    '$copy' => 'mixed',
+                ],
+                'ignored_issues' => ['MixedAssignment'],
+            ],
+            'mixedAssignedInABranchOfATernaryIsTheAssignedTypeOrMixed' => [
+                'code' => '<?php
+                    /** @var mixed $a */
+                    $a = 1;
+                    $result = is_int($a) ? ($a = "five") : 2;
+                    $copy = $a;',
+                'assertions' => [
+                    '$copy' => 'mixed|string',
+                ],
+                'ignored_issues' => ['MixedAssignment'],
+            ],
+            'mixedStaysMixedAfterAnAssignedTernaryOnItsType' => [
+                'code' => '<?php
+                    /** @var mixed $a */
+                    $a = 1;
+                    $result = is_int($a) ? "int" : "other";
+                    $copy = $a;',
+                'assertions' => [
+                    '$copy' => 'mixed',
+                ],
+                'ignored_issues' => ['MixedAssignment'],
+            ],
+            'mixedStaysMixedAfterATernaryOnItsTypeInAStatement' => [
+                'code' => '<?php
+                    /** @var mixed $a */
+                    $a = 1;
+                    is_array($a) ? true : false;
+                    $copy = $a;',
+                'assertions' => [
+                    '$copy' => 'mixed',
+                ],
+                'ignored_issues' => ['MixedAssignment'],
             ],
             'identicalKeyedArraysWithTheSameKeysInAnotherOrder' => [
                 'code' => '<?php
@@ -3985,6 +4012,188 @@ final class ConditionalTest extends TestCase
                     final class B extends A {
                         public function onlyB(): void {}
                     }',
+            ],
+            'privateMethodAnalysedFromTheConstructorIgnoresTheConditionsOfItsCaller' => [
+                'code' => '<?php
+                    declare(strict_types=1);
+
+                    class Test {
+                        private string $pattern;
+
+                        public function __construct(string $pattern) {
+                            $this->captureErrors(fn(): bool => random_int(0, 1) ? true : false);
+                            $this->pattern = $pattern;
+                        }
+
+                        private function captureErrors(\\Closure $function): void {
+                            if ($function() === false) {
+                                throw new \\RuntimeException($this->formatPcreError(random_int(0, 1)));
+                            }
+
+                            $errorCode = preg_last_error();
+
+                            if ($errorCode !== 0) {
+                                throw new \\RuntimeException($this->formatPcreError($errorCode));
+                            }
+                        }
+
+                        private function formatPcreError(int $errorCode): string {
+                            if ($errorCode === 0) {
+                                return "Is Zero";
+                            }
+
+                            return "Not Zero";
+                        }
+                    }',
+            ],
+            'privateMethodOfATraitFollowedFromTheConstructorKeepsTheConditionsOfItsCaller' => [
+                'code' => '<?php
+                    final class Y {
+                        public function foo(): int {
+                            return 1;
+                        }
+                    }
+
+                    trait T {
+                        private function init(): void {
+                            $this->n = 1;
+                        }
+                    }
+
+                    final class C {
+                        use T;
+
+                        public int $n;
+                        public int $m;
+
+                        public function __construct(?Y $x, ?Y $y) {
+                            if ($x === null && $y === null) {
+                                throw new Exception();
+                            }
+
+                            $this->init();
+
+                            if ($x === null) {
+                                $this->m = $y->foo();
+                            } else {
+                                $this->m = $x->foo();
+                            }
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'privateMethodFollowedFromTheConstructorKeepsTheConditionsOfItsCaller' => [
+                'code' => '<?php
+                    final class Y {
+                        public function foo(): int {
+                            return 1;
+                        }
+                    }
+
+                    final class C {
+                        public int $n;
+                        public int $m;
+
+                        private function init(): void {
+                            $this->n = 1;
+                        }
+
+                        public function __construct(?Y $x, ?Y $y) {
+                            if ($x === null && $y === null) {
+                                throw new Exception();
+                            }
+
+                            $this->init();
+
+                            if ($x === null) {
+                                $this->m = $y->foo();
+                            } else {
+                                $this->m = $x->foo();
+                            }
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'finalMethodAnalysedFromTheConstructorIgnoresTheConditionsOfItsCaller' => [
+                'code' => '<?php
+                    declare(strict_types=1);
+
+                    class Test {
+                        private string $pattern;
+
+                        public function __construct(string $pattern) {
+                            $this->captureErrors(fn(): bool => random_int(0, 1) ? true : false);
+                            $this->pattern = $pattern;
+                        }
+
+                        final public function captureErrors(\\Closure $function): void {
+                            if ($function() === false) {
+                                throw new \\RuntimeException($this->formatPcreError(random_int(0, 1)));
+                            }
+
+                            $errorCode = preg_last_error();
+
+                            if ($errorCode !== 0) {
+                                throw new \\RuntimeException($this->formatPcreError($errorCode));
+                            }
+                        }
+
+                        final public function formatPcreError(int $errorCode): string {
+                            if ($errorCode === 0) {
+                                return "Is Zero";
+                            }
+
+                            return "Not Zero";
+                        }
+                    }',
+            ],
+            'instanceofClassStringIsNotRedundantForTheBound' => [
+                'code' => <<<'PHP'
+                    <?php
+                    class Foo {}
+                    class Bar extends Foo {}
+
+                    /** @param class-string<Foo> $class */
+                    function sameType(Foo $input, string $class): void {
+                        if ($input instanceof $class) {
+                            /** @psalm-check-type-exact $input = Foo */;
+                        } else {
+                            /** @psalm-check-type-exact $input = Foo */;
+                        }
+                    }
+
+                    /** @param class-string<Foo> $class */
+                    function narrower(Bar $input, string $class): void {
+                        if ($input instanceof $class) {
+                            /** @psalm-check-type-exact $input = Bar */;
+                        }
+                    }
+
+                    /** @param class-string<Foo> $class */
+                    function wider(object $input, string $class): void {
+                        if ($input instanceof $class) {
+                            /** @psalm-check-type-exact $input = Foo */;
+                        } else {
+                            /** @psalm-check-type-exact $input = object */;
+                        }
+                    }
+
+                    /** @param class-string<Foo> $class */
+                    function union(int|Foo $input, string $class): void {
+                        if ($input instanceof $class) {
+                            /** @psalm-check-type-exact $input = Foo */;
+                        } else {
+                            /** @psalm-check-type-exact $input = Foo|int */;
+                        }
+                    }
+                    PHP,
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
             ],
         ];
     }

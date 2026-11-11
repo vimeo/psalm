@@ -339,6 +339,13 @@ final class MethodComparator
 
                     $parent_storage = $codebase->classlike_storage_provider->get($overridden_fq_class_name);
 
+                    // a call from outside reaches `__call` or `__callStatic` instead of a method that isn't public
+                    if (($parent_storage->trait_visibility_map[$overridden_method_id->method_name]
+                            ?? $parent_method_storage->visibility) !== ClassLikeAnalyzer::VISIBILITY_PUBLIC
+                    ) {
+                        continue;
+                    }
+
                     self::compare(
                         $codebase,
                         null,
