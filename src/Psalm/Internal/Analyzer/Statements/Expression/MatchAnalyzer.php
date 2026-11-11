@@ -159,10 +159,12 @@ final class MatchAnalyzer
             }
 
             foreach ($arm->conds as $cond) {
+                // conditions that share their attributes would share the clause key of an expression
+                // that is not a variable
                 $flattened_arms[] = new PhpParser\Node\MatchArm(
                     [$cond],
                     $arm->body,
-                    $arm->getAttributes(),
+                    $cond->getAttributes(),
                 );
             }
         }
