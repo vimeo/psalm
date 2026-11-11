@@ -3211,4 +3211,58 @@ final class ConfigTest extends DeferredAnalyzerTestCase
         $this->assertSame('zstd', $config->compressor);
         $this->assertSame([], $config->config_warnings);
     }
+
+    /**
+     * @psalm-pure
+     * @return iterable<string, array{string, bool, bool}>
+     */
+    public static function providerAssumeGettersMutationFree(): iterable
+    {
+        $open = 'class Lib { private string $name = ""; public function getName(): string { return $this->name; } }';
+        $final = 'final class Lib { private string $name = ""; public function getName(): string { return $this->name; } }';
+        $annotated = 'final class Lib { private string $name = "";'
+            . ' /** @psalm-mutation-free */ public function getName(): string { return $this->name; } }';
+
+        yield 'a getter of an open class, assumed' => [$open, true, false];
+        yield 'a getter of an open class, not assumed' => [$open, false, true];
+        yield 'a getter of a final class, assumed' => [$final, true, false];
+        yield 'a getter of a final class, not assumed' => [$final, false, true];
+        yield 'an annotated getter, not assumed' => [$annotated, false, false];
+    }
+
+    #[DataProvider('providerAssumeGettersMutationFree')]
+    public function testAssumeGettersMutationFree(string $class, bool $assume, bool $is_reported): void
+    {
+        if ($is_reported) {
+            $this->expectException(CodeException::class);
+            $this->expectExceptionMessage('ImpureMethodCall');
+        }
+
+        $this->project_analyzer = $this->getProjectAnalyzerWithConfig(
+            TestConfig::loadFromXML(
+                dirname(__DIR__, 2),
+                '<?xml version="1.0"?>
+                <psalm assumeGettersMutationFree="' . ($assume ? 'true' : 'false') . '">
+                </psalm>',
+            ),
+        );
+
+        $file_path = (string) getcwd() . '/src/somefile.php';
+
+        $this->addFile(
+            $file_path,
+            '<?php
+                ' . $class . '
+
+                /** @psalm-pure */
+                function name(Lib $lib): string {
+                    return $lib->getName();
+                }',
+        );
+
+        $this->analyzeFile($file_path, new Context());
+
+        // an accepted call: the analysis went through without an exception
+        $this->addToAssertionCount(1);
+    }
 }

@@ -9,6 +9,8 @@ use Psalm\Tests\TestCase;
 use Psalm\Tests\Traits\InvalidCodeAnalysisTestTrait;
 use Psalm\Tests\Traits\ValidCodeAnalysisTestTrait;
 
+use const DIRECTORY_SEPARATOR;
+
 final class ConditionalTest extends TestCase
 {
     use InvalidCodeAnalysisTestTrait;
@@ -3210,6 +3212,16 @@ final class ConditionalTest extends TestCase
                 'ignored_issues' => [],
                 'php_version' => '8.0',
             ],
+            'negatedInstanceofOfANonFinalClassKeepsIt' => [
+                'code' => '<?php
+                    class Open {}
+
+                    function f(Open $o): void {
+                        if (!$o instanceof Open) {
+                            /** @psalm-check-type-exact $o = Open */
+                        }
+                    }',
+            ],
             'onlySingleErrorForEarlyExit' => [
                 'code' => '<?php
                     class App {
@@ -4161,6 +4173,22 @@ final class ConditionalTest extends TestCase
     public static function providerInvalidCodeParse(): iterable
     {
         return [
+            'negatedInstanceofOfAnEnumOfItself' => [
+                'code' => '<?php
+                    enum Code: int {
+                        case Ok = 0;
+                        case Fatal = 1;
+                    }
+
+                    function f(Code $code): void {
+                        if (!$code instanceof Code) {
+                            echo 1;
+                        }
+                    }',
+                'error_message' => 'TypeDoesNotContainType - src' . DIRECTORY_SEPARATOR . 'somefile.php:8:30 - Type Code for $code',
+                'error_levels' => [],
+                'php_version' => '8.1',
+            ],
             'identicalKeyedArraysWithAnOptionalKeyOfOverlappingTypesAreAKnownLimit' => [
                 'code' => '<?php
                     /** @param array{a?: int|string} $x */
