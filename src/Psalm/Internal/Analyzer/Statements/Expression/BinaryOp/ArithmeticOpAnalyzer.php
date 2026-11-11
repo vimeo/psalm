@@ -351,6 +351,7 @@ final class ArithmeticOpAnalyzer
             if ($statements_source !== null
                 && $config->strict_binary_operands
                 && $left_type_part::class !== $right_type_part::class
+                && !$parent instanceof PhpParser\Node\Expr\BinaryOp\Pow
             ) {
                 IssueBuffer::maybeAdd(
                     new InvalidOperand(
@@ -791,7 +792,7 @@ final class ArithmeticOpAnalyzer
             if (($left_type_part instanceof TNumeric || $right_type_part instanceof TNumeric)
                 && ($left_type_part->isNumericType() && $right_type_part->isNumericType())
             ) {
-                if ($config->strict_binary_operands) {
+                if ($config->strict_binary_operands && !$parent instanceof PhpParser\Node\Expr\BinaryOp\Pow) {
                     if ($statements_source) {
                         IssueBuffer::maybeAdd(
                             new InvalidOperand(
@@ -944,7 +945,7 @@ final class ArithmeticOpAnalyzer
             if (($left_type_part instanceof TFloat && $right_type_part instanceof TInt)
                 || ($left_type_part instanceof TInt && $right_type_part instanceof TFloat)
             ) {
-                if ($config->strict_binary_operands) {
+                if ($config->strict_binary_operands && !$parent instanceof PhpParser\Node\Expr\BinaryOp\Pow) {
                     if ($statements_source) {
                         IssueBuffer::maybeAdd(
                             new InvalidOperand(
@@ -970,7 +971,7 @@ final class ArithmeticOpAnalyzer
             }
 
             if ($left_type_part->isNumericType() && $right_type_part->isNumericType()) {
-                if ($config->strict_binary_operands) {
+                if ($config->strict_binary_operands && !$parent instanceof PhpParser\Node\Expr\BinaryOp\Pow) {
                     if ($statements_source) {
                         IssueBuffer::maybeAdd(
                             new InvalidOperand(

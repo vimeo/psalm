@@ -284,6 +284,7 @@
             <xs:element name="FalsableReturnStatement" type="IssueHandlerType" minOccurs="0" />
             <xs:element name="FalseOperand" type="IssueHandlerType" minOccurs="0" />
             <xs:element name="ForbiddenCode" type="IssueHandlerType" minOccurs="0" />
+            <xs:element name="HiddenGeneratorReturn" type="IssueHandlerType" minOccurs="0" />
             <xs:element name="IfThisIsMismatch" type="IssueHandlerType" minOccurs="0" />
             <xs:element name="ImplementationRequirementViolation" type="IssueHandlerType" minOccurs="0" />
             <xs:element name="ImplementedParamTypeMismatch" type="IssueHandlerType" minOccurs="0" />
@@ -814,6 +815,7 @@
         <xs:restriction base="xs:string">
             <xs:enumeration value="amqp"/>
             <xs:enumeration value="apcu"/>
+            <xs:enumeration value="curl"/>
             <xs:enumeration value="decimal"/>
             <xs:enumeration value="dom"/>
             <xs:enumeration value="ds"/>
@@ -822,9 +824,12 @@
             <xs:enumeration value="gmp"/>
             <xs:enumeration value="ibm_db2"/>
             <xs:enumeration value="imagick"/>
+            <xs:enumeration value="intl"/>
+            <xs:enumeration value="ldap"/>
             <xs:enumeration value="memcached"/>
             <xs:enumeration value="mongodb"/>
             <xs:enumeration value="mysqli"/>
+            <xs:enumeration value="openssl"/>
             <xs:enumeration value="pdo"/>
             <xs:enumeration value="random"/>
             <xs:enumeration value="rdkafka"/>
@@ -832,6 +837,7 @@
             <xs:enumeration value="simplexml"/>
             <xs:enumeration value="soap"/>
             <xs:enumeration value="xdebug"/>
+            <xs:enumeration value="zip"/>
             <xs:enumeration value="zstd"/>
         </xs:restriction>
     </xs:simpleType>
