@@ -64,8 +64,6 @@ use Psalm\Type\Union;
 
 use function array_filter;
 use function array_reverse;
-use function array_values;
-use function assert;
 use function count;
 use function in_array;
 use function strtolower;
@@ -278,9 +276,11 @@ final class AtomicStaticCallAnalyzer
                                 ),
                         );
 
-                        if ($method_exists) {
-                            $declaring_method_id = $codebase->methods->getDeclaringMethodId($method_identifier)
-                                ?? $method_identifier;
+                        $declaring_method_id = $codebase->methods->getDeclaringMethodId($method_identifier)
+                            ?? $method_identifier;
+
+                        // A method confirmed only by an existence provider has no storage.
+                        if ($method_exists && $codebase->methods->hasStorage($declaring_method_id)) {
                             [$closure, $method_template_types] = MethodCallReturnTypeFetcher::getInheritedClosure(
                                 $codebase,
                                 $declaring_method_id,
@@ -575,14 +575,38 @@ final class AtomicStaticCallAnalyzer
                         $declaring_method_id->fq_class_name,
                     );
 
-                    $declaring_method_storage = $codebase->methods->getStorage($declaring_method_id);
+                    if ($codebase->methods->hasStorage($declaring_method_id)) {
+                        $declaring_method_storage = $codebase->methods->getStorage($declaring_method_id);
 
-                    $closure = new TClosure(
-                        array_values($codebase->getMethodParams($method_id)),
-                        $codebase->getMethodReturnType($method_id, $self_fq_class_name),
-                        $declaring_method_storage->capabilities,
-                    );
-                    $method_template_types = $declaring_method_storage->template_types ?? [];
+                        // Pass the source and context like the non-callable path does: params
+                        // providers may need them.
+                        $closure = new TClosure(
+                            $codebase->methods->getMethodParams(
+                                $method_id,
+                                $statements_analyzer,
+                                null,
+                                $context,
+                            ),
+                            $codebase->getMethodReturnType($method_id, $self_fq_class_name),
+                            $declaring_method_storage->capabilities,
+                        );
+                        $method_template_types = $declaring_method_storage->template_types ?? [];
+                    } else {
+                        // Confirmed only by an existence provider: there is no storage to fall back
+                        // to when no params provider answers, and a call dispatches through __callStatic.
+                        $closure = new TClosure(
+                            $codebase->methods->params_provider->getMethodParams(
+                                $method_id->fq_class_name,
+                                $method_id->method_name,
+                                null,
+                                $statements_analyzer,
+                                $context,
+                            ),
+                            $codebase->getMethodReturnType($method_id, $self_fq_class_name),
+                            self::getCallStaticCapabilities($codebase, $method_id->fq_class_name),
+                        );
+                        $method_template_types = [];
+                    }
                 } elseif ($stmt->class instanceof PhpParser\Node\Name && $stmt->class->getFirst() === 'parent'
                     && !$statements_analyzer->isStatic()
                     && isset($class_storage->pseudo_methods[$method_name_lc])
@@ -710,13 +734,7 @@ final class AtomicStaticCallAnalyzer
             || $found_method_and_class_storage
         ) {
             if ($callstatic_method_exists) {
-                $callstatic_declaring_id = $codebase->methods->getDeclaringMethodId($callstatic_id);
-                assert($callstatic_declaring_id !== null);
-                $callstatic_mutations = Capabilities::ALL;
-                if ($codebase->methods->hasStorage($callstatic_declaring_id)) {
-                    $callstatic_storage = $codebase->methods->getStorage($callstatic_declaring_id);
-                    $callstatic_mutations = $callstatic_storage->capabilities;
-                }
+                $callstatic_mutations = self::getCallStaticCapabilities($codebase, $fq_class_name);
                 if ($codebase->methods->return_type_provider->has($fq_class_name)) {
                     $return_type_candidate = $codebase->methods->return_type_provider->getReturnType(
                         $statements_analyzer,
@@ -1455,5 +1473,25 @@ final class AtomicStaticCallAnalyzer
         }
 
         return true;
+    }
+
+    /**
+     * Capabilities of the __callStatic a magic static call dispatches through, read from the
+     * declaring class because an inherited __callStatic has no storage on the subclass.
+     *
+     * @return CapabilitySet
+     * @psalm-capabilities read-props
+     */
+    private static function getCallStaticCapabilities(Codebase $codebase, string $fq_class_name): int
+    {
+        $declaring_method_id = $codebase->methods->getDeclaringMethodId(
+            new MethodIdentifier($fq_class_name, '__callstatic'),
+        );
+
+        if ($declaring_method_id === null || !$codebase->methods->hasStorage($declaring_method_id)) {
+            return Capabilities::ALL;
+        }
+
+        return $codebase->methods->getStorage($declaring_method_id)->capabilities;
     }
 }

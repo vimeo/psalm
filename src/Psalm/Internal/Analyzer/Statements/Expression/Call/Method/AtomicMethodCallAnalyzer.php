@@ -250,35 +250,39 @@ final class AtomicMethodCallAnalyzer extends CallAnalyzer
                     )) {
                         $declaring_method_id = $codebase->methods->getDeclaringMethodId($method_identifier)
                             ?? $method_identifier;
-                        $declaring_class_storage = $codebase->classlike_storage_provider->get(
-                            $declaring_method_id->fq_class_name,
-                        );
-                        [$closure, $method_template_types] = MethodCallReturnTypeFetcher::getInheritedClosure(
-                            $codebase,
-                            $declaring_method_id,
-                            $codebase->methods->getStorage($declaring_method_id),
-                        );
 
-                        $return_type_candidate = MethodCallReturnTypeFetcher::getFirstClassCallableType(
-                            $codebase,
-                            $stmt,
-                            $closure,
-                            new TemplateResult([], ClassTemplateParamCollector::collect(
+                        // A method confirmed only by an existence provider has no storage.
+                        if ($codebase->methods->hasStorage($declaring_method_id)) {
+                            $declaring_class_storage = $codebase->classlike_storage_provider->get(
+                                $declaring_method_id->fq_class_name,
+                            );
+                            [$closure, $method_template_types] = MethodCallReturnTypeFetcher::getInheritedClosure(
                                 $codebase,
-                                $declaring_class_storage,
-                                $class_storage,
-                                $method_identifier->method_name,
-                                $lhs_type_part,
-                                $lhs_var_id === '$this',
-                            ) ?? []),
-                            $method_template_types,
-                            $fq_class_name,
-                            $static_type,
-                            $declaring_class_storage->parent_class,
-                            $static_type instanceof TNamedObject
-                            && $codebase->classlike_storage_provider->get($static_type->value)->final,
-                            true,
-                        );
+                                $declaring_method_id,
+                                $codebase->methods->getStorage($declaring_method_id),
+                            );
+
+                            $return_type_candidate = MethodCallReturnTypeFetcher::getFirstClassCallableType(
+                                $codebase,
+                                $stmt,
+                                $closure,
+                                new TemplateResult([], ClassTemplateParamCollector::collect(
+                                    $codebase,
+                                    $declaring_class_storage,
+                                    $class_storage,
+                                    $method_identifier->method_name,
+                                    $lhs_type_part,
+                                    $lhs_var_id === '$this',
+                                ) ?? []),
+                                $method_template_types,
+                                $fq_class_name,
+                                $static_type,
+                                $declaring_class_storage->parent_class,
+                                $static_type instanceof TNamedObject
+                                && $codebase->classlike_storage_provider->get($static_type->value)->final,
+                                true,
+                            );
+                        }
                     }
                 }
 
