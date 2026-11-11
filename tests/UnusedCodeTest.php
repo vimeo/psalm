@@ -2590,6 +2590,44 @@ final class UnusedCodeTest extends TestCase
 
                     echo test(true);',
             ],
+            'paramOfAMethodIsNotUnusedAfterEval' => [
+                'code' => <<<'PHP'
+                    <?php
+                    /** @psalm-api */
+                    final class Demo
+                    {
+                        public function run(): void
+                        {
+                            $this->test(['k' => '1']);
+                        }
+
+                        protected function test(array $in): void
+                        {
+                            echo count($in);
+                            eval('1;');
+                        }
+                    }
+                    PHP,
+            ],
+            'paramOfAMethodIsNotUnusedAfterExtract' => [
+                'code' => <<<'PHP'
+                    <?php
+                    /** @psalm-api */
+                    final class Demo
+                    {
+                        public function run(): void
+                        {
+                            $this->test(['k' => '1']);
+                        }
+
+                        protected function test(array $in): void
+                        {
+                            echo count($in);
+                            extract($_GET);
+                        }
+                    }
+                    PHP,
+            ],
         ];
     }
 

@@ -2332,6 +2332,41 @@ final class ConditionalReturnTypeTest extends TestCase
                 'ignored_issues' => [],
                 'php_version' => '8.0',
             ],
+            'conditionalReturnTypeMakesATemplateArrayNonEmpty' => [
+                'code' => '<?php
+                    /**
+                     * @template A
+                     * @param A $a
+                     * @return (A is array ? non-empty-array<key-of<A>, value-of<A>> : (A is string ? non-empty-string : A))
+                     */
+                    function notEmpty($a) {
+                        if ($a === [] || $a === "") {
+                            throw new InvalidArgumentException("empty");
+                        }
+
+                        return $a;
+                    }
+
+                    /** @var array<string, bool> $map */
+                    $map = [];
+                    /** @var array{a: int, b?: string} $shape */
+                    $shape = ["a" => 1];
+                    /** @var string $string */
+                    $string = "";
+                    /** @var int $int */
+                    $int = 0;
+
+                    $fromMap = notEmpty($map);
+                    $fromShape = notEmpty($shape);
+                    $fromString = notEmpty($string);
+                    $fromInt = notEmpty($int);',
+                'assertions' => [
+                    '$fromMap===' => 'non-empty-array<string, bool>',
+                    '$fromShape===' => "non-empty-array<'a'|'b', int|string>",
+                    '$fromString===' => 'non-empty-string',
+                    '$fromInt===' => 'int',
+                ],
+            ],
         ];
     }
 
@@ -2342,6 +2377,42 @@ final class ConditionalReturnTypeTest extends TestCase
     public static function providerInvalidCodeParse(): iterable
     {
         return [
+            'classTemplateBoundedByStringConditionalOnNonFinalStringableClass' => [
+                'code' => '<?php
+                    class Mdl implements Stringable {
+                        public function __toString(): string {
+                            return "";
+                        }
+                    }
+
+                    function sink(int $_a): void {}
+
+                    /**
+                     * @template T of string
+                     * @template U of object
+                     */
+                    class Pg {
+                        /** @return (T is Mdl ? list<T> : array<T>) */
+                        public function strings(): array {
+                            return [];
+                        }
+
+                        /** @return (U is Mdl ? list<U> : array<U>) */
+                        public function objects(): array {
+                            return [];
+                        }
+
+                        public function run(): void {
+                            $a = [$this->strings(), $this->objects()];
+                            sink($a);
+                        }
+                    }',
+                // only the object bound still intersects with the class
+                'error_message' => 'Argument 1 of sink expects int, but list{array<array-key, T:Pg as string>,'
+                    . ' array<array-key, (U:Pg as object)&Mdl|(U:Pg as object)>} provided',
+                'error_levels' => [],
+                'php_version' => '8.0',
+            ],
             'conditionalReturnTypeWithoutIsTypeIsReportedInsteadOfCrashing' => [
                 'code' => '<?php
                     /**
