@@ -565,7 +565,7 @@ final class Populator
 
         // once every trait is in, so that a method of one trait wins over a `@method` of another
         foreach ($trait_storages as $trait_storage) {
-            self::inheritPseudoMethods($storage, $trait_storage);
+            $this->inheritPseudoMethods($storage, $trait_storage);
         }
 
         if ($storage->parent_classes) {
@@ -586,13 +586,38 @@ final class Populator
             $storage->methods['__construct'] = $storage->methods[$fq_classlike_name_lc];
         }
 
+        $parent_interface_storages = [];
+
         foreach ($storage->direct_interface_parents as $parent_interface_lc => $_) {
-            $this->populateInterfaceDataFromParentInterface(
+            $parent_interface_storage = $this->populateInterfaceDataFromParentInterface(
                 $storage,
                 $storage_provider,
                 $dependent_classlikes,
                 $parent_interface_lc,
             );
+
+            if ($parent_interface_storage !== null) {
+                $parent_interface_storages[] = $parent_interface_storage;
+            }
+        }
+
+        // once every parent is in, so that a method the interface declares or gets from one of them wins over the
+        // `@method` of another, which doesn't have that method
+        foreach ($parent_interface_storages as $parent_interface_storage) {
+            foreach ($parent_interface_storage->pseudo_methods as $method_name => $pseudo_method) {
+                if (isset($storage->declaring_method_ids[$method_name])
+                    && !isset($parent_interface_storage->declaring_method_ids[$method_name])
+                ) {
+                    continue;
+                }
+
+                $storage->pseudo_methods[$method_name] ??= $pseudo_method;
+
+                if (isset($parent_interface_storage->declaring_pseudo_method_ids[$method_name])) {
+                    $storage->declaring_pseudo_method_ids[$method_name]
+                        ??= $parent_interface_storage->declaring_pseudo_method_ids[$method_name];
+                }
+            }
         }
 
         foreach ($storage->direct_class_interfaces as $implemented_interface_lc => $_) {
@@ -1080,42 +1105,68 @@ final class Populator
 
         $parent_storage->dependent_classlikes[strtolower($storage->name)] = true;
 
-        self::inheritPseudoMethods($storage, $parent_storage);
+        $this->inheritPseudoMethods($storage, $parent_storage);
 
         $parent_storage->has_children = true;
     }
 
     /**
-     * A method that appears in the class, being declared there or in a used trait, and a `@method` the class already
-     * has, win over the `@method` of a used trait or parent class
+     * A public method that appears in the class, being declared there or in a used trait, and a `@method` the class
+     * already has, win over the `@method` of a used trait or parent class. A call of a method that isn't public goes
+     * through `__call` or `__callStatic` from outside the class, so the `@method` still describes it.
      */
-    private static function inheritPseudoMethods(ClassLikeStorage $storage, ClassLikeStorage $parent_storage): void
+    private function inheritPseudoMethods(ClassLikeStorage $storage, ClassLikeStorage $parent_storage): void
     {
         $fq_class_name_lc = strtolower($storage->name);
 
         foreach ($parent_storage->pseudo_methods as $method_name => $pseudo_method) {
-            $appearing_method_id = $storage->appearing_method_ids[$method_name] ?? null;
-
-            if ($appearing_method_id === null
-                || strtolower($appearing_method_id->fq_class_name) !== $fq_class_name_lc
-            ) {
+            if (!$this->hasPublicMethodAppearingInClass($storage, $fq_class_name_lc, $method_name)) {
                 $storage->pseudo_methods[$method_name] ??= $pseudo_method;
-                $storage->declaring_pseudo_method_ids[$method_name]
-                    ??= $parent_storage->declaring_pseudo_method_ids[$method_name];
+
+                if (isset($parent_storage->declaring_pseudo_method_ids[$method_name])) {
+                    $storage->declaring_pseudo_method_ids[$method_name]
+                        ??= $parent_storage->declaring_pseudo_method_ids[$method_name];
+                }
             }
         }
 
         foreach ($parent_storage->pseudo_static_methods as $method_name => $pseudo_method) {
-            $appearing_method_id = $storage->appearing_method_ids[$method_name] ?? null;
-
-            if ($appearing_method_id === null
-                || strtolower($appearing_method_id->fq_class_name) !== $fq_class_name_lc
-            ) {
+            if (!$this->hasPublicMethodAppearingInClass($storage, $fq_class_name_lc, $method_name)) {
                 $storage->pseudo_static_methods[$method_name] ??= $pseudo_method;
-                $storage->declaring_pseudo_static_method_ids[$method_name]
-                    ??= $parent_storage->declaring_pseudo_static_method_ids[$method_name];
+
+                if (isset($parent_storage->declaring_pseudo_static_method_ids[$method_name])) {
+                    $storage->declaring_pseudo_static_method_ids[$method_name]
+                        ??= $parent_storage->declaring_pseudo_static_method_ids[$method_name];
+                }
             }
         }
+    }
+
+    /**
+     * @param lowercase-string $fq_class_name_lc
+     * @psalm-capabilities read-props
+     */
+    private function hasPublicMethodAppearingInClass(
+        ClassLikeStorage $storage,
+        string $fq_class_name_lc,
+        string $method_name,
+    ): bool {
+        $appearing_method_id = $storage->appearing_method_ids[$method_name] ?? null;
+        $declaring_method_id = $storage->declaring_method_ids[$method_name] ?? null;
+
+        if ($appearing_method_id === null
+            || $declaring_method_id === null
+            || strtolower($appearing_method_id->fq_class_name) !== $fq_class_name_lc
+        ) {
+            return false;
+        }
+
+        // the visibility a `use` adaptation gives to a trait method, as in MethodVisibilityAnalyzer
+        $visibility = $storage->trait_visibility_map[$method_name]
+            ?? ($this->classlike_storage_provider->get($declaring_method_id->fq_class_name)
+                ->methods[$declaring_method_id->method_name] ?? null)?->visibility;
+
+        return $visibility === ClassLikeAnalyzer::VISIBILITY_PUBLIC;
     }
 
     private static function removeInheritedPseudoMethods(ClassLikeStorage $storage): void
@@ -1363,7 +1414,7 @@ final class Populator
         ClassLikeStorageProvider $storage_provider,
         array $dependent_classlikes,
         string $parent_interface_lc,
-    ): void {
+    ): ?ClassLikeStorage {
         try {
             $parent_interface_lc = strtolower(
                 $this->classlikes->getUnAliasedName(
@@ -1375,21 +1426,13 @@ final class Populator
             $this->progress->debug('Populator could not find dependency (' . __LINE__ . ")\n");
 
             $storage->invalid_dependencies[$parent_interface_lc] = true;
-            return;
+            return null;
         }
 
         $this->populateInterfaceData($storage, $parent_interface_storage, $storage_provider, $dependent_classlikes);
 
         $this->inheritMethodsFromParent($storage, $parent_interface_storage);
         $this->inheritPropertiesFromParent($storage, $parent_interface_storage);
-
-        foreach ($parent_interface_storage->pseudo_methods as $method_name => $pseudo_method) {
-            if (!isset($storage->methods[$method_name])) {
-                $storage->pseudo_methods[$method_name] ??= $pseudo_method;
-                $storage->declaring_pseudo_method_ids[$method_name]
-                    ??= $parent_interface_storage->declaring_pseudo_method_ids[$method_name];
-            }
-        }
 
         $storage->parent_interfaces = [...$parent_interface_storage->parent_interfaces, ...$storage->parent_interfaces];
 
@@ -1405,6 +1448,8 @@ final class Populator
             $storage->properties['value'] = new PropertyStorage();
             $storage->properties['value']->type = new Union([new TInt(), new TString()]);
         }
+
+        return $parent_interface_storage;
     }
 
     private function populateDataFromImplementedInterface(

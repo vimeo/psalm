@@ -523,14 +523,15 @@ final class AtomicStaticCallAnalyzer
 
         $config = $codebase->config;
 
+        $method_visible = $naive_method_exists
+            && MethodAnalyzer::isMethodVisible($method_id, $context, $statements_analyzer->getSource());
+
         $found_method_and_class_storage = self::findPseudoMethodAndClassStorages(
             $codebase,
             $class_storage,
             $method_name_lc,
+            $method_visible,
         );
-
-        $method_visible = $naive_method_exists
-            && MethodAnalyzer::isMethodVisible($method_id, $context, $statements_analyzer->getSource());
 
         self::recordCallStaticReference($statements_analyzer, $stmt, $context, $method_id, $method_visible);
 
@@ -1355,6 +1356,7 @@ final class AtomicStaticCallAnalyzer
      *
      * @param ClassLikeStorage $static_class_storage The called class
      * @param lowercase-string $method_name_lc
+     * @param bool $method_visible Whether the call reaches a real method instead of `__callStatic`
      * @return array{MethodStorage, ClassLikeStorage}|null
      * @psalm-mutation-free
      */
@@ -1362,14 +1364,15 @@ final class AtomicStaticCallAnalyzer
         Codebase $codebase,
         ClassLikeStorage $static_class_storage,
         string $method_name_lc,
+        bool $method_visible,
     ): ?array {
         if ($pseudo_method_storage = $static_class_storage->pseudo_static_methods[$method_name_lc] ?? null) {
             return [$pseudo_method_storage, $static_class_storage];
         }
 
-        // the class already has the ones of its parents that its own methods don't override, and the ones of its
-        // interfaces don't override its methods either
-        if (isset($static_class_storage->declaring_method_ids[$method_name_lc])) {
+        // the class already has the ones of its parents that its own public methods don't override, and the ones of
+        // its interfaces don't override a method the call reaches
+        if ($method_visible) {
             return null;
         }
 
