@@ -77,6 +77,45 @@ final class ForeachTest extends TestCase
 
                     echo $car;',
             ],
+            'postDecrementInTheConditionOfAnIfThatBreaksOverAConcreteArray' => [
+                'code' => '<?php
+                    $count = 3;
+                    $a = [0, 1, 2, 3, 4, 5];
+
+                    foreach ($a as $_) {
+                        if ($count-- === 0) {
+                            break;
+                        }
+                    }',
+            ],
+            'postDecrementInTheConditionOfAnIfThatBreaks' => [
+                'code' => '<?php
+                    /** @param list<int> $items */
+                    function f(array $items): void {
+                        $count = 3;
+
+                        foreach ($items as $_) {
+                            if ($count-- === 0) {
+                                break;
+                            }
+                        }
+                    }',
+            ],
+            'assignmentInTheConditionOfAnIfThatBreaks' => [
+                'code' => '<?php
+                    /** @param list<int> $items */
+                    function f(array $items): int {
+                        foreach ($items as $_) {
+                            if (($found = rand(0, 3)) === 0) {
+                                break;
+                            }
+
+                            /** @psalm-check-type-exact $found = int<1, 3> */;
+                        }
+
+                        return 1;
+                    }',
+            ],
             'foreachOverNullableOrFalsableMayNotRun' => [
                 'code' => <<<'PHP'
                     <?php
