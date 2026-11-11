@@ -76,6 +76,7 @@ use Psalm\Type\Atomic\TClassStringMap;
 use Psalm\Type\Atomic\TFalse;
 use Psalm\Type\Atomic\TFloat;
 use Psalm\Type\Atomic\TInt;
+use Psalm\Type\Atomic\TIntRange;
 use Psalm\Type\Atomic\TKeyedArray;
 use Psalm\Type\Atomic\TLiteralClassString;
 use Psalm\Type\Atomic\TLiteralFloat;
@@ -122,6 +123,34 @@ use function substr;
  */
 final class ArrayFetchAnalyzer
 {
+    /**
+     * What a message names as the array: the variable or, as an expression with no variable id,
+     * its constant, else a placeholder
+     *
+     * @psalm-capabilities read-props
+     */
+    private static function describeArrayVar(
+        ?string $extended_var_id,
+        PhpParser\Node\Expr\ArrayDimFetch $stmt,
+    ): string {
+        if ($extended_var_id !== null) {
+            return $extended_var_id;
+        }
+
+        if ($stmt->var instanceof PhpParser\Node\Expr\ConstFetch) {
+            return $stmt->var->name->toString();
+        }
+
+        if ($stmt->var instanceof PhpParser\Node\Expr\ClassConstFetch
+            && $stmt->var->class instanceof PhpParser\Node\Name
+            && $stmt->var->name instanceof PhpParser\Node\Identifier
+        ) {
+            return $stmt->var->class->toString() . '::' . $stmt->var->name->name;
+        }
+
+        return '(expression)';
+    }
+
     public static function analyze(
         StatementsAnalyzer $statements_analyzer,
         PhpParser\Node\Expr\ArrayDimFetch $stmt,
@@ -253,7 +282,8 @@ final class ArrayFetchAnalyzer
                 if (!$context->inside_isset && !$context->inside_by_ref_offset) {
                     IssueBuffer::maybeAdd(
                         new NullArrayAccess(
-                            'Cannot access array value on null variable ' . $extended_var_id,
+                            'Cannot access array value on null variable ' .
+                                self::describeArrayVar($extended_var_id, $stmt),
                             new CodeLocation($statements_analyzer->getSource(), $stmt),
                         ),
                         $statements_analyzer->getSuppressedIssues(),
@@ -876,7 +906,8 @@ final class ArrayFetchAnalyzer
         if ($offset_type->isNull()) {
             IssueBuffer::maybeAdd(
                 new NullArrayOffset(
-                    'Cannot access value on variable ' . $extended_var_id . ' using null offset',
+                    'Cannot access value on variable ' .
+                        self::describeArrayVar($extended_var_id, $stmt) . ' using null offset',
                     new CodeLocation($statements_analyzer->getSource(), $stmt),
                 ),
                 $statements_analyzer->getSuppressedIssues(),
@@ -901,7 +932,7 @@ final class ArrayFetchAnalyzer
             if (!$offset_type->ignore_nullable_issues) {
                 IssueBuffer::maybeAdd(
                     new PossiblyNullArrayOffset(
-                        'Cannot access value on variable ' . $extended_var_id
+                        'Cannot access value on variable ' . self::describeArrayVar($extended_var_id, $stmt)
                             . ' using possibly null offset ' . $offset_type,
                         new CodeLocation($statements_analyzer->getSource(), $stmt->var),
                     ),
@@ -997,7 +1028,8 @@ final class ArrayFetchAnalyzer
                     } else {
                         IssueBuffer::maybeAdd(
                             new PossiblyNullArrayAssignment(
-                                'Cannot access array value on possibly null variable ' . $extended_var_id .
+                                'Cannot access array value on possibly null variable ' .
+                                    self::describeArrayVar($extended_var_id, $stmt) .
                                     ' of type ' . $array_type,
                                 new CodeLocation($statements_analyzer->getSource(), $stmt),
                             ),
@@ -1010,7 +1042,8 @@ final class ArrayFetchAnalyzer
                     if (!$context->inside_isset && !$context->inside_by_ref_offset) {
                         IssueBuffer::maybeAdd(
                             new PossiblyNullArrayAccess(
-                                'Cannot access array value on possibly null variable ' . $extended_var_id .
+                                'Cannot access array value on possibly null variable ' .
+                                    self::describeArrayVar($extended_var_id, $stmt) .
                                     ' of type ' . $array_type,
                                 new CodeLocation($statements_analyzer->getSource(), $stmt),
                             ),
@@ -1124,7 +1157,7 @@ final class ArrayFetchAnalyzer
                     IssueBuffer::maybeAdd(
                         new PossiblyInvalidArrayAssignment(
                             'Cannot access array value on non-array variable ' .
-                            $extended_var_id . ' of type ' . $non_array_types[0],
+                            self::describeArrayVar($extended_var_id, $stmt) . ' of type ' . $non_array_types[0],
                             new CodeLocation($statements_analyzer->getSource(), $stmt),
                         ),
                         $statements_analyzer->getSuppressedIssues(),
@@ -1133,7 +1166,7 @@ final class ArrayFetchAnalyzer
                     IssueBuffer::maybeAdd(
                         new PossiblyInvalidArrayAccess(
                             'Cannot access array value on non-array variable ' .
-                            $extended_var_id . ' of type ' . $non_array_types[0],
+                            self::describeArrayVar($extended_var_id, $stmt) . ' of type ' . $non_array_types[0],
                             new CodeLocation($statements_analyzer->getSource(), $stmt),
                         ),
                         $statements_analyzer->getSuppressedIssues(),
@@ -1144,7 +1177,7 @@ final class ArrayFetchAnalyzer
                     IssueBuffer::maybeAdd(
                         new InvalidArrayAssignment(
                             'Cannot access array value on non-array variable ' .
-                            $extended_var_id . ' of type ' . $non_array_types[0],
+                            self::describeArrayVar($extended_var_id, $stmt) . ' of type ' . $non_array_types[0],
                             new CodeLocation($statements_analyzer->getSource(), $stmt),
                         ),
                         $statements_analyzer->getSuppressedIssues(),
@@ -1153,7 +1186,7 @@ final class ArrayFetchAnalyzer
                     IssueBuffer::maybeAdd(
                         new InvalidArrayAccess(
                             'Cannot access array value on non-array variable ' .
-                            $extended_var_id . ' of type ' . $non_array_types[0],
+                            self::describeArrayVar($extended_var_id, $stmt) . ' of type ' . $non_array_types[0],
                             new CodeLocation($statements_analyzer->getSource(), $stmt),
                         ),
                         $statements_analyzer->getSuppressedIssues(),
@@ -1177,7 +1210,8 @@ final class ArrayFetchAnalyzer
 
             IssueBuffer::maybeAdd(
                 new MixedArrayOffset(
-                    'Cannot access value on variable ' . $extended_var_id . ' using mixed offset',
+                    'Cannot access value on variable ' .
+                        self::describeArrayVar($extended_var_id, $stmt) . ' using mixed offset',
                     new CodeLocation($statements_analyzer->getSource(), $stmt),
                 ),
                 $statements_analyzer->getSuppressedIssues(),
@@ -1210,7 +1244,8 @@ final class ArrayFetchAnalyzer
                     if (!$context->inside_unset) {
                         IssueBuffer::maybeAdd(
                             new PossiblyInvalidArrayOffset(
-                                'Cannot access value on variable ' . $extended_var_id . ' ' . $used_offset
+                                'Cannot access value on variable ' .
+                                    self::describeArrayVar($extended_var_id, $stmt) . ' ' . $used_offset
                                     . ', expecting ' . $invalid_offset_type,
                                 new CodeLocation($statements_analyzer->getSource(), $stmt),
                             ),
@@ -1260,7 +1295,8 @@ final class ArrayFetchAnalyzer
 
                     IssueBuffer::maybeAdd(
                         new InvalidArrayOffset(
-                            'Cannot access value on variable ' . $extended_var_id . ' ' . $used_offset
+                            'Cannot access value on variable ' .
+                                self::describeArrayVar($extended_var_id, $stmt) . ' ' . $used_offset
                                 . ', expecting ' . $invalid_offset_type,
                             new CodeLocation($statements_analyzer->getSource(), $stmt),
                         ),
@@ -1457,7 +1493,8 @@ final class ArrayFetchAnalyzer
             if ($in_assignment) {
                 IssueBuffer::maybeAdd(
                     new MixedArrayAssignment(
-                        'Cannot access array value on mixed variable ' . $extended_var_id,
+                        'Cannot access array value on mixed variable ' .
+                            self::describeArrayVar($extended_var_id, $stmt),
                         new CodeLocation($statements_analyzer->getSource(), $stmt),
                     ),
                     $statements_analyzer->getSuppressedIssues(),
@@ -1465,7 +1502,8 @@ final class ArrayFetchAnalyzer
             } else {
                 IssueBuffer::maybeAdd(
                     new MixedArrayAccess(
-                        'Cannot access array value on mixed variable ' . $extended_var_id,
+                        'Cannot access array value on mixed variable ' .
+                            self::describeArrayVar($extended_var_id, $stmt),
                         new CodeLocation($statements_analyzer->getSource(), $stmt),
                     ),
                     $statements_analyzer->getSuppressedIssues(),
@@ -1815,7 +1853,7 @@ final class ArrayFetchAnalyzer
         ) {
             IssueBuffer::maybeAdd(
                 new EmptyArrayAccess(
-                    'Cannot access value on empty array variable ' . $extended_var_id,
+                    'Cannot access value on empty array variable ' . self::describeArrayVar($extended_var_id, $stmt),
                     new CodeLocation($statements_analyzer->getSource(), $stmt),
                 ),
                 $statements_analyzer->getSuppressedIssues(),
@@ -1952,6 +1990,7 @@ final class ArrayFetchAnalyzer
 
         if ($key_values) {
             $properties = $type->properties;
+            $missing_key_in_isset = false;
             foreach ($key_values as $key_value) {
                 $string_to_int = ArrayAnalyzer::getLiteralArrayKeyInt($key_value->value);
                 $key_value = $string_to_int === false ? $key_value : new TLiteralInt($string_to_int);
@@ -2071,8 +2110,16 @@ final class ArrayFetchAnalyzer
 
                     $expected_offset_types[] = $key_string;
 
-                    $array_access_type = Type::getMixed();
+                    if ($context->inside_isset) {
+                        $missing_key_in_isset = true;
+                    } else {
+                        $array_access_type = Type::getMixed();
+                    }
                 }
+            }
+
+            if ($missing_key_in_isset && $array_access_type === null) {
+                $array_access_type = Type::getMixed();
             }
 
             $type = $type->setProperties($properties);
@@ -2182,9 +2229,42 @@ final class ArrayFetchAnalyzer
                     $expected_offset_types[] = $generic_key_type->getId();
                 }
 
+                // an offset range that only partly lies within the keys is possibly valid
+                if (self::offsetRangeOverlapsKeys($offset_type->freeze(), $key_type)) {
+                    $has_valid_offset = true;
+                }
+
                 $array_access_type = Type::getMixed();
             }
         }
+    }
+
+    /**
+     * Whether an int range among the offset types has an int in common with the int keys
+     *
+     * @psalm-pure
+     */
+    private static function offsetRangeOverlapsKeys(Union $offset_type, Union $key_type): bool
+    {
+        foreach ($offset_type->getAtomicTypes() as $offset_atomic) {
+            if (!$offset_atomic instanceof TIntRange) {
+                continue;
+            }
+
+            foreach ($key_type->getAtomicTypes() as $key_atomic) {
+                if ($key_atomic instanceof TIntRange
+                    && TIntRange::intersectIntRanges($offset_atomic, $key_atomic) !== null
+                ) {
+                    return true;
+                }
+
+                if ($key_atomic instanceof TLiteralInt && $offset_atomic->contains($key_atomic->value)) {
+                    return true;
+                }
+            }
+        }
+
+        return false;
     }
 
     public static function validateArrayOffset(
