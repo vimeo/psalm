@@ -180,6 +180,7 @@ final class TemplateStandinTypeReplacer
             )];
         }
 
+        // the result keeps the parent nodes: this also runs on argument types, whose data flow must survive
         if ($replace) {
             if (array_values($original_atomic_types) === $atomic_types) {
                 return $union_type;
@@ -198,6 +199,7 @@ final class TemplateStandinTypeReplacer
                     'ignore_falsable_issues' => $union_type->ignore_falsable_issues,
                     'possibly_undefined' => $union_type->possibly_undefined,
                     'had_template' => $had_template,
+                    'parent_nodes' => $union_type->parent_nodes,
                 ]);
             }
 
@@ -206,6 +208,7 @@ final class TemplateStandinTypeReplacer
                 'ignore_falsable_issues' => $union_type->ignore_falsable_issues,
                 'possibly_undefined' => $union_type->possibly_undefined,
                 'had_template' => $had_template,
+                'parent_nodes' => $union_type->parent_nodes,
             ]);
         }
 
