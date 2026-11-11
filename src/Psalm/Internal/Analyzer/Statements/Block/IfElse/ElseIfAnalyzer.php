@@ -286,6 +286,7 @@ final class ElseIfAnalyzer
 
         $pre_stmts_assigned_var_ids = $elseif_context->assigned_var_ids;
         $elseif_context->assigned_var_ids = [];
+        $elseif_context->fully_assigned_var_ids = [];
         $pre_stmts_possibly_assigned_var_ids = $elseif_context->possibly_assigned_var_ids;
         $elseif_context->possibly_assigned_var_ids = [];
 
