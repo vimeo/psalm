@@ -45,7 +45,9 @@ use Psalm\Type\Atomic\TTemplateParam;
 use Psalm\Type\Union;
 
 use function array_any;
+use function array_diff_key;
 use function array_key_last;
+use function array_slice;
 use function in_array;
 use function str_starts_with;
 use function strtolower;
@@ -322,14 +324,31 @@ final class MethodComparator
     }
 
     /**
-     * @param array<lowercase-string, MethodStorage> $pseudo_methods
+     * A `@method` the class inherits was already compared where it was introduced, so it's only compared with the
+     * methods the parent it comes from didn't already have to deal with
      */
-    public static function comparePseudoMethods(
-        array $pseudo_methods,
-        string $fq_class_name,
-        Codebase $codebase,
-        ClassLikeStorage $class_storage,
-    ): void {
+    public static function comparePseudoMethods(Codebase $codebase, ClassLikeStorage $class_storage): void
+    {
+        $pseudo_methods = $class_storage->pseudo_methods + $class_storage->pseudo_static_methods;
+
+        if (!$pseudo_methods) {
+            return;
+        }
+
+        $fq_class_name = $class_storage->name;
+        $parent_storages = [];
+
+        foreach ($class_storage->is_interface
+            ? $class_storage->direct_interface_parents
+            : array_slice($class_storage->parent_classes, 0, 1) as $parent_name) {
+            // a parent that doesn't exist has no storage, and is reported as undefined elsewhere
+            $parent_storage = $codebase->classlikes->getStorageFor($parent_name);
+
+            if ($parent_storage) {
+                $parent_storages[] = $parent_storage;
+            }
+        }
+
         foreach ($pseudo_methods as $pseudo_method_name => $pseudo_method_storage) {
             $pseudo_method_id = new MethodIdentifier(
                 $fq_class_name,
@@ -337,6 +356,28 @@ final class MethodComparator
             );
 
             $overridden_method_ids = $codebase->methods->getOverriddenMethodIds($pseudo_method_id);
+
+            $is_static = !isset($class_storage->pseudo_methods[$pseudo_method_name]);
+            $declaring_class = self::getDeclaringPseudoMethodClass($class_storage, $pseudo_method_name, $is_static);
+
+            foreach ($parent_storages as $parent_storage) {
+                if ($declaring_class !== null
+                    && $declaring_class === self::getDeclaringPseudoMethodClass(
+                        $parent_storage,
+                        $pseudo_method_name,
+                        $is_static,
+                    )
+                ) {
+                    $parent_declaring_method_id = $parent_storage->declaring_method_ids[$pseudo_method_name] ?? null;
+
+                    $overridden_method_ids = array_diff_key(
+                        $overridden_method_ids,
+                        $parent_storage->overridden_method_ids[$pseudo_method_name] ?? [],
+                        $parent_declaring_method_id ? [$parent_declaring_method_id->fq_class_name => true] : [],
+                    );
+                }
+            }
+
             if (isset($class_storage->methods[$pseudo_method_id->method_name])) {
                 $overridden_method_ids[$class_storage->name] = $pseudo_method_id;
             }
@@ -376,6 +417,23 @@ final class MethodComparator
                 }
             }
         }
+    }
+
+    /**
+     * @param lowercase-string $method_name
+     * @return ?lowercase-string
+     * @psalm-mutation-free
+     */
+    private static function getDeclaringPseudoMethodClass(
+        ClassLikeStorage $storage,
+        string $method_name,
+        bool $is_static,
+    ): ?string {
+        $declaring_method_id = ($is_static
+            ? $storage->declaring_pseudo_static_method_ids
+            : $storage->declaring_pseudo_method_ids)[$method_name] ?? null;
+
+        return $declaring_method_id ? strtolower($declaring_method_id->fq_class_name) : null;
     }
 
     /**

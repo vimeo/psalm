@@ -442,6 +442,117 @@ final class MethodSignatureTest extends TestCase
         );
     }
 
+    public function testInheritedPseudoMethodMismatchIsReportedOnlyWhereItIsIntroduced(): void
+    {
+        $this->testConfig->throw_exception = false;
+        $file_path = self::$src_dir_path . 'somefile.php';
+        $this->addFile(
+            $file_path,
+            '<?php
+                trait Makeable {
+                    /**
+                     * @param mixed ...$arguments
+                     * @return static
+                     */
+                    public static function make(...$arguments) {
+                        throw new LogicException();
+                    }
+                }
+                abstract class Element { use Makeable; }
+                /**
+                 * @method static static make(string $name, string|null $attribute = null)
+                 */
+                abstract class Field extends Element {}
+                /**
+                 * @method static static make(string $name, string|null $attribute = null)
+                 */
+                class Heading extends Field {}
+                final class DangerHeading extends Heading {}
+
+                /**
+                 * @method static void create(string $a, string $b)
+                 */
+                trait Creates {}
+                class Factory { public static function create(): void {} }
+                class UsesTrait extends Factory { use Creates; }
+                class InheritsTrait extends UsesTrait {}
+
+                interface Contract { public function run(int $a): void; }
+                /**
+                 * @method void run(string $a, string $b)
+                 */
+                class Dispatcher { public function __call(string $n, array $a) { return null; } }
+                abstract class AddsContract extends Dispatcher implements Contract {}
+                abstract class InheritsContract extends AddsContract {}
+
+                interface Base { public function go(): void; }
+                /**
+                 * @method void go(string $a, string $b)
+                 */
+                interface Child extends Base {}
+                interface GrandChild extends Child {}',
+        );
+
+        $this->analyzeFile($file_path, new Context(), false);
+
+        // each mismatch is reported in the class or interface that introduces it, not again in every descendant
+        self::assertSame(
+            [
+                'MethodSignatureMismatch: Method Child::go has more required parameters than parent method Base::go',
+                'MoreSpecificImplementedParamType: Argument 1 of Field::make has the more specific type \'string\','
+                    . ' expecting \'mixed\' as defined by Makeable::make',
+                'MethodSignatureMismatch: Method Field::make has more required parameters than parent method'
+                    . ' Makeable::make',
+                'MoreSpecificImplementedParamType: Argument 1 of Heading::make has the more specific type \'string\','
+                    . ' expecting \'mixed\' as defined by Makeable::make',
+                'MethodSignatureMismatch: Method Heading::make has more required parameters than parent method'
+                    . ' Makeable::make',
+                'MethodSignatureMismatch: Method UsesTrait::create has more required parameters than parent method'
+                    . ' Factory::create',
+                'ImplementedParamTypeMismatch: Argument 1 of AddsContract::run has wrong type \'string\','
+                    . ' expecting \'int\' as defined by Contract::run',
+                'MethodSignatureMismatch: Method AddsContract::run has more required parameters than parent method'
+                    . ' Contract::run',
+            ],
+            array_map(
+                static fn(IssueData $issue): string => $issue->type . ': ' . $issue->message,
+                IssueBuffer::getIssuesDataForFile($file_path),
+            ),
+        );
+    }
+
+    public function testPseudoMethodOfAClassLikeWithAnUndefinedParentIsNotCompared(): void
+    {
+        $this->testConfig->throw_exception = false;
+        $file_path = self::$src_dir_path . 'somefile.php';
+        $this->addFile(
+            $file_path,
+            '<?php
+                /**
+                 * @method void foo(string $a)
+                 */
+                interface J extends MissingInterface {}
+
+                /**
+                 * @method void foo(string $a)
+                 */
+                class C extends MissingClass {}',
+        );
+
+        $this->analyzeFile($file_path, new Context(), false);
+
+        self::assertSame(
+            [
+                'UndefinedClass: Class, interface or enum named MissingInterface does not exist',
+                'UndefinedClass: Class, interface or enum named MissingClass does not exist',
+            ],
+            array_map(
+                static fn(IssueData $issue): string => $issue->type . ': ' . $issue->message,
+                IssueBuffer::getIssuesDataForFile($file_path),
+            ),
+        );
+    }
+
     /**
      * @psalm-pure
      */
