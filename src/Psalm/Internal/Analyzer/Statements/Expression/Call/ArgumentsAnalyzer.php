@@ -1223,13 +1223,18 @@ final class ArgumentsAnalyzer
         $named_variadic_args = [];
         $named_args_was_used = false;
 
-        // the parameter each argument starts at: an unpacked list of known length consumes several parameters
+        // the parameter each argument starts at: an unpacked list of known length consumes several parameters, and
+        // a partial application's bound argument is at its offset in it, the placeholders before it being parameters
         $param_offsets = [];
         $next_param_offset = 0;
         $args_in_order = $args;
         ksort($args_in_order);
 
         foreach ($args_in_order as $argument_offset => $arg) {
+            if ($partial_application && !$arg->unpack && !$arg->name) {
+                $next_param_offset = $argument_offset;
+            }
+
             $param_offsets[$argument_offset] = $next_param_offset;
 
             if ($arg->unpack) {
