@@ -251,41 +251,43 @@ final class AssertAnnotationTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
-            'assertAlternativeThatCannotHoldIsNotReported' => [
-                'code' => <<<'PHP'
-                    <?php
-                    final class Html {
-                        public function __toString(): string {
-                            return '';
-                        }
+            'assertObjectShapeOnObject' => [
+                'code' => '<?php
+                    /** @psalm-assert object{a: int} $obj */
+                    function assertShape(mixed $obj): void {}
+
+                    function getObject(): object {
+                        return new stdClass;
                     }
 
-                    final class Plain {}
-
-                    /**
-                     * @template ExpectedType
-                     * @param ExpectedType $expected
-                     * @psalm-assert =ExpectedType $actual
-                     */
-                    function assertSameish(mixed $expected, mixed $actual): void {}
-
-                    /** @psalm-assert Plain|string $actual */
-                    function isPlainOrString(mixed $actual): void {}
-
-                    function check(Html|string $withToString, Plain|string $plain, string $a, string $b): void {
-                        assertSameish($withToString, $a);
-                        assertSameish($plain, $b);
-                    }
-
-                    /** @param mixed $value */
-                    function narrowed($value): void {
-                        isPlainOrString($value);
-                        /** @psalm-check-type-exact $value = Plain|string */;
-                    }
-                    PHP,
-                'assertions' => [],
+                    $b = getObject();
+                    assertShape($b);',
+                'assertions' => [
+                    '$b===' => 'object{a:int}',
+                ],
                 'ignored_issues' => [],
-                'php_version' => '8.1',
+                'php_version' => '8.0',
+            ],
+            'assertObjectShapeOnObjectKeepsEarlierShape' => [
+                'code' => '<?php
+                    /** @psalm-assert object{a: int} $obj */
+                    function assertA(mixed $obj): void {}
+
+                    /** @psalm-assert object{b: string} $obj */
+                    function assertB(mixed $obj): void {}
+
+                    function getObject(): object {
+                        return new stdClass;
+                    }
+
+                    $b = getObject();
+                    assertA($b);
+                    assertB($b);',
+                'assertions' => [
+                    '$b===' => 'object{a:int}&object{b:string}',
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
             ],
             'negatedArrayAssertionKeepsTheExistingArrayType' => [
                 'code' => '<?php
@@ -4129,6 +4131,42 @@ final class AssertAnnotationTest extends TestCase
                     '$arr===' => 'non-empty-array<int, string>',
                 ],
             ],
+            'assertAlternativeThatCannotHoldIsNotReported' => [
+                'code' => <<<'PHP'
+                    <?php
+                    final class Html {
+                        public function __toString(): string {
+                            return '';
+                        }
+                    }
+
+                    final class Plain {}
+
+                    /**
+                     * @template ExpectedType
+                     * @param ExpectedType $expected
+                     * @psalm-assert =ExpectedType $actual
+                     */
+                    function assertSameish(mixed $expected, mixed $actual): void {}
+
+                    /** @psalm-assert Plain|string $actual */
+                    function isPlainOrString(mixed $actual): void {}
+
+                    function check(Html|string $withToString, Plain|string $plain, string $a, string $b): void {
+                        assertSameish($withToString, $a);
+                        assertSameish($plain, $b);
+                    }
+
+                    /** @param mixed $value */
+                    function narrowed($value): void {
+                        isPlainOrString($value);
+                        /** @psalm-check-type-exact $value = Plain|string */;
+                    }
+                    PHP,
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
         ];
     }
 
@@ -4139,22 +4177,6 @@ final class AssertAnnotationTest extends TestCase
     public static function providerInvalidCodeParse(): iterable
     {
         return [
-            'assertWithNoAlternativeThatCanHold' => [
-                'code' => <<<'PHP'
-                    <?php
-                    final class Plain {}
-
-                    /** @psalm-assert Plain|string $actual */
-                    function isPlainOrString(mixed $actual): void {}
-
-                    function check(int $number): void {
-                        isPlainOrString($number);
-                    }
-                    PHP,
-                'error_message' => 'TypeDoesNotContainType',
-                'error_levels' => [],
-                'php_version' => '8.1',
-            ],
             'assertNonEmptyArrayOnANonEmptyArray' => [
                 'code' => '<?php
                     /**
@@ -4658,6 +4680,22 @@ final class AssertAnnotationTest extends TestCase
 
                     if (hasP(Holder::$sh)) {}',
                 'error_message' => 'Variable Holder::$sh is not an object so the assertion cannot be applied',
+            ],
+            'assertWithNoAlternativeThatCanHold' => [
+                'code' => <<<'PHP'
+                    <?php
+                    final class Plain {}
+
+                    /** @psalm-assert Plain|string $actual */
+                    function isPlainOrString(mixed $actual): void {}
+
+                    function check(int $number): void {
+                        isPlainOrString($number);
+                    }
+                    PHP,
+                'error_message' => 'TypeDoesNotContainType',
+                'error_levels' => [],
+                'php_version' => '8.1',
             ],
         ];
     }
