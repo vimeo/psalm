@@ -746,45 +746,34 @@ final class BinaryOperationTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
-            'floatWithExactIntValueInIntOperations' => [
+            'assignmentInTheRightOperandOfAndMayNotHaveRun' => [
                 'code' => '<?php
-                    $a = 7.0 % 2.0;
-                    $b = 6.0 | 1;
-                    $c = 6 & 3.0;
-                    $d = 5.0 ^ 1;
-                    $e = 1.0 << 3;
-                    $f = 8.0 >> 1;
-                    $g = -7.0 % 3;
-                    $h = 2.0 << 0;',
+                    function fetch(): ?float {
+                        return rand(0, 1) ? 1.5 : null;
+                    }
+
+                    function check(bool $enabled): ?float {
+                        $value = 0.0;
+                        $matched = $enabled && null !== ($value = fetch());
+
+                        return $value;
+                    }
+
+                    $result = check(true);',
                 'assertions' => [
-                    '$a===' => '1',
-                    '$b===' => '7',
-                    '$c===' => '2',
-                    '$d===' => '4',
-                    '$e===' => '8',
-                    '$f===' => '4',
-                    '$g===' => '-1',
-                    '$h===' => '2',
+                    '$result===' => 'float|null',
                 ],
             ],
-            'floatOperandOutsideIntRange' => [
+            'assignmentInTheRightOperandOfAndKeepsTheTypeBeforeIt' => [
                 'code' => '<?php
-                    $a = 1e30 & 1;
-                    $b = -1e30 | 1;
-                    $c = 9.3e18 % 7;',
-                'assertions' => [
-                    '$a===' => 'int',
-                    '$b===' => 'int',
-                    '$c===' => 'int',
-                ],
-            ],
-            'floatOperandsOfIntOnlyOperationsGiveInt' => [
-                'code' => '<?php
-                    /**
-                     * @return list{int, int, int, int, int, int}
-                     */
-                    function f(float $f, int $i): array {
-                        return [$f | $i, $i & $f, $f ^ $f, $f << $i, $i >> $f, $f % $i];
+                    function fetch(): ?float {
+                        return rand(0, 1) ? 1.5 : null;
+                    }
+
+                    function check(bool $enabled): void {
+                        $value = 0;
+                        $matched = $enabled && null !== ($value = fetch());
+                        /** @psalm-check-type-exact $value = 0|float|null */;
                     }',
             ],
             'coalesceOfAStaticAndASelfPropertyOffset' => [
@@ -1177,6 +1166,25 @@ final class BinaryOperationTest extends TestCase
                     $bar = new A();
                     foo("" . $bar);
                 ',
+            ],
+            'concatenateStringableUsesDeclaredStringReturn' => [
+                'code' => '<?php
+                    final class Text {
+                        public function __toString(): string {
+                            return "text";
+                        }
+                    }
+
+                    /** @var lowercase-string $lowercase */
+                    $lowercase = "lowercase";
+                    $prefixed = "abc" . new Text();
+                    $lowercasePrefixed = $lowercase . new Text();',
+                'assertions' => [
+                    '$prefixed===' => 'non-falsy-string',
+                    '$lowercasePrefixed===' => 'string',
+                ],
+                'ignored_issues' => ['ImplicitToStringCast'],
+                'php_version' => '8.1',
             ],
             'concatenateNegativeIntLeftSideIsNumeric' => [
                 'code' => '<?php
@@ -2121,6 +2129,47 @@ final class BinaryOperationTest extends TestCase
                 'ignored_issues' => ['TypeDoesNotContainType', 'RedundantCondition'],
                 'php_version' => '8.1',
             ],
+            'floatWithExactIntValueInIntOperations' => [
+                'code' => '<?php
+                    $a = 7.0 % 2.0;
+                    $b = 6.0 | 1;
+                    $c = 6 & 3.0;
+                    $d = 5.0 ^ 1;
+                    $e = 1.0 << 3;
+                    $f = 8.0 >> 1;
+                    $g = -7.0 % 3;
+                    $h = 2.0 << 0;',
+                'assertions' => [
+                    '$a===' => '1',
+                    '$b===' => '7',
+                    '$c===' => '2',
+                    '$d===' => '4',
+                    '$e===' => '8',
+                    '$f===' => '4',
+                    '$g===' => '-1',
+                    '$h===' => '2',
+                ],
+            ],
+            'floatOperandOutsideIntRange' => [
+                'code' => '<?php
+                    $a = 1e30 & 1;
+                    $b = -1e30 | 1;
+                    $c = 9.3e18 % 7;',
+                'assertions' => [
+                    '$a===' => 'int',
+                    '$b===' => 'int',
+                    '$c===' => 'int',
+                ],
+            ],
+            'floatOperandsOfIntOnlyOperationsGiveInt' => [
+                'code' => '<?php
+                    /**
+                     * @return list{int, int, int, int, int, int}
+                     */
+                    function f(float $f, int $i): array {
+                        return [$f | $i, $i & $f, $f ^ $f, $f << $i, $i >> $f, $f % $i];
+                    }',
+            ],
         ];
     }
 
@@ -2131,16 +2180,6 @@ final class BinaryOperationTest extends TestCase
     public static function providerInvalidCodeParse(): iterable
     {
         return [
-            'shiftRightByNegativeFloatLiteral' => [
-                'code' => '<?php
-                    $a = 8 >> -2.0;',
-                'error_message' => 'NoValue',
-            ],
-            'shiftByNegativeLiteral' => [
-                'code' => '<?php
-                    $a = 1 << -1;',
-                'error_message' => 'NoValue',
-            ],
             'assignmentToSelfStaticPropertyForgetsTheNarrowingOfStaticOne' => [
                 'code' => '<?php
                     interface Container {}
@@ -2364,6 +2403,16 @@ final class BinaryOperationTest extends TestCase
                         return "hello $s1 $s2";
                     }',
                 'error_message' => 'LessSpecificReturnStatement',
+            ],
+            'shiftRightByNegativeFloatLiteral' => [
+                'code' => '<?php
+                    $a = 8 >> -2.0;',
+                'error_message' => 'NoValue',
+            ],
+            'shiftByNegativeLiteral' => [
+                'code' => '<?php
+                    $a = 1 << -1;',
+                'error_message' => 'NoValue',
             ],
         ];
     }
