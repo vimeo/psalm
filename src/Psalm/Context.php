@@ -265,6 +265,14 @@ final class Context
     public array $phantom_files = [];
 
     /**
+     * The files of phantom_files that were checked in a negated condition (`!file_exists($s)`): a check that holds
+     * where the condition does not
+     *
+     * @var array<string,bool>
+     */
+    public array $negated_phantom_files = [];
+
+    /**
      * A list of clauses in Conjunctive Normal Form
      *
      * @var list<Clause>
@@ -342,6 +350,14 @@ final class Context
      * @var array<string, bool>
      */
     public array $possibly_assigned_var_ids = [];
+
+    /**
+     * The variables (and properties) that were assigned as a whole in this context, not only an offset of them and
+     * not by the union of an array into them (`$a += [...]`, which keeps every offset the array had)
+     *
+     * @var array<string, bool>
+     */
+    public array $fully_assigned_var_ids = [];
 
     /**
      * A list of classes or interfaces that may have been thrown
@@ -1140,6 +1156,14 @@ final class Context
         $this->check_methods = $this->check_methods && $op_context->check_methods;
         $this->check_functions = $this->check_functions && $op_context->check_functions;
         $this->check_consts = $this->check_consts && $op_context->check_consts;
+
+        // `!defined('A') || !defined('B')`: both are defined where the condition is false
+        foreach ($op_context->constants as $const_name => $const_type) {
+            if (!isset($this->constants[$const_name])) {
+                $this->constants[$const_name] = $const_type;
+                $this->vars_in_scope[$const_name] = $const_type;
+            }
+        }
     }
 
     /**
