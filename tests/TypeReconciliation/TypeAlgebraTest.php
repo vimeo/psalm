@@ -21,32 +21,37 @@ final class TypeAlgebraTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
-            'offsetKnownFromTheConditionIsForgottenWhenTheArrayIsReassigned' => [
+            'instanceofStoredInVariableNarrowsInIfBody' => [
                 'code' => '<?php
-                    $dummy = ["test" => ""];
-                    $a = ["test" => rand(0, 1) ? null : "x"];
-
-                    if ($a["test"] === null) {
-                        $a = $dummy;
+                    interface Foo {}
+                    interface Bar {
+                        public function bar(): void;
                     }
 
-                    $var = $a["test"];',
-                'assertions' => [
-                    '$var===' => "''|'x'",
-                ],
+                    function f(Foo $obj): void {
+                        $isBar = $obj instanceof Bar;
+
+                        if ($isBar) {
+                            $obj->bar();
+                        }
+                    }',
             ],
-            'offsetKnownFromTheConditionIsKeptWhenTheArrayIsNotReassigned' => [
+            'instanceofStoredInVariableNarrowsAfterEarlyReturn' => [
                 'code' => '<?php
-                    $a = ["test" => rand(0, 1) ? null : "x"];
-
-                    if ($a["test"] === null) {
-                        $a["other"] = 1;
+                    interface Foo {}
+                    interface Bar {
+                        public function bar(): void;
                     }
 
-                    $var = $a["test"];',
-                'assertions' => [
-                    '$var===' => "'x'|null",
-                ],
+                    function f(Foo $obj): void {
+                        $isBar = $obj instanceof Bar;
+
+                        if (!$isBar) {
+                            return;
+                        }
+
+                        $obj->bar();
+                    }',
             ],
             'nullsafeCallFalsyResultDoesNotNarrowReceiver' => [
                 'code' => <<<'PHP'
@@ -1594,6 +1599,33 @@ final class TypeAlgebraTest extends TestCase
                         return A::$x->y;
                     }',
             ],
+            'offsetKnownFromTheConditionIsForgottenWhenTheArrayIsReassigned' => [
+                'code' => '<?php
+                    $dummy = ["test" => ""];
+                    $a = ["test" => rand(0, 1) ? null : "x"];
+
+                    if ($a["test"] === null) {
+                        $a = $dummy;
+                    }
+
+                    $var = $a["test"];',
+                'assertions' => [
+                    '$var===' => "''|'x'",
+                ],
+            ],
+            'offsetKnownFromTheConditionIsKeptWhenTheArrayIsNotReassigned' => [
+                'code' => '<?php
+                    $a = ["test" => rand(0, 1) ? null : "x"];
+
+                    if ($a["test"] === null) {
+                        $a["other"] = 1;
+                    }
+
+                    $var = $a["test"];',
+                'assertions' => [
+                    '$var===' => "'x'|null",
+                ],
+            ],
         ];
     }
 
@@ -1604,6 +1636,42 @@ final class TypeAlgebraTest extends TestCase
     public static function providerInvalidCodeParse(): iterable
     {
         return [
+            'instanceofStoredInVariableIsForgottenWhenTheVariableIsReassigned' => [
+                'code' => '<?php
+                    interface Foo {}
+                    interface Bar {
+                        public function bar(): void;
+                    }
+                    class Baz implements Foo {}
+
+                    function f(Foo $obj): void {
+                        $isBar = $obj instanceof Bar;
+                        $obj = new Baz();
+
+                        if ($isBar) {
+                            $obj->bar();
+                        }
+                    }',
+                'error_message' => 'UndefinedMethod',
+            ],
+            'instanceofStoredInVariableDoesNotNarrowTheElseBranch' => [
+                'code' => '<?php
+                    interface Foo {}
+                    interface Bar {
+                        public function bar(): void;
+                    }
+
+                    function f(Foo $obj): void {
+                        $isBar = $obj instanceof Bar;
+
+                        if ($isBar) {
+                            echo "bar";
+                        } else {
+                            $obj->bar();
+                        }
+                    }',
+                'error_message' => 'UndefinedInterfaceMethod',
+            ],
             'booleanVariableNarrowingNotKeptInElseOfOr' => [
                 'code' => <<<'PHP'
                     <?php
