@@ -1216,6 +1216,16 @@ final class ConfigTest extends DeferredAnalyzerTestCase
         );
     }
 
+    public function testAllIssueTypesIncludeTheIssuesWithAShortcode(): void
+    {
+        $issue_types = IssueHandler::getAllIssueTypes();
+
+        // psalm.dev resolves the https://psalm.dev/<shortcode> links of the issues in this list
+        $this->assertContains('ParseError', $issue_types);
+        $this->assertNotContains('CodeIssue', $issue_types);
+        $this->assertNotContains('PluginIssue', $issue_types);
+    }
+
     public function testAllPossibleIssues(): void
     {
         $all_possible_handlers = implode(
@@ -1621,6 +1631,154 @@ final class ConfigTest extends DeferredAnalyzerTestCase
             $this->assertStringContainsString('<xs:enumeration value="' . $stub . '"/>', (string) $schema, $stub);
         }
     }
+
+    public function testMutableDependencySuppressedForAReferencedClass(): void
+    {
+        $this->project_analyzer = $this->getProjectAnalyzerWithConfig(
+            TestConfig::loadFromXML(
+                dirname(__DIR__, 2),
+                '<?xml version="1.0"?>
+                <psalm>
+                    <issueHandlers>
+                        <MutableDependency>
+                            <errorLevel type="suppress">
+                                <referencedClass name="AbstractSerializable" />
+                            </errorLevel>
+                        </MutableDependency>
+                    </issueHandlers>
+                </psalm>',
+            ),
+        );
+
+        $file_path = (string) getcwd() . '/src/somefile.php';
+
+        $this->addFile(
+            $file_path,
+            '<?php
+                abstract class AbstractSerializable {}
+
+                /** @psalm-immutable */
+                final class Document extends AbstractSerializable {}',
+        );
+
+        $this->analyzeFile($file_path, new Context());
+    }
+
+    public function testImmutableDependencySuppressedForAReferencedClass(): void
+    {
+        $this->project_analyzer = $this->getProjectAnalyzerWithConfig(
+            TestConfig::loadFromXML(
+                dirname(__DIR__, 2),
+                '<?xml version="1.0"?>
+                <psalm>
+                    <issueHandlers>
+                        <ImmutableDependency>
+                            <errorLevel type="suppress">
+                                <referencedClass name="ImmutableParent" />
+                            </errorLevel>
+                        </ImmutableDependency>
+                    </issueHandlers>
+                </psalm>',
+            ),
+        );
+
+        $file_path = (string) getcwd() . '/src/somefile.php';
+
+        $this->addFile(
+            $file_path,
+            '<?php
+                /** @psalm-immutable */
+                abstract class ImmutableParent {}
+
+                final class Child extends ImmutableParent {}',
+        );
+
+        $this->analyzeFile($file_path, new Context());
+    }
+
+    public function testMutableDependencyNotSuppressedForAnotherReferencedClass(): void
+    {
+        $this->expectExceptionMessage('MutableDependency');
+        $this->expectException(CodeException::class);
+        $this->project_analyzer = $this->getProjectAnalyzerWithConfig(
+            TestConfig::loadFromXML(
+                dirname(__DIR__, 2),
+                '<?xml version="1.0"?>
+                <psalm>
+                    <issueHandlers>
+                        <MutableDependency>
+                            <errorLevel type="suppress">
+                                <referencedClass name="SomethingElse" />
+                            </errorLevel>
+                        </MutableDependency>
+                    </issueHandlers>
+                </psalm>',
+            ),
+        );
+
+        $file_path = (string) getcwd() . '/src/somefile.php';
+
+        $this->addFile(
+            $file_path,
+            '<?php
+                abstract class AbstractSerializable {}
+
+                /** @psalm-immutable */
+                final class Document extends AbstractSerializable {}',
+        );
+
+        $this->analyzeFile($file_path, new Context());
+    }
+
+    /**
+     * @psalm-pure
+     * @return iterable<string, array{string, bool, bool}>
+     */
+    public static function providerIgnoreInternalFalseReturn(): iterable
+    {
+        yield 'a method of a stub, ignored' => ['\\DateTimeImmutable::createFromFormat("Y-m-d", $date)', true, false];
+        yield 'a method of a stub, reported' => ['\\DateTimeImmutable::createFromFormat("Y-m-d", $date)', false, true];
+        yield 'a method of the call map, ignored' => ['\\DateTime::createFromFormat("Y-m-d", $date)', true, false];
+        yield 'a function, ignored' => ['date_create_from_format("Y-m-d", $date)', true, false];
+        yield 'a function, reported' => ['date_create_from_format("Y-m-d", $date)', false, true];
+    }
+
+    #[DataProvider('providerIgnoreInternalFalseReturn')]
+    public function testIgnoreInternalFunctionFalseReturnAppliesToStubbedMethods(
+        string $call,
+        bool $ignore_false_return,
+        bool $is_reported,
+    ): void {
+        if ($is_reported) {
+            $this->expectException(CodeException::class);
+            $this->expectExceptionMessage('PossiblyFalseReference');
+        }
+
+        $this->project_analyzer = $this->getProjectAnalyzerWithConfig(
+            TestConfig::loadFromXML(
+                dirname(__DIR__, 2),
+                '<?xml version="1.0"?>
+                <psalm ignoreInternalFunctionFalseReturn="' . ($ignore_false_return ? 'true' : 'false') . '">
+                </psalm>',
+            ),
+        );
+
+        $file_path = (string) getcwd() . '/src/somefile.php';
+
+        $this->addFile(
+            $file_path,
+            '<?php
+                function resetTimestamp(string $date): void {
+                    ' . $call . '->setTimestamp(0);
+                }',
+        );
+
+        $this->analyzeFile($file_path, new Context());
+
+        // an ignored issue: the analysis went through without an exception
+        $this->addToAssertionCount(1);
+    }
+
 
     public function testValidThrowInvalidCatch(): void
     {
