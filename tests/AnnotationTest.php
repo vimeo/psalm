@@ -1910,6 +1910,22 @@ final class AnnotationTest extends TestCase
                         return $foo;
                     }',
             ],
+            'fileLevelVarDocblockBeforeAUseStatement' => [
+                'code' => '<?php
+                    /**
+                     * @var string $foo
+                     * @var int $count
+                     */
+
+                    use stdClass;
+                    use Exception as E;
+
+                    echo strlen($foo) + $count;
+                    echo get_class(new stdClass());',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
         ];
     }
 
@@ -1920,6 +1936,38 @@ final class AnnotationTest extends TestCase
     public static function providerInvalidCodeParse(): iterable
     {
         return [
+            'removedSelfAccessingCallableWithParamsIsInvalid' => [
+                'code' => <<<'PHP'
+                    <?php
+                    /** @param self-accessing-callable(): int $f */
+                    function f(callable $f): void {}
+                    PHP,
+                'error_message' => 'InvalidDocblock',
+            ],
+            'removedSelfMutatingCallableWithParamsIsInvalid' => [
+                'code' => <<<'PHP'
+                    <?php
+                    /** @param self-mutating-callable(): int $f */
+                    function f(callable $f): void {}
+                    PHP,
+                'error_message' => 'InvalidDocblock',
+            ],
+            'removedSelfAccessingClosureWithParamsIsInvalid' => [
+                'code' => <<<'PHP'
+                    <?php
+                    /** @param self-accessing-Closure(): int $f */
+                    function f(callable $f): void {}
+                    PHP,
+                'error_message' => 'InvalidDocblock',
+            ],
+            'removedSelfMutatingClosureWithParamsIsInvalid' => [
+                'code' => <<<'PHP'
+                    <?php
+                    /** @param self-mutating-Closure(): int $f */
+                    function f(callable $f): void {}
+                    PHP,
+                'error_message' => 'InvalidDocblock',
+            ],
             'psalmVarWithTooManyTemplateParamsOnProperty' => [
                 'code' => '<?php
                     class Foo {}
@@ -2729,6 +2777,17 @@ final class AnnotationTest extends TestCase
                 'error_message' => 'InvalidDocblock',
                 'error_levels' => [],
                 'php_version' => '8.0',
+            ],
+            'fileLevelVarDocblockBeforeAUseStatementOnlyDeclaresItsOwnVariables' => [
+                'code' => '<?php
+                    /**
+                     * @var string $foo
+                     */
+
+                    use stdClass;
+
+                    echo strlen($other);',
+                'error_message' => 'UndefinedGlobalVariable',
             ],
         ];
     }

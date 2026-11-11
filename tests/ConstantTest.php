@@ -18,6 +18,36 @@ final class ConstantTest extends TestCase
     use InvalidCodeAnalysisTestTrait;
     use ValidCodeAnalysisTestTrait;
 
+    public function testConstantDefinedInSeveralBranchesIsTheUnionInAnotherFile(): void
+    {
+        // the constants of other files are known without including them
+        $this->project_analyzer->getCodebase()->all_constants_global = true;
+
+        $file1 = (string) getcwd() . DIRECTORY_SEPARATOR . 'tests' . DIRECTORY_SEPARATOR . 'file1.php';
+        $file2 = (string) getcwd() . DIRECTORY_SEPARATOR . 'tests' . DIRECTORY_SEPARATOR . 'file2.php';
+
+        $this->addFile(
+            $file1,
+            '<?php
+                if (rand(0, 1)) {
+                    define("BRANCHED", "x");
+                } else {
+                    define("BRANCHED", "y");
+                }
+            ',
+        );
+
+        $this->addFile(
+            $file2,
+            '<?php
+                /** @psalm-check-type-exact $value = \'x\'|\'y\' */
+                $value = BRANCHED;
+            ',
+        );
+
+        $this->analyzeFile($file2, new Context());
+    }
+
     public function testGlobalConstantOfEnumCasesFromAnotherFile(): void
     {
         $this->project_analyzer->setPhpVersion('8.1', 'tests');
@@ -250,45 +280,42 @@ final class ConstantTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
-            'constantDefinedByANegatedDefinedGuardInANamespace' => [
+            'defineInSeveralSwitchBranchesWithoutDefault' => [
                 'code' => '<?php
-                    namespace App\\TextUI;
-
-                    final class Application {
-                        public function run(): int {
-                            if (!defined("APPLICATION_BOOTSTRAP_FILE")) {
-                                return 1;
-                            }
-
-                            $bootstrapFile = APPLICATION_BOOTSTRAP_FILE;
-
-                            return $bootstrapFile === "" ? 1 : 0;
-                        }
-                    }',
-                'assertions' => [],
-                'ignored_issues' => ['MixedAssignment'],
-            ],
-            'constantsDefinedByANegatedDefinedGuardOfSeveralOperands' => [
-                'code' => '<?php
-                    function check(): int {
-                        if (!defined("FIRST") || !defined("SECOND")) {
-                            return 1;
-                        }
-
-                        return FIRST + SECOND;
-                    }',
-                'assertions' => [],
-                'ignored_issues' => ['MixedOperand', 'MixedReturnStatement'],
-            ],
-            'constantDefinedByANegatedDefinedGuardWithAnExit' => [
-                'code' => '<?php
-                    if (!defined("ABSPATH")) {
-                        exit;
+                    switch (random_int(1, 3)) {
+                        case 1:
+                            define("ASD", "x");
+                            break;
+                        case 2:
+                            define("ASD", "y");
+                            break;
                     }
 
-                    echo ABSPATH;',
-                'assertions' => [],
-                'ignored_issues' => ['MixedArgument'],
+                    if (ASD === "x") {
+                        echo "x";
+                    }
+
+                    if (ASD === "y") {
+                        echo "y";
+                    }
+
+                    $value = ASD;',
+                'assertions' => [
+                    '$value===' => '\'x\'|\'y\'',
+                ],
+            ],
+            'defineInBothBranchesOfAnIf' => [
+                'code' => '<?php
+                    if (rand(0, 1)) {
+                        define("CHOICE", 1);
+                    } else {
+                        define("CHOICE", 2);
+                    }
+
+                    $value = CHOICE;',
+                'assertions' => [
+                    '$value===' => '1|2',
+                ],
             ],
             'classConstantFromAShiftOfANonLiteral' => [
                 'code' => '<?php
@@ -2478,6 +2505,46 @@ final class ConstantTest extends TestCase
                     class FooBar implements FooInterface, BarInterface {}
                     PHP,
             ],
+            'constantDefinedByANegatedDefinedGuardInANamespace' => [
+                'code' => '<?php
+                    namespace App\\TextUI;
+
+                    final class Application {
+                        public function run(): int {
+                            if (!defined("APPLICATION_BOOTSTRAP_FILE")) {
+                                return 1;
+                            }
+
+                            $bootstrapFile = APPLICATION_BOOTSTRAP_FILE;
+
+                            return $bootstrapFile === "" ? 1 : 0;
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => ['MixedAssignment'],
+            ],
+            'constantsDefinedByANegatedDefinedGuardOfSeveralOperands' => [
+                'code' => '<?php
+                    function check(): int {
+                        if (!defined("FIRST") || !defined("SECOND")) {
+                            return 1;
+                        }
+
+                        return FIRST + SECOND;
+                    }',
+                'assertions' => [],
+                'ignored_issues' => ['MixedOperand', 'MixedReturnStatement'],
+            ],
+            'constantDefinedByANegatedDefinedGuardWithAnExit' => [
+                'code' => '<?php
+                    if (!defined("ABSPATH")) {
+                        exit;
+                    }
+
+                    echo ABSPATH;',
+                'assertions' => [],
+                'ignored_issues' => ['MixedArgument'],
+            ],
         ];
     }
 
@@ -2488,15 +2555,6 @@ final class ConstantTest extends TestCase
     public static function providerInvalidCodeParse(): iterable
     {
         return [
-            'undefinedConstantAfterANegatedDefinedCheck' => [
-                'code' => '<?php
-                    if (!defined("AAA")) {
-                        define("NOT_DEFINED", 1);
-                    }
-
-                    echo ZZZ;',
-                'error_message' => 'UndefinedConstant - src' . DIRECTORY_SEPARATOR . 'somefile.php:6:26 - Const ZZZ is not defined',
-            ],
             'classConstantFromANegativeShiftIsNever' => [
                 'code' => '<?php
                     enum Color: int
@@ -3145,6 +3203,15 @@ final class ConstantTest extends TestCase
                 'error_message' => 'ParseError',
                 'error_levels' => [],
                 'php_version' => '8.2',
+            ],
+            'undefinedConstantAfterANegatedDefinedCheck' => [
+                'code' => '<?php
+                    if (!defined("AAA")) {
+                        define("NOT_DEFINED", 1);
+                    }
+
+                    echo ZZZ;',
+                'error_message' => 'UndefinedConstant - src' . DIRECTORY_SEPARATOR . 'somefile.php:6:26 - Const ZZZ is not defined',
             ],
         ];
     }
