@@ -47,6 +47,49 @@ final class TraitTest extends TestCase
                 'ignored_issues' => [],
                 'php_version' => '8.0',
             ],
+            'selfReturnOfTraitMethodIsTheClassUsingTheTrait' => [
+                'code' => <<<'PHP'
+                    <?php
+                    interface SomeInterface
+                    {
+                        public function duplicate(): self;
+                    }
+
+                    trait SomeTrait
+                    {
+                        public function duplicate(): self
+                        {
+                            return new self();
+                        }
+                    }
+
+                    class Concrete implements SomeInterface
+                    {
+                        use SomeTrait;
+                    }
+
+                    class ConcreteChild extends Concrete
+                    {
+                        public function duplicate(): self
+                        {
+                            return new self();
+                        }
+                    }
+
+                    class Other implements SomeInterface
+                    {
+                        use SomeTrait;
+
+                        public function duplicate(): self
+                        {
+                            return new self();
+                        }
+                    }
+                    PHP,
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
             'constructorInitializesPropertyThroughMethodOfNestedTrait' => [
                 'code' => '<?php
                     class MyClass {
@@ -1574,6 +1617,42 @@ final class TraitTest extends TestCase
                 'error_message' => 'MethodSignatureMismatch',
                 'error_levels' => [],
                 'php_version' => '8.0',
+            ],
+            'selfReturnOfTraitMethodRejectsTheParentOfTheClassUsingTheTrait' => [
+                'code' => <<<'PHP'
+                    <?php
+                    trait SomeTrait
+                    {
+                        public function duplicate(): self
+                        {
+                            return new self();
+                        }
+                    }
+
+                    class Concrete
+                    {
+                        use SomeTrait;
+                    }
+
+                    class ConcreteChild extends Concrete
+                    {
+                        public function duplicate(): self
+                        {
+                            return new self();
+                        }
+                    }
+
+                    class GrandChild extends ConcreteChild
+                    {
+                        public function duplicate(): Concrete
+                        {
+                            return new Concrete();
+                        }
+                    }
+                    PHP,
+                'error_message' => 'Method GrandChild::duplicate with return type',
+                'error_levels' => [],
+                'php_version' => '8.1',
             ],
             'constructorCallsMethodOfNestedTraitThatDoesNotInitializeProperty' => [
                 'code' => '<?php
