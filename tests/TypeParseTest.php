@@ -947,6 +947,30 @@ final class TypeParseTest extends TestCase
         );
     }
 
+    public function testCallableWithNamedOptionalParam(): void
+    {
+        $this->assertSame(
+            'callable(int, string=):void',
+            (string) Type::parseString('callable(int, string= $name) : void'),
+        );
+    }
+
+    public function testCallableWithNamedVariadicParamWithoutSpace(): void
+    {
+        $this->assertSame(
+            'callable(int...):void',
+            (string) Type::parseString('callable(int... $rest) : void'),
+        );
+    }
+
+    public function testCallableWithOptionalParamNamedBeforeTheEquals(): void
+    {
+        $this->assertSame(
+            'callable(int=):void',
+            (string) Type::parseString('callable(int $foo=) : void'),
+        );
+    }
+
     public function testCallableWithVariadicAndDefault(): void
     {
         $this->expectException(TypeParseTreeException::class);
