@@ -12,9 +12,10 @@ use Psalm\Type\Atomic\TEnumCase;
 use Psalm\Type\Atomic\TLiteralFloat;
 use Psalm\Type\Atomic\TLiteralInt;
 use Psalm\Type\Atomic\TLiteralString;
+use Psalm\Type\Atomic\TNamedObject;
 use Stringable;
 
-use function array_diff;
+use function array_diff_key;
 use function array_keys;
 use function assert;
 use function count;
@@ -47,6 +48,9 @@ final class Clause implements Stringable
      * representing the formula
      *
      * !$a || $b || $c !== null || is_string($d) || is_int($d)
+     *
+     * Every assertion is keyed by its string form, which is how clauses are compared
+     * (see {@see Clause::contains()} and {@see Algebra::simplifyCNF()}).
      *
      * @var array<string, non-empty-array<string, Assertion>>
      */
@@ -127,7 +131,7 @@ final class Clause implements Stringable
         }
 
         foreach ($other_clause->possibilities as $var => $possible_types) {
-            if (count(array_diff($possible_types, $this->possibilities[$var]))) {
+            if (array_diff_key($possible_types, $this->possibilities[$var])) {
                 return false;
             }
         }
@@ -254,7 +258,8 @@ final class Clause implements Stringable
                             || $inner_type instanceof TLiteralFloat
                             || $inner_type instanceof TLiteralString
                             || $inner_type instanceof TClassConstant
-                            || $inner_type instanceof TEnumCase))
+                            || $inner_type instanceof TEnumCase
+                            || ($inner_type instanceof TNamedObject && $inner_type->is_static)))
                 ) {
                     $impossibility[] = $type->getNegation();
                 }

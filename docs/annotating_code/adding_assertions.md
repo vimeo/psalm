@@ -110,6 +110,30 @@ function isNull($value): bool {
 }
 ```
 
+### Asserting that an array key exists
+
+`array-key-exists` asserts that the array in one parameter has the key held by another parameter. The same works with `@psalm-assert-if-true` and `@psalm-assert-if-false` (`!array-key-exists` asserts the opposite):
+
+```php
+<?php
+/**
+ * @psalm-assert array-key-exists $array[$key]
+ */
+function check(int|string $key, array $array): void {
+  if (!array_key_exists($key, $array)) {
+    throw new RuntimeException();
+  }
+}
+
+function f(array $array, int $key): void {
+  check(0, $array);
+  echo $array[0]; // no PossiblyUndefinedIntArrayOffset
+  check($key, $array);
+  echo $array[$key]; // no PossiblyUndefinedIntArrayOffset
+  check(strtoupper("a"), $array); // asserts nothing: the key is neither a literal nor a variable
+}
+```
+
 ### Asserting return values of methods
 
 You can also use the `@psalm-assert-if-true` and `@psalm-assert-if-false` annotations to assert return values of
@@ -117,6 +141,9 @@ methods inside classes. As you can see, Psalm even allows you to specify multipl
 
 ```php
 <?php
+/**
+ * @psalm-immutable
+ */
 class Result {
     /**
      * @var ?Exception
@@ -135,11 +162,13 @@ class Result {
         return $this->exception;
     }
 
-    public function foo(): void {
+    public function foo(): string {
         if( $this->hasException() ) {
             // Psalm now knows that $this->exception is an instance of Exception
-            echo $this->exception->getMessage();
+            return $this->exception->getMessage();
         }
+
+        return "";
     }
 }
 
@@ -151,8 +180,7 @@ if( $result->hasException() ) {
 }
 ```
 
-Please note that the example above only works if you enable [method call memoization](https://psalm.dev/docs/running_psalm/configuration/#memoizemethodcallresults)
-in the config file or annotate the class as [immutable](https://psalm.dev/docs/annotating_code/supported_annotations/#psalm-immutable).
+The assertion on `$this->getException()` only holds because the class is annotated as [immutable](https://psalm.dev/docs/annotating_code/supported_annotations/#psalm-immutable). For a mutable class, enable [method call memoization](https://psalm.dev/docs/running_psalm/configuration/#memoizemethodcallresults) in the config file.
 
 
 You can use `@psalm-this-out` to change the template arguments of a method after a method call, to reflect changes to the object's internal state.  
