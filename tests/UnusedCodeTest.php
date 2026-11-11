@@ -742,6 +742,20 @@ final class UnusedCodeTest extends TestCase
                     }',
                 'ignored_issues' => ['PossiblyInvalidArgument', 'InvalidArgument'],
             ],
+            'shebangBeforeNamespaceWithExit' => [
+                'code' => '#!/usr/bin/env php
+<?php
+                    namespace Foo;
+
+                    exit(1);',
+            ],
+            'shebangBeforeNamespaceWithReturn' => [
+                'code' => '#!/usr/bin/env php
+<?php
+                    namespace Foo;
+
+                    return [];',
+            ],
             'usedExceptionsAreNotReported' => [
                 'code' => '<?php
                     /** @psalm-api */
@@ -2482,6 +2496,44 @@ final class UnusedCodeTest extends TestCase
                     PHP,
                 'ignored_issues' => ['MixedAssignment'],
             ],
+            'paramOfAMethodIsNotUnusedAfterEval' => [
+                'code' => <<<'PHP'
+                    <?php
+                    /** @psalm-api */
+                    final class Demo
+                    {
+                        public function run(): void
+                        {
+                            $this->test(['k' => '1']);
+                        }
+
+                        protected function test(array $in): void
+                        {
+                            echo count($in);
+                            eval('1;');
+                        }
+                    }
+                    PHP,
+            ],
+            'paramOfAMethodIsNotUnusedAfterExtract' => [
+                'code' => <<<'PHP'
+                    <?php
+                    /** @psalm-api */
+                    final class Demo
+                    {
+                        public function run(): void
+                        {
+                            $this->test(['k' => '1']);
+                        }
+
+                        protected function test(array $in): void
+                        {
+                            echo count($in);
+                            extract($_GET);
+                        }
+                    }
+                    PHP,
+            ],
         ];
     }
 
@@ -2683,6 +2735,15 @@ final class UnusedCodeTest extends TestCase
                         return "$s";
                     }',
                 'error_message' => 'PossiblyInvalidCast',
+            ],
+            'unevaluatedCodeAfterExitInNamespaceWithShebang' => [
+                'code' => '#!/usr/bin/env php
+<?php
+                    namespace Foo;
+
+                    exit(1);
+                    echo "unreachable";',
+                'error_message' => 'UnevaluatedCode',
             ],
             'unusedClass' => [
                 'code' => '<?php
