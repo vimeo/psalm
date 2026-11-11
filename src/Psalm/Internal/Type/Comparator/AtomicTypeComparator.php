@@ -5,7 +5,10 @@ declare(strict_types=1);
 namespace Psalm\Internal\Type\Comparator;
 
 use Psalm\Codebase;
+use Psalm\Internal\Analyzer\Statements\Expression\Call\ClassTemplateParamCollector;
 use Psalm\Internal\MethodIdentifier;
+use Psalm\Internal\Type\TemplateInferredTypeReplacer;
+use Psalm\Internal\Type\TemplateResult;
 use Psalm\Storage\Capabilities;
 use Psalm\Type\Atomic;
 use Psalm\Type\Atomic\Scalar;
@@ -44,6 +47,7 @@ use Psalm\Type\Union;
 
 use function array_all;
 use function array_any;
+use function array_diff_key;
 use function array_merge;
 use function array_values;
 use function assert;
@@ -744,6 +748,57 @@ final class AtomicTypeComparator
             if ($input_type_part instanceof TNamedObject) {
                 // check whether the object has a __toString method
                 if ($codebase->classOrInterfaceExists($input_type_part->value)) {
+                    $to_string_method_id = new MethodIdentifier(
+                        $input_type_part->value,
+                        '__tostring',
+                    );
+
+                    if ($container_type_part instanceof TString
+                        && $container_type_part::class !== TString::class
+                        && $codebase->methodExists($to_string_method_id)
+                    ) {
+                        $self_class = $input_type_part->value;
+                        $return_type = $codebase->getMethodReturnType($to_string_method_id, $self_class);
+
+                        if ($return_type !== null && $input_type_part instanceof TGenericObject) {
+                            $class_template_params = ClassTemplateParamCollector::collect(
+                                $codebase,
+                                $codebase->methods->getClassLikeStorageForMethod($to_string_method_id),
+                                $codebase->classlike_storage_provider->get($input_type_part->value),
+                                $to_string_method_id->method_name,
+                                $input_type_part,
+                            );
+
+                            if ($class_template_params !== null) {
+                                $return_type = TemplateInferredTypeReplacer::replace(
+                                    $return_type,
+                                    new TemplateResult([], $class_template_params),
+                                    $codebase,
+                                );
+                            }
+                        }
+
+                        $return_type_comparison = new TypeComparisonResult();
+                        if ($return_type === null
+                            || !UnionTypeComparator::isContainedBy(
+                                $codebase,
+                                $return_type,
+                                new Union([$container_type_part]),
+                                false,
+                                false,
+                                $return_type_comparison,
+                            )
+                        ) {
+                            if ($atomic_comparison_result) {
+                                $atomic_comparison_result->type_coerced = $return_type === null
+                                    || $return_type_comparison->type_coerced;
+                                $atomic_comparison_result->to_string_cast = true;
+                            }
+
+                            return false;
+                        }
+                    }
+
                     if ($codebase->analysis_php_version_id >= 8_00_00
                         && ($input_type_part->value === 'Stringable'
                             || ($codebase->classlikes->classExists($input_type_part->value)
@@ -757,12 +812,7 @@ final class AtomicTypeComparator
                         return true;
                     }
 
-                    if ($codebase->methodExists(
-                        new MethodIdentifier(
-                            $input_type_part->value,
-                            '__tostring',
-                        ),
-                    )) {
+                    if ($codebase->methodExists($to_string_method_id)) {
                         if ($atomic_comparison_result) {
                             $atomic_comparison_result->to_string_cast = true;
                         }
@@ -1042,6 +1092,35 @@ final class AtomicTypeComparator
                 $type1_part->type_params[1],
                 $type2_part->type_params[1],
             );
+        }
+
+        // arrays of the same keys can be identical when every pair of their items can, as list{int|string} and
+        // list{string|bool}: neither contains the other
+        if ($type1_part instanceof TKeyedArray
+            && $type2_part instanceof TKeyedArray
+            && $type1_part->fallback_params === null
+            && $type2_part->fallback_params === null
+            && count($type1_part->properties) === count($type2_part->properties)
+            && array_diff_key($type1_part->properties, $type2_part->properties) === []
+        ) {
+            $only_defined_items = true;
+
+            foreach ($type1_part->properties as $key => $property_1) {
+                $property_2 = $type2_part->properties[$key];
+
+                if ($property_1->possibly_undefined || $property_2->possibly_undefined) {
+                    $only_defined_items = false;
+                    break;
+                }
+
+                if (!UnionTypeComparator::canExpressionTypesBeIdentical($codebase, $property_1, $property_2)) {
+                    return false;
+                }
+            }
+
+            if ($only_defined_items) {
+                return true;
+            }
         }
 
         $first_comparison_result = new TypeComparisonResult();
