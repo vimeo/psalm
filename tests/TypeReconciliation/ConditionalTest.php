@@ -21,51 +21,76 @@ final class ConditionalTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
-            'negatedInstanceofRemovesTemplateBoundByThatClass' => [
+            'mixedStaysMixedAfterAStackedTernaryOnItsType' => [
                 'code' => '<?php
-                    interface MyInterface {}
-
-                    /**
-                     * @template T of MyInterface
-                     * @param T|string $value
-                     */
-                    function f($value): string {
-                        if ($value instanceof MyInterface) {
-                            return "object";
-                        }
-
-                        return $value;
-                    }',
+                    /** @var mixed $a */
+                    $a = 1;
+                    $result = is_array($a) ? 1 : (is_int($a) ? 2 : (is_callable($a) ? 3 : 4));
+                    $copy = $a;',
+                'assertions' => [
+                    '$copy' => 'mixed',
+                ],
+                'ignored_issues' => ['MixedAssignment'],
             ],
-            'negatedInstanceofRemovesTemplateBoundByAParentOfThatClass' => [
+            'nonEmptyMixedStaysNonEmptyMixedAfterATernaryOnItsType' => [
                 'code' => '<?php
-                    interface MyInterface {}
-                    final class Impl implements MyInterface {}
+                    /** @var mixed $a */
+                    $a = 1;
 
-                    /**
-                     * @template T of Impl
-                     * @param T|string $value
-                     */
-                    function f($value): string {
-                        if (!$value instanceof MyInterface) {
-                            return $value;
-                        }
-
-                        return "object";
-                    }',
-            ],
-            'nonFinalClassCanBeIdenticalToIterable' => [
-                'code' => <<<'PHP'
-                    <?php
-                    class Foo {}
-
-                    function f(Foo $x, iterable $i): bool {
-                        return $x === $i;
+                    if (!$a) {
+                        throw new Exception("empty");
                     }
-                    PHP,
-                'assertions' => [],
-                'ignored_issues' => [],
-                'php_version' => '8.1',
+
+                    $result = is_int($a) ? 1 : 2;
+                    $copy = $a;',
+                'assertions' => [
+                    '$copy===' => 'non-empty-mixed',
+                ],
+                'ignored_issues' => ['MixedAssignment'],
+            ],
+            'mixedStaysMixedAfterAShortTernaryOnItsType' => [
+                'code' => '<?php
+                    /** @var mixed $a */
+                    $a = 1;
+                    $result = is_int($a) ?: 2;
+                    $copy = $a;',
+                'assertions' => [
+                    '$copy' => 'mixed',
+                ],
+                'ignored_issues' => ['MixedAssignment'],
+            ],
+            'mixedAssignedInABranchOfATernaryIsTheAssignedTypeOrMixed' => [
+                'code' => '<?php
+                    /** @var mixed $a */
+                    $a = 1;
+                    $result = is_int($a) ? ($a = "five") : 2;
+                    $copy = $a;',
+                'assertions' => [
+                    '$copy' => 'mixed|string',
+                ],
+                'ignored_issues' => ['MixedAssignment'],
+            ],
+            'mixedStaysMixedAfterAnAssignedTernaryOnItsType' => [
+                'code' => '<?php
+                    /** @var mixed $a */
+                    $a = 1;
+                    $result = is_int($a) ? "int" : "other";
+                    $copy = $a;',
+                'assertions' => [
+                    '$copy' => 'mixed',
+                ],
+                'ignored_issues' => ['MixedAssignment'],
+            ],
+            'mixedStaysMixedAfterATernaryOnItsTypeInAStatement' => [
+                'code' => '<?php
+                    /** @var mixed $a */
+                    $a = 1;
+                    is_array($a) ? true : false;
+                    $copy = $a;',
+                'assertions' => [
+                    '$copy' => 'mixed',
+                ],
+                'ignored_issues' => ['MixedAssignment'],
             ],
             'identicalKeyedArraysWithTheSameKeysInAnotherOrder' => [
                 'code' => '<?php
@@ -145,6 +170,19 @@ final class ConditionalTest extends TestCase
                         if (!$isRoot || $isSimple) {
                             echo "not the root, or simple";
                         }
+                    }
+                    PHP,
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
+            'nonFinalClassCanBeIdenticalToIterable' => [
+                'code' => <<<'PHP'
+                    <?php
+                    class Foo {}
+
+                    function f(Foo $x, iterable $i): bool {
+                        return $x === $i;
                     }
                     PHP,
                 'assertions' => [],
@@ -3975,6 +4013,177 @@ final class ConditionalTest extends TestCase
                         public function onlyB(): void {}
                     }',
             ],
+            'privateMethodAnalysedFromTheConstructorIgnoresTheConditionsOfItsCaller' => [
+                'code' => '<?php
+                    declare(strict_types=1);
+
+                    class Test {
+                        private string $pattern;
+
+                        public function __construct(string $pattern) {
+                            $this->captureErrors(fn(): bool => random_int(0, 1) ? true : false);
+                            $this->pattern = $pattern;
+                        }
+
+                        private function captureErrors(\\Closure $function): void {
+                            if ($function() === false) {
+                                throw new \\RuntimeException($this->formatPcreError(random_int(0, 1)));
+                            }
+
+                            $errorCode = preg_last_error();
+
+                            if ($errorCode !== 0) {
+                                throw new \\RuntimeException($this->formatPcreError($errorCode));
+                            }
+                        }
+
+                        private function formatPcreError(int $errorCode): string {
+                            if ($errorCode === 0) {
+                                return "Is Zero";
+                            }
+
+                            return "Not Zero";
+                        }
+                    }',
+            ],
+            'privateMethodOfATraitFollowedFromTheConstructorKeepsTheConditionsOfItsCaller' => [
+                'code' => '<?php
+                    final class Y {
+                        public function foo(): int {
+                            return 1;
+                        }
+                    }
+
+                    trait T {
+                        private function init(): void {
+                            $this->n = 1;
+                        }
+                    }
+
+                    final class C {
+                        use T;
+
+                        public int $n;
+                        public int $m;
+
+                        public function __construct(?Y $x, ?Y $y) {
+                            if ($x === null && $y === null) {
+                                throw new Exception();
+                            }
+
+                            $this->init();
+
+                            if ($x === null) {
+                                $this->m = $y->foo();
+                            } else {
+                                $this->m = $x->foo();
+                            }
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'privateMethodFollowedFromTheConstructorKeepsTheConditionsOfItsCaller' => [
+                'code' => '<?php
+                    final class Y {
+                        public function foo(): int {
+                            return 1;
+                        }
+                    }
+
+                    final class C {
+                        public int $n;
+                        public int $m;
+
+                        private function init(): void {
+                            $this->n = 1;
+                        }
+
+                        public function __construct(?Y $x, ?Y $y) {
+                            if ($x === null && $y === null) {
+                                throw new Exception();
+                            }
+
+                            $this->init();
+
+                            if ($x === null) {
+                                $this->m = $y->foo();
+                            } else {
+                                $this->m = $x->foo();
+                            }
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'finalMethodAnalysedFromTheConstructorIgnoresTheConditionsOfItsCaller' => [
+                'code' => '<?php
+                    declare(strict_types=1);
+
+                    class Test {
+                        private string $pattern;
+
+                        public function __construct(string $pattern) {
+                            $this->captureErrors(fn(): bool => random_int(0, 1) ? true : false);
+                            $this->pattern = $pattern;
+                        }
+
+                        final public function captureErrors(\\Closure $function): void {
+                            if ($function() === false) {
+                                throw new \\RuntimeException($this->formatPcreError(random_int(0, 1)));
+                            }
+
+                            $errorCode = preg_last_error();
+
+                            if ($errorCode !== 0) {
+                                throw new \\RuntimeException($this->formatPcreError($errorCode));
+                            }
+                        }
+
+                        final public function formatPcreError(int $errorCode): string {
+                            if ($errorCode === 0) {
+                                return "Is Zero";
+                            }
+
+                            return "Not Zero";
+                        }
+                    }',
+            ],
+            'negatedInstanceofRemovesTemplateBoundByThatClass' => [
+                'code' => '<?php
+                    interface MyInterface {}
+
+                    /**
+                     * @template T of MyInterface
+                     * @param T|string $value
+                     */
+                    function f($value): string {
+                        if ($value instanceof MyInterface) {
+                            return "object";
+                        }
+
+                        return $value;
+                    }',
+            ],
+            'negatedInstanceofRemovesTemplateBoundByAParentOfThatClass' => [
+                'code' => '<?php
+                    interface MyInterface {}
+                    final class Impl implements MyInterface {}
+
+                    /**
+                     * @template T of Impl
+                     * @param T|string $value
+                     */
+                    function f($value): string {
+                        if (!$value instanceof MyInterface) {
+                            return $value;
+                        }
+
+                        return "object";
+                    }',
+            ],
         ];
     }
 
@@ -3985,24 +4194,6 @@ final class ConditionalTest extends TestCase
     public static function providerInvalidCodeParse(): iterable
     {
         return [
-            'negatedInstanceofKeepsTemplateWithAWiderBound' => [
-                'code' => '<?php
-                    interface MyInterface {}
-                    final class Impl implements MyInterface {}
-
-                    /**
-                     * @template T of MyInterface
-                     * @param T|string $value
-                     */
-                    function f($value): string {
-                        if ($value instanceof Impl) {
-                            return "object";
-                        }
-
-                        return $value;
-                    }',
-                'error_message' => 'InvalidReturnStatement',
-            ],
             'identicalKeyedArraysWithAnOptionalKeyOfOverlappingTypesAreAKnownLimit' => [
                 'code' => '<?php
                     /** @param array{a?: int|string} $x */
@@ -4603,6 +4794,24 @@ final class ConditionalTest extends TestCase
                         echo $i;
                     }',
                 'error_message' => 'TypeDoesNotContainType',
+            ],
+            'negatedInstanceofKeepsTemplateWithAWiderBound' => [
+                'code' => '<?php
+                    interface MyInterface {}
+                    final class Impl implements MyInterface {}
+
+                    /**
+                     * @template T of MyInterface
+                     * @param T|string $value
+                     */
+                    function f($value): string {
+                        if ($value instanceof Impl) {
+                            return "object";
+                        }
+
+                        return $value;
+                    }',
+                'error_message' => 'InvalidReturnStatement',
             ],
         ];
     }
