@@ -22,41 +22,48 @@ final class TraitTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
-            'traitReadsAClassConstantEachUsingClassDefinesDifferently' => [
-                'code' => '<?php
-                    trait TestTrait {
-                        public function testFunction(): void {
-                            if (self::VALUE) {
-                                echo "True";
-                            } else {
-                                echo "False";
-                            }
+            'selfReturnOfTraitMethodIsTheClassUsingTheTrait' => [
+                'code' => <<<'PHP'
+                    <?php
+                    interface SomeInterface
+                    {
+                        public function duplicate(): self;
+                    }
 
-                            if (static::VALUE) {
-                                echo "True";
-                            } else {
-                                echo "False";
-                            }
+                    trait SomeTrait
+                    {
+                        public function duplicate(): self
+                        {
+                            return new self();
                         }
                     }
 
-                    final class ClassOne {
-                        use TestTrait;
-
-                        public const VALUE = true;
+                    class Concrete implements SomeInterface
+                    {
+                        use SomeTrait;
                     }
 
-                    final class ClassTwo {
-                        use TestTrait;
-
-                        public const VALUE = false;
+                    class ConcreteChild extends Concrete
+                    {
+                        public function duplicate(): self
+                        {
+                            return new self();
+                        }
                     }
 
-                    (new ClassOne())->testFunction();
-                    (new ClassTwo())->testFunction();',
+                    class Other implements SomeInterface
+                    {
+                        use SomeTrait;
+
+                        public function duplicate(): self
+                        {
+                            return new self();
+                        }
+                    }
+                    PHP,
                 'assertions' => [],
                 'ignored_issues' => [],
-                'php_version' => '8.3',
+                'php_version' => '8.1',
             ],
             'constructorInitializesPropertyThroughMethodOfNestedTrait' => [
                 'code' => '<?php
@@ -1549,6 +1556,42 @@ final class TraitTest extends TestCase
 
                     test(function(string ...$args): void {});',
             ],
+            'traitReadsAClassConstantEachUsingClassDefinesDifferently' => [
+                'code' => '<?php
+                    trait TestTrait {
+                        public function testFunction(): void {
+                            if (self::VALUE) {
+                                echo "True";
+                            } else {
+                                echo "False";
+                            }
+
+                            if (static::VALUE) {
+                                echo "True";
+                            } else {
+                                echo "False";
+                            }
+                        }
+                    }
+
+                    final class ClassOne {
+                        use TestTrait;
+
+                        public const VALUE = true;
+                    }
+
+                    final class ClassTwo {
+                        use TestTrait;
+
+                        public const VALUE = false;
+                    }
+
+                    (new ClassOne())->testFunction();
+                    (new ClassTwo())->testFunction();',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.3',
+            ],
         ];
     }
 
@@ -1559,18 +1602,41 @@ final class TraitTest extends TestCase
     public static function providerInvalidCodeParse(): iterable
     {
         return [
-            'classConstantOutsideATraitKeepsItsLiteralType' => [
-                'code' => '<?php
-                    final class ClassOne {
-                        public const VALUE = true;
-
-                        public function check(): void {
-                            if (self::VALUE) {
-                                echo "True";
-                            }
+            'selfReturnOfTraitMethodRejectsTheParentOfTheClassUsingTheTrait' => [
+                'code' => <<<'PHP'
+                    <?php
+                    trait SomeTrait
+                    {
+                        public function duplicate(): self
+                        {
+                            return new self();
                         }
-                    }',
-                'error_message' => 'RedundantCondition',
+                    }
+
+                    class Concrete
+                    {
+                        use SomeTrait;
+                    }
+
+                    class ConcreteChild extends Concrete
+                    {
+                        public function duplicate(): self
+                        {
+                            return new self();
+                        }
+                    }
+
+                    class GrandChild extends ConcreteChild
+                    {
+                        public function duplicate(): Concrete
+                        {
+                            return new Concrete();
+                        }
+                    }
+                    PHP,
+                'error_message' => 'Method GrandChild::duplicate with return type',
+                'error_levels' => [],
+                'php_version' => '8.1',
             ],
             'constructorCallsMethodOfNestedTraitThatDoesNotInitializeProperty' => [
                 'code' => '<?php
@@ -1978,6 +2044,19 @@ final class TraitTest extends TestCase
                     }
                     ',
                 'error_message' => 'DuplicateProperty',
+            ],
+            'classConstantOutsideATraitKeepsItsLiteralType' => [
+                'code' => '<?php
+                    final class ClassOne {
+                        public const VALUE = true;
+
+                        public function check(): void {
+                            if (self::VALUE) {
+                                echo "True";
+                            }
+                        }
+                    }',
+                'error_message' => 'RedundantCondition',
             ],
         ];
     }
