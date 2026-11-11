@@ -4374,6 +4374,26 @@ final class ClassTemplateTest extends TestCase
                 'ignored_issues' => [],
                 'php_version' => '8.0',
             ],
+            'classNamedOnlyInATemplateBoundIsKnown' => [
+                'code' => '<?php
+                    /** @template TArr of array{a: DateTime, b: stdClass} */
+                    abstract class Holder {
+                        /** @return value-of<TArr> */
+                        abstract public function read(): mixed;
+                    }
+
+                    /** @return Holder */
+                    function holder(): Holder {
+                        throw new Exception();
+                    }
+
+                    $value = holder()->read();',
+                'assertions' => [
+                    '$value===' => 'DateTime|stdClass',
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
         ];
     }
 
