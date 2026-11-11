@@ -419,6 +419,27 @@ final class AnnotationTest extends TestCase
                 'ignored_issues' => [],
                 'php_version' => '8.1',
             ],
+            'varDocblockBeforeAUseStatementDefinesTheVariable' => [
+                'code' => '<?php
+                    /**
+                     * @var string $foo
+                     */
+
+                    use StdClass;
+
+                    echo strlen($foo);',
+            ],
+            'varDocblockBeforeAUseStatementInANamespaceDefinesTheVariable' => [
+                'code' => '<?php
+                    namespace App;
+
+                    /**
+                     * @var string $foo
+                     */
+                    use StdClass;
+
+                    echo strlen($foo);',
+            ],
             'varWithoutNameDoesNotTakeNameOfPreviousVarLine' => [
                 'code' => '<?php
                     /**
