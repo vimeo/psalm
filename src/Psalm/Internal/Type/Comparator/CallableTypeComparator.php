@@ -29,6 +29,7 @@ use Psalm\Type\Atomic\TClassString;
 use Psalm\Type\Atomic\TClosure;
 use Psalm\Type\Atomic\TGenericObject;
 use Psalm\Type\Atomic\TKeyedArray;
+use Psalm\Type\Atomic\TLiteralClassString;
 use Psalm\Type\Atomic\TLiteralString;
 use Psalm\Type\Atomic\TNamedObject;
 use Psalm\Type\Atomic\TTemplateParam;
@@ -312,6 +313,7 @@ final class CallableTypeComparator
         MethodIdentifier $method_id,
         ?TCallable $container_type_part,
         ?Atomic $callable_object = null,
+        bool $exact_static = false,
     ): ?TCallable {
         if (!$codebase->classlike_storage_provider->has($method_id->fq_class_name)) {
             return null;
@@ -334,7 +336,7 @@ final class CallableTypeComparator
                     null,
                     true,
                     false,
-                    $codebase->classlike_storage_provider->get($method_fqcln)->final,
+                    $exact_static || $codebase->classlike_storage_provider->get($method_fqcln)->final,
                 );
             }
 
@@ -428,6 +430,7 @@ final class CallableTypeComparator
                 $callable->getCapabilities(),
                 $method_storage->defining_fqcln,
                 $method_fqcln,
+                $exact_static || $codebase->classlike_storage_provider->get($method_fqcln)->final,
             );
 
             $callable = $callable->replace($closure->params, $closure->return_type);
@@ -558,6 +561,8 @@ final class CallableTypeComparator
                         strtolower(substr($input_type_part->value, $method_separator + 2)),
                     ),
                     $container_type_part,
+                    null,
+                    true,
                 );
 
                 if ($callable) {
@@ -693,6 +698,7 @@ final class CallableTypeComparator
                     $method_id,
                     $container_type_part,
                     $callable_object,
+                    $callable_object instanceof TLiteralClassString,
                 );
 
                 if ($callable) {
