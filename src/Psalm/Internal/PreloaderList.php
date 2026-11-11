@@ -1038,6 +1038,7 @@ final class PreloaderList {
         \Psalm\Internal\TypeVisitor\FunctionPurityTemplateReplacer::class,
         \Psalm\Internal\TypeVisitor\PurityWildcardBinder::class,
         \Psalm\Internal\TypeVisitor\PurityWildcardFinder::class,
+        \Psalm\Internal\TypeVisitor\TemplateBoundNarrower::class,
         \Psalm\Internal\TypeVisitor\TemplateDefaultFiller::class,
         \Psalm\Internal\TypeVisitor\TemplateTypeCollector::class,
         \Psalm\Internal\TypeVisitor\TypeChecker::class,
