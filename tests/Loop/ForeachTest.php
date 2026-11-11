@@ -23,6 +23,199 @@ final class ForeachTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'foreachOverListKeepsTheEmptyStringOfAnEmptyOrNumericString' => [
+                'code' => '<?php
+                    /** @var list<array{foo: ""|numeric-string}> $rows */
+                    $rows = [];
+                    $row = ["foo" => "1"];
+                    foreach ($rows as $row) {
+                        if ("" === $row["foo"]) {
+                            throw new Exception("empty");
+                        }
+                    }
+
+                    /** @var non-empty-list<""|numeric-string> $values */
+                    $values = ["1"];
+                    $value = "1";
+                    foreach ($values as $value) {
+                    }',
+                'assertions' => [
+                    '$row===' => "array{foo: numeric-string}",
+                    '$value===' => "''|numeric-string",
+                ],
+            ],
+            'postDecrementInTheConditionOfAnIfThatBreaksOverAConcreteArray' => [
+                'code' => '<?php
+                    $count = 3;
+                    $a = [0, 1, 2, 3, 4, 5];
+
+                    foreach ($a as $_) {
+                        if ($count-- === 0) {
+                            break;
+                        }
+                    }',
+            ],
+            'postDecrementInTheConditionOfAnIfThatBreaks' => [
+                'code' => '<?php
+                    /** @param list<int> $items */
+                    function f(array $items): void {
+                        $count = 3;
+
+                        foreach ($items as $_) {
+                            if ($count-- === 0) {
+                                break;
+                            }
+                        }
+                    }',
+            ],
+            'assignmentInTheConditionOfAnIfThatBreaks' => [
+                'code' => '<?php
+                    /** @param list<int> $items */
+                    function f(array $items): int {
+                        foreach ($items as $_) {
+                            if (($found = rand(0, 3)) === 0) {
+                                break;
+                            }
+
+                            /** @psalm-check-type-exact $found = int<1, 3> */;
+                        }
+
+                        return 1;
+                    }',
+            ],
+            'foreachOverNullableOrFalsableMayNotRun' => [
+                'code' => <<<'PHP'
+                    <?php
+                    /** @var array<int>|null $nullable */
+                    $nullable = null;
+                    $nullableEmpty = true;
+                    foreach ($nullable as $_) {
+                        $nullableEmpty = false;
+                    }
+
+                    /** @var array<int>|false $falsable */
+                    $falsable = false;
+                    $falsableEmpty = true;
+                    foreach ($falsable as $_) {
+                        $falsableEmpty = false;
+                    }
+
+                    /** @var non-empty-array<int> $nonEmpty */
+                    $nonEmpty = [1];
+                    $nonEmptyEmpty = true;
+                    foreach ($nonEmpty as $_) {
+                        $nonEmptyEmpty = false;
+                    }
+                    PHP,
+                'assertions' => [
+                    '$nullableEmpty===' => 'bool',
+                    '$falsableEmpty===' => 'bool',
+                    '$nonEmptyEmpty===' => 'false',
+                    '$nullable===' => 'array<array-key, int>|null',
+                    '$falsable===' => 'array<array-key, int>|false',
+                ],
+                'ignored_issues' => ['PossiblyNullIterator', 'PossiblyFalseIterator'],
+            ],
+            'foreachOverAClassStringMapReturnedByAMethodWithATemplateOfTheSameName' => [
+                'code' => <<<'PHP'
+                    <?php
+                    interface MappingAttribute {}
+
+                    /** @template T of MappingAttribute */
+                    final class RepeatableAttributeCollection {}
+
+                    final class AttributeReader {
+                        /**
+                         * @return class-string-map<T, T|RepeatableAttributeCollection<T>>
+                         *
+                         * @template T of MappingAttribute
+                         */
+                        public function read(): array {
+                            return [];
+                        }
+                    }
+
+                    function iterate(AttributeReader $reader): void {
+                        foreach ($reader->read() as $class => $attribute) {
+                            /** @psalm-check-type-exact $class = class-string<MappingAttribute> */
+                            /** @psalm-check-type-exact $attribute = MappingAttribute|RepeatableAttributeCollection<MappingAttribute> */
+                        }
+                    }
+                    PHP,
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
+            'foreachSourceIsEvaluatedBeforeTheValueIsAssigned' => [
+                'code' => <<<'PHP'
+                    <?php
+                    /** @param array<string, list<int>> $rows */
+                    function values(array $rows, string $row): void {
+                        foreach ($rows[$row] as $key => $row) {
+                            echo $key, $row;
+                        }
+                    }
+
+                    /** @param array<string, array<string, int>> $data */
+                    function keys(array $data, string $name): void {
+                        foreach ($data[$name] as $name => $value) {
+                            echo $name, $value;
+                        }
+                    }
+                    PHP,
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
+            'foreachOverAClassStringMap' => [
+                'code' => <<<'PHP'
+                    <?php
+                    class Foo {}
+
+                    /**
+                     * @param class-string-map<T of Foo, T> $map
+                     * @param class-string-map<U, U> $unbounded
+                     * @param class-string-map<V of Foo, list<V>> $lists
+                     */
+                    function iterate(array $map, array $unbounded, array $lists): void {
+                        foreach ($map as $class => $instance) {
+                            /** @psalm-check-type-exact $class = class-string<Foo> */
+                            /** @psalm-check-type-exact $instance = Foo */
+                        }
+
+                        foreach ($unbounded as $class => $instance) {
+                            /** @psalm-check-type-exact $class = class-string */
+                            /** @psalm-check-type-exact $instance = object */
+                        }
+
+                        foreach ($lists as $list) {
+                            /** @psalm-check-type-exact $list = list<Foo> */
+                        }
+                    }
+                    PHP,
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
+            'foreachKeyOverwritesTheValueOfTheSameName' => [
+                'code' => <<<'PHP'
+                    <?php
+                    /** @param array<string, list<int>> $devices */
+                    function keys(array $devices): array {
+                        $result = [];
+
+                        foreach ($devices as $device => $device) {
+                            /** @psalm-check-type-exact $device = string */
+                            $result[$device] = 'hello world';
+                        }
+
+                        return $result;
+                    }
+                    PHP,
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
             'iteratorCurrentNullIsNotPartOfTheForeachValueType' => [
                 'code' => '<?php
                     class Foo {
@@ -1474,6 +1667,137 @@ final class ForeachTest extends TestCase
                 'assertions' => [],
                 'ignored_issues' => [],
                 'php_version' => '8.0',
+            ],
+            'incrementInsideAnAssignmentInLoopIsNotFoldedLikeALiteral' => [
+                'code' => <<<'PHP'
+                    <?php
+                    $counts = ['one' => 0];
+                    $previous = 0;
+
+                    foreach ([1, 2, 3] as $_) {
+                        $previous = $counts['one']++;
+                    }
+                    PHP,
+                'assertions' => [
+                    '$counts===' => 'array{one: int<1, max>}',
+                    '$previous===' => 'int<0, max>',
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
+            'readOfAnItemTheLoopDoesNotChangeIsFoldedLikeALiteral' => [
+                'code' => <<<'PHP'
+                    <?php
+                    $config = ['step' => 1];
+                    $counts = ['one' => 0];
+                    $next = 0;
+
+                    foreach ([1, 2, 3] as $_) {
+                        $counts['one']++;
+                        $next = $config['step'] + 1;
+                    }
+                    PHP,
+                'assertions' => [
+                    '$next===' => '2',
+                    '$counts===' => 'array{one: int<1, max>}',
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
+            'readOfAPropertyOfAnObjectPassedToACallInLoopIsNotFoldedLikeALiteral' => [
+                'code' => <<<'PHP'
+                    <?php
+                    class Counter {
+                        public int $count = 0;
+                        public ?Counter $next = null;
+                    }
+
+                    function bump(Counter $c): void {
+                        $c->count++;
+                    }
+
+                    $counter = new Counter();
+                    $counter->count = 1;
+                    $nested = new Counter();
+                    $nested->next = new Counter();
+                    $nested->next->count = 1;
+
+                    foreach ([1, 2, 3] as $_) {
+                        bump($counter);
+                        bump($nested->next);
+                        $direct = $counter->count + 1;
+                        $deep = $nested->next->count + 1;
+                    }
+                    PHP,
+                'assertions' => [
+                    '$direct===' => 'int<1, max>',
+                    '$deep===' => 'int<1, max>',
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
+            'readOfAPropertyOfAnObjectTheLoopDoesNotChangeIsFoldedNextToOneItPassesToACall' => [
+                'code' => <<<'PHP'
+                    <?php
+                    class Counter {
+                        public int $count = 0;
+                    }
+
+                    function bump(Counter $c): void {
+                        $c->count++;
+                    }
+
+                    $counter = new Counter();
+                    $counter->count = 1;
+                    $other = new Counter();
+                    $other->count = 1;
+
+                    foreach ([1, 2, 3] as $_) {
+                        bump($counter);
+                        $other_next = $other->count + 1;
+                    }
+                    PHP,
+                'assertions' => [
+                    '$other_next===' => '2',
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
+            'incrementOfAnItemInLoopIsNotFoldedLikeALiteral' => [
+                'code' => <<<'PHP'
+                    <?php
+                    /** @param list<string> $elems */
+                    function check(array $elems): bool {
+                        $results = ['one' => 0, 'two' => 0];
+
+                        foreach ($elems as $elem) {
+                            $results[$elem]++;
+                        }
+
+                        return isset($results['one']) && $results['one'] == 4;
+                    }
+
+                    class Counter {
+                        public int $count = 0;
+                    }
+
+                    $counts = ['one' => 0];
+                    $counter = new Counter();
+
+                    foreach ([1, 2, 3] as $_) {
+                        $counts['one']++;
+                        $counter->count += 1;
+                    }
+
+                    $once = ['one' => 0];
+                    $once['one']++;
+                    PHP,
+                'assertions' => [
+                    '$counts===' => 'array{one: int<1, max>}',
+                    '$once===' => 'array{one: 1}',
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
             ],
         ];
     }

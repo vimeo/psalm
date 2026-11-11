@@ -64,6 +64,7 @@ use const FILTER_FLAG_EMAIL_UNICODE;
 use const FILTER_FLAG_ENCODE_AMP;
 use const FILTER_FLAG_ENCODE_HIGH;
 use const FILTER_FLAG_ENCODE_LOW;
+use const FILTER_FLAG_GLOBAL_RANGE;
 use const FILTER_FLAG_HOSTNAME;
 use const FILTER_FLAG_IPV4;
 use const FILTER_FLAG_IPV6;
@@ -1724,8 +1725,8 @@ final class FilterUtils
         }
 
         if ($codebase->analysis_php_version_id >= 8_02_00) {
-            // phpcs:ignore SlevomatCodingStandard.Numbers.RequireNumericLiteralSeparator.RequiredNumericLiteralSeparator
-            $validate_filters[FILTER_VALIDATE_IP]['flags'][] = 268435456; // FILTER_FLAG_GLOBAL_RANGE
+            // its value depends on the PHP Psalm runs on (268435456 up to PHP 8.4, 536870912 from PHP 8.5)
+            $validate_filters[FILTER_VALIDATE_IP]['flags'][] = FILTER_FLAG_GLOBAL_RANGE;
         }
 
         if ($codebase->analysis_php_version_id >= 7_00_00) {
