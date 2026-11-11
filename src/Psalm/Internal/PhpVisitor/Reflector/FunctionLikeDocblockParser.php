@@ -15,9 +15,11 @@ use Psalm\Internal\Analyzer\CommentAnalyzer;
 use Psalm\Internal\Scanner\DocblockParser;
 use Psalm\Internal\Scanner\FunctionDocblockComment;
 use Psalm\Internal\Scanner\ParsedDocblock;
+use Psalm\Issue\CodeIssue;
 use Psalm\Issue\InvalidDocblock;
 use Psalm\Storage\Capabilities;
 use Psalm\Storage\CapabilitiesParseException;
+use RuntimeException;
 
 use function array_keys;
 use function array_shift;
@@ -118,19 +120,17 @@ final class FunctionLikeDocblockParser
                 foreach ($parsed_docblock->tags[$alias] as $offset => $param) {
                     $line_parts = CommentAnalyzer::splitDocLine($param);
 
-                    if (count($line_parts) > 0) {
-                        $line_parts[0] = CommentAnalyzer::sanitizeDocblockType($line_parts[0]);
+                    $line_parts[0] = CommentAnalyzer::sanitizeDocblockType($line_parts[0]);
 
-                        $info->self_out = [
-                            'type' => $line_parts[0],
-                            'line_number' => $comment->getStartLine() + substr_count(
-                                $comment_text,
-                                "\n",
-                                0,
-                                $offset - $comment->getStartFilePos(),
-                            ),
-                        ];
-                    }
+                    $info->self_out = [
+                        'type' => $line_parts[0],
+                        'line_number' => $comment->getStartLine() + substr_count(
+                            $comment_text,
+                            "\n",
+                            0,
+                            $offset - $comment->getStartFilePos(),
+                        ),
+                    ];
                 }
                 break;
             }
@@ -175,28 +175,32 @@ final class FunctionLikeDocblockParser
                 }
 
                 if (count($line_parts) > 1) {
-                    if (preg_match('/^(\.\.\.)?&?\$[A-Za-z0-9_]+,?$/', $line_parts[1])
+                    if (preg_match('/^(\.\.\.)?&?\$[A-Za-z0-9_\x80-\xff]+[,;]?$/', $line_parts[1])
                         && $line_parts[0][0] !== '{'
                     ) {
                         if ($line_parts[1][0] === '&') {
                             $line_parts[1] = substr($line_parts[1], 1);
                         }
 
-                        if ($line_parts[0][0] === '$' && !preg_match('/^\$this(\||$)/', $line_parts[0])) {
+                        if ($line_parts[0][0] === '$'
+                            && !preg_match('/^\$this *(\||$)/', CommentAnalyzer::sanitizeDocblockType($line_parts[0]))
+                        ) {
                             throw new IncorrectDocblockException('Misplaced variable');
                         }
 
-                        $line_parts[1] = (string) preg_replace('/,$/', '', $line_parts[1], 1);
+                        $line_parts[1] = (string) preg_replace('/[,;]$/', '', $line_parts[1], 1);
 
                         $info->globals[] = [
                             'name' => $line_parts[1],
-                            'type' => $line_parts[0],
+                            'type' => CommentAnalyzer::sanitizeDocblockType($line_parts[0]),
                             'line_number' => $comment->getStartLine() + substr_count(
                                 $comment_text,
                                 "\n",
                                 0,
                                 $offset - $comment->getStartFilePos(),
                             ),
+                            'start' => $offset,
+                            'end' => $offset + strlen($line_parts[0]),
                         ];
                     }
                 } else {
@@ -244,9 +248,13 @@ final class FunctionLikeDocblockParser
 
         if (isset($parsed_docblock->tags['throws'])) {
             foreach ($parsed_docblock->tags['throws'] as $offset => $throws_entry) {
-                // Take everything up to the first whitespace that is not inside
-                // generic parameters, e.g. `Foo<int, string>|Bar description`
-                preg_match('/^(?:[^\s<]++|(<(?:[^<>]++|(?1))*+>))++/', $throws_entry, $matches);
+                // Take everything up to the first whitespace that is not inside generic parameters or next to
+                // a `|`, e.g. `Foo<int, string> | Bar description`
+                preg_match(
+                    '/^(?:[^\s<|]++|(<(?:[^<>]++|(?1))*+>)|(?: |\n *\*?)*\|(?: |\n *\*?)*)++/',
+                    $throws_entry,
+                    $matches,
+                );
                 $throws_class = $matches[0] ?? '';
 
                 if ($throws_class === '') {
@@ -377,6 +385,26 @@ final class FunctionLikeDocblockParser
     }
 
     /**
+     * Registers the taint a docblock names. What is wrong with it is added to the issues found while scanning.
+     *
+     * @param list<CodeIssue> $scan_issues
+     */
+    public static function registerTaint(
+        Codebase $codebase,
+        string $taint_type,
+        CodeLocation $code_location,
+        array &$scan_issues,
+    ): ?int {
+        try {
+            return $codebase->getOrRegisterTaint($taint_type);
+        } catch (RuntimeException $e) {
+            $scan_issues[] = new InvalidDocblock($e->getMessage(), $code_location);
+
+            return null;
+        }
+    }
+
+    /**
      * Reads `@psalm-taint-sink (<conditional>) $param`
      */
     private static function parseConditionalTaintSink(
@@ -455,7 +483,7 @@ final class FunctionLikeDocblockParser
                 }
 
                 if (count($param_parts) >= 2) {
-                    $t = $codebase->getOrRegisterTaint($param_parts[0], $code_location);
+                    $t = self::registerTaint($codebase, $param_parts[0], $code_location, $info->scan_issues);
                     if ($t !== null) {
                         $info->taint_sink_params[] = ['name' => $param_parts[1], 'taint' => $t];
                     }
@@ -481,7 +509,7 @@ final class FunctionLikeDocblockParser
 
                     if (str_starts_with($taint_type, 'exec_')) {
                         $taint_type = substr($taint_type, 5);
-                        $t = $codebase->getOrRegisterTaint($taint_type, $code_location);
+                        $t = self::registerTaint($codebase, $taint_type, $code_location, $info->scan_issues);
                         if ($t !== null) {
                             $info->taint_sink_params[] = ['name' => $param_parts[0], 'taint' => $t];
                         }
@@ -498,7 +526,7 @@ final class FunctionLikeDocblockParser
                 }
 
                 if ($param_parts[0]) {
-                    $t = $codebase->getOrRegisterTaint($param_parts[0], $code_location);
+                    $t = self::registerTaint($codebase, $param_parts[0], $code_location, $info->scan_issues);
                     $keys = isset($param_parts[1]) && str_starts_with($param_parts[1], 'return[')
                         ? self::parseReturnKeys($param_parts[1])
                         : null;
@@ -535,7 +563,7 @@ final class FunctionLikeDocblockParser
 
                 if ($param_parts[0]) {
                     if ($param_parts[0] !== 'none') {
-                        $t = $codebase->getOrRegisterTaint($param_parts[0], $code_location);
+                        $t = self::registerTaint($codebase, $param_parts[0], $code_location, $info->scan_issues);
                         if ($t !== null) {
                             $info->taint_source_types |= $t;
                         }
@@ -610,12 +638,12 @@ final class FunctionLikeDocblockParser
             }
 
             if (count($line_parts) > 1) {
-                if (preg_match('/^&?(\.\.\.)?&?\$[A-Za-z0-9_]+,?$/', $line_parts[1])
+                if (preg_match('/^&?(\.\.\.)?&?\$[A-Za-z0-9_\x80-\xff]+[,;]?$/', $line_parts[1])
                     && ($line_parts[0] === '' || $line_parts[0][0] !== '{')
                 ) {
                     $line_parts[1] = str_replace('&', '', $line_parts[1]);
 
-                    $line_parts[1] = (string) preg_replace('/,$/', '', $line_parts[1], 1);
+                    $line_parts[1] = (string) preg_replace('/[,;]$/', '', $line_parts[1], 1);
 
                     $end = $offset + strlen($line_parts[0]);
 
@@ -623,7 +651,7 @@ final class FunctionLikeDocblockParser
 
                     if ($line_parts[0] === ''
                         || ($line_parts[0][0] === '$'
-                            && !preg_match('/^\$this(\||$)/', $line_parts[0]))
+                            && !preg_match('/^\$this *(\||$)/', $line_parts[0]))
                     ) {
                         throw new IncorrectDocblockException('Misplaced variable');
                     }
@@ -642,7 +670,12 @@ final class FunctionLikeDocblockParser
                     ];
 
                     if (isset($line_parts[1]) && isset($line_parts[2])) {
-                        $description = substr($param, strlen($line_parts[0]) + strlen($line_parts[1]) + 2);
+                        // the description follows the name as written: `& $x`, or on the next line
+                        $description = (string) preg_replace(
+                            '/^[\s*]*&?[\s*]*\S+/',
+                            '',
+                            substr($param, $end - $offset),
+                        );
                         $info_param['description'] = trim($description);
                         // Handle multiline description.
                         $info_param['description'] = (string) preg_replace(
@@ -739,7 +772,9 @@ final class FunctionLikeDocblockParser
             $line_parts = CommentAnalyzer::splitDocLine($return_block);
 
             if ($line_parts[0][0] !== '{') {
-                if ($line_parts[0][0] === '$' && !preg_match('/^\$this(\||$)/', $line_parts[0])) {
+                if ($line_parts[0][0] === '$'
+                    && !preg_match('/^\$this *(\||$)/', CommentAnalyzer::sanitizeDocblockType($line_parts[0]))
+                ) {
                     throw new IncorrectDocblockException('Misplaced variable');
                 }
 
@@ -915,7 +950,7 @@ final class FunctionLikeDocblockParser
             return null;
         }
 
-        if (!preg_match('/^(\.\.\.)?&?\$[A-Za-z0-9_]+,?$/', $line_parts[1])
+        if (!preg_match('/^(\.\.\.)?&?\$[A-Za-z0-9_\x80-\xff]+[,;]?$/', $line_parts[1])
             || $line_parts[0][0] === '{'
         ) {
             return null;
@@ -934,12 +969,12 @@ final class FunctionLikeDocblockParser
         $line_parts[0] = CommentAnalyzer::sanitizeDocblockType($line_parts[0]);
 
         if ($line_parts[0] === ''
-            || ($line_parts[0][0] === '$' && !preg_match('/^\$this(\||$)/', $line_parts[0]))
+            || ($line_parts[0][0] === '$' && !preg_match('/^\$this *(\||$)/', $line_parts[0]))
         ) {
             throw new IncorrectDocblockException('Misplaced variable');
         }
 
-        $line_parts[1] = (string) preg_replace('/,$/', '', $line_parts[1], 1);
+        $line_parts[1] = (string) preg_replace('/[,;]$/', '', $line_parts[1], 1);
 
         return [
             'name' => trim($line_parts[1]),
