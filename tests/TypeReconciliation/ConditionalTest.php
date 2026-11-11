@@ -21,6 +21,35 @@ final class ConditionalTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'chainedAssignmentOfAConditionIsFalseWhereTheConditionIsFalse' => [
+                'code' => <<<'PHP'
+                    <?php
+                    function f(?stdClass $definition): void {
+                        if ($isSimple = $isRoot = null === $definition) {
+                            return;
+                        }
+
+                        /** @psalm-check-type-exact $isSimple = false */
+                        /** @psalm-check-type-exact $isRoot = false */
+                        /** @psalm-check-type-exact $definition = stdClass */
+                    }
+
+                    function g(?stdClass $definition): void {
+                        if ($isSimple = $isRoot = null === $definition) {
+                            echo "root";
+                        } elseif ($definition instanceof stdClass) {
+                            echo "definition";
+                        }
+
+                        if (!$isRoot || $isSimple) {
+                            echo "not the root, or simple";
+                        }
+                    }
+                    PHP,
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
             'nonFinalClassCanBeIdenticalToIterable' => [
                 'code' => <<<'PHP'
                     <?php
@@ -901,6 +930,54 @@ final class ConditionalTest extends TestCase
                         public static function getOne() {
                             $one = current(static::getArr());
                             return $one instanceof static ? $one : null;
+                        }
+                    }',
+            ],
+            'negatedInstanceofStaticNarrowsAfterAnEarlyReturn' => [
+                'code' => '<?php
+                    interface Equatable {
+                        public function equals(Equatable $other): bool;
+                    }
+
+                    final class Money implements Equatable {
+                        public function __construct(private string $id) {}
+
+                        public function equals(Equatable $other): bool {
+                            if (!$other instanceof static) {
+                                return false;
+                            }
+
+                            /** @psalm-check-type-exact $other = Money&static */
+                            return $this->id === $other->id;
+                        }
+                    }',
+            ],
+            'negatedInstanceofThisNarrowsInTheElseBranch' => [
+                'code' => '<?php
+                    interface Equatable {}
+
+                    class Money implements Equatable {
+                        public function check(Equatable $other): void {
+                            if (!$other instanceof $this) {
+                                /** @psalm-check-type-exact $other = Equatable */
+                                return;
+                            } else {
+                                /** @psalm-check-type-exact $other = Money&static */
+                                return;
+                            }
+                        }
+                    }',
+            ],
+            'negatedInstanceofStaticKeepsTheTypeOfANonStaticValue' => [
+                'code' => '<?php
+                    class Money {
+                        public function check(Money $other): void {
+                            if (!$other instanceof static) {
+                                /** @psalm-check-type-exact $other = Money */
+                                return;
+                            }
+
+                            /** @psalm-check-type-exact $other = Money&static */
                         }
                     }',
             ],
@@ -3687,6 +3764,117 @@ final class ConditionalTest extends TestCase
                 'ignored_issues' => [],
                 'php_version' => '8.0',
             ],
+            'firstClassCallableInCountComparison' => [
+                'code' => '<?php
+                    while (count(...) > 1) {}
+                    while (sizeof(...) <= 1) {}
+                    if (count(...) === 1) {}
+                    if (1 !== sizeof(...)) {}
+                    if (2 <= count(...)) {}
+                    if (3 > count(...)) {}
+                    if (count(...) == 1) {}
+                    if (1 != sizeof(...)) {}',
+                'assertions' => [],
+                'ignored_issues' => ['RedundantCondition', 'TypeDoesNotContainType'],
+                'php_version' => '8.1',
+            ],
+            'firstClassCallableInGettypeComparison' => [
+                'code' => '<?php
+                    if (gettype(...) === "x") {}
+                    if ("x" !== gettype(...)) {}
+                    if (get_debug_type(...) === "x") {}
+                    if ("x" != get_debug_type(...)) {}',
+                'assertions' => [],
+                'ignored_issues' => [
+                    'TypeDoesNotContainType',
+                    'RedundantCondition',
+                ],
+                'php_version' => '8.1',
+            ],
+            'firstClassCallableInGetClassComparison' => [
+                'code' => '<?php
+                    class A {
+                        public function f(): void {
+                            if (get_class(...) === A::class) {}
+                            if (A::class !== get_class(...)) {}
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [
+                    'TypeDoesNotContainType',
+                    'RedundantCondition',
+                ],
+                'php_version' => '8.1',
+            ],
+            'countWithModeArgumentNarrowsToNonEmpty' => [
+                'code' => '<?php
+                    /** @var array<int, string> $xs */
+                    $xs = [];
+                    $a = null;
+                    if (count($xs, COUNT_NORMAL) > 0) {
+                        $a = $xs;
+                    }',
+                'assertions' => [
+                    '$a===' => 'non-empty-array<int, string>|null',
+                ],
+            ],
+            'classConstOnNonNameClassExprNarrows' => [
+                'code' => '<?php
+                    final class T {}
+                    final class Holder {
+                        public object $value;
+                        public function __construct() {
+                            $this->value = new T();
+                        }
+                    }
+                    $holder = new Holder();
+                    if ($holder->value::class === T::class) {
+                        $fromProp = $holder->value;
+                    } else {
+                        $fromProp = new T();
+                    }
+
+                    /** @var array{value: object} $box */
+                    $box = ["value" => new T()];
+                    if ($box["value"]::class === T::class) {
+                        $fromBox = $box["value"];
+                    } else {
+                        $fromBox = new T();
+                    }',
+                'assertions' => [
+                    '$fromProp===' => 'T',
+                    '$fromBox===' => 'T',
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
+            'getClassWithoutArgumentsNarrowsThis' => [
+                'code' => '<?php
+                    class A {
+                        public function f(): void {
+                            if (get_class() === B::class) {
+                                $this->onlyB();
+                            }
+                        }
+                    }
+                    final class B extends A {
+                        public function onlyB(): void {}
+                    }',
+            ],
+            'getClassInequalityWithoutArgumentsNarrowsThis' => [
+                'code' => '<?php
+                    class A {
+                        public function f(): void {
+                            if (get_class() !== B::class) {
+                                return;
+                            }
+                            $this->onlyB();
+                        }
+                    }
+                    final class B extends A {
+                        public function onlyB(): void {}
+                    }',
+            ],
         ];
     }
 
@@ -4247,6 +4435,14 @@ final class ConditionalTest extends TestCase
                     }
                 ',
                 'error_message' => 'RedundantCondition',
+            ],
+            'literalIntGreaterThanComparisonIsImpossible' => [
+                'code' => '<?php
+                    $i = 0;
+                    if ($i > 1) {
+                        echo $i;
+                    }',
+                'error_message' => 'TypeDoesNotContainType',
             ],
         ];
     }
