@@ -11,6 +11,7 @@ use Psalm\Internal\Analyzer\Statements\ExpressionAnalyzer;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\Internal\Codebase\VariableUseGraph;
 use Psalm\Internal\DataFlow\DataFlowNode;
+use Psalm\Internal\Type\LiteralCast;
 use Psalm\Issue\InvalidOperand;
 use Psalm\Issue\PossiblyInvalidOperand;
 use Psalm\IssueBuffer;
@@ -58,9 +59,8 @@ final class BitwiseNotAnalyzer
                     $acceptable_types[] = $type_part;
                     $has_valid_operand = true;
                 } elseif ($type_part instanceof TFloat) {
-                    $type_part = ($type_part instanceof TLiteralFloat) ?
-                        new TLiteralInt(~$type_part->value) :
-                        new TInt;
+                    $int = $type_part instanceof TLiteralFloat ? LiteralCast::toInt($type_part->value) : null;
+                    $type_part = $int === null ? new TInt : new TLiteralInt(~$int);
 
                     $stmt_expr_type->removeType($type_string);
                     $stmt_expr_type->addType($type_part);

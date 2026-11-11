@@ -1483,6 +1483,9 @@ final class AssignmentAnalyzer
                             );
                         }
                     } elseif ($assign_value_atomic_type->hasArrayAccessInterface($codebase)) {
+                        $array_access_key_type = null;
+                        $array_access_value_type = null;
+
                         ForeachAnalyzer::getKeyValueParamsForTraversableObject(
                             $assign_value_atomic_type,
                             $codebase,
@@ -1490,7 +1493,12 @@ final class AssignmentAnalyzer
                             $array_access_value_type,
                         );
 
-                        $new_assign_type = $array_access_value_type;
+                        $new_assign_type = Type::combineUnionTypes(
+                            $array_access_value_type
+                                ?? ForeachAnalyzer::getArrayAccessValueType($assign_value_atomic_type, $codebase)
+                                ?? Type::getMixed(),
+                            $new_assign_type,
+                        );
                     }
 
                     if ($already_in_scope) {
