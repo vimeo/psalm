@@ -133,7 +133,7 @@ interface SeekableIterator extends Iterator {
  *
  * @template-covariant TKey
  * @template-covariant TValue
- * @template-covariant TIterator as Traversable[TPurity]<TKey, TValue>
+ * @template-covariant TIterator as Traversable[TPurity]<TKey, TValue> = Traversable<TKey, TValue>
  * @psalm-purity-template TPurity(impure)
  *
  * @template-implements OuterIterator[TPurity]<TKey, TValue>
@@ -202,7 +202,7 @@ class IteratorIterator implements OuterIterator {
  *
  * @template TKey
  * @template TValue
- * @template TIterator as Iterator[TPurity]<TKey, TValue>
+ * @template TIterator as Iterator[TPurity]<TKey, TValue> = Iterator<TKey, TValue>
  * @psalm-purity-template TPurity(impure)
  *
  * @template-extends IteratorIterator[TPurity]<TKey, TValue, TIterator>
@@ -521,7 +521,7 @@ class ArrayIterator implements SeekableIterator, ArrayAccess, Serializable, Coun
  *
  * @template-covariant TKey
  * @template-covariant TValue
- * @template-covariant TIterator as Traversable[TPurity]<TKey, TValue>
+ * @template-covariant TIterator as Traversable[TPurity]<TKey, TValue> = Traversable<TKey, TValue>
  * @psalm-purity-template TPurity(impure)
  *
  * @template-extends IteratorIterator[TPurity]<TKey, TValue, TIterator>
@@ -577,7 +577,7 @@ abstract class FilterIterator extends IteratorIterator {
  *
  * @template-covariant TKey
  * @template-covariant TValue
- * @template-covariant TIterator as Iterator[TPurity]<TKey, TValue>
+ * @template-covariant TIterator as Iterator[TPurity]<TKey, TValue> = Iterator<TKey, TValue>
  * @psalm-purity-template TPurity(impure)
  *
  * @template-implements OuterIterator[TPurity]<TKey, TValue>
@@ -721,7 +721,7 @@ class CachingIterator extends IteratorIterator implements OuterIterator , ArrayA
  *
  * @template-covariant TKey
  * @template-covariant TValue
- * @template-covariant TIterator as Iterator[TPurity]<TKey, TValue>
+ * @template-covariant TIterator as Iterator[TPurity]<TKey, TValue> = Iterator<TKey, TValue>
  * @psalm-purity-template TPurity(impure)
  *
  * @template-implements OuterIterator[TPurity]<TKey, TValue>
@@ -953,7 +953,7 @@ class GlobIterator extends FilesystemIterator implements Countable {
 /**
  * @template-covariant TKey
  * @template-covariant TValue
- * @template-covariant TIterator as Iterator[TPurity]<TKey, TValue>
+ * @template-covariant TIterator as Iterator[TPurity]<TKey, TValue> = Iterator<TKey, TValue>
  * @psalm-purity-template TPurity(impure)
  *
  * @template-extends IteratorIterator[TPurity]<TKey, TValue, TIterator>
@@ -993,7 +993,7 @@ class InfiniteIterator extends IteratorIterator {
 /**
  * @template-covariant TKey
  * @template-covariant TValue
- * @template-covariant TIterator as Iterator[TPurity]<TKey, TValue>
+ * @template-covariant TIterator as Iterator[TPurity]<TKey, TValue> = Iterator<TKey, TValue>
  * @psalm-purity-template TPurity(impure)
  *
  * @template-implements OuterIterator[TPurity]<TKey, TValue>
@@ -1060,7 +1060,7 @@ class LimitIterator extends IteratorIterator implements OuterIterator {
 /**
  * @template-covariant TKey
  * @template-covariant TValue
- * @template-covariant TIterator as Iterator[TPurity]<TKey, TValue>
+ * @template-covariant TIterator as Iterator[TPurity]<TKey, TValue> = Iterator<TKey, TValue>
  * @psalm-purity-template TPurity(impure)
  *
  * @template-extends IteratorIterator[TPurity]<TKey, TValue, TIterator>
@@ -1231,7 +1231,7 @@ class MultipleIterator implements Iterator {
 /**
  * @template TKey
  * @template TValue
- * @template TIterator as RecursiveIterator[TPurity]<TKey, TValue>
+ * @template TIterator as RecursiveIterator[TPurity]<TKey, TValue> = RecursiveIterator<TKey, TValue>
  * @psalm-purity-template TPurity(impure)
  *
  * @template-extends FilterIterator[TPurity]<TKey, TValue, TIterator>
@@ -1250,7 +1250,7 @@ abstract class RecursiveFilterIterator extends FilterIterator implements Recursi
      *
      * @psalm-pure
      * @psalm-purity-from-template TPurity
-     * @return TIterator
+     * @return RecursiveFilterIterator[TPurity]<TKey, TValue>
      */
     public function getChildren() {}
 
@@ -1281,7 +1281,7 @@ abstract class RecursiveFilterIterator extends FilterIterator implements Recursi
 /**
  * @template TKey
  * @template TValue
- * @template TIterator as RecursiveIterator[TPurity]<TKey, TValue>
+ * @template TIterator as RecursiveIterator[TPurity]<TKey, TValue> = RecursiveIterator<TKey, TValue>
  * @psalm-purity-template TPurity(impure)
  *
  * @template-extends RecursiveFilterIterator[TPurity]<TKey, TValue, TIterator>
@@ -1397,7 +1397,7 @@ class RecursiveArrayIterator extends ArrayIterator implements RecursiveIterator 
 /**
  * @template TKey
  * @template TValue
- * @template TIterator as Iterator[TPurity]<TKey, TValue>
+ * @template TIterator as Iterator[TPurity]<TKey, TValue> = Iterator<TKey, TValue>
  * @psalm-purity-template TPurity(impure)
  *
  * @template-implements RecursiveIterator[TPurity]<TKey, TValue>
@@ -1414,7 +1414,7 @@ class RecursiveCachingIterator extends CachingIterator implements RecursiveItera
     /**
      * @psalm-pure
      * @psalm-purity-from-template TPurity
-     * @return RecursiveCachingIterator[TPurity]<TKey,TValue, TIterator>
+     * @return RecursiveCachingIterator[TPurity]<TKey, TValue>
      */
     public function getChildren() {}
 
@@ -1429,7 +1429,7 @@ class RecursiveCachingIterator extends CachingIterator implements RecursiveItera
 /**
  * @template TKey
  * @template TValue
- * @template TIterator as RecursiveIterator[TPurity]<TKey, TValue>
+ * @template TIterator as RecursiveIterator[TPurity]<TKey, TValue> = RecursiveIterator<TKey, TValue>
  * @psalm-purity-template TPurity(impure)
  *
  * @template-implements RecursiveIterator[TPurity]<TKey, TValue>
@@ -1448,7 +1448,7 @@ class RecursiveCallbackFilterIterator extends CallbackFilterIterator implements 
     /**
      * @psalm-pure
      * @psalm-purity-from-template TPurity
-     * @return RecursiveCallbackFilterIterator[TPurity]<TKey, TValue, TIterator>
+     * @return RecursiveCallbackFilterIterator[TPurity]<TKey, TValue>
      */
     public function getChildren() {}
 
@@ -1701,7 +1701,7 @@ class RecursiveIteratorIterator implements OuterIterator {
 /**
  * @template TKey
  * @template TValue
- * @template TIterator as RecursiveIterator[TPurity]<TKey, TValue>
+ * @template TIterator as RecursiveIterator[TPurity]<TKey, TValue> = RecursiveIterator<TKey, TValue>
  * @psalm-purity-template TPurity(impure)
  *
  * @template-implements RecursiveIterator[TPurity]<TKey, TValue>
@@ -1913,7 +1913,7 @@ class RecursiveTreeIterator extends RecursiveIteratorIterator implements OuterIt
  *
  * @template TKey
  * @template TValue
- * @template TIterator as Iterator[TPurity]<TKey, TValue>
+ * @template TIterator as Iterator[TPurity]<TKey, TValue> = Iterator<TKey, TValue>
  * @psalm-purity-template TPurity(impure)
  *
  * @template-extends FilterIterator[TPurity]<TKey, TValue, TIterator>
