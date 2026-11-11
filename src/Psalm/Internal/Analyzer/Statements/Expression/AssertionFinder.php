@@ -1525,7 +1525,7 @@ final class AssertionFinder
     ): bool {
         return $expr instanceof PhpParser\Node\Expr\FuncCall
             && $expr->name instanceof PhpParser\Node\Name
-            && !$expr->isPartialFunctionApplication()
+            && !CallAnalyzer::isPartialFunctionApplication($expr)
             && in_array(strtolower($expr->name->getFirst()), $lowercase_names, true)
             && count($expr->getArgs()) >= $min_args;
     }

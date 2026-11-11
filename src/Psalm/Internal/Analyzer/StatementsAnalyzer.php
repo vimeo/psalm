@@ -29,6 +29,7 @@ use Psalm\Internal\Analyzer\Statements\DeclareAnalyzer;
 use Psalm\Internal\Analyzer\Statements\EchoAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\Assignment\InstancePropertyAssignmentAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\AssignmentAnalyzer;
+use Psalm\Internal\Analyzer\Statements\Expression\CallAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\ClassConstAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\Fetch\ConstFetchAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\Fetch\VariableFetchAnalyzer;
@@ -331,7 +332,7 @@ final class StatementsAnalyzer extends SourceAnalyzer
                 && $stmt->expr instanceof PhpParser\Node\Expr\FuncCall
                 && $stmt->expr->name instanceof PhpParser\Node\Name
                 && $stmt->expr->name->getParts() === ['define']
-                && !$stmt->expr->isPartialFunctionApplication()
+                && !CallAnalyzer::isPartialFunctionApplication($stmt->expr)
                 && isset($stmt->expr->getArgs()[1])
             ) {
                 $const_name = ConstFetchAnalyzer::getConstName(
