@@ -25,6 +25,7 @@ use Psalm\Plugin\EventHandler\Event\BeforeAddIssueEvent;
 use Psalm\PluginRegistrationSocket;
 use Psalm\Type;
 
+use function array_keys;
 use function array_map;
 use function array_values;
 use function get_class;
@@ -136,6 +137,43 @@ final class CodebaseTest extends TestCase
     {
         yield ['iterable<int,string>', ['int', 'string']];
         yield ['iterable<int|string,bool|float>', ['int|string', 'bool|float']];
+    }
+
+    #[Test]
+    public function dependentClasslikesIncludeTransitiveDependents(): void
+    {
+        $this->addFile(
+            'somefile.php',
+            '<?php
+                namespace Psalm\CurrentTest;
+                interface I {}
+                interface J {}
+                class A implements I, J {}
+                class B extends A {}
+                class C extends A {}
+                class D extends B {}
+                class E extends C {}
+            ',
+        );
+
+        $this->analyzeFile('somefile.php', new Context);
+
+        $ns = 'psalm\\currenttest\\';
+        $provider = $this->codebase->classlike_storage_provider;
+
+        self::assertSame(
+            [$ns . 'b', $ns . 'c', $ns . 'd', $ns . 'e'],
+            array_keys($provider->get($ns . 'a')->dependent_classlikes),
+        );
+        self::assertSame(
+            [$ns . 'a', $ns . 'b', $ns . 'c', $ns . 'd', $ns . 'e'],
+            array_keys($provider->get($ns . 'i')->dependent_classlikes),
+        );
+        self::assertSame(
+            [$ns . 'a', $ns . 'b', $ns . 'c', $ns . 'd', $ns . 'e'],
+            array_keys($provider->get($ns . 'j')->dependent_classlikes),
+        );
+        self::assertSame([$ns . 'd'], array_keys($provider->get($ns . 'b')->dependent_classlikes));
     }
 
     #[Test]

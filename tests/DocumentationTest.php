@@ -16,13 +16,9 @@ use Psalm\Context;
 use Psalm\DocComment;
 use Psalm\Exception\CodeException;
 use Psalm\Internal\Analyzer\ProjectAnalyzer;
-use Psalm\Internal\Provider\FakeFileProvider;
-use Psalm\Internal\Provider\Providers;
-use Psalm\Internal\RuntimeCaches;
 use Psalm\Issue\CodeIssue;
 use Psalm\Issue\UnusedBaselineEntry;
 use Psalm\Issue\UnusedIssueHandlerSuppression;
-use Psalm\Tests\Internal\Provider\FakeParserCacheProvider;
 use SebastianBergmann\Exporter\Exporter;
 use UnexpectedValueException;
 
@@ -152,17 +148,7 @@ final class DocumentationTest extends TestCase
     #[Override]
     public function setUp(): void
     {
-        RuntimeCaches::clearAll();
-
-        $this->file_provider = new FakeFileProvider();
-
-        $this->project_analyzer = new ProjectAnalyzer(
-            new TestConfig(),
-            new Providers(
-                $this->file_provider,
-                new FakeParserCacheProvider(),
-            ),
-        );
+        parent::setUp();
 
         $this->project_analyzer->setPhpVersion('8.0', 'tests');
     }
@@ -193,7 +179,6 @@ final class DocumentationTest extends TestCase
     public function testAllIssuesCovered(): void
     {
         $all_issues = IssueHandler::getAllIssueTypes();
-        $all_issues[] = 'ParseError';
         $all_issues[] = 'PluginIssue';
 
         sort($all_issues);
@@ -605,7 +590,7 @@ final class DocumentationTest extends TestCase
         $sorted = $issues_index_list;
         usort($sorted, "strcasecmp");
         for ($i = 0; $i < count($sorted); ++$i) {
-            $this->assertEquals($sorted[$i], $issues_index_list[$i], "issues.md out of order, expected {$sorted[$i]} before {$issues_index_list[$i]}");
+            $this->assertSame($sorted[$i], $issues_index_list[$i], "issues.md out of order, expected {$sorted[$i]} before {$issues_index_list[$i]}");
         }
     }
 }

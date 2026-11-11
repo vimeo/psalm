@@ -3,14 +3,14 @@
  * @psalm-template TArray as array
  *
  * @param TArray $array
- * @param mixed $search_value
+ * @param mixed $filter_value
  * @param bool  $strict
  *
  * @return (TArray is non-empty-array ? non-empty-list<key-of<TArray>> : list<key-of<TArray>>)
  * @psalm-pure
  * @psalm-flow ($array) -(arraykey-fetch)-> return
  */
-function array_keys(array $array, $search_value = null, bool $strict = false)
+function array_keys(array $array, $filter_value = null, bool $strict = false)
 {
 }
 
@@ -298,6 +298,15 @@ function sort(array &$array, int $flags = SORT_REGULAR): bool
 function rsort(array &$array, int $flags = SORT_REGULAR): bool
 {
 }
+
+/**
+ * @template TValue
+ *
+ * @param array<TValue> $array
+ * @param callable(mixed, TValue): mixed $callback
+ * @param mixed $initial
+ */
+function array_reduce(array $array, callable $callback, mixed $initial = null): mixed {}
 
 /**
  * @psalm-template T
@@ -692,7 +701,7 @@ function pathinfo(string $path, int $flags = \PATHINFO_DIRNAME) {}
  *
  * @return (func_num_args() is 0 ? array<string, string> : string|false)
  */
-function getenv(string $varname = '', bool $local_only = false) {}
+function getenv(string $name = '', bool $local_only = false) {}
 
 /**
  * @psalm-pure
@@ -1250,7 +1259,7 @@ function strpbrk(string $string, string $characters) {}
  *
  * @psalm-flow ($haystack) -> return
  */
-function strrchr(string $haystack, string $needle) {}
+function strrchr(string $haystack, string $needle, bool $before_needle = false) {}
 
 /**
  * @psalm-pure
@@ -1437,7 +1446,21 @@ function preg_match($pattern, $subject, &$matches = [], int $flags = 0, int $off
 /**
  * @psalm-pure
  *
- * @return (PHP_MAJOR_VERSION is 5|7 ? string|false : string)
+ * @template TString as string
+ * @template TOffset as int
+ * @template TLength as int|null = null
+ *
+ * @param TString $string
+ * @param TOffset $offset
+ * @param TLength $length
+ *
+ * @return (PHP_MAJOR_VERSION is 5|7
+ *     ? string|false
+ *     : (TString is non-empty-string
+ *         ? (TOffset is int<min, 0>
+ *             ? (TLength is null|int<1, max> ? non-empty-string : string)
+ *             : string)
+ *         : string))
  * @psalm-ignore-falsable-return
  *
  * @psalm-flow ($string) -> return
@@ -1854,7 +1877,7 @@ function stream_select(null|array &$read, null|array &$write, null|array &$excep
  * @psalm-taint-escape sql
  * @psalm-flow ($string) -> return
  */
-function mysqli_escape_string(mysqli $mysqli, $string) {}
+function mysqli_escape_string(mysqli $mysql, $string) {}
 
 /**
  * @psalm-pure
@@ -1862,15 +1885,15 @@ function mysqli_escape_string(mysqli $mysqli, $string) {}
  * @psalm-taint-escape sql
  * @psalm-flow ($string) -> return
  */
-function mysqli_real_escape_string(mysqli $mysqli, $string) {}
+function mysqli_real_escape_string(mysqli $mysql, $string) {}
 
 /**
  * @psalm-pure
  *
  * @psalm-taint-escape sql
- * @psalm-flow ($string) -> return
+ * @psalm-flow ($string_literal) -> return
  */
-function db2_escape_string($string) {}
+function db2_escape_string($string_literal) {}
 
 /**
  * @psalm-pure
@@ -1970,7 +1993,7 @@ if (defined('GLOB_BRACE')) {
  * @psalm-template TOutput of array|null
  *
  * @param TOutput $output
- * @param-out (TOutput is null ? list<string> : array) $output
+ * @param-out (TOutput is null|array{} ? list<string> : array) $output
  * @param-out int $result_code
  *
  * @psalm-taint-specialize
@@ -2038,3 +2061,32 @@ function register_tick_function(callable $callback, mixed ...$args): bool {}
  * @psalm-taint-sink extract $array
  */
 function extract(array &$array, int $flags = EXTR_OVERWRITE, string $prefix = ""): int {}
+/**
+ * @param object|string $object_or_class
+ *
+ * @return ($object_or_class is object ? array<class-string, class-string> : array<class-string, class-string>|false)
+ * @psalm-ignore-falsable-return
+ */
+function class_parents($object_or_class, bool $autoload = true)
+{
+}
+
+/**
+ * @param object|string $object_or_class
+ *
+ * @return ($object_or_class is object ? array<interface-string, interface-string> : array<interface-string, interface-string>|false)
+ * @psalm-ignore-falsable-return
+ */
+function class_implements($object_or_class, bool $autoload = true)
+{
+}
+
+/**
+ * @param object|string $object_or_class
+ *
+ * @return ($object_or_class is object ? array<trait-string, trait-string> : array<trait-string, trait-string>|false)
+ * @psalm-ignore-falsable-return
+ */
+function class_uses($object_or_class, bool $autoload = true)
+{
+}

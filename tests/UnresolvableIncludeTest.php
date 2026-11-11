@@ -38,6 +38,26 @@ final class UnresolvableIncludeTest extends TestCase
                 ',
                 'expectedExceptionLine' => 3,
             ],
+            'file_exists_negated_in_an_and_condition' => [
+                'code' => '<?php
+                    function requireFile(string $s, bool $flag) : void {
+                        if ($flag && !file_exists($s)) {
+                            require_once($s);
+                        }
+                    }
+                ',
+                'expectedExceptionLine' => 4,
+            ],
+            'file_exists_in_an_or_condition' => [
+                'code' => '<?php
+                    function requireFile(string $s, bool $flag) : void {
+                        if ($flag || file_exists($s)) {
+                            require_once($s);
+                        }
+                    }
+                ',
+                'expectedExceptionLine' => 4,
+            ],
         ];
     }
 
@@ -65,6 +85,34 @@ final class UnresolvableIncludeTest extends TestCase
                         if (file_exists($s)) {
                             require_once($s);
                         }
+                    }
+                ',
+            ],
+            'github_issue_3241_file_exists_of_a_constant' => [
+                'code' => '<?php
+                    define("SOME_PATH", (string) getenv("SOME_PATH"));
+
+                    if (is_file(SOME_PATH)) {
+                        require_once SOME_PATH;
+                    }
+                ',
+            ],
+            'github_issue_3241_file_exists_in_an_and_condition' => [
+                'code' => '<?php
+                    function requireFile(string $s, bool $flag) : void {
+                        if ($flag && file_exists($s)) {
+                            require_once($s);
+                        }
+
+                        if (is_file($s) && $flag) {
+                            require_once($s);
+                        }
+                    }
+
+                    define("SOME_PATH", (string) getenv("SOME_PATH"));
+
+                    if (defined("SOME_PATH") && SOME_PATH && file_exists(SOME_PATH)) {
+                        require_once SOME_PATH;
                     }
                 ',
             ],

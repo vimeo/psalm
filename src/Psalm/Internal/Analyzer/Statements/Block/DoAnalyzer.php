@@ -9,6 +9,7 @@ use Psalm\CodeLocation;
 use Psalm\Context;
 use Psalm\Internal\Algebra;
 use Psalm\Internal\Algebra\FormulaGenerator;
+use Psalm\Internal\Analyzer\ScopeAnalyzer;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\Internal\Clause;
 use Psalm\Internal\Scope\LoopScope;
@@ -19,6 +20,8 @@ use function array_diff;
 use function array_filter;
 use function array_keys;
 use function array_values;
+use function in_array;
+use function is_array;
 use function preg_match;
 use function preg_quote;
 use function spl_object_id;
@@ -138,6 +141,17 @@ final class DoAnalyzer
 
         LoopAnalyzer::setLoopVars($inner_loop_context, $context, $loop_scope);
 
+        // the body of a do-while runs once, unless it leaves the loop
+        if (!in_array(ScopeAnalyzer::ACTION_BREAK, $loop_scope->final_actions, true)
+            && !in_array(ScopeAnalyzer::ACTION_CONTINUE, $loop_scope->final_actions, true)
+            && !self::hasExitToTheLoop($stmt->stmts, 0)
+        ) {
+            $context->assigned_var_ids = [
+                ...$context->assigned_var_ids,
+                ...$inner_loop_context->assigned_var_ids,
+            ];
+        }
+
         $do_context->loop_scope = null;
 
         $context->vars_possibly_in_scope = [
@@ -171,6 +185,10 @@ final class DoAnalyzer
         if (!isset($suppressed_issues['TypeDoesNotContainType'])) {
             $statements_analyzer->addSuppressedIssues(['TypeDoesNotContainType']);
         }
+        // a branch only impossible in the first iteration is reachable in the next ones
+        if (!isset($suppressed_issues['NoValue'])) {
+            $statements_analyzer->addSuppressedIssues(['NoValue']);
+        }
 
         $do_context->loop_scope = $loop_scope;
 
@@ -185,5 +203,68 @@ final class DoAnalyzer
         if (!isset($suppressed_issues['TypeDoesNotContainType'])) {
             $statements_analyzer->removeSuppressedIssues(['TypeDoesNotContainType']);
         }
+        if (!isset($suppressed_issues['NoValue'])) {
+            $statements_analyzer->removeSuppressedIssues(['NoValue']);
+        }
+    }
+
+    /**
+     * Whether a `break` or `continue` in the statements leaves the loop, from inside loops or switches nested in it
+     * (`break 2` in a nested loop is recorded on the nested one only)
+     *
+     * @param array<PhpParser\Node> $nodes
+     * @param int $depth the loops and switches between the statements and the loop
+     */
+    private static function hasExitToTheLoop(array $nodes, int $depth): bool
+    {
+        foreach ($nodes as $node) {
+            if ($node instanceof PhpParser\Node\Stmt\Break_ || $node instanceof PhpParser\Node\Stmt\Continue_) {
+                $levels = $node->num instanceof PhpParser\Node\Scalar\Int_ ? $node->num->value : 1;
+
+                if ($levels > $depth) {
+                    return true;
+                }
+
+                continue;
+            }
+
+            if ($node instanceof PhpParser\Node\FunctionLike || $node instanceof PhpParser\Node\Stmt\ClassLike) {
+                continue;
+            }
+
+            $nested_depth = $node instanceof PhpParser\Node\Stmt\For_
+                || $node instanceof PhpParser\Node\Stmt\Foreach_
+                || $node instanceof PhpParser\Node\Stmt\While_
+                || $node instanceof PhpParser\Node\Stmt\Do_
+                || $node instanceof PhpParser\Node\Stmt\Switch_
+                ? $depth + 1
+                : $depth;
+
+            foreach ($node->getSubNodeNames() as $name) {
+                /** @var mixed $child */
+                $child = $node->{$name};
+
+                if ($child instanceof PhpParser\Node) {
+                    $child = [$child];
+                }
+
+                if (is_array($child)) {
+                    $children = [];
+
+                    /** @var mixed $item */
+                    foreach ($child as $item) {
+                        if ($item instanceof PhpParser\Node) {
+                            $children[] = $item;
+                        }
+                    }
+
+                    if (self::hasExitToTheLoop($children, $nested_depth)) {
+                        return true;
+                    }
+                }
+            }
+        }
+
+        return false;
     }
 }

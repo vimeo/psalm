@@ -24,6 +24,38 @@ use function str_starts_with;
  */
 final class SarifReport extends Report
 {
+    /**
+     * The score (0.0 to 10.0, as a string) GitHub Code Scanning sorts a security alert by: 9.0 and more is critical,
+     * 7.0 high, 4.0 medium.
+     */
+    private const SECURITY_SEVERITIES = [
+        'TaintedShell' => '9.8',
+        'TaintedEval' => '9.8',
+        'TaintedSql' => '9.8',
+        'TaintedInclude' => '9.8',
+        'TaintedUnserialize' => '9.8',
+        'TaintedCallable' => '9.8',
+        'TaintedNosql' => '9.1',
+        'TaintedLdap' => '9.1',
+        'TaintedXpath' => '9.1',
+        'TaintedExtract' => '8.8',
+        'TaintedFile' => '7.5',
+        'TaintedSSRF' => '7.5',
+        'TaintedLlmPrompt' => '7.5',
+        'TaintedUserSecret' => '7.5',
+        'TaintedSystemSecret' => '7.5',
+        'TaintedHtml' => '6.1',
+        'TaintedTextWithQuotes' => '6.1',
+        'TaintedHeader' => '6.1',
+        'TaintedCookie' => '6.1',
+        'TaintedUrlComponent' => '5.3',
+        'TaintedUrlPath' => '5.3',
+        'TaintedSleep' => '5.3',
+    ];
+
+    private const DEFAULT_SECURITY_SEVERITY = '7.0';
+
+
     #[Override]
     public function create(): string
     {
@@ -53,11 +85,13 @@ final class SarifReport extends Report
                 'shortDescription' => [
                     'text' => $issue_data->type,
                 ],
-                'properties' => [
-                    'tags' => [
-                        (str_starts_with($issue_data->type, 'Tainted')) ? 'security' : 'maintainability',
-                    ],
-                ],
+                'properties' => str_starts_with($issue_data->type, 'Tainted')
+                    ? [
+                        'tags' => ['security'],
+                        'security-severity' => self::SECURITY_SEVERITIES[$issue_data->type]
+                            ?? self::DEFAULT_SECURITY_SEVERITY,
+                    ]
+                    : ['tags' => ['maintainability']],
                 'helpUri' => $issue_data->link,
             ];
 
