@@ -1467,20 +1467,6 @@ final class AnnotationTest extends TestCase
 
                     takesFlags(FileFlag::MODIFIED | FileFlag::NEW);',
             ],
-            'intMaskOfGlobalConstantsInNamespace' => [
-                'code' => '<?php
-                    namespace Abc;
-
-                    use const E_ALL;
-
-                    /** @param int-mask<E_ALL, \\E_WARNING> $flags */
-                    function takesFlags(int $flags): void {
-                        echo $flags;
-                    }
-
-                    takesFlags(E_ALL);
-                ',
-            ],
             'intMaskWithZero' => [
                 'code' => '<?php
                     /** @param int-mask<1,2> $_flags */
@@ -1924,6 +1910,20 @@ final class AnnotationTest extends TestCase
                         return $foo;
                     }',
             ],
+            'intMaskOfGlobalConstantsInNamespace' => [
+                'code' => '<?php
+                    namespace Abc;
+
+                    use const E_ALL;
+
+                    /** @param int-mask<E_ALL, \\E_WARNING> $flags */
+                    function takesFlags(int $flags): void {
+                        echo $flags;
+                    }
+
+                    takesFlags(E_ALL);
+                ',
+            ],
         ];
     }
 
@@ -1934,24 +1934,36 @@ final class AnnotationTest extends TestCase
     public static function providerInvalidCodeParse(): iterable
     {
         return [
-            'intMaskOfUnknownConstantInNamespace' => [
-                'code' => '<?php
-                    namespace Abc;
-
-                    /** @param int-mask<NOT_A_CONSTANT> $flags */
-                    function takesFlags(int $flags): void {
-                        echo $flags;
-                    }',
+            'removedSelfAccessingCallableWithParamsIsInvalid' => [
+                'code' => <<<'PHP'
+                    <?php
+                    /** @param self-accessing-callable(): int $f */
+                    function f(callable $f): void {}
+                    PHP,
                 'error_message' => 'InvalidDocblock',
             ],
-            'intMaskOfNonIntegerGlobalConstantInNamespace' => [
-                'code' => '<?php
-                    namespace Abc;
-
-                    /** @param int-mask<PHP_VERSION> $flags */
-                    function takesFlags(int $flags): void {
-                        echo $flags;
-                    }',
+            'removedSelfMutatingCallableWithParamsIsInvalid' => [
+                'code' => <<<'PHP'
+                    <?php
+                    /** @param self-mutating-callable(): int $f */
+                    function f(callable $f): void {}
+                    PHP,
+                'error_message' => 'InvalidDocblock',
+            ],
+            'removedSelfAccessingClosureWithParamsIsInvalid' => [
+                'code' => <<<'PHP'
+                    <?php
+                    /** @param self-accessing-Closure(): int $f */
+                    function f(callable $f): void {}
+                    PHP,
+                'error_message' => 'InvalidDocblock',
+            ],
+            'removedSelfMutatingClosureWithParamsIsInvalid' => [
+                'code' => <<<'PHP'
+                    <?php
+                    /** @param self-mutating-Closure(): int $f */
+                    function f(callable $f): void {}
+                    PHP,
                 'error_message' => 'InvalidDocblock',
             ],
             'psalmVarWithTooManyTemplateParamsOnProperty' => [
@@ -2763,6 +2775,26 @@ final class AnnotationTest extends TestCase
                 'error_message' => 'InvalidDocblock',
                 'error_levels' => [],
                 'php_version' => '8.0',
+            ],
+            'intMaskOfUnknownConstantInNamespace' => [
+                'code' => '<?php
+                    namespace Abc;
+
+                    /** @param int-mask<NOT_A_CONSTANT> $flags */
+                    function takesFlags(int $flags): void {
+                        echo $flags;
+                    }',
+                'error_message' => 'InvalidDocblock',
+            ],
+            'intMaskOfNonIntegerGlobalConstantInNamespace' => [
+                'code' => '<?php
+                    namespace Abc;
+
+                    /** @param int-mask<PHP_VERSION> $flags */
+                    function takesFlags(int $flags): void {
+                        echo $flags;
+                    }',
+                'error_message' => 'InvalidDocblock',
             ],
         ];
     }
