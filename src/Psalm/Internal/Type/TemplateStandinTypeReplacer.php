@@ -155,6 +155,7 @@ final class TemplateStandinTypeReplacer
             // the whole input is one of the union's own atomic types (`null` for `T|null`):
             // it says nothing about the template
             $input_type = Type::getNever();
+            $other_input_type = $input_type;
         }
 
         $had_template = false;
