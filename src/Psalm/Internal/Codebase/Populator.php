@@ -123,6 +123,9 @@ final class Populator
         }
 
         foreach ($this->classlike_storage_provider->getNew() as $class_storage) {
+            // `+=` on the typed property would copy the whole array on every merge
+            $dependents = $class_storage->dependent_classlikes;
+
             foreach ($class_storage->dependent_classlikes as $dependent_classlike_lc => $_) {
                 try {
                     $dependee_storage = $this->classlike_storage_provider->get($dependent_classlike_lc);
@@ -130,8 +133,10 @@ final class Populator
                     continue;
                 }
 
-                $class_storage->dependent_classlikes += $dependee_storage->dependent_classlikes;
+                $dependents += $dependee_storage->dependent_classlikes;
             }
+
+            $class_storage->dependent_classlikes = $dependents;
         }
 
         $this->progress->debug('FileStorage is populated' . "\n");
@@ -885,9 +890,28 @@ final class Populator
 
         $this->populateClassLikeStorage($trait_storage, $dependent_classlikes);
 
+        // a constructor of a trait wins over the one of the parent, which the empty one would hide
+        if (isset($trait_storage->methods['__construct'])) {
+            self::removeEmptyConstructor($storage);
+        }
+
         $this->inheritConstantsFromTrait($storage, $trait_storage);
         $this->inheritMethodsFromParent($storage, $trait_storage);
         $this->inheritPropertiesFromParent($storage, $trait_storage);
+
+        // the visibility a trait gives to the methods it uses from another one, unless the class changes it again,
+        // declares the method itself or uses the one of another trait for it
+        $trait_name_lc = strtolower($trait_storage->name);
+
+        foreach ($trait_storage->trait_visibility_map as $method_name_lc => $visibility) {
+            if (isset($storage->methods[$method_name_lc])
+                || isset($storage->trait_excluded_methods[$method_name_lc][$trait_name_lc])
+            ) {
+                continue;
+            }
+
+            $storage->trait_visibility_map[$method_name_lc] ??= $visibility;
+        }
 
         $this->extendTemplateParams($storage, $trait_storage, false);
 
@@ -899,6 +923,27 @@ final class Populator
 
         $storage->pseudo_methods += $trait_storage->pseudo_methods;
         $storage->declaring_pseudo_method_ids += $trait_storage->declaring_pseudo_method_ids;
+    }
+
+    /**
+     * The empty constructor of a `@psalm-consistent-constructor` class that declares none stands for the lack of it
+     */
+    private static function removeEmptyConstructor(ClassLikeStorage $storage): void
+    {
+        if (!$storage->user_defined
+            || !isset($storage->methods['__construct'])
+            || $storage->methods['__construct']->location !== null
+        ) {
+            return;
+        }
+
+        unset(
+            $storage->methods['__construct'],
+            $storage->declaring_method_ids['__construct'],
+            $storage->inheritable_method_ids['__construct'],
+            $storage->appearing_method_ids['__construct'],
+            $storage->overridden_method_ids['__construct'],
+        );
     }
 
     /**
@@ -964,6 +1009,12 @@ final class Populator
         $storage->parent_classes = [...$storage->parent_classes, ...$parent_storage->parent_classes];
 
         $this->extendTemplateParams($storage, $parent_storage, true);
+
+        // the empty constructor of a `@psalm-consistent-constructor` class without one stands for the lack of
+        // it: where the parent has a constructor, that is the one the class has
+        if (isset($parent_storage->declaring_method_ids['__construct'])) {
+            self::removeEmptyConstructor($storage);
+        }
 
         $this->inheritMethodsFromParent($storage, $parent_storage);
         $this->inheritPropertiesFromParent($storage, $parent_storage);
@@ -1281,6 +1332,7 @@ final class Populator
         $this->populateInterfaceData($storage, $parent_interface_storage, $storage_provider, $dependent_classlikes);
 
         $this->inheritMethodsFromParent($storage, $parent_interface_storage);
+        $this->inheritPropertiesFromParent($storage, $parent_interface_storage);
 
         $storage->pseudo_methods += $parent_interface_storage->pseudo_methods;
         $storage->declaring_pseudo_method_ids += $parent_interface_storage->declaring_pseudo_method_ids;
@@ -1529,6 +1581,37 @@ final class Populator
         }
     }
 
+    /**
+     * The names a method of the parent is inherited under: its own, unless `insteadof` excludes the parent's, and
+     * the aliases of a trait.
+     *
+     * @param lowercase-string $method_name_lc
+     * @return list<lowercase-string>
+     * @psalm-capabilities read-props
+     */
+    private static function getTraitMethodNames(
+        ClassLikeStorage $storage,
+        ClassLikeStorage $parent_storage,
+        string $method_name_lc,
+    ): array {
+        if (!$parent_storage->is_trait) {
+            return [$method_name_lc];
+        }
+
+        $parent_name_lc = strtolower($parent_storage->name);
+        $names = isset($storage->trait_excluded_methods[$method_name_lc][$parent_name_lc])
+            ? []
+            : [$method_name_lc];
+
+        foreach (array_keys($storage->trait_alias_map, $method_name_lc, true) as $alias) {
+            if (($storage->trait_alias_trait_map[$alias] ?? $parent_name_lc) === $parent_name_lc) {
+                $names[] = $alias;
+            }
+        }
+
+        return $names;
+    }
+
     private function inheritMethodsFromParent(
         ClassLikeStorage $storage,
         ClassLikeStorage $parent_storage,
@@ -1542,16 +1625,7 @@ final class Populator
 
         // register where they appear (can never be in a trait)
         foreach ($parent_storage->appearing_method_ids as $method_name_lc => $appearing_method_id) {
-            $aliased_method_names = [$method_name_lc];
-
-            if ($parent_storage->is_trait
-                && $storage->trait_alias_map
-            ) {
-                $aliased_method_names = [
-                    ...$aliased_method_names,
-                    ...array_keys($storage->trait_alias_map, $method_name_lc, true),
-                ];
-            }
+            $aliased_method_names = self::getTraitMethodNames($storage, $parent_storage, $method_name_lc);
 
             foreach ($aliased_method_names as $aliased_method_name) {
                 if (isset($storage->appearing_method_ids[$aliased_method_name])) {
@@ -1639,16 +1713,7 @@ final class Populator
                 }
             }
 
-            $aliased_method_names = [$method_name_lc];
-
-            if ($parent_storage->is_trait
-                && $storage->trait_alias_map
-            ) {
-                $aliased_method_names = [
-                    ...$aliased_method_names,
-                    ...array_keys($storage->trait_alias_map, $method_name_lc, true),
-                ];
-            }
+            $aliased_method_names = self::getTraitMethodNames($storage, $parent_storage, $method_name_lc);
 
             foreach ($aliased_method_names as $aliased_method_name) {
                 if (isset($storage->declaring_method_ids[$aliased_method_name])) {
@@ -1675,6 +1740,25 @@ final class Populator
         }
     }
 
+    /**
+     * A property imported from a trait is declared by the trait, not by the class using it
+     *
+     * @psalm-capabilities read-props
+     */
+    private function isPrivateProperty(ClassLikeStorage $storage, string $property_name): bool
+    {
+        $declaring_class = $storage->declaring_property_ids[$property_name] ?? null;
+
+        $declaring_storage = $declaring_class !== null
+            && strtolower($declaring_class) !== strtolower($storage->name)
+            && $this->classlike_storage_provider->has($declaring_class)
+                ? $this->classlike_storage_provider->get($declaring_class)
+                : $storage;
+
+        return isset($declaring_storage->properties[$property_name])
+            && $declaring_storage->properties[$property_name]->visibility === ClassLikeAnalyzer::VISIBILITY_PRIVATE;
+    }
+
     private function inheritPropertiesFromParent(
         ClassLikeStorage $storage,
         ClassLikeStorage $parent_storage,
@@ -1689,10 +1773,7 @@ final class Populator
                 continue;
             }
 
-            if (!$parent_storage->is_trait
-                && isset($parent_storage->properties[$property_name])
-                && $parent_storage->properties[$property_name]->visibility === ClassLikeAnalyzer::VISIBILITY_PRIVATE
-            ) {
+            if (!$parent_storage->is_trait && $this->isPrivateProperty($parent_storage, $property_name)) {
                 continue;
             }
 
@@ -1708,10 +1789,7 @@ final class Populator
                 continue;
             }
 
-            if (!$parent_storage->is_trait
-                && isset($parent_storage->properties[$property_name])
-                && $parent_storage->properties[$property_name]->visibility === ClassLikeAnalyzer::VISIBILITY_PRIVATE
-            ) {
+            if (!$parent_storage->is_trait && $this->isPrivateProperty($parent_storage, $property_name)) {
                 continue;
             }
 
@@ -1720,10 +1798,7 @@ final class Populator
 
         // register where they're declared
         foreach ($parent_storage->inheritable_property_ids as $property_name => $inheritable_property_id) {
-            if (!$parent_storage->is_trait
-                && isset($parent_storage->properties[$property_name])
-                && $parent_storage->properties[$property_name]->visibility === ClassLikeAnalyzer::VISIBILITY_PRIVATE
-            ) {
+            if (!$parent_storage->is_trait && $this->isPrivateProperty($parent_storage, $property_name)) {
                 continue;
             }
 
