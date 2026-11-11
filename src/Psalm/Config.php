@@ -56,12 +56,14 @@ use Psalm\Issue\PropertyIssue;
 use Psalm\Issue\VariableIssue;
 use Psalm\Plugin\PluginEntryPointInterface;
 use Psalm\Plugin\PluginFileExtensionsInterface;
+use Psalm\Plugin\PluginFixableIssuesInterface;
 use Psalm\Plugin\PluginInterface;
 use Psalm\Progress\Progress;
 use Psalm\Progress\VoidProgress;
 use Psalm\Type\TaintKind;
 use RecursiveDirectoryIterator;
 use RecursiveIteratorIterator;
+use ReflectionClass;
 use RuntimeException;
 use SimpleXMLElement;
 use SplFileInfo;
@@ -95,6 +97,7 @@ use function file_get_contents;
 use function flock;
 use function fopen;
 use function function_exists;
+use function get_debug_type;
 use function get_defined_constants;
 use function get_defined_functions;
 use function getcwd;
@@ -609,6 +612,7 @@ final class Config
     public array $php_extensions = [
         "amqp" => null,
         "apcu" => null,
+        "curl" => null,
         "decimal" => null,
         "dom" => null,
         "ds" => null,
@@ -617,9 +621,12 @@ final class Config
         "gmp" => null,
         "ibm_db2" => null,
         "imagick" => null,
+        "intl" => null,
+        "ldap" => null,
         "memcached" => null,
         "mongodb" => null,
         "mysqli" => null,
+        "openssl" => null,
         "pdo" => null,
         "random" => null,
         "rdkafka" => null,
@@ -627,6 +634,7 @@ final class Config
         "simplexml" => null,
         "soap" => null,
         "xdebug" => null,
+        "zip" => null,
         "zstd" => null,
     ];
 
@@ -1611,18 +1619,18 @@ final class Config
                 $issue_handler_children = $issue_handlers->children();
                 if ($issue_handler_children) {
                     foreach ($issue_handler_children as $key => $issue_handler) {
-                        if ($key === 'PluginIssue') {
-                            $custom_class_name = (string)$issue_handler['name'];
-                            /** @var string $key */
-                            $config->issue_handlers[$custom_class_name] = IssueHandler::loadFromXMLElement(
-                                $issue_handler,
-                                $base_dir,
+                        $handled_issue = $key === 'PluginIssue' ? (string) $issue_handler['name'] : $key;
+
+                        $loaded_handler = IssueHandler::loadFromXMLElement($issue_handler, $base_dir);
+
+                        // an issue named twice keeps what both elements say
+                        if (isset($config->issue_handlers[$handled_issue])) {
+                            $config->issue_handlers[$handled_issue]->mergeLater(
+                                $loaded_handler,
+                                isset($issue_handler['errorLevel']),
                             );
                         } else {
-                            $config->issue_handlers[$key] = IssueHandler::loadFromXMLElement(
-                                $issue_handler,
-                                $base_dir,
-                            );
+                            $config->issue_handlers[$handled_issue] = $loaded_handler;
                         }
                     }
                 }
@@ -1847,6 +1855,58 @@ final class Config
         foreach ($socket->getAdditionalFileTypeAnalyzers() as $extension => $className) {
             $this->filetype_analyzers[$extension] = $className;
         }
+    }
+
+    /**
+     * The types of the issues the plugins can fix (see PluginFixableIssuesInterface)
+     *
+     * @internal
+     * @return list<string>
+     */
+    public function getPluginFixableIssueTypes(ProjectAnalyzer $project_analyzer): array
+    {
+        $issue_types = [];
+
+        foreach ($this->plugin_classes as $plugin_class_entry) {
+            $plugin_class_name = $plugin_class_entry['class'];
+            $plugin = $this->loadPlugin($project_analyzer, $plugin_class_name);
+            if (!$plugin instanceof PluginFixableIssuesInterface) {
+                continue;
+            }
+
+            try {
+                foreach ($plugin->getFixableIssues($plugin_class_entry['config']) as $issue_class) {
+                    $issue_types[] = self::getFixableIssueType($issue_class);
+                }
+            } catch (Throwable $t) {
+                throw new ConfigException(
+                    'Failed to get the fixable issues of plugin ' . $plugin_class_name,
+                    1_635_800_583,
+                    $t,
+                );
+            }
+        }
+
+        return $issue_types;
+    }
+
+    /**
+     * @param mixed $issue_class what a plugin declares, which Psalm may not have analysed
+     * @psalm-pure
+     */
+    private static function getFixableIssueType(mixed $issue_class): string
+    {
+        if (!is_string($issue_class)
+            || !is_a($issue_class, CodeIssue::class, true)
+            || (new ReflectionClass($issue_class))->isAbstract()
+        ) {
+            throw new UnexpectedValueException(
+                (is_string($issue_class) ? $issue_class : get_debug_type($issue_class))
+                . ' is not a concrete ' . CodeIssue::class . ' class',
+            );
+        }
+
+        return $issue_class::getIssueType();
     }
 
     /**
