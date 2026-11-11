@@ -915,7 +915,8 @@ final class MethodCallReturnTypeFetcher
 
     /**
      * The closure of a method for a first-class callable. A method without a return type of its own inherits the type
-     * of the parent that declares one, and the parameters and templates that type refers to come with it.
+     * of the parent that documents it (the one a call of the method uses), with the templates that type refers to;
+     * its parameters are those of a call, the method's own with the parent's docblock types.
      *
      * @return array{TClosure, array<string, non-empty-array<string, Union>>} the closure and its method templates
      */
@@ -924,26 +925,31 @@ final class MethodCallReturnTypeFetcher
         MethodIdentifier $method_id,
         MethodStorage $method_storage,
     ): array {
-        $return_type = $method_storage->return_type;
-        $signature_storage = $method_storage;
+        $params = $codebase->methods->getMethodParams($method_id);
 
-        if ($return_type === null) {
-            $self_class = null;
-            $return_type = $codebase->methods->getMethodReturnType($codebase, $method_id, $self_class);
-
-            foreach ($codebase->methods->getOverriddenMethodIds($method_id) as $overridden_method_id) {
-                $overridden_storage = $codebase->methods->getStorage($overridden_method_id);
-
-                if ($overridden_storage->return_type !== null) {
-                    $signature_storage = $overridden_storage;
-                    break;
-                }
-            }
+        if ($method_storage->return_type !== null) {
+            return [
+                new TClosure($params, $method_storage->return_type, $method_storage->capabilities),
+                $method_storage->template_types ?? [],
+            ];
         }
 
+        $self_class = null;
+        $appearing_method_id = $codebase->methods->getAppearingMethodId($method_id);
+        $documenting_method_id = $appearing_method_id !== null
+            ? $codebase->classlike_storage_provider->get($appearing_method_id->fq_class_name)
+                ->documenting_method_ids[$appearing_method_id->method_name] ?? null
+            : null;
+
         return [
-            new TClosure($signature_storage->params, $return_type, $method_storage->capabilities),
-            $signature_storage->template_types ?? [],
+            new TClosure(
+                $params,
+                $codebase->methods->getMethodReturnType($codebase, $method_id, $self_class),
+                $method_storage->capabilities,
+            ),
+            ($documenting_method_id !== null
+                ? $codebase->methods->getStorage($documenting_method_id)->template_types
+                : null) ?? $method_storage->template_types ?? [],
         ];
     }
 

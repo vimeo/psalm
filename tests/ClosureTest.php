@@ -957,6 +957,49 @@ final class ClosureTest extends TestCase
                 'ignored_issues' => ['ClassMustBeFinal'],
                 'php_version' => '8.1',
             ],
+            'FirstClassCallable:InstanceMethod:InheritedReturnTypeKeepsTheOwnParameters' => [
+                'code' => '<?php
+                    interface Counter {
+                        /** @return positive-int */
+                        public function count();
+                    }
+
+                    final class Items implements Counter {
+                        #[Override]
+                        public function count(int $step = 1) {
+                            return 1;
+                        }
+                    }
+
+                    $count = (new Items())->count(...);
+                    $result = $count(5);',
+                'assertions' => [
+                    '$count===' => 'Closure[impure](int=):int<1, max>',
+                    '$result' => 'int<1, max>',
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
+            'FirstClassCallable:InstanceMethod:InheritedParameterType' => [
+                'code' => '<?php
+                    interface Sink {
+                        /** @param positive-int $count */
+                        public function take($count): void;
+                    }
+
+                    final class Box implements Sink {
+                        #[Override]
+                        public function take($count): void {
+                        }
+                    }
+
+                    $take = (new Box())->take(...);',
+                'assertions' => [
+                    '$take===' => 'Closure[impure](int<1, max>):void',
+                ],
+                'ignored_issues' => ['MissingParamType'],
+                'php_version' => '8.1',
+            ],
             'FirstClassCallable:InstanceMethod:InheritedTemplate' => [
                 'code' => '<?php
                     interface Identity {
@@ -1926,6 +1969,26 @@ final class ClosureTest extends TestCase
     public static function providerInvalidCodeParse(): iterable
     {
         return [
+            'FirstClassCallable:InstanceMethod:InheritedReturnTypeKeepsTheOwnParameterType' => [
+                'code' => '<?php
+                    interface Fmt {
+                        /** @return non-empty-string */
+                        public function fmt($x);
+                    }
+
+                    final class F implements Fmt {
+                        #[Override]
+                        public function fmt(int|string $x) {
+                            return "a" . $x;
+                        }
+                    }
+
+                    $fmt = (new F())->fmt(...);
+                    $fmt([]);',
+                'error_message' => 'InvalidArgument',
+                'error_levels' => ['MissingParamType'],
+                'php_version' => '8.1',
+            ],
             'byValueUseOfAVariableThatIsNotDefinedYet' => [
                 'code' => '<?php
                     $f = function () use ($total): int {
