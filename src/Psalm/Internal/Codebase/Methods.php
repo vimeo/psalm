@@ -48,6 +48,8 @@ use Psalm\Type\Atomic\TObject;
 use Psalm\Type\Atomic\TResource;
 use Psalm\Type\Atomic\TString;
 use Psalm\Type\Atomic\TTemplateParam;
+use Psalm\Type\Atomic\TTemplateValueOf;
+use Psalm\Type\Atomic\TValueOf;
 use Psalm\Type\Atomic\TVoid;
 use Psalm\Type\Union;
 use UnexpectedValueException;
@@ -374,7 +376,10 @@ final class Methods
                 return $params;
             }
 
-            $appearing_method_id = $this->getAppearingMethodId($declaring_method_id);
+            // a trait method appears in the class using it, which holds the docblock it inherits
+            $appearing_method_id = $this->classlike_storage_provider->get($declaring_method_id->fq_class_name)->is_trait
+                ? $this->getAppearingMethodId($method_id)
+                : $this->getAppearingMethodId($declaring_method_id);
 
             if (!$appearing_method_id) {
                 return $params;
@@ -577,6 +582,21 @@ final class Methods
                 && isset($args[0])
                 && ($first_arg_type = $source_analyzer->getNodeTypeProvider()->getType($args[0]->value))
             ) {
+                $arg_atomic_types = [];
+                foreach ($first_arg_type->getAtomicTypes() as $arg_atomic_type) {
+                    if ($arg_atomic_type instanceof TTemplateValueOf) {
+                        $arg_atomic_type = new TValueOf($arg_atomic_type->as);
+                    }
+
+                    $arg_atomic_types[] = $arg_atomic_type;
+                }
+                $first_arg_type = TypeExpander::expandUnion(
+                    $codebase,
+                    new Union($arg_atomic_types),
+                    null,
+                    null,
+                    null,
+                );
                 $types = [];
                 foreach ($original_class_storage->enum_cases as $case_name => $case_storage) {
                     $case_value = $case_storage->getValue($this->classlikes);

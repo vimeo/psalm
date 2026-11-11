@@ -17,11 +17,13 @@ use Psalm\Internal\Analyzer\InheritedMethodTaints;
 use Psalm\Internal\Analyzer\Statements\Expression\Call\FunctionCallReturnTypeFetcher;
 use Psalm\Internal\Analyzer\Statements\Expression\ExpressionIdentifier;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
+use Psalm\Internal\Codebase\CombinedFlowGraph;
 use Psalm\Internal\Codebase\ConditionalTaintSinks;
 use Psalm\Internal\Codebase\InternalCallMapHandler;
 use Psalm\Internal\Codebase\ReceiverPropertyTaints;
 use Psalm\Internal\Codebase\TaintFlowGraph;
 use Psalm\Internal\Codebase\TaintStore;
+use Psalm\Internal\Codebase\VariableUseGraph;
 use Psalm\Internal\DataFlow\DataFlowNode;
 use Psalm\Internal\MethodIdentifier;
 use Psalm\Internal\Type\TemplateBound;
@@ -79,16 +81,18 @@ final class MethodCallReturnTypeFetcher
 
         if ($stmt->isFirstClassCallable()) {
             if ($method_storage) {
+                [$closure, $method_template_types] = self::getInheritedClosure(
+                    $codebase,
+                    $method_id,
+                    $method_storage,
+                );
+
                 return self::getFirstClassCallableType(
                     $codebase,
                     $stmt,
-                    new TClosure(
-                        $method_storage->params,
-                        $method_storage->return_type,
-                        $method_storage->capabilities,
-                    ),
+                    $closure,
                     $template_result,
-                    $method_storage->template_types ?? [],
+                    $method_template_types,
                     $fq_class_name,
                     $static_type,
                     $class_storage->parent_class,
@@ -113,7 +117,17 @@ final class MethodCallReturnTypeFetcher
             );
 
             if ($return_type_candidate) {
-                return $return_type_candidate;
+                return self::taintReturnType(
+                    $statements_analyzer,
+                    $stmt,
+                    $context,
+                    $method_id,
+                    $declaring_method_id,
+                    $cased_method_id,
+                    $args,
+                    $template_result,
+                    $return_type_candidate,
+                );
             }
         }
 
@@ -147,7 +161,17 @@ final class MethodCallReturnTypeFetcher
                 );
 
                 if ($return_type_candidate) {
-                    return $return_type_candidate;
+                    return self::taintReturnType(
+                        $statements_analyzer,
+                        $stmt,
+                        $context,
+                        $method_id,
+                        $declaring_method_id,
+                        $cased_method_id,
+                        $args,
+                        $template_result,
+                        $return_type_candidate,
+                    );
                 }
             }
         }
@@ -284,6 +308,36 @@ final class MethodCallReturnTypeFetcher
 
         $return_type_candidate = TypeVariableTracker::resolveTypeVariables($return_type_candidate, $codebase);
 
+        return self::taintReturnType(
+            $statements_analyzer,
+            $stmt,
+            $context,
+            $method_id,
+            $declaring_method_id,
+            $cased_method_id,
+            $args,
+            $template_result,
+            $return_type_candidate,
+        );
+    }
+
+    /**
+     * What a call gives, whichever way its return type was found: a plugin supplying the type of a call doesn't
+     * make it lose the taints its method declares.
+     *
+     * @param list<PhpParser\Node\Arg> $args
+     */
+    private static function taintReturnType(
+        StatementsAnalyzer $statements_analyzer,
+        PhpParser\Node\Expr\MethodCall $stmt,
+        Context $context,
+        MethodIdentifier $method_id,
+        ?MethodIdentifier $declaring_method_id,
+        string $cased_method_id,
+        array $args,
+        TemplateResult $template_result,
+        Union $return_type_candidate,
+    ): Union {
         self::taintMethodCallResult(
             $statements_analyzer,
             $return_type_candidate,
@@ -294,6 +348,7 @@ final class MethodCallReturnTypeFetcher
             $declaring_method_id,
             $cased_method_id,
             $context,
+            $template_result,
         );
 
         // what is sent to a generator becomes the value of its yield expressions (what it gives back, see
@@ -331,6 +386,40 @@ final class MethodCallReturnTypeFetcher
     }
 
     /**
+     * What the method removes from its return depends on the arguments of this call: its result has a node of its own,
+     * as $method_call_node may be shared with the other calls, the last call deciding for all
+     */
+    private static function escapeReturnByArguments(
+        Codebase $codebase,
+        TaintFlowGraph|CombinedFlowGraph|VariableUseGraph $graph,
+        MethodStorage $method_storage,
+        ?TemplateResult $template_result,
+        MethodIdentifier $method_id,
+        CodeLocation $node_location,
+        DataFlowNode $method_call_node,
+        Union &$return_type_candidate,
+    ): void {
+        $removed_taints = $template_result
+            ? FunctionCallReturnTypeFetcher::getConditionallyRemovedTaints(
+                $codebase,
+                $method_storage,
+                $template_result,
+            )
+            : 0;
+
+        if (!$removed_taints) {
+            return;
+        }
+
+        $escaped_node = DataFlowNode::getForAssignment((string) $method_id . '-escaped', $node_location);
+
+        $graph->addNode($escaped_node);
+        $graph->addPath($method_call_node, $escaped_node, 'conditionally-escaped', 0, $removed_taints);
+
+        $return_type_candidate = $return_type_candidate->setParentNodes([$escaped_node->id => $escaped_node]);
+    }
+
+    /**
      * @param list<PhpParser\Node\Arg> $args
      */
     public static function taintMethodCallResult(
@@ -343,6 +432,7 @@ final class MethodCallReturnTypeFetcher
         ?MethodIdentifier $declaring_method_id,
         string $cased_method_id,
         Context $context,
+        ?TemplateResult $template_result = null,
     ): void {
         if (!($graph = $statements_analyzer->getDataFlowGraphWithSuppressed())
             || !$declaring_method_id
@@ -596,6 +686,17 @@ final class MethodCallReturnTypeFetcher
                 $method_call_node->id => $method_call_node,
             ]);
         }
+
+        self::escapeReturnByArguments(
+            $codebase,
+            $graph,
+            $method_storage,
+            $template_result,
+            $method_id,
+            $node_location,
+            $method_call_node,
+            $return_type_candidate,
+        );
 
         if (!$taint_flow_graph) {
             return;
@@ -863,6 +964,46 @@ final class MethodCallReturnTypeFetcher
     public const CALL_ARGUMENT_ATTRIBUTE = 'first_class_callable_argument';
 
     /**
+     * The closure of a method for a first-class callable. A method without a return type of its own inherits the type
+     * of the parent that documents it (the one a call of the method uses), with the templates that type refers to;
+     * its parameters are those of a call, the method's own with the parent's docblock types.
+     *
+     * @return array{TClosure, array<string, non-empty-array<string, Union>>} the closure and its method templates
+     */
+    public static function getInheritedClosure(
+        Codebase $codebase,
+        MethodIdentifier $method_id,
+        MethodStorage $method_storage,
+    ): array {
+        $params = $codebase->methods->getMethodParams($method_id);
+
+        if ($method_storage->return_type !== null) {
+            return [
+                new TClosure($params, $method_storage->return_type, $method_storage->capabilities),
+                $method_storage->template_types ?? [],
+            ];
+        }
+
+        $self_class = null;
+        $appearing_method_id = $codebase->methods->getAppearingMethodId($method_id);
+        $documenting_method_id = $appearing_method_id !== null
+            ? $codebase->classlike_storage_provider->get($appearing_method_id->fq_class_name)
+                ->documenting_method_ids[$appearing_method_id->method_name] ?? null
+            : null;
+
+        return [
+            new TClosure(
+                $params,
+                $codebase->methods->getMethodReturnType($codebase, $method_id, $self_class),
+                $method_storage->capabilities,
+            ),
+            ($documenting_method_id !== null
+                ? $codebase->methods->getStorage($documenting_method_id)->template_types
+                : null) ?? $method_storage->template_types ?? [],
+        ];
+    }
+
+    /**
      * The closure of a first-class callable of a method, typed as a call of the method on the same receiver: with its
      * template bounds (those of the class, from the receiver) and `static`. The method's own templates left unbound
      * stand for their bounds, as a function's do in its closure, unless the call it is an argument of may bind them.
@@ -949,7 +1090,9 @@ final class MethodCallReturnTypeFetcher
             $bindable_template_types = $return_type_candidate->getTemplateTypes();
 
             foreach ($bindable_template_types as $template_type) {
+                // the template of a class-string-map belongs to the type, not to the call
                 if ($template_type->defining_class !== $method_id->fq_class_name
+                    && $template_type->defining_class !== 'class-string-map'
                     && !isset(
                         $template_result->lower_bounds
                             [$template_type->param_name]
