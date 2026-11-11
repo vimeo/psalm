@@ -1413,6 +1413,18 @@ final class ConstantTest extends TestCase
                     '$a===' => '0|1|2|3',
                 ],
             ],
+            'intMaskWithImportedGlobalConstant' => [
+                'code' => '<?php
+                    namespace App;
+
+                    use const JSON_PRETTY_PRINT;
+                    use const JSON_UNESCAPED_SLASHES;
+
+                    /** @param int-mask<JSON_PRETTY_PRINT, JSON_UNESCAPED_SLASHES> $flags */
+                    function encode(int $flags): void {
+                        /** @psalm-check-type-exact $flags = 0|64|128|192 */;
+                    }',
+            ],
             'intMaskWithSuppressedUndefinedGlobalConstantInPropertyType' => [
                 'code' => '<?php
                     namespace App;
