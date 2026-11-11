@@ -470,7 +470,8 @@ final class SwitchCaseAnalyzer
         // but that leaves the switch through `break` statements contributes the variables of its `break`s
         $ends_unless_breaking = $case_context->has_returned
             && $case_scope->break_vars !== null
-            && $case_actions !== [ScopeAnalyzer::ACTION_LEAVE_SWITCH];
+            && $case_actions !== [ScopeAnalyzer::ACTION_LEAVE_SWITCH]
+            && ($case_exit_type !== 'break' || in_array(ScopeAnalyzer::ACTION_END, $case_actions, true));
 
         if ($case_exit_type !== 'return_throw' && !$ends_unless_breaking) {
             if (self::handleNonReturningCase(
