@@ -100,38 +100,36 @@ final class ArrayFunctionCallTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
-            'arrayMapOnATemplateBoundedByAListKeepsTheList' => [
-                'code' => '<?php
-                    /**
-                     * @template T of list<string>
-                     * @param T $v
-                     * @return list<string>
-                     */
-                    function f(array $v): array {
-                        return array_map(fn(string $i) => $i, $v);
-                    }',
-            ],
-            'arrayMapOnATemplateBoundedByANonEmptyListKeepsThat' => [
-                'code' => '<?php
-                    /**
-                     * @template T of non-empty-list<int>
-                     * @param T $v
-                     * @return non-empty-list<string>
-                     */
-                    function f(array $v): array {
-                        return array_map(fn(int $i) => (string) $i, $v);
-                    }',
-            ],
-            'arrayMapOnATemplateBoundedByAnArrayKeepsTheKeys' => [
-                'code' => '<?php
-                    /**
-                     * @template T of array<string, int>
-                     * @param T $v
-                     * @return array<string, string>
-                     */
-                    function f(array $v): array {
-                        return array_map(fn(int $i) => (string) $i, $v);
-                    }',
+            'arrayPopOfAListWithAnOptionalLastItem' => [
+                'code' => <<<'PHP'
+                    <?php
+                    function pop(bool $one, bool $two): void {
+                        $always = [0, 1];
+                        array_pop($always);
+
+                        $maybe = [0];
+                        if ($one) {
+                            $maybe[] = 2;
+                        }
+                        array_pop($maybe);
+
+                        $maybe_twice = [0];
+                        if ($one) {
+                            $maybe_twice[] = 2;
+                        }
+                        if ($two) {
+                            $maybe_twice[] = 3;
+                        }
+                        array_pop($maybe_twice);
+
+                        /** @psalm-check-type-exact $always = list{0: 0} */
+                        /** @psalm-check-type-exact $maybe = list{0?: 0} */
+                        /** @psalm-check-type-exact $maybe_twice = list{0?: 0, 1?: 2|3} */
+                    }
+                    PHP,
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
             ],
             'arrayUdiffKeepsTheTypeOfTheFirstArray' => [
                 'code' => '<?php
@@ -3830,6 +3828,39 @@ final class ArrayFunctionCallTest extends TestCase
                 'ignored_issues' => [],
                 'php_version' => '8.4',
             ],
+            'arrayMapOnATemplateBoundedByAListKeepsTheList' => [
+                'code' => '<?php
+                    /**
+                     * @template T of list<string>
+                     * @param T $v
+                     * @return list<string>
+                     */
+                    function f(array $v): array {
+                        return array_map(fn(string $i) => $i, $v);
+                    }',
+            ],
+            'arrayMapOnATemplateBoundedByANonEmptyListKeepsThat' => [
+                'code' => '<?php
+                    /**
+                     * @template T of non-empty-list<int>
+                     * @param T $v
+                     * @return non-empty-list<string>
+                     */
+                    function f(array $v): array {
+                        return array_map(fn(int $i) => (string) $i, $v);
+                    }',
+            ],
+            'arrayMapOnATemplateBoundedByAnArrayKeepsTheKeys' => [
+                'code' => '<?php
+                    /**
+                     * @template T of array<string, int>
+                     * @param T $v
+                     * @return array<string, string>
+                     */
+                    function f(array $v): array {
+                        return array_map(fn(int $i) => (string) $i, $v);
+                    }',
+            ],
         ];
     }
 
@@ -3840,6 +3871,21 @@ final class ArrayFunctionCallTest extends TestCase
     public static function providerInvalidCodeParse(): iterable
     {
         return [
+            'arrayPopOfAListWithAnOptionalLastItemMayEmptyIt' => [
+                'code' => '<?php
+                    /** @param non-empty-list<int> $a */
+                    function foo(array $a): void {}
+
+                    function bar(bool $one): void {
+                        $d = [0];
+                        if ($one) {
+                            $d[] = 2;
+                        }
+                        array_pop($d);
+                        foo($d);
+                    }',
+                'error_message' => 'InvalidArgument',
+            ],
             'arrayColumnIndexColumnOfAnObjectIsNotAnArrayKey' => [
                 'code' => '<?php
                     $result = array_column([[new stdClass, 1]], 1, 0);',
