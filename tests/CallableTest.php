@@ -22,31 +22,46 @@ final class CallableTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
-            'callableArrayOfAMagicMethodDeclaredByAnAnnotation' => [
+            'byReferenceCallableParamAcceptsByReferenceCallee' => [
                 'code' => '<?php
-                    /**
-                     * @method void magic()
-                     * @method static void staticMagic()
-                     */
-                    class Foo {
-                        public function __call(string $name, array $arguments): mixed {
-                            return null;
-                        }
-
-                        public static function __callStatic(string $name, array $arguments): mixed {
-                            return null;
-                        }
+                    /** @param callable(int &$i): void $closure */
+                    function takesRefCallable(callable $closure): void {
+                        $v = 1;
+                        $closure($v);
                     }
-
-                    function call(callable $_callable): void {}
-
-                    function test(Foo $foo): void {
-                        call([$foo, "magic"]);
-                        call([Foo::class, "staticMagic"]);
-                    }',
+                    function incr(int &$i): void {
+                        ++$i;
+                    }
+                    takesRefCallable("incr");
+                    takesRefCallable(function (int &$i): void {
+                        ++$i;
+                    });',
                 'assertions' => [],
-                'ignored_issues' => [],
-                'php_version' => '8.0',
+            ],
+            'byReferenceCallableParamAcceptsByValueCallee' => [
+                'code' => '<?php
+                    /** @param callable(int &$i): void $closure */
+                    function takesRefCallable(callable $closure): void {
+                        $v = 1;
+                        $closure($v);
+                    }
+                    function show(int $i): void {
+                        echo $i;
+                    }
+                    takesRefCallable("show");
+                    takesRefCallable(function (int $i): void {
+                        echo $i;
+                    });',
+                'assertions' => [],
+            ],
+            'namedOptionalCallableParam' => [
+                'code' => '<?php
+                    /** @param callable(int $i=): void $closure */
+                    function takesOptional(callable $closure): void {
+                        $closure();
+                    }
+                    takesOptional(function (int $i = 0): void {});',
+                'assertions' => [],
             ],
             'stringNamingAFunctionForClosureOrStringParam' => [
                 'code' => <<<'PHP'
@@ -2835,17 +2850,7 @@ final class CallableTest extends TestCase
                         return call_user_func($var);
                     }',
             ],
-        ];
-    }
-
-    /**
-     * @psalm-pure
-     */
-    #[Override]
-    public static function providerInvalidCodeParse(): iterable
-    {
-        return [
-            'callableArrayOfAMethodThatIsNotDeclaredByAnAnnotation' => [
+            'callableArrayOfAMagicMethodDeclaredByAnAnnotation' => [
                 'code' => '<?php
                     /**
                      * @method void magic()
@@ -2864,12 +2869,23 @@ final class CallableTest extends TestCase
                     function call(callable $_callable): void {}
 
                     function test(Foo $foo): void {
-                        call([$foo, "missing"]);
+                        call([$foo, "magic"]);
+                        call([Foo::class, "staticMagic"]);
                     }',
-                'error_message' => 'InvalidArgument',
-                'error_levels' => [],
+                'assertions' => [],
+                'ignored_issues' => [],
                 'php_version' => '8.0',
             ],
+        ];
+    }
+
+    /**
+     * @psalm-pure
+     */
+    #[Override]
+    public static function providerInvalidCodeParse(): iterable
+    {
+        return [
             'stringNamingAFunctionForClosureParamOnly' => [
                 'code' => <<<'PHP'
                     <?php
@@ -4231,6 +4247,31 @@ final class CallableTest extends TestCase
 
                     foo([\DateTime::class, "wrongMethod"]);',
                 'error_message' => 'InvalidArgument',
+            ],
+            'callableArrayOfAMethodThatIsNotDeclaredByAnAnnotation' => [
+                'code' => '<?php
+                    /**
+                     * @method void magic()
+                     * @method static void staticMagic()
+                     */
+                    class Foo {
+                        public function __call(string $name, array $arguments): mixed {
+                            return null;
+                        }
+
+                        public static function __callStatic(string $name, array $arguments): mixed {
+                            return null;
+                        }
+                    }
+
+                    function call(callable $_callable): void {}
+
+                    function test(Foo $foo): void {
+                        call([$foo, "missing"]);
+                    }',
+                'error_message' => 'InvalidArgument',
+                'error_levels' => [],
+                'php_version' => '8.0',
             ],
         ];
     }
