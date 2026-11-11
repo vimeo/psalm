@@ -5,7 +5,10 @@ declare(strict_types=1);
 namespace Psalm\Internal\Type\Comparator;
 
 use Psalm\Codebase;
+use Psalm\Internal\Analyzer\Statements\Expression\Call\ClassTemplateParamCollector;
 use Psalm\Internal\MethodIdentifier;
+use Psalm\Internal\Type\TemplateInferredTypeReplacer;
+use Psalm\Internal\Type\TemplateResult;
 use Psalm\Storage\Capabilities;
 use Psalm\Type\Atomic;
 use Psalm\Type\Atomic\Scalar;
@@ -44,10 +47,12 @@ use Psalm\Type\Union;
 
 use function array_all;
 use function array_any;
+use function array_diff_key;
 use function array_merge;
 use function array_values;
 use function assert;
 use function count;
+use function reset;
 use function strtolower;
 
 /**
@@ -722,6 +727,57 @@ final class AtomicTypeComparator
             if ($input_type_part instanceof TNamedObject) {
                 // check whether the object has a __toString method
                 if ($codebase->classOrInterfaceExists($input_type_part->value)) {
+                    $to_string_method_id = new MethodIdentifier(
+                        $input_type_part->value,
+                        '__tostring',
+                    );
+
+                    if ($container_type_part instanceof TString
+                        && $container_type_part::class !== TString::class
+                        && $codebase->methodExists($to_string_method_id)
+                    ) {
+                        $self_class = $input_type_part->value;
+                        $return_type = $codebase->getMethodReturnType($to_string_method_id, $self_class);
+
+                        if ($return_type !== null && $input_type_part instanceof TGenericObject) {
+                            $class_template_params = ClassTemplateParamCollector::collect(
+                                $codebase,
+                                $codebase->methods->getClassLikeStorageForMethod($to_string_method_id),
+                                $codebase->classlike_storage_provider->get($input_type_part->value),
+                                $to_string_method_id->method_name,
+                                $input_type_part,
+                            );
+
+                            if ($class_template_params !== null) {
+                                $return_type = TemplateInferredTypeReplacer::replace(
+                                    $return_type,
+                                    new TemplateResult([], $class_template_params),
+                                    $codebase,
+                                );
+                            }
+                        }
+
+                        $return_type_comparison = new TypeComparisonResult();
+                        if ($return_type === null
+                            || !UnionTypeComparator::isContainedBy(
+                                $codebase,
+                                $return_type,
+                                new Union([$container_type_part]),
+                                false,
+                                false,
+                                $return_type_comparison,
+                            )
+                        ) {
+                            if ($atomic_comparison_result) {
+                                $atomic_comparison_result->type_coerced = $return_type === null
+                                    || $return_type_comparison->type_coerced;
+                                $atomic_comparison_result->to_string_cast = true;
+                            }
+
+                            return false;
+                        }
+                    }
+
                     if ($codebase->analysis_php_version_id >= 8_00_00
                         && ($input_type_part->value === 'Stringable'
                             || ($codebase->classlikes->classExists($input_type_part->value)
@@ -735,12 +791,7 @@ final class AtomicTypeComparator
                         return true;
                     }
 
-                    if ($codebase->methodExists(
-                        new MethodIdentifier(
-                            $input_type_part->value,
-                            '__tostring',
-                        ),
-                    )) {
+                    if ($codebase->methodExists($to_string_method_id)) {
                         if ($atomic_comparison_result) {
                             $atomic_comparison_result->to_string_cast = true;
                         }
@@ -886,6 +937,90 @@ final class AtomicTypeComparator
             && $array->properties[0]->equals($array->fallback_params[1])
         ;
     }
+
+    /**
+     * The object half of an iterable is a Traversable, unless the other type is a class that cannot be one
+     * or has template params of its own, which the generic comparison handles. Whether an iterable may be
+     * that object is not a question of its purity.
+     *
+     * @psalm-capabilities read-props|write-props
+     * @internal
+     */
+    public static function getTraversableHalf(
+        Codebase $codebase,
+        TIterable $iterable,
+        TNamedObject $other,
+        bool $keep_purity = true,
+    ): ?TGenericObject {
+        if ($other instanceof TGenericObject
+            || $iterable->extra_types
+            || (($codebase->classExists($other->value) || $codebase->classlikes->enumExists($other->value))
+                && !$codebase->classImplements($other->value, 'Traversable')
+                && ($codebase->classlike_storage_provider->get($other->value)->final
+                    || $codebase->classlike_storage_provider->get($other->value)->is_enum))
+        ) {
+            return null;
+        }
+
+        // a generic class takes the key and the value of the iterable for the templates that stand for its own
+        if ($codebase->classExists($other->value)) {
+            $other_storage = $codebase->classlike_storage_provider->get($other->value);
+            $extended_params = $other_storage->template_extended_params['Traversable'] ?? null;
+
+            if ($other_storage->template_types !== null
+                && $extended_params !== null
+                && isset($extended_params['TKey'], $extended_params['TValue'])
+                && isset($iterable->type_params[1])
+            ) {
+                $iterable_params = [
+                    'TKey' => $iterable->type_params[0],
+                    'TValue' => $iterable->type_params[1],
+                ];
+                $class_params = [];
+                $found = [];
+
+                foreach ($other_storage->template_types as $template_name => $bounds) {
+                    $class_param = reset($bounds);
+
+                    foreach ($iterable_params as $traversable_template => $iterable_param) {
+                        $standing_for = $extended_params[$traversable_template];
+
+                        if ($standing_for->isSingle()
+                            && $standing_for->getSingleAtomic() instanceof TTemplateParam
+                            && $standing_for->getSingleAtomic()->param_name === $template_name
+                        ) {
+                            $class_param = $iterable_param;
+                            $found[$traversable_template] = true;
+                        }
+                    }
+
+                    // only the purity template that stands for the one of Traversable is the iterable's
+                    $purity_standing_for = $extended_params['TPurity'] ?? null;
+
+                    if ($purity_standing_for !== null
+                        && $purity_standing_for->isSingle()
+                        && $purity_standing_for->getSingleAtomic() instanceof TTemplateParam
+                        && $purity_standing_for->getSingleAtomic()->param_name === $template_name
+                    ) {
+                        $class_param = $iterable->purity;
+                    }
+
+                    $class_params[] = $class_param;
+                }
+
+                if ($class_params !== [] && count($found) === 2) {
+                    return new TGenericObject($other->value, $class_params);
+                }
+            }
+        }
+
+        // the purity of the iterable is the last template of Traversable
+        return new TGenericObject(
+            'Traversable',
+            $keep_purity ? [...$iterable->type_params, $iterable->purity] : $iterable->type_params,
+        );
+    }
+
     /**
      * Does the input param atomic type match the given param atomic type
      */
@@ -901,6 +1036,11 @@ final class AtomicTypeComparator
             return true;
         }
 
+        if ($type1_part instanceof TIterable && $type2_part instanceof TNamedObject) {
+            $type1_part = self::getTraversableHalf($codebase, $type1_part, $type2_part, false) ?? $type1_part;
+        } elseif ($type2_part instanceof TIterable && $type1_part instanceof TNamedObject) {
+            $type2_part = self::getTraversableHalf($codebase, $type2_part, $type1_part, false) ?? $type2_part;
+        }
 
         if ((self::isLegacyTListLike($type1_part)
                 && self::isLegacyTNonEmptyListLike($type2_part))
@@ -931,6 +1071,35 @@ final class AtomicTypeComparator
                 $type1_part->type_params[1],
                 $type2_part->type_params[1],
             );
+        }
+
+        // arrays of the same keys can be identical when every pair of their items can, as list{int|string} and
+        // list{string|bool}: neither contains the other
+        if ($type1_part instanceof TKeyedArray
+            && $type2_part instanceof TKeyedArray
+            && $type1_part->fallback_params === null
+            && $type2_part->fallback_params === null
+            && count($type1_part->properties) === count($type2_part->properties)
+            && array_diff_key($type1_part->properties, $type2_part->properties) === []
+        ) {
+            $only_defined_items = true;
+
+            foreach ($type1_part->properties as $key => $property_1) {
+                $property_2 = $type2_part->properties[$key];
+
+                if ($property_1->possibly_undefined || $property_2->possibly_undefined) {
+                    $only_defined_items = false;
+                    break;
+                }
+
+                if (!UnionTypeComparator::canExpressionTypesBeIdentical($codebase, $property_1, $property_2)) {
+                    return false;
+                }
+            }
+
+            if ($only_defined_items) {
+                return true;
+            }
         }
 
         $first_comparison_result = new TypeComparisonResult();

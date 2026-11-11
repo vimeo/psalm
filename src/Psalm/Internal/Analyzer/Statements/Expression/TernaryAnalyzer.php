@@ -13,11 +13,13 @@ use Psalm\Internal\Algebra;
 use Psalm\Internal\Algebra\FormulaGenerator;
 use Psalm\Internal\Analyzer\AlgebraAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Block\IfConditionalAnalyzer;
+use Psalm\Internal\Analyzer\Statements\Block\IfElse\IfAnalyzer;
 use Psalm\Internal\Analyzer\Statements\ExpressionAnalyzer;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\Internal\Clause;
 use Psalm\Internal\Scope\IfScope;
 use Psalm\Internal\Type\AssertionReconciler;
+use Psalm\Internal\Type\Comparator\UnionTypeComparator;
 use Psalm\Node\Expr\VirtualBooleanNot;
 use Psalm\Storage\Assertion\Truthy;
 use Psalm\Type;
@@ -51,6 +53,12 @@ final class TernaryAnalyzer
         $if_scope = new IfScope();
 
         try {
+            // the else of an `||` is analysed again from where the condition started, not from where it ended
+            $pre_condition_context = $stmt->cond instanceof PhpParser\Node\Expr\BinaryOp\BooleanOr
+                || $stmt->cond instanceof PhpParser\Node\Expr\BinaryOp\LogicalOr
+                    ? clone $context
+                    : null;
+
             $if_conditional_scope = IfConditionalAnalyzer::analyze(
                 $statements_analyzer,
                 $stmt->cond,
@@ -205,6 +213,17 @@ final class TernaryAnalyzer
 
         $t_else_context = clone $context;
 
+        // the else runs when every operand of an `||` was evaluated and falsy, so what they assigned is known there
+        if (array_filter($assigned_in_conditional_var_ids) !== [] && $pre_condition_context !== null) {
+            IfAnalyzer::addConditionallyAssignedVarsToContext(
+                $statements_analyzer,
+                $stmt->cond,
+                $pre_condition_context,
+                $t_else_context,
+                $assigned_in_conditional_var_ids,
+            );
+        }
+
         if ($stmt->if) {
             if (ExpressionAnalyzer::analyze($statements_analyzer, $stmt->if, $if_context) === false) {
                 return false;
@@ -243,17 +262,58 @@ final class TernaryAnalyzer
             return false;
         }
 
+        // a branch that never finishes (throw, exit) leaves the other one as the only way past the ternary
+        $if_type = $stmt->if ? $statements_analyzer->node_data->getType($stmt->if) : null;
+        $else_type = $statements_analyzer->node_data->getType($stmt->else);
+        $if_exits = $if_type !== null && $if_type->isNever();
+        $else_exits = $else_type !== null && $else_type->isNever();
+
+        if ($if_exits !== $else_exits) {
+            $completing_context = $if_exits ? $t_else_context : $if_context;
+
+            foreach ($completing_context->getRedefinedVars($context->vars_in_scope) as $var_id => $type) {
+                $context->vars_in_scope[$var_id] = $type;
+            }
+
+            foreach ($completing_context->assigned_var_ids as $var_id => $assigned_at) {
+                if (isset($completing_context->vars_in_scope[$var_id])) {
+                    $context->vars_in_scope[$var_id] = $completing_context->vars_in_scope[$var_id];
+                    // an enclosing ternary needs to know the variable is assigned wherever this one completes
+                    $context->assigned_var_ids[$var_id] = $assigned_at;
+                }
+            }
+
+            $context->vars_possibly_in_scope = [
+                ...$context->vars_possibly_in_scope,
+                ...$completing_context->vars_possibly_in_scope,
+            ];
+
+            $context->cond_referenced_var_ids = [
+                ...$context->cond_referenced_var_ids,
+                ...$completing_context->cond_referenced_var_ids,
+            ];
+
+            return self::setResultType($statements_analyzer, $stmt, $context);
+        }
+
         $assign_var_ifs = $if_context->assigned_var_ids;
         $assign_var_else = $t_else_context->assigned_var_ids;
         $assign_all = array_intersect_key($assign_var_ifs, $assign_var_else);
 
         //if the same var was assigned in both branches
         foreach ($assign_all as $var_id => $_) {
-            if (isset($if_context->vars_in_scope[$var_id]) && isset($t_else_context->vars_in_scope[$var_id])) {
+            if (isset($if_context->vars_in_scope[$var_id])
+                && isset($t_else_context->vars_in_scope[$var_id])
+                && !(self::keepsOuterMixedType($statements_analyzer, $context, $if_context, $var_id)
+                    && self::keepsOuterMixedType($statements_analyzer, $context, $t_else_context, $var_id))
+            ) {
                 $context->vars_in_scope[$var_id] = Type::combineUnionTypes(
                     $if_context->vars_in_scope[$var_id],
                     $t_else_context->vars_in_scope[$var_id],
                 );
+
+                // an enclosing ternary needs to know the variable is assigned in both of its branches too
+                $context->assigned_var_ids[$var_id] = $if_context->assigned_var_ids[$var_id];
             }
         }
 
@@ -263,6 +323,12 @@ final class TernaryAnalyzer
 
         //these vars were changed in both branches
         foreach ($redef_all as $redef_var_id) {
+            if (self::keepsOuterMixedType($statements_analyzer, $context, $if_context, $redef_var_id)
+                && self::keepsOuterMixedType($statements_analyzer, $context, $t_else_context, $redef_var_id)
+            ) {
+                continue;
+            }
+
             $context->vars_in_scope[$redef_var_id] = Type::combineUnionTypes(
                 $if_context->vars_in_scope[$redef_var_id],
                 $t_else_context->vars_in_scope[$redef_var_id],
@@ -271,7 +337,9 @@ final class TernaryAnalyzer
 
         //these vars were changed in the if and existed before
         foreach ($redef_var_ifs as $redef_var_ifs_id) {
-            if (isset($context->vars_in_scope[$redef_var_ifs_id])) {
+            if (isset($context->vars_in_scope[$redef_var_ifs_id])
+                && !self::keepsOuterMixedType($statements_analyzer, $context, $if_context, $redef_var_ifs_id)
+            ) {
                 $context->vars_in_scope[$redef_var_ifs_id] = Type::combineUnionTypes(
                     $context->vars_in_scope[$redef_var_ifs_id],
                     $if_context->vars_in_scope[$redef_var_ifs_id],
@@ -281,7 +349,9 @@ final class TernaryAnalyzer
 
         //these vars were changed in the else and existed before
         foreach ($redef_var_else as $redef_var_else_id) {
-            if (isset($context->vars_in_scope[$redef_var_else_id])) {
+            if (isset($context->vars_in_scope[$redef_var_else_id])
+                && !self::keepsOuterMixedType($statements_analyzer, $context, $t_else_context, $redef_var_else_id)
+            ) {
                 $context->vars_in_scope[$redef_var_else_id] = Type::combineUnionTypes(
                     $context->vars_in_scope[$redef_var_else_id],
                     $t_else_context->vars_in_scope[$redef_var_else_id],
@@ -300,6 +370,38 @@ final class TernaryAnalyzer
             ...$t_else_context->cond_referenced_var_ids,
         ];
 
+        return self::setResultType($statements_analyzer, $stmt, $context);
+    }
+
+    /**
+     * A mixed variable that a branch only narrowed (never wrote) is still just mixed after the ternary: merging the
+     * narrowed type back in would only produce a `mixed|Foo` union, as IfAnalyzer avoids
+     */
+    private static function keepsOuterMixedType(
+        StatementsAnalyzer $statements_analyzer,
+        Context $outer_context,
+        Context $branch_context,
+        string $var_id,
+    ): bool {
+        return isset($outer_context->vars_in_scope[$var_id], $branch_context->vars_in_scope[$var_id])
+            && $outer_context->vars_in_scope[$var_id]->hasMixed()
+            // the branch context starts as a copy of the outer one, which can have assigned the variable earlier
+            && ($branch_context->assigned_var_ids[$var_id] ?? null)
+                === ($outer_context->assigned_var_ids[$var_id] ?? null)
+            && isset($branch_context->possibly_assigned_var_ids[$var_id])
+                === isset($outer_context->possibly_assigned_var_ids[$var_id])
+            && UnionTypeComparator::isContainedBy(
+                $statements_analyzer->getCodebase(),
+                $branch_context->vars_in_scope[$var_id],
+                $outer_context->vars_in_scope[$var_id],
+            );
+    }
+
+    private static function setResultType(
+        StatementsAnalyzer $statements_analyzer,
+        PhpParser\Node\Expr\Ternary $stmt,
+        Context $context,
+    ): bool {
         $lhs_type = null;
         $stmt_cond_type = $statements_analyzer->node_data->getType($stmt->cond);
         if ($stmt->if) {

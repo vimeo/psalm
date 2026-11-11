@@ -443,8 +443,7 @@ final class TemplateStandinTypeReplacer
         }
 
         if (!$matching_atomic_types) {
-            /** @psalm-suppress ReferenceConstraintViolation Psalm bug, $atomic_type is not a reference */
-            $atomic_type = $atomic_type->replaceTemplateTypesWithStandins(
+            $replaced_atomic_type = $atomic_type->replaceTemplateTypesWithStandins(
                 $template_result,
                 $codebase,
                 $statements_analyzer,
@@ -457,13 +456,18 @@ final class TemplateStandinTypeReplacer
                 $depth + 1,
             );
 
-            return [$atomic_type];
+            // not where another alternative stays in the union: what it holds is not given by the inferred template
+            if ($was_single && $replaced_atomic_type !== $atomic_type && !$template_result->readonly) {
+                $had_template = true;
+            }
+
+            return [$replaced_atomic_type];
         }
 
         $atomic_types = [];
 
         foreach ($matching_atomic_types as $matching_atomic_type) {
-            $atomic_types[] = $atomic_type->replaceTemplateTypesWithStandins(
+            $replaced_atomic_type = $atomic_type->replaceTemplateTypesWithStandins(
                 $template_result,
                 $codebase,
                 $statements_analyzer,
@@ -475,6 +479,13 @@ final class TemplateStandinTypeReplacer
                 $add_lower_bound,
                 $depth + 1,
             );
+
+            // not where another alternative stays in the union: what it holds is not given by the inferred template
+            if ($was_single && $replaced_atomic_type !== $atomic_type && !$template_result->readonly) {
+                $had_template = true;
+            }
+
+            $atomic_types[] = $replaced_atomic_type;
         }
 
         return $atomic_types;
@@ -592,35 +603,11 @@ final class TemplateStandinTypeReplacer
                     );
                 }
 
-                try {
-                    $classlike_storage =
-                        $codebase->classlike_storage_provider->get($atomic_input_type->value);
+                $matching_object = self::getObjectMatchingBase($codebase, $atomic_input_type, $base_type);
 
-                    if ($atomic_input_type instanceof TGenericObject
-                        && isset($classlike_storage->template_extended_params[$base_type->value])
-                    ) {
-                        $matching_atomic_types[$atomic_input_type->getId()] = $atomic_input_type;
-                        continue;
-                    }
-
-                    if (!empty($classlike_storage->template_extended_params[$base_type->value])) {
-                        $atomic_input_type = new TGenericObject(
-                            $base_type->value,
-                            array_values($classlike_storage->template_extended_params[$base_type->value]),
-                        );
-
-                        $matching_atomic_types[$atomic_input_type->getId()] = $atomic_input_type;
-                        continue;
-                    }
-
-                    if (in_array('Traversable', $classlike_storage->class_implements)
-                        && $base_type->value === 'Iterator'
-                    ) {
-                        $matching_atomic_types[$atomic_input_type->getId()] = $atomic_input_type;
-                        continue;
-                    }
-                } catch (InvalidArgumentException) {
-                    // do nothing
+                if ($matching_object) {
+                    $matching_atomic_types[$matching_object->getId()] = $matching_object;
+                    continue;
                 }
             }
 
@@ -816,7 +803,11 @@ final class TemplateStandinTypeReplacer
                         $atomic_types[] = $replacement_atomic_type;
                     }
 
-                    $had_template = true;
+                    // a binding that is only read (class templates fixed by the receiver) is the actual
+                    // type, not a stand-in for what the arguments may still infer
+                    if (!$template_result->readonly) {
+                        $had_template = true;
+                    }
                 }
             }
 
@@ -962,7 +953,9 @@ final class TemplateStandinTypeReplacer
                     || $t instanceof TIterable
                     || $t instanceof TObjectWithProperties
                 ) {
-                    $t = $t->setIntersectionTypes($extra_types);
+                    if ($extra_types) {
+                        $t = $t->setIntersectionTypes([...$t->getIntersectionTypes(), ...$extra_types]);
+                    }
                 } elseif ($t instanceof TObject && $extra_types) {
                     $t = reset($extra_types)->setIntersectionTypes(array_slice($extra_types, 1));
                 }
@@ -1082,7 +1075,21 @@ final class TemplateStandinTypeReplacer
         if ($input_type && !$template_result->readonly) {
             $valid_input_atomic_types = [];
 
+            // a template bounded by a class-string (the one generated for a parameter used in a conditional
+            // return type) is as good as its bound
+            $input_atomic_types = [];
+
             foreach ($input_type->getAtomicTypes() as $input_atomic_type) {
+                if ($input_atomic_type instanceof TTemplateParam) {
+                    foreach ($input_atomic_type->as->getAtomicTypes() as $bound_atomic_type) {
+                        $input_atomic_types[] = $bound_atomic_type;
+                    }
+                } else {
+                    $input_atomic_types[] = $input_atomic_type;
+                }
+            }
+
+            foreach ($input_atomic_types as $input_atomic_type) {
                 if ($input_atomic_type instanceof TLiteralClassString) {
                     $valid_input_atomic_types[] = new TNamedObject(
                         $input_atomic_type->value,
@@ -1118,7 +1125,14 @@ final class TemplateStandinTypeReplacer
                         $valid_input_atomic_types[] = new TObject(true);
                     }
                 } elseif ($input_atomic_type instanceof TDependentGetClass) {
-                    $valid_input_atomic_types[] = new TObject(true);
+                    // what get_class($x) is known to be: the class of $x, or any object if that is not known
+                    if ($input_atomic_type->as_type->isMixed() || $input_atomic_type->as_type->hasObject()) {
+                        $valid_input_atomic_types[] = new TObject(true);
+                    } else {
+                        foreach ($input_atomic_type->as_type->getAtomicTypes() as $as_atomic_type) {
+                            $valid_input_atomic_types[] = $as_atomic_type;
+                        }
+                    }
                 }
             }
 
@@ -1357,8 +1371,47 @@ final class TemplateStandinTypeReplacer
     }
 
     /**
+     * The object as the base it is matched against, if its class extends it: with the params that the templates of
+     * the base map to for this object, an object without type params leaving them at those of its class.
+     *
+     * @psalm-capabilities read-props|write-this-props|write-props|write-refs
+     */
+    private static function getObjectMatchingBase(
+        Codebase $codebase,
+        TNamedObject $atomic_input_type,
+        TNamedObject $base_type,
+    ): ?TNamedObject {
+        try {
+            $classlike_storage = $codebase->classlike_storage_provider->get($atomic_input_type->value);
+
+            if ($atomic_input_type instanceof TGenericObject
+                && isset($classlike_storage->template_extended_params[$base_type->value])
+            ) {
+                return $atomic_input_type;
+            }
+
+            if (!empty($classlike_storage->template_extended_params[$base_type->value])) {
+                /** @var non-empty-list<Union> $params */
+                $params = self::getMappedGenericTypeParams($codebase, $atomic_input_type, $base_type);
+
+                return new TGenericObject($base_type->value, $params);
+            }
+
+            if (in_array('Traversable', $classlike_storage->class_implements)
+                && $base_type->value === 'Iterator'
+            ) {
+                return $atomic_input_type;
+            }
+        } catch (InvalidArgumentException) {
+            // do nothing
+        }
+
+        return null;
+    }
+
+    /**
      * @param TGenericObject|TNamedObject|TIterable $input_type_part
-     * @param TGenericObject|TIterable $container_type_part
+     * @param TGenericObject|TNamedObject|TIterable $container_type_part
      * @psalm-capabilities read-props|write-this-props|write-props|write-refs
      * @return list<Union>
      */

@@ -23,6 +23,92 @@ final class FunctionTemplateTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'typePredicatesOnATemplateBoundedByATemplate' => [
+                'code' => '<?php
+                    /**
+                     * @template T
+                     * @template U of T
+                     * @param U $v
+                     */
+                    function f($v): int {
+                        $count = 0;
+
+                        if (is_string($v)) {
+                            $count++;
+                        }
+
+                        if (is_int($v)) {
+                            $count++;
+                        }
+
+                        if (is_float($v)) {
+                            $count++;
+                        }
+
+                        if (is_numeric($v)) {
+                            $count++;
+                        }
+
+                        if (is_scalar($v)) {
+                            $count++;
+                        }
+
+                        if (is_bool($v)) {
+                            $count++;
+                        }
+
+                        if ($v === true) {
+                            $count++;
+                        }
+
+                        if ($v === false) {
+                            $count++;
+                        }
+
+                        if (is_object($v)) {
+                            $count++;
+                        }
+
+                        if (is_array($v)) {
+                            $count++;
+                        }
+
+                        if (is_callable($v)) {
+                            $count++;
+                        }
+
+                        return $count;
+                    }',
+            ],
+            'classStringTemplateOfAParamUsedInAConditionalReturnType' => [
+                'code' => '<?php
+                    class Container {
+                        /**
+                         * @template T of object
+                         * @param null|class-string<T> $type
+                         * @return ($type is class-string ? T : null)
+                         */
+                        public function get(string|null $type = null): object|null {
+                            if ($type === null) {
+                                return null;
+                            }
+
+                            return $this->make($type);
+                        }
+
+                        /**
+                         * @template T of object
+                         * @param class-string<T> $class
+                         * @return T
+                         */
+                        public function make(string $class): object {
+                            return new $class();
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => ['MixedMethodCall'],
+                'php_version' => '8.0',
+            ],
             'negatedInstanceofNarrowsTheBoundOfATemplateParam' => [
                 'code' => '<?php
                     class File {
@@ -1917,7 +2003,7 @@ final class FunctionTemplateTest extends TestCase
                     );
 
                     $test = $list->sortByArr(
-                        /** 
+                        /**
                          * @return list{0: mixed, 1: mixed}
                          */
                         static fn ($item): array => [$item, $item],
@@ -2489,6 +2575,20 @@ final class FunctionTemplateTest extends TestCase
     public static function providerInvalidCodeParse(): iterable
     {
         return [
+            'typePredicateImpossibleForATemplateBoundedByATemplate' => [
+                'code' => '<?php
+                    /**
+                     * @template T of string
+                     * @template U of T
+                     * @param U $v
+                     */
+                    function f($v): void {
+                        if (is_int($v)) {
+                            echo 1;
+                        }
+                    }',
+                'error_message' => 'DocblockTypeContradiction',
+            ],
             'templateBoundedByMixedIsBoundedByMixedAgainAfterABranchNarrowingIt' => [
                 'code' => '<?php
                     function takesInt(int $i): void {}

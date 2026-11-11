@@ -7,6 +7,10 @@ namespace Psalm\Tests;
 use Override;
 use Psalm\Tests\Traits\InvalidCodeAnalysisTestTrait;
 use Psalm\Tests\Traits\ValidCodeAnalysisTestTrait;
+use Psalm\Type;
+use Psalm\Type\Atomic\TLiteralString;
+
+use function mb_internal_encoding;
 
 use const DIRECTORY_SEPARATOR;
 
@@ -21,6 +25,23 @@ final class ReturnTypeTest extends TestCase
         $this->testInvalidCode('<?php function f(void $p): void {}', 'ParseError');
     }
 
+    public function testUnicodeEscapeOfADocblockStringLiteralIsNotTheInternalEncoding(): void
+    {
+        $encoding = mb_internal_encoding();
+        mb_internal_encoding('ISO-8859-1');
+
+        try {
+            $type = Type::parseString('"\u{e9}\u{1F600}"');
+        } finally {
+            mb_internal_encoding($encoding);
+        }
+
+        $atomic = $type->getSingleAtomic();
+
+        self::assertInstanceOf(TLiteralString::class, $atomic);
+        self::assertSame("\u{e9}\u{1F600}", $atomic->value);
+    }
+
     /**
      * @psalm-pure
      */
@@ -28,6 +49,336 @@ final class ReturnTypeTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'docblockStringLiteralWithEscapedBackslashes' => [
+                'code' => '<?php
+                    /** @return "\\\\t" */
+                    function backslashAndLetter(): string {
+                        return "\\\\t";
+                    }
+
+                    /** @return "\\\\\\\\" */
+                    function twoBackslashes(): string {
+                        return "\\\\\\\\";
+                    }
+
+                    /** @return \'\\\\\\\\\' */
+                    function twoBackslashesSingleQuoted(): string {
+                        return \'\\\\\\\\\';
+                    }',
+            ],
+            'docblockStringLiteralWithAUnicodeEscapeWithLeadingZeros' => [
+                'code' => '<?php
+                    /** @return "\u{0000000000e9}" */
+                    function leadingZeros(): string {
+                        return "é";
+                    }',
+            ],
+            'docblockStringLiteralWithNonAsciiUnicodeEscapes' => [
+                'code' => '<?php
+                    /** @return "\u{e9}\u{20AC}\u{1F600}" */
+                    function nonAscii(): string {
+                        return "é€😀";
+                    }',
+            ],
+            'docblockStringLiteralWithEscapeSequences' => [
+                'code' => '<?php
+                    /** @return "\t" */
+                    function tab(): string {
+                        return "\t";
+                    }
+
+                    /** @return "a\nb" */
+                    function newline(): string {
+                        return "a\nb";
+                    }
+
+                    /** @return "\x41\101\u{42}" */
+                    function numeric(): string {
+                        return "AAB";
+                    }
+
+                    /** @return "\$x" */
+                    function dollar(): string {
+                        return \'$x\';
+                    }
+
+                    /** @return "say \"hi\"" */
+                    function quotes(): string {
+                        return \'say "hi"\';
+                    }',
+            ],
+            'docblockStringLiteralKeepsWhatIsNotAnEscapeSequence' => [
+                'code' => '<?php
+                    /** @return "\d+" */
+                    function regex(): string {
+                        return "\\d+";
+                    }
+
+                    /** @return "\\d" */
+                    function backslash(): string {
+                        return "\\d";
+                    }
+
+                    /** @return \'a\\\\b\' */
+                    function single(): string {
+                        return \'a\\\\b\';
+                    }
+
+                    /** @return \'it\\\'s\' */
+                    function apostrophe(): string {
+                        return "it\'s";
+                    }',
+            ],
+            'generatorReturnTypeAllowsAnImplicitReturnOfNull' => [
+                'code' => '<?php
+                    /** @return Generator<int, int, mixed, string|null> */
+                    function nullable(bool $r): Generator {
+                        if ($r) {
+                            return "string";
+                        }
+
+                        yield 1;
+                    }
+
+                    /** @return Generator<int, int, mixed, mixed> */
+                    function untyped(bool $r): Generator {
+                        if ($r) {
+                            return "string";
+                        }
+
+                        yield 1;
+                    }
+
+                    /** @return Generator<int, int, mixed, string> */
+                    function everyPathReturns(bool $r): Generator {
+                        yield 1;
+
+                        if ($r) {
+                            return "a";
+                        }
+
+                        return "b";
+                    }',
+            ],
+            'generatorMethodThatThrowsInInfiniteLoop' => [
+                'code' => '<?php
+                    class A {
+                        /**
+                         * @return Generator<int>
+                         */
+                        public function events(): Generator {
+                            while (true) {
+                                if (rand(0, 1)) {
+                                    throw new Exception("failed");
+                                }
+
+                                foreach ([1, 2] as $event) {
+                                    yield $event;
+                                }
+                            }
+                        }
+                    }',
+            ],
+            'generatorThatThrowsInInfiniteLoop' => [
+                'code' => '<?php
+                    /**
+                     * @return Generator<int>
+                     */
+                    function events(): Generator {
+                        while (true) {
+                            if (rand(0, 1)) {
+                                throw new Exception("failed");
+                            }
+
+                            yield 1;
+                        }
+                    }',
+            ],
+            'narrowerNativeReturnTypeWinsOverInheritedDocblockWithStringable' => [
+                'code' => '<?php
+                    abstract class A {
+                        /**
+                         * @return string|Stringable
+                         */
+                        abstract public function render(): string|Stringable;
+                    }
+
+                    final class B extends A {
+                        public function render(): string {
+                            return "x";
+                        }
+                    }
+
+                    $s = (new B())->render();',
+                'assertions' => ['$s===' => 'string'],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'inheritedDocblockStillRefinesNativeReturnType' => [
+                'code' => '<?php
+                    abstract class A {
+                        /**
+                         * @return non-empty-string
+                         */
+                        abstract public function render(): string;
+                    }
+
+                    final class B extends A {
+                        public function render(): string {
+                            return "x";
+                        }
+                    }
+
+                    $s = (new B())->render();',
+                'assertions' => ['$s===' => 'non-empty-string'],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'narrowerNativeReturnTypeWinsOverInheritedDocblockWithStringableOrInt' => [
+                'code' => '<?php
+                    abstract class C {
+                        /** @return Stringable|int */
+                        abstract public function render(): Stringable|int|string;
+                    }
+
+                    final class D extends C {
+                        public function render(): string {
+                            return "x";
+                        }
+                    }
+
+                    $t = (new D())->render();',
+                'assertions' => ['$t===' => 'string'],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
+            'narrowerNativeReturnTypeWinsOverInheritedStringableDocblock' => [
+                'code' => '<?php
+                    abstract class E {
+                        /** @return Stringable */
+                        abstract public function render(): Stringable|string;
+                    }
+
+                    final class F extends E {
+                        public function render(): string {
+                            return "x";
+                        }
+                    }
+
+                    $u = (new F())->render();',
+                'assertions' => ['$u===' => 'string'],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
+            'nativeStringableReturnTypeKeepsStringableOverInheritedStringOrStringable' => [
+                'code' => '<?php
+                    abstract class A {
+                        /**
+                         * @return string|Stringable
+                         */
+                        abstract public function render(): string|Stringable;
+                    }
+
+                    final class B extends A {
+                        public function render(): Stringable {
+                            return new class implements Stringable {
+                                public function __toString(): string { return "x"; }
+                            };
+                        }
+                    }
+
+                    $s = (new B())->render();',
+                'assertions' => ['$s===' => 'Stringable'],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'overriddenInterfaceReturnTypesIgnoreAStringCastAsContainment' => [
+                'code' => '<?php
+                    interface I1 {
+                        /** @return string */
+                        public function render();
+                    }
+                    interface I2 {
+                        /** @return Stringable */
+                        public function render();
+                    }
+                    final class C implements I1, I2 {
+                        public function render() {
+                            return "x";
+                        }
+                    }
+
+                    $x = (new C())->render();',
+                'assertions' => ['$x===' => 'string'],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'overriddenInterfaceReturnTypesIgnoreAStringCastAsContainmentInTheOtherOrder' => [
+                'code' => '<?php
+                    interface L1 {
+                        /** @return Stringable */
+                        public function render();
+                    }
+                    interface L2 {
+                        /** @return string */
+                        public function render();
+                    }
+                    final class M implements L1, L2 {
+                        public function render() {
+                            return "x";
+                        }
+                    }
+
+                    $w = (new M())->render();',
+                'assertions' => ['$w===' => 'string'],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'overriddenInterfaceReturnTypesKeepContainmentWithoutAStringCast' => [
+                'code' => '<?php
+                    interface J1 {
+                        /** @return non-empty-string */
+                        public function render();
+                    }
+                    interface J2 {
+                        /** @return string */
+                        public function render();
+                    }
+                    final class K implements J1, J2 {
+                        public function render() {
+                            return "x";
+                        }
+                    }
+
+                    $y = (new K())->render();',
+                'assertions' => ['$y===' => 'non-empty-string'],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'narrowerNativeReturnTypeWinsOverInheritedDocblockWithAClassHavingToString' => [
+                'code' => '<?php
+                    class S {
+                        public function __toString() {
+                            return "s";
+                        }
+                    }
+
+                    abstract class A {
+                        /** @return string|S */
+                        abstract public function render();
+                    }
+
+                    final class B extends A {
+                        public function render(): string {
+                            return "x";
+                        }
+                    }
+
+                    $z = (new B())->render();',
+                'assertions' => ['$z===' => 'string'],
+                'ignored_issues' => [],
+                'php_version' => '7.4',
+            ],
             'voidNeverDeclaredWithAThrowingPathAndAnImplicitReturn' => [
                 'code' => '<?php
                     /**
@@ -1866,6 +2217,42 @@ final class ReturnTypeTest extends TestCase
     public static function providerInvalidCodeParse(): iterable
     {
         return [
+            'docblockStringLiteralWithAUnicodeEscapeThatOverflowsAnInt' => [
+                'code' => '<?php
+                    /** @return "\u{FFFFFFFFFFFFFFFF}" */
+                    function overflow(): string {
+                        return "";
+                    }',
+                'error_message' => 'InvalidDocblock',
+            ],
+            'docblockStringLiteralWithATooLargeUnicodeEscape' => [
+                'code' => '<?php
+                    /** @return "\u{110000}" */
+                    function tooLarge(): string {
+                        return "";
+                    }',
+                'error_message' => 'InvalidDocblock',
+            ],
+            'docblockStringLiteralWithEscapeSequenceIsNotTheBackslashAndLetter' => [
+                'code' => '<?php
+                    /** @return "\t" */
+                    function tab(): string {
+                        return "\\\\t";
+                    }',
+                'error_message' => 'InvalidReturnStatement',
+            ],
+            'generatorReturnsImplicitlyOnAPath' => [
+                'code' => '<?php
+                    /** @return Generator<int, int, mixed, string> */
+                    function foo(bool $r): Generator {
+                        if ($r) {
+                            return "string";
+                        }
+
+                        yield 1;
+                    }',
+                'error_message' => 'InvalidReturnType - src' . DIRECTORY_SEPARATOR . 'somefile.php:2:33 - Not all code paths of foo end in a return statement, the generator return type string expected',
+            ],
             'voidNeverDeclaredWithOnlyAnImplicitReturn' => [
                 'code' => '<?php
                     /**
@@ -2319,7 +2706,7 @@ final class ReturnTypeTest extends TestCase
 
                 $res = map(function(int $i): string { return (string) $i; })([1,2,3]);
                 ',
-                'error_message' => 'MixedAssignment - src' . DIRECTORY_SEPARATOR . 'somefile.php:10:43 - Unable to determine the type that $key is being assigned to',
+                'error_message' => 'MixedAssignment - src' . DIRECTORY_SEPARATOR . 'somefile.php:10:51 - Unable to determine the type that $value is being assigned to',
             ],
             'cannotInferReturnClosureWithMoreSpecificTypes' => [
                 'code' => '<?php

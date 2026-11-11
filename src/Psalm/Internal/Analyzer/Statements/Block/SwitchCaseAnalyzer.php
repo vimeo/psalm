@@ -51,6 +51,7 @@ use function in_array;
 use function is_string;
 use function spl_object_id;
 use function str_starts_with;
+use function strtolower;
 use function substr;
 
 /**
@@ -374,6 +375,10 @@ final class SwitchCaseAnalyzer
 
         $reconcilable_if_types = Algebra::getTruthsFromFormula($case_context->clauses);
 
+        $is_switch_true = $case->cond !== null
+            && $stmt->cond instanceof PhpParser\Node\Expr\ConstFetch
+            && strtolower($stmt->cond->name->getFirst()) === 'true';
+
         // if the if has an || in the conditional, we cannot easily reason about it
         if ($reconcilable_if_types) {
             $changed_var_ids = [];
@@ -391,11 +396,14 @@ final class SwitchCaseAnalyzer
             [$case_vars_in_scope_reconciled, $case_references_in_scope_reconciled] =
                 Reconciler::reconcileKeyedTypes(
                     $reconcilable_if_types,
-                    [],
+                    // the conditions of `switch (true)` are checked like those of an `if`
+                    $is_switch_true ? $reconcilable_if_types : [],
                     $case_context->vars_in_scope,
                     $case_context->references_in_scope,
                     $changed_var_ids,
-                    $case->cond && $switch_var_id ? [$switch_var_id => true] : [],
+                    $is_switch_true
+                        ? $case_context->cond_referenced_var_ids
+                        : ($case->cond && $switch_var_id ? [$switch_var_id => true] : []),
                     $statements_analyzer,
                     [],
                     $case_context->inside_loop,
@@ -582,15 +590,13 @@ final class SwitchCaseAnalyzer
             && isset($case_context->vars_in_scope[$switch_var_id])
             && $case_context->vars_in_scope[$switch_var_id]->isNever()
         ) {
-            if (IssueBuffer::accepts(
+            IssueBuffer::maybeAdd(
                 new ParadoxicalCondition(
                     'All possible case statements have been met, default is impossible here',
                     new CodeLocation($statements_analyzer->getSource(), $case),
                 ),
                 $statements_analyzer->getSuppressedIssues(),
-            )) {
-                return false;
-            }
+            );
         }
 
         // if we're leaving this block, add vars to outer for loop scope

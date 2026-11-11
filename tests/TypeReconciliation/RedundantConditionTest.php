@@ -23,6 +23,31 @@ final class RedundantConditionTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'ctypeCheckOfNumericStringExpressionIsNotRedundant' => [
+                'code' => <<<'PHP'
+                    <?php
+                    function negated(int $id): void {
+                        if (!ctype_digit("$id")) {
+                            throw new InvalidArgumentException("Bad id $id");
+                        }
+                    }
+
+                    function positive(int $id): void {
+                        if (ctype_digit("$id")) {
+                            echo "non-negative";
+                        }
+                    }
+
+                    function lower(): void {
+                        if (ctype_lower("abc" . rand())) {
+                            echo "lower";
+                        }
+                    }
+                    PHP,
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
             'negatedInstanceofOfAGenericSubclassOnAnInterfaceWithTemplateArguments' => [
                 'code' => '<?php
                     /**
@@ -1064,6 +1089,66 @@ final class RedundantConditionTest extends TestCase
                         assert(!!$p);
                     }',
             ],
+            'assignedArrayOffsetNarrowedByLongChain' => [
+                'code' => '<?php
+                    /** @param array<int, string|int> $arr */
+                    function foo(array $arr): void {
+                        if (($y = $arr)
+                            && is_string($y[0])
+                            && $y[0] !== ""
+                            && $y[0] !== "a"
+                        ) {
+                            echo $y[0];
+                        }
+                    }',
+            ],
+            'assignedPropertyNarrowedByLongChain' => [
+                'code' => '<?php
+                    final class Leaf { public ?Leaf $next = null; }
+                    final class Mid { public ?Leaf $leaf = null; }
+                    final class Root { public ?Mid $mid = null; }
+
+                    function make(): ?Root {
+                        return null;
+                    }
+
+                    function foo(): void {
+                        if (($root = make())
+                            && $root->mid instanceof Mid
+                            && $root->mid->leaf !== null
+                            && $root->mid->leaf->next !== null
+                            && $root->mid->leaf->next->next === null
+                        ) {
+                            echo "ok";
+                        }
+                    }',
+            ],
+            'countedArrayOffsetNarrowedByLongChain' => [
+                'code' => '<?php
+                    declare(strict_types=1);
+
+                    final class Node {
+                        /** @var list<Node|Ret>|null */
+                        public ?array $stmts = null;
+                    }
+                    final class Ret {
+                        public ?Node $expr = null;
+                    }
+
+                    function foo(Node $stmt): void {
+                        if ($stmt->stmts
+                            && count($stmt->stmts) === 1
+                            && $stmt->stmts[0] instanceof Ret
+                            && $stmt->stmts[0]->expr instanceof Node
+                            && $stmt->stmts[0]->expr->stmts !== null
+                        ) {
+                            echo "ok";
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => ['RiskyTruthyFalsyComparison'],
+                'php_version' => '8.1',
+            ],
         ];
     }
 
@@ -1074,6 +1159,26 @@ final class RedundantConditionTest extends TestCase
     public static function providerInvalidCodeParse(): iterable
     {
         return [
+            'inequalityWithAnEmptyArrayOfANonEmptyArrayIsRedundant' => [
+                'code' => '<?php
+                    $a = [1, 2];
+                    array_shift($a);
+
+                    if ($a !== []) {
+                        echo 1;
+                    }',
+                'error_message' => 'RedundantCondition - src' . DIRECTORY_SEPARATOR . 'somefile.php:5:25 - list{2} can never be an empty array',
+            ],
+            'inequalityWithAnEmptyArrayOfADocblockNonEmptyArrayIsRedundant' => [
+                'code' => '<?php
+                    /** @var non-empty-list<int> $a */
+                    $a = [];
+
+                    if ($a !== []) {
+                        echo 1;
+                    }',
+                'error_message' => 'RedundantConditionGivenDocblockType - src' . DIRECTORY_SEPARATOR . 'somefile.php:5:25 - Docblock-defined type non-empty-list<int> can never be an empty array',
+            ],
             'negatedTypeCheckOfAKnownTypeExplainsThatItCanNeverBeTrue' => [
                 'code' => '<?php
                     $a = "some";
@@ -1768,6 +1873,19 @@ final class RedundantConditionTest extends TestCase
                      */
 
                     if (array_key_exists("10", $a) && array_key_exists(10, $a)) {}',
+                'error_message' => 'RedundantCondition',
+            ],
+            'assignedArrayOffsetCheckedTwice' => [
+                'code' => '<?php
+                    /** @param array<int, string|int> $arr */
+                    function foo(array $arr): void {
+                        if (($y = $arr)
+                            && is_string($y[0])
+                            && is_string($y[0])
+                        ) {
+                            echo $y[0];
+                        }
+                    }',
                 'error_message' => 'RedundantCondition',
             ],
         ];
