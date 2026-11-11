@@ -67,6 +67,7 @@ use Psalm\Type\Union;
 use function array_intersect_key;
 use function array_merge;
 use function count;
+use function is_nan;
 use function is_string;
 
 /**
@@ -1140,7 +1141,7 @@ final class AssertionReconciler extends Reconciler
 
             if ($assertion instanceof IsLooselyEqual
                 && $existing_var_atomic_type instanceof TLiteralFloat
-                && (int)$existing_var_atomic_type->value === $value
+                && $existing_var_atomic_type->value == $value
             ) {
                 return new Union([$existing_var_atomic_type]);
             }
@@ -1290,6 +1291,7 @@ final class AssertionReconciler extends Reconciler
 
             if ($assertion instanceof IsLooselyEqual
                 && $existing_var_atomic_type instanceof TLiteralFloat
+                && !is_nan($existing_var_atomic_type->value) // NAN is not equal to anything
                 && (string)$existing_var_atomic_type->value === $value
             ) {
                 return new Union([$existing_var_atomic_type]);
