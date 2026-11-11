@@ -115,6 +115,11 @@ final class IfConditionalAnalyzer
         $pre_assigned_var_ids = $outer_context->assigned_var_ids;
         $outer_context->assigned_var_ids = [];
 
+        // what the outer context removed earlier is already gone from it: the if body only reports what the
+        // condition and the body remove
+        $pre_parent_remove_vars = $outer_context->parent_remove_vars;
+        $outer_context->parent_remove_vars = [];
+
         $if_context = null;
 
         if ($internally_applied_if_cond_expr !== $externally_applied_if_cond_expr) {
@@ -150,6 +155,8 @@ final class IfConditionalAnalyzer
         if (!$if_context) {
             $if_context = clone $outer_context;
         }
+
+        $outer_context->parent_remove_vars += $pre_parent_remove_vars;
 
         $if_conditional_context = clone $if_context;
 

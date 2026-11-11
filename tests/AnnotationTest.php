@@ -248,6 +248,58 @@ final class AnnotationTest extends TestCase
                 'assertions' => [],
                 'ignored_issues' => ['UnnecessaryVarAnnotation'],
             ],
+            'boolFlagNarrowsVarRedeclaredByVarAfterFloatingVar' => [
+                'code' => '<?php
+                    final class Slot {
+                        public string $attributes = "";
+                    }
+                    /** @var mixed $action */
+                    ?>
+                    <?php /** @var Slot|null $action */
+                    $hasAction = $action !== null;
+                    if (isset($_GET["x"])) {
+                    }
+                    if ($hasAction) {
+                        echo $action->attributes;
+                    }',
+            ],
+            'boolFlagNarrowsVarRedeclaredByVarAfterIfElse' => [
+                'code' => '<?php
+                    final class Slot {
+                        public string $attributes = "";
+                    }
+                    /** @var mixed $action */
+                    ?>
+                    <?php /** @var Slot|null $action */
+                    $hasAction = $action !== null;
+                    if (isset($_GET["x"])) {
+                    } elseif (isset($_GET["y"])) {
+                        echo 1;
+                    } else {
+                        echo 2;
+                    }
+                    if ($hasAction) {
+                        echo $action->attributes;
+                    }',
+            ],
+            'boolFlagNarrowsVarAssignedTwice' => [
+                'code' => '<?php
+                    final class Slot {
+                        public string $attributes = "";
+                    }
+                    function getSlot(): ?Slot {
+                        return null;
+                    }
+                    $action = getSlot();
+                    echo json_encode($action);
+                    $action = getSlot();
+                    $hasAction = $action !== null;
+                    if (isset($_GET["x"])) {
+                    }
+                    if ($hasAction) {
+                        echo $action->attributes;
+                    }',
+            ],
             'propertyWithNonAsciiName' => [
                 'code' => '<?php
                     /**
@@ -1936,6 +1988,22 @@ final class AnnotationTest extends TestCase
     public static function providerInvalidCodeParse(): iterable
     {
         return [
+            'boolFlagLosesNarrowingOfVarReassignedInElseifCondition' => [
+                'code' => '<?php
+                    final class Slot {
+                        public string $attributes = "";
+                    }
+                    function f(?Slot $action, ?Slot $other, bool $b): void {
+                        $hasAction = $action !== null;
+                        if ($b) {
+                        } elseif (($action = $other) !== null) {
+                        }
+                        if ($hasAction) {
+                            echo $action->attributes;
+                        }
+                    }',
+                'error_message' => 'PossiblyNullPropertyFetch',
+            ],
             'removedSelfAccessingCallableWithParamsIsInvalid' => [
                 'code' => <<<'PHP'
                     <?php
