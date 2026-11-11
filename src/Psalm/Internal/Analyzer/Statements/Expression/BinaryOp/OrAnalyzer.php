@@ -29,6 +29,7 @@ use Psalm\Type\Reconciler;
 
 use function array_diff_key;
 use function array_filter;
+use function array_intersect_key;
 use function array_merge;
 use function array_values;
 use function count;
@@ -119,11 +120,10 @@ final class OrAnalyzer
             IfConditionalAnalyzer::handleParadoxicalCondition($statements_analyzer, $stmt->left);
 
             foreach ($left_context->vars_in_scope as $var_id => $type) {
-                if (!isset($context->vars_in_scope[$var_id])) {
-                    if (isset($left_context->assigned_var_ids[$var_id])) {
-                        $context->vars_in_scope[$var_id] = $type;
-                    }
-                } else {
+                if (isset($left_context->assigned_var_ids[$var_id])) {
+                    // the left operand always runs: what it assigns replaces what the variable held before
+                    $context->vars_in_scope[$var_id] = $type;
+                } elseif (isset($context->vars_in_scope[$var_id])) {
                     $context->vars_in_scope[$var_id] = Type::combineUnionTypes(
                         $context->vars_in_scope[$var_id],
                         $type,
@@ -254,11 +254,17 @@ final class OrAnalyzer
             }
 
             $partitioned_clauses = Context::removeReconciledClauses($context->clauses, $changed_var_ids);
-            $context->clauses = $partitioned_clauses[0];
 
             foreach ($partitioned_clauses[1] as $clause) {
                 $context->reconciled_expression_clauses[] = $clause->hash;
             }
+
+            // the clauses the context had about a variable the left operand assigns are stale, the other ones still
+            // hold after the expression (`$has = $b !== null; $has || $c;` keeps what `$has` says about `$b`)
+            $context->clauses = Context::removeReconciledClauses(
+                $context->clauses,
+                array_intersect_key($changed_var_ids, $left_assigned_var_ids),
+            )[0];
         }
 
         $right_context->if_body_context = null;
@@ -383,7 +389,14 @@ final class OrAnalyzer
             $if_body_context = $context->if_body_context;
 
             foreach ($right_context->vars_in_scope as $var_id => $type) {
-                if (isset($if_body_context->vars_in_scope[$var_id])) {
+                if (isset($left_context->assigned_var_ids[$var_id], $left_context->vars_in_scope[$var_id])) {
+                    // the left operand always runs: the body sees what the operands assigned, not what was before
+                    $if_body_context->vars_in_scope[$var_id] = Type::combineUnionTypes(
+                        $type,
+                        $left_context->vars_in_scope[$var_id],
+                        $codebase,
+                    );
+                } elseif (isset($if_body_context->vars_in_scope[$var_id])) {
                     $if_body_context->vars_in_scope[$var_id] = Type::combineUnionTypes(
                         $type,
                         $if_body_context->vars_in_scope[$var_id],
