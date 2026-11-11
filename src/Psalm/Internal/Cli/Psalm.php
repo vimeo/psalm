@@ -124,7 +124,7 @@ final class Psalm
         'r:',
     ];
 
-    private const LONG_OPTIONS = [
+    public const LONG_OPTIONS = [
         'clear-cache',
         'consolidate-cache',
         'clear-global-cache',
@@ -260,7 +260,12 @@ final class Psalm
             // phpcs:ignore SlevomatCodingStandard.Namespaces.ReferenceUsedNamesOnly.ReferenceViaFullyQualifiedName
             /** @return list<ClassLoader> */
             static fn(): array =>
-                CliUtils::requireAutoloaders($current_dir, isset($options['r']), $vendor_dir),
+                CliUtils::requireAutoloaders(
+                    $current_dir,
+                    isset($options['r']),
+                    $vendor_dir,
+                    !array_key_exists('v', $options),
+                ),
         );
 
         $run_taint_analysis = self::shouldRunTaintAnalysis($options);
@@ -457,8 +462,8 @@ final class Psalm
         if (defined('PHP_WINDOWS_VERSION_MAJOR')) {
             // No support desired for Windows at the moment
             return 1;
-        } elseif (!extension_loaded('pcntl')) {
-            // Psalm requires pcntl for multi-threads support
+        } elseif (!extension_loaded('pcntl') || !extension_loaded('posix') || !function_exists('pcntl_fork')) {
+            // the worker pool forks its workers and kills them with posix_kill()
             return 1;
         }
 
@@ -1219,7 +1224,13 @@ final class Psalm
             // based on the errors we find
             $init_source_dir = $args[0] ?? null;
 
-            Creator::createBareConfig($current_dir, $init_source_dir, $vendor_dir);
+            try {
+                Creator::createBareConfig($current_dir, $init_source_dir, $vendor_dir);
+            } catch (ConfigCreationException $e) {
+                fwrite(STDERR, $e->getMessage() . PHP_EOL);
+                exit(1);
+            }
+
             $config = Config::getInstance();
             $config->setComposerClassLoader($autoloaders);
         } else {

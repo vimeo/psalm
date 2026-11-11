@@ -1093,6 +1093,34 @@ final class MissingReturnTypeTest extends FileManipulationTestCase
                 'safe_types' => false,
                 'allow_backwards_incompatible_changes' => true,
             ],
+            'neverNative81' => [
+                'input' => '<?php
+                    function f() {
+                        exit(1);
+                    }
+
+                    class A {
+                        public function g() {
+                            throw new Exception("x");
+                        }
+                    }
+                ',
+                'output' => '<?php
+                    function f(): never {
+                        exit(1);
+                    }
+
+                    class A {
+                        public function g(): never {
+                            throw new Exception("x");
+                        }
+                    }
+                ',
+                'php_version' => '8.1',
+                'issues_to_fix' => ['MissingReturnType'],
+                'safe_types' => false,
+                'allow_backwards_incompatible_changes' => true,
+            ],
             'WithAttributes' => [
                 'input' => '<?php
 
@@ -1115,6 +1143,66 @@ final class MissingReturnTypeTest extends FileManipulationTestCase
                     }
                     ',
                 'php_version' => '7.1',
+                'issues_to_fix' => ['MissingReturnType'],
+                'safe_types' => true,
+                'allow_backwards_incompatible_changes' => true,
+            ],
+            'staticPropertyFetch' => [
+                'input' => '<?php
+                    final class Holder
+                    {
+                        public static int $count = 0;
+                    }
+
+                    function fromStatic()
+                    {
+                        return Holder::$count;
+                    }
+                    ',
+                'output' => '<?php
+                    final class Holder
+                    {
+                        public static int $count = 0;
+                    }
+
+                    function fromStatic(): int
+                    {
+                        return Holder::$count;
+                    }
+                    ',
+                'php_version' => '7.4',
+                'issues_to_fix' => ['MissingReturnType'],
+                'safe_types' => true,
+                'allow_backwards_incompatible_changes' => true,
+            ],
+            'inheritedStaticPropertyFetch' => [
+                'input' => '<?php
+                    class ParentHolder
+                    {
+                        public static ?string $name = null;
+                    }
+
+                    final class Holder extends ParentHolder {}
+
+                    function fromInherited()
+                    {
+                        return Holder::$name;
+                    }
+                    ',
+                'output' => '<?php
+                    class ParentHolder
+                    {
+                        public static ?string $name = null;
+                    }
+
+                    final class Holder extends ParentHolder {}
+
+                    function fromInherited(): ?string
+                    {
+                        return Holder::$name;
+                    }
+                    ',
+                'php_version' => '7.4',
                 'issues_to_fix' => ['MissingReturnType'],
                 'safe_types' => true,
                 'allow_backwards_incompatible_changes' => true,
