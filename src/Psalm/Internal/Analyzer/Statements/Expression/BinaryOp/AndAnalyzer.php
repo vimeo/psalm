@@ -89,7 +89,7 @@ final class AndAnalyzer
         foreach ($left_context->vars_in_scope as $var_id => $type) {
             if (isset($left_context->assigned_var_ids[$var_id])
                 // the property of an isset() that asks whether it was set (see InstancePropertyFetchAnalyzer)
-                || ($type->possibly_undefined
+                || ($type->ignore_isset
                     && !isset($context->vars_in_scope[$var_id])
                     && str_contains($var_id, '->'))
             ) {

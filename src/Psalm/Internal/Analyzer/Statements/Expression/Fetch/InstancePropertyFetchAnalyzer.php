@@ -321,10 +321,11 @@ final class InstancePropertyFetchAnalyzer
         // a typed property of a class that has no constructor starts uninitialized, so isset() on it asks something
         if ($context->inside_isset
             && ($stmt_type = $statements_analyzer->node_data->getType($stmt))
-            && !$stmt_type->possibly_undefined
+            && !$stmt_type->ignore_isset
             && self::isLeftUninitialized($codebase, $stmt_var_type, $prop_name)
         ) {
-            $statements_analyzer->node_data->setType($stmt, $stmt_type->setPossiblyUndefined(true));
+            $stmt_type = $stmt_type->setProperties(['ignore_isset' => true]);
+            $statements_analyzer->node_data->setType($stmt, $stmt_type);
         }
 
         if ($invalid_fetch_types) {
@@ -387,7 +388,7 @@ final class InstancePropertyFetchAnalyzer
             ->properties[$property_name] ?? null;
 
         if ($property === null
-            || $property->type === null
+            || $property->signature_type === null
             || $property->has_default
             || $property->is_promoted
             || $property->is_static
@@ -422,13 +423,6 @@ final class InstancePropertyFetchAnalyzer
         bool $in_assignment,
     ): void {
         $stmt_type = $context->vars_in_scope[$var_id];
-
-        // a value that is read is set, whatever an earlier isset() of the property asked (reading an
-        // uninitialized property is an error)
-        if ($stmt_type->possibly_undefined && !$context->inside_isset && !$in_assignment) {
-            $stmt_type = $stmt_type->setPossiblyUndefined(false);
-            $context->vars_in_scope[$var_id] = $stmt_type;
-        }
 
         // we don't need to check anything
         $statements_analyzer->node_data->setType($stmt, $stmt_type);

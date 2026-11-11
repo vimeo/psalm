@@ -669,6 +669,21 @@ final class PropertyTypeTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'emptyOnATypedPropertyThatNoConstructorSetsAllowsAnArrayAppend' => [
+                'code' => '<?php
+                    final class Builder {
+                        public ?array $orders;
+                    }
+
+                    function append(Builder $q): void {
+                        if (empty($q->orders)) {
+                            $q->orders[] = 1;
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => ['MissingConstructor', 'RiskyTruthyFalsyComparison'],
+                'php_version' => '8.0',
+            ],
             'issetOnATypedPropertyDoesNotMakeAFollowingReadPossiblyUndefined' => [
                 'code' => '<?php
                     final class Book {
@@ -3528,6 +3543,41 @@ final class PropertyTypeTest extends TestCase
                         return false;
                     }',
                 'error_message' => 'RedundantCondition',
+                'error_levels' => [],
+                'php_version' => '8.0',
+            ],
+            'nullCoalescingOnATypedPropertyThatNoConstructorSetsKeepsTheNullableConcatenation' => [
+                'code' => '<?php
+                    final class Box {
+                        public ?string $tag;
+
+                        public function __construct() {
+                        }
+                    }
+
+                    function tag(Box $box): void {
+                        $t = $box->tag ?? null;
+                        $box->tag .= "x";
+                    }',
+                'error_message' => 'PossiblyNullOperand',
+                'error_levels' => ['MissingConstructor', 'PropertyNotSetInConstructor'],
+                'php_version' => '8.0',
+            ],
+            'issetOnADocblockTypedPropertyIsRedundant' => [
+                'code' => '<?php
+                    final class Book {
+                        /** @var string */
+                        public $name = "x";
+                    }
+
+                    function hasName(Book $book): bool {
+                        if (isset($book->name)) {
+                            return true;
+                        }
+
+                        return false;
+                    }',
+                'error_message' => 'RedundantConditionGivenDocblockType',
                 'error_levels' => [],
                 'php_version' => '8.0',
             ],
