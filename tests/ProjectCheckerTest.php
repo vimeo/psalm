@@ -64,7 +64,7 @@ final class ProjectCheckerTest extends DeferredAnalyzerTestCase
         $config->setIncludeCollector(new IncludeCollector());
         $ret = new ProjectAnalyzer(
             $config,
-            $this->getInMemoryProviders(),
+            $this->getInMemoryProviders($config),
             new ReportOptions(),
         );
         if ($init_files) {
@@ -90,7 +90,7 @@ final class ProjectCheckerTest extends DeferredAnalyzerTestCase
         return self::$autoload_file_collector;
     }
 
-    private function getProjectAnalyzerWithScanHookPlugin(?Providers $providers = null): ProjectAnalyzer
+    private static function getConfigWithScanHookPlugin(): Config
     {
         $config = Config::loadFromXML(
             (string) getcwd(),
@@ -106,9 +106,15 @@ final class ProjectCheckerTest extends DeferredAnalyzerTestCase
         );
         $config->setIncludeCollector(self::getIncludeCollectorWithAutoloadFile());
 
+        return $config;
+    }
+
+    private function getProjectAnalyzerWithScanHookPlugin(?Providers $providers = null): ProjectAnalyzer
+    {
+        $config = self::getConfigWithScanHookPlugin();
         $project_analyzer = new ProjectAnalyzer(
             $config,
-            $providers ?? $this->getInMemoryProviders(),
+            $providers ?? $this->getInMemoryProviders($config),
             new ReportOptions(),
         );
         $project_analyzer->initProjectFiles();
@@ -117,10 +123,8 @@ final class ProjectCheckerTest extends DeferredAnalyzerTestCase
         return $project_analyzer;
     }
 
-    private function getInMemoryProviders(): Providers
+    private function getInMemoryProviders(Config $config): Providers
     {
-        $config = new TestConfig();
-
         return new Providers(
             $this->file_provider,
             new ParserCacheProvider($config, '', false),
@@ -131,6 +135,9 @@ final class ProjectCheckerTest extends DeferredAnalyzerTestCase
         );
     }
 
+    /**
+     * @psalm-capabilities read-props
+     */
     private static function isSeenByScanHook(ProjectAnalyzer $project_analyzer, string $fq_class_name): bool
     {
         return isset(
@@ -178,7 +185,7 @@ final class ProjectCheckerTest extends DeferredAnalyzerTestCase
 
     public function testFullRunDoesNotDependOnWhichRunWroteTheCache(): void
     {
-        $shared_providers = $this->getInMemoryProviders();
+        $shared_providers = $this->getInMemoryProviders(self::getConfigWithScanHookPlugin());
 
         ob_start();
         $this->getProjectAnalyzerWithScanHookPlugin($shared_providers)->checkPaths([
@@ -205,7 +212,7 @@ final class ProjectCheckerTest extends DeferredAnalyzerTestCase
 
     public function testDiffRunInitializesPlugins(): void
     {
-        $providers = $this->getInMemoryProviders();
+        $providers = $this->getInMemoryProviders(self::getConfigWithScanHookPlugin());
 
         $this->project_analyzer = $this->getProjectAnalyzerWithScanHookPlugin($providers);
         ob_start();
