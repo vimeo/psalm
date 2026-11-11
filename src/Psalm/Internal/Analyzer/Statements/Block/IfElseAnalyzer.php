@@ -231,6 +231,12 @@ final class IfElseAnalyzer
             }
         }
 
+        $if_scope->negated_clauses = FormulaGenerator::withoutClausesOfReassignedVars(
+            $if_scope->negated_clauses,
+            $stmt->cond,
+            $context->self,
+        );
+
         $if_scope->negated_types = Algebra::getTruthsFromFormula(
             Algebra::simplifyCNF(
                 [...$context->clauses, ...$if_scope->negated_clauses],
@@ -287,6 +293,15 @@ final class IfElseAnalyzer
         // this has to go on a separate line because the phar compactor messes with precedence
         $scope_to_clone = $if_scope->post_leaving_if_context ?? $post_if_context;
         $else_context = clone $scope_to_clone;
+
+        if ($if_scope->post_leaving_if_context === null) {
+            IfAnalyzer::rederiveReassignedVars(
+                $statements_analyzer,
+                $stmt->cond,
+                $else_context,
+                FormulaGenerator::getVarsAssignedByOredRightSides($stmt->cond, $context->self),
+            );
+        }
         $else_context->clauses = Algebra::simplifyCNF(
             [...$else_context->clauses, ...$if_scope->negated_clauses],
         );

@@ -22,7 +22,9 @@ use Psalm\Storage\Assertion\Truthy;
 use Psalm\Type\Atomic\TNull;
 
 use function array_diff_key;
+use function array_filter;
 use function array_map;
+use function array_values;
 use function count;
 use function spl_object_id;
 use function strcspn;
@@ -104,36 +106,6 @@ final class FormulaGenerator
             $right_assigned_var_ids = self::getAssignedVarIds($conditional->right, $this_class_name);
 
             if ($right_assigned_var_ids) {
-                // what the left one tested of the previous value says nothing about the value the right one assigns
-                $left_tested_var_ids = array_diff_key(
-                    $right_assigned_var_ids,
-                    self::getAssignedVarIds($conditional->left, $this_class_name),
-                );
-
-                $right_possibilities = [];
-
-                foreach ($right_clauses as $right_clause) {
-                    foreach ($right_clause->possibilities as $var => $assertions) {
-                        foreach ($assertions as $assertion_key => $_) {
-                            $right_possibilities[$var][$assertion_key] = true;
-                        }
-                    }
-                }
-
-                // dropping some of the clauses of the left side would make its negation stronger than the truth
-                // (`(A && B) || C` without B is `A || C`, whose negation says more), so either all go or none
-                foreach ($left_clauses as $left_clause) {
-                    if (self::testsAnyVarTheRightSideDoesNot(
-                        $left_clause,
-                        $left_tested_var_ids,
-                        $right_possibilities,
-                    )) {
-                        $left_clauses = [new Clause([], $conditional_object_id, $conditional_object_id, true)];
-
-                        break;
-                    }
-                }
-
                 $right_clauses = array_map(
                     static fn(Clause $clause): Clause => $clause->wedge || !$clause->reconcilable
                         ? new Clause(
@@ -549,26 +521,64 @@ final class FormulaGenerator
     }
 
     /**
-     * Whether the clause tests a variable (or an item of it) in a way the right side, which assigns it, doesn't
-     * say again: only what both sides say holds of the value the right side assigns
+     * The variables that the right side of an `||` of the expression assigns, and its left side doesn't: where the
+     * whole expression is false the right side has run, so what the negated left side says of them is about the
+     * value they had before
      *
-     * @param array<string, true> $var_ids
-     * @param array<string, array<string, true>> $right_possibilities
+     * @return array<string, true>
+     */
+    public static function getVarsAssignedByOredRightSides(PhpParser\Node\Expr $expr, ?string $this_class_name): array
+    {
+        if (!$expr instanceof PhpParser\Node\Expr\BinaryOp\BooleanOr
+            && !$expr instanceof PhpParser\Node\Expr\BinaryOp\LogicalOr
+        ) {
+            return [];
+        }
+
+        return [
+            ...self::getVarsAssignedByOredRightSides($expr->left, $this_class_name),
+            ...array_diff_key(
+                self::getAssignedVarIds($expr->right, $this_class_name),
+                self::getAssignedVarIds($expr->left, $this_class_name),
+            ),
+        ];
+    }
+
+    /**
+     * The negation of a condition without what it says of a variable that the right side of one of its `||` assigns.
+     * Where the condition is false that right side has run, so what the negated left side says of the variable is
+     * about the value it had before; leaving out conjuncts of a negation keeps it true.
+     *
+     * @param list<Clause> $negated_clauses
+     * @return list<Clause>
+     */
+    public static function withoutClausesOfReassignedVars(
+        array $negated_clauses,
+        PhpParser\Node\Expr $condition,
+        ?string $this_class_name,
+    ): array {
+        $reassigned_var_ids = self::getVarsAssignedByOredRightSides($condition, $this_class_name);
+
+        if (!$reassigned_var_ids) {
+            return $negated_clauses;
+        }
+
+        return array_values(array_filter(
+            $negated_clauses,
+            static fn(Clause $clause): bool => !self::testsAnyVar($clause, $reassigned_var_ids),
+        ));
+    }
+
+    /**
+     * Whether the clause tests one of the variables, or an item or property of one
+     *
+     * @param array<string, mixed> $var_ids
      * @psalm-pure
      */
-    private static function testsAnyVarTheRightSideDoesNot(
-        Clause $clause,
-        array $var_ids,
-        array $right_possibilities,
-    ): bool {
-        foreach ($clause->possibilities as $var => $assertions) {
-            if (!isset($var_ids[$var]) && !isset($var_ids[substr($var, 0, strcspn($var, '[-'))])) {
-                continue;
-            }
-
-            if (!isset($var_ids[$var])
-                || array_diff_key($assertions, $right_possibilities[$var] ?? []) !== []
-            ) {
+    private static function testsAnyVar(Clause $clause, array $var_ids): bool
+    {
+        foreach ($clause->possibilities as $var => $_) {
+            if (isset($var_ids[$var]) || isset($var_ids[substr($var, 0, strcspn($var, '[-'))])) {
                 return true;
             }
         }

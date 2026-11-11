@@ -21,6 +21,64 @@ final class ConditionalTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'orWhoseRightSideReassignsWhatTheLeftOneTestedInATernaryElse' => [
+                'code' => '<?php
+                    function viaTernary(?string $s): string {
+                        return $s === null || ($s = trim($s)) === "" ? "default" : $s;
+                    }
+
+                    /** @var string $value */
+                    $value = "5";
+                    $result = !ctype_digit($value) || ($value = intval($value)) < 1 ? 0 : $value;',
+                'assertions' => ['$result' => 'int<0, max>'],
+                'ignored_issues' => [],
+            ],
+            'orWhoseRightSideReassignsWhatTheLeftOneTestedInAnElseBranch' => [
+                'code' => '<?php
+                    function early(?string $s): string {
+                        if ($s === null || ($s = trim($s)) === "") {
+                            return "";
+                        } else {
+                            return $s;
+                        }
+                    }
+
+                    function falling(string $value): int {
+                        if (!ctype_digit($value) || ($value = intval($value)) < 1) {
+                            echo "bad";
+                        } else {
+                            return $value;
+                        }
+
+                        return 0;
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+            ],
+            'andWhoseRightSideReassignsWhatTheLeftOneTestedKeepsTheAssignedType' => [
+                'code' => '<?php
+                    function decode(string $body): string {
+                        if (!str_ends_with($body, "}") && false === $body = base64_decode($body, true)) {
+                            return "";
+                        }
+
+                        return stripslashes($body);
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'orWhoseLeftSideIsTrueKeepsWhatItTestedInTheIfBranch' => [
+                'code' => '<?php
+                    function narrow(int|string|null $x): void {
+                        if ($x === null || ($x = (rand() ? 0 : "a")) === 0) {
+                            /** @psalm-check-type-exact $x = 0|null */;
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
             'orWhoseLeftSideIsAConjunctionAndRightSideReassignsAVariableDoesNotParadoxicallyNarrow' => [
                 'code' => '<?php
                     function fetch(): ?int {

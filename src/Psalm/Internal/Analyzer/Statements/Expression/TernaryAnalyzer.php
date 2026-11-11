@@ -13,6 +13,7 @@ use Psalm\Internal\Algebra;
 use Psalm\Internal\Algebra\FormulaGenerator;
 use Psalm\Internal\Analyzer\AlgebraAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Block\IfConditionalAnalyzer;
+use Psalm\Internal\Analyzer\Statements\Block\IfElse\IfAnalyzer;
 use Psalm\Internal\Analyzer\Statements\ExpressionAnalyzer;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\Internal\Clause;
@@ -171,6 +172,12 @@ final class TernaryAnalyzer
             }
         }
 
+        $if_scope->negated_clauses = FormulaGenerator::withoutClausesOfReassignedVars(
+            $if_scope->negated_clauses,
+            $stmt->cond,
+            $context->self,
+        );
+
         $if_scope->negated_types = Algebra::getTruthsFromFormula(
             Algebra::simplifyCNF(
                 [...$context->clauses, ...$if_scope->negated_clauses],
@@ -204,6 +211,13 @@ final class TernaryAnalyzer
         }
 
         $t_else_context = clone $context;
+
+        IfAnalyzer::rederiveReassignedVars(
+            $statements_analyzer,
+            $stmt->cond,
+            $t_else_context,
+            FormulaGenerator::getVarsAssignedByOredRightSides($stmt->cond, $context->self),
+        );
 
         if ($stmt->if) {
             if (ExpressionAnalyzer::analyze($statements_analyzer, $stmt->if, $if_context) === false) {
