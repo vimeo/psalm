@@ -64,13 +64,16 @@ use Psalm\Type\Union;
 use UnexpectedValueException;
 
 use function array_any;
+use function array_map;
 use function array_reduce;
 use function array_reverse;
+use function array_search;
 use function array_slice;
 use function array_values;
 use function assert;
 use function count;
 use function dirname;
+use function implode;
 use function in_array;
 use function is_int;
 use function is_string;
@@ -2358,6 +2361,18 @@ final class ArgumentsAnalyzer
         ?string $cased_method_id,
         CodeLocation $code_location,
     ): void {
+        $callee = $cased_method_id ?: (string) $method_id;
+
+        if ($callee === '') {
+            // a callable value has no name: describe it by its parameter types
+            $callee = 'callable(' . implode(', ', array_map(
+                static fn(FunctionLikeParameter $param): string => $param->type
+                    ? $param->type->getId()
+                    : 'mixed',
+                $function_params,
+            )) . ')';
+        }
+
         if (!$is_variadic
             && count($args) > count($function_params)
             && (!count($function_params) || $function_params[count($function_params) - 1]->name !== '...=')
@@ -2369,7 +2384,7 @@ final class ArgumentsAnalyzer
         ) {
             IssueBuffer::maybeAdd(
                 new TooManyArguments(
-                    'Too many arguments for ' . ($cased_method_id ?: $method_id)
+                    'Too many arguments for ' . $callee
                     . ' - expecting ' . count($function_params) . ' but saw ' . count($args),
                     $code_location,
                     (string)$method_id,
@@ -2384,6 +2399,8 @@ final class ArgumentsAnalyzer
         if (count($args) < count($function_params)
             || array_any($args, static fn(PhpParser\Node\Arg $arg): bool => $arg->unpack)
         ) {
+            $all_function_params = $function_params;
+
             //we're gonna loop over given args and unset them from the function_params.
             // If some mandatory params are left at the end, we'll throw an error
             foreach ($args as $arg) {
@@ -2470,8 +2487,12 @@ final class ArgumentsAnalyzer
                 if (!$param->is_optional && !$param->is_variadic) {
                     IssueBuffer::maybeAdd(
                         new TooFewArguments(
-                            'Too few arguments for ' . $cased_method_id
-                            . ' - expecting ' . $param->name . ' to be passed',
+                            'Too few arguments for ' . $callee
+                            . ' - expecting ' . (
+                                $param->name !== ''
+                                    ? $param->name
+                                    : 'parameter #' . ((int) array_search($param, $all_function_params, true) + 1)
+                            ) . ' to be passed',
                             $code_location,
                             (string)$method_id,
                         ),
