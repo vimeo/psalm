@@ -23,6 +23,65 @@ final class ClassTemplateExtendsTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'implementedTemplateWithUnionOfOwnTemplateIsResolvedAtTheCall' => [
+                'code' => '<?php
+                    /** @template T1 */
+                    interface InputType {
+                        /** @return T1 */
+                        public function castValue(mixed $value);
+                    }
+
+                    /**
+                     * @template T2
+                     * @implements InputType<T2|null>
+                     */
+                    final class NullableType implements InputType {
+                        /** @param T2 $innerType */
+                        public function __construct(private $innerType) {}
+
+                        public function castValue(mixed $value) {
+                            throw new \Exception("irrelevant");
+                        }
+                    }
+
+                    /** @var NullableType<string> $n */
+                    $n = new NullableType("a");
+                    $result = $n->castValue(1);',
+                'assertions' => [
+                    '$result===' => 'null|string',
+                ],
+                'ignored_issues' => ['MissingOverrideAttribute'],
+                'php_version' => '8.0',
+            ],
+            'implementedTemplateWithOwnTemplateIsResolvedAtTheCall' => [
+                'code' => '<?php
+                    /** @template T1 */
+                    interface Box {
+                        /** @return T1 */
+                        public function get();
+                    }
+
+                    /**
+                     * @template T2
+                     * @implements Box<list<T2>>
+                     */
+                    final class ListBox implements Box {
+                        /** @param list<T2> $items */
+                        public function __construct(private array $items) {}
+
+                        public function get() {
+                            return $this->items;
+                        }
+                    }
+
+                    /** @var ListBox<int> $box */
+                    $box = new ListBox([1]);
+                    $items = $box->get();',
+                'assertions' => [
+                    '$items===' => 'list<int>',
+                ],
+                'ignored_issues' => ['MissingOverrideAttribute'],
+            ],
             'inheritedDocblockReturnTypeResolvesThroughSubclassTemplates' => [
                 'code' => '<?php
                     /**
