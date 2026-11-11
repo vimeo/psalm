@@ -23,59 +23,62 @@ final class FunctionTemplateTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
-            'closureOfATemplateWithANullDefaultOfTheSameTemplate' => [
+            'typePredicatesOnATemplateBoundedByATemplate' => [
                 'code' => '<?php
-                    /** @template T */
-                    final class Collection {
-                        /**
-                         * @param Closure(T,mixed):bool|null $callback
-                         * @param T|null $default
-                         * @return T|null
-                         */
-                        public function last(?Closure $callback = null, $default = null) {
-                            return $default;
+                    /**
+                     * @template T
+                     * @template U of T
+                     * @param U $v
+                     */
+                    function f($v): int {
+                        $count = 0;
+
+                        if (is_string($v)) {
+                            $count++;
                         }
-                    }
 
-                    /** @var Collection<array> $collection */
-                    $collection = new Collection();
-                    $collection->last(function (array $_item): bool {
-                        return true;
-                    });',
-            ],
-            'nullOfATemplateOrNullParamDoesNotBoundTheTemplate' => [
-                'code' => '<?php
-                    /**
-                     * @template T
-                     * @param Closure(T):void $callback
-                     * @param T|null $default
-                     */
-                    function withDefault(Closure $callback, $default = null): void {}
+                        if (is_int($v)) {
+                            $count++;
+                        }
 
-                    /**
-                     * @template T
-                     * @param T|null $default
-                     * @param Closure(T):void $callback
-                     */
-                    function withNull($default, Closure $callback): void {}
+                        if (is_float($v)) {
+                            $count++;
+                        }
 
-                    /**
-                     * @template T
-                     * @param T|null $value
-                     * @return T|null
-                     */
-                    function identity($value) {
-                        return $value;
-                    }
+                        if (is_numeric($v)) {
+                            $count++;
+                        }
 
-                    withDefault(function (array $_item): void {});
-                    withNull(null, function (array $_item): void {});
-                    $null = identity(null);
-                    $one = identity(1);',
-                'assertions' => [
-                    '$null===' => 'null',
-                    '$one===' => '1|null',
-                ],
+                        if (is_scalar($v)) {
+                            $count++;
+                        }
+
+                        if (is_bool($v)) {
+                            $count++;
+                        }
+
+                        if ($v === true) {
+                            $count++;
+                        }
+
+                        if ($v === false) {
+                            $count++;
+                        }
+
+                        if (is_object($v)) {
+                            $count++;
+                        }
+
+                        if (is_array($v)) {
+                            $count++;
+                        }
+
+                        if (is_callable($v)) {
+                            $count++;
+                        }
+
+                        return $count;
+                    }',
             ],
             'classStringTemplateOfAParamUsedInAConditionalReturnType' => [
                 'code' => '<?php
@@ -2562,6 +2565,60 @@ final class FunctionTemplateTest extends TestCase
                     }',
                 'assertions' => [],
             ],
+            'closureOfATemplateWithANullDefaultOfTheSameTemplate' => [
+                'code' => '<?php
+                    /** @template T */
+                    final class Collection {
+                        /**
+                         * @param Closure(T,mixed):bool|null $callback
+                         * @param T|null $default
+                         * @return T|null
+                         */
+                        public function last(?Closure $callback = null, $default = null) {
+                            return $default;
+                        }
+                    }
+
+                    /** @var Collection<array> $collection */
+                    $collection = new Collection();
+                    $collection->last(function (array $_item): bool {
+                        return true;
+                    });',
+            ],
+            'nullOfATemplateOrNullParamDoesNotBoundTheTemplate' => [
+                'code' => '<?php
+                    /**
+                     * @template T
+                     * @param Closure(T):void $callback
+                     * @param T|null $default
+                     */
+                    function withDefault(Closure $callback, $default = null): void {}
+
+                    /**
+                     * @template T
+                     * @param T|null $default
+                     * @param Closure(T):void $callback
+                     */
+                    function withNull($default, Closure $callback): void {}
+
+                    /**
+                     * @template T
+                     * @param T|null $value
+                     * @return T|null
+                     */
+                    function identity($value) {
+                        return $value;
+                    }
+
+                    withDefault(function (array $_item): void {});
+                    withNull(null, function (array $_item): void {});
+                    $null = identity(null);
+                    $one = identity(1);',
+                'assertions' => [
+                    '$null===' => 'null',
+                    '$one===' => '1|null',
+                ],
+            ],
         ];
     }
 
@@ -2572,6 +2629,20 @@ final class FunctionTemplateTest extends TestCase
     public static function providerInvalidCodeParse(): iterable
     {
         return [
+            'typePredicateImpossibleForATemplateBoundedByATemplate' => [
+                'code' => '<?php
+                    /**
+                     * @template T of string
+                     * @template U of T
+                     * @param U $v
+                     */
+                    function f($v): void {
+                        if (is_int($v)) {
+                            echo 1;
+                        }
+                    }',
+                'error_message' => 'DocblockTypeContradiction',
+            ],
             'templateBoundedByMixedIsBoundedByMixedAgainAfterABranchNarrowingIt' => [
                 'code' => '<?php
                     function takesInt(int $i): void {}

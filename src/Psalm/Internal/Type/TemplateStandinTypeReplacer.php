@@ -450,8 +450,7 @@ final class TemplateStandinTypeReplacer
         }
 
         if (!$matching_atomic_types) {
-            /** @psalm-suppress ReferenceConstraintViolation Psalm bug, $atomic_type is not a reference */
-            $atomic_type = $atomic_type->replaceTemplateTypesWithStandins(
+            $replaced_atomic_type = $atomic_type->replaceTemplateTypesWithStandins(
                 $template_result,
                 $codebase,
                 $statements_analyzer,
@@ -464,13 +463,18 @@ final class TemplateStandinTypeReplacer
                 $depth + 1,
             );
 
-            return [$atomic_type];
+            // not where another alternative stays in the union: what it holds is not given by the inferred template
+            if ($was_single && $replaced_atomic_type !== $atomic_type && !$template_result->readonly) {
+                $had_template = true;
+            }
+
+            return [$replaced_atomic_type];
         }
 
         $atomic_types = [];
 
         foreach ($matching_atomic_types as $matching_atomic_type) {
-            $atomic_types[] = $atomic_type->replaceTemplateTypesWithStandins(
+            $replaced_atomic_type = $atomic_type->replaceTemplateTypesWithStandins(
                 $template_result,
                 $codebase,
                 $statements_analyzer,
@@ -482,6 +486,13 @@ final class TemplateStandinTypeReplacer
                 $add_lower_bound,
                 $depth + 1,
             );
+
+            // not where another alternative stays in the union: what it holds is not given by the inferred template
+            if ($was_single && $replaced_atomic_type !== $atomic_type && !$template_result->readonly) {
+                $had_template = true;
+            }
+
+            $atomic_types[] = $replaced_atomic_type;
         }
 
         return $atomic_types;
@@ -823,7 +834,11 @@ final class TemplateStandinTypeReplacer
                         $atomic_types[] = $replacement_atomic_type;
                     }
 
-                    $had_template = true;
+                    // a binding that is only read (class templates fixed by the receiver) is the actual
+                    // type, not a stand-in for what the arguments may still infer
+                    if (!$template_result->readonly) {
+                        $had_template = true;
+                    }
                 }
             }
 
