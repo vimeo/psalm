@@ -36,12 +36,14 @@ use Psalm\Internal\Scanner\ClassLikeDocblockComment;
 use Psalm\Internal\Scanner\FileScanner;
 use Psalm\Internal\Scanner\ParsedDocblock;
 use Psalm\Internal\Scanner\UnresolvedConstantComponent;
+use Psalm\Internal\Type\TemplateDefaults;
 use Psalm\Internal\Type\TypeAlias;
 use Psalm\Internal\Type\TypeAlias\ClassTypeAlias;
 use Psalm\Internal\Type\TypeAlias\InlineTypeAlias;
 use Psalm\Internal\Type\TypeAlias\LinkableTypeAlias;
 use Psalm\Internal\Type\TypeParser;
 use Psalm\Internal\Type\TypeTokenizer;
+use Psalm\Internal\TypeVisitor\TypeScanner;
 use Psalm\Issue\ConstantDeclarationInTrait;
 use Psalm\Issue\DuplicateClass;
 use Psalm\Issue\DuplicateConstant;
@@ -75,13 +77,16 @@ use Psalm\Type\Atomic\TTemplateParam;
 use Psalm\Type\Union;
 use UnexpectedValueException;
 
+use function array_column;
 use function array_diff_key;
+use function array_fill_keys;
 use function array_merge;
 use function array_pop;
 use function array_shift;
 use function array_values;
 use function assert;
 use function count;
+use function end;
 use function implode;
 use function in_array;
 use function is_array;
@@ -93,6 +98,7 @@ use function reset;
 use function sprintf;
 use function str_starts_with;
 use function strlen;
+use function strtok;
 use function strtolower;
 use function substr;
 use function trim;
@@ -530,6 +536,14 @@ final class ClassLikeNodeScanner
                                 continue;
                             }
 
+                            // a class named only in the bound (`@template TArr of array{a: stdClass}`) is read where
+                            // the template is read through its bound
+                            (new TypeScanner(
+                                $this->codebase->scanner,
+                                $this->file_storage,
+                                $storage->template_types + $purity_template_types,
+                            ))->traverse($template_type);
+
                             $storage->template_types[$template_name] = [
                                 $fq_classlike_name => $template_type,
                             ];
@@ -548,6 +562,24 @@ final class ClassLikeNodeScanner
                 }
 
                 $this->class_template_types = $storage->template_types;
+
+                $storage->purity_templates = array_fill_keys($purity_templates, true);
+
+                [$storage->template_defaults, $storage->template_default_locations, $default_issues]
+                    = TemplateDefaults::parseDefaults(
+                        $docblock_info->template_defaults,
+                        $storage->template_types,
+                        $storage->template_types,
+                        $storage->purity_templates,
+                        $this->aliases,
+                        $this->type_aliases,
+                        $fq_classlike_name,
+                        $storage->parent_class,
+                        $name_location ?? $class_location,
+                        $fq_classlike_name,
+                        new TypeScanner($this->codebase->scanner, $this->file_storage, $storage->template_types),
+                    );
+                $storage->docblock_issues = [...$storage->docblock_issues, ...$default_issues];
 
                 foreach ($docblock_info->purity_templates as $purity_template) {
                     $bound = $storage->template_types[$purity_template][$fq_classlike_name] ?? null;
@@ -696,31 +728,39 @@ final class ClassLikeNodeScanner
             }
 
             if ($docblock_info->extension_requirement !== null) {
-                $storage->extension_requirement = (string) TypeParser::parseTokens(
-                    TypeTokenizer::getFullyQualifiedTokens(
-                        $docblock_info->extension_requirement,
-                        $this->aliases,
-                        $this->class_template_types,
-                        $this->type_aliases,
-                    ),
-                    null,
-                    $this->class_template_types,
-                    $this->type_aliases,
-                );
+                try {
+                    $requirement_type = $this->parseRequirement($docblock_info->extension_requirement);
+                    $requirement_atomic = $requirement_type->isSingle() ? $requirement_type->getSingleAtomic() : null;
+
+                    $storage->extension_requirement = $this->getRequirementName($docblock_info->extension_requirement);
+                    $storage->extension_requirement_type = $requirement_atomic instanceof TGenericObject
+                        ? $requirement_atomic
+                        : null;
+                } catch (TypeParseTreeException $e) {
+                    $storage->docblock_issues[] = new InvalidDocblock(
+                        $e->getMessage() . ' in docblock for ' . $fq_classlike_name,
+                        $name_location ?? $class_location,
+                    );
+                }
             }
 
             foreach ($docblock_info->implementation_requirements as $implementation_requirement) {
-                $storage->implementation_requirements[] = (string) TypeParser::parseTokens(
-                    TypeTokenizer::getFullyQualifiedTokens(
-                        $implementation_requirement,
-                        $this->aliases,
-                        $this->class_template_types,
-                        $this->type_aliases,
-                    ),
-                    null,
-                    $this->class_template_types,
-                    $this->type_aliases,
-                );
+                try {
+                    $requirement_name = $this->getRequirementName($implementation_requirement);
+                    $requirement_type = $this->parseRequirement($implementation_requirement);
+                    $requirement_atomic = $requirement_type->isSingle() ? $requirement_type->getSingleAtomic() : null;
+
+                    $storage->implementation_requirements[] = $requirement_name;
+
+                    if ($requirement_atomic instanceof TGenericObject) {
+                        $storage->implementation_requirement_types[$requirement_name] = $requirement_atomic;
+                    }
+                } catch (TypeParseTreeException $e) {
+                    $storage->docblock_issues[] = new InvalidDocblock(
+                        $e->getMessage() . ' in docblock for ' . $fq_classlike_name,
+                        $name_location ?? $class_location,
+                    );
+                }
             }
 
             $storage->sealed_properties = $docblock_info->sealed_properties;
@@ -864,20 +904,29 @@ final class ClassLikeNodeScanner
 
             $storage->enforce_template_inheritance = $docblock_info->consistent_templates;
 
-            foreach ($docblock_info->mixins as $key => $mixin) {
-                $mixin_type = TypeParser::parseTokens(
-                    TypeTokenizer::getFullyQualifiedTokens(
-                        $mixin,
-                        $this->aliases,
+            foreach ($docblock_info->mixins as $mixin) {
+                try {
+                    $mixin_type = TypeParser::parseTokens(
+                        TypeTokenizer::getFullyQualifiedTokens(
+                            $mixin,
+                            $this->aliases,
+                            $this->class_template_types,
+                            $this->type_aliases,
+                            $fq_classlike_name,
+                        ),
+                        null,
                         $this->class_template_types,
                         $this->type_aliases,
-                        $fq_classlike_name,
-                    ),
-                    null,
-                    $this->class_template_types,
-                    $this->type_aliases,
-                    true,
-                );
+                        true,
+                    );
+                } catch (TypeParseTreeException $e) {
+                    $storage->docblock_issues[] = new InvalidDocblock(
+                        $e->getMessage() . ' in docblock for ' . $fq_classlike_name,
+                        $name_location ?? $class_location,
+                    );
+
+                    continue;
+                }
 
                 /** @psalm-suppress UnusedMethodCall */
                 $mixin_type->queueClassLikesForScanning(
@@ -898,9 +947,7 @@ final class ClassLikeNodeScanner
                     }
                 }
 
-                if ($key === 0) {
-                    $storage->mixin_declaring_fqcln = $storage->name;
-                }
+                $storage->mixin_declaring_fqcln = $storage->name;
             }
 
             $deferred_capabilities = [];
@@ -955,6 +1002,7 @@ final class ClassLikeNodeScanner
             $storage->override_method_visibility = $docblock_info->override_method_visibility;
 
             $storage->suppressed_issues = $docblock_info->suppressed_issues;
+            $storage->docblock_suppressed_issues = $docblock_info->suppressed_issues;
 
             if ($docblock_info->description) {
                 $storage->description = $docblock_info->description;
@@ -1062,10 +1110,10 @@ final class ClassLikeNodeScanner
                 }
 
                 if ($attribute->fq_class_name === 'AllowDynamicProperties' && $storage->readonly) {
-                    IssueBuffer::maybeAdd(new InvalidAttribute(
+                    $this->file_storage->scan_issues[] = new InvalidAttribute(
                         'Readonly classes cannot have dynamic properties',
                         new CodeLocation($this->file_scanner, $attr, null, true),
-                    ));
+                    );
                     continue;
                 }
 
@@ -1154,7 +1202,14 @@ final class ClassLikeNodeScanner
         }
 
         foreach ($node->adaptations as $adaptation) {
-            if ($adaptation instanceof PhpParser\Node\Stmt\TraitUseAdaptation\Alias) {
+            if ($adaptation instanceof PhpParser\Node\Stmt\TraitUseAdaptation\Precedence) {
+                $method_name = strtolower($adaptation->method->name);
+
+                foreach ($adaptation->insteadof as $excluded_trait) {
+                    $excluded_fqcln = ClassLikeAnalyzer::getFQCLNFromNameObject($excluded_trait, $this->aliases);
+                    $storage->trait_excluded_methods[$method_name][strtolower($excluded_fqcln)] = true;
+                }
+            } elseif ($adaptation instanceof PhpParser\Node\Stmt\TraitUseAdaptation\Alias) {
                 $old_name = strtolower($adaptation->method->name);
                 $new_name = $old_name;
 
@@ -1164,6 +1219,12 @@ final class ClassLikeNodeScanner
                     if ($new_name !== $old_name) {
                         $storage->trait_alias_map[$new_name] = $old_name;
                         $storage->trait_alias_map_cased[$adaptation->newName->name] = $adaptation->method->name;
+
+                        if ($adaptation->trait) {
+                            $storage->trait_alias_trait_map[$new_name] = strtolower(
+                                ClassLikeAnalyzer::getFQCLNFromNameObject($adaptation->trait, $this->aliases),
+                            );
+                        }
                     }
                 }
 
@@ -1540,10 +1601,10 @@ final class ClassLikeNodeScanner
         string $fq_classlike_name,
     ): void {
         if ($storage->is_trait && $this->codebase->analysis_php_version_id < 8_02_00) {
-            IssueBuffer::maybeAdd(new ConstantDeclarationInTrait(
+            $this->file_storage->scan_issues[] = new ConstantDeclarationInTrait(
                 'Traits cannot declare constants until PHP 8.2.0',
                 new CodeLocation($this->file_scanner, $stmt),
-            ));
+            );
             return;
         }
 
@@ -1596,11 +1657,11 @@ final class ClassLikeNodeScanner
             if (isset($storage->constants[$const->name->name])
                 || isset($storage->enum_cases[$const->name->name])
             ) {
-                IssueBuffer::maybeAdd(new DuplicateConstant(
+                $this->file_storage->scan_issues[] = new DuplicateConstant(
                     'Constant names should be unique',
                     new CodeLocation($this->file_scanner, $const),
                     $fq_classlike_name,
-                ));
+                );
                 continue;
             }
 
@@ -1708,17 +1769,21 @@ final class ClassLikeNodeScanner
                 && !$storage->final
                 && $stmt->type === null
             ) {
-                IssueBuffer::maybeAdd(
-                    new MissingClassConstType(
-                        sprintf(
-                            'Class constant "%s::%s" should have a declared type.',
-                            $storage->name,
-                            $const->name->name,
-                        ),
-                        new CodeLocation($this->file_scanner, $const),
+                $missing_type_issue = new MissingClassConstType(
+                    sprintf(
+                        'Class constant "%s::%s" should have a declared type.',
+                        $storage->name,
+                        $const->name->name,
                     ),
-                    $suppressed_issues,
+                    new CodeLocation($this->file_scanner, $const),
                 );
+
+                if (!IssueBuffer::isSuppressedInList(
+                    $missing_type_issue,
+                    $suppressed_issues + $storage->suppressed_issues,
+                )) {
+                    $this->file_storage->scan_issues[] = $missing_type_issue;
+                }
             }
 
             if ($exists) {
@@ -1732,12 +1797,18 @@ final class ClassLikeNodeScanner
         ClassLikeStorage $storage,
         string $fq_classlike_name,
     ): void {
-        if (isset($storage->constants[$stmt->name->name])) {
-            IssueBuffer::maybeAdd(new DuplicateConstant(
+        $existing_constant = $storage->constants[$stmt->name->name] ?? null;
+
+        // A reflected constant has no location: a stub refining a natively reflected enum replaces
+        // it with the declared case instead of losing the case
+        if ($existing_constant !== null && $existing_constant->location === null) {
+            unset($storage->constants[$stmt->name->name]);
+        } elseif ($existing_constant !== null) {
+            $this->file_storage->scan_issues[] = new DuplicateConstant(
                 'Constant names should be unique',
                 new CodeLocation($this->file_scanner, $stmt),
                 $fq_classlike_name,
-            ));
+            );
             return;
         }
 
@@ -1762,12 +1833,10 @@ final class ClassLikeNodeScanner
                 } elseif ($case_type->isSingleStringLiteral()) {
                     $enum_value = $case_type->getSingleStringLiteral();
                 } else {
-                    IssueBuffer::maybeAdd(
-                        new InvalidEnumCaseValue(
-                            'Case of a backed enum should have either string or int value',
-                            $case_location,
-                            $fq_classlike_name,
-                        ),
+                    $this->file_storage->scan_issues[] = new InvalidEnumCaseValue(
+                        'Case of a backed enum should have either string or int value',
+                        $case_location,
+                        $fq_classlike_name,
                     );
                 }
             } else {
@@ -1824,12 +1893,10 @@ final class ClassLikeNodeScanner
                 $deprecated,
             );
         } else {
-            IssueBuffer::maybeAdd(
-                new DuplicateEnumCase(
-                    'Enum case names should be unique',
-                    $case_location,
-                    $fq_classlike_name,
-                ),
+            $this->file_storage->scan_issues[] = new DuplicateEnumCase(
+                'Enum case names should be unique',
+                $case_location,
+                $fq_classlike_name,
             );
         }
     }
@@ -1951,12 +2018,10 @@ final class ClassLikeNodeScanner
             $doc_var_location = null;
 
             if (isset($storage->properties[$property->name->name])) {
-                IssueBuffer::maybeAdd(
-                    new DuplicateProperty(
-                        'Property ' . $fq_classlike_name . '::$' . $property->name->name . ' has already been defined',
-                        new CodeLocation($this->file_scanner, $stmt, null, true),
-                        $fq_classlike_name . '::$' . $property->name->name,
-                    ),
+                $this->file_storage->scan_issues[] = new DuplicateProperty(
+                    'Property ' . $fq_classlike_name . '::$' . $property->name->name . ' has already been defined',
+                    new CodeLocation($this->file_scanner, $stmt, null, true),
+                    $fq_classlike_name . '::$' . $property->name->name,
                 );
             }
 
@@ -1981,16 +2046,17 @@ final class ClassLikeNodeScanner
             $property_storage->readonly = $storage->readonly
                 || $stmt->isReadonly()
                 || ($var_comment && $var_comment->readonly);
+            $property_storage->readonly_default = ($storage->readonly || $stmt->isReadonly())
+                && !$stmt->isStatic()
+                && $property->default !== null;
             $property_storage->allow_private_mutation = $var_comment ? $var_comment->allow_private_mutation : false;
             $property_storage->description = $var_comment ? $var_comment->description : null;
 
             if (!$signature_type && $storage->readonly) {
-                IssueBuffer::maybeAdd(
-                    new MissingPropertyType(
-                        'Properties of readonly classes must have a type',
-                        new CodeLocation($this->file_scanner, $stmt, null, true),
-                        $fq_classlike_name . '::$' . $property->name->name,
-                    ),
+                $this->file_storage->scan_issues[] = new MissingPropertyType(
+                    'Properties of readonly classes must have a type',
+                    new CodeLocation($this->file_scanner, $stmt, null, true),
+                    $fq_classlike_name . '::$' . $property->name->name,
                 );
             }
 
@@ -2035,6 +2101,8 @@ final class ClassLikeNodeScanner
                 }
 
                 if ($property_storage->signature_type) {
+                    $property_storage->type_location = $doc_var_location ?? $property_storage->type_location;
+
                     $all_typehint_types_match = true;
                     $signature_atomic_types = $property_storage->signature_type->getAtomicTypes();
 
@@ -2343,17 +2411,33 @@ final class ClassLikeNodeScanner
             $parsed_docblock->tags['psalm-type'] ?? [],
         );
 
+        $template_names = [];
+
+        foreach (['template', 'psalm-template', 'phpstan-template', 'template-covariant',
+            'psalm-template-covariant', 'phpstan-template-covariant', 'template-contravariant',
+            'psalm-template-contravariant', 'phpstan-template-contravariant'] as $template_tag) {
+            foreach ($parsed_docblock->tags[$template_tag] ?? [] as $template_line) {
+                $template_name = strtok(trim($template_line), " \t\n");
+
+                if ($template_name !== false) {
+                    $template_names[$template_name] = true;
+                }
+            }
+        }
+
         return self::getTypeAliasesFromCommentLines(
             $type_alias_comment_lines,
             $aliases,
             $type_aliases,
             $self_fqcln,
+            $template_names,
         );
     }
 
     /**
      * @param array<string>    $type_alias_comment_lines
      * @param array<string, TypeAlias> $type_aliases
+     * @param array<string, true> $template_names
      * @return array<string, InlineTypeAlias>
      * @throws DocblockParseException if there was a problem parsing the docblock
      * @psalm-external-mutation-free
@@ -2363,6 +2447,7 @@ final class ClassLikeNodeScanner
         Aliases $aliases,
         ?array $type_aliases,
         ?string $self_fqcln,
+        array $template_names,
     ): array {
         $declarations = [];
 
@@ -2390,7 +2475,7 @@ final class ClassLikeNodeScanner
                 $type_tokens = TypeTokenizer::getFullyQualifiedTokens(
                     $type_string,
                     $aliases,
-                    null,
+                    $template_names,
                     $type_alias_tokens + $type_aliases,
                     $self_fqcln,
                 );
@@ -2398,10 +2483,67 @@ final class ClassLikeNodeScanner
                 throw new DocblockParseException($type_string . ' is not a valid type: '.$e->getMessage());
             }
 
+            // the template a class-string-map binds (class-string-map<T as object, T>) is its own inside its brackets
+            $bound_templates = [];
+            $depth = 0;
+
+            // an alias can be imported into classes that don't have the template
+            foreach ($type_tokens as $i => $type_token) {
+                if ($type_token[0] === '<') {
+                    $depth++;
+                    continue;
+                }
+
+                if ($type_token[0] === '>') {
+                    $depth--;
+
+                    while ($bound_templates !== [] && end($bound_templates)[1] > $depth) {
+                        array_pop($bound_templates);
+                    }
+
+                    continue;
+                }
+
+                if (strtolower($type_token[0]) === 'class-string-map'
+                    && ($type_tokens[$i + 1][0] ?? null) === '<'
+                    && isset($type_tokens[$i + 2])
+                ) {
+                    $bound_templates[] = [$type_tokens[$i + 2][0], $depth + 1];
+                }
+
+                if (isset($template_names[$type_token[0]])
+                    && !in_array($type_token[0], array_column($bound_templates, 0), true)
+                    && !self::isShapeKey($type_tokens, $i)
+                ) {
+                    throw new DocblockParseException(
+                        'Type alias ' . $type_alias . ' cannot use the template ' . $type_token[0] . ' of its class',
+                    );
+                }
+            }
+
             $type_alias_tokens[$type_alias] = new InlineTypeAlias($type_tokens);
         }
 
         return $type_alias_tokens;
+    }
+
+    /**
+     * Whether the token at $i names a key of an array or object shape (`array{T: int}`), not a type
+     *
+     * @param list<array{0: string, 1: int, 2?: string}> $type_tokens
+     * @psalm-pure
+     */
+    private static function isShapeKey(array $type_tokens, int $i): bool
+    {
+        $previous = $type_tokens[$i - 1][0] ?? null;
+
+        if ($previous !== '{' && $previous !== ',') {
+            return false;
+        }
+
+        $next = $type_tokens[$i + 1][0] ?? null;
+
+        return $next === ':' || ($next === '?' && ($type_tokens[$i + 2][0] ?? null) === ':');
     }
 
     /**
@@ -2570,5 +2712,33 @@ final class ClassLikeNodeScanner
         }
 
         return $referenced_names;
+    }
+
+    /**
+     * The class or interface named by a `@psalm-require-extends` or `@psalm-require-implements` type: its type
+     * arguments don't change which class is required
+     */
+    private function getRequirementName(string $docblock_type): string
+    {
+        $type = $this->parseRequirement($docblock_type);
+
+        $atomic_type = $type->isSingle() ? $type->getSingleAtomic() : null;
+
+        return $atomic_type instanceof TNamedObject ? $atomic_type->value : (string) $type;
+    }
+
+    private function parseRequirement(string $docblock_type): Union
+    {
+        return TypeParser::parseTokens(
+            TypeTokenizer::getFullyQualifiedTokens(
+                $docblock_type,
+                $this->aliases,
+                $this->class_template_types,
+                $this->type_aliases,
+            ),
+            null,
+            $this->class_template_types,
+            $this->type_aliases,
+        );
     }
 }
