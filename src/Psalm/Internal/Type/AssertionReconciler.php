@@ -740,6 +740,21 @@ final class AssertionReconciler extends Reconciler
     }
 
     /**
+     * @param non-empty-list<Union> $traversable_params
+     * @psalm-capabilities read-props
+     */
+    private static function intersectWithTraversable(
+        Codebase $codebase,
+        TNamedObject $class,
+        array $traversable_params,
+    ): Atomic {
+        $traversable = new TGenericObject('Traversable', $traversable_params);
+
+        return self::inferTemplateParamsFromParent($codebase, $class, $traversable)
+            ->addIntersectionType($traversable);
+    }
+
+    /**
      * The object half of an iterable is a Traversable, which can be narrowed to any of its subclasses
      *
      * @return array{Atomic, Atomic}
@@ -846,10 +861,7 @@ final class AssertionReconciler extends Reconciler
             && $type_2_atomic instanceof TNamedObject
             && $codebase->classExtendsOrImplements($type_2_atomic->value, 'Traversable')
         ) {
-            $traversable = new TGenericObject('Traversable', $type_1_atomic->type_params);
-
-            return self::inferTemplateParamsFromParent($codebase, $type_2_atomic, $traversable)
-                ->addIntersectionType($traversable);
+            return self::intersectWithTraversable($codebase, $type_2_atomic, $type_1_atomic->type_params);
         }
 
         /*if ($type_2_atomic instanceof TKeyedArray
