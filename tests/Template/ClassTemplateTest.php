@@ -57,6 +57,85 @@ final class ClassTemplateTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'sameTypeFromTwoConstructionsOfAGenericClassIsOneType' => [
+                'code' => '<?php
+                    class obj {}
+
+                    /** @template TValue */
+                    class PagerOnQuery {
+                        /** @param ArrayObject<array-key, TValue> $source */
+                        public function __construct(protected ArrayObject $source) {
+                        }
+                    }
+
+                    if (random_int(0, 1)) {
+                        $items = new ArrayObject([0 => new obj]);
+                    } else {
+                        $items = new ArrayObject(["test" => new obj]);
+                    }
+
+                    $pager = new PagerOnQuery($items);',
+                'assertions' => [],
+                'ignored_issues' => ['UnusedVariable'],
+            ],
+            'closureOfAMethodOfAGenericObject' => [
+                'code' => '<?php
+                    /**
+                     * @template S
+                     * @template A
+                     */
+                    final class Iso
+                    {
+                        /** @var callable(S): A */
+                        private $to;
+
+                        /** @param callable(S): A $to */
+                        public function __construct(callable $to)
+                        {
+                            $this->to = $to;
+                        }
+
+                        /**
+                         * @param S $s
+                         * @return A
+                         */
+                        public function to($s)
+                        {
+                            return ($this->to)($s);
+                        }
+                    }
+
+                    /** @var Iso<int, string> $iso */
+                    $iso = new Iso(fn(int $i): string => (string) $i);
+                    $first_class = $iso->to(...);
+                    $from_callable = Closure::fromCallable([$iso, "to"]);
+                    $first_class_result = $first_class(1);
+                    $from_callable_result = $from_callable(1);',
+                'assertions' => [
+                    '$first_class' => 'Closure[impure](int):string',
+                    '$from_callable' => 'Closure[impure](int):string',
+                    '$first_class_result' => 'string',
+                    '$from_callable_result' => 'string',
+                ],
+            ],
+            'closureOfAMethodOfAnObjectThatIsNotGeneric' => [
+                'code' => '<?php
+                    final class Plain
+                    {
+                        public function to(int $s): string
+                        {
+                            return (string) $s;
+                        }
+                    }
+
+                    $plain = new Plain();
+                    $first_class = $plain->to(...);
+                    $from_callable = Closure::fromCallable([$plain, "to"]);',
+                'assertions' => [
+                    '$first_class' => 'Closure[impure](int):string',
+                    '$from_callable' => 'Closure[impure](int):string',
+                ],
+            ],
             'iteratorWrappersTakeTheKeyAndTheValueTypeOnly' => [
                 'code' => '<?php
                     /**
@@ -1790,7 +1869,7 @@ final class ClassTemplateTest extends TestCase
                     /**
                      * @template P as string
                      * @template V as mixed
-                     * 
+                     *
                      * @psalm-no-seal-properties
                      */
                     class PropertyBag {
@@ -4295,7 +4374,7 @@ final class ClassTemplateTest extends TestCase
             'undefined class in function dockblock' => [
                 'code' => '<?php
                     /**
-                     * @psalm-suppress UndefinedDocblockClass
+                     * @psalm-suppress UndefinedDocblockClass, UndefinedClass
                      *
                      * @param DoesNotExist<int> $baz
                      */
@@ -5849,6 +5928,26 @@ final class ClassTemplateTest extends TestCase
                         }
                     }',
             ],
+            'classNamedOnlyInATemplateBoundIsKnown' => [
+                'code' => '<?php
+                    /** @template TArr of array{a: DateTime, b: stdClass} */
+                    abstract class Holder {
+                        /** @return value-of<TArr> */
+                        abstract public function read(): mixed;
+                    }
+
+                    /** @return Holder */
+                    function holder(): Holder {
+                        throw new Exception();
+                    }
+
+                    $value = holder()->read();',
+                'assertions' => [
+                    '$value===' => 'DateTime|stdClass',
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
         ];
     }
 
@@ -5859,6 +5958,98 @@ final class ClassTemplateTest extends TestCase
     public static function providerInvalidCodeParse(): iterable
     {
         return [
+            'differentTypesFromTwoConstructionsOfAGenericClassAreNotOneType' => [
+                'code' => '<?php
+                    class one {}
+                    class two {}
+
+                    /** @template TValue */
+                    class PagerOnQuery {
+                        /** @param ArrayObject<array-key, TValue> $source */
+                        public function __construct(protected ArrayObject $source) {
+                        }
+                    }
+
+                    if (random_int(0, 1)) {
+                        $items = new ArrayObject([0 => new one]);
+                    } else {
+                        $items = new ArrayObject(["test" => new two]);
+                    }
+
+                    $pager = new PagerOnQuery($items);',
+                'error_message' => 'InvalidArgument',
+            ],
+            'closureOfAMethodOfAnObjectWithTheTemplatesOfTheCaller' => [
+                'code' => '<?php
+                    /**
+                     * @template S
+                     * @template A
+                     */
+                    final class Iso
+                    {
+                        /** @var callable(S): A */
+                        private $to;
+
+                        /** @param callable(S): A $to */
+                        public function __construct(callable $to)
+                        {
+                            $this->to = $to;
+                        }
+
+                        /**
+                         * @param S $s
+                         * @return A
+                         */
+                        public function to($s)
+                        {
+                            return ($this->to)($s);
+                        }
+
+                        /**
+                         * @template C
+                         * @param Iso<A, C> $that
+                         */
+                        public function compose(Iso $that): void
+                        {
+                            /** @psalm-trace $f */
+                            $f = \Closure::fromCallable([$that, "to"]);
+                        }
+                    }',
+                'error_message' => 'Trace - src' . DIRECTORY_SEPARATOR . 'somefile.php:33:29 - $f: Closure[impure](A:Iso as mixed):C:fn-iso::compose as mixed',
+            ],
+            'closureOfAMethodOfAGenericObjectTakesItsArgument' => [
+                'code' => '<?php
+                    /**
+                     * @template S
+                     * @template A
+                     */
+                    final class Iso
+                    {
+                        /** @var callable(S): A */
+                        private $to;
+
+                        /** @param callable(S): A $to */
+                        public function __construct(callable $to)
+                        {
+                            $this->to = $to;
+                        }
+
+                        /**
+                         * @param S $s
+                         * @return A
+                         */
+                        public function to($s)
+                        {
+                            return ($this->to)($s);
+                        }
+                    }
+
+                    /** @var Iso<int, string> $iso */
+                    $iso = new Iso(fn(int $i): string => (string) $i);
+                    $first_class = $iso->to(...);
+                    $first_class("not an int");',
+                'error_message' => 'InvalidArgument - src' . DIRECTORY_SEPARATOR . 'somefile.php:30:34 - Argument 1 expects int, but \'not an int\' provided',
+            ],
             'classTemplateDefaultNamingAnUndefinedClass' => [
                 'code' => '<?php
                     /**
