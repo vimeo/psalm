@@ -9,6 +9,7 @@ use Psalm\Config;
 use Psalm\Context;
 use Psalm\FileSource;
 use Psalm\Internal\Analyzer\ClassLikeAnalyzer;
+use Psalm\Internal\Analyzer\Statements\Expression\Fetch\ConstFetchAnalyzer;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
 
 use function count;
@@ -34,6 +35,10 @@ final class ExpressionIdentifier
 
         if ($stmt instanceof PhpParser\Node\Expr\ConstFetch && $stmt->name->getParts() === ['PHP_VERSION_ID']) {
             return Context::PHP_VERSION_ID_VAR_ID;
+        }
+
+        if ($stmt instanceof PhpParser\Node\Expr\ConstFetch && $source instanceof StatementsAnalyzer) {
+            return ConstFetchAnalyzer::getUndeclaredConstVarId($stmt, $source);
         }
 
         if ($stmt instanceof PhpParser\Node\Expr\StaticPropertyFetch

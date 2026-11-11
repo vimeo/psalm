@@ -19,6 +19,7 @@ use Psalm\Internal\Type\TemplateResult;
 use Psalm\Internal\Type\TemplateStandinTypeReplacer;
 use Psalm\Internal\Type\TypeExpander;
 use Psalm\Storage\Capabilities;
+use Psalm\Storage\FunctionLikeParameter;
 use Psalm\Storage\FunctionLikeStorage;
 use Psalm\Type;
 use Psalm\Type\Atomic;
@@ -28,6 +29,7 @@ use Psalm\Type\Atomic\TClassString;
 use Psalm\Type\Atomic\TClosure;
 use Psalm\Type\Atomic\TGenericObject;
 use Psalm\Type\Atomic\TKeyedArray;
+use Psalm\Type\Atomic\TLiteralClassString;
 use Psalm\Type\Atomic\TLiteralString;
 use Psalm\Type\Atomic\TNamedObject;
 use Psalm\Type\Atomic\TTemplateParam;
@@ -39,6 +41,7 @@ use function assert;
 use function count;
 use function end;
 use function ltrim;
+use function str_starts_with;
 use function strpos;
 use function strtolower;
 use function substr;
@@ -319,6 +322,7 @@ final class CallableTypeComparator
         MethodIdentifier $method_id,
         ?TCallable $container_type_part,
         ?Atomic $callable_object = null,
+        bool $exact_static = false,
     ): ?TCallable {
         if (!$codebase->classlike_storage_provider->has($method_id->fq_class_name)) {
             return null;
@@ -341,7 +345,7 @@ final class CallableTypeComparator
                     null,
                     true,
                     false,
-                    $codebase->classlike_storage_provider->get($method_fqcln)->final,
+                    $exact_static || $codebase->classlike_storage_provider->get($method_fqcln)->final,
                 );
             }
 
@@ -407,10 +411,135 @@ final class CallableTypeComparator
                 }
             }
 
+            // the templates generated for the parameters are resolved, those of the caller are not the method's
+            $generated_templates = [];
+
+            foreach ($method_storage->template_types ?? [] as $template_name => $defining_types) {
+                if (str_starts_with($template_name, 'TGeneratedFromParam')) {
+                    $generated_templates[$template_name] = $defining_types;
+                }
+            }
+
+            if ($generated_templates !== []) {
+                $replaced = TemplateInferredTypeReplacer::replace(
+                    new Union([$callable]),
+                    new TemplateResult([], $generated_templates),
+                    $codebase,
+                )->getSingleAtomic();
+
+                if ($replaced instanceof TCallable) {
+                    $callable = $replaced;
+                }
+            }
+
+            $closure = self::getClosureOfMethod(
+                $codebase,
+                $callable->params ?? [],
+                $callable->return_type,
+                $callable->getCapabilities(),
+                // the class the method appears in: the one using the trait, for a trait method
+                ($codebase->methods->getAppearingMethodId($method_id) ?? $declaring_method_id)->fq_class_name,
+                $method_fqcln,
+                $exact_static || $codebase->classlike_storage_provider->get($method_fqcln)->final,
+            );
+
+            $callable = $callable->replace($closure->params, $closure->return_type);
+
             return $callable;
         } catch (UnexpectedValueException) {
             return null;
         }
+    }
+
+    /**
+     * The closure a first-class callable of a method is: its signature with `self`, `static` and `parent`, the
+     * conditional return type, and the templates generated for its parameters resolved, as for a function
+     *
+     * @param array<int, FunctionLikeParameter> $method_params
+     * @param CapabilitySet $capabilities
+     * @param bool $exact_static whether `static` is the class itself, as for `C::m(...)`, and not a subclass of it
+     */
+    private static function getClosureOfMethod(
+        Codebase $codebase,
+        array $method_params,
+        ?Union $return_type,
+        int $capabilities,
+        ?string $self_class,
+        string $static_class,
+        bool $exact_static = false,
+    ): TClosure {
+        $parent_class = $self_class !== null && $codebase->classlike_storage_provider->has($self_class)
+            ? $codebase->classlike_storage_provider->get($self_class)->parent_class
+            : null;
+
+        $params = [];
+
+        foreach ($method_params as $param) {
+            if ($param->type) {
+                $param = $param->setType(
+                    self::expandForClosure(
+                        $codebase,
+                        $param->type,
+                        $self_class,
+                        $static_class,
+                        $parent_class,
+                        $exact_static,
+                    ),
+                );
+            }
+
+            if ($param->out_type) {
+                $param = $param->setOutType(
+                    self::expandForClosure(
+                        $codebase,
+                        $param->out_type,
+                        $self_class,
+                        $static_class,
+                        $parent_class,
+                        $exact_static,
+                    ),
+                );
+            }
+
+            $params[] = $param;
+        }
+
+        return new TClosure(
+            $params,
+            $return_type
+                ? self::expandForClosure(
+                    $codebase,
+                    $return_type,
+                    $self_class,
+                    $static_class,
+                    $parent_class,
+                    $exact_static,
+                )
+                : null,
+            $capabilities,
+        );
+    }
+
+    private static function expandForClosure(
+        Codebase $codebase,
+        Union $type,
+        ?string $self_class,
+        string $static_class,
+        ?string $parent_class,
+        bool $exact_static,
+    ): Union {
+        return TypeExpander::expandUnion(
+            $codebase,
+            $type,
+            $self_class,
+            $static_class,
+            $parent_class,
+            true,
+            true,
+            $exact_static,
+            false,
+            false,
+        );
     }
 
     /**
@@ -442,6 +571,8 @@ final class CallableTypeComparator
                         strtolower(substr($input_type_part->value, $method_separator + 2)),
                     ),
                     $container_type_part,
+                    null,
+                    true,
                 );
 
                 if ($callable) {
@@ -577,6 +708,7 @@ final class CallableTypeComparator
                     $method_id,
                     $container_type_part,
                     $callable_object,
+                    $callable_object instanceof TLiteralClassString,
                 );
 
                 if ($callable) {
