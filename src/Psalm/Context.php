@@ -959,6 +959,8 @@ final class Context
 
     /**
      * The class a `self::`, `static::` or `parent::` of the code the context is of stands for
+     *
+     * @psalm-capabilities read-props
      */
     private static function resolveClassOfStaticPropertyId(
         Codebase $codebase,
