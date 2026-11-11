@@ -9990,6 +9990,51 @@ final class TaintTest extends TestCase
                     }',
                 'error_message' => 'TaintedHtml',
             ],
+            'taintTheSourceOfAnOffsetGetAccessedWithBrackets' => [
+                'code' => '<?php
+                    /** @implements ArrayAccess<string, mixed> */
+                    final class Bag implements ArrayAccess {
+                        public function offsetExists(mixed $offset): bool {
+                            return true;
+                        }
+
+                        /** @psalm-taint-source input */
+                        public function offsetGet(mixed $offset): mixed {
+                            return "";
+                        }
+
+                        public function offsetSet(mixed $offset, mixed $value): void {}
+
+                        public function offsetUnset(mixed $offset): void {}
+                    }
+
+                    function show(Bag $b): void {
+                        echo (string) $b["q"];
+                    }',
+                'error_message' => 'TaintedHtml',
+            ],
+            'taintTheArgumentAnOffsetGetReturnsAccessedWithBrackets' => [
+                'code' => '<?php
+                    /** @implements ArrayAccess<string, mixed> */
+                    final class Passthru implements ArrayAccess {
+                        public function offsetExists(mixed $offset): bool {
+                            return true;
+                        }
+
+                        public function offsetGet(mixed $offset): mixed {
+                            return $offset;
+                        }
+
+                        public function offsetSet(mixed $offset, mixed $value): void {}
+
+                        public function offsetUnset(mixed $offset): void {}
+                    }
+
+                    function show(Passthru $p): void {
+                        echo (string) $p[(string) $_GET["x"]];
+                    }',
+                'error_message' => 'TaintedHtml',
+            ],
             'taintTheValueOfAnArrayAccessOffsetAssignedAgain' => [
                 'code' => '<?php
                     function show(ArrayAccess $data): void {
