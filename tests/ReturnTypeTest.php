@@ -2283,6 +2283,39 @@ final class ReturnTypeTest extends TestCase
     public static function providerInvalidCodeParse(): iterable
     {
         return [
+            'finalMethodOfASubclassableClassKeepsItsStaticReturnType' => [
+                'code' => <<<'PHP'
+                    <?php
+                    /** @template T of object */
+                    final class Box
+                    {
+                        /** @param T $value */
+                        public function __construct(public readonly object $value) {}
+                    }
+
+                    class Base
+                    {
+                        /** @return Box<Mid> */
+                        public function box(): Box
+                        {
+                            return new Box(new Mid());
+                        }
+                    }
+
+                    class Mid extends Base
+                    {
+                        /** @return Box<static> */
+                        #[\Override]
+                        final public function box(): Box
+                        {
+                            return new Box($this);
+                        }
+                    }
+                    PHP,
+                'error_message' => 'ImplementedReturnTypeMismatch',
+                'error_levels' => [],
+                'php_version' => '8.3',
+            ],
             'docblockStringLiteralWithAUnicodeEscapeThatOverflowsAnInt' => [
                 'code' => '<?php
                     /** @return "\u{FFFFFFFFFFFFFFFF}" */
