@@ -390,8 +390,15 @@ final class KeyedArrayComparator
             $properties[$property_name] = $property_type ?? Type::getMixed();
         }
 
+        // a `@property` is readable as the fetch of the property finds it: through `__get()`, or where the
+        // configuration or `#[AllowDynamicProperties]` lets the docblock stand for the property
+        $pseudo_properties_are_readable = $codebase->config->use_phpdoc_property_without_magic_or_parent
+            || $storage->hasAttributeIncludingParents('AllowDynamicProperties', $codebase)
+            || isset($storage->declaring_method_ids['__get']);
+
         foreach ($container_type_part->properties as $property_name => $_) {
-            if (!isset($properties[$property_name])
+            if ($pseudo_properties_are_readable
+                && !isset($properties[$property_name])
                 && isset($storage->pseudo_property_get_types['$' . $property_name])
             ) {
                 $properties[$property_name] = $storage->pseudo_property_get_types['$' . $property_name];
