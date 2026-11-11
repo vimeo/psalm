@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Psalm\Internal\Analyzer\Statements\Expression;
 
+use Attribute;
 use InvalidArgumentException;
 use PhpParser;
 use Psalm\CodeLocation;
@@ -11,6 +12,7 @@ use Psalm\Codebase;
 use Psalm\Context;
 use Psalm\Exception\CircularReferenceException;
 use Psalm\FileManipulation;
+use Psalm\Internal\Analyzer\AttributesAnalyzer;
 use Psalm\Internal\Analyzer\ClassLikeAnalyzer;
 use Psalm\Internal\Analyzer\ClassLikeNameOptions;
 use Psalm\Internal\Analyzer\NamespaceAnalyzer;
@@ -142,13 +144,11 @@ final class ClassConstAnalyzer
                 );
             }
 
-            if ($codebase->classlikes->classExists($fq_class_name, null, $context)) {
-                $fq_class_name = $codebase->classlikes->getUnAliasedName($fq_class_name);
-            }
-
             if ($stmt->name instanceof PhpParser\Node\Identifier && $stmt->name->name === 'class') {
                 if ($codebase->classlikes->classExists($fq_class_name, null, $context)) {
-                    $const_class_storage = $codebase->classlike_storage_provider->get($fq_class_name);
+                    $const_class_storage = $codebase->classlike_storage_provider->get(
+                        $codebase->classlikes->getUnAliasedName($fq_class_name),
+                    );
                     $fq_class_name = $const_class_storage->name;
 
                     if ($const_class_storage->deprecated && $fq_class_name !== $context->self) {
@@ -189,6 +189,8 @@ final class ClassConstAnalyzer
 
                 return true;
             }
+
+            $fq_class_name = $codebase->classlikes->getUnAliasedName($fq_class_name);
 
             // if we're ignoring that the class doesn't exist, exit anyway
             if (!$codebase->classlikes->classOrInterfaceOrEnumExists($fq_class_name, null, $context)) {
@@ -367,16 +369,17 @@ final class ClassConstAnalyzer
                 }
             }
 
-            if ($context->self
-                && !$context->collect_initializations
+            $caller_identifier = $statements_analyzer->getFullyQualifiedFunctionMethodOrNamespaceName() ?? '';
+
+            if (!$context->collect_initializations
                 && !$context->collect_mutations
-                && !NamespaceAnalyzer::isWithinAny($context->self, $const_class_storage->internal)
+                && !NamespaceAnalyzer::isWithinAny($caller_identifier, $const_class_storage->internal)
             ) {
                 IssueBuffer::maybeAdd(
                     new InternalClass(
                         $fq_class_name . ' is internal to '
                             . InternalClass::listToPhrase($const_class_storage->internal)
-                            . ' but called from ' . $context->self,
+                            . ' but called from ' . ($caller_identifier ?: 'root namespace'),
                         new CodeLocation($statements_analyzer->getSource(), $stmt),
                         $fq_class_name,
                     ),
@@ -511,9 +514,7 @@ final class ClassConstAnalyzer
                 return true;
             }
 
-            if ($codebase->classlikes->classExists($fq_class_name, null, $context)) {
-                $fq_class_name = $codebase->classlikes->getUnAliasedName($fq_class_name);
-            }
+            $fq_class_name = $codebase->classlikes->getUnAliasedName($fq_class_name);
 
             $moved_class = false;
 
@@ -659,16 +660,17 @@ final class ClassConstAnalyzer
                 }
             }
 
-            if ($context->self
-                && !$context->collect_initializations
+            $caller_identifier = $statements_analyzer->getFullyQualifiedFunctionMethodOrNamespaceName() ?? '';
+
+            if (!$context->collect_initializations
                 && !$context->collect_mutations
-                && !NamespaceAnalyzer::isWithinAny($context->self, $const_class_storage->internal)
+                && !NamespaceAnalyzer::isWithinAny($caller_identifier, $const_class_storage->internal)
             ) {
                 IssueBuffer::maybeAdd(
                     new InternalClass(
                         $fq_class_name . ' is internal to '
                             . InternalClass::listToPhrase($const_class_storage->internal)
-                            . ' but called from ' . $context->self,
+                            . ' but called from ' . ($caller_identifier ?: 'root namespace'),
                         new CodeLocation($statements_analyzer->getSource(), $stmt),
                         $fq_class_name,
                     ),
@@ -720,6 +722,22 @@ final class ClassConstAnalyzer
 
         if ($class_storage->has_visitor_issues) {
             return;
+        }
+
+        // the attributes are those of every constant of the statement
+        $first_const = $stmt->consts[0] ?? null;
+
+        if ($first_const) {
+            $first_const_storage = $class_storage->constants[$first_const->name->name];
+
+            AttributesAnalyzer::analyze(
+                $statements_analyzer,
+                $context,
+                $first_const_storage,
+                $stmt->attrGroups,
+                Attribute::TARGET_CLASS_CONSTANT,
+                $first_const_storage->suppressed_issues + $statements_analyzer->getSuppressedIssues(),
+            );
         }
 
         foreach ($stmt->consts as $const) {
@@ -864,9 +882,9 @@ final class ClassConstAnalyzer
         $parent_classlike_storage = $interface_const_storage = $parent_const_storage = null;
         $interface_overrides = [];
         foreach ($class_storage->class_implements ?: $class_storage->direct_interface_parents as $interface) {
-            $interface_storage = $codebase->classlike_storage_provider->get($interface);
+            $interface_storage = $codebase->classlikes->getStorageFor($interface);
             $parent_const_storage = $interface_storage->constants[$const_name] ?? null;
-            if ($parent_const_storage !== null) {
+            if ($interface_storage !== null && $parent_const_storage !== null) {
                 if ($const_storage->location
                     && $const_storage !== $parent_const_storage
                     && $codebase->analysis_php_version_id < 8_01_00
@@ -900,9 +918,9 @@ final class ClassConstAnalyzer
         }
 
         foreach ($class_storage->parent_classes as $parent_class) {
-            $parent_class_storage = $codebase->classlike_storage_provider->get($parent_class);
+            $parent_class_storage = $codebase->classlikes->getStorageFor($parent_class);
             $parent_const_storage = $parent_class_storage->constants[$const_name] ?? null;
-            if ($parent_const_storage !== null) {
+            if ($parent_class_storage !== null && $parent_const_storage !== null) {
                 if ($const_storage->location !== null && $interface_const_storage !== null) {
                     assert($parent_classlike_storage !== null);
                     if (!isset($parent_class_storage->class_implements[strtolower($parent_classlike_storage->name)])) {

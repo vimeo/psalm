@@ -27,6 +27,19 @@ final class PurityTemplateTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'newOfAClassWhoseTemplateConstraintNamesAPurityTemplateAcceptsAPureArgument' => [
+                'code' => '<?php
+                    $append = new AppendIterator();
+                    $append->append(new ArrayIterator([1, 2]));
+                    $append->append(new ArrayIterator(["a", "b"]));
+
+                    function chain(Iterator $iterator): void {
+                        $append = new AppendIterator();
+                        $append->append($iterator);
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+            ],
             'newOfAClassExtendingAPurityTemplatedClassResolvesItsUnboundTemplatesToTheirBounds' => [
                 'code' => '<?php
                     /** @psalm-purity-template P */
@@ -1477,6 +1490,20 @@ final class PurityTemplateTest extends TestCase
                 'assertions' => [
                     '$r===' => "'a'",
                 ],
+            ],
+            'fiberGetCurrentIsPure' => [
+                'code' => '<?php
+                    /** @psalm-pure */
+                    function currentFiber(): ?Fiber {
+                        return Fiber::getCurrent();
+                    }
+
+                    $fiber = currentFiber();',
+                'assertions' => [
+                    '$fiber===' => 'Fiber[impure]|null',
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
             ],
             'fiberInheritsTheCallbacksPurity' => [
                 'code' => '<?php
@@ -4232,6 +4259,21 @@ final class PurityTemplateTest extends TestCase
                     /**
                      * @psalm-import-type Item from Items
                      * @template T as Item
+                     * @psalm-consistent-constructor
+                     */
+                    abstract class Repo {
+                        public function __construct() {}
+
+                        public static function make(): static {
+                            return new static();
+                        }
+                    }',
+                'error_message' => 'UnsafeGenericInstantiation',
+            ],
+            'newStaticOfClassWithTypeTemplateWithADefault' => [
+                'code' => '<?php
+                    /**
+                     * @template T = int
                      * @psalm-consistent-constructor
                      */
                     abstract class Repo {

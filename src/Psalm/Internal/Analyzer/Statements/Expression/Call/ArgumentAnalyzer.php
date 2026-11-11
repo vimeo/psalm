@@ -65,11 +65,13 @@ use Psalm\Type\Atomic\TKeyedArray;
 use Psalm\Type\Atomic\TLiteralString;
 use Psalm\Type\Atomic\TMixed;
 use Psalm\Type\Atomic\TNamedObject;
+use Psalm\Type\Atomic\TTemplateParam;
 use Psalm\Type\Atomic\TTypeVariable;
 use Psalm\Type\Union;
 use UnexpectedValueException;
 
 use function array_filter;
+use function array_shift;
 use function count;
 use function explode;
 use function implode;
@@ -93,6 +95,9 @@ use const PREG_SPLIT_NO_EMPTY;
  */
 final class ArgumentAnalyzer
 {
+    /** Set on an argument PHP never passes, whose type isn't checked against its parameter */
+    public const NOT_PASSED = 'not_passed';
+
     // callable $this
     // some PHP-internal functions (e.g. array_filter) will call the callback within the current context
     // unlike user-defined functions which call the callback in their context
@@ -164,7 +169,12 @@ final class ArgumentAnalyzer
         ?TemplateResult $template_result,
         bool $specialize_taint,
         bool $in_call_map,
+        bool $static_is_called_class = false,
     ): ?bool {
+        if ($arg->getAttribute(self::NOT_PASSED) === true) {
+            return null;
+        }
+
         $codebase = $statements_analyzer->getCodebase();
 
         if (!$arg_value_type) {
@@ -273,6 +283,7 @@ final class ArgumentAnalyzer
             $template_result,
             $specialize_taint,
             $in_call_map,
+            $static_is_called_class,
         ) === false) {
             return false;
         }
@@ -304,6 +315,7 @@ final class ArgumentAnalyzer
         ?TemplateResult $template_result,
         bool $specialize_taint,
         bool $in_call_map,
+        bool $static_is_called_class,
     ): ?bool {
         if (!$function_param->type) {
             if (!$codebase->infer_types_from_usage && !$statements_analyzer->data_flow_graph) {
@@ -344,9 +356,12 @@ final class ArgumentAnalyzer
             $parent_class,
             true,
             false,
-            $static_classlike_storage->final ?? false,
+            ($static_classlike_storage->final ?? false) || $static_is_called_class,
             true,
         );
+
+        // what the argument says about each template is read from the declared type, before class templates are bound
+        $declared_param_type = $param_type;
 
         if ($class_generic_params) {
             // here we're replacing the param types and arg types with the bound
@@ -435,35 +450,13 @@ final class ArgumentAnalyzer
                 $context->calling_method_id ?: $context->calling_function_id,
             );
 
-            foreach ($bindable_template_params as $template_type) {
-                if (!isset(
-                    $template_result->lower_bounds
-                        [$template_type->param_name]
-                        [$template_type->defining_class],
-                )) {
-                    if (isset(
-                        $template_result->upper_bounds
-                            [$template_type->param_name]
-                            [$template_type->defining_class],
-                    )) {
-                        $fallback_bound = new TemplateBound(
-                            $template_result->upper_bounds
-                                [$template_type->param_name]
-                                [$template_type->defining_class]->type,
-                        );
-                    } else {
-                        $fallback_bound = new TemplateBound(
-                            $template_type->as,
-                        );
-                    }
-
-                    $fallback_bound->from_constraint_fallback = true;
-
-                    $template_result->lower_bounds[$template_type->param_name][$template_type->defining_class] = [
-                        $fallback_bound,
-                    ];
-                }
-            }
+            self::addConstraintFallbacks(
+                $codebase,
+                $template_result,
+                $bindable_template_params,
+                $declared_param_type,
+                $arg_type_param,
+            );
 
             $param_type = TypeExpander::expandUnion(
                 $codebase,
@@ -473,7 +466,7 @@ final class ArgumentAnalyzer
                 $parent_class,
                 true,
                 false,
-                $static_classlike_storage->final ?? false,
+                ($static_classlike_storage->final ?? false) || $static_is_called_class,
                 true,
             );
         }
@@ -538,6 +531,36 @@ final class ArgumentAnalyzer
             if ($arg_value_type->hasArray()) {
                 $unpacked_atomic_array = $arg_value_type->getArray();
                 $arg_key_allowed = true;
+
+                // a template param is as iterable as its bound
+                $unpacked_atomic_types = $arg_value_type->getAtomicTypes();
+
+                while ($unpacked_atomic_type = array_shift($unpacked_atomic_types)) {
+                    if ($unpacked_atomic_type instanceof TTemplateParam) {
+                        $unpacked_atomic_types = [
+                            ...$unpacked_atomic_types,
+                            ...$unpacked_atomic_type->as->getAtomicTypes(),
+                        ];
+
+                        continue;
+                    }
+
+                    if (!$unpacked_atomic_type instanceof TClassStringMap
+                        && !$unpacked_atomic_type instanceof TMixed
+                        && !$unpacked_atomic_type->isIterable($codebase)
+                    ) {
+                        IssueBuffer::maybeAdd(
+                            new PossiblyInvalidArgument(
+                                'Tried to unpack non-iterable ' . $arg_value_type->getId(),
+                                new CodeLocation($statements_analyzer->getSource(), $arg->value),
+                                $cased_method_id,
+                            ),
+                            $statements_analyzer->getSuppressedIssues(),
+                        );
+
+                        break;
+                    }
+                }
 
                 if ($unpacked_atomic_array instanceof TKeyedArray) {
                     if (!$allow_named_args && !$unpacked_atomic_array->getGenericKeyType()->isInt()) {
@@ -721,6 +744,127 @@ final class ArgumentAnalyzer
     }
 
     /**
+     * Gives each template the argument did not bind its constraint (or the upper bound the argument gave it) as a
+     * stand-in lower bound, and sets {@see TemplateBound::$from_template_free_argument} on its lower bounds, those of
+     * earlier arguments included: a template takes its default only if no argument says anything about it.
+     *
+     * @param list<TTemplateParam> $bindable_template_params
+     */
+    private static function addConstraintFallbacks(
+        Codebase $codebase,
+        TemplateResult $template_result,
+        array $bindable_template_params,
+        Union $declared_param_type,
+        Union $arg_type,
+    ): void {
+        foreach ($bindable_template_params as $template_type) {
+            $lower_bounds = $template_result->lower_bounds[$template_type->param_name][$template_type->defining_class]
+                ?? [];
+
+            foreach ($lower_bounds as $lower_bound) {
+                if ($lower_bound->from_template_free_argument) {
+                    $lower_bound->from_template_free_argument
+                        = self::saysNothingAbout($codebase, $template_type, $declared_param_type, $arg_type);
+                }
+            }
+
+            if ($lower_bounds !== []) {
+                continue;
+            }
+
+            $fallback_bound = new TemplateBound(
+                $template_result->upper_bounds[$template_type->param_name][$template_type->defining_class]->type
+                    ?? $template_type->as,
+            );
+            $fallback_bound->from_constraint_fallback = true;
+            $fallback_bound->from_template_free_argument
+                = self::saysNothingAbout($codebase, $template_type, $declared_param_type, $arg_type);
+
+            $template_result->lower_bounds[$template_type->param_name][$template_type->defining_class] = [
+                $fallback_bound,
+            ];
+        }
+    }
+
+    /**
+     * Whether the argument fits the parts of the declared type not naming the template, read at their bounds. As a
+     * template there may take anything (`(callable(): T)|U`), no part of the argument may then fit or coerce to the
+     * parts naming the template.
+     */
+    private static function saysNothingAbout(
+        Codebase $codebase,
+        TTemplateParam $template_type,
+        Union $declared_param_type,
+        Union $arg_type,
+    ): bool {
+        $naming_types = [];
+        $other_types = [];
+
+        foreach ($declared_param_type->getAtomicTypes() as $key => $atomic) {
+            foreach ((new Union([$atomic]))->getTemplateTypes() as $named_template) {
+                if ($named_template->param_name === $template_type->param_name
+                    && $named_template->defining_class === $template_type->defining_class
+                ) {
+                    $naming_types[$key] = $atomic;
+
+                    continue 2;
+                }
+            }
+
+            $other_types[$key] = $atomic;
+        }
+
+        if ($other_types === []) {
+            return false;
+        }
+
+        $other_type = new Union($other_types);
+
+        if (!UnionTypeComparator::isContainedBy($codebase, $arg_type, self::atBounds($codebase, $other_type))) {
+            return false;
+        }
+
+        if ($naming_types === [] || $other_type->getTemplateTypes() === []) {
+            return true;
+        }
+
+        $naming_type = self::atBounds($codebase, new Union($naming_types));
+
+        foreach ($arg_type->getAtomicTypes() as $arg_atomic) {
+            $comparison_result = new TypeComparisonResult();
+
+            if (UnionTypeComparator::isContainedBy(
+                $codebase,
+                new Union([$arg_atomic]),
+                $naming_type,
+                false,
+                false,
+                $comparison_result,
+            ) || $comparison_result->type_coerced || $comparison_result->type_coerced_from_mixed) {
+                return false;
+            }
+        }
+
+        return true;
+    }
+
+    private static function atBounds(Codebase $codebase, Union $type): Union
+    {
+        return TypeExpander::expandUnion(
+            $codebase,
+            $type,
+            null,
+            null,
+            null,
+            true,
+            false,
+            false,
+            false,
+            true,
+        );
+    }
+
+    /**
      * @param TKeyedArray|TArray|TClassStringMap|null $unpacked_atomic_array
      * @return  null|false
      */
@@ -747,7 +891,6 @@ final class ArgumentAnalyzer
 
         if ($param_type->hasMixed()) {
             if ($codebase->infer_types_from_usage
-                && !$input_type->hasMixed()
                 && !$param_type->from_docblock
                 && !$param_type->had_template
                 && $method_id
@@ -995,6 +1138,32 @@ final class ArgumentAnalyzer
             $union_comparison_results,
         );
 
+        // the callable form of a string naming a function doesn't fit, but the string may fit the rest of the param
+        /** @var Union|null $original_input_type set by HighOrderFunctionArgHandler */
+        $original_input_type = $input_expr->getAttribute(HighOrderFunctionArgHandler::ORIGINAL_ARG_TYPE_ATTRIBUTE);
+
+        if ($original_input_type
+            && (!$type_match_found || $union_comparison_results->type_coerced)
+            && $param_type->hasCallableType()
+        ) {
+            $param_types_without_callable = array_filter(
+                $param_type->getAtomicTypes(),
+                static fn(Atomic $atomic) => !$atomic->isCallableType(),
+            );
+
+            if ($param_types_without_callable
+                && UnionTypeComparator::isContainedBy(
+                    $codebase,
+                    $original_input_type,
+                    new Union($param_types_without_callable),
+                )
+            ) {
+                $input_type = $original_input_type;
+                $union_comparison_results = new TypeComparisonResult();
+                $type_match_found = true;
+            }
+        }
+
         if ($union_comparison_results->type_variable_lower_bounds
             || $union_comparison_results->type_variable_upper_bounds
         ) {
@@ -1067,21 +1236,25 @@ final class ArgumentAnalyzer
 
             foreach ($input_type->getAtomicTypes() as $input_type_part) {
                 if ($input_type_part instanceof TKeyedArray) {
-                    // If the param accept an array, we don't report arrays as wrong callbacks.
-                    if (null !== $param_type_without_callable && UnionTypeComparator::isContainedBy(
-                        $codebase,
-                        $input_type,
-                        $param_type_without_callable,
-                    )) {
-                        continue;
-                    }
-
                     $potential_method_id = CallableTypeComparator::getCallableMethodIdFromTKeyedArray(
                         $input_type_part,
                         $codebase,
                         $context->calling_method_id,
                         $statements_analyzer->getFilePath(),
                     );
+
+                    // If the param accept an array, we don't report arrays as wrong callbacks.
+                    if (null !== $param_type_without_callable && UnionTypeComparator::isContainedBy(
+                        $codebase,
+                        $input_type,
+                        $param_type_without_callable,
+                    )) {
+                        if ($potential_method_id && $potential_method_id !== 'not-callable') {
+                            $potential_method_ids[] = $potential_method_id;
+                        }
+
+                        continue;
+                    }
 
                     if ($potential_method_id === null && $codebase->analysis_php_version_id >= 8_02_00) {
                         [$lhs,] = $input_type_part->properties;
@@ -1652,7 +1825,12 @@ final class ArgumentAnalyzer
                                 }
                             }
 
-                            if ($non_existent_method_ids && !$param_type->hasString() && !$param_type->hasArray()) {
+                            // of an intersection, one of the types having the method is enough
+                            if ($non_existent_method_ids
+                                && count($non_existent_method_ids) === count($function_id_parts)
+                                && !$param_type->hasString()
+                                && !$param_type->hasArray()
+                            ) {
                                 if (MethodAnalyzer::checkMethodExists(
                                     $codebase,
                                     $non_existent_method_ids[0],
@@ -1672,6 +1850,7 @@ final class ArgumentAnalyzer
                                     $function_id,
                                     $arg_location,
                                     false,
+                                    $context,
                                 ) === false
                             ) {
                                 return;
@@ -1774,6 +1953,14 @@ final class ArgumentAnalyzer
             ]);
         }
 
+        if (!$was_cloned
+            && !$input_type_changed
+            && !$unpack
+            && ($context->vars_in_scope[$var_id] ?? null) === $input_type
+        ) {
+            return;
+        }
+
         if ($context->inside_conditional && !isset($context->assigned_var_ids[$var_id])) {
             $context->assigned_var_ids[$var_id] = 0;
         }
@@ -1848,11 +2035,13 @@ final class ArgumentAnalyzer
         }
 
         if ($function_param->type && $function_param->type->isString() && !$input_type->isString()) {
+            // only the data-flow path is wanted: the argument check reports a bad argument itself
             $input_type = CastAnalyzer::castStringAttempt(
                 $statements_analyzer,
                 $context,
                 $input_type,
                 $expr,
+                false,
                 false,
             );
         }

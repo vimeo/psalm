@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Psalm;
 
 use InvalidArgumentException;
+use Psalm\Internal\Analyzer\ConstructorExits;
 use Psalm\Internal\Analyzer\Statements\Expression\Fetch\VariableFetchAnalyzer;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\Internal\Clause;
@@ -22,24 +23,21 @@ use Psalm\Type\Atomic\TNull;
 use Psalm\Type\Union;
 use RuntimeException;
 
-use function array_keys;
 use function array_search;
 use function array_shift;
 use function assert;
 use function count;
 use function in_array;
 use function is_int;
-use function json_encode;
 use function preg_match;
 use function preg_quote;
 use function preg_replace;
+use function serialize;
 use function str_contains;
 use function strcspn;
 use function strpos;
 use function strtolower;
 use function substr;
-
-use const JSON_THROW_ON_ERROR;
 
 /**
  * @api
@@ -101,6 +99,15 @@ final class Context
      * @var array<string, DataFlowNode>
      */
     public array $by_ref_param_out_nodes = [];
+
+    /**
+     * The variables bound to a global by `global`, with the type the scope declares for the global (see
+     * GlobalAnalyzer::readGlobalsWrittenBy()). Dropped when the variable stops referencing the global.
+     *
+     * @internal
+     * @var array<string, Union>
+     */
+    public array $bound_globals = [];
 
     /**
      * The elements of an array a foreach loop iterates over, that an assignment in its body may copy under their
@@ -244,6 +251,13 @@ final class Context
     public array $phantom_classes = [];
 
     /**
+     * A list of functions checked with function_exists
+     *
+     * @var array<lowercase-string,true>
+     */
+    public array $phantom_functions = [];
+
+    /**
      * A list of files checked with file_exists
      *
      * @var array<string,bool>
@@ -278,6 +292,11 @@ final class Context
      * Whether or not to do a deep analysis and collect initializations from public non-final methods
      */
     public bool $collect_nonprivate_initializations = false;
+
+    /**
+     * @internal
+     */
+    public ?ConstructorExits $constructor_exits = null;
 
     /**
      * Stored to prevent re-analysing methods when checking for initialised properties
@@ -721,7 +740,7 @@ final class Context
 
             if (!isset($clause->possibilities[$remove_var_id])
                 || (count($clause->possibilities[$remove_var_id]) === 1
-                    && array_keys($clause->possibilities[$remove_var_id])[0] === $new_type_string)
+                    && isset($clause->possibilities[$remove_var_id][$new_type_string]))
             ) {
                 $clauses_to_keep[] = $clause;
             } elseif ($statements_analyzer &&
@@ -936,7 +955,7 @@ final class Context
             $summary[$k] = $v->getId();
         }
 
-        return json_encode($summary, JSON_THROW_ON_ERROR);
+        return serialize($summary);
     }
 
     public function defineGlobals(): void
