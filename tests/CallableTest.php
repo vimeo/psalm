@@ -22,28 +22,46 @@ final class CallableTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
-            'negatedIsStringKeepsArrayOfCallableOrArray' => [
+            'byReferenceCallableParamAcceptsByReferenceCallee' => [
                 'code' => '<?php
-                    /** @var string|callable|array $p */
-                    $p = $_GET["p"];
-                    $r = is_string($p) ? 0 : $p;
-                ',
-                'assertions' => [
-                    '$r===' => '0|array<array-key, mixed>|callable-object',
-                ],
+                    /** @param callable(int &$i): void $closure */
+                    function takesRefCallable(callable $closure): void {
+                        $v = 1;
+                        $closure($v);
+                    }
+                    function incr(int &$i): void {
+                        ++$i;
+                    }
+                    takesRefCallable("incr");
+                    takesRefCallable(function (int &$i): void {
+                        ++$i;
+                    });',
+                'assertions' => [],
             ],
-            'callableCheckAfterIsStringOnCallableOrArray' => [
+            'byReferenceCallableParamAcceptsByValueCallee' => [
                 'code' => '<?php
-                    /** @param string|callable|array $param */
-                    function foo($param): void {
-                        if (is_string($param)) {
-                            return;
-                        }
-
-                        if (is_callable($param)) {
-                            return;
-                        }
-                    }',
+                    /** @param callable(int &$i): void $closure */
+                    function takesRefCallable(callable $closure): void {
+                        $v = 1;
+                        $closure($v);
+                    }
+                    function show(int $i): void {
+                        echo $i;
+                    }
+                    takesRefCallable("show");
+                    takesRefCallable(function (int $i): void {
+                        echo $i;
+                    });',
+                'assertions' => [],
+            ],
+            'namedOptionalCallableParam' => [
+                'code' => '<?php
+                    /** @param callable(int $i=): void $closure */
+                    function takesOptional(callable $closure): void {
+                        $closure();
+                    }
+                    takesOptional(function (int $i = 0): void {});',
+                'assertions' => [],
             ],
             'stringNamingAFunctionForClosureOrStringParam' => [
                 'code' => <<<'PHP'
@@ -2830,6 +2848,29 @@ final class CallableTest extends TestCase
 
                         //callable-string can\'t specify return type but it doesn\'t error
                         return call_user_func($var);
+                    }',
+            ],
+            'negatedIsStringKeepsArrayOfCallableOrArray' => [
+                'code' => '<?php
+                    /** @var string|callable|array $p */
+                    $p = $_GET["p"];
+                    $r = is_string($p) ? 0 : $p;
+                ',
+                'assertions' => [
+                    '$r===' => '0|array<array-key, mixed>|callable-object',
+                ],
+            ],
+            'callableCheckAfterIsStringOnCallableOrArray' => [
+                'code' => '<?php
+                    /** @param string|callable|array $param */
+                    function foo($param): void {
+                        if (is_string($param)) {
+                            return;
+                        }
+
+                        if (is_callable($param)) {
+                            return;
+                        }
                     }',
             ],
         ];
