@@ -1041,6 +1041,159 @@ final class ClosureTest extends TestCase
                 'ignored_issues' => [],
                 'php_version' => '8.1',
             ],
+            'FirstClassCallable:InstanceMethod:InheritedReturnType' => [
+                'code' => '<?php
+                    interface Counter {
+                        /** @return positive-int */
+                        public function count();
+                    }
+
+                    final class Items implements Counter {
+                        #[Override]
+                        public function count() {
+                            return 1;
+                        }
+                    }
+
+                    $items = new Items();
+                    $count = $items->count(...);
+                    $result = $count();',
+                'assertions' => [
+                    '$count===' => 'Closure[impure]():int<1, max>',
+                    '$result' => 'int<1, max>',
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
+            'FirstClassCallable:DynamicMethodName:InheritedReturnType' => [
+                'code' => '<?php
+                    interface Counter {
+                        /** @return positive-int */
+                        public function count();
+
+                        /** @return positive-int */
+                        public static function total();
+                    }
+
+                    final class Items implements Counter {
+                        #[Override]
+                        public function count() {
+                            return 1;
+                        }
+
+                        #[Override]
+                        public static function total() {
+                            return 1;
+                        }
+                    }
+
+                    $items = new Items();
+                    $count = $items->{"count"}(...);
+                    $total = Items::{"total"}(...);',
+                'assertions' => [
+                    '$count===' => 'Closure[impure]():int<1, max>',
+                    '$total===' => 'Closure[impure]():int<1, max>',
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
+            'FirstClassCallable:InstanceMethod:InheritedStaticReturnType' => [
+                'code' => '<?php
+                    class Items {
+                        /** @return static */
+                        public function make() {
+                            return $this;
+                        }
+                    }
+
+                    final class SubItems extends Items {
+                        #[Override]
+                        public function make() {
+                            return $this;
+                        }
+                    }
+
+                    $items = new SubItems();
+                    $make = $items->make(...);
+                    $result = $make();',
+                'assertions' => [
+                    '$make===' => 'Closure[impure]():SubItems',
+                    '$result' => 'SubItems',
+                ],
+                'ignored_issues' => ['ClassMustBeFinal'],
+                'php_version' => '8.1',
+            ],
+            'FirstClassCallable:InstanceMethod:InheritedReturnTypeKeepsTheOwnParameters' => [
+                'code' => '<?php
+                    interface Counter {
+                        /** @return positive-int */
+                        public function count();
+                    }
+
+                    final class Items implements Counter {
+                        #[Override]
+                        public function count(int $step = 1) {
+                            return 1;
+                        }
+                    }
+
+                    $count = (new Items())->count(...);
+                    $result = $count(5);',
+                'assertions' => [
+                    '$count===' => 'Closure[impure](int=):int<1, max>',
+                    '$result' => 'int<1, max>',
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
+            'FirstClassCallable:InstanceMethod:InheritedParameterType' => [
+                'code' => '<?php
+                    interface Sink {
+                        /** @param positive-int $count */
+                        public function take($count): void;
+                    }
+
+                    final class Box implements Sink {
+                        #[Override]
+                        public function take($count): void {
+                        }
+                    }
+
+                    $take = (new Box())->take(...);',
+                'assertions' => [
+                    '$take===' => 'Closure[impure](int<1, max>):void',
+                ],
+                'ignored_issues' => ['MissingParamType'],
+                'php_version' => '8.1',
+            ],
+            'FirstClassCallable:InstanceMethod:InheritedTemplate' => [
+                'code' => '<?php
+                    interface Identity {
+                        /**
+                         * @template T
+                         * @param T $x
+                         * @return T
+                         */
+                        public function id($x);
+                    }
+
+                    final class Same implements Identity {
+                        #[Override]
+                        public function id($x) {
+                            return $x;
+                        }
+                    }
+
+                    $same = new Same();
+                    $id = $same->id(...);
+                    $result = $id("s");',
+                'assertions' => [
+                    '$id===' => 'Closure[impure](mixed):mixed',
+                    '$result' => 'mixed',
+                ],
+                'ignored_issues' => ['MixedAssignment'],
+                'php_version' => '8.1',
+            ],
             'FirstClassCallable:InstanceMethod:UserDefined' => [
                 'code' => '<?php
                     class Test {
@@ -1972,6 +2125,104 @@ final class ClosureTest extends TestCase
                 'ignored_issues' => ['UnsafeInstantiation'],
                 'php_version' => '8.1',
             ],
+            'nestedArrowFunctionsTakeTheTypesOfTheClosureTheyAreReturnedFrom' => [
+                'code' => '<?php
+                    /**
+                     * @template TArg1
+                     * @template TArg2
+                     * @template TArg3
+                     * @template TRes
+                     *
+                     * @psalm-param Closure(TArg1, TArg2, TArg3): TRes $func
+                     * @psalm-param TArg1 $arg1
+                     *
+                     * @psalm-return Closure(TArg2): Closure(TArg3): TRes
+                     */
+                    function curry3(Closure $func, $arg1): Closure {
+                        return fn($arg2) => fn($arg3) => $func($arg1, $arg2, $arg3);
+                    }',
+            ],
+            'nestedClosuresTakeTheTypesOfTheClosureTheyAreReturnedFrom' => [
+                'code' => '<?php
+                    /**
+                     * @template A
+                     * @param A $x
+                     * @return Closure(): Closure(A): A
+                     */
+                    function two($x): Closure {
+                        return function () {
+                            return function ($y) {
+                                return $y;
+                            };
+                        };
+                    }',
+            ],
+            'nestedArrowFunctionsWithDeclaredTypes' => [
+                'code' => '<?php
+                    /** @return Closure(int): Closure(string): string */
+                    function build(): Closure {
+                        return fn($number) => fn($text) => $text . $number;
+                    }',
+            ],
+            'narrowedPropertyOfAMutationFreeClassHoldsInAnArrowFunction' => [
+                'code' => '<?php
+                    /** @psalm-mutation-free */
+                    final class Box {
+                        public ?string $value = null;
+                    }
+
+                    function f(Box $box): void {
+                        if ($box->value === null) {
+                            return;
+                        }
+
+                        $arrow = fn (): string => $box->value;
+
+                        echo $arrow();
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
+            'narrowedReadonlyPropertyHoldsInAnArrowFunction' => [
+                'code' => '<?php
+                    final class Box {
+                        public function __construct(public readonly ?string $value = null) {}
+                    }
+
+                    function f(Box $box): void {
+                        if ($box->value === null) {
+                            return;
+                        }
+
+                        $arrow = fn (): string => $box->value;
+
+                        echo $arrow();
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
+            'narrowedPropertyOfAnImmutableObjectHoldsInAClosure' => [
+                'code' => '<?php
+                    /** @psalm-immutable */
+                    final class Imm {
+                        public function __construct(public ?string $value = null) {}
+                    }
+
+                    function f(Imm $imm): void {
+                        if ($imm->value === null) {
+                            return;
+                        }
+
+                        $closure = function () use ($imm): string {
+                            return $imm->value;
+                        };
+                        $arrow = fn (): string => $imm->value;
+
+                        echo $closure() . $arrow();
+                    }',
+            ],
         ];
     }
 
@@ -1982,6 +2233,26 @@ final class ClosureTest extends TestCase
     public static function providerInvalidCodeParse(): iterable
     {
         return [
+            'FirstClassCallable:InstanceMethod:InheritedReturnTypeKeepsTheOwnParameterType' => [
+                'code' => '<?php
+                    interface Fmt {
+                        /** @return non-empty-string */
+                        public function fmt($x);
+                    }
+
+                    final class F implements Fmt {
+                        #[Override]
+                        public function fmt(int|string $x) {
+                            return "a" . $x;
+                        }
+                    }
+
+                    $fmt = (new F())->fmt(...);
+                    $fmt([]);',
+                'error_message' => 'InvalidArgument',
+                'error_levels' => ['MissingParamType'],
+                'php_version' => '8.1',
+            ],
             'byValueUseOfAVariableThatIsNotDefinedYet' => [
                 'code' => '<?php
                     $f = function () use ($total): int {
@@ -2532,6 +2803,81 @@ final class ClosureTest extends TestCase
                     fn &(): int => 45;
                 ',
                 'error_message' => 'NonVariableReferenceReturn',
+            ],
+            'nestedArrowFunctionReturningTheWrongType' => [
+                'code' => '<?php
+                    /** @return Closure(int): Closure(string): int */
+                    function build(): Closure {
+                        return fn($number) => fn($text) => $text;
+                    }',
+                'error_message' => 'InvalidReturnStatement',
+            ],
+            'narrowedReadonlyPropertyThatAllowsPrivateMutationIsNotKnownInAnArrowFunction' => [
+                'code' => '<?php
+                    final class Box {
+                        /** @psalm-readonly-allow-private-mutation */
+                        public ?string $value = null;
+
+                        public function reset(): void {
+                            $this->value = null;
+                        }
+                    }
+
+                    function f(Box $box): void {
+                        if ($box->value === null) {
+                            return;
+                        }
+
+                        $arrow = fn (): string => $box->value;
+
+                        echo $arrow();
+                    }',
+                'error_message' => 'NullableReturnStatement',
+                'error_levels' => [],
+                'php_version' => '8.1',
+            ],
+            'narrowedMutablePropertyIsNotKnownInAnArrowFunction' => [
+                'code' => '<?php
+                    final class Box {
+                        public ?string $value = null;
+                    }
+
+                    function f(Box $box): void {
+                        if ($box->value === null) {
+                            return;
+                        }
+
+                        $arrow = fn (): string => $box->value;
+
+                        echo $arrow();
+                    }',
+                'error_message' => 'NullableReturnStatement',
+                'error_levels' => [],
+                'php_version' => '8.1',
+            ],
+            'narrowedPropertyOfAMutableObjectInAnImmutableOneIsNotKnownInAnArrowFunction' => [
+                'code' => '<?php
+                    final class Child {
+                        public ?string $value = null;
+                    }
+
+                    /** @psalm-immutable */
+                    final class Box {
+                        public function __construct(public Child $child) {}
+                    }
+
+                    function f(Box $box): void {
+                        if ($box->child->value === null) {
+                            return;
+                        }
+
+                        $arrow = fn (): string => $box->child->value;
+
+                        echo $arrow();
+                    }',
+                'error_message' => 'NullableReturnStatement',
+                'error_levels' => [],
+                'php_version' => '8.1',
             ],
         ];
     }
