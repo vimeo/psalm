@@ -18,6 +18,36 @@ final class ConstantTest extends TestCase
     use InvalidCodeAnalysisTestTrait;
     use ValidCodeAnalysisTestTrait;
 
+    public function testConstantDefinedInSeveralBranchesIsTheUnionInAnotherFile(): void
+    {
+        // the constants of other files are known without including them
+        $this->project_analyzer->getCodebase()->all_constants_global = true;
+
+        $file1 = (string) getcwd() . DIRECTORY_SEPARATOR . 'tests' . DIRECTORY_SEPARATOR . 'file1.php';
+        $file2 = (string) getcwd() . DIRECTORY_SEPARATOR . 'tests' . DIRECTORY_SEPARATOR . 'file2.php';
+
+        $this->addFile(
+            $file1,
+            '<?php
+                if (rand(0, 1)) {
+                    define("BRANCHED", "x");
+                } else {
+                    define("BRANCHED", "y");
+                }
+            ',
+        );
+
+        $this->addFile(
+            $file2,
+            '<?php
+                /** @psalm-check-type-exact $value = \'x\'|\'y\' */
+                $value = BRANCHED;
+            ',
+        );
+
+        $this->analyzeFile($file2, new Context());
+    }
+
     public function testGlobalConstantOfEnumCasesFromAnotherFile(): void
     {
         $this->project_analyzer->setPhpVersion('8.1', 'tests');
@@ -250,23 +280,42 @@ final class ConstantTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
-            'finalConstantFetchedOnNarrowedInstance' => [
+            'defineInSeveralSwitchBranchesWithoutDefault' => [
                 'code' => '<?php
-                    class Clazz {
-                        /** @var string */
-                        final public const NAME = "string";
+                    switch (random_int(1, 3)) {
+                        case 1:
+                            define("ASD", "x");
+                            break;
+                        case 2:
+                            define("ASD", "y");
+                            break;
+                    }
 
-                        public function test(object $c): int {
-                            if (!$c instanceof Clazz) {
-                                return 0;
-                            }
+                    if (ASD === "x") {
+                        echo "x";
+                    }
 
-                            return strlen($c::NAME);
-                        }
-                    }',
-                'assertions' => [],
-                'ignored_issues' => [],
-                'php_version' => '8.1',
+                    if (ASD === "y") {
+                        echo "y";
+                    }
+
+                    $value = ASD;',
+                'assertions' => [
+                    '$value===' => '\'x\'|\'y\'',
+                ],
+            ],
+            'defineInBothBranchesOfAnIf' => [
+                'code' => '<?php
+                    if (rand(0, 1)) {
+                        define("CHOICE", 1);
+                    } else {
+                        define("CHOICE", 2);
+                    }
+
+                    $value = CHOICE;',
+                'assertions' => [
+                    '$value===' => '1|2',
+                ],
             ],
             'classConstantFromAShiftOfANonLiteral' => [
                 'code' => '<?php
@@ -2456,6 +2505,24 @@ final class ConstantTest extends TestCase
                     class FooBar implements FooInterface, BarInterface {}
                     PHP,
             ],
+            'finalConstantFetchedOnNarrowedInstance' => [
+                'code' => '<?php
+                    class Clazz {
+                        /** @var string */
+                        final public const NAME = "string";
+
+                        public function test(object $c): int {
+                            if (!$c instanceof Clazz) {
+                                return 0;
+                            }
+
+                            return strlen($c::NAME);
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
         ];
     }
 
@@ -2466,23 +2533,6 @@ final class ConstantTest extends TestCase
     public static function providerInvalidCodeParse(): iterable
     {
         return [
-            'nonFinalConstantFetchedOnNarrowedInstanceIsMixed' => [
-                'code' => '<?php
-                    class Clazz {
-                        public const NAME = "string";
-
-                        public function test(object $c): int {
-                            if (!$c instanceof Clazz) {
-                                return 0;
-                            }
-
-                            return strlen($c::NAME);
-                        }
-                    }',
-                'error_message' => 'MixedArgument',
-                'error_levels' => ['MissingClassConstType'],
-                'php_version' => '8.1',
-            ],
             'classConstantFromANegativeShiftIsNever' => [
                 'code' => '<?php
                     enum Color: int
@@ -3131,6 +3181,23 @@ final class ConstantTest extends TestCase
                 'error_message' => 'ParseError',
                 'error_levels' => [],
                 'php_version' => '8.2',
+            ],
+            'nonFinalConstantFetchedOnNarrowedInstanceIsMixed' => [
+                'code' => '<?php
+                    class Clazz {
+                        public const NAME = "string";
+
+                        public function test(object $c): int {
+                            if (!$c instanceof Clazz) {
+                                return 0;
+                            }
+
+                            return strlen($c::NAME);
+                        }
+                    }',
+                'error_message' => 'MixedArgument',
+                'error_levels' => ['MissingClassConstType'],
+                'php_version' => '8.1',
             ],
         ];
     }
