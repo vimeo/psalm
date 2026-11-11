@@ -2265,7 +2265,17 @@ final class AssertionFinder
         $codebase = $source->getCodebase();
         $property_types = [];
 
+        $receiver_atomic_types = [];
+
         foreach ($receiver_type->getAtomicTypes() as $atomic_type) {
+            // a template stands for the types it is bounded by
+            $receiver_atomic_types = [
+                ...$receiver_atomic_types,
+                ...($atomic_type instanceof TTemplateParam ? $atomic_type->as->getAtomicTypes() : [$atomic_type]),
+            ];
+        }
+
+        foreach ($receiver_atomic_types as $atomic_type) {
             if ($atomic_type instanceof TNull) {
                 continue;
             }

@@ -700,6 +700,27 @@ final class PropertyTypeTest extends TestCase
                 'ignored_issues' => [],
                 'php_version' => '8.0',
             ],
+            'nullsafeFetchOfANonNullablePropertyOfATemplateReceiverChecksTheReceiver' => [
+                'code' => '<?php
+                    final class U {
+                        public string $s = "";
+                    }
+
+                    /**
+                     * @template T of U
+                     * @param T|null $u
+                     */
+                    function check($u): bool {
+                        if ($u?->s !== null) {
+                            return strlen($u->s) > 0;
+                        }
+
+                        return false;
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
             'nullsafeChainNotNullNarrowsEveryReceiver' => [
                 'code' => '<?php
                     final class B {
