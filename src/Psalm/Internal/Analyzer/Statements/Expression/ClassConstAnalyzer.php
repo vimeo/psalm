@@ -21,6 +21,7 @@ use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\Internal\Analyzer\TraitAnalyzer;
 use Psalm\Internal\FileManipulation\FileManipulationBuffer;
 use Psalm\Internal\Type\Comparator\UnionTypeComparator;
+use Psalm\Internal\Type\TypeExpander;
 use Psalm\Issue\AmbiguousConstantInheritance;
 use Psalm\Issue\CircularReference;
 use Psalm\Issue\DeprecatedClass;
@@ -62,6 +63,46 @@ use function strtolower;
  */
 final class ClassConstAnalyzer
 {
+    /**
+     * The type the constant has in the classes that use the trait the code is in, null outside a trait or where one of
+     * the classes doesn't have the constant
+     */
+    private static function getConstantTypeOfTheClassesUsingTheTrait(
+        StatementsAnalyzer $statements_analyzer,
+        string $constant_name,
+    ): ?Union {
+        $trait_analyzer = $statements_analyzer->getSource()->getSource();
+
+        if (!$trait_analyzer instanceof TraitAnalyzer) {
+            return null;
+        }
+
+        $codebase = $statements_analyzer->getCodebase();
+        $trait_lc = strtolower($trait_analyzer->getFQCLN());
+        $types = [];
+
+        foreach ($codebase->classlike_storage_provider->getAll() as $user_storage) {
+            if (!isset($user_storage->used_traits[$trait_lc])) {
+                continue;
+            }
+
+            $type = $codebase->classlikes->getClassConstantType(
+                $user_storage->name,
+                $constant_name,
+                ReflectionProperty::IS_PRIVATE,
+                $statements_analyzer,
+            );
+
+            if ($type === null) {
+                return null;
+            }
+
+            $types[] = $type;
+        }
+
+        return $types !== [] ? Type::combineUnionTypeArray($types, $codebase) : null;
+    }
+
     /**
      * @psalm-suppress ComplexMethod to be refactored. We should probably regroup the two big if about $stmt->class and
      * analyse the ::class int $stmt->name separately
@@ -408,6 +449,15 @@ final class ClassConstAnalyzer
                 );
             }
 
+            // a trait is analysed for each class using it, and each class gives the constant its own value: what the
+            // code of the trait can rely on is the values they give it together
+            if ($first_part_lc === 'self' || $first_part_lc === 'static') {
+                $class_constant_type = self::getConstantTypeOfTheClassesUsingTheTrait(
+                    $statements_analyzer,
+                    $stmt->name->name,
+                ) ?? $class_constant_type;
+            }
+
             if ($first_part_lc !== 'static' || $const_class_storage->final || $class_constant_type->from_docblock
                 || (isset($const_class_storage->constants[$stmt->name->name])
                     && $const_class_storage->constants[$stmt->name->name]->final
@@ -446,6 +496,16 @@ final class ClassConstAnalyzer
         }
 
         $context->inside_general_use = $was_inside_general_use;
+
+        if ($stmt->name instanceof PhpParser\Node\Expr) {
+            $context->inside_general_use = true;
+            $name_analyzed = ExpressionAnalyzer::analyze($statements_analyzer, $stmt->name, $context);
+            $context->inside_general_use = $was_inside_general_use;
+
+            if ($name_analyzed === false) {
+                return false;
+            }
+        }
 
         $lhs_type = $statements_analyzer->node_data->getType($stmt->class);
 
@@ -713,7 +773,12 @@ final class ClassConstAnalyzer
                 );
             }
 
-            if ($const_class_storage->final || $lhs_type_definite_class === true) {
+            if ($const_class_storage->final
+                || $lhs_type_definite_class === true
+                || (isset($const_class_storage->constants[$stmt->name->name])
+                    && $const_class_storage->constants[$stmt->name->name]->final
+                )
+            ) {
                 $stmt_type = $class_constant_type;
 
                 $statements_analyzer->node_data->setType($stmt, $stmt_type);
@@ -774,7 +839,16 @@ final class ClassConstAnalyzer
                     && !UnionTypeComparator::isContainedBy(
                         $statements_analyzer->getCodebase(),
                         $assigned_type,
-                        $const_storage_type,
+                        TypeExpander::expandUnion(
+                            $statements_analyzer->getCodebase(),
+                            $const_storage_type,
+                            $class_storage->name,
+                            $class_storage->name,
+                            $class_storage->parent_class,
+                            true,
+                            false,
+                            $class_storage->final,
+                        ),
                     )
                 ) {
                     IssueBuffer::maybeAdd(
