@@ -2342,6 +2342,42 @@ final class ConditionalReturnTypeTest extends TestCase
     public static function providerInvalidCodeParse(): iterable
     {
         return [
+            'classTemplateBoundedByStringConditionalOnNonFinalStringableClass' => [
+                'code' => '<?php
+                    class Mdl implements Stringable {
+                        public function __toString(): string {
+                            return "";
+                        }
+                    }
+
+                    function sink(int $_a): void {}
+
+                    /**
+                     * @template T of string
+                     * @template U of object
+                     */
+                    class Pg {
+                        /** @return (T is Mdl ? list<T> : array<T>) */
+                        public function strings(): array {
+                            return [];
+                        }
+
+                        /** @return (U is Mdl ? list<U> : array<U>) */
+                        public function objects(): array {
+                            return [];
+                        }
+
+                        public function run(): void {
+                            $a = [$this->strings(), $this->objects()];
+                            sink($a);
+                        }
+                    }',
+                // only the object bound still intersects with the class
+                'error_message' => 'Argument 1 of sink expects int, but list{array<array-key, T:Pg as string>,'
+                    . ' array<array-key, (U:Pg as object)&Mdl|(U:Pg as object)>} provided',
+                'error_levels' => [],
+                'php_version' => '8.0',
+            ],
             'conditionalReturnTypeWithoutIsTypeIsReportedInsteadOfCrashing' => [
                 'code' => '<?php
                     /**
