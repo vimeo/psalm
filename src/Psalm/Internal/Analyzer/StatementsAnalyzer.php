@@ -136,6 +136,13 @@ final class StatementsAnalyzer extends SourceAnalyzer
     private array $unused_var_locations = [];
 
     /**
+     * The issues suppressed where a variable is assigned, as it's only reported once the whole function is analysed
+     *
+     * @var array<string, array<array-key, string>>
+     */
+    private array $unused_var_suppressions = [];
+
+    /**
      * @var array<string, true>
      */
     public array $byref_uses = [];
@@ -383,6 +390,7 @@ final class StatementsAnalyzer extends SourceAnalyzer
                 && $stmt->expr instanceof PhpParser\Node\Expr\FuncCall
                 && $stmt->expr->name instanceof PhpParser\Node\Name
                 && $stmt->expr->name->getParts() === ['define']
+                && !$stmt->expr->isPartialFunctionApplication()
                 && isset($stmt->expr->getArgs()[1])
             ) {
                 $const_name = ConstFetchAnalyzer::getConstName(
@@ -408,6 +416,73 @@ final class StatementsAnalyzer extends SourceAnalyzer
                 }
             }
         }
+    }
+
+    /**
+     * A class, enum or interface declared inside another statement, e.g. in a condition
+     */
+    private static function analyzeNestedClassLike(
+        StatementsAnalyzer $statements_analyzer,
+        PhpParser\Node\Stmt\ClassLike $stmt,
+        ?Context $global_context,
+    ): void {
+        try {
+            if ($stmt instanceof PhpParser\Node\Stmt\Interface_ && $stmt->name !== null) {
+                (new InterfaceAnalyzer($stmt, $statements_analyzer->source, $stmt->name->name))->analyze();
+            } elseif ($stmt instanceof PhpParser\Node\Stmt\Class_ || $stmt instanceof PhpParser\Node\Stmt\Enum_) {
+                $class_analyzer = new ClassAnalyzer(
+                    $stmt,
+                    $statements_analyzer->source,
+                    $stmt->name->name ?? null,
+                );
+
+                $class_analyzer->analyze(null, $global_context);
+            }
+        } catch (InvalidArgumentException) {
+            // disregard this exception, we'll likely see it elsewhere in the form
+            // of an issue
+        }
+    }
+
+    /**
+     * The statements that declare something, mark a position or are not understood
+     *
+     * @return false|null
+     */
+    private static function analyzeDeclarationStatement(
+        StatementsAnalyzer $statements_analyzer,
+        PhpParser\Node\Stmt $stmt,
+        Context $context,
+        ?Context $global_context,
+    ): ?bool {
+        if ($stmt instanceof PhpParser\Node\Stmt\Trait_) {
+            TraitAnalyzer::analyze($statements_analyzer, $stmt, $context);
+        } elseif ($stmt instanceof PhpParser\Node\Stmt\ClassLike) {
+            self::analyzeNestedClassLike($statements_analyzer, $stmt, $global_context);
+        } elseif ($stmt instanceof PhpParser\Node\Stmt\Nop
+            || $stmt instanceof PhpParser\Node\Stmt\Goto_
+            || $stmt instanceof PhpParser\Node\Stmt\Label
+        ) {
+            // do nothing
+        } elseif ($stmt instanceof PhpParser\Node\Stmt\Declare_) {
+            DeclareAnalyzer::analyze($statements_analyzer, $stmt, $context);
+        } elseif ($stmt instanceof PhpParser\Node\Stmt\HaltCompiler) {
+            $context->has_returned = true;
+        } elseif ($stmt instanceof PhpParser\Node\Stmt\Block) {
+            foreach ($stmt->stmts as $sub) {
+                self::analyzeStatement($statements_analyzer, $sub, $context, $global_context);
+            }
+        } elseif (IssueBuffer::accepts(
+            new UnrecognizedStatement(
+                'Psalm does not understand ' . $stmt::class,
+                new CodeLocation($statements_analyzer->source, $stmt),
+            ),
+            $statements_analyzer->getSuppressedIssues(),
+        )) {
+            return false;
+        }
+
+        return null;
     }
 
     /**
@@ -513,6 +588,7 @@ final class StatementsAnalyzer extends SourceAnalyzer
                     && $stmt->expr instanceof PhpParser\Node\Expr\Assign)
                 && !$stmt instanceof PhpParser\Node\Stmt\Foreach_
                 && !$stmt instanceof PhpParser\Node\Stmt\Return_
+                && !$stmt instanceof PhpParser\Node\Stmt\Property
             ) {
                 $file_path = $statements_analyzer->getRootFilePath();
 
@@ -535,6 +611,7 @@ final class StatementsAnalyzer extends SourceAnalyzer
                             $statements_analyzer->getAliases(),
                             $template_type_map,
                             $file_storage->type_aliases,
+                            $stmt instanceof PhpParser\Node\Stmt\ClassConst,
                         );
                 } catch (IncorrectDocblockException $e) {
                     IssueBuffer::maybeAdd(
@@ -674,45 +751,8 @@ final class StatementsAnalyzer extends SourceAnalyzer
             InstancePropertyAssignmentAnalyzer::analyzeStatement($statements_analyzer, $stmt, $context);
         } elseif ($stmt instanceof PhpParser\Node\Stmt\ClassConst) {
             ClassConstAnalyzer::analyzeAssignment($statements_analyzer, $stmt, $context);
-        } elseif ($stmt instanceof PhpParser\Node\Stmt\Class_) {
-            try {
-                $class_analyzer = new ClassAnalyzer(
-                    $stmt,
-                    $statements_analyzer->source,
-                    $stmt->name->name ?? null,
-                );
-
-                $class_analyzer->analyze(null, $global_context);
-            } catch (InvalidArgumentException) {
-                // disregard this exception, we'll likely see it elsewhere in the form
-                // of an issue
-            }
-        } elseif ($stmt instanceof PhpParser\Node\Stmt\Trait_) {
-            TraitAnalyzer::analyze($statements_analyzer, $stmt, $context);
-        } elseif ($stmt instanceof PhpParser\Node\Stmt\Nop) {
-            // do nothing
-        } elseif ($stmt instanceof PhpParser\Node\Stmt\Goto_) {
-            // do nothing
-        } elseif ($stmt instanceof PhpParser\Node\Stmt\Label) {
-            // do nothing
-        } elseif ($stmt instanceof PhpParser\Node\Stmt\Declare_) {
-            DeclareAnalyzer::analyze($statements_analyzer, $stmt, $context);
-        } elseif ($stmt instanceof PhpParser\Node\Stmt\HaltCompiler) {
-            $context->has_returned = true;
-        } elseif ($stmt instanceof PhpParser\Node\Stmt\Block) {
-            foreach ($stmt->stmts as $sub) {
-                self::analyzeStatement($statements_analyzer, $sub, $context, $global_context);
-            }
-        } else {
-            if (IssueBuffer::accepts(
-                new UnrecognizedStatement(
-                    'Psalm does not understand ' . $stmt::class,
-                    new CodeLocation($statements_analyzer->source, $stmt),
-                ),
-                $statements_analyzer->getSuppressedIssues(),
-            )) {
-                return false;
-            }
+        } elseif (self::analyzeDeclarationStatement($statements_analyzer, $stmt, $context, $global_context) === false) {
+            return false;
         }
 
         if (self::afterStatementAnalysis($stmt, $context, $statements_analyzer) === false) {
@@ -1055,11 +1095,13 @@ final class StatementsAnalyzer extends SourceAnalyzer
                     );
                 }
 
+                $suppressed_issues = $this->unused_var_suppressions[$original_location->getHash()];
+
                 if ($codebase->alter_code
                     && $issue instanceof UnusedVariable
                     && !$unused_var_remover->checkIfVarRemoved($var_id, $original_location)
                     && isset($project_analyzer->getIssuesToFix()['UnusedVariable'])
-                    && !IssueBuffer::isSuppressed($issue, $this->getSuppressedIssues())
+                    && !IssueBuffer::isSuppressed($issue, $suppressed_issues)
                 ) {
                     $unused_var_remover->findUnusedAssignment(
                         $this->getCodebase(),
@@ -1072,7 +1114,7 @@ final class StatementsAnalyzer extends SourceAnalyzer
 
                 IssueBuffer::maybeAdd(
                     $issue,
-                    $this->getSuppressedIssues(),
+                    $suppressed_issues,
                     $issue instanceof UnusedVariable,
                 );
             }
@@ -1137,6 +1179,7 @@ final class StatementsAnalyzer extends SourceAnalyzer
     public function registerVariableAssignment(string $var_id, CodeLocation $location): void
     {
         $this->unused_var_locations[$location->getHash()] = [$var_id, $location];
+        $this->unused_var_suppressions[$location->getHash()] = $this->getSuppressedIssues();
     }
 
     /**
@@ -1371,14 +1414,22 @@ final class StatementsAnalyzer extends SourceAnalyzer
         }
 
         if ($this->source instanceof FunctionAnalyzer) {
-            $namespace = $this->getNamespace();
-            $namespace = $namespace === "" ? "" : "$namespace\\";
+            // a function's cased_name is already namespace-qualified
             $function_name = $this->source->getFunctionLikeStorage($this)->cased_name;
             assert($function_name !== null);
 
-            return "{$namespace}{$function_name}";
+            return $function_name;
         }
 
-        return $this->getNamespace();
+        if ($this->source instanceof ClosureAnalyzer) {
+            $enclosing_source = $this->source->getSource();
+
+            if ($enclosing_source instanceof self) {
+                return $enclosing_source->getFullyQualifiedFunctionMethodOrNamespaceName();
+            }
+        }
+
+        // class-level code (constants, property defaults, attributes), or top-level code with @psalm-scope-this
+        return $this->getFQCLN() ?? $this->getNamespace();
     }
 }
