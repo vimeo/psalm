@@ -71,6 +71,7 @@ use function array_keys;
 use function array_merge;
 use function array_pop;
 use function array_shift;
+use function array_slice;
 use function array_values;
 use function count;
 use function explode;
@@ -258,6 +259,15 @@ class Reconciler
 
             foreach ($new_type_parts as $offset => $new_type_part_parts) {
                 $orred_type = null;
+                $report_location = $code_location
+                    && isset($referenced_var_ids[$key])
+                    && isset($active_new_types[$key][$offset])
+                    ? $code_location
+                    : null;
+                // of several alternatives, one that cannot be the value is only a problem when none can
+                $record_alternatives = $report_location !== null && count($new_type_part_parts) > 1;
+                $recorded_issues = [];
+                $any_alternative_possible = false;
 
                 foreach ($new_type_part_parts as $new_type_part_part) {
                     if ($new_type_part_part instanceof NestedAssertions
@@ -292,6 +302,10 @@ class Reconciler
                         $new_type_part_part = $nested_negated ? new Falsy() : new Truthy();
                     }
 
+                    if ($record_alternatives) {
+                        IssueBuffer::startRecording();
+                    }
+
                     $result_type_candidate = AssertionReconciler::reconcile(
                         $new_type_part_part,
                         $result_type,
@@ -299,15 +313,31 @@ class Reconciler
                         $statements_analyzer,
                         $inside_loop,
                         $template_type_map,
-                        $code_location
-                            && isset($referenced_var_ids[$key])
-                            && isset($active_new_types[$key][$offset])
-                            ? $code_location
-                            : null,
+                        $report_location,
                         $suppressed_issues,
                         $failed_reconciliation,
                         $negated,
                     );
+
+                    if ($record_alternatives) {
+                        $alternative_issues = IssueBuffer::clearRecordingLevel();
+                        IssueBuffer::stopRecording();
+
+                        $recorded_issues[] = $alternative_issues;
+
+                        $is_impossible = false;
+
+                        foreach ($alternative_issues as $alternative_issue) {
+                            if ($alternative_issue instanceof TypeDoesNotContainType
+                                || $alternative_issue instanceof TypeDoesNotContainNull
+                                || $alternative_issue instanceof DocblockTypeContradiction
+                            ) {
+                                $is_impossible = true;
+                            }
+                        }
+
+                        $any_alternative_possible = $any_alternative_possible || !$is_impossible;
+                    }
 
                     if ($result_type_candidate->isUnionEmpty()) {
                         $result_type_candidate = $result_type_candidate->getBuilder()->addType(new TNever)->freeze();
@@ -318,6 +348,31 @@ class Reconciler
                         $orred_type,
                         $codebase,
                     );
+                }
+
+                if ($record_alternatives) {
+                    // when one alternative can be the value, what the others say about being impossible is dropped
+                    $reported_alternatives = $any_alternative_possible
+                        ? $recorded_issues
+                        : array_slice($recorded_issues, 0, 1);
+
+                    foreach ($reported_alternatives as $alternative_issues) {
+                        foreach ($alternative_issues as $alternative_issue) {
+                            if ($any_alternative_possible
+                                && ($alternative_issue instanceof TypeDoesNotContainType
+                                    || $alternative_issue instanceof TypeDoesNotContainNull
+                                    || $alternative_issue instanceof DocblockTypeContradiction)
+                            ) {
+                                continue;
+                            }
+
+                            IssueBuffer::bubbleUp($alternative_issue);
+                        }
+                    }
+
+                    if ($any_alternative_possible) {
+                        $failed_reconciliation = self::RECONCILIATION_OK;
+                    }
                 }
 
                 $result_type = $orred_type;
