@@ -46,6 +46,7 @@ use Psalm\Internal\Provider\ReturnTypeProvider\MinMaxReturnTypeProvider;
 use Psalm\Internal\Provider\ReturnTypeProvider\MktimeReturnTypeProvider;
 use Psalm\Internal\Provider\ReturnTypeProvider\ParseUrlReturnTypeProvider;
 use Psalm\Internal\Provider\ReturnTypeProvider\PowReturnTypeProvider;
+use Psalm\Internal\Provider\ReturnTypeProvider\PropertyExistsReturnTypeProvider;
 use Psalm\Internal\Provider\ReturnTypeProvider\RandReturnTypeProvider;
 use Psalm\Internal\Provider\ReturnTypeProvider\RoundReturnTypeProvider;
 use Psalm\Internal\Provider\ReturnTypeProvider\SprintfReturnTypeProvider;
@@ -105,6 +106,7 @@ final class FunctionReturnTypeProvider
         $this->registerClass(FilterVarReturnTypeProvider::class);
         $this->registerClass(IteratorToArrayReturnTypeProvider::class);
         $this->registerClass(ParseUrlReturnTypeProvider::class);
+        $this->registerClass(PropertyExistsReturnTypeProvider::class);
         $this->registerClass(StrReplaceReturnTypeProvider::class);
         $this->registerClass(StrTrReturnTypeProvider::class);
         $this->registerClass(StrvalReturnTypeProvider::class);

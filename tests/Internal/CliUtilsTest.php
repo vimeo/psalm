@@ -117,6 +117,21 @@ final class CliUtilsTest extends TestCase
             ],
         ];
 
+        yield 'withTheValueOfAnOptionAfterASpace' => [
+            null,
+            [$psalm, '--output-format', 'compact', '--threads', '4'],
+        ];
+
+        yield 'withTheValueOfAnOptionAfterASpaceAndPaths' => [
+            [$dummyProjectDir . DIRECTORY_SEPARATOR . 'Bar.php'],
+            [$psalm, '--memory-limit', '2G', $dummyProjectDir . DIRECTORY_SEPARATOR . 'Bar.php', '--report', 'x.json'],
+        ];
+
+        yield 'withPathAfterAnOptionWithAnOptionalValue' => [
+            [$dummyProjectDir . DIRECTORY_SEPARATOR . 'Bar.php'],
+            [$psalm, '--show-snippet=false', $dummyProjectDir . DIRECTORY_SEPARATOR . 'Bar.php'],
+        ];
+
         yield 'withFpathToCurrentDir' => [
             [$currentDir],
             [$psalm, '-f', '.'],
