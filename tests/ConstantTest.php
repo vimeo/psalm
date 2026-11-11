@@ -2548,6 +2548,88 @@ final class ConstantTest extends TestCase
                     class FooBar implements FooInterface, BarInterface {}
                     PHP,
             ],
+            'constantDefinedByANegatedDefinedGuardInANamespace' => [
+                'code' => '<?php
+                    namespace App\\TextUI;
+
+                    final class Application {
+                        public function run(): int {
+                            if (!defined("APPLICATION_BOOTSTRAP_FILE")) {
+                                return 1;
+                            }
+
+                            $bootstrapFile = APPLICATION_BOOTSTRAP_FILE;
+
+                            return $bootstrapFile === "" ? 1 : 0;
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => ['MixedAssignment'],
+            ],
+            'constantsDefinedByANegatedDefinedGuardOfSeveralOperands' => [
+                'code' => '<?php
+                    function check(): int {
+                        if (!defined("FIRST") || !defined("SECOND")) {
+                            return 1;
+                        }
+
+                        return FIRST + SECOND;
+                    }',
+                'assertions' => [],
+                'ignored_issues' => ['MixedOperand', 'MixedReturnStatement'],
+            ],
+            'constantNarrowedByATypeCheckAfterADefinedCheckInANamespace' => [
+                'code' => '<?php
+                    namespace App\\Util;
+
+                    function path(): string {
+                        if (defined("APP_PHAR_ROOT") && is_string(APP_PHAR_ROOT)) {
+                            $root = APP_PHAR_ROOT;
+                            /** @psalm-check-type-exact $root = string */
+                            return $root . "/";
+                        }
+
+                        return "";
+                    }',
+            ],
+            'constantNarrowedByANegatedDefinedGuardWithATypeCheck' => [
+                'code' => '<?php
+                    namespace App\\Util;
+
+                    function path(): string {
+                        if (!defined("APP_PHAR_ROOT") || !is_string(APP_PHAR_ROOT)) {
+                            return "";
+                        }
+
+                        return APP_PHAR_ROOT . "/";
+                    }
+
+                    function wrapped(): string {
+                        if (!(defined("APP_PHAR") && is_string(APP_PHAR))) {
+                            return "";
+                        }
+
+                        return APP_PHAR . "/";
+                    }
+
+                    function inTheElse(): string {
+                        if (!defined("APP_PREFIX") || !is_string(APP_PREFIX)) {
+                            return "";
+                        } else {
+                            return APP_PREFIX . "/";
+                        }
+                    }',
+            ],
+            'constantDefinedByANegatedDefinedGuardWithAnExit' => [
+                'code' => '<?php
+                    if (!defined("ABSPATH")) {
+                        exit;
+                    }
+
+                    echo ABSPATH;',
+                'assertions' => [],
+                'ignored_issues' => ['MixedArgument'],
+            ],
             'staticClassConstantComparedWithNullIsNarrowedInTheBranch' => [
                 'code' => '<?php
                     function greet(string $name = "default"): void {
@@ -3233,6 +3315,48 @@ final class ConstantTest extends TestCase
                 'error_message' => 'ParseError',
                 'error_levels' => [],
                 'php_version' => '8.2',
+            ],
+            'undefinedConstantAfterANegatedDefinedCheck' => [
+                'code' => '<?php
+                    if (!defined("AAA")) {
+                        define("NOT_DEFINED", 1);
+                    }
+
+                    echo ZZZ;',
+                'error_message' => 'UndefinedConstant - src' . DIRECTORY_SEPARATOR . 'somefile.php:6:26 - Const ZZZ is not defined',
+            ],
+            'repeatedTypeCheckOfAConstantAfterADefinedCheck' => [
+                'code' => '<?php
+                    function path(): string {
+                        if (defined("APP_ROOT") && is_string(APP_ROOT) && is_string(APP_ROOT)) {
+                            return APP_ROOT;
+                        }
+
+                        return "";
+                    }',
+                'error_message' => 'RedundantCondition - src' . DIRECTORY_SEPARATOR . 'somefile.php:3:75 - Type string for APP_ROOT is always string',
+            ],
+            'typeCheckOfAConstantDoesNotNarrowItAfterTheIf' => [
+                'code' => '<?php
+                    function path(): string {
+                        if (defined("APP_ROOT") && is_string(APP_ROOT)) {
+                            echo APP_ROOT;
+                        }
+
+                        return APP_ROOT . "/";
+                    }',
+                'error_message' => 'MixedOperand - src' . DIRECTORY_SEPARATOR . 'somefile.php:7:32',
+            ],
+            'typeCheckOfAnUndefinedConstantWithoutADefinedCheck' => [
+                'code' => '<?php
+                    function path(): string {
+                        if (is_string(APP_ROOT)) {
+                            return APP_ROOT;
+                        }
+
+                        return "";
+                    }',
+                'error_message' => 'UndefinedConstant - src' . DIRECTORY_SEPARATOR . 'somefile.php:3:39',
             ],
             'narrowingAStaticClassConstantDoesNotNarrowSelf' => [
                 'code' => '<?php
