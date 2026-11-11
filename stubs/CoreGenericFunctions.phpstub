@@ -3,14 +3,14 @@
  * @psalm-template TArray as array
  *
  * @param TArray $array
- * @param mixed $search_value
+ * @param mixed $filter_value
  * @param bool  $strict
  *
  * @return (TArray is non-empty-array ? non-empty-list<key-of<TArray>> : list<key-of<TArray>>)
  * @psalm-pure
  * @psalm-flow ($array) -(arraykey-fetch)-> return
  */
-function array_keys(array $array, $search_value = null, bool $strict = false)
+function array_keys(array $array, $filter_value = null, bool $strict = false)
 {
 }
 
@@ -298,6 +298,15 @@ function sort(array &$array, int $flags = SORT_REGULAR): bool
 function rsort(array &$array, int $flags = SORT_REGULAR): bool
 {
 }
+
+/**
+ * @template TValue
+ *
+ * @param array<TValue> $array
+ * @param callable(mixed, TValue): mixed $callback
+ * @param mixed $initial
+ */
+function array_reduce(array $array, callable $callback, mixed $initial = null): mixed {}
 
 /**
  * @psalm-template T
@@ -692,7 +701,7 @@ function pathinfo(string $path, int $flags = \PATHINFO_DIRNAME) {}
  *
  * @return (func_num_args() is 0 ? array<string, string> : string|false)
  */
-function getenv(string $varname = '', bool $local_only = false) {}
+function getenv(string $name = '', bool $local_only = false) {}
 
 /**
  * @psalm-pure
@@ -1250,7 +1259,7 @@ function strpbrk(string $string, string $characters) {}
  *
  * @psalm-flow ($haystack) -> return
  */
-function strrchr(string $haystack, string $needle) {}
+function strrchr(string $haystack, string $needle, bool $before_needle = false) {}
 
 /**
  * @psalm-pure
@@ -1868,7 +1877,7 @@ function stream_select(null|array &$read, null|array &$write, null|array &$excep
  * @psalm-taint-escape sql
  * @psalm-flow ($string) -> return
  */
-function mysqli_escape_string(mysqli $mysqli, $string) {}
+function mysqli_escape_string(mysqli $mysql, $string) {}
 
 /**
  * @psalm-pure
@@ -1876,15 +1885,15 @@ function mysqli_escape_string(mysqli $mysqli, $string) {}
  * @psalm-taint-escape sql
  * @psalm-flow ($string) -> return
  */
-function mysqli_real_escape_string(mysqli $mysqli, $string) {}
+function mysqli_real_escape_string(mysqli $mysql, $string) {}
 
 /**
  * @psalm-pure
  *
  * @psalm-taint-escape sql
- * @psalm-flow ($string) -> return
+ * @psalm-flow ($string_literal) -> return
  */
-function db2_escape_string($string) {}
+function db2_escape_string($string_literal) {}
 
 /**
  * @psalm-pure
