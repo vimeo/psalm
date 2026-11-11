@@ -57,56 +57,29 @@ final class ClassTemplateTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
-            'newOfTheClassItselfBindsItsTemplatesToTheArguments' => [
+            'listParamInheritedFromATemplatedParentAcceptsAList' => [
                 'code' => '<?php
-                    interface Item {}
+                    /** @template T */
+                    abstract class P {
+                        /** @param list<string> $x */
+                        abstract public function f(array $x): void;
 
-                    /** @template E of Item */
-                    class Wrapper
-                    {
-                        /** @param callable(E) $c */
-                        public function __construct(private callable $c) {}
+                        /** @param non-empty-list<string> $x */
+                        abstract public function g(array $x): void;
+                    }
 
-                        /**
-                         * @template E_ of Item
-                         * @param callable(E_) $c
-                         * @return Wrapper<E_>
-                         */
-                        public static function viaName(callable $c): Wrapper {
-                            return new Wrapper($c);
-                        }
+                    /** @extends P<string> */
+                    final class C extends P {
+                        /** @inheritDoc */
+                        public function f(array $x): void {}
 
-                        /**
-                         * @template E_ of Item
-                         * @param callable(E_) $c
-                         * @return Wrapper<E_>
-                         */
-                        public static function viaSelf(callable $c): Wrapper {
-                            return new self($c);
-                        }
+                        /** @inheritDoc */
+                        public function g(array $x): void {}
+                    }
 
-                        /**
-                         * @template E_ of Item
-                         * @param callable(E_) $c
-                         * @return Wrapper<E_>
-                         */
-                        public function viaInstance(callable $c): Wrapper {
-                            return new Wrapper($c);
-                        }
-                    }',
-            ],
-            'newOfTheClassItselfWithTheInstancesOwnTemplateKeepsIt' => [
-                'code' => '<?php
-                    /** @template T of object */
-                    class Box {
-                        /** @param T $item */
-                        public function __construct(public object $item) {}
-
-                        /** @return Box<T> */
-                        public function copy(): Box {
-                            return new Box($this->item);
-                        }
-                    }',
+                    $c = new C();
+                    $c->f(["a", "b"]);
+                    $c->g(["a", "b"]);',
             ],
             'sameTypeFromTwoConstructionsOfAGenericClassIsOneType' => [
                 'code' => '<?php
@@ -5999,6 +5972,57 @@ final class ClassTemplateTest extends TestCase
                 'ignored_issues' => [],
                 'php_version' => '8.0',
             ],
+            'newOfTheClassItselfBindsItsTemplatesToTheArguments' => [
+                'code' => '<?php
+                    interface Item {}
+
+                    /** @template E of Item */
+                    class Wrapper
+                    {
+                        /** @param callable(E) $c */
+                        public function __construct(private callable $c) {}
+
+                        /**
+                         * @template E_ of Item
+                         * @param callable(E_) $c
+                         * @return Wrapper<E_>
+                         */
+                        public static function viaName(callable $c): Wrapper {
+                            return new Wrapper($c);
+                        }
+
+                        /**
+                         * @template E_ of Item
+                         * @param callable(E_) $c
+                         * @return Wrapper<E_>
+                         */
+                        public static function viaSelf(callable $c): Wrapper {
+                            return new self($c);
+                        }
+
+                        /**
+                         * @template E_ of Item
+                         * @param callable(E_) $c
+                         * @return Wrapper<E_>
+                         */
+                        public function viaInstance(callable $c): Wrapper {
+                            return new Wrapper($c);
+                        }
+                    }',
+            ],
+            'newOfTheClassItselfWithTheInstancesOwnTemplateKeepsIt' => [
+                'code' => '<?php
+                    /** @template T of object */
+                    class Box {
+                        /** @param T $item */
+                        public function __construct(public object $item) {}
+
+                        /** @return Box<T> */
+                        public function copy(): Box {
+                            return new Box($this->item);
+                        }
+                    }',
+            ],
         ];
     }
 
@@ -6009,6 +6033,23 @@ final class ClassTemplateTest extends TestCase
     public static function providerInvalidCodeParse(): iterable
     {
         return [
+            'listParamInheritedFromATemplatedParentRejectsAWrongList' => [
+                'code' => '<?php
+                    /** @template T */
+                    abstract class P {
+                        /** @param list<string> $x */
+                        abstract public function f(array $x): void;
+                    }
+
+                    /** @extends P<string> */
+                    final class C extends P {
+                        /** @inheritDoc */
+                        public function f(array $x): void {}
+                    }
+
+                    (new C())->f(["a", 1]);',
+                'error_message' => 'InvalidArgument',
+            ],
             'differentTypesFromTwoConstructionsOfAGenericClassAreNotOneType' => [
                 'code' => '<?php
                     class one {}
