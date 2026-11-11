@@ -184,6 +184,34 @@ final class AnnotationTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'optionalShapeKeysNamedLikeScalarAliases' => [
+                'code' => '<?php
+                    /** @var array{double?: string, integer?: int, boolean?: bool, real?: float} $a */
+                    $a = [];
+                    $double = $a["double"] ?? null;
+                    $integer = $a["integer"] ?? null;
+                    $boolean = $a["boolean"] ?? null;
+                    $real = $a["real"] ?? null;',
+                'assertions' => [
+                    '$double===' => 'null|string',
+                    '$integer===' => 'int|null',
+                    '$boolean===' => 'bool|null',
+                    '$real===' => 'float|null',
+                ],
+                'ignored_issues' => ['UnusedVariable'],
+            ],
+            'optionalShapeKeysNamedLikeSelfAndParent' => [
+                'code' => '<?php
+                    class P {}
+
+                    class C extends P {
+                        /** @param array{self?: int, parent?: string} $a */
+                        public function f(array $a): void {
+                            echo $a["self"] ?? 0;
+                            echo $a["parent"] ?? "";
+                        }
+                    }',
+            ],
             'psalmVarOverridesPhpstanVarOnProperty' => [
                 'code' => '<?php
                     class Foo {}
@@ -1926,6 +1954,17 @@ final class AnnotationTest extends TestCase
                 'ignored_issues' => [],
                 'php_version' => '8.0',
             ],
+            'globalInAFileDocumentingItsThisIsAnIncludedTemplate' => [
+                'code' => '<?php
+                    /**
+                     * @var stdClass $this
+                     */
+
+                    /** @var string $title */
+                    global $title;
+
+                    echo strlen($title);',
+            ],
         ];
     }
 
@@ -2788,6 +2827,12 @@ final class AnnotationTest extends TestCase
 
                     echo strlen($other);',
                 'error_message' => 'UndefinedGlobalVariable',
+            ],
+            'globalInAFileWithoutADocumentedThisIsInvalid' => [
+                'code' => '<?php
+                    /** @var string $title */
+                    global $title;',
+                'error_message' => 'InvalidGlobal',
             ],
         ];
     }

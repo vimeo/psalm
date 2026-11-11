@@ -3046,6 +3046,29 @@ final class CallableTest extends TestCase
                         return call_user_func($var);
                     }',
             ],
+            'negatedIsStringKeepsArrayOfCallableOrArray' => [
+                'code' => '<?php
+                    /** @var string|callable|array $p */
+                    $p = $_GET["p"];
+                    $r = is_string($p) ? 0 : $p;
+                ',
+                'assertions' => [
+                    '$r===' => '0|array<array-key, mixed>|callable-object',
+                ],
+            ],
+            'callableCheckAfterIsStringOnCallableOrArray' => [
+                'code' => '<?php
+                    /** @param string|callable|array $param */
+                    function foo($param): void {
+                        if (is_string($param)) {
+                            return;
+                        }
+
+                        if (is_callable($param)) {
+                            return;
+                        }
+                    }',
+            ],
         ];
     }
 
