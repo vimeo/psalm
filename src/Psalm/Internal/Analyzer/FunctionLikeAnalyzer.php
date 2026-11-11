@@ -594,14 +594,15 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
                     : [];
 
                 if ($types_at_return !== []) {
-                    $byref_type = Type::combineUnionTypeArray(
-                        $end_type !== null ? [$end_type, ...$types_at_return] : $types_at_return,
-                        $codebase,
-                    );
+                    $path_types = $end_type !== null ? [$end_type, ...$types_at_return] : $types_at_return;
+                    $byref_type = Type::combineUnionTypeArray($path_types, $codebase);
 
                     // a path on which the closure left the variable as it was (mixed in the closure) makes it mixed
-                    if ($byref_type->hasMixed()) {
-                        $byref_type = Type::getMixed();
+                    foreach ($path_types as $path_type) {
+                        if ($path_type->isMixed()) {
+                            $byref_type = Type::getMixed();
+                            break;
+                        }
                     }
                 } else {
                     $byref_type = $end_type ?? Type::getMixed();

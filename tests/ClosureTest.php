@@ -188,6 +188,25 @@ final class ClosureTest extends TestCase
                     '$other' => 'int',
                 ],
             ],
+            'closureByRefVariablePartlyMixedAtTheReturnKeepsItsKnownPart' => [
+                'code' => '<?php
+                    final class C {}
+
+                    /** @var mixed $list */
+                    $list = json_decode("[]", true);
+
+                    $f = function (string $k) use (&$list): int {
+                        if (!$list[$k] instanceof C) {
+                            $list[$k] = new C();
+                        }
+
+                        return 0;
+                    };',
+                'assertions' => [
+                    '$list===' => 'mixed|non-empty-array<string, C>',
+                ],
+                'ignored_issues' => ['MixedArrayAccess', 'MixedArrayAssignment'],
+            ],
             'byRefUseOfAVariableThatIsNotDefinedYet' => [
                 'code' => '<?php
                     function collect(): int {
