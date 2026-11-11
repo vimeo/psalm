@@ -46,6 +46,7 @@ use function substr_compare;
  * @psalm-consistent-constructor
  * @internal
  * @psalm-external-mutation-free
+ * @psalm-type SerializedNode = array{string, ?string, ?string, string, ?int, int, ?array, list<string>, ?int}
  * @psalm-type CallableKind = 'builtin'|'inherited-method'|'magic-method'|'dynamic-function-call'|'dynamic-instantiation'|'callable-object'
  */
 final class DataFlowNode implements Stringable
@@ -188,8 +189,9 @@ final class DataFlowNode implements Stringable
      * specialized to their location have one of their own, which only goes to the overrides.
      *
      * An override binds a named argument by its name (case-sensitive), unless the positional arguments before it
-     * (null: unknown, after an unpack) filled that parameter, and an unpacked one otherwise than a positional one:
-     * those calls have a node per binding.
+     * (null: unknown, after an unpack) filled that parameter: those calls have a node per binding. So do the
+     * calls with an argument that may be any following parameter, and with one unpacked into a parameter that is
+     * not variadic, which an override binds by the name of the declared parameter.
      *
      * @psalm-pure
      */
@@ -198,15 +200,18 @@ final class DataFlowNode implements Stringable
         int $argument_offset,
         bool $specialized_calls = false,
         ?string $named_argument = null,
-        bool $unpacked_argument = false,
+        bool $any_following = false,
         ?int $positional_arguments = null,
+        bool $unpacked_argument = false,
     ): self {
         $label = ($specialized_calls ? 'specialized ' : '') . 'dispatch of ' . $cased_method_id
             . '#' . ($argument_offset + 1);
         $binding = '';
 
         if ($named_argument !== null) {
-            $binding = ' named ' . $named_argument . ' after ' . ($positional_arguments ?? 'unpack');
+            $binding = ' (' . $named_argument . ': after ' . ($positional_arguments ?? 'unpack') . ')';
+        } elseif ($any_following) {
+            $binding = ' (...)';
         } elseif ($unpacked_argument) {
             $binding = ' unpacked';
         }
@@ -1015,6 +1020,52 @@ final class DataFlowNode implements Stringable
     public static function getForVariableUseDestination(string $id, array $path_types = []): self
     {
         return new self($id, null, null, $id, null, 0, null, $path_types);
+    }
+
+    /**
+     * The fields of this node as TaintFlowGraph::__serialize() writes them: its location is $location_index, an
+     * index into the list of locations the graph is serialized with, and its taint source is $taint_source, the
+     * same fields of that node.
+     *
+     * @param SerializedNode|null $taint_source
+     * @return SerializedNode
+     * @psalm-mutation-free
+     */
+    public function toSerializedFields(?int $location_index, ?array $taint_source): array
+    {
+        return [
+            $this->id,
+            $this->unspecialized_id,
+            $this->specialization_key,
+            $this->label,
+            $location_index,
+            $this->taints,
+            $taint_source,
+            $this->path_types,
+            $this->context,
+        ];
+    }
+
+    /**
+     * Rebuilds a node from toSerializedFields(), with the location and taint source it was serialized with, so its
+     * location is still the one its id has (see the class invariant).
+     *
+     * @param SerializedNode $fields
+     * @psalm-pure
+     */
+    public static function fromSerializedFields(array $fields, ?CodeLocation $code_location, ?self $taint_source): self
+    {
+        return new self(
+            $fields[0],
+            $fields[1],
+            $fields[2],
+            $fields[3],
+            $code_location,
+            $fields[5],
+            $taint_source,
+            $fields[7],
+            $fields[8],
+        );
     }
 
     /**

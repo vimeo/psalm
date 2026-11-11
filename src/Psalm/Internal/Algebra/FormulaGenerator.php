@@ -14,12 +14,21 @@ use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\Internal\Clause;
 use Psalm\Node\Expr\BinaryOp\VirtualBooleanAnd;
 use Psalm\Node\Expr\BinaryOp\VirtualBooleanOr;
+use Psalm\Node\Expr\BinaryOp\VirtualEqual;
+use Psalm\Node\Expr\BinaryOp\VirtualIdentical;
+use Psalm\Node\Expr\BinaryOp\VirtualNotEqual;
+use Psalm\Node\Expr\BinaryOp\VirtualNotIdentical;
 use Psalm\Node\Expr\VirtualBooleanNot;
+use Psalm\Node\Expr\VirtualPropertyFetch;
+use Psalm\Storage\Assertion\Falsy;
+use Psalm\Storage\Assertion\IsNotType;
 use Psalm\Storage\Assertion\Truthy;
+use Psalm\Type\Atomic\TNull;
 
 use function array_map;
 use function count;
 use function spl_object_id;
+use function strtolower;
 use function substr;
 
 /**
@@ -115,6 +124,27 @@ final class FormulaGenerator
             }
 
             return Algebra::combineOredClauses($left_clauses, $right_clauses, $conditional_object_id);
+        }
+
+        if ($conditional instanceof PhpParser\Node\Expr\BinaryOp\Identical
+            || $conditional instanceof PhpParser\Node\Expr\BinaryOp\NotIdentical
+            || $conditional instanceof PhpParser\Node\Expr\BinaryOp\Equal
+            || $conditional instanceof PhpParser\Node\Expr\BinaryOp\NotEqual
+        ) {
+            $nullsafe_expansion = self::expandNullsafePropertyNullComparison($conditional);
+
+            if ($nullsafe_expansion !== null) {
+                return self::getFormula(
+                    $conditional_object_id,
+                    $conditional_object_id,
+                    $nullsafe_expansion,
+                    $this_class_name,
+                    $source,
+                    $codebase,
+                    $inside_negation,
+                    false,
+                );
+            }
         }
 
         if ($conditional instanceof PhpParser\Node\Expr\BooleanNot) {
@@ -416,6 +446,37 @@ final class FormulaGenerator
             );
         }
 
+        $conditional_ref = '*' . (int) $conditional->getAttribute('startFilePos')
+            . ':' . (int) $conditional->getAttribute('endFilePos');
+
+        $nullsafe_call = $conditional instanceof PhpParser\Node\Expr\Assign ? $conditional->expr : $conditional;
+
+        if ($nullsafe_call instanceof PhpParser\Node\Expr\NullsafeMethodCall) {
+            $receiver_id = ExpressionIdentifier::getExtendedVarId($nullsafe_call->var, $this_class_name, $source);
+
+            $result_id = $conditional instanceof PhpParser\Node\Expr\Assign
+                ? ExpressionIdentifier::getExtendedVarId($conditional->var, $this_class_name, $source)
+                : $conditional_ref;
+
+            if ($receiver_id !== null && $result_id !== null) {
+                // a truthy result means the receiver wasn't null, but a falsy one says nothing about it
+                $not_null = new IsNotType(new TNull());
+
+                return [
+                    new Clause(
+                        [$result_id => ['truthy' => new Truthy()]],
+                        $conditional_object_id,
+                        $creating_object_id,
+                    ),
+                    new Clause(
+                        [$result_id => ['falsy' => new Falsy()], $receiver_id => [(string) $not_null => $not_null]],
+                        $conditional_object_id,
+                        $creating_object_id,
+                    ),
+                ];
+            }
+        }
+
         $anded_assertions = null;
 
         if ($cache && $source instanceof StatementsAnalyzer) {
@@ -469,10 +530,6 @@ final class FormulaGenerator
         if ($clauses) {
             return $clauses;
         }
-
-        /** @psalm-suppress MixedOperand */
-        $conditional_ref = '*' . $conditional->getAttribute('startFilePos')
-            . ':' . $conditional->getAttribute('endFilePos');
 
         $truthy = new Truthy();
 
@@ -533,5 +590,72 @@ final class FormulaGenerator
         }
 
         return $var_ids;
+    }
+
+    /**
+     * `$a?->b === null` is `$a === null || $a->b === null` and `$a?->b !== null` is `$a !== null && $a->b !== null`.
+     * The copies of the receiver have no types, as the receiver of a nullsafe fetch is typed without the null that
+     * the comparison tests it for.
+     */
+    private static function expandNullsafePropertyNullComparison(
+        PhpParser\Node\Expr\BinaryOp $conditional,
+    ): ?PhpParser\Node\Expr {
+        if ($conditional->left instanceof PhpParser\Node\Expr\NullsafePropertyFetch
+            && self::isNullLiteral($conditional->right)
+        ) {
+            $nullsafe_fetch = $conditional->left;
+            $null_operand = $conditional->right;
+            $nullsafe_is_left = true;
+        } elseif ($conditional->right instanceof PhpParser\Node\Expr\NullsafePropertyFetch
+            && self::isNullLiteral($conditional->left)
+        ) {
+            $nullsafe_fetch = $conditional->right;
+            $null_operand = $conditional->left;
+            $nullsafe_is_left = false;
+        } else {
+            return null;
+        }
+
+        $traverser = new PhpParser\NodeTraverser(new PhpParser\NodeVisitor\CloningVisitor());
+        $receiver = $traverser->traverse([$nullsafe_fetch->var])[0] ?? null;
+
+        if (!$receiver instanceof PhpParser\Node\Expr) {
+            return null;
+        }
+
+        $attributes = $conditional->getAttributes();
+        $property_fetch = new VirtualPropertyFetch($receiver, $nullsafe_fetch->name, $nullsafe_fetch->getAttributes());
+
+        $receiver_comparison = self::createComparison($conditional, $receiver, $null_operand, $nullsafe_is_left);
+        $property_comparison = self::createComparison($conditional, $property_fetch, $null_operand, $nullsafe_is_left);
+
+        return $conditional instanceof PhpParser\Node\Expr\BinaryOp\Identical
+            || $conditional instanceof PhpParser\Node\Expr\BinaryOp\Equal
+            ? new VirtualBooleanOr($receiver_comparison, $property_comparison, $attributes)
+            : new VirtualBooleanAnd($receiver_comparison, $property_comparison, $attributes);
+    }
+
+    private static function createComparison(
+        PhpParser\Node\Expr\BinaryOp $like,
+        PhpParser\Node\Expr $operand,
+        PhpParser\Node\Expr $null_operand,
+        bool $operand_is_left,
+    ): PhpParser\Node\Expr\BinaryOp {
+        $left = $operand_is_left ? $operand : $null_operand;
+        $right = $operand_is_left ? $null_operand : $operand;
+        $attributes = $like->getAttributes();
+
+        return match (true) {
+            $like instanceof PhpParser\Node\Expr\BinaryOp\Identical => new VirtualIdentical($left, $right, $attributes),
+            $like instanceof PhpParser\Node\Expr\BinaryOp\NotIdentical
+                => new VirtualNotIdentical($left, $right, $attributes),
+            $like instanceof PhpParser\Node\Expr\BinaryOp\Equal => new VirtualEqual($left, $right, $attributes),
+            default => new VirtualNotEqual($left, $right, $attributes),
+        };
+    }
+
+    private static function isNullLiteral(PhpParser\Node\Expr $expr): bool
+    {
+        return $expr instanceof PhpParser\Node\Expr\ConstFetch && strtolower($expr->name->getFirst()) === 'null';
     }
 }
