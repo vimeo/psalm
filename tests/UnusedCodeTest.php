@@ -11,13 +11,9 @@ use Psalm\Context;
 use Psalm\Exception\CodeException;
 use Psalm\Internal\Analyzer\ProjectAnalyzer;
 use Psalm\Internal\Codebase\CodeUseGraph;
-use Psalm\Internal\Provider\FakeFileProvider;
-use Psalm\Internal\Provider\Providers;
-use Psalm\Internal\RuntimeCaches;
 use Psalm\IssueBuffer;
 use Psalm\Plugin\EventHandler\Event\MethodExistenceProviderEvent;
 use Psalm\Storage\Capabilities;
-use Psalm\Tests\Internal\Provider\FakeParserCacheProvider;
 
 use function array_column;
 use function getcwd;
@@ -34,17 +30,7 @@ final class UnusedCodeTest extends TestCase
     #[Override]
     public function setUp(): void
     {
-        RuntimeCaches::clearAll();
-
-        $this->file_provider = new FakeFileProvider();
-
-        $this->project_analyzer = new ProjectAnalyzer(
-            new TestConfig(),
-            new Providers(
-                $this->file_provider,
-                new FakeParserCacheProvider(),
-            ),
-        );
+        parent::setUp();
 
         $this->project_analyzer->getCodebase()->reportUnusedCode();
         $this->project_analyzer->setPhpVersion('7.3', 'tests');
@@ -142,6 +128,45 @@ final class UnusedCodeTest extends TestCase
         $issue = IssueBuffer::getIssuesDataForFile($file_path)[0];
         $this->assertSame('UnevaluatedCode', $issue->type);
         $this->assertSame(4, $issue->line_from);
+    }
+
+    public function testTheArgumentsOfACallOfAMissingClassAreNotAnalysed(): void
+    {
+        $this->project_analyzer->getConfig()->throw_exception = false;
+        $file_path = self::$src_dir_path . 'somefile.php';
+
+        $this->addFile(
+            $file_path,
+            '<?php
+                Missing::call($undefined);',
+        );
+        $this->analyzeFile($file_path, new Context(), false);
+        $this->project_analyzer->consolidateAnalyzedData();
+
+        $this->assertSame(
+            ['UndefinedClass'],
+            array_column(IssueBuffer::getIssuesDataForFile($file_path), 'type'),
+        );
+    }
+
+    public function testTheArgumentsOfACallOfAMissingClassAreNotAnalysedWhenItsIssueIsSuppressed(): void
+    {
+        $this->project_analyzer->getConfig()->throw_exception = false;
+        $this->project_analyzer->getConfig()->setCustomErrorLevel('UndefinedClass', Config::REPORT_SUPPRESS);
+        $file_path = self::$src_dir_path . 'somefile.php';
+
+        $this->addFile(
+            $file_path,
+            '<?php
+                Missing::call($undefined);',
+        );
+        $this->analyzeFile($file_path, new Context(), false);
+        $this->project_analyzer->consolidateAnalyzedData();
+
+        $this->assertSame(
+            [],
+            array_column(IssueBuffer::getIssuesDataForFile($file_path), 'type'),
+        );
     }
 
     public function testDeadDirectCallDoesNotTriggerUnusedReturnOnLiveOverride(): void
@@ -494,6 +519,64 @@ final class UnusedCodeTest extends TestCase
     public static function providerValidCodeParse(): array
     {
         return [
+            'classExistsGuardedStaticFirstClassCallable' => [
+                'code' => '<?php
+                    if (class_exists("Nope")) {
+                        $callable = Nope::stat(...);
+                        echo $callable !== null ? "set" : "unset";
+                    }',
+                'ignored_issues' => ['MixedAssignment'],
+            ],
+            'classExistsGuardedStaticCallUsesItsArguments' => [
+                'code' => '<?php
+                    if (class_exists("Nope")) {
+                        $foo = "foo";
+                        Nope::stat($foo);
+                    }',
+            ],
+            'functionExistsGuardedCallUsesItsArguments' => [
+                'code' => '<?php
+                    if (function_exists("nope_fn")) {
+                        $foo = "foo";
+                        nope_fn($foo);
+                    }',
+            ],
+            'unusedParamsOfMagicMethodsAreNotReported' => [
+                'code' => '<?php
+                    /**
+                     * @method string foo()
+                     * @method static string bar()
+                     */
+                    final class MethodTest
+                    {
+                        /** @param mixed[] $arguments */
+                        public function __call(string $name, array $arguments): string
+                        {
+                            return $name;
+                        }
+
+                        /** @param mixed[] $arguments */
+                        public static function __callStatic(string $name, array $arguments): string
+                        {
+                            return $name;
+                        }
+
+                        public function __get(string $name): string
+                        {
+                            return "x";
+                        }
+
+                        public function __set(string $name, mixed $value): void
+                        {
+                        }
+                    }
+
+                    $test = new MethodTest();
+                    echo $test->foo() . MethodTest::bar();
+                    echo $test->anything;
+                    $test->other = 1;',
+                'ignored_issues' => ['UndefinedMagicPropertyFetch', 'UndefinedMagicPropertyAssignment', 'MixedArgument'],
+            ],
             'unusedVariableSuppressedOnItsStatement' => [
                 'code' => '<?php
                     /** @psalm-api */
@@ -1007,6 +1090,38 @@ final class UnusedCodeTest extends TestCase
                     }
 
                     takesCallable([C::class, "foo"]);',
+            ],
+            'methodUsedAsCallableArrayForArrayOrCallableParam' => [
+                'code' => '<?php
+                    final class C {
+                        private static int $x = 1;
+
+                        public static function foo() : void {
+                            echo self::$x;
+                        }
+                    }
+
+                    /** @param array|callable $c */
+                    function takesUnion($c) : void {
+                        if (is_callable($c)) {
+                            $c();
+                        }
+                    }
+
+                    takesUnion([C::class, "foo"]);',
+            ],
+            'plainArrayForArrayOrCallableParam' => [
+                'code' => '<?php
+                    /** @param array|callable $c */
+                    function takesUnion($c) : void {
+                        if (is_callable($c)) {
+                            $c();
+                        }
+                    }
+
+                    takesUnion(["Nope", "foo"]);
+                    takesUnion([1, 2]);',
+                'ignored_issues' => ['UndefinedClass'],
             ],
             'propertyAndMethodOverriddenDownstream' => [
                 'code' => '<?php
@@ -2301,6 +2416,55 @@ final class UnusedCodeTest extends TestCase
     public static function providerInvalidCodeParse(): array
     {
         return [
+            'undefinedClassStaticFirstClassCallable' => [
+                'code' => '<?php
+                    $callable = Nope::stat(...);',
+                'error_message' => 'UndefinedClass',
+            ],
+            'classExistsGuardedStaticCallAnalysesItsArguments' => [
+                'code' => '<?php
+                    if (class_exists("Nope")) {
+                        Nope::stat($undefined);
+                    }',
+                'error_message' => 'PossiblyUndefinedVariable',
+            ],
+            'functionExistsGuardedCallAnalysesItsArguments' => [
+                'code' => '<?php
+                    if (function_exists("nope_fn")) {
+                        nope_fn($undefined);
+                    }',
+                'error_message' => 'PossiblyUndefinedVariable',
+            ],
+            'callStaticOfAClassWithoutStaticMagicCallsIsReportedAsUnused' => [
+                'code' => '<?php
+                    final class Forwarder {
+                        /** @param mixed[] $arguments */
+                        public static function __callStatic(string $name, array $arguments): string
+                        {
+                            return $name;
+                        }
+
+                        public static function real(): string
+                        {
+                            return "real";
+                        }
+                    }
+
+                    echo Forwarder::real();',
+                'error_message' => 'PossiblyUnusedMethod',
+            ],
+            'unusedParamOfARegularPublicMethodIsStillReported' => [
+                'code' => '<?php
+                    final class Reader {
+                        public function read(string $path, string $unused): string
+                        {
+                            return $path;
+                        }
+                    }
+
+                    echo (new Reader())->read("x", "y");',
+                'error_message' => 'UnusedParam',
+            ],
             'unusedVariableSuppressionDoesNotReachOtherStatements' => [
                 'code' => '<?php
                     /** @psalm-api */
