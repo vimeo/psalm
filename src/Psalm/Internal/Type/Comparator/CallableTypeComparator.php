@@ -137,6 +137,15 @@ final class CallableTypeComparator
                     $atomic_comparison_result->callable_by_reference_mismatch = true;
                 }
 
+                // a callable that may be called without the parameter must not require it
+                if ($codebase->config->strict_optional_callable_params
+                    && $container_param->is_optional
+                    && !$input_param->is_optional
+                    && !$input_param->is_variadic
+                ) {
+                    return false;
+                }
+
                 if ($container_param->type
                     && !$container_param->type->hasMixed()
                     && !self::isParamContainedBy(
