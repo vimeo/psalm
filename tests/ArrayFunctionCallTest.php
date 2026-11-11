@@ -1705,6 +1705,38 @@ final class ArrayFunctionCallTest extends TestCase
                 'ignored_issues' => [],
                 'php_version' => '8.0',
             ],
+            'arrayReduceOverTheMixedResultOfAnotherArrayReduce' => [
+                'code' => '<?php
+                    function join_path(string $path): string {
+                        $normalized = array_reduce(
+                            explode("/", $path),
+                            static function (array $carry, string $part): array {
+                                $carry[] = $part;
+                                return $carry;
+                            },
+                            [],
+                        );
+
+                        return array_reduce(
+                            $normalized,
+                            static fn (string $carry, string $part): string => $carry . "/" . $part,
+                            "",
+                        );
+                    }',
+                'assertions' => [],
+                'ignored_issues' => ['MixedArgument'],
+            ],
+            'arrayReduceOverAnArrayOfMixed' => [
+                'code' => '<?php
+                    /** @param array<mixed> $values */
+                    function join_all(array $values): string {
+                        return array_reduce(
+                            $values,
+                            static fn (string $carry, string $part): string => $carry . $part,
+                            "",
+                        );
+                    }',
+            ],
             'arrayReduceCallbackParamsTakeTheTypeOfTheElements' => [
                 'code' => '<?php
                     /** @param array<array{tags: string}> $a */
