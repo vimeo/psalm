@@ -6,6 +6,7 @@ namespace Psalm\Internal\Analyzer\Statements\Expression\Call;
 
 use AssertionError;
 use Psalm\Codebase;
+use Psalm\Internal\MethodIdentifier;
 use Psalm\Internal\Type\TemplateDefaults;
 use Psalm\Internal\Type\TemplateResult;
 use Psalm\Internal\Type\TypeExpander;
@@ -41,13 +42,21 @@ final class ClassTemplateParamCollector
         bool $self_call = false,
     ): ?array {
         // a trait method without a docblock takes the one of the parent method in the class using it, so its types
-        // are written with the templates of that class
-        if ($class_storage->is_trait
-            && $class_storage !== $static_class_storage
-            && $method_name !== null
-            && isset($static_class_storage->documenting_method_ids[$method_name])
-        ) {
-            $class_storage = $static_class_storage;
+        // are written with the templates of that class (which the receiver may extend)
+        if ($class_storage->is_trait && $class_storage !== $static_class_storage && $method_name !== null) {
+            $appearing_method_id = $codebase->methods->getAppearingMethodId(
+                new MethodIdentifier($static_class_storage->name, $method_name),
+            );
+
+            if ($appearing_method_id !== null) {
+                $appearing_class_storage = $codebase->classlike_storage_provider->get(
+                    $appearing_method_id->fq_class_name,
+                );
+
+                if (isset($appearing_class_storage->documenting_method_ids[$method_name])) {
+                    $class_storage = $appearing_class_storage;
+                }
+            }
         }
 
         $non_trait_class_storage = $class_storage->is_trait

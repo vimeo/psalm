@@ -21,6 +21,50 @@ final class TraitTemplateTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'subclassOfAGenericClassUsingATraitThroughAnIntermediateInterfaceTakesItsTypeArguments' => [
+                'code' => '<?php
+                    /**
+                     * @template TKey of array-key
+                     * @template TValue
+                     * @extends ArrayAccess<TKey, TValue>
+                     */
+                    interface ArrayInterface extends ArrayAccess {}
+
+                    trait IsArrayAccess {
+                        public function offsetSet(mixed $offset, mixed $value): void {}
+                        public function offsetGet(mixed $offset): mixed { return null; }
+                        public function offsetExists(mixed $offset): bool { return false; }
+                        public function offsetUnset(mixed $offset): void {}
+                    }
+
+                    /**
+                     * @template TKey of array-key
+                     * @template TValue
+                     * @implements ArrayInterface<TKey, TValue>
+                     */
+                    abstract class AbstractArray implements ArrayInterface {
+                        use IsArrayAccess;
+                    }
+
+                    final class ImmutableString {}
+
+                    /** @extends AbstractArray<string, ImmutableString> */
+                    final class Concrete extends AbstractArray {}
+
+                    function f(Concrete $c): void {
+                        $c["key"] = new ImmutableString();
+                        $value = $c["key"];
+                        echo isset($c["other"]);
+                    }
+
+                    /** @param ArrayInterface<string, ImmutableString> $i */
+                    function g(ArrayInterface $i): void {
+                        $i["key"] = new ImmutableString();
+                    }',
+                'assertions' => [],
+                'ignored_issues' => ['MixedAssignment'],
+                'php_version' => '8.0',
+            ],
             'genericClassImplementingAnInterfaceThroughATraitTakesItsTypeArguments' => [
                 'code' => '<?php
                     trait IsArrayAccess {
@@ -744,6 +788,80 @@ final class TraitTemplateTest extends TestCase
     public static function providerInvalidCodeParse(): iterable
     {
         return [
+            'subclassOfAGenericClassUsingATraitChecksTheKeyType' => [
+                'code' => '<?php
+                    /**
+                     * @template TKey of array-key
+                     * @template TValue
+                     * @extends ArrayAccess<TKey, TValue>
+                     */
+                    interface ArrayInterface extends ArrayAccess {}
+
+                    trait IsArrayAccess {
+                        public function offsetSet(mixed $offset, mixed $value): void {}
+                        public function offsetGet(mixed $offset): mixed { return null; }
+                        public function offsetExists(mixed $offset): bool { return false; }
+                        public function offsetUnset(mixed $offset): void {}
+                    }
+
+                    /**
+                     * @template TKey of array-key
+                     * @template TValue
+                     * @implements ArrayInterface<TKey, TValue>
+                     */
+                    abstract class AbstractArray implements ArrayInterface {
+                        use IsArrayAccess;
+                    }
+
+                    final class ImmutableString {}
+
+                    /** @extends AbstractArray<string, ImmutableString> */
+                    final class Concrete extends AbstractArray {}
+
+                    function f(Concrete $c): void {
+                        $c[5] = new ImmutableString();
+                    }',
+                'error_message' => 'Argument 1 of Concrete::offsetSet expects null|string, but 5 provided',
+                'error_levels' => [],
+                'php_version' => '8.0',
+            ],
+            'subclassOfAGenericClassUsingATraitChecksTheValueType' => [
+                'code' => '<?php
+                    /**
+                     * @template TKey of array-key
+                     * @template TValue
+                     * @extends ArrayAccess<TKey, TValue>
+                     */
+                    interface ArrayInterface extends ArrayAccess {}
+
+                    trait IsArrayAccess {
+                        public function offsetSet(mixed $offset, mixed $value): void {}
+                        public function offsetGet(mixed $offset): mixed { return null; }
+                        public function offsetExists(mixed $offset): bool { return false; }
+                        public function offsetUnset(mixed $offset): void {}
+                    }
+
+                    /**
+                     * @template TKey of array-key
+                     * @template TValue
+                     * @implements ArrayInterface<TKey, TValue>
+                     */
+                    abstract class AbstractArray implements ArrayInterface {
+                        use IsArrayAccess;
+                    }
+
+                    final class ImmutableString {}
+
+                    /** @extends AbstractArray<string, ImmutableString> */
+                    final class Concrete extends AbstractArray {}
+
+                    function f(Concrete $c): void {
+                        $c["key"] = "not an ImmutableString";
+                    }',
+                'error_message' => 'Argument 2 of Concrete::offsetSet expects ImmutableString, but',
+                'error_levels' => [],
+                'php_version' => '8.0',
+            ],
             'genericClassImplementingAnInterfaceThroughATraitChecksTheKeyType' => [
                 'code' => '<?php
                     trait IsArrayAccess {
