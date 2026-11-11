@@ -5,8 +5,13 @@ declare(strict_types=1);
 namespace Psalm\Tests;
 
 use Override;
+use PHPUnit\Framework\Attributes\DataProvider;
+use Psalm\Context;
+use Psalm\IssueBuffer;
 use Psalm\Tests\Traits\InvalidCodeAnalysisTestTrait;
 use Psalm\Tests\Traits\ValidCodeAnalysisTestTrait;
+
+use function array_column;
 
 use const DIRECTORY_SEPARATOR;
 
@@ -16,12 +21,106 @@ final class ClosureTest extends TestCase
     use ValidCodeAnalysisTestTrait;
 
     /**
+     * @param list<string> $expected_issue_types
+     */
+    #[DataProvider('providerUndefinedClosureUse')]
+    public function testAnalysisContinuesAfterUndefinedClosureUse(string $code, array $expected_issue_types): void
+    {
+        $this->project_analyzer->getConfig()->throw_exception = false;
+        $file_path = self::$src_dir_path . 'somefile.php';
+
+        $this->addFile($file_path, $code);
+        $this->analyzeFile($file_path, new Context());
+
+        $this->assertSame($expected_issue_types, array_column(IssueBuffer::getIssuesDataForFile($file_path), 'type'));
+    }
+
+    /**
+     * @return iterable<string, array{string, list<string>}>
+     * @psalm-pure
+     */
+    public static function providerUndefinedClosureUse(): iterable
+    {
+        return [
+            'undefinedVariable' => [
+                '<?php
+                    function () use ($missing): void {
+                        if (false) {}
+                    };
+
+                    if (false) {}',
+                ['UndefinedVariable', 'TypeDoesNotContainType', 'TypeDoesNotContainType'],
+            ],
+            'undefinedVariableByReference' => [
+                '<?php
+                    function () use (&$missing): void {
+                        if (false) {}
+                    };
+
+                    if (false) {}',
+                ['TypeDoesNotContainType', 'TypeDoesNotContainType'],
+            ],
+            'possiblyUndefinedVariable' => [
+                '<?php
+                    if (rand(0, 1)) {
+                        $maybe = 1;
+                    }
+
+                    function () use ($maybe): void {
+                        if (false) {}
+                    };
+
+                    if (false) {}',
+                ['PossiblyUndefinedVariable', 'TypeDoesNotContainType', 'TypeDoesNotContainType'],
+            ],
+            'severalUndefinedVariables' => [
+                '<?php
+                    function () use ($first, $second): void {};',
+                ['UndefinedVariable', 'UndefinedVariable'],
+            ],
+        ];
+    }
+
+    /**
      * @psalm-pure
      */
     #[Override]
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'byRefUseOfAVariableThatIsNotDefinedYet' => [
+                'code' => '<?php
+                    function collect(): int {
+                        $add = function (int $i) use (&$total): void {
+                            $total = $i;
+                        };
+                        $add(1);
+
+                        return $total;
+                    }',
+                'assertions' => [],
+                'ignored_issues' => ['MixedReturnStatement', 'MixedInferredReturnType'],
+            ],
+            'closureCapturingTheVariableItIsAssignedToByReferenceInAnArgument' => [
+                'code' => '<?php
+                    function verifyNegative(callable $callable): void {
+                        $triggered = 0;
+
+                        $prevHandler = set_error_handler(function () use (&$prevHandler, &$triggered): bool {
+                            ++$triggered;
+
+                            return $prevHandler === null;
+                        });
+
+                        $callable();
+
+                        if ($triggered > 0) {
+                            echo "oops";
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+            ],
             'byRefUseVarUnsetInClosure' => [
                 'code' => '<?php
                     function reserve(): Closure {
@@ -37,7 +136,7 @@ final class ClosureTest extends TestCase
                     $doNotContaminate = 123;
 
                     $test = 123;
-                    
+
                     $testBefore = $test;
 
                     $testInsideBefore = null;
@@ -63,14 +162,14 @@ final class ClosureTest extends TestCase
             'byRefUseSelf' => [
                 'code' => '<?php
                     $external = random_int(0, 1);
-                    
+
                     $v = function (bool $callMe) use (&$v, $external): void {
                         echo($external.PHP_EOL);
                         if ($callMe) {
                             $v(false);
                         }
                     };
-                    
+
                     $v(true);',
             ],
             'byRefUseVarChangeType' => [
@@ -1827,6 +1926,13 @@ final class ClosureTest extends TestCase
     public static function providerInvalidCodeParse(): iterable
     {
         return [
+            'byValueUseOfAVariableThatIsNotDefinedYet' => [
+                'code' => '<?php
+                    $f = function () use ($total): int {
+                        return 1;
+                    };',
+                'error_message' => 'UndefinedVariable',
+            ],
             'wrongArg' => [
                 'code' => '<?php
                     $bar = ["foo", "bar"];
