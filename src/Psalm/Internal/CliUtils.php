@@ -13,6 +13,8 @@ use Psalm\Exception\ConfigCreationException;
 use Psalm\Exception\ConfigException;
 use Psalm\Exception\ConfigNotFoundException;
 use Psalm\Internal\Analyzer\ProjectAnalyzer;
+use Psalm\Internal\Cli\Psalm;
+use Psalm\Internal\Cli\Psalter;
 use Psalm\Report;
 use RuntimeException;
 use UnexpectedValueException;
@@ -43,6 +45,7 @@ use function preg_last_error_msg;
 use function preg_replace;
 use function preg_split;
 use function realpath;
+use function str_ends_with;
 use function str_starts_with;
 use function stream_get_meta_data;
 use function stream_isatty;
@@ -72,6 +75,7 @@ final class CliUtils
         string $current_dir,
         bool $has_explicit_root,
         string $vendor_dir,
+        bool $project_autoloader_required = true,
     ): array {
         $autoload_roots = [$current_dir];
 
@@ -118,7 +122,7 @@ final class CliUtils
             }
 
             $composer_json_file = Composer::getJsonFilePath($autoload_root);
-            if (!$has_autoloader && file_exists($composer_json_file)) {
+            if ($project_autoloader_required && !$has_autoloader && file_exists($composer_json_file)) {
                 $error_message = 'Could not find any composer autoloaders in ' . $autoload_root;
 
                 if (!$has_explicit_root) {
@@ -322,6 +326,13 @@ final class CliUtils
                 // ignore common phpunit args that accept a class instead of a path, as this can cause issues on Windows
                 $ignored_arguments = ['config', 'printer', 'root'];
 
+                // the value of an option that requires one follows it, as in `--threads 4`
+                foreach ([...Psalm::LONG_OPTIONS, ...Psalter::LONG_OPTIONS] as $long_option) {
+                    if (str_ends_with($long_option, ':') && !str_ends_with($long_option, '::')) {
+                        $ignored_arguments[] = substr($long_option, 0, -1);
+                    }
+                }
+
                 if (in_array(substr($input_path, 2), $ignored_arguments, true)) {
                     ++$i;
                 }
@@ -415,6 +426,8 @@ final class CliUtils
         array $autoloaders,
         bool $create_if_non_existent = false,
     ): Config {
+        Config::setAddCommandLinePaths(true);
+
         try {
             if ($path_to_config) {
                 $config = Config::loadFromXMLFile($path_to_config, $current_dir);
@@ -448,6 +461,8 @@ final class CliUtils
                 $e->getMessage() . PHP_EOL,
             );
             exit(1);
+        } finally {
+            Config::setAddCommandLinePaths(false);
         }
 
         $config->setComposerClassLoader($autoloaders);

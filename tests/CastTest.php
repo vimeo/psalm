@@ -21,6 +21,30 @@ final class CastTest extends TestCase
     #[Override]
     public static function providerValidCodeParse(): iterable
     {
+        yield 'castOfAnIntersectionToStringIsWhatTheNarrowestToStringReturns' => [
+            'code' => '<?php
+                interface PlainString {
+                    public function __toString(): string;
+                }
+
+                interface NumericString {
+                    /** @return numeric-string */
+                    public function __toString(): string;
+                }
+
+                /** @var PlainString&NumericString $a */
+                $a = null;
+                $fromPlainFirst = (string) $a;
+
+                /** @var NumericString&PlainString $b */
+                $b = null;
+                $fromNumericFirst = (string) $b;',
+            'assertions' => [
+                '$fromPlainFirst===' => 'numeric-string',
+                '$fromNumericFirst===' => 'numeric-string',
+            ],
+        ];
+
         yield 'castOfFloatLiteralsToIntOnlyFoldsThoseInTheRangeOfAnInt' => [
             'code' => '<?php
                 $tooBig = (int) 1e30;
@@ -197,9 +221,28 @@ final class CastTest extends TestCase
                     $five = strval(5);
                     /** @psalm-check-type-exact $five = \'5\' */
                     $concatenated = "id $int";
-                    /** @psalm-check-type-exact $concatenated = non-empty-string */
+                    /** @psalm-check-type-exact $concatenated = non-falsy-string */
                 }
             ',
+        ];
+        yield 'closureCastToArrayIsAListOfTheClosure' => [
+            'code' => '<?php
+                /**
+                 * @param Closure(string): void|non-empty-list<Closure(string): void> $writers
+                 */
+                function write_to(mixed $writers, string $message): void {
+                    $writers = (array) $writers;
+                    $writers[0]($message);
+                }
+
+                $closure = static fn(): int => 1;
+                $cast = (array) $closure;
+            ',
+            'assertions' => [
+                '$cast===' => 'list{Closure[pure]():1}',
+            ],
+            'ignored_issues' => [],
+            'php_version' => '8.1',
         ];
         yield 'floatIsCastToANonNumericStringWhenInfiniteOrNotANumber' => [
             'code' => '<?php
@@ -308,6 +351,196 @@ final class CastTest extends TestCase
                 '$string===' => "'-1'|'-2'|'-3'|'-4'|'-5'|'0'|'1'|'2'|'3'",
             ],
         ];
+        yield 'arrayCastToStringIsTheArrayLiteral' => [
+            'code' => '<?php
+                /**
+                 * @param array<string> $arr
+                 * @param list{1, 2} $tuple
+                 * @param non-empty-array<int, string> $non_empty
+                 * @param list<int> $list
+                 */
+                function f(array $arr, array $tuple, array $non_empty, array $list): void {
+                    $cast = (string) $arr;
+                    $interpolated = "$arr";
+                    $prefixed = "A: $arr";
+                    /** @psalm-check-type-exact $cast = \'Array\' */
+                    /** @psalm-check-type-exact $interpolated = \'Array\' */
+                    /** @psalm-check-type-exact $prefixed = \'A: Array\' */
+                    $tuple_cast = (string) $tuple;
+                    $tuple_interpolated = "$tuple";
+                    /** @psalm-check-type-exact $tuple_cast = \'Array\' */
+                    /** @psalm-check-type-exact $tuple_interpolated = \'Array\' */
+                    $non_empty_cast = (string) $non_empty;
+                    $list_interpolated = "$list";
+                    /** @psalm-check-type-exact $non_empty_cast = \'Array\' */
+                    /** @psalm-check-type-exact $list_interpolated = \'Array\' */
+                }
+            ',
+            'assertions' => [],
+            'ignored_issues' => ['InvalidCast'],
+        ];
+        yield 'arrayAmongOtherTypesAddsTheArrayLiteralToTheCast' => [
+            'code' => '<?php
+                /**
+                 * @param array<string>|false $array_or_false
+                 * @param array<string>|int $array_or_int
+                 */
+                function f($array_or_false, $array_or_int): void {
+                    $interpolated = "$array_or_false";
+                    $cast = (string) $array_or_int;
+                    /** @psalm-check-type-exact $interpolated = \'\'|\'Array\' */
+                    /** @psalm-check-type-exact $cast = \'Array\'|decimal-int-string */
+                }
+            ',
+            'assertions' => [],
+            'ignored_issues' => ['PossiblyInvalidCast'],
+        ];
+        yield 'arrayBoundOfTemplateIsCastToTheArrayLiteral' => [
+            'code' => '<?php
+                /**
+                 * @template T of array<string>
+                 * @param T $array
+                 */
+                function f(array $array): void {
+                    $cast = (string) $array;
+                    $interpolated = "x$array";
+                    /** @psalm-check-type-exact $cast = \'Array\' */
+                    /** @psalm-check-type-exact $interpolated = \'xArray\' */
+                }
+            ',
+            'assertions' => [],
+            'ignored_issues' => ['InvalidCast'],
+        ];
+        yield 'interpolationOfEmptyStringsIsTheEmptyString' => [
+            'code' => '<?php
+                $empty1 = "";
+                $empty2 = "";
+                $both = "$empty1$empty2";
+                $one = "{$empty1}";
+            ',
+            'assertions' => [
+                '$both===' => "''",
+                '$one===' => "''",
+            ],
+        ];
+        yield 'interpolationWithANonEmptyPartIsNonEmpty' => [
+            'code' => '<?php
+                /**
+                 * @param non-empty-string $non_empty
+                 * @param int|null $nullable
+                 */
+                function f(string $non_empty, string $string, int $int, ?int $nullable): void {
+                    $first = "$non_empty$string";
+                    $last = "$string$non_empty";
+                    $int_part = "$string$int";
+                    $single = "$non_empty";
+                    /** @psalm-check-type-exact $first = non-empty-string */
+                    /** @psalm-check-type-exact $last = non-empty-string */
+                    /** @psalm-check-type-exact $int_part = non-empty-string */
+                    /** @psalm-check-type-exact $single = non-empty-string */
+                    $maybe_empty = "$string$string";
+                    $nullable_part = "$string$nullable";
+                    /** @psalm-check-type-exact $maybe_empty = string */
+                    /** @psalm-check-type-exact $nullable_part = string */
+                }
+            ',
+        ];
+        yield 'interpolationOfAToStringReturningATemplate' => [
+            'code' => '<?php
+                /** @template T of string */
+                final class Wrapper {
+                    /** @param T $value */
+                    public function __construct(private string $value) {}
+
+                    /** @return T */
+                    public function __toString(): string {
+                        return $this->value;
+                    }
+                }
+
+                /** @param Wrapper<string> $wrapper */
+                function f(Wrapper $wrapper): void {
+                    $wrapped = "[{$wrapper}]";
+                    $twice = "{$wrapper}{$wrapper}";
+                    /** @psalm-check-type-exact $wrapped = non-falsy-string */
+                    /** @psalm-check-type-exact $twice = string */
+                }
+            ',
+        ];
+        yield 'interpolationWithClassStringUnionStaysNonEmpty' => [
+            'code' => '<?php
+                /**
+                 * @template T of object
+                 * @param class-string<T>|\'foo\'|\'bar\' $class
+                 */
+                function f(string $class): void {
+                    $prefixed = "x$class";
+                    /** @psalm-check-type-exact $prefixed = non-falsy-string */
+                }
+            ',
+        ];
+        yield 'arrayOrObjectCastToStringStaysAString' => [
+            'code' => '<?php
+                /** @param array<array-key, mixed>|object $value */
+                function f($value): void {
+                    $cast = (string) $value;
+                    $interpolated = "$value";
+                    $prefixed = "x$value";
+                    /** @psalm-check-type-exact $cast = string */
+                    /** @psalm-check-type-exact $interpolated = string */
+                    /** @psalm-check-type-exact $prefixed = non-falsy-string */
+                }
+            ',
+            'assertions' => [],
+            'ignored_issues' => ['InvalidCast'],
+        ];
+        yield 'objectAmongOtherTypesIsCastToAString' => [
+            'code' => '<?php
+                /**
+                 * @param object|int $object_or_int
+                 * @param array<array-key, mixed>|object|int $anything
+                 */
+                function f($object_or_int, $anything, string $suffix): void {
+                    $cast = (string) $object_or_int;
+                    $anything_cast = (string) $anything;
+                    $interpolated = "{$object_or_int}{$suffix}";
+                    $anything_interpolated = "{$anything}{$suffix}";
+                    $prefixed = "x{$object_or_int}";
+                    /** @psalm-check-type-exact $cast = string */
+                    /** @psalm-check-type-exact $anything_cast = string */
+                    /** @psalm-check-type-exact $interpolated = string */
+                    /** @psalm-check-type-exact $anything_interpolated = string */
+                    /** @psalm-check-type-exact $prefixed = non-falsy-string */
+                }
+            ',
+            'assertions' => [],
+            'ignored_issues' => ['InvalidCast', 'PossiblyInvalidCast'],
+        ];
+        yield 'interpolationWithANeverPartIsNever' => [
+            'code' => '<?php
+                final class NeverString {
+                    /** @return never */
+                    public function __toString(): string {
+                        throw new Exception();
+                    }
+                }
+
+                function single(NeverString $v): never {
+                    return "$v";
+                }
+
+                function prefixed(NeverString $v): never {
+                    return "x$v";
+                }
+
+                function suffixed(NeverString $v, string $s): never {
+                    return "$s{$v}y";
+                }
+            ',
+            'assertions' => [],
+            'ignored_issues' => ['NoValue'],
+            'php_version' => '8.1',
+        ];
     }
 
     /**
@@ -324,6 +557,33 @@ final class CastTest extends TestCase
                 . 'somefile.php:3:17 - The (unset) cast was removed in PHP 8.0',
             'error_levels' => [],
             'php_version' => '8.0',
+        ];
+        yield 'arrayCastToStringIsInvalid' => [
+            'code' => '<?php
+                /** @param array<string> $arr */
+                function f(array $arr): string {
+                    return (string) $arr;
+                }',
+            'error_message' => 'InvalidCast - src' . DIRECTORY_SEPARATOR
+                . 'somefile.php:4:37 - array<array-key, string> cannot be cast to string',
+        ];
+        yield 'arrayOrIntCastToStringIsPossiblyInvalid' => [
+            'code' => '<?php
+                /** @param array<string>|int $arr */
+                function f($arr): string {
+                    return "$arr";
+                }',
+            'error_message' => 'PossiblyInvalidCast - src' . DIRECTORY_SEPARATOR
+                . 'somefile.php:4:29 - array<array-key, string> cannot be cast to string',
+        ];
+        yield 'arrayInterpolatedWithAPrefixIsInvalid' => [
+            'code' => '<?php
+                /** @param list{1, 2} $tuple */
+                function f(array $tuple): string {
+                    return "A: $tuple";
+                }',
+            'error_message' => 'InvalidCast - src' . DIRECTORY_SEPARATOR
+                . 'somefile.php:4:32 - list{1, 2} cannot be cast to string',
         ];
     }
 }

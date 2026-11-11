@@ -658,7 +658,7 @@ final class PartialApplicationAnalyzer
             $template_result,
             $code_location,
             $context,
-            true,
+            partial_application: true,
         );
 
         if ($template_result->template_types) {
