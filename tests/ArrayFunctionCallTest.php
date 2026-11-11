@@ -1840,8 +1840,8 @@ final class ArrayFunctionCallTest extends TestCase
                     $a = implode(":", $l);
                     $b = implode(":", $k);',
                 'assertions' => [
-                    '$a===' => 'non-empty-literal-string',
-                    '$b===' => 'non-empty-literal-string',
+                    '$a===' => '\'a:b\'',
+                    '$b===' => '\'1:2:3\'',
                 ],
             ],
             'implodeArrayOfNonEmptyStringAndEmptyString' => [
@@ -1854,7 +1854,7 @@ final class ArrayFunctionCallTest extends TestCase
                     $a = implode("", $l);
                     $b = implode("", $k);',
                 'assertions' => [
-                    '$a===' => 'non-empty-literal-string',
+                    '$a===' => '\'ab\'',
                     '$b===' => 'non-empty-string',
                 ],
             ],
@@ -1901,7 +1901,7 @@ final class ArrayFunctionCallTest extends TestCase
                     $h = join(":", getStrings());',
                 'assertions' => [
                     '$a===' => 'literal-string',
-                    '$b===' => 'non-empty-literal-string',
+                    '$b===' => '\'a:\'',
                     '$c===' => 'string',
                     '$d===' => 'string',
                     '$e===' => 'non-empty-string',
@@ -1932,9 +1932,27 @@ final class ArrayFunctionCallTest extends TestCase
                     '$b===' => 'non-falsy-string',
                     '$c===' => 'non-falsy-string',
                     '$d===' => 'string',
-                    '$e===' => 'non-empty-literal-string',
+                    '$e===' => '\',\'',
                     '$f===' => 'string',
                     '$g===' => 'non-falsy-string',
+                ],
+            ],
+            'implodeOfKnownLiteralsIsTheLiteral' => [
+                'code' => '<?php
+                    class Foo {
+                        const DIR = __DIR__;
+                    }
+                    $a = implode(" ", ["", ""]);
+                    $b = implode("", ["0", "0"]);
+                    $c = implode(",", ["a", 1]);
+                    $d = implode("", ["", "0"]);
+                    $e = implode(" ", ["", Foo::DIR]);',
+                'assertions' => [
+                    '$a===' => '\' \'',
+                    '$b===' => 'non-empty-literal-string',
+                    '$c===' => '\'a,1\'',
+                    '$d===' => 'non-empty-literal-string',
+                    '$e===' => 'non-falsy-string',
                 ],
             ],
             'implodeNonFalsyPieceOrSeparator' => [

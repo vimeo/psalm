@@ -25,6 +25,7 @@ use Psalm\Type\Atomic\TTrue;
 use Psalm\Type\Union;
 
 use function count;
+use function implode;
 
 /**
  * The stub of implode() only sees what all the pieces have in common: an array shape whose pieces include a
@@ -115,7 +116,10 @@ final class ImplodeReturnTypeProvider implements FunctionReturnTypeProviderInter
         }
 
         if ($separator_is_literal && $pieces_are_literal) {
-            return new Union([new TNonEmptyNonspecificLiteralString()]);
+            // a non-falsy result of known literals is that literal: a literal string is not a non-falsy one otherwise
+            $joined = $is_non_falsy ? self::joinLiterals($separator_type, $array_type) : null;
+
+            return new Union([$joined !== null ? new TLiteralString($joined) : new TNonEmptyNonspecificLiteralString()]);
         }
 
         return $is_non_falsy ? Type::getNonFalsyString() : Type::getNonEmptyString();
@@ -133,6 +137,44 @@ final class ImplodeReturnTypeProvider implements FunctionReturnTypeProviderInter
         }
 
         return true;
+    }
+
+    /**
+     * The value of the call when the separator and every piece are known literals
+     *
+     * @psalm-pure
+     */
+    private static function joinLiterals(Union $separator_type, Union $array_type): ?string
+    {
+        if (!$separator_type->isSingleStringLiteral() || !$array_type->isSingle()) {
+            return null;
+        }
+
+        $array_atomic_type = $array_type->getSingleAtomic();
+
+        if (!$array_atomic_type instanceof TKeyedArray || $array_atomic_type->fallback_params !== null) {
+            return null;
+        }
+
+        $pieces = [];
+
+        foreach ($array_atomic_type->properties as $property) {
+            if ($property->possibly_undefined || !$property->isSingle()) {
+                return null;
+            }
+
+            $piece = $property->getSingleAtomic();
+
+            if ($piece instanceof TLiteralString) {
+                $pieces[] = $piece->value;
+            } elseif ($piece instanceof TLiteralInt) {
+                $pieces[] = (string) $piece->value;
+            } else {
+                return null;
+            }
+        }
+
+        return implode($separator_type->getSingleStringLiteral()->value, $pieces);
     }
 
     /**
