@@ -719,6 +719,24 @@ final class PartialFunctionApplicationTest extends TestCase
                 'ignored_issues' => [],
                 'php_version' => '8.6',
             ],
+            'PartialApplication:BoundItemHasItsKeyEvaluatedOnce' => [
+                'code' => <<<'PHP'
+                    <?php
+                        /** @param-out int $x */
+                        function fill(mixed &$x, int $v): void {
+                            $x = $v;
+                        }
+                        $items = [[1], [2]];
+                        $i = 0;
+                        $closure = fill($items[$i++], ?);
+                        $j = $i;
+                    PHP,
+                'assertions' => [
+                    '$j===' => '1',
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.6',
+            ],
             'PartialApplication:BoundMissingOffsetOfAReferenceParameter' => [
                 'code' => <<<'PHP'
                     <?php

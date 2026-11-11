@@ -11,6 +11,7 @@ use Psalm\Internal\Analyzer\ProjectAnalyzer;
 use Psalm\Internal\Codebase\Analyzer;
 use Psalm\Internal\EventDispatcher;
 use Psalm\IssueBuffer;
+use Psalm\Report;
 use Psalm\Report\ReportOptions;
 
 use function microtime;
@@ -145,5 +146,36 @@ final class IssueBufferTest extends TestCase
         $output = (string) ob_get_clean();
 
         $this->assertStringContainsString('No errors found!', $output);
+    }
+
+    /**
+     * @param Report::TYPE_* $format
+     * @psalm-pure
+     */
+    private static function reportOptions(string $format): ReportOptions
+    {
+        $options = new ReportOptions();
+        $options->format = $format;
+
+        return $options;
+    }
+
+    public function testASarifReportAmongTheGeneratedReportsIsRecognised(): void
+    {
+        self::assertTrue(IssueBuffer::hasSarifReport(
+            [self::reportOptions(Report::TYPE_JSON), self::reportOptions(Report::TYPE_SARIF)],
+        ));
+    }
+
+    public function testOtherReportsAreNotSarif(): void
+    {
+        self::assertFalse(IssueBuffer::hasSarifReport(
+            [self::reportOptions(Report::TYPE_JSON), self::reportOptions(Report::TYPE_CHECKSTYLE)],
+        ));
+    }
+
+    public function testNoGeneratedReportIsNotSarif(): void
+    {
+        self::assertFalse(IssueBuffer::hasSarifReport([]));
     }
 }
