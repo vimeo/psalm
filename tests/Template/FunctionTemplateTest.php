@@ -23,39 +23,62 @@ final class FunctionTemplateTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
-            'arithmeticOnATemplateBoundToAnInt' => [
+            'typePredicatesOnATemplateBoundedByATemplate' => [
                 'code' => '<?php
                     /**
-                     * @template T of int|null
-                     * @param T $a
-                     * @return (T is null ? null : int)
+                     * @template T
+                     * @template U of T
+                     * @param U $v
                      */
-                    function add(?int $a, int $b): ?int {
-                        if ($a === null) {
-                            return null;
+                    function f($v): int {
+                        $count = 0;
+
+                        if (is_string($v)) {
+                            $count++;
                         }
 
-                        return $a + $b;
-                    }
+                        if (is_int($v)) {
+                            $count++;
+                        }
 
-                    /**
-                     * @template T of int
-                     * @param T $a
-                     * @param T $b
-                     */
-                    function twice(int $a, int $b): int {
-                        return $a * 2 - $b;
-                    }
+                        if (is_float($v)) {
+                            $count++;
+                        }
 
-                    /**
-                     * @template T of float
-                     * @param T $a
-                     */
-                    function half(float $a, int $b): float {
-                        return $b / 2 + $a;
+                        if (is_numeric($v)) {
+                            $count++;
+                        }
+
+                        if (is_scalar($v)) {
+                            $count++;
+                        }
+
+                        if (is_bool($v)) {
+                            $count++;
+                        }
+
+                        if ($v === true) {
+                            $count++;
+                        }
+
+                        if ($v === false) {
+                            $count++;
+                        }
+
+                        if (is_object($v)) {
+                            $count++;
+                        }
+
+                        if (is_array($v)) {
+                            $count++;
+                        }
+
+                        if (is_callable($v)) {
+                            $count++;
+                        }
+
+                        return $count;
                     }',
-                'assertions' => [],
-                'ignored_issues' => [],
             ],
             'classStringTemplateOfAParamUsedInAConditionalReturnType' => [
                 'code' => '<?php
@@ -2542,6 +2565,40 @@ final class FunctionTemplateTest extends TestCase
                     }',
                 'assertions' => [],
             ],
+            'arithmeticOnATemplateBoundToAnInt' => [
+                'code' => '<?php
+                    /**
+                     * @template T of int|null
+                     * @param T $a
+                     * @return (T is null ? null : int)
+                     */
+                    function add(?int $a, int $b): ?int {
+                        if ($a === null) {
+                            return null;
+                        }
+
+                        return $a + $b;
+                    }
+
+                    /**
+                     * @template T of int
+                     * @param T $a
+                     * @param T $b
+                     */
+                    function twice(int $a, int $b): int {
+                        return $a * 2 - $b;
+                    }
+
+                    /**
+                     * @template T of float
+                     * @param T $a
+                     */
+                    function half(float $a, int $b): float {
+                        return $b / 2 + $a;
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+            ],
         ];
     }
 
@@ -2552,6 +2609,20 @@ final class FunctionTemplateTest extends TestCase
     public static function providerInvalidCodeParse(): iterable
     {
         return [
+            'typePredicateImpossibleForATemplateBoundedByATemplate' => [
+                'code' => '<?php
+                    /**
+                     * @template T of string
+                     * @template U of T
+                     * @param U $v
+                     */
+                    function f($v): void {
+                        if (is_int($v)) {
+                            echo 1;
+                        }
+                    }',
+                'error_message' => 'DocblockTypeContradiction',
+            ],
             'templateBoundedByMixedIsBoundedByMixedAgainAfterABranchNarrowingIt' => [
                 'code' => '<?php
                     function takesInt(int $i): void {}
