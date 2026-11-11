@@ -124,15 +124,16 @@ trait CallableTrait
     }
 
     /**
-     * By-reference parameters print as `int &$_` so that the id parses back
+     * By-reference parameters print as `int &$_` (`int &...$_` for a variadic one) so that the id parses back
      */
     private static function getParamId(FunctionLikeParameter $param): string
     {
-        if (!$param->by_ref || $param->is_variadic) {
+        if (!$param->by_ref) {
             return $param->getId();
         }
 
-        return ($param->type ? $param->type->getId() : 'mixed') . ' &$_' . ($param->is_optional ? '=' : '');
+        return ($param->type ? $param->type->getId() : 'mixed')
+            . ($param->is_variadic ? ' &...$_' : ' &$_' . ($param->is_optional ? '=' : ''));
     }
 
     public function getParamString(): string
@@ -207,8 +208,10 @@ trait CallableTrait
                     $type_string = $param->type->toNamespacedString($namespace, $aliased_classes, $this_class, false);
                 }
 
-                $params_array[] = ($param->is_variadic ? '...' : '') . $type_string
-                    . ($param->by_ref && !$param->is_variadic ? ' &$_' : '') . ($param->is_optional ? '=' : '');
+                $params_array[] = ($param->by_ref && $param->is_variadic ? '' : ($param->is_variadic ? '...' : ''))
+                    . $type_string
+                    . ($param->by_ref ? ($param->is_variadic ? ' &...$_' : ' &$_') : '')
+                    . ($param->is_optional ? '=' : '');
             }
 
             $param_string = '(' . implode(', ', $params_array) . ')';

@@ -303,6 +303,13 @@ final class ParseTreeCreator
             $by_ref = true;
             ++$this->t;
             $current_token = $this->t < $this->type_token_count ? $this->type_tokens[$this->t] : null;
+
+            // `&...$args`
+            if ($current_token && $current_token[0] === '...') {
+                $variadic = true;
+                ++$this->t;
+                $current_token = $this->t < $this->type_token_count ? $this->type_tokens[$this->t] : null;
+            }
         } elseif ($current_token[0] === '...') {
             $variadic = true;
 
@@ -885,10 +892,14 @@ final class ParseTreeCreator
             return;
         }
 
-        // `callable(int &$i)`: the tokenizer drops the space before `&`
+        // `callable(int &$i)` and `callable(int &...$i)`: the tokenizer drops the space before `&`
         $next_token = $this->t + 1 < $this->type_token_count ? $this->type_tokens[$this->t + 1] : null;
+        $token_after_next = $this->t + 2 < $this->type_token_count ? $this->type_tokens[$this->t + 2] : null;
 
-        if ($next_token !== null && $next_token[0][0] === '$') {
+        if ($next_token !== null
+            && ($next_token[0][0] === '$'
+                || ($next_token[0] === '...' && $token_after_next !== null && $token_after_next[0][0] === '$'))
+        ) {
             while ($current_parent
                 && !$current_parent instanceof MethodTree
                 && !$current_parent instanceof CallableTree
