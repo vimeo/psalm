@@ -385,6 +385,82 @@ final class BinaryOperationTest extends TestCase
     public function providerValidCodeParse(): iterable
     {
         return [
+            'zeroToANegativePowerIsAFloat' => [
+                'code' => '<?php
+                    $a = 0 ** -1;
+                    $b = 0.0 ** -2;
+                    $c = 0 ** -INF;
+                    echo $a, $b, $c;',
+                'assertions' => [
+                    '$a' => 'float',
+                    '$b' => 'float',
+                    '$c' => 'float',
+                ],
+            ],
+            'floatOperandsOutsideTheRangeOfAnIntAreNotFolded' => [
+                'code' => '<?php
+                    $notANumberModulo = NAN % 3;
+                    $infiniteModulo = 3 % INF;
+                    $modulo = 7.0 % 4;
+                    $bigOr = 1e30 | 1;
+                    $infiniteAnd = INF & 1;
+                    $notANumberXor = 1 ^ NAN;
+                    $bigShiftLeft = 1 << 1e30;
+                    $bigShiftRight = -1e30 >> 1;
+                    $or = 6.0 | 1;
+                    $notANumberNot = ~NAN;
+                    $bigNot = ~1e30;
+                    $infiniteNot = ~-INF;
+                    $not = ~5.0;',
+                'assertions' => [
+                    '$notANumberModulo===' => 'int',
+                    '$infiniteModulo===' => 'int',
+                    '$modulo===' => '3',
+                    '$bigOr===' => 'int',
+                    '$infiniteAnd===' => 'int',
+                    '$notANumberXor===' => 'int',
+                    '$bigShiftLeft===' => 'int',
+                    '$bigShiftRight===' => 'int',
+                    '$or===' => '7',
+                    '$notANumberNot===' => 'int',
+                    '$bigNot===' => 'int',
+                    '$infiniteNot===' => 'int',
+                    '$not===' => '-6',
+                ],
+            ],
+
+            'integerOperatorsGiveIntsWhateverTheOperandsAre' => [
+                'code' => '<?php
+                    /** @var int $int */
+                    $int = 1;
+                    /** @var float $float */
+                    $float = 1.5;
+                    /** @var int|float $number */
+                    $number = 1;
+
+                    $shiftedByFloat = $int << 1.0;
+                    $orWithFloat = $int | 1.0;
+                    $andOfFloatAndInt = $float & $int;
+                    $xorOfFloats = $float ^ $float;
+                    $shiftedFloat = $float >> $float;
+                    $orWithNumber = $number | 1;
+                    $shiftedNumber = $number << $int;
+                    $moduloOfFloat = $int % 1.0;
+                    $shiftedBig = (int) 1e30 << 1.0;
+                    $orOfBig = (1e30 | 1) | 1.0;',
+                'assertions' => [
+                    '$shiftedByFloat===' => 'int',
+                    '$orWithFloat===' => 'int',
+                    '$andOfFloatAndInt===' => 'int',
+                    '$xorOfFloats===' => 'int',
+                    '$shiftedFloat===' => 'int',
+                    '$orWithNumber===' => 'int',
+                    '$shiftedNumber===' => 'int',
+                    '$moduloOfFloat===' => 'int',
+                    '$shiftedBig===' => 'int',
+                    '$orOfBig===' => 'int',
+                ],
+            ],
             'regularAddition' => [
                 'code' => '<?php
                     $a = 5 + 4;',
@@ -1224,6 +1300,14 @@ final class BinaryOperationTest extends TestCase
                 ],
                 'ignored_issues' => ['InvalidOperand'],
             ],
+            'firstClassCallableInSubstrComparison' => [
+                'code' => '<?php
+                    if (substr(...) === "x") {}
+                    if (substr(...) != "x") {}',
+                'assertions' => [],
+                'ignored_issues' => ['TypeDoesNotContainType', 'RedundantCondition'],
+                'php_version' => '8.1',
+            ],
         ];
     }
 
@@ -1231,6 +1315,29 @@ final class BinaryOperationTest extends TestCase
     public function providerInvalidCodeParse(): iterable
     {
         return [
+            'shiftLeftByANegativeNumber' => [
+                'code' => '<?php
+                    $a = 1 << -1;
+                    echo $a;',
+                'error_message' => 'NoValue',
+            ],
+            'shiftRightByANegativeNumber' => [
+                'code' => '<?php
+                    $a = 1 >> -2;
+                    echo $a;',
+                'error_message' => 'NoValue',
+            ],
+            'moduloOfABigFloatLiteralByZeroIsNever' => [
+                'code' => '<?php
+                    $a = 1e30 % 0;',
+                'error_message' => 'NoValue',
+            ],
+
+            'moduloOfNotANumberByAFractionIsNever' => [
+                'code' => '<?php
+                    $a = NAN % 0.5;',
+                'error_message' => 'NoValue',
+            ],
             'badAddition' => [
                 'code' => '<?php
                     $a = "b" + 5;',

@@ -1397,6 +1397,15 @@ final class TypeParser
             $is_optional = false;
             $param_name = '';
 
+            // `$x=` wraps the named parameter in a parameter that only carries the default
+            if ($child_tree instanceof CallableParamTree
+                && isset($child_tree->children[0])
+                && $child_tree->children[0] instanceof CallableParamTree
+            ) {
+                $is_optional = $child_tree->has_default;
+                $child_tree = $child_tree->children[0];
+            }
+
             if ($child_tree instanceof CallableParamTree) {
                 if (isset($child_tree->children[0])) {
                     $tree_type = self::getTypeFromTree(
@@ -1412,7 +1421,7 @@ final class TypeParser
                 }
 
                 $is_variadic = $child_tree->variadic;
-                $is_optional = $child_tree->has_default;
+                $is_optional = $is_optional || $child_tree->has_default;
                 $param_name = $child_tree->name ?? '';
             } else {
                 if ($child_tree instanceof Value && strpos($child_tree->value, '$') > 0) {
