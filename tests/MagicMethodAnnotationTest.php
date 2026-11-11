@@ -253,6 +253,79 @@ final class MagicMethodAnnotationTest extends TestCase
         $this->analyzeFile('somefile.php', $context);
     }
 
+    public function testPseudoMethodOfAStubbedParentOverridesItsInheritedMethod(): void
+    {
+        $this->addFile(
+            'Base.php',
+            '<?php
+                class Base {
+                    public function foo(): int|string {
+                        return 1;
+                    }
+                }',
+        );
+
+        $this->addStubFile(
+            'base.phpstub',
+            '<?php
+                /** @method int foo() */
+                class Base {
+                    public function foo(): int|string {}
+                }',
+        );
+
+        $this->addFile(
+            'somefile.php',
+            '<?php
+                class Child extends Base {}
+
+                $foo = (new Child)->foo();',
+        );
+
+        $this->project_analyzer->setPhpVersion('8.0', 'tests');
+
+        $context = new Context();
+
+        $this->analyzeFile('somefile.php', $context);
+
+        $this->assertSame('int', (string) $context->vars_in_scope['$foo']);
+    }
+
+    public function testPseudoMethodOfAStubbedParentReplacesTheOneOfTheOverriddenClass(): void
+    {
+        $this->addFile(
+            'Base.php',
+            '<?php
+                /** @method static int foo() */
+                class Base {
+                    public static function __callStatic(string $name, array $args) {
+                        return null;
+                    }
+                }',
+        );
+
+        $this->addStubFile(
+            'base.phpstub',
+            '<?php
+                /** @method static string foo() */
+                class Base {}',
+        );
+
+        $this->addFile(
+            'somefile.php',
+            '<?php
+                class Child extends Base {}
+
+                $foo = Child::foo();',
+        );
+
+        $context = new Context();
+
+        $this->analyzeFile('somefile.php', $context);
+
+        $this->assertSame('string', (string) $context->vars_in_scope['$foo']);
+    }
+
     /**
      * @psalm-pure
      */
@@ -1547,6 +1620,43 @@ final class MagicMethodAnnotationTest extends TestCase
                     function f(ChildInterface $i): int {
                         return $i->foo();
                     }',
+            ],
+            'staticPseudoMethodOfAParentOrInterfaceYieldsToMethodOfTheClass' => [
+                'code' => '<?php
+                    /** @method static string foo() */
+                    class ParentClass {}
+
+                    /** @method static string foo() */
+                    interface SomeInterface {}
+
+                    trait RealTrait {
+                        public static function foo(): int {
+                            return 1;
+                        }
+                    }
+
+                    class A extends ParentClass {
+                        use RealTrait;
+                    }
+
+                    class B extends ParentClass {
+                        public static function foo(): int {
+                            return 1;
+                        }
+                    }
+
+                    class C implements SomeInterface {
+                        use RealTrait;
+                    }
+
+                    $a = A::foo();
+                    $b = B::foo();
+                    $c = C::foo();',
+                'assertions' => [
+                    '$a===' => 'int',
+                    '$b===' => 'int',
+                    '$c===' => 'int',
+                ],
             ],
             'pseudoMethodOfTheClassOrOfItsTraitWinsOverOneOfTheParent' => [
                 'code' => '<?php

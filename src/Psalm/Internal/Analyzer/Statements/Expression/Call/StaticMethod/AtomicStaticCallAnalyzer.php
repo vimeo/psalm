@@ -1367,9 +1367,13 @@ final class AtomicStaticCallAnalyzer
             return [$pseudo_method_storage, $static_class_storage];
         }
 
-        $ancestors = $static_class_storage->class_implements + $static_class_storage->parent_classes;
+        // the class already has the ones of its parents that its own methods don't override, and the ones of its
+        // interfaces don't override its methods either
+        if (isset($static_class_storage->declaring_method_ids[$method_name_lc])) {
+            return null;
+        }
 
-        foreach ($ancestors as $fq_class_name => $_) {
+        foreach ($static_class_storage->class_implements as $fq_class_name => $_) {
             $class_storage = $codebase->classlikes->getStorageFor($fq_class_name);
 
             if ($class_storage && isset($class_storage->pseudo_static_methods[$method_name_lc])) {
