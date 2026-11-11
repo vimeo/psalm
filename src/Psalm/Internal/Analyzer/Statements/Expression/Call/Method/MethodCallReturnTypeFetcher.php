@@ -386,8 +386,44 @@ final class MethodCallReturnTypeFetcher
     }
 
     /**
+     * What a plugin that supplied the return type of a call gave its result flows on through what the method removes
+     * from its return, on a node of this call's own: the return node of the method may be shared with the other calls
+     *
+     * @param array<string, DataFlowNode> $provided_parent_nodes
+     */
+    public static function addProvidedParentNodes(
+        TaintFlowGraph|CombinedFlowGraph|VariableUseGraph $graph,
+        Union $return_type,
+        array $provided_parent_nodes,
+        MethodIdentifier $method_id,
+        CodeLocation $node_location,
+        int $added_taints,
+        int $removed_taints,
+    ): Union {
+        if (!$provided_parent_nodes) {
+            return $return_type;
+        }
+
+        $provided_node = DataFlowNode::getForAssignment((string) $method_id . '-provided', $node_location);
+
+        $graph->addNode($provided_node);
+
+        foreach ($provided_parent_nodes as $parent_node) {
+            $graph->addPath(
+                $parent_node,
+                $provided_node,
+                '=',
+                $added_taints,
+                $removed_taints,
+            );
+        }
+
+        return $return_type->addParentNodes([$provided_node->id => $provided_node]);
+    }
+
+    /**
      * What the method removes from its return depends on the arguments of this call: its result has a node of its own,
-     * as $method_call_node may be shared with the other calls, the last call deciding for all
+     * as the nodes it comes from may be shared with the other calls, the last call deciding for all
      */
     private static function escapeReturnByArguments(
         Codebase $codebase,
@@ -396,7 +432,6 @@ final class MethodCallReturnTypeFetcher
         ?TemplateResult $template_result,
         MethodIdentifier $method_id,
         CodeLocation $node_location,
-        DataFlowNode $method_call_node,
         Union &$return_type_candidate,
     ): void {
         $removed_taints = $template_result
@@ -414,7 +449,10 @@ final class MethodCallReturnTypeFetcher
         $escaped_node = DataFlowNode::getForAssignment((string) $method_id . '-escaped', $node_location);
 
         $graph->addNode($escaped_node);
-        $graph->addPath($method_call_node, $escaped_node, 'conditionally-escaped', 0, $removed_taints);
+
+        foreach ($return_type_candidate->parent_nodes as $parent_node) {
+            $graph->addPath($parent_node, $escaped_node, 'conditionally-escaped', 0, $removed_taints);
+        }
 
         $return_type_candidate = $return_type_candidate->setParentNodes([$escaped_node->id => $escaped_node]);
     }
@@ -440,6 +478,8 @@ final class MethodCallReturnTypeFetcher
             return;
         }
         $taint_flow_graph = $statements_analyzer->getTaintFlowGraphWithSuppressed();
+
+        $provided_parent_nodes = $return_type_candidate->parent_nodes;
 
         $codebase = $statements_analyzer->getCodebase();
 
@@ -687,6 +727,16 @@ final class MethodCallReturnTypeFetcher
             ]);
         }
 
+        $return_type_candidate = self::addProvidedParentNodes(
+            $graph,
+            $return_type_candidate,
+            $provided_parent_nodes,
+            $method_id,
+            $node_location,
+            $method_storage->added_taints,
+            $method_storage->removed_taints,
+        );
+
         self::escapeReturnByArguments(
             $codebase,
             $graph,
@@ -694,7 +744,6 @@ final class MethodCallReturnTypeFetcher
             $template_result,
             $method_id,
             $node_location,
-            $method_call_node,
             $return_type_candidate,
         );
 
