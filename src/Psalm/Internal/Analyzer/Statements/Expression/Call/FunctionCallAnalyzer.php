@@ -827,16 +827,14 @@ final class FunctionCallAnalyzer extends CallAnalyzer
                 );
 
                 if ($function_storage->overloads !== [] && !$stmt->isFirstClassCallable()) {
-                    $overload_offset = OverloadSelector::findOffset(
-                        $statements_analyzer,
-                        $codebase,
-                        $args,
-                        $context,
-                        $function_storage->overloads,
-                    ) ?? count($function_storage->overloads) - 1;
-
                     $function_call_info->function_storage = $function_storage = $function_storage->withOverload(
-                        $function_storage->overloads[$overload_offset],
+                        OverloadSelector::select(
+                            $statements_analyzer,
+                            $codebase,
+                            $args,
+                            $context,
+                            $function_storage->overloads,
+                        ),
                     );
                 }
 

@@ -148,14 +148,13 @@ final class MissingMethodCallHandler
             $overloads = $defining_class_storage->pseudo_method_overloads[$method_name_lc] ?? null;
 
             if ($overloads !== null) {
-                // none accepting the arguments, the last declared reports the issues
-                $pseudo_method_storage = $overloads[OverloadSelector::findOffset(
+                $pseudo_method_storage = OverloadSelector::select(
                     $statements_analyzer,
                     $codebase,
                     $stmt->getArgs(),
                     $context,
                     $overloads,
-                ) ?? count($overloads) - 1];
+                );
             }
 
             $found_generic_params = ClassTemplateParamCollector::collect(
