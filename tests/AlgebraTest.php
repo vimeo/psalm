@@ -21,19 +21,78 @@ use Psalm\Storage\Assertion\IsIsset;
 use Psalm\Storage\Assertion\IsNotIdentical;
 use Psalm\Storage\Assertion\IsNotType;
 use Psalm\Storage\Assertion\IsType;
+use Psalm\Storage\Assertion\NestedAssertions;
+use Psalm\Storage\Assertion\NotNestedAssertions;
 use Psalm\Storage\Assertion\Truthy;
 use Psalm\Type;
 use Psalm\Type\Atomic\TArray;
 use Psalm\Type\Atomic\TInt;
 use Psalm\Type\Atomic\TLiteralInt;
+use Psalm\Type\Atomic\TLiteralString;
 use Psalm\Type\Atomic\TString;
 
 use function array_map;
+use function json_encode;
+use function preg_match;
 use function spl_object_id;
 use function strval;
 
+use const JSON_THROW_ON_ERROR;
+
 final class AlgebraTest extends TestCase
 {
+    #[DataProvider('providerNestedAssertionNegations')]
+    public function testNestedAssertionsPreserveBinaryLiterals(bool $negated): void
+    {
+        $strings = [];
+        foreach (["\xFF\xFE", "\xFE\xFF", "\u{FFFD}\u{FFFD}"] as $value) {
+            $assertions = ['$s' => [[new IsIdentical(TLiteralString::make($value))]]];
+            $assertion = $negated ? new NotNestedAssertions($assertions) : new NestedAssertions($assertions);
+            $string = (string) $assertion;
+            self::assertSame($string, (string) $assertion);
+            self::assertNotSame($string, (string) $assertion->getNegation());
+            self::assertSame($string, (string) $assertion->getNegation()->getNegation());
+            self::assertSame(1, preg_match('/^[\x20-\x7E]+$/D', $string));
+            foreach ($strings as $previous) {
+                self::assertNotSame($previous, $string);
+            }
+            $strings[] = $string;
+        }
+    }
+
+    #[DataProvider('providerNestedAssertionNegations')]
+    public function testNestedAssertionsPreserveBinaryVariableNames(bool $negated): void
+    {
+        $strings = [];
+        foreach (["$\xFF\xFE", "$\xFE\xFF", "$\u{FFFD}\u{FFFD}"] as $variable) {
+            $assertions = [$variable => [[new IsType(new TString())]]];
+            $assertion = $negated ? new NotNestedAssertions($assertions) : new NestedAssertions($assertions);
+            $string = (string) $assertion;
+            self::assertSame($string, (string) $assertion);
+            foreach ($strings as $previous) {
+                self::assertNotSame($previous, $string);
+            }
+            $strings[] = $string;
+        }
+    }
+
+    #[DataProvider('providerNestedAssertionNegations')]
+    public function testNestedAssertionsKeepValidUtf8Output(bool $negated): void
+    {
+        $assertions = ['$s' => [[new IsIdentical(TLiteralString::make("é/\"\\\n"))]]];
+        $assertion = $negated ? new NotNestedAssertions($assertions) : new NestedAssertions($assertions);
+        self::assertSame(($negated ? '!@' : '@') . json_encode($assertions, JSON_THROW_ON_ERROR), (string) $assertion);
+    }
+
+    /**
+     * @return array<string, array{bool}>
+     * @psalm-pure
+     */
+    public static function providerNestedAssertionNegations(): array
+    {
+        return ['positive' => [false], 'negative' => [true]];
+    }
+
     public function testNegateFormula(): void
     {
         $formula = [
