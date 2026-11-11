@@ -40,6 +40,13 @@ use const DIRECTORY_SEPARATOR;
 
 class TestCase extends BaseTestCase
 {
+    /**
+     * Null keeps the analyzer's default PHP version.
+     *
+     * @var string|null
+     */
+    protected const ANALYSIS_PHP_VERSION = '7.4';
+
     protected static string $src_dir_path;
 
     /**
@@ -91,7 +98,11 @@ class TestCase extends BaseTestCase
         RuntimeCaches::clearAll();
 
         $this->file_provider = new FakeFileProvider();
+        $this->setUpProjectAnalyzer();
+    }
 
+    protected function setUpProjectAnalyzer(): void
+    {
         $this->testConfig = $this->makeConfig();
 
         $providers = new Providers(
@@ -104,7 +115,10 @@ class TestCase extends BaseTestCase
             $providers,
         );
 
-        $this->project_analyzer->setPhpVersion('7.4', 'tests');
+        $php_version = static::ANALYSIS_PHP_VERSION;
+        if ($php_version !== null) {
+            $this->project_analyzer->setPhpVersion($php_version, 'tests');
+        }
     }
 
     /**
