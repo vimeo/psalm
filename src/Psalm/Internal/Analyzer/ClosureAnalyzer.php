@@ -29,7 +29,9 @@ use function in_array;
 use function is_string;
 use function preg_match;
 use function str_starts_with;
+use function strlen;
 use function strtolower;
+use function substr;
 
 /**
  * @internal
@@ -84,6 +86,13 @@ final class ClosureAnalyzer extends FunctionLikeAnalyzer
      * @var array<string, true>
      */
     public array $captured_by_ref_writes = [];
+
+    /**
+     * The types of the variables captured by reference where the closure body returns.
+     *
+     * @var array<string, list<Union>>
+     */
+    public array $captured_by_ref_types_at_return = [];
 
     public function getRecursiveVarId(): ?string
     {
@@ -321,6 +330,21 @@ final class ClosureAnalyzer extends FunctionLikeAnalyzer
                         $context->vars_in_scope[$use_var_id],
                     );
 
+                    // what is known of a readonly property holds in the closure; a deeper path goes through a
+                    // value that may change
+                    foreach ($context->vars_in_scope as $var_id => $type) {
+                        if (str_starts_with($var_id, $use_var_id . '->')
+                            && self::isReadonlyPropertyOf(
+                                $statements_analyzer->getCodebase(),
+                                $context->vars_in_scope[$use_var_id],
+                                substr($var_id, strlen($use_var_id) + 2),
+                            )
+                        ) {
+                            $use_context->vars_in_scope[$var_id] = self::getCapturedType($type);
+                            $use_context->vars_possibly_in_scope[$var_id] = true;
+                        }
+                    }
+
                     if ($statements_analyzer->data_flow_graph) {
                         $parent_nodes = $context->vars_in_scope[$use_var_id]->parent_nodes;
 
@@ -401,6 +425,37 @@ final class ClosureAnalyzer extends FunctionLikeAnalyzer
     }
 
     /**
+     * Whether every class the type can be has the readonly property of that name
+     *
+     * @psalm-capabilities read-props
+     */
+    private static function isReadonlyPropertyOf(Codebase $codebase, Union $type, string $property_name): bool
+    {
+        if (!preg_match('/^[a-zA-Z_\x80-\xff][a-zA-Z0-9_\x80-\xff]*$/', $property_name)) {
+            return false;
+        }
+
+        foreach ($type->getAtomicTypes() as $atomic_type) {
+            if (!$atomic_type instanceof TNamedObject) {
+                return false;
+            }
+
+            $property_id = $atomic_type->value . '::$' . $property_name;
+
+            if (!$codebase->classlike_storage_provider->has($atomic_type->value)
+                || !$codebase->properties->hasStorage($property_id)
+                || !$codebase->properties->getStorage($property_id)->readonly
+                // a private method of the class may still write it
+                || $codebase->properties->getStorage($property_id)->allow_private_mutation
+            ) {
+                return false;
+            }
+        }
+
+        return true;
+    }
+
+    /**
      * @return  false|null
      */
     private static function analyzeClosureUses(
@@ -435,6 +490,11 @@ final class ClosureAnalyzer extends FunctionLikeAnalyzer
                 )) {
                     return false;
                 }
+            }
+
+            // capturing by reference defines the variable (as null) in the enclosing scope
+            if ($use->byRef && !$context->hasVariable($use_var_id)) {
+                continue;
             }
 
             if (!$context->hasVariable($use_var_id)) {

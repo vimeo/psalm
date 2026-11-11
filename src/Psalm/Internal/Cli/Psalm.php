@@ -124,7 +124,7 @@ final class Psalm
         'r:',
     ];
 
-    private const LONG_OPTIONS = [
+    public const LONG_OPTIONS = [
         'clear-cache',
         'consolidate-cache',
         'clear-global-cache',
@@ -462,8 +462,8 @@ final class Psalm
         if (defined('PHP_WINDOWS_VERSION_MAJOR')) {
             // No support desired for Windows at the moment
             return 1;
-        } elseif (!extension_loaded('pcntl')) {
-            // Psalm requires pcntl for multi-threads support
+        } elseif (!extension_loaded('pcntl') || !extension_loaded('posix') || !function_exists('pcntl_fork')) {
+            // the worker pool forks its workers and kills them with posix_kill()
             return 1;
         }
 
