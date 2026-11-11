@@ -6,15 +6,9 @@ namespace Psalm\Tests;
 
 use ArrayAccess;
 use Countable;
-use Override;
 use Psalm\Codebase;
 use Psalm\Exception\TypeParseTreeException;
-use Psalm\Internal\Analyzer\ProjectAnalyzer;
 use Psalm\Internal\Codebase\InternalCallMapHandler;
-use Psalm\Internal\Provider\FakeFileProvider;
-use Psalm\Internal\Provider\Providers;
-use Psalm\Internal\RuntimeCaches;
-use Psalm\Tests\Internal\Provider\FakeParserCacheProvider;
 use Psalm\Type;
 use Psalm\Type\Atomic\TClassConstant;
 use Psalm\Type\Atomic\TLiteralFloat;
@@ -35,24 +29,7 @@ use function stripos;
 
 final class TypeParseTest extends TestCase
 {
-    #[Override]
-    public function setUp(): void
-    {
-        RuntimeCaches::clearAll();
-        $this->file_provider = new FakeFileProvider();
-
-        $config = new TestConfig();
-
-        $providers = new Providers(
-            $this->file_provider,
-            new FakeParserCacheProvider(),
-        );
-
-        $this->project_analyzer = new ProjectAnalyzer(
-            $config,
-            $providers,
-        );
-    }
+    protected const ANALYSIS_PHP_VERSION = null;
 
     public function testThisToStatic(): void
     {
@@ -179,6 +156,33 @@ final class TypeParseTest extends TestCase
     public function testLiteralStringIdKeepsTheEscapesPhpHas(): void
     {
         $this->assertSame("'\\n\\t\\r\\f\\v\\033\\000'", (new TLiteralString("\n\t\r\f\v\e\0"))->getId());
+    }
+
+    public function testGenericWithTrailingComma(): void
+    {
+        $this->assertSame('array<int, string>', (string) Type::parseString('array<int, string,>'));
+    }
+
+    public function testNestedGenericsWithTrailingCommas(): void
+    {
+        $this->assertSame(
+            'array<int, array<string, bool>>',
+            (string) Type::parseString('array<int, array<string, bool,>,>'),
+        );
+    }
+
+    public function testGenericWithTrailingCommaBeforeALaterGeneric(): void
+    {
+        $this->assertSame(
+            'array<int|string, int|string>',
+            (string) Type::parseString('array<int, string,>|array<string, int,>'),
+        );
+    }
+
+    public function testGenericWithOnlyAComma(): void
+    {
+        $this->expectException(TypeParseTreeException::class);
+        Type::parseString('array<,>');
     }
 
     public function testArrayWithoutClosingBracket(): void
@@ -1939,5 +1943,19 @@ final class TypeParseTest extends TestCase
                 }
             }
         }
+    }
+
+    public function testClassStringOfAGenericKeepsItsArgumentsInNamespacedString(): void
+    {
+        $type = Type::parseString('class-string<Ns\Box<int>>');
+        self::assertSame('class-string<\Ns\Box<int>>', $type->toNamespacedString(null, [], null, false));
+        self::assertSame('class-string<Box<int>>', $type->toNamespacedString('Ns', [], null, false));
+        self::assertTrue($type->equals(Type::parseString($type->toNamespacedString(null, [], null, false))));
+    }
+
+    public function testInterfaceStringKeepsItsKindInNamespacedString(): void
+    {
+        $type = Type::parseString('interface-string');
+        self::assertSame('interface-string', $type->toNamespacedString(null, [], null, false));
     }
 }
