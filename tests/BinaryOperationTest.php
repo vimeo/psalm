@@ -1137,6 +1137,25 @@ final class BinaryOperationTest extends TestCase
                     foo("" . $bar);
                 ',
             ],
+            'concatenateStringableUsesDeclaredStringReturn' => [
+                'code' => '<?php
+                    final class Text {
+                        public function __toString(): string {
+                            return "text";
+                        }
+                    }
+
+                    /** @var lowercase-string $lowercase */
+                    $lowercase = "lowercase";
+                    $prefixed = "abc" . new Text();
+                    $lowercasePrefixed = $lowercase . new Text();',
+                'assertions' => [
+                    '$prefixed===' => 'non-falsy-string',
+                    '$lowercasePrefixed===' => 'string',
+                ],
+                'ignored_issues' => ['ImplicitToStringCast'],
+                'php_version' => '8.1',
+            ],
             'concatenateNegativeIntLeftSideIsNumeric' => [
                 'code' => '<?php
                     /**

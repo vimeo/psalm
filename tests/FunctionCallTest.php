@@ -2672,6 +2672,84 @@ final class FunctionCallTest extends TestCase
                 'ignored_issues' => ['ImplicitToStringCast'],
                 'php_version' => '8.1',
             ],
+            'objectWithRefinedToStringReturnMatchesStringParameter' => [
+                'code' => '<?php
+                    final class LowercaseText {
+                        /** @return lowercase-string */
+                        public function __toString(): string {
+                            return "lowercase";
+                        }
+                    }
+
+                    /** @param lowercase-string $value */
+                    function acceptsLowercase(string $value): void {}
+
+                    /** @psalm-suppress ImplicitToStringCast */
+                    acceptsLowercase(new LowercaseText());',
+                'php_version' => '8.1',
+            ],
+            'genericObjectWithRefinedToStringReturnMatchesStringParameter' => [
+                'code' => '<?php
+                    /** @template T of string */
+                    final class Box {
+                        /** @param T $value */
+                        public function __construct(private string $value) {}
+
+                        /** @return T */
+                        public function __toString(): string {
+                            return $this->value;
+                        }
+                    }
+
+                    /** @param lowercase-string $value */
+                    function acceptsLowercase(string $value): void {}
+
+                    /** @var Box<lowercase-string> $box */
+                    $box = new Box("lowercase");
+
+                    /** @psalm-suppress ImplicitToStringCast */
+                    acceptsLowercase($box);',
+                'php_version' => '8.1',
+            ],
+            'stringConditionOnObjectPreservesObjectType' => [
+                'code' => '<?php
+                    final class Path {
+                        public function __toString(): string {
+                            return "path";
+                        }
+
+                        public function getElement(): string {
+                            return "element";
+                        }
+                    }
+
+                    function getElement(Path $path): string {
+                        if (str_starts_with($path, "p")) {
+                            return $path->getElement();
+                        }
+
+                        return "";
+                    }',
+                'ignored_issues' => ['ImplicitToStringCast'],
+                'php_version' => '8.1',
+            ],
+            'failedNestedStringCastDoesNotLeakFromArray' => [
+                'code' => '<?php
+                    final class Join {
+                        public function __toString(): string {
+                            return "join";
+                        }
+                    }
+
+                    /**
+                     * @param string|object|list<string>|array{join: array<int|string, object>} $part
+                     */
+                    function add(string|object|array $part): void {}
+
+                    add(["root" => new Join()]);',
+                'ignored_issues' => ['InvalidScalarArgument'],
+                'php_version' => '8.1',
+            ],
             'strReplaceWithAsManyReplacementsAsSearches' => [
                 'code' => '<?php
                     /** @var string $subject */
@@ -3354,6 +3432,184 @@ final class FunctionCallTest extends TestCase
                     'MixedArrayAccess',
                     'RedundantConditionGivenDocblockType',
                 ],
+            ],
+            'objectToStringReturnDoesNotMatchLowercaseStringParameter' => [
+                'code' => '<?php
+                    final class UppercaseText {
+                        /** @return "AAA" */
+                        public function __toString(): string {
+                            return "AAA";
+                        }
+                    }
+
+                    /** @param lowercase-string $value */
+                    function acceptsLowercase(string $value): void {}
+
+                    /** @psalm-suppress ImplicitToStringCast */
+                    acceptsLowercase(new UppercaseText());',
+                'error_message' => 'InvalidArgument',
+                'error_levels' => [],
+                'php_version' => '8.1',
+            ],
+            'objectToStringReturnCoercesToLowercaseStringParameter' => [
+                'code' => '<?php
+                    final class Text {
+                        public function __toString(): string {
+                            return "text";
+                        }
+                    }
+
+                    /** @param lowercase-string $value */
+                    function acceptsLowercase(string $value): void {}
+
+                    /** @psalm-suppress ImplicitToStringCast */
+                    acceptsLowercase(new Text());',
+                'error_message' => 'ArgumentTypeCoercion',
+                'error_levels' => [],
+                'php_version' => '8.1',
+            ],
+            'objectToStringReturnCoercionReportsImplicitCast' => [
+                'code' => '<?php
+                    final class Text {
+                        public function __toString(): string {
+                            return "text";
+                        }
+                    }
+
+                    /** @param lowercase-string $value */
+                    function acceptsLowercase(string $value): void {}
+
+                    /** @psalm-suppress ArgumentTypeCoercion */
+                    acceptsLowercase(new Text());',
+                'error_message' => 'ImplicitToStringCast',
+                'error_levels' => [],
+                'php_version' => '8.1',
+            ],
+            'stringableUnionWithNonStringableObjectDoesNotCoerce' => [
+                'code' => '<?php
+                    final class Text {
+                        public function __toString(): string {
+                            return "text";
+                        }
+                    }
+
+                    final class Other {}
+
+                    /** @param lowercase-string $value */
+                    function acceptsLowercase(string $value): void {}
+
+                    /** @param Text|Other $value */
+                    function passObject($value): void {
+                        /** @psalm-suppress ImplicitToStringCast */
+                        acceptsLowercase($value);
+                    }',
+                'error_message' => 'InvalidArgument',
+                'error_levels' => [],
+                'php_version' => '8.1',
+            ],
+            'untypedObjectToStringReturnCoercesToLowercaseStringParameter' => [
+                'code' => '<?php
+                    final class Text {
+                        public function __toString() {
+                            return "text";
+                        }
+                    }
+
+                    /** @param lowercase-string $value */
+                    function acceptsLowercase(string $value): void {}
+
+                    /** @psalm-suppress ImplicitToStringCast */
+                    acceptsLowercase(new Text());',
+                'error_message' => 'ArgumentTypeCoercion',
+                'error_levels' => [],
+                'php_version' => '7.4',
+            ],
+            'objectToStringReturnCoercesToClassStringParameter' => [
+                'code' => '<?php
+                    final class Text {
+                        public function __toString(): string {
+                            return "text";
+                        }
+                    }
+
+                    /** @param class-string $value */
+                    function acceptsClassString(string $value): void {}
+
+                    /** @psalm-suppress ImplicitToStringCast */
+                    acceptsClassString(new Text());',
+                'error_message' => 'ArgumentTypeCoercion',
+                'error_levels' => [],
+                'php_version' => '8.1',
+            ],
+            'objectToStringReturnCoercesToNumericStringParameter' => [
+                'code' => '<?php
+                    final class Text {
+                        public function __toString(): string {
+                            return "text";
+                        }
+                    }
+
+                    /** @param numeric-string $value */
+                    function acceptsNumericString(string $value): void {}
+
+                    /** @psalm-suppress ImplicitToStringCast */
+                    acceptsNumericString(new Text());',
+                'error_message' => 'ArgumentTypeCoercion',
+                'error_levels' => [],
+                'php_version' => '8.1',
+            ],
+            'objectToStringReturnDoesNotMatchLiteralStringParameter' => [
+                'code' => '<?php
+                    final class Text {
+                        /** @return "AAA" */
+                        public function __toString(): string {
+                            return "AAA";
+                        }
+                    }
+
+                    /** @param "BBB"|"CCC" $value */
+                    function acceptsOtherLiterals(string $value): void {}
+
+                    /** @psalm-suppress ImplicitToStringCast */
+                    acceptsOtherLiterals(new Text());',
+                'error_message' => 'InvalidArgument',
+                'error_levels' => [],
+                'php_version' => '8.1',
+            ],
+            'objectToStringReturnDoesNotMatchNonEmptyStringParameter' => [
+                'code' => '<?php
+                    final class EmptyText {
+                        /** @return "" */
+                        public function __toString(): string {
+                            return "";
+                        }
+                    }
+
+                    /** @param non-empty-string $value */
+                    function acceptsNonEmpty(string $value): void {}
+
+                    /** @psalm-suppress ImplicitToStringCast */
+                    acceptsNonEmpty(new EmptyText());',
+                'error_message' => 'InvalidArgument',
+                'error_levels' => [],
+                'php_version' => '8.1',
+            ],
+            'objectToStringReturnCoercesToNonEmptyStringParameter' => [
+                'code' => '<?php
+                    final class Text {
+                        public function __toString(): string {
+                            return "text";
+                        }
+                    }
+
+                    /** @param non-empty-string $value */
+                    function acceptsNonEmpty(string $value): void {}
+
+                    /** @psalm-suppress ImplicitToStringCast */
+                    acceptsNonEmpty(new Text());',
+                'error_message' => 'ArgumentTypeCoercion',
+                'error_levels' => [],
+                'php_version' => '8.1',
             ],
             'clampIsUndefinedBeforePhp86' => [
                 'code' => '<?php
