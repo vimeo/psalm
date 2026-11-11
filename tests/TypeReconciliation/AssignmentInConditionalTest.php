@@ -21,6 +21,51 @@ final class AssignmentInConditionalTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'assignmentInTheOffsetOfAnIssetInATryIsDefined' => [
+                'code' => '<?php
+                    function keyOf(string $t): string {
+                        return $t;
+                    }
+
+                    /** @param list<string> $templates */
+                    function warm(array $templates): void {
+                        $seen = [];
+
+                        foreach ($templates as $t) {
+                            try {
+                                if (!isset($seen[$k = keyOf($t)])) {
+                                    $seen[$k] = true;
+                                }
+                            } catch (Error) {
+                            }
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'assignmentInTheOffsetOfAnIssetKeepsTheTypeAfterIt' => [
+                'code' => '<?php
+                    function connectionName(UnitEnum|string|null $name): string {
+                        return $name instanceof UnitEnum ? $name->name : (string) $name;
+                    }
+
+                    function defaultName(): string {
+                        return "default";
+                    }
+
+                    /** @param array<string, int> $connections */
+                    function connection(array $connections, UnitEnum|string|null $name = null): int {
+                        if (isset($connections[$name = connectionName($name) ?: defaultName()])) {
+                            return $connections[$name];
+                        }
+
+                        return 0;
+                    }',
+                'assertions' => [],
+                'ignored_issues' => ['RiskyTruthyFalsyComparison'],
+                'php_version' => '8.1',
+            ],
             'assignmentInAPlainIfKeepsTheTypeAfterIt' => [
                 'code' => '<?php
                     /** @return (callable(int): bool)|null */

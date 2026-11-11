@@ -683,8 +683,7 @@ final class IfConditionalAnalyzer
                         || $node instanceof PhpParser\Node\Expr\AssignOp\Coalesce
                         || $node instanceof PhpParser\Node\Expr\Match_
                         || $node instanceof PhpParser\Node\Expr\NullsafePropertyFetch
-                        || $node instanceof PhpParser\Node\Expr\NullsafeMethodCall
-                        || $node instanceof PhpParser\Node\Expr\Isset_)
+                        || $node instanceof PhpParser\Node\Expr\NullsafeMethodCall)
                 ) {
                     return PhpParser\NodeVisitor::DONT_TRAVERSE_CHILDREN;
                 }
