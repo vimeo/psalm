@@ -56,6 +56,8 @@ use Psalm\Internal\Provider\Providers;
 use Psalm\Internal\Provider\StatementsProvider;
 use Psalm\Internal\Scanner\UnresolvedConstantComponent;
 use Psalm\Internal\Type\Comparator\UnionTypeComparator;
+use Psalm\Internal\TypeVisitor\TypeScanner;
+use Psalm\Issue\CodeIssue;
 use Psalm\Issue\InvalidDocblock;
 use Psalm\Progress\Progress;
 use Psalm\Progress\VoidProgress;
@@ -224,6 +226,14 @@ final class Codebase
     public bool $infer_types_from_usage = false;
 
     public bool $alter_code = false;
+
+    /**
+     * The issue types Psalter was asked to fix (see shouldFixIssue())
+     *
+     * @internal
+     * @var array<string, bool>
+     */
+    public array $issues_to_fix = [];
 
     public bool $diff_methods = false;
 
@@ -958,6 +968,24 @@ final class Codebase
     }
 
     /**
+     * Whether Psalter was asked to fix $issue (`--issues=...`, `all` included) and neither $suppressed_issues nor the
+     * config's issue handlers suppress it: a plugin that declares its type with PluginFixableIssuesInterface adds its
+     * file replacements for it only then.
+     *
+     * @api
+     * @param array<array-key, string> $suppressed_issues
+     */
+    public function shouldFixIssue(CodeIssue $issue, array $suppressed_issues): bool
+    {
+        $issue_type = $issue::getIssueType();
+
+        return $this->alter_code
+            && isset($this->issues_to_fix[$issue_type])
+            && !$this->config->suppressesIssueType($suppressed_issues, $issue_type)
+            && $this->config->getReportingLevelForIssue($issue) !== Config::REPORT_SUPPRESS;
+    }
+
+    /**
      * @param array<string, string> $files_to_analyze
      * @psalm-capabilities read-props|write-this-props|write-props|write-refs
      */
@@ -972,6 +1000,13 @@ final class Codebase
      */
     public function scanFiles(int $threads = 1): void
     {
+        // the classes of the global variables of the config are named nowhere else
+        foreach ($this->config->globals as $global_type) {
+            (new TypeScanner($this->scanner, null, []))->traverseArray(
+                Type::parseString($global_type)->getAtomicTypes(),
+            );
+        }
+
         $has_changes = $this->scanner->scanFiles($this->classlikes, $threads);
 
         // a taint analysis analyzes the bodies of inherited methods again, for the classes inheriting them (see
@@ -1587,9 +1622,6 @@ final class Codebase
         $this->global_constant_types_by_wildcard = [];
     }
 
-    /**
-     * @psalm-capabilities read-props|write-this-props|write-props|write-refs
-     */
     public function getFunctionStorageForSymbol(string $file_path, string $symbol): ?FunctionLikeStorage
     {
         if (strpos($symbol, '::')) {
@@ -1617,7 +1649,7 @@ final class Codebase
             return null;
         }
 
-        return $this->functions->getStorage(null, $function_id, $file_path, $file_path);
+        return $this->functions->getStorageForSymbolLookup($function_id, $file_path);
     }
 
     /**
@@ -1753,12 +1785,7 @@ final class Codebase
                 return null;
             }
 
-            $function = $this->functions->getStorage(
-                null,
-                $function_id,
-                $reference->file_path,
-                $reference->file_path,
-            );
+            $function = $this->functions->getStorageForSymbolLookup($function_id, $reference->file_path);
 
             return new PHPMarkdownContent(
                 $function->getHoverMarkdown(),
@@ -1927,12 +1954,7 @@ final class Codebase
                     return null;
                 }
 
-                return $this->functions->getStorage(
-                    null,
-                    $function_id,
-                    $reference->file_path,
-                    $reference->file_path,
-                )->location;
+                return $this->functions->getStorageForSymbolLookup($function_id, $reference->file_path)->location;
             }
 
             return $this->classlike_storage_provider->get(
