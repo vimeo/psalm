@@ -5,7 +5,10 @@ declare(strict_types=1);
 namespace Psalm\Internal\Type\Comparator;
 
 use Psalm\Codebase;
+use Psalm\Internal\Analyzer\Statements\Expression\Call\ClassTemplateParamCollector;
 use Psalm\Internal\MethodIdentifier;
+use Psalm\Internal\Type\TemplateInferredTypeReplacer;
+use Psalm\Internal\Type\TemplateResult;
 use Psalm\Storage\Capabilities;
 use Psalm\Type\Atomic;
 use Psalm\Type\Atomic\Scalar;
@@ -724,6 +727,57 @@ final class AtomicTypeComparator
             if ($input_type_part instanceof TNamedObject) {
                 // check whether the object has a __toString method
                 if ($codebase->classOrInterfaceExists($input_type_part->value)) {
+                    $to_string_method_id = new MethodIdentifier(
+                        $input_type_part->value,
+                        '__tostring',
+                    );
+
+                    if ($container_type_part instanceof TString
+                        && $container_type_part::class !== TString::class
+                        && $codebase->methodExists($to_string_method_id)
+                    ) {
+                        $self_class = $input_type_part->value;
+                        $return_type = $codebase->getMethodReturnType($to_string_method_id, $self_class);
+
+                        if ($return_type !== null && $input_type_part instanceof TGenericObject) {
+                            $class_template_params = ClassTemplateParamCollector::collect(
+                                $codebase,
+                                $codebase->methods->getClassLikeStorageForMethod($to_string_method_id),
+                                $codebase->classlike_storage_provider->get($input_type_part->value),
+                                $to_string_method_id->method_name,
+                                $input_type_part,
+                            );
+
+                            if ($class_template_params !== null) {
+                                $return_type = TemplateInferredTypeReplacer::replace(
+                                    $return_type,
+                                    new TemplateResult([], $class_template_params),
+                                    $codebase,
+                                );
+                            }
+                        }
+
+                        $return_type_comparison = new TypeComparisonResult();
+                        if ($return_type === null
+                            || !UnionTypeComparator::isContainedBy(
+                                $codebase,
+                                $return_type,
+                                new Union([$container_type_part]),
+                                false,
+                                false,
+                                $return_type_comparison,
+                            )
+                        ) {
+                            if ($atomic_comparison_result) {
+                                $atomic_comparison_result->type_coerced = $return_type === null
+                                    || $return_type_comparison->type_coerced;
+                                $atomic_comparison_result->to_string_cast = true;
+                            }
+
+                            return false;
+                        }
+                    }
+
                     if ($codebase->analysis_php_version_id >= 8_00_00
                         && ($input_type_part->value === 'Stringable'
                             || ($codebase->classlikes->classExists($input_type_part->value)
@@ -737,12 +791,7 @@ final class AtomicTypeComparator
                         return true;
                     }
 
-                    if ($codebase->methodExists(
-                        new MethodIdentifier(
-                            $input_type_part->value,
-                            '__tostring',
-                        ),
-                    )) {
+                    if ($codebase->methodExists($to_string_method_id)) {
                         if ($atomic_comparison_result) {
                             $atomic_comparison_result->to_string_cast = true;
                         }
