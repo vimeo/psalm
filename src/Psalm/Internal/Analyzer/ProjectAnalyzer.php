@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Psalm\Internal\Analyzer;
 
 use InvalidArgumentException;
+use PhpParser\Node\Stmt;
 use Psalm\Codebase;
 use Psalm\Config;
 use Psalm\Context;
@@ -60,10 +61,13 @@ use function array_combine;
 use function array_diff;
 use function array_fill_keys;
 use function array_filter;
+use function array_key_first;
 use function array_keys;
 use function array_map;
 use function array_merge;
 use function array_shift;
+use function array_unique;
+use function array_values;
 use function count;
 use function dirname;
 use function end;
@@ -74,6 +78,8 @@ use function implode;
 use function in_array;
 use function is_dir;
 use function is_file;
+use function max;
+use function memory_get_usage;
 use function microtime;
 use function mkdir;
 use function number_format;
@@ -124,11 +130,6 @@ final class ProjectAnalyzer
     public bool $debug_performance = false;
 
     public bool $show_issues = true;
-
-    /**
-     * @var array<string, bool>
-     */
-    private array $issues_to_fix = [];
 
     public bool $dry_run = false;
 
@@ -190,6 +191,18 @@ final class ProjectAnalyzer
         UnusedVariable::class,
         UnnecessaryVarAnnotation::class,
     ];
+
+    /** The issues to fix that `--issues=all` leaves out */
+    private const NAMED_ISSUES_TO_FIX = [
+        'MissingImmutableAnnotation', // opt-in by design (#4036), reported only with suggestPurityAnnotations
+        'MissingPureAnnotation', // same as MissingImmutableAnnotation
+        'MissingThrowsDocblock', // reported only with checkForThrowsDocblock (#7918)
+    ];
+
+    /** Bytes of parsed statements getMethodMutations() may keep per process (not a user setting, for now) */
+    private const MUTATION_STATEMENTS_BUDGET = 16 * 1_024 * 1_024;
+
+    private const MUTATION_STATEMENTS_MAX_SEEN = 65_536;
 
     private const PHP_VERSION_REGEX = '^(0|[1-9]\d*)\.(0|[1-9]\d*)(?:\..*)?$';
 
@@ -1227,15 +1240,14 @@ final class ProjectAnalyzer
     /**
      * @param array<string, bool> $issues
      * @throws UnsupportedIssueToFixException
-     * @psalm-external-mutation-free
      */
     public function setIssuesToFix(array $issues): void
     {
-        $supported_issues_to_fix = static::getSupportedIssuesToFix();
-
-        $supported_issues_to_fix[] = 'MissingImmutableAnnotation';
-        $supported_issues_to_fix[] = 'MissingPureAnnotation';
-        $supported_issues_to_fix[] = 'MissingThrowsDocblock';
+        $supported_issues_to_fix = [
+            ...static::getSupportedIssuesToFix(),
+            ...self::NAMED_ISSUES_TO_FIX,
+            ...$this->getPluginIssuesToFix(),
+        ];
 
         $unsupportedIssues = array_diff(array_keys($issues), $supported_issues_to_fix);
 
@@ -1246,25 +1258,46 @@ final class ProjectAnalyzer
             );
         }
 
-        $this->issues_to_fix = $issues;
+        $this->codebase->issues_to_fix = $issues;
+    }
+
+    public function setAllIssuesToFix(): void
+    {
+        $this->codebase->issues_to_fix = array_fill_keys($this->getAllIssuesToFix(), true);
     }
 
     /**
-     * @psalm-external-mutation-free
+     * The issues `--issues=all` fixes: those of getSupportedIssuesToFix(), then those only the plugins fix
+     *
+     * @return list<string>
      */
-    public function setAllIssuesToFix(): void
+    public function getAllIssuesToFix(): array
     {
-        $keyed_issues = array_fill_keys(static::getSupportedIssuesToFix(), true);
+        return [...static::getSupportedIssuesToFix(), ...$this->getPluginIssuesToFix()];
+    }
 
-        $this->setIssuesToFix($keyed_issues);
+    /**
+     * The issues the plugins fix (see PluginFixableIssuesInterface), except Psalm's own: they join `--issues=all`,
+     * but a plugin can't pull into it the issues Psalm fixes, nor NAMED_ISSUES_TO_FIX
+     *
+     * @return list<string>
+     */
+    private function getPluginIssuesToFix(): array
+    {
+        return array_values(array_unique(array_diff(
+            $this->config->getPluginFixableIssueTypes($this),
+            static::getSupportedIssuesToFix(),
+            self::NAMED_ISSUES_TO_FIX,
+        )));
     }
 
     /**
      * @return array<string, bool>
+     * @psalm-capabilities read-props
      */
     public function getIssuesToFix(): array
     {
-        return $this->issues_to_fix;
+        return $this->codebase->issues_to_fix;
     }
 
     /**
@@ -1277,8 +1310,8 @@ final class ProjectAnalyzer
     {
         return $this->config->suggest_purity_annotations
             || ($this->codebase->alter_code
-                && (isset($this->issues_to_fix['MissingPureAnnotation'])
-                    || isset($this->issues_to_fix['MissingImmutableAnnotation'])));
+                && (isset($this->codebase->issues_to_fix['MissingPureAnnotation'])
+                    || isset($this->codebase->issues_to_fix['MissingImmutableAnnotation'])));
     }
 
     /**
@@ -1296,6 +1329,77 @@ final class ProjectAnalyzer
     public function getCodebase(): Codebase
     {
         return $this->codebase;
+    }
+
+    /**
+     * Parsed statements of files whose methods getMethodMutations() inlined, least recently used first.
+     * Inlining $this->method() and parent::method() calls made by a constructor fetched the declaring file
+     * from the parser cache every time, which is a full unserialize when arrayCache is off.
+     *
+     * @var array<string, array{list<Stmt>, int}>
+     */
+    private array $mutation_statements = [];
+
+    private int $mutation_statements_bytes = 0;
+
+    /**
+     * Files fetched once already. A file is only retained from its second fetch,
+     * so files needed once never push out the ones needed again and again.
+     *
+     * @var array<string, true>
+     */
+    private array $mutation_statements_seen = [];
+
+    /**
+     * @return list<Stmt>
+     */
+    private function getStatementsForMutations(string $file_path): array
+    {
+        if ($this->config->array_cache || $this->codebase->server_mode || $this->codebase->language_server) {
+            // either the cache already keeps every AST in memory, or files can change under us
+            return $this->codebase->getStatementsForFile($file_path);
+        }
+
+        if (isset($this->mutation_statements[$file_path])) {
+            $entry = $this->mutation_statements[$file_path];
+            unset($this->mutation_statements[$file_path]);
+            $this->mutation_statements[$file_path] = $entry;
+
+            return $entry[0];
+        }
+
+        $memory_before = memory_get_usage();
+        $stmts = $this->codebase->getStatementsForFile($file_path);
+
+        if (!isset($this->mutation_statements_seen[$file_path])) {
+            if (count($this->mutation_statements_seen) >= self::MUTATION_STATEMENTS_MAX_SEEN) {
+                $this->mutation_statements_seen = [];
+            }
+
+            $this->mutation_statements_seen[$file_path] = true;
+
+            return $stmts;
+        }
+
+        // the statements were just unserialized, so the memory growth is about what keeping them costs
+        $bytes = max(1024, memory_get_usage() - $memory_before);
+
+        if ($bytes > self::MUTATION_STATEMENTS_BUDGET) {
+            return $stmts;
+        }
+
+        while ($this->mutation_statements
+            && $this->mutation_statements_bytes + $bytes > self::MUTATION_STATEMENTS_BUDGET
+        ) {
+            $oldest = array_key_first($this->mutation_statements);
+            $this->mutation_statements_bytes -= $this->mutation_statements[$oldest][1];
+            unset($this->mutation_statements[$oldest]);
+        }
+
+        $this->mutation_statements[$file_path] = [$stmts, $bytes];
+        $this->mutation_statements_bytes += $bytes;
+
+        return $stmts;
     }
 
     public function getFileAnalyzerForClassLike(string $fq_class_name): FileAnalyzer
@@ -1342,9 +1446,7 @@ final class ProjectAnalyzer
             $file_analyzer = $this->getFileAnalyzerForClassLike($appearing_fq_class_name);
         }
 
-        $stmts = $this->codebase->getStatementsForFile(
-            $file_analyzer->getFilePath(),
-        );
+        $stmts = $this->getStatementsForMutations($file_analyzer->getFilePath());
 
         $file_analyzer->populateCheckers($stmts);
 
