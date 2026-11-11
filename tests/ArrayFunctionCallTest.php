@@ -4056,6 +4056,17 @@ final class ArrayFunctionCallTest extends TestCase
                         return array_map(fn(string $i) => $i, $v);
                     }',
             ],
+            'arrayMapOnAUnionOfAnArrayAndATemplateBoundedByAListKeepsTheStringKeys' => [
+                'code' => '<?php
+                    /**
+                     * @template T of list<int>
+                     * @param array<string, int>|T $v
+                     * @return array<array-key, int>
+                     */
+                    function f(array $v): array {
+                        return array_map(fn(int $i) => $i + 1, $v);
+                    }',
+            ],
             'arrayMapOnATemplateBoundedByANonEmptyListKeepsThat' => [
                 'code' => '<?php
                     /**
@@ -4088,6 +4099,18 @@ final class ArrayFunctionCallTest extends TestCase
     public static function providerInvalidCodeParse(): iterable
     {
         return [
+            'arrayMapOnAUnionOfAnArrayAndATemplateBoundedByAListIsNotAList' => [
+                'code' => '<?php
+                    /**
+                     * @template T of list<int>
+                     * @param array<string, int>|T $v
+                     * @return list<int>
+                     */
+                    function f(array $v): array {
+                        return array_map(fn(int $i) => $i + 1, $v);
+                    }',
+                'error_message' => 'LessSpecificReturnStatement',
+            ],
             'arrayPopOfAListWithAnOptionalLastItemMayEmptyIt' => [
                 'code' => '<?php
                     /** @param non-empty-list<int> $a */
