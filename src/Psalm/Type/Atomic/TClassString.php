@@ -113,12 +113,29 @@ class TClassString extends TString
         ?string $this_class,
         bool $use_phpdoc_format,
     ): string {
+        if ($this->is_interface) {
+            $key = 'interface-string';
+        } elseif ($this->is_enum) {
+            $key = 'enum-string';
+        } else {
+            $key = 'class-string';
+        }
+
         if ($this->as === 'object') {
-            return 'class-string';
+            return $key;
+        }
+
+        if ($this->as_type !== null) {
+            return $key . '<' . $this->as_type->toNamespacedString(
+                $namespace,
+                $aliased_classes,
+                $this_class,
+                $use_phpdoc_format,
+            ) . '>';
         }
 
         if ($namespace && stripos($this->as, $namespace . '\\') === 0) {
-            return 'class-string<' . preg_replace(
+            return $key . '<' . preg_replace(
                 '/^' . preg_quote($namespace . '\\') . '/i',
                 '',
                 $this->as,
@@ -126,14 +143,14 @@ class TClassString extends TString
         }
 
         if (!$namespace && !str_contains($this->as, '\\')) {
-            return 'class-string<' . $this->as . '>';
+            return $key . '<' . $this->as . '>';
         }
 
         if (isset($aliased_classes[strtolower($this->as)])) {
-            return 'class-string<' . $aliased_classes[strtolower($this->as)] . '>';
+            return $key . '<' . $aliased_classes[strtolower($this->as)] . '>';
         }
 
-        return 'class-string<\\' . $this->as . '>';
+        return $key . '<\\' . $this->as . '>';
     }
 
     /**

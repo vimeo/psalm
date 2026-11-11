@@ -81,6 +81,27 @@ final class ClassTemplateTest extends TestCase
                     $c->f(["a", "b"]);
                     $c->g(["a", "b"]);',
             ],
+            'sameTypeFromTwoConstructionsOfAGenericClassIsOneType' => [
+                'code' => '<?php
+                    class obj {}
+
+                    /** @template TValue */
+                    class PagerOnQuery {
+                        /** @param ArrayObject<array-key, TValue> $source */
+                        public function __construct(protected ArrayObject $source) {
+                        }
+                    }
+
+                    if (random_int(0, 1)) {
+                        $items = new ArrayObject([0 => new obj]);
+                    } else {
+                        $items = new ArrayObject(["test" => new obj]);
+                    }
+
+                    $pager = new PagerOnQuery($items);',
+                'assertions' => [],
+                'ignored_issues' => ['UnusedVariable'],
+            ],
             'closureOfAMethodOfAGenericObject' => [
                 'code' => '<?php
                     /**
@@ -4377,7 +4398,7 @@ final class ClassTemplateTest extends TestCase
             'undefined class in function dockblock' => [
                 'code' => '<?php
                     /**
-                     * @psalm-suppress UndefinedDocblockClass
+                     * @psalm-suppress UndefinedDocblockClass, UndefinedClass
                      *
                      * @param DoesNotExist<int> $baz
                      */
@@ -5931,6 +5952,26 @@ final class ClassTemplateTest extends TestCase
                         }
                     }',
             ],
+            'classNamedOnlyInATemplateBoundIsKnown' => [
+                'code' => '<?php
+                    /** @template TArr of array{a: DateTime, b: stdClass} */
+                    abstract class Holder {
+                        /** @return value-of<TArr> */
+                        abstract public function read(): mixed;
+                    }
+
+                    /** @return Holder */
+                    function holder(): Holder {
+                        throw new Exception();
+                    }
+
+                    $value = holder()->read();',
+                'assertions' => [
+                    '$value===' => 'DateTime|stdClass',
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
         ];
     }
 
@@ -5956,6 +5997,27 @@ final class ClassTemplateTest extends TestCase
                     }
 
                     (new C())->f(["a", 1]);',
+                'error_message' => 'InvalidArgument',
+            ],
+            'differentTypesFromTwoConstructionsOfAGenericClassAreNotOneType' => [
+                'code' => '<?php
+                    class one {}
+                    class two {}
+
+                    /** @template TValue */
+                    class PagerOnQuery {
+                        /** @param ArrayObject<array-key, TValue> $source */
+                        public function __construct(protected ArrayObject $source) {
+                        }
+                    }
+
+                    if (random_int(0, 1)) {
+                        $items = new ArrayObject([0 => new one]);
+                    } else {
+                        $items = new ArrayObject(["test" => new two]);
+                    }
+
+                    $pager = new PagerOnQuery($items);',
                 'error_message' => 'InvalidArgument',
             ],
             'closureOfAMethodOfAnObjectWithTheTemplatesOfTheCaller' => [
