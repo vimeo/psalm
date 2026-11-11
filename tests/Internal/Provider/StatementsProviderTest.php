@@ -12,13 +12,21 @@ use PhpParser\Node\Stmt\Class_;
 use PhpParser\Node\Stmt\Return_;
 use Psalm\Config;
 use Psalm\Internal\Provider\FakeFileProvider;
+use Psalm\Internal\Provider\FileProvider;
+use Psalm\Internal\Provider\ParserCacheProvider;
 use Psalm\Internal\Provider\StatementsProvider;
 use Psalm\Tests\TestCase;
+use Symfony\Component\Filesystem\Filesystem;
 
+use function dirname;
 use function extension_loaded;
 use function ini_get;
 use function ini_set;
+use function realpath;
 use function str_repeat;
+use function str_replace;
+use function sys_get_temp_dir;
+use function uniqid;
 
 use const DIRECTORY_SEPARATOR;
 
@@ -150,6 +158,111 @@ final class StatementsProviderTest extends TestCase
 
         // assertEquals() takes minutes to compare trees this deep
         $this->assertTrue($this->parse() == $this->getStatements());
+    }
+
+    #[TestWith(['plain-app', 'lib/Acme.php', true])]
+    #[TestWith(['vendor-app', 'lib/Acme.php', true])]
+    #[TestWith(['stub-app', 'lib/Acme.php', true])]
+    #[TestWith(['vendor/app', 'lib/Acme.php', true])]
+    #[TestWith(['plain-app', 'lib/vendor-tools/Acme.php', true])]
+    #[TestWith(['plain-app', 'lib/Acme-vendor.php', true])]
+    #[TestWith(['plain-app', 'vendor/Acme.php', false])]
+    #[TestWith(['vendor-app', 'vendor/Acme.php', false])]
+    #[TestWith(['plain-app', 'lib/vendor/Acme.php', false])]
+    public function testOnlyVendorDirectoriesBypassTheParserCache(
+        string $project_directory,
+        string $relative_path,
+        bool $should_cache,
+    ): void {
+        $this->testConfig->base_dir = str_replace('/', DIRECTORY_SEPARATOR, '/tmp/' . $project_directory);
+        $file_path = $this->testConfig->base_dir . DIRECTORY_SEPARATOR
+            . str_replace('/', DIRECTORY_SEPARATOR, $relative_path);
+        $contents = '<?php class Acme {}';
+        $this->files->registerFile($file_path, $contents);
+        $cache = new ParserCacheProvider($this->testConfig, '', false);
+        $provider = new StatementsProvider($this->files, $cache);
+
+        $this->assertFalse($this->testConfig->isInProjectDirs($file_path));
+        $stmts = $provider->getStatementsForFile($file_path, self::PHP_VERSION_ID, false);
+
+        $this->assertSame($should_cache, $cache->loadStatementsFromCache($file_path, $contents) !== null);
+        $this->assertEquals($stmts, $provider->getStatementsForFile($file_path, self::PHP_VERSION_ID, false));
+        $this->assertSame($should_cache ? [$file_path => []] : [], $provider->getDiffMap());
+    }
+
+    #[TestWith(['plain-app', 'lib/Acme.php', true])]
+    #[TestWith(['vendor-app', 'lib/Acme.php', true])]
+    #[TestWith(['vendor/pkg/app', 'lib/Acme.php', true])]
+    #[TestWith(['plain-app', 'lib/vendor-tools/Acme.php', true])]
+    #[TestWith(['plain-app', 'lib/Acme-vendor.php', true])]
+    #[TestWith(['plain-app', 'vendor/Acme.php', false])]
+    #[TestWith(['vendor-app', 'vendor/Acme.php', false])]
+    #[TestWith(['plain-app', 'lib/vendor/Acme.php', false])]
+    #[TestWith(['vendor/pkg/app', '../lib/Acme.php', true])]
+    #[TestWith(['plain-app', '../vendor/Acme.php', false])]
+    #[TestWith(['vendor/pkg/app', '../vendor/Acme.php', false])]
+    public function testOnlyRealVendorDirectoriesBypassTheParserCache(
+        string $project_directory,
+        string $relative_path,
+        bool $should_cache,
+    ): void {
+        $temporary_directory = realpath(sys_get_temp_dir());
+        $this->assertIsString($temporary_directory);
+        $directory = $temporary_directory . DIRECTORY_SEPARATOR . uniqid('psalm-statements-');
+        $filesystem = new Filesystem();
+
+        try {
+            $this->testConfig->base_dir = $directory . DIRECTORY_SEPARATOR
+                . str_replace('/', DIRECTORY_SEPARATOR, $project_directory);
+            $file_path = $this->testConfig->base_dir . DIRECTORY_SEPARATOR
+                . str_replace('/', DIRECTORY_SEPARATOR, $relative_path);
+            $filesystem->mkdir([$this->testConfig->base_dir, dirname($file_path)]);
+            $contents = '<?php class Acme {}';
+            $filesystem->dumpFile($file_path, $contents);
+            $file_path = realpath($file_path);
+            $this->assertIsString($file_path);
+            $this->assertFileExists($file_path);
+            $this->assertSame($relative_path, $this->testConfig->shortenFileName($file_path));
+            $this->assertFalse($this->testConfig->isInProjectDirs($file_path));
+
+            $cache = new ParserCacheProvider($this->testConfig, '', false);
+            $provider = new StatementsProvider(new FileProvider(), $cache);
+            $stmts = $provider->getStatementsForFile($file_path, self::PHP_VERSION_ID, false);
+
+            $this->assertSame($should_cache, $cache->loadStatementsFromCache($file_path, $contents) !== null);
+            $this->assertEquals($stmts, $provider->getStatementsForFile($file_path, self::PHP_VERSION_ID, false));
+            $this->assertSame($should_cache ? [$file_path => []] : [], $provider->getDiffMap());
+        } finally {
+            $filesystem->remove($directory);
+        }
+    }
+
+    public function testVendorDirectoryInsideProjectDirsUsesTheParserCache(): void
+    {
+        $file_path = self::$src_dir_path . 'vendor' . DIRECTORY_SEPARATOR . 'Acme.php';
+        $contents = '<?php class Acme {}';
+        $this->files->registerFile($file_path, $contents);
+        $cache = new ParserCacheProvider($this->testConfig, '', false);
+        $provider = new StatementsProvider($this->files, $cache);
+
+        $this->assertTrue($this->testConfig->isInProjectDirs($file_path));
+        $provider->getStatementsForFile($file_path, self::PHP_VERSION_ID, false);
+
+        $this->assertNotNull($cache->loadStatementsFromCache($file_path, $contents));
+    }
+
+    public function testWithoutAParserCacheProviderGetsTheCurrentStatements(): void
+    {
+        $file_path = self::$src_dir_path . 'Acme.php';
+        $this->files->registerFile($file_path, '<?php class Acme {}');
+        $provider = new StatementsProvider($this->files);
+        $provider->getStatementsForFile($file_path, self::PHP_VERSION_ID, false);
+        $this->files->setContents($file_path, '<?php class Changed {}');
+
+        $stmts = $provider->getStatementsForFile($file_path, self::PHP_VERSION_ID, false);
+
+        $this->assertInstanceOf(Class_::class, $stmts[0]);
+        $this->assertSame('Changed', $stmts[0]->name?->name);
     }
 
     /**
