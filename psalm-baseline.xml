@@ -96,7 +96,6 @@
     </PossiblyNullReference>
     <PropertyTypeCoercion>
       <code><![CDATA[$this]]></code>
-      <code><![CDATA[$this]]></code>
     </PropertyTypeCoercion>
     <RiskyTruthyFalsyComparison>
       <code><![CDATA[!$config_path]]></code>
@@ -302,7 +301,6 @@
   </file>
   <file src="src/Psalm/Internal/Analyzer/FunctionLikeAnalyzer.php">
     <ImplicitToStringCast>
-      <code><![CDATA[$method_id]]></code>
       <code><![CDATA[$method_id]]></code>
       <code><![CDATA[$param_type]]></code>
       <code><![CDATA[$real_method_id]]></code>
@@ -573,12 +571,6 @@
       <code><![CDATA[$var_type]]></code>
       <code><![CDATA[$var_type]]></code>
     </ImplicitToStringCast>
-    <InvalidOperand>
-      <code><![CDATA[$var_id+1]]></code>
-      <code><![CDATA[$var_id+1]]></code>
-      <code><![CDATA[$var_id+1]]></code>
-      <code><![CDATA[$var_id+1]]></code>
-    </InvalidOperand>
     <PossiblyUndefinedIntArrayOffset>
       <code><![CDATA[$count_expr->getArgs()[0]]]></code>
       <code><![CDATA[$count_expr->getArgs()[0]]]></code>
@@ -747,11 +739,7 @@
       <code><![CDATA[$assignment_value_type]]></code>
       <code><![CDATA[$class_property_type]]></code>
       <code><![CDATA[$prop_name]]></code>
-      <code><![CDATA[$prop_name]]></code>
     </ImplicitToStringCast>
-    <PossiblyUndefinedIntArrayOffset>
-      <code><![CDATA[$new_property_name]]></code>
-    </PossiblyUndefinedIntArrayOffset>
     <RiskyTruthyFalsyComparison>
       <code><![CDATA[$context->calling_method_id]]></code>
       <code><![CDATA[$var_id]]></code>
@@ -888,7 +876,6 @@
   </file>
   <file src="src/Psalm/Internal/Analyzer/Statements/Expression/Call/ArgumentsAnalyzer.php">
     <ImplicitToStringCast>
-      <code><![CDATA[$cased_method_id ?: $method_id]]></code>
       <code><![CDATA[$cased_method_id ?: $method_id]]></code>
       <code><![CDATA[$cased_method_id ?: $method_id]]></code>
       <code><![CDATA[$cased_method_id ?: $method_id]]></code>
@@ -1133,7 +1120,6 @@
       <code><![CDATA[$callable_arg->items[1]]]></code>
     </PossiblyUndefinedIntArrayOffset>
     <RiskyTruthyFalsyComparison>
-      <code><![CDATA[!$arg_var_id]]></code>
       <code><![CDATA[$arg_var_id]]></code>
       <code><![CDATA[$assertion_var_id]]></code>
       <code><![CDATA[$calling_class_storage->template_extended_params]]></code>
@@ -2332,7 +2318,6 @@
       <code><![CDATA[$file_changes]]></code>
       <code><![CDATA[self::$parser->parse($file_contents, $error_handler)]]></code>
       <code><![CDATA[self::$parser->parse($file_contents, $error_handler)]]></code>
-      <code><![CDATA[strpos($file_path, 'vendor')]]></code>
     </RiskyTruthyFalsyComparison>
   </file>
   <file src="src/Psalm/Internal/Scanner/DocblockParser.php">

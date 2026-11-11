@@ -12,6 +12,7 @@ use Psalm\Internal\Analyzer\Statements\Expression\ArrayAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\Fetch\AtomicPropertyFetchAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\Fetch\ConstFetchAnalyzer;
 use Psalm\Internal\TypeVisitor\ContainsStaticVisitor;
+use Psalm\Internal\TypeVisitor\TemplateBoundNarrower;
 use Psalm\Storage\Assertion\IsType;
 use Psalm\Storage\Capabilities;
 use Psalm\Type;
@@ -721,6 +722,22 @@ final class TypeExpander
                             $throw_on_unresolvable_constant,
                         ));
                     }
+
+                    if ($param->out_type) {
+                        $param = $param->setOutType(self::expandUnion(
+                            $codebase,
+                            $param->out_type,
+                            $self_class,
+                            $static_class_type,
+                            $parent_class,
+                            $evaluate_class_constants,
+                            $evaluate_conditional_types,
+                            $final,
+                            $expand_generic,
+                            $expand_templates,
+                            $throw_on_unresolvable_constant,
+                        ));
+                    }
                 }
                 unset($param);
             }
@@ -1036,9 +1053,21 @@ final class TypeExpander
                 }
             }
 
+            $if_type = $return_type->if_type;
+
+            // in the true branch the template is what the condition says
+            if ($return_type->subject_type === null) {
+                (new TemplateBoundNarrower(
+                    $return_type->param_name,
+                    $return_type->defining_class,
+                    $return_type->conditional_type,
+                    $codebase,
+                ))->traverse($if_type);
+            }
+
             $if_conditional_return_types = [];
 
-            foreach ($return_type->if_type->getAtomicTypes() as $if_atomic_type) {
+            foreach ($if_type->getAtomicTypes() as $if_atomic_type) {
                 $candidate_types = self::expandAtomic(
                     $codebase,
                     $if_atomic_type,

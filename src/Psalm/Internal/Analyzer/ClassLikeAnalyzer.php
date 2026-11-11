@@ -193,6 +193,9 @@ abstract class ClassLikeAnalyzer extends SourceAnalyzer
         );
         $actual_method_name = $called_method_id !== null ? $called_method_id->method_name : $method_name;
 
+        // what the caller established about its own variables says nothing about the method's
+        $context->clauses = [];
+
         foreach ($this->class->stmts as $stmt) {
             if ($stmt instanceof PhpParser\Node\Stmt\ClassMethod &&
                 strtolower($stmt->name->name) === strtolower($actual_method_name)
