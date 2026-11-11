@@ -519,18 +519,27 @@ final class UnusedCodeTest extends TestCase
     public static function providerValidCodeParse(): array
     {
         return [
-            'suppressUnusedPropertyOnAPromotedProperty' => [
+            'preIncrementAsArrayAssignmentKey' => [
                 'code' => '<?php
-                    final class Test
-                    {
-                        public function __construct(
-                            /** @psalm-suppress PossiblyUnusedProperty */
-                            public bool $result,
-                        ) {
-                        }
-                    }
+                    /** @psalm-api */
+                    function f(): array {
+                        $row = 1;
+                        $array = [];
+                        $array[$row] = "1";
+                        $array[++$row] = "2";
+                        $array[++$row] = "3";
 
-                    new Test(true);',
+                        return $array;
+                    }',
+            ],
+            'preDecrementAsArrayLiteralKey' => [
+                'code' => '<?php
+                    /** @psalm-api */
+                    function f(): array {
+                        $i = 3;
+
+                        return [--$i => 1];
+                    }',
             ],
             'classExistsGuardedStaticFirstClassCallable' => [
                 'code' => '<?php
@@ -2419,6 +2428,19 @@ final class UnusedCodeTest extends TestCase
                     (new Base())->run();
                     (new Child())->other();',
             ],
+            'suppressUnusedPropertyOnAPromotedProperty' => [
+                'code' => '<?php
+                    final class Test
+                    {
+                        public function __construct(
+                            /** @psalm-suppress PossiblyUnusedProperty */
+                            public bool $result,
+                        ) {
+                        }
+                    }
+
+                    new Test(true);',
+            ],
         ];
     }
 
@@ -2429,21 +2451,24 @@ final class UnusedCodeTest extends TestCase
     public static function providerInvalidCodeParse(): array
     {
         return [
-            'suppressOnAPromotedPropertyDoesNotCoverTheNextOne' => [
+            'postIncrementAsArrayKeyIsAnUnusedAssignment' => [
                 'code' => '<?php
-                    final class Test
-                    {
-                        public function __construct(
-                            /** @psalm-suppress PossiblyUnusedProperty */
-                            public bool $result,
-                            public bool $other,
-                        ) {
-                        }
-                    }
+                    /** @psalm-api */
+                    function f(): array {
+                        $i = 0;
 
-                    new Test(true, false);',
-                'error_message' => 'PossiblyUnusedProperty',
-                'error_levels' => ['UnusedVariable'],
+                        return [$i++ => 1];
+                    }',
+                'error_message' => 'UnusedVariable',
+            ],
+            'preIncrementStatementIsAnUnusedAssignment' => [
+                'code' => '<?php
+                    /** @psalm-api */
+                    function f(): void {
+                        $i = 0;
+                        ++$i;
+                    }',
+                'error_message' => 'UnusedVariable',
             ],
             'undefinedClassStaticFirstClassCallable' => [
                 'code' => '<?php
@@ -3506,6 +3531,22 @@ final class UnusedCodeTest extends TestCase
 
                     (new Factory())->run();',
                 'error_message' => 'Cannot find any calls to method Factory::__callStatic',
+            ],
+            'suppressOnAPromotedPropertyDoesNotCoverTheNextOne' => [
+                'code' => '<?php
+                    final class Test
+                    {
+                        public function __construct(
+                            /** @psalm-suppress PossiblyUnusedProperty */
+                            public bool $result,
+                            public bool $other,
+                        ) {
+                        }
+                    }
+
+                    new Test(true, false);',
+                'error_message' => 'PossiblyUnusedProperty',
+                'error_levels' => ['UnusedVariable'],
             ],
         ];
     }
