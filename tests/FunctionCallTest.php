@@ -4312,6 +4312,18 @@ final class FunctionCallTest extends TestCase
                     }',
                 'error_message' => 'ArgumentTypeCoercion',
             ],
+            'getObjectVarsOfAStdClassIsAMixedCoercion' => [
+                'code' => '<?php
+                    /** @param array{i: int} $array */
+                    function takesAnArray(array $array): void {
+                        echo $array["i"];
+                    }
+
+                    $obj = new stdClass();
+
+                    takesAnArray(get_object_vars($obj));',
+                'error_message' => 'MixedArgumentTypeCoercion',
+            ],
             'strReplaceWithFewerReplacementsThanSearches' => [
                 'code' => '<?php
                     $subject = "Hello";

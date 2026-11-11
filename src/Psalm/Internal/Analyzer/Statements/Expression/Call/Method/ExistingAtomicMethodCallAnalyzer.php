@@ -292,13 +292,13 @@ final class ExistingAtomicMethodCallAnalyzer extends CallAnalyzer
         $overload = null;
 
         if ($method_storage && $method_storage->overloads !== [] && !$is_first_class_callable) {
-            $overload = $method_storage->overloads[OverloadSelector::findOffset(
+            $overload = OverloadSelector::select(
                 $statements_analyzer,
                 $codebase,
                 $args,
                 $context,
                 $method_storage->overloads,
-            ) ?? count($method_storage->overloads) - 1];
+            );
         }
 
         if (!$is_first_class_callable && self::checkMethodArgs(

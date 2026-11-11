@@ -177,13 +177,13 @@ final class ExistingAtomicStaticCallAnalyzer
         $overload = null;
 
         if ($overloaded_method_storage && $overloaded_method_storage->overloads !== []) {
-            $overload = $overloaded_method_storage->overloads[OverloadSelector::findOffset(
+            $overload = OverloadSelector::select(
                 $statements_analyzer,
                 $codebase,
                 $args,
                 $context,
                 $overloaded_method_storage->overloads,
-            ) ?? count($overloaded_method_storage->overloads) - 1];
+            );
         }
 
         // a static call naming a class does not forward the late static binding: `static` is that class

@@ -1074,11 +1074,13 @@ final class AtomicStaticCallAnalyzer
         $overloads = $class_storage->pseudo_static_method_overloads[$method_id->method_name] ?? null;
 
         if ($overloads !== null) {
-            // none accepting the arguments, the last declared reports the issues
-            $pseudo_method_storage = $overloads[
-                OverloadSelector::findOffset($statements_analyzer, $codebase, $args, $context, $overloads)
-                    ?? count($overloads) - 1
-            ];
+            $pseudo_method_storage = OverloadSelector::select(
+                $statements_analyzer,
+                $codebase,
+                $args,
+                $context,
+                $overloads,
+            );
         }
 
         if (!$context->isSuppressingExceptions($statements_analyzer)) {
