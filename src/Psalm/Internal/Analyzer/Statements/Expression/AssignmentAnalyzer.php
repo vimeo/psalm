@@ -86,6 +86,7 @@ use Psalm\Node\Expr\VirtualAssign;
 use Psalm\Plugin\EventHandler\Event\AddRemoveTaintsEvent;
 use Psalm\Storage\Assertion\Falsy;
 use Psalm\Storage\Capabilities;
+use Psalm\Storage\FunctionLikeParameter;
 use Psalm\Type;
 use Psalm\Type\Atomic;
 use Psalm\Type\Atomic\TArray;
@@ -100,6 +101,7 @@ use Psalm\Type\TaintKind;
 use Psalm\Type\Union;
 use UnexpectedValueException;
 
+use function array_map;
 use function assert;
 use function count;
 use function is_int;
@@ -124,6 +126,7 @@ final class AssignmentAnalyzer
     private static function getRecursiveClosureType(
         StatementsAnalyzer $statements_analyzer,
         PhpParser\Node\Expr\Closure $closure,
+        Context $context,
     ): Union {
         $closure_id = strtolower($statements_analyzer->getFilePath())
             . ':' . $closure->getLine()
@@ -139,7 +142,23 @@ final class AssignmentAnalyzer
             return Type::getClosure();
         }
 
-        return new Union([new TClosure($storage->params, $storage->return_type, $storage->capabilities)]);
+        $codebase = $statements_analyzer->getCodebase();
+
+        // the self of the parameters, which a trait leaves open, is the class of the code that calls the closure
+        $params = array_map(
+            static fn(FunctionLikeParameter $param): FunctionLikeParameter => $param->type
+                ? $param->setType(TypeExpander::expandUnion(
+                    $codebase,
+                    $param->type,
+                    $context->self,
+                    $context->self,
+                    null,
+                ))
+                : $param,
+            $storage->params,
+        );
+
+        return new Union([new TClosure($params, $storage->return_type, $storage->capabilities)]);
     }
 
     /**
@@ -348,6 +367,7 @@ final class AssignmentAnalyzer
                         $context->vars_in_scope[$var_id] = self::getRecursiveClosureType(
                             $statements_analyzer,
                             $assign_value,
+                            $context,
                         );
                         $context->vars_possibly_in_scope[$var_id] = true;
                         $assign_value->setAttribute('recursive_var_id', $var_id);
