@@ -70,6 +70,7 @@ final class MethodCallReturnTypeFetcher
         array $args,
         AtomicMethodCallAnalysisResult $result,
         TemplateResult $template_result,
+        ?Atomic $premixin_lhs_type_part = null,
     ): Union {
         $call_map_id = $declaring_method_id ?? $method_id;
 
@@ -85,6 +86,7 @@ final class MethodCallReturnTypeFetcher
                     $codebase,
                     $method_id,
                     $method_storage,
+                    $premixin_method_id !== $method_id ? $premixin_method_id : null,
                 );
 
                 return self::getFirstClassCallableType(
@@ -105,15 +107,26 @@ final class MethodCallReturnTypeFetcher
             return Type::getClosure();
         }
 
-        if ($codebase->methods->return_type_provider->has($premixin_method_id->fq_class_name)) {
+        // the provider of the class using a `@mixin` comes first, with that class's type params, not the mixin's
+        $providers = [[$premixin_method_id, $premixin_lhs_type_part ?? $lhs_type_part]];
+
+        if ($premixin_method_id !== $method_id) {
+            $providers[] = [$method_id, $lhs_type_part];
+        }
+
+        foreach ($providers as [$provider_method_id, $provider_lhs_type_part]) {
+            if (!$codebase->methods->return_type_provider->has($provider_method_id->fq_class_name)) {
+                continue;
+            }
+
             $return_type_candidate = $codebase->methods->return_type_provider->getReturnType(
                 $statements_analyzer,
-                $premixin_method_id->fq_class_name,
-                $premixin_method_id->method_name,
+                $provider_method_id->fq_class_name,
+                $provider_method_id->method_name,
                 $stmt,
                 $context,
                 new CodeLocation($statements_analyzer->getSource(), $stmt->name),
-                $lhs_type_part instanceof TGenericObject ? $lhs_type_part->type_params : null,
+                $provider_lhs_type_part instanceof TGenericObject ? $provider_lhs_type_part->type_params : null,
             );
 
             if ($return_type_candidate) {
@@ -131,13 +144,13 @@ final class MethodCallReturnTypeFetcher
             }
         }
 
-        if ($premixin_method_id->method_name === 'getcode'
-            && $premixin_method_id->fq_class_name !== Exception::class
-            && $premixin_method_id->fq_class_name !== RuntimeException::class
-            && $premixin_method_id->fq_class_name !== PDOException::class
+        if ($method_name === 'getcode'
+            && $fq_class_name !== Exception::class
+            && $fq_class_name !== RuntimeException::class
+            && $fq_class_name !== PDOException::class
             && (
-                $codebase->classImplements($premixin_method_id->fq_class_name, Throwable::class)
-                || $codebase->interfaceExtends($premixin_method_id->fq_class_name, Throwable::class)
+                $codebase->classImplements($fq_class_name, Throwable::class)
+                || $codebase->interfaceExtends($fq_class_name, Throwable::class)
             )
         ) {
             return Type::getInt();
@@ -974,8 +987,9 @@ final class MethodCallReturnTypeFetcher
         Codebase $codebase,
         MethodIdentifier $method_id,
         MethodStorage $method_storage,
+        ?MethodIdentifier $premixin_method_id = null,
     ): array {
-        $params = $codebase->methods->getMethodParams($method_id);
+        $params = $codebase->methods->getMethodParams($method_id, premixin_method_id: $premixin_method_id);
 
         if ($method_storage->return_type !== null) {
             return [

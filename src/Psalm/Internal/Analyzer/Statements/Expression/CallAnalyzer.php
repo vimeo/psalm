@@ -44,6 +44,7 @@ use Psalm\Storage\Assertion\IsIdentical;
 use Psalm\Storage\Assertion\IsType;
 use Psalm\Storage\Assertion\Truthy;
 use Psalm\Storage\ClassLikeStorage;
+use Psalm\Storage\FunctionLikeParameter;
 use Psalm\Storage\FunctionLikeStorage;
 use Psalm\Storage\Possibilities;
 use Psalm\Type;
@@ -310,6 +311,7 @@ abstract class CallAnalyzer
 
     /**
      * @param  list<PhpParser\Node\Arg>   $args
+     * @param  ?list<FunctionLikeParameter> $method_params the params of the method, when the caller already has them
      */
     public static function checkMethodArgs(
         ?MethodIdentifier $method_id,
@@ -319,10 +321,20 @@ abstract class CallAnalyzer
         CodeLocation $code_location,
         StatementsAnalyzer $statements_analyzer,
         bool $static_is_called_class = false,
+        ?array $method_params = null,
     ): bool {
         $codebase = $statements_analyzer->getCodebase();
 
-        if (!$method_id) {
+        // reached through `__call` or `__callStatic`, a method has params only if a provider supplies them
+        $method_params ??= $method_id ? $codebase->methods->findMethodParams(
+            $method_id,
+            $statements_analyzer,
+            $args,
+            $context,
+            $code_location,
+        ) : null;
+
+        if (!$method_id || $method_params === null) {
             return ArgumentsAnalyzer::analyze(
                 $statements_analyzer,
                 $args,
@@ -333,14 +345,6 @@ abstract class CallAnalyzer
                 $template_result,
             ) !== false;
         }
-
-        $method_params = $codebase->methods->getMethodParams(
-            $method_id,
-            $statements_analyzer,
-            $args,
-            $context,
-            $code_location,
-        );
 
         $fq_class_name = $method_id->fq_class_name;
         $method_name = $method_id->method_name;

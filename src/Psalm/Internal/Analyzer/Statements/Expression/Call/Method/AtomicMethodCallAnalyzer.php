@@ -67,6 +67,12 @@ use function strtolower;
 final class AtomicMethodCallAnalyzer extends CallAnalyzer
 {
     /**
+     * The node attribute of a call that a static call on a class using a `@mixin` forwards to the mixin:
+     * the name of the class the static call was made on, whose providers are asked about the call first.
+     */
+    public const MIXIN_HOST_ATTRIBUTE = 'mixin_host';
+
+    /**
      * @param  TNamedObject|TTemplateParam|null $static_type
      * @psalm-suppress ComplexMethod it's really complex, but unavoidably so
      */
@@ -346,8 +352,9 @@ final class AtomicMethodCallAnalyzer extends CallAnalyzer
         );
 
         $fake_method_exists = false;
-        // the class whose @mixin the method is found through, as the call goes through its __call()
-        $mixin_user_class = null;
+        // the method as called on the class using the @mixin, when it is found through the mixin
+        $premixin_method_id = null;
+        $premixin_lhs_type_part = null;
         $mixin_method_id = null;
 
         if (!$naive_method_exists) {
@@ -366,8 +373,8 @@ final class AtomicMethodCallAnalyzer extends CallAnalyzer
             }
 
             $naive_method_exists = false;
-            $class_name_before_mixins = $fq_class_name;
             $method_id_before_mixins = $method_id;
+            $lhs_type_part_before_mixins = $lhs_type_part;
 
             // @mixin attributes are an absolute pain! Lots of complexity here,
             // as they can redefine the called class, method id etc.
@@ -409,9 +416,14 @@ final class AtomicMethodCallAnalyzer extends CallAnalyzer
 
             // a templated mixin keeps $fq_class_name, only the method id moves to the mixin
             if ($naive_method_exists && $method_id !== $method_id_before_mixins) {
-                $mixin_user_class = $class_name_before_mixins;
+                $premixin_method_id = $method_id_before_mixins;
+                $premixin_lhs_type_part = $lhs_type_part_before_mixins;
                 $mixin_method_id = $method_id;
             }
+        } elseif (($mixin_host = (string) $stmt->getAttribute(self::MIXIN_HOST_ATTRIBUTE, '')) !== '') {
+            $premixin_method_id = new MethodIdentifier($mixin_host, $method_name_lc);
+            $premixin_lhs_type_part = new TNamedObject($mixin_host);
+            $mixin_method_id = $method_id;
         }
 
         $all_intersection_return_type = null;
@@ -584,7 +596,8 @@ final class AtomicMethodCallAnalyzer extends CallAnalyzer
             $method_id,
             $result,
             $inferred_template_result,
-            $method_id === $mixin_method_id ? $mixin_user_class : null,
+            $method_id === $mixin_method_id ? $premixin_method_id : null,
+            $method_id === $mixin_method_id ? $premixin_lhs_type_part : null,
         );
 
         $statements_analyzer->node_data = $old_node_data;

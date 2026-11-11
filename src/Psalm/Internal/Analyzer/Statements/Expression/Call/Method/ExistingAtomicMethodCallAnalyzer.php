@@ -53,6 +53,7 @@ use UnexpectedValueException;
 
 use function array_filter;
 use function array_map;
+use function array_replace_recursive;
 use function array_slice;
 use function count;
 use function explode;
@@ -69,7 +70,8 @@ final class ExistingAtomicMethodCallAnalyzer extends CallAnalyzer
     /**
      * @param  TNamedObject|TTemplateParam|null  $static_type
      * @param  list<PhpParser\Node\Arg> $args
-     * @param  ?string $mixin_user_class the class whose `@mixin` the method was found through
+     * @param  ?MethodIdentifier $premixin_method_id the method as called on the class whose `@mixin` has it
+     * @param  ?TNamedObject $premixin_lhs_type_part the receiver before it became the mixin
      */
     public static function analyze(
         StatementsAnalyzer $statements_analyzer,
@@ -84,7 +86,8 @@ final class ExistingAtomicMethodCallAnalyzer extends CallAnalyzer
         MethodIdentifier $method_id,
         AtomicMethodCallAnalysisResult $result,
         ?TemplateResult $inferred_template_result = null,
-        ?string $mixin_user_class = null,
+        ?MethodIdentifier $premixin_method_id = null,
+        ?TNamedObject $premixin_lhs_type_part = null,
     ): Union {
         $config = $codebase->config;
 
@@ -225,6 +228,22 @@ final class ExistingAtomicMethodCallAnalyzer extends CallAnalyzer
             }
         }
 
+        // the params a provider of the class using a `@mixin` describes use the templates of that class
+        if ($premixin_method_id !== null) {
+            $premixin_class_storage = $codebase->classlike_storage_provider->get($premixin_method_id->fq_class_name);
+
+            $class_template_params = array_replace_recursive(
+                $class_template_params ?? [],
+                ClassTemplateParamCollector::collect(
+                    $codebase,
+                    $premixin_class_storage,
+                    $premixin_class_storage,
+                    null,
+                    $premixin_lhs_type_part,
+                ) ?? [],
+            );
+        }
+
         $declaring_method_id = $codebase->methods->getDeclaringMethodId($method_id);
 
         try {
@@ -288,6 +307,16 @@ final class ExistingAtomicMethodCallAnalyzer extends CallAnalyzer
 
         $is_first_class_callable = $stmt->isFirstClassCallable();
 
+        // the params of the class using a `@mixin` come first, they are the ones the call is checked with
+        $method_params = $is_first_class_callable ? null : $codebase->methods->getMethodParams(
+            $method_id,
+            $statements_analyzer,
+            $args,
+            $context,
+            new CodeLocation($source, $stmt_name),
+            $premixin_method_id,
+        );
+
         if (!$is_first_class_callable && self::checkMethodArgs(
             $method_id,
             $args,
@@ -295,6 +324,7 @@ final class ExistingAtomicMethodCallAnalyzer extends CallAnalyzer
             $context,
             new CodeLocation($source, $stmt_name),
             $statements_analyzer,
+            method_params: $method_params,
         ) === false) {
             return Type::getMixed();
         }
@@ -306,13 +336,14 @@ final class ExistingAtomicMethodCallAnalyzer extends CallAnalyzer
             $context,
             $method_id,
             $declaring_method_id,
-            $method_id,
+            $premixin_method_id ?? $method_id,
             $cased_method_id,
             $lhs_type_part,
             $static_type,
             $args,
             $result,
             $template_result,
+            $premixin_lhs_type_part,
         );
 
         if ($method_storage?->has_yield && !$is_first_class_callable) {
@@ -420,6 +451,7 @@ final class ExistingAtomicMethodCallAnalyzer extends CallAnalyzer
 
             if (!$context->collect_mutations && !$context->collect_initializations) {
                 // a method of a mixin runs through the __call() of the class using the mixin
+                $mixin_user_class = $premixin_method_id?->fq_class_name;
                 $magic_method_id = $mixin_user_class !== null
                     ? $codebase->methods->getDeclaringMethodId(new MethodIdentifier($mixin_user_class, '__call'))
                     : null;
@@ -456,14 +488,15 @@ final class ExistingAtomicMethodCallAnalyzer extends CallAnalyzer
             }
 
             if (!$has_packed_arg) {
+                $call_params = $method_params ?? $method_storage->params;
                 $has_variadic_param = $method_storage->variadic;
 
-                foreach ($method_storage->params as $param) {
+                foreach ($call_params as $param) {
                     $has_variadic_param = $has_variadic_param || $param->is_variadic;
                 }
 
-                for ($i = count($args), $j = count($method_storage->params); $i < $j; ++$i) {
-                    $param = $method_storage->params[$i];
+                for ($i = count($args), $j = count($call_params); $i < $j; ++$i) {
+                    $param = $call_params[$i];
 
                     if (!$param->is_optional
                         && !$param->is_variadic
@@ -474,7 +507,7 @@ final class ExistingAtomicMethodCallAnalyzer extends CallAnalyzer
                     }
                 }
 
-                if ($has_variadic_param || count($method_storage->params) >= count($args) || $in_call_map) {
+                if ($has_variadic_param || count($call_params) >= count($args) || $in_call_map) {
                     $result->too_many_arguments = false;
                 } else {
                     $result->too_many_arguments_method_ids[] = $declaring_method_id ?? $method_id;
