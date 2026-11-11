@@ -17,6 +17,15 @@ final class CallableTest extends TestCase
     public function providerValidCodeParse(): iterable
     {
         return [
+            'namedOptionalCallableParam' => [
+                'code' => '<?php
+                    /** @param callable(int $i=): void $closure */
+                    function takesOptional(callable $closure): void {
+                        $closure();
+                    }
+                    takesOptional(function (int $i = 0): void {});',
+                'assertions' => [],
+            ],
             'byRefUseVar' => [
                 'code' => '<?php
                     /** @return void */
