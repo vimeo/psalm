@@ -59,7 +59,9 @@ use function is_numeric;
 use function max;
 use function min;
 use function preg_match;
+use function strrpos;
 use function strtolower;
+use function substr;
 
 /**
  * @internal
@@ -1109,9 +1111,22 @@ final class ArithmeticOpAnalyzer
 
         $root_var_id = $context !== null ? ExpressionIdentifier::getRootVarId($expr, $context->self) : null;
 
-        return $root_var_id === null
-            || $context?->loop_scope === null
-            || isset($context->loop_scope->assigned_root_var_ids[$root_var_id]);
+        if ($root_var_id === null || $context?->loop_scope === null) {
+            return true;
+        }
+
+        // passing `$a` to a call or assigning `$a->b` changes what `$a->b->c` reads
+        while (!isset($context->loop_scope->assigned_root_var_ids[$root_var_id])) {
+            $property_separator = strrpos($root_var_id, '->');
+
+            if ($property_separator === false) {
+                return false;
+            }
+
+            $root_var_id = substr($root_var_id, 0, $property_separator);
+        }
+
+        return true;
     }
 
     /**

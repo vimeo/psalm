@@ -1704,6 +1704,65 @@ final class ForeachTest extends TestCase
                 'ignored_issues' => [],
                 'php_version' => '8.1',
             ],
+            'readOfAPropertyOfAnObjectPassedToACallInLoopIsNotFoldedLikeALiteral' => [
+                'code' => <<<'PHP'
+                    <?php
+                    class Counter {
+                        public int $count = 0;
+                        public ?Counter $next = null;
+                    }
+
+                    function bump(Counter $c): void {
+                        $c->count++;
+                    }
+
+                    $counter = new Counter();
+                    $counter->count = 1;
+                    $nested = new Counter();
+                    $nested->next = new Counter();
+                    $nested->next->count = 1;
+
+                    foreach ([1, 2, 3] as $_) {
+                        bump($counter);
+                        bump($nested->next);
+                        $direct = $counter->count + 1;
+                        $deep = $nested->next->count + 1;
+                    }
+                    PHP,
+                'assertions' => [
+                    '$direct===' => 'int<1, max>',
+                    '$deep===' => 'int<1, max>',
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
+            'readOfAPropertyOfAnObjectTheLoopDoesNotChangeIsFoldedNextToOneItPassesToACall' => [
+                'code' => <<<'PHP'
+                    <?php
+                    class Counter {
+                        public int $count = 0;
+                    }
+
+                    function bump(Counter $c): void {
+                        $c->count++;
+                    }
+
+                    $counter = new Counter();
+                    $counter->count = 1;
+                    $other = new Counter();
+                    $other->count = 1;
+
+                    foreach ([1, 2, 3] as $_) {
+                        bump($counter);
+                        $other_next = $other->count + 1;
+                    }
+                    PHP,
+                'assertions' => [
+                    '$other_next===' => '2',
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
             'incrementOfAnItemInLoopIsNotFoldedLikeALiteral' => [
                 'code' => <<<'PHP'
                     <?php
