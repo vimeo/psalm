@@ -1705,6 +1705,12 @@ final class ArrayFunctionCallTest extends TestCase
                 'ignored_issues' => [],
                 'php_version' => '8.0',
             ],
+            'arrayReduceUntypedArrayWithTypedCallbackIsNotReported' => [
+                'code' => '<?php
+                    function multiply(array $arr): int {
+                        return array_reduce($arr, fn(int $carry, int $item): int => $carry * $item, 1);
+                    }',
+            ],
             'arrayReduceOverTheMixedResultOfAnotherArrayReduce' => [
                 'code' => '<?php
                     function join_path(string $path): string {
@@ -4048,13 +4054,6 @@ final class ArrayFunctionCallTest extends TestCase
     public static function providerInvalidCodeParse(): iterable
     {
         return [
-            'arrayReduceUntypedArrayWithTypedCallback' => [
-                'code' => '<?php
-                    function multiply(array $arr): int {
-                        return array_reduce($arr, fn(int $carry, int $item): int => $carry * $item, 1);
-                    }',
-                'error_message' => 'MixedArgumentTypeCoercion',
-            ],
             'arrayReduceCallbackParamOfTheWrongType' => [
                 'code' => '<?php
                     /** @param list<array{tags: string}> $a */
