@@ -233,6 +233,7 @@ These issues become info (non-blocking) at level 5 and higher.
 
  - [FalseOperand](issues/FalseOperand.md)
  - [ForbiddenCode](issues/ForbiddenCode.md)
+ - [HiddenGeneratorReturn](issues/HiddenGeneratorReturn.md)
  - [IfThisIsMismatch](issues/IfThisIsMismatch.md)
  - [ImplementedParamTypeMismatch](issues/ImplementedParamTypeMismatch.md)
  - [ImplementedReturnTypeMismatch](issues/ImplementedReturnTypeMismatch.md)
