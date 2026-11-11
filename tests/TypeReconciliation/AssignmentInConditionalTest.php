@@ -21,36 +21,300 @@ final class AssignmentInConditionalTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
-            'variableAssignedByBothSidesOfAnOrIsDefinedInTheBodyInALoop' => [
+            'assignmentInTheMatchArmsOfTheValueOfAnOuterAssignmentOfTheSameVariable' => [
                 'code' => '<?php
-                    final class Files {
-                        public function exists(string $file): bool {
-                            return $file !== "";
-                        }
+                    interface ViewFactory {
+                        public function exists(string $view): bool;
                     }
 
-                    /** @param list<string> $names */
-                    function find(Files $files, array $names): void {
-                        foreach ($names as $name) {
-                            if ($files->exists($file = $name . ".php") || $files->exists($file = $name . ".inc")) {
-                                echo $file;
+                    function guess(ViewFactory $views, string $component): ?string {
+                        foreach ([1, 2] as $_) {
+                            try {
+                                if (! is_null($guess = match (true) {
+                                    $views->exists($guess = "a" . $component) => $guess,
+                                    $views->exists($guess = "b" . $component) => $guess,
+                                    default => null,
+                                })) {
+                                    return $guess;
+                                }
+                            } catch (InvalidArgumentException) {
                             }
+                        }
+
+                        return null;
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'assignmentInTheOffsetOfAnIssetInATryIsDefined' => [
+                'code' => '<?php
+                    function keyOf(string $t): string {
+                        return $t;
+                    }
+
+                    /** @param list<string> $templates */
+                    function warm(array $templates): void {
+                        $seen = [];
+
+                        foreach ($templates as $t) {
+                            try {
+                                if (!isset($seen[$k = keyOf($t)])) {
+                                    $seen[$k] = true;
+                                }
+                            } catch (Error) {
+                            }
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'assignmentInTheOffsetOfAnIssetKeepsTheTypeAfterIt' => [
+                'code' => '<?php
+                    function connectionName(UnitEnum|string|null $name): string {
+                        return $name instanceof UnitEnum ? $name->name : (string) $name;
+                    }
+
+                    function defaultName(): string {
+                        return "default";
+                    }
+
+                    /** @param array<string, int> $connections */
+                    function connection(array $connections, UnitEnum|string|null $name = null): int {
+                        if (isset($connections[$name = connectionName($name) ?: defaultName()])) {
+                            return $connections[$name];
+                        }
+
+                        return 0;
+                    }',
+                'assertions' => [],
+                'ignored_issues' => ['RiskyTruthyFalsyComparison'],
+                'php_version' => '8.1',
+            ],
+            'assignmentInAPlainIfKeepsTheTypeAfterIt' => [
+                'code' => '<?php
+                    /** @return (callable(int): bool)|null */
+                    function handler() {
+                        return null;
+                    }
+
+                    if ($handler = handler()) {
+                        if (\\is_array($handler)) {
+                            echo "array";
+                        }
+                    }',
+                'assertions' => [
+                    '$handler===' => 'callable[impure](int):bool|null',
+                ],
+                'ignored_issues' => ['RiskyTruthyFalsyComparison'],
+                'php_version' => '8.3',
+            ],
+            'assignmentInTheRightOperandOfAndIsEitherTypeInTheElse' => [
+                'code' => '<?php
+                    function fetch(): ?string {
+                        return rand(0, 1) ? "a" : null;
+                    }
+
+                    function check(bool $a): void {
+                        $v = new stdClass();
+
+                        if ($a && ($v = fetch())) {
+                            echo "found";
+                        } else {
+                            /** @psalm-check-type-exact $v = null|stdClass|string */;
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => ['RiskyTruthyFalsyComparison'],
+                'php_version' => '8.0',
+            ],
+            'assignmentInTheRightOperandOfAndIsEitherTypeInTheElseOfAnElseif' => [
+                'code' => '<?php
+                    function fetch(): ?string {
+                        return rand(0, 1) ? "a" : null;
+                    }
+
+                    function check(bool $a, bool $b): void {
+                        $v = new stdClass();
+
+                        if ($b) {
+                            echo "b";
+                        } elseif ($a && ($v = fetch())) {
+                            /** @psalm-check-type-exact $v = non-falsy-string */;
+                        } else {
+                            /** @psalm-check-type-exact $v = null|stdClass|string */;
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => ['RiskyTruthyFalsyComparison'],
+                'php_version' => '8.0',
+            ],
+            'assignmentInTheRightOperandOfAndInAWhileIsNarrowedInTheBody' => [
+                'code' => '<?php
+                    function fetch(): ?string {
+                        return rand(0, 1) ? "a" : null;
+                    }
+
+                    function check(bool $a): void {
+                        $v = new stdClass();
+
+                        while ($a && ($v = fetch())) {
+                            /** @psalm-check-type-exact $v = non-falsy-string */;
+                            $a = false;
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => ['RiskyTruthyFalsyComparison'],
+                'php_version' => '8.0',
+            ],
+            'assignmentInTheRightOperandOfAnAndInAGuardClauseIsSetAfterIt' => [
+                'code' => '<?php
+                    function fetch(): ?string {
+                        return rand(0, 1) ? "a" : null;
+                    }
+
+                    function check(bool $a): void {
+                        $v = new stdClass();
+
+                        if (!$a || !($v = fetch())) {
+                            return;
+                        }
+
+                        /** @psalm-check-type-exact $v = non-falsy-string */;
+                    }',
+                'assertions' => [],
+                'ignored_issues' => ['RiskyTruthyFalsyComparison'],
+                'php_version' => '8.0',
+            ],
+            'assignmentComparedWithTrueIsNarrowedInTheBody' => [
+                'code' => '<?php
+                    function label(): string {
+                        return rand(0, 1) ? "a" : "";
+                    }
+
+                    function check(): int {
+                        $value = new stdClass();
+
+                        if (($value = label()) == true) {
+                            /** @psalm-check-type-exact $value = non-falsy-string */;
+                            return strlen($value);
+                        }
+
+                        return 0;
+                    }',
+                'assertions' => [],
+                'ignored_issues' => ['RiskyTruthyFalsyComparison'],
+                'php_version' => '8.0',
+            ],
+            'assignmentInTheRightOperandOfAndInAnIfKeepsTheEarlierType' => [
+                'code' => '<?php
+                    function fetch(): ?float {
+                        return rand(0, 1) ? 1.5 : null;
+                    }
+
+                    function check(bool $enabled): void {
+                        $value = 0;
+                        if ($enabled && null !== ($value = fetch())) {
+                            echo "found";
+                        }
+
+                        /** @psalm-check-type-exact $value = 0|float|null */;
+                    }',
+            ],
+            'assignmentInTheRightOperandOfAndInAnIfIsNarrowedInTheBody' => [
+                'code' => '<?php
+                    function fetch(): ?float {
+                        return rand(0, 1) ? 1.5 : null;
+                    }
+
+                    function check(bool $enabled): void {
+                        $value = 0;
+                        if ($enabled && null !== ($value = fetch())) {
+                            /** @psalm-check-type-exact $value = float */;
                         }
                     }',
             ],
-            'variableAssignedByTheLeftSideOfAnOrIsDefinedInTheBodyInALoop' => [
+            'assignmentInTheRightOperandOfAnAndInsideAnOrIsNotNullInTheBody' => [
                 'code' => '<?php
-                    function ok(string $value): bool {
-                        return $value !== "";
+                    interface Argument {
+                        public function name(): string;
                     }
 
-                    function run(): void {
-                        foreach ([1, 2] as $_) {
-                            if (ok($path = "a") || ok("b")) {
-                                echo $path;
-                            }
+                    final class Tagged implements Argument {
+                        public function name(): string {
+                            return "tagged";
+                        }
+                    }
+
+                    final class Locator implements Argument {
+                        public function name(): string {
+                            return "locator";
+                        }
+
+                        public function getTagged(): ?Tagged {
+                            return null;
+                        }
+                    }
+
+                    function dump(Argument $value): string {
+                        $tag = $value;
+
+                        if ($value instanceof Tagged
+                            || ($value instanceof Locator && ($tag = $value->getTagged()))
+                        ) {
+                            return $tag->name();
+                        }
+
+                        return "";
+                    }',
+            ],
+            'assignmentInBothOperandsOfOrInAnIfIsEitherOfThem' => [
+                'code' => '<?php
+                    function getPath(): ?string {
+                        return rand(0, 1) ? "a" : null;
+                    }
+
+                    function foo(?string $s): string {
+                        if (($path = $s) || ($path = getPath())) {
+                            /** @psalm-check-type-exact $path = non-falsy-string */
+                            return $path;
+                        }
+
+                        return "b";
+                    }',
+                'assertions' => [],
+                'ignored_issues' => ['RiskyTruthyFalsyComparison'],
+                'php_version' => '8.0',
+            ],
+            'assignmentInTheRightOperandOfAndInAnIfWithAFloatPreviously' => [
+                'code' => '<?php
+                    class Check {
+                        private bool $isTrue = false;
+                        private ?float $value = 0.0;
+
+                        public function isTrue(): bool {
+                            return $this->isTrue;
+                        }
+
+                        public function getValue(): ?float {
+                            return $this->value;
+                        }
+                    }
+
+                    function run(Check $check): void {
+                        $bar = .0;
+
+                        if ($check->isTrue() && null === ($bar = $check->getValue())) {
+                            echo "condition match";
+                        }
+
+                        if ($bar) {
+                            echo "condition 2 match";
                         }
                     }',
+                'assertions' => [],
+                'ignored_issues' => ['RiskyTruthyFalsyComparison'],
             ],
             'binaryComparisonAssignedInConditional' => [
                 'code' => '<?php
@@ -503,6 +767,37 @@ final class AssignmentInConditionalTest extends TestCase
                         if ($a) {}
                     }',
             ],
+            'variableAssignedByBothSidesOfAnOrIsDefinedInTheBodyInALoop' => [
+                'code' => '<?php
+                    final class Files {
+                        public function exists(string $file): bool {
+                            return $file !== "";
+                        }
+                    }
+
+                    /** @param list<string> $names */
+                    function find(Files $files, array $names): void {
+                        foreach ($names as $name) {
+                            if ($files->exists($file = $name . ".php") || $files->exists($file = $name . ".inc")) {
+                                echo $file;
+                            }
+                        }
+                    }',
+            ],
+            'variableAssignedByTheLeftSideOfAnOrIsDefinedInTheBodyInALoop' => [
+                'code' => '<?php
+                    function ok(string $value): bool {
+                        return $value !== "";
+                    }
+
+                    function run(): void {
+                        foreach ([1, 2] as $_) {
+                            if (ok($path = "a") || ok("b")) {
+                                echo $path;
+                            }
+                        }
+                    }',
+            ],
         ];
     }
 
@@ -513,69 +808,147 @@ final class AssignmentInConditionalTest extends TestCase
     public static function providerInvalidCodeParse(): iterable
     {
         return [
-            'variableAssignedByTheRightSideOfAnOrOnlyIsNotDefinedInTheBodyInALoop' => [
+            'assignmentInABranchOfATernaryInAnIfMayBeSkipped' => [
                 'code' => '<?php
-                    function ok(string $value): bool {
-                        return $value !== "";
+                    function label(): string {
+                        return rand(0, 1) ? "a" : "";
                     }
 
-                    function run(): void {
-                        foreach ([1, 2] as $_) {
-                            if (ok("b") || ok($path = "a")) {
-                                echo $path;
-                            }
+                    function check(bool $flag, bool $other): int {
+                        $value = new stdClass();
+
+                        if ($flag ? ($value = label()) : $other) {
+                            return strlen($value);
                         }
+
+                        return 0;
                     }',
-                'error_message' => 'UndefinedVariable',
+                'error_message' => 'PossiblyInvalidArgument',
+                'error_levels' => ['RiskyTruthyFalsyComparison'],
+                'php_version' => '8.0',
             ],
-            'variableAssignedByTheRightSideOfANestedOrOnlyIsNotDefinedInTheBodyInALoop' => [
+            'assignmentInATernaryComparedWithTrueMayBeSkipped' => [
                 'code' => '<?php
-                    function ok(string $value): bool {
-                        return $value !== "";
+                    function label(): string {
+                        return rand(0, 1) ? "a" : "";
                     }
 
-                    function run(): void {
-                        foreach ([1, 2] as $_) {
-                            if ((ok("a") || ok($path = "b")) || ok("c")) {
-                                echo $path;
-                            }
+                    function check(bool $flag, bool $other): int {
+                        $value = new stdClass();
+
+                        if (($flag ? ($value = label()) : $other) == true) {
+                            return strlen($value);
                         }
+
+                        return 0;
                     }',
-                'error_message' => 'UndefinedVariable',
+                'error_message' => 'PossiblyInvalidArgument',
+                'error_levels' => ['RiskyTruthyFalsyComparison'],
+                'php_version' => '8.0',
             ],
-            'possiblyUndefinedVariableAssignedByTheRightSideOfANestedOrStaysPossiblyUndefinedInTheBody' => [
+            'assignmentInAnAndInsideACastMayBeSkipped' => [
                 'code' => '<?php
-                    function ok(string $value): bool {
-                        return $value !== "";
+                    function label(): string {
+                        return rand(0, 1) ? "a" : "";
                     }
 
-                    function run(bool $c): void {
-                        if ($c) {
-                            $path = "x";
+                    function check(bool $flag): int {
+                        $value = new stdClass();
+
+                        if ((int) ($flag && ($value = label())) === 1) {
+                            return strlen($value);
                         }
 
-                        if ((ok("a") || ok($path = "b")) || ok("c")) {
-                            echo $path;
-                        }
+                        return 0;
                     }',
-                'error_message' => 'PossiblyUndefinedVariable',
+                'error_message' => 'PossiblyInvalidArgument',
+                'error_levels' => ['RiskyTruthyFalsyComparison'],
+                'php_version' => '8.0',
             ],
-            'possiblyUndefinedVariableAssignedByTheRightSideOfADeeplyNestedOrStaysPossiblyUndefinedInTheBody' => [
+            'assignmentInTheRightOfACoalesceInsideAComparisonMayBeSkipped' => [
                 'code' => '<?php
-                    function ok(string $value): bool {
-                        return $value !== "";
+                    function label(): string {
+                        return rand(0, 1) ? "a" : "";
                     }
 
-                    function run(bool $c): void {
-                        if ($c) {
-                            $path = "x";
+                    function check(?string $name): int {
+                        $value = new stdClass();
+
+                        if (($name ?? ($value = label())) !== "q") {
+                            return strlen($value);
                         }
 
-                        if ((((ok("a") || ok("b")) || ok("c")) || ok($path = "d")) || ok("e")) {
-                            echo $path;
-                        }
+                        return 0;
                     }',
-                'error_message' => 'PossiblyUndefinedVariable',
+                'error_message' => 'PossiblyInvalidArgument',
+                'error_levels' => ['RiskyTruthyFalsyComparison'],
+                'php_version' => '8.0',
+            ],
+            'assignmentInAMatchArmMayBeSkipped' => [
+                'code' => '<?php
+                    function label(): string {
+                        return rand(0, 1) ? "a" : "";
+                    }
+
+                    function check(bool $flag): int {
+                        $value = new stdClass();
+
+                        if (match ($flag) { true => ($value = label()), default => false } !== false) {
+                            return strlen($value);
+                        }
+
+                        return 0;
+                    }',
+                'error_message' => 'PossiblyInvalidArgument',
+                'error_levels' => ['RiskyTruthyFalsyComparison'],
+                'php_version' => '8.0',
+            ],
+            'assignmentInAnArgumentOfANullsafeCallMayBeSkipped' => [
+                'code' => '<?php
+                    final class Reader {
+                        public function read(string $label): ?int {
+                            return null;
+                        }
+                    }
+
+                    function label(): string {
+                        return rand(0, 1) ? "a" : "";
+                    }
+
+                    function check(?Reader $reader): int {
+                        $value = new stdClass();
+
+                        if ($reader?->read($value = label()) !== null) {
+                            return strlen($value);
+                        }
+
+                        return 0;
+                    }',
+                'error_message' => 'PossiblyInvalidArgument',
+                'php_version' => '8.0',
+            ],
+            'assignmentInTheRightOperandOfAndFollowedByAnOrMayBeNullInTheBody' => [
+                'code' => '<?php
+                    final class Tagged {
+                        public function name(): string {
+                            return "tagged";
+                        }
+                    }
+
+                    function getTagged(): ?Tagged {
+                        return null;
+                    }
+
+                    function dump(bool $enabled, bool $fallback): string {
+                        $tag = new Tagged();
+
+                        if (($enabled && ($tag = getTagged())) || $fallback) {
+                            return $tag->name();
+                        }
+
+                        return "";
+                    }',
+                'error_message' => 'PossiblyNullReference',
             ],
             'assignmentInBranchOfAnd' => [
                 'code' => '<?php
@@ -641,6 +1014,70 @@ final class AssignmentInConditionalTest extends TestCase
                         }
                     }',
                 'error_message' => 'InvalidReturnStatement',
+            ],
+            'variableAssignedByTheRightSideOfAnOrOnlyIsNotDefinedInTheBodyInALoop' => [
+                'code' => '<?php
+                    function ok(string $value): bool {
+                        return $value !== "";
+                    }
+
+                    function run(): void {
+                        foreach ([1, 2] as $_) {
+                            if (ok("b") || ok($path = "a")) {
+                                echo $path;
+                            }
+                        }
+                    }',
+                'error_message' => 'UndefinedVariable',
+            ],
+            'variableAssignedByTheRightSideOfANestedOrOnlyIsNotDefinedInTheBodyInALoop' => [
+                'code' => '<?php
+                    function ok(string $value): bool {
+                        return $value !== "";
+                    }
+
+                    function run(): void {
+                        foreach ([1, 2] as $_) {
+                            if ((ok("a") || ok($path = "b")) || ok("c")) {
+                                echo $path;
+                            }
+                        }
+                    }',
+                'error_message' => 'UndefinedVariable',
+            ],
+            'possiblyUndefinedVariableAssignedByTheRightSideOfANestedOrStaysPossiblyUndefinedInTheBody' => [
+                'code' => '<?php
+                    function ok(string $value): bool {
+                        return $value !== "";
+                    }
+
+                    function run(bool $c): void {
+                        if ($c) {
+                            $path = "x";
+                        }
+
+                        if ((ok("a") || ok($path = "b")) || ok("c")) {
+                            echo $path;
+                        }
+                    }',
+                'error_message' => 'PossiblyUndefinedVariable',
+            ],
+            'possiblyUndefinedVariableAssignedByTheRightSideOfADeeplyNestedOrStaysPossiblyUndefinedInTheBody' => [
+                'code' => '<?php
+                    function ok(string $value): bool {
+                        return $value !== "";
+                    }
+
+                    function run(bool $c): void {
+                        if ($c) {
+                            $path = "x";
+                        }
+
+                        if ((((ok("a") || ok("b")) || ok("c")) || ok($path = "d")) || ok("e")) {
+                            echo $path;
+                        }
+                    }',
+                'error_message' => 'PossiblyUndefinedVariable',
             ],
         ];
     }
