@@ -385,6 +385,18 @@ final class BinaryOperationTest extends TestCase
     public function providerValidCodeParse(): iterable
     {
         return [
+            'zeroToANegativePowerIsAFloat' => [
+                'code' => '<?php
+                    $a = 0 ** -1;
+                    $b = 0.0 ** -2;
+                    $c = 0 ** -INF;
+                    echo $a, $b, $c;',
+                'assertions' => [
+                    '$a' => 'float',
+                    '$b' => 'float',
+                    '$c' => 'float',
+                ],
+            ],
             'regularAddition' => [
                 'code' => '<?php
                     $a = 5 + 4;',
@@ -1239,6 +1251,18 @@ final class BinaryOperationTest extends TestCase
     public function providerInvalidCodeParse(): iterable
     {
         return [
+            'shiftLeftByANegativeNumber' => [
+                'code' => '<?php
+                    $a = 1 << -1;
+                    echo $a;',
+                'error_message' => 'NoValue',
+            ],
+            'shiftRightByANegativeNumber' => [
+                'code' => '<?php
+                    $a = 1 >> -2;
+                    echo $a;',
+                'error_message' => 'NoValue',
+            ],
             'badAddition' => [
                 'code' => '<?php
                     $a = "b" + 5;',
