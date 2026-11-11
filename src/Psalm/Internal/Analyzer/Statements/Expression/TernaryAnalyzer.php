@@ -256,9 +256,11 @@ final class TernaryAnalyzer
                 $context->vars_in_scope[$var_id] = $type;
             }
 
-            foreach ($completing_context->assigned_var_ids as $var_id => $_) {
+            foreach ($completing_context->assigned_var_ids as $var_id => $assigned_at) {
                 if (isset($completing_context->vars_in_scope[$var_id])) {
                     $context->vars_in_scope[$var_id] = $completing_context->vars_in_scope[$var_id];
+                    // an enclosing ternary needs to know the variable is assigned wherever this one completes
+                    $context->assigned_var_ids[$var_id] = $assigned_at;
                 }
             }
 
@@ -286,6 +288,9 @@ final class TernaryAnalyzer
                     $if_context->vars_in_scope[$var_id],
                     $t_else_context->vars_in_scope[$var_id],
                 );
+
+                // an enclosing ternary needs to know the variable is assigned in both of its branches too
+                $context->assigned_var_ids[$var_id] = $if_context->assigned_var_ids[$var_id];
             }
         }
 
