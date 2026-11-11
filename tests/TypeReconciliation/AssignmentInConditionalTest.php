@@ -21,6 +21,32 @@ final class AssignmentInConditionalTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'assignmentInTheMatchArmsOfTheValueOfAnOuterAssignmentOfTheSameVariable' => [
+                'code' => '<?php
+                    interface ViewFactory {
+                        public function exists(string $view): bool;
+                    }
+
+                    function guess(ViewFactory $views, string $component): ?string {
+                        foreach ([1, 2] as $_) {
+                            try {
+                                if (! is_null($guess = match (true) {
+                                    $views->exists($guess = "a" . $component) => $guess,
+                                    $views->exists($guess = "b" . $component) => $guess,
+                                    default => null,
+                                })) {
+                                    return $guess;
+                                }
+                            } catch (InvalidArgumentException) {
+                            }
+                        }
+
+                        return null;
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
             'assignmentInTheOffsetOfAnIssetInATryIsDefined' => [
                 'code' => '<?php
                     function keyOf(string $t): string {

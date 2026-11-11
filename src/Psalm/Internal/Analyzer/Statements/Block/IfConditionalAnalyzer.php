@@ -633,7 +633,15 @@ final class IfConditionalAnalyzer
             if (ExpressionIdentifier::getExtendedVarId($assign->var, $self, $statements_analyzer) === $var_id) {
                 $full_states['full#' . spl_object_id($assign)] = true;
 
-                if (!in_array($assign, $unconditional_assignments, true)) {
+                if (!in_array($assign, $unconditional_assignments, true)
+                    && !self::isOverwrittenByAnUnconditionalAssignment(
+                        $statements_analyzer,
+                        $assign,
+                        $unconditional_assignments,
+                        $var_id,
+                        $self,
+                    )
+                ) {
                     $full_states += $incoming;
                 }
             }
@@ -644,6 +652,34 @@ final class IfConditionalAnalyzer
         }
 
         return [$incoming, $incoming];
+    }
+
+    /**
+     * Whether an assignment that may be skipped is in the value of an assignment of the same variable that always runs
+     * (`$a = match (...) { f($a = 1) => ... }`): the value of the outer one is what the variable is after both
+     *
+     * @param list<PhpParser\Node\Expr\Assign> $unconditional_assignments
+     */
+    private static function isOverwrittenByAnUnconditionalAssignment(
+        StatementsAnalyzer $statements_analyzer,
+        PhpParser\Node\Expr\Assign $assign,
+        array $unconditional_assignments,
+        string $var_id,
+        ?string $self,
+    ): bool {
+        foreach ($unconditional_assignments as $outer) {
+            if ($outer !== $assign
+                && ExpressionIdentifier::getExtendedVarId($outer->var, $self, $statements_analyzer) === $var_id
+                && (new PhpParser\NodeFinder())->findFirst(
+                    $outer->expr,
+                    static fn(PhpParser\Node $node): bool => $node === $assign,
+                ) !== null
+            ) {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     /**
