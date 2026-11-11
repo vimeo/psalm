@@ -22,39 +22,48 @@ final class TraitTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
-            'traitMethodTemplatePassedThroughAClosureParam' => [
-                'code' => '<?php
-                    class Service
+            'selfReturnOfTraitMethodIsTheClassUsingTheTrait' => [
+                'code' => <<<'PHP'
+                    <?php
+                    interface SomeInterface
                     {
-                        /**
-                         * @template T
-                         * @param class-string<T> $type
-                         * @param Closure(T): void $callback
-                         */
-                        public function run(string $type, Closure $callback): void
-                        {
-                            echo $type;
-                            echo $callback::class;
-                        }
+                        public function duplicate(): self;
                     }
 
                     trait SomeTrait
                     {
-                        /**
-                         * @template T
-                         * @param class-string<T> $type
-                         * @param Closure(T): void $callback
-                         */
-                        protected function bar(string $type, Closure $callback): void
+                        public function duplicate(): self
                         {
-                            (new Service())->run($type, $callback);
+                            return new self();
                         }
                     }
 
-                    class Bar
+                    class Concrete implements SomeInterface
                     {
                         use SomeTrait;
-                    }',
+                    }
+
+                    class ConcreteChild extends Concrete
+                    {
+                        public function duplicate(): self
+                        {
+                            return new self();
+                        }
+                    }
+
+                    class Other implements SomeInterface
+                    {
+                        use SomeTrait;
+
+                        public function duplicate(): self
+                        {
+                            return new self();
+                        }
+                    }
+                    PHP,
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
             ],
             'constructorInitializesPropertyThroughMethodOfNestedTrait' => [
                 'code' => '<?php
@@ -1547,6 +1556,40 @@ final class TraitTest extends TestCase
 
                     test(function(string ...$args): void {});',
             ],
+            'traitMethodTemplatePassedThroughAClosureParam' => [
+                'code' => '<?php
+                    class Service
+                    {
+                        /**
+                         * @template T
+                         * @param class-string<T> $type
+                         * @param Closure(T): void $callback
+                         */
+                        public function run(string $type, Closure $callback): void
+                        {
+                            echo $type;
+                            echo $callback::class;
+                        }
+                    }
+
+                    trait SomeTrait
+                    {
+                        /**
+                         * @template T
+                         * @param class-string<T> $type
+                         * @param Closure(T): void $callback
+                         */
+                        protected function bar(string $type, Closure $callback): void
+                        {
+                            (new Service())->run($type, $callback);
+                        }
+                    }
+
+                    class Bar
+                    {
+                        use SomeTrait;
+                    }',
+            ],
         ];
     }
 
@@ -1557,6 +1600,42 @@ final class TraitTest extends TestCase
     public static function providerInvalidCodeParse(): iterable
     {
         return [
+            'selfReturnOfTraitMethodRejectsTheParentOfTheClassUsingTheTrait' => [
+                'code' => <<<'PHP'
+                    <?php
+                    trait SomeTrait
+                    {
+                        public function duplicate(): self
+                        {
+                            return new self();
+                        }
+                    }
+
+                    class Concrete
+                    {
+                        use SomeTrait;
+                    }
+
+                    class ConcreteChild extends Concrete
+                    {
+                        public function duplicate(): self
+                        {
+                            return new self();
+                        }
+                    }
+
+                    class GrandChild extends ConcreteChild
+                    {
+                        public function duplicate(): Concrete
+                        {
+                            return new Concrete();
+                        }
+                    }
+                    PHP,
+                'error_message' => 'Method GrandChild::duplicate with return type',
+                'error_levels' => [],
+                'php_version' => '8.1',
+            ],
             'constructorCallsMethodOfNestedTraitThatDoesNotInitializeProperty' => [
                 'code' => '<?php
                     class MyClass {
