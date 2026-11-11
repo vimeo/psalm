@@ -281,14 +281,12 @@ class Reconciler
                     ) {
                         $data = $new_type_part_part->assertions;
 
-                        if ($new_type_part_part instanceof NotNestedAssertions) {
-                            $nested_negated = !$negated;
-                            // the negation is in the assertions now: what they are reconciled for is unchanged
+                        // the polarity is in the assertion (a negated formula holds NotNestedAssertions for the
+                        // NestedAssertions of the condition); $negated only words the issues
+                        $nested_negated = $new_type_part_part instanceof NotNestedAssertions;
+
+                        if ($nested_negated) {
                             $data = self::negateNestedAssertions($data);
-                            $data_negated = $negated;
-                        } else {
-                            $nested_negated = $negated;
-                            $data_negated = $negated;
                         }
 
                         [$existing_types, $_] = self::reconcileKeyedTypes(
@@ -302,7 +300,7 @@ class Reconciler
                             $template_type_map,
                             $inside_loop,
                             $code_location,
-                            $data_negated,
+                            $negated,
                         );
 
                         $new_type_part_part = $nested_negated ? new Falsy() : new Truthy();
