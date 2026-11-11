@@ -3187,6 +3187,17 @@ final class FunctionCallTest extends TestCase
     public static function providerInvalidCodeParse(): iterable
     {
         return [
+            'streamSelectDoesNotTakeAContextBeforePhp86' => [
+                'code' => '<?php
+                    $read = [STDIN];
+                    $write = null;
+                    $except = null;
+
+                    stream_select($read, $write, $except, 0, 0, null);',
+                'error_message' => 'TooManyArguments',
+                'error_levels' => [],
+                'php_version' => '8.5',
+            ],
             'emptyStringIsNotANonEmptyLowercaseString' => [
                 'code' => '<?php
                     /** @param non-empty-lowercase-string $s */

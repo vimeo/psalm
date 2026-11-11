@@ -38,6 +38,7 @@ final class StubCallMapConformityTest extends TestCase
     /** @var array<string, string> function => why the stub deliberately differs from the call map */
     private const DEVIATIONS = [
         'fclose' => 'the stub takes the handle by reference so that it is not reported as unused afterwards',
+        'stream_select' => 'the sixth parameter ($context) exists only since PHP 8.6, and the stub serves every version',
         'pg_escape_bytea' => 'the stub accepts the connection as an optional first argument',
         'pg_escape_identifier' => 'the stub accepts the connection as an optional first argument',
         'pg_escape_literal' => 'the stub accepts the connection as an optional first argument',
