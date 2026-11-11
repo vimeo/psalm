@@ -23,113 +23,30 @@ final class RedundantConditionTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
-            'issetOfAnArrayOffsetThatMayBeUnset' => [
-                'code' => '<?php
-                    /**
-                     * @param list<string> $list
-                     * @param array<string, string> $map
-                     * @param array{a: string, b?: string} $shape
-                     * @param non-empty-list<string> $nonEmptyList
-                     * @param array{a: ?string} $nullable
-                     */
-                    function f(array $list, array $map, array $shape, array $nonEmptyList, array $nullable, string $str): void {
-                        $a = $list[0] ?? "";
-                        $b = $map["k"] ?? "";
-                        $c = $shape["b"] ?? "";
-                        $d = $nonEmptyList[1] ?? "";
-                        $e = $nullable["a"] ?? "";
-                        $f = $str[0] ?? "";
-                        $g = $shape["a"] === "x" ? $shape["b"] ?? "" : "";
-                        $h = isset($map["k"]) ? $map["k"] : "";
-                        $i = $_GET["x"] ?? "";
-                        $j = $_SERVER["REQUEST_METHOD"] ?? "";
-                    }
-
-                    /** @param list<non-empty-list<string>> $rows */
-                    function g(array $rows): string {
-                        return $rows[0][0] ?? "";
-                    }',
-            ],
-            'issetOfAnArrayOffsetOfSomethingThatMayNotBeAnArray' => [
-                'code' => '<?php
-                    /**
-                     * @param ?array{k: string} $nullable
-                     * @param array{k: string}|false $falsable
-                     * @param array{k: string}|string $string
-                     */
-                    function f(?array $nullable, $falsable, $string): void {
-                        $a = $nullable["k"] ?? "";
-                        $b = $falsable["k"] ?? "";
-                        $c = $string["k"] ?? "";
-                        $d = isset($nullable["k"]) ? $nullable["k"] : "";
-                    }
-
-                    function g(): string {
-                        $error = error_get_last();
-
-                        return $error["message"] ?? "unknown error";
-                    }
-
-                    function h(): string {
-                        global $argv;
-
-                        return $argv[0] ?? "";
-                    }',
-            ],
-            'issetOfAnArrayOffsetAfterItWasRemovedOrReplaced' => [
-                'code' => '<?php
-                    function f(): void {
-                        $c = ["x" => 1];
-                        foreach ([1, 2] as $_) {
-                            echo $c["x"] ?? 0;
-                            unset($c["x"]);
+            'ctypeCheckOfNumericStringExpressionIsNotRedundant' => [
+                'code' => <<<'PHP'
+                    <?php
+                    function negated(int $id): void {
+                        if (!ctype_digit("$id")) {
+                            throw new InvalidArgumentException("Bad id $id");
                         }
-
-                        $d = ["x" => 1];
-                        removeX($d);
-                        $e = $d["x"] ?? 0;
                     }
 
-                    /** @param array<string, int> $a */
-                    function removeX(array &$a): void {
-                        unset($a["x"]);
-                    }',
-            ],
-            'issetOfAnArrayOffsetThatWasReadBefore' => [
-                'code' => '<?php
-                    /** @param array<string, string> $map */
-                    function f(array $map): string {
-                        $a = $map["k"];
+                    function positive(int $id): void {
+                        if (ctype_digit("$id")) {
+                            echo "non-negative";
+                        }
+                    }
 
-                        return $a . ($map["k"] ?? "");
-                    }',
+                    function lower(): void {
+                        if (ctype_lower("abc" . rand())) {
+                            echo "lower";
+                        }
+                    }
+                    PHP,
                 'assertions' => [],
-                'ignored_issues' => ['PossiblyUndefinedStringArrayOffset'],
-            ],
-            'issetOfAnArrayOffsetOfAVariableAssignedInTheCondition' => [
-                'code' => '<?php
-                    function f(string $s): string {
-                        if (preg_match("/^(a)(b)$/", $s, $m) !== 1 || !isset($m[1]) || $m[1] === "") {
-                            return "";
-                        }
-
-                        return $m[1];
-                    }
-
-                    function g(string $s): string {
-                        if (preg_match("/^(a)(b)$/", $s, $m) && isset($m[1]) && isset($m[2]) && $m[2] !== "") {
-                            return $m[1];
-                        }
-
-                        return "";
-                    }',
-            ],
-            'issetOfAnArrayOffsetOfAnArrayAccessObject' => [
-                'code' => '<?php
-                    /** @param ArrayAccess<string, string> $o */
-                    function f(ArrayAccess $o): string {
-                        return $o["k"] ?? "";
-                    }',
+                'ignored_issues' => [],
+                'php_version' => '8.1',
             ],
             'negatedInstanceofOfAGenericSubclassOnAnInterfaceWithTemplateArguments' => [
                 'code' => '<?php
@@ -1172,6 +1089,114 @@ final class RedundantConditionTest extends TestCase
                         assert(!!$p);
                     }',
             ],
+            'issetOfAnArrayOffsetThatMayBeUnset' => [
+                'code' => '<?php
+                    /**
+                     * @param list<string> $list
+                     * @param array<string, string> $map
+                     * @param array{a: string, b?: string} $shape
+                     * @param non-empty-list<string> $nonEmptyList
+                     * @param array{a: ?string} $nullable
+                     */
+                    function f(array $list, array $map, array $shape, array $nonEmptyList, array $nullable, string $str): void {
+                        $a = $list[0] ?? "";
+                        $b = $map["k"] ?? "";
+                        $c = $shape["b"] ?? "";
+                        $d = $nonEmptyList[1] ?? "";
+                        $e = $nullable["a"] ?? "";
+                        $f = $str[0] ?? "";
+                        $g = $shape["a"] === "x" ? $shape["b"] ?? "" : "";
+                        $h = isset($map["k"]) ? $map["k"] : "";
+                        $i = $_GET["x"] ?? "";
+                        $j = $_SERVER["REQUEST_METHOD"] ?? "";
+                    }
+
+                    /** @param list<non-empty-list<string>> $rows */
+                    function g(array $rows): string {
+                        return $rows[0][0] ?? "";
+                    }',
+            ],
+            'issetOfAnArrayOffsetOfSomethingThatMayNotBeAnArray' => [
+                'code' => '<?php
+                    /**
+                     * @param ?array{k: string} $nullable
+                     * @param array{k: string}|false $falsable
+                     * @param array{k: string}|string $string
+                     */
+                    function f(?array $nullable, $falsable, $string): void {
+                        $a = $nullable["k"] ?? "";
+                        $b = $falsable["k"] ?? "";
+                        $c = $string["k"] ?? "";
+                        $d = isset($nullable["k"]) ? $nullable["k"] : "";
+                    }
+
+                    function g(): string {
+                        $error = error_get_last();
+
+                        return $error["message"] ?? "unknown error";
+                    }
+
+                    function h(): string {
+                        global $argv;
+
+                        return $argv[0] ?? "";
+                    }',
+            ],
+            'issetOfAnArrayOffsetAfterItWasRemovedOrReplaced' => [
+                'code' => '<?php
+                    function f(): void {
+                        $c = ["x" => 1];
+                        foreach ([1, 2] as $_) {
+                            echo $c["x"] ?? 0;
+                            unset($c["x"]);
+                        }
+
+                        $d = ["x" => 1];
+                        removeX($d);
+                        $e = $d["x"] ?? 0;
+                    }
+
+                    /** @param array<string, int> $a */
+                    function removeX(array &$a): void {
+                        unset($a["x"]);
+                    }',
+            ],
+            'issetOfAnArrayOffsetThatWasReadBefore' => [
+                'code' => '<?php
+                    /** @param array<string, string> $map */
+                    function f(array $map): string {
+                        $a = $map["k"];
+
+                        return $a . ($map["k"] ?? "");
+                    }',
+                'assertions' => [],
+                'ignored_issues' => ['PossiblyUndefinedStringArrayOffset'],
+            ],
+            'issetOfAnArrayOffsetOfAVariableAssignedInTheCondition' => [
+                'code' => '<?php
+                    function f(string $s): string {
+                        if (preg_match("/^(a)(b)$/", $s, $m) !== 1 || !isset($m[1]) || $m[1] === "") {
+                            return "";
+                        }
+
+                        return $m[1];
+                    }
+
+                    function g(string $s): string {
+                        if (preg_match("/^(a)(b)$/", $s, $m) && isset($m[1]) && isset($m[2]) && $m[2] !== "") {
+                            return $m[1];
+                        }
+
+                        return "";
+                    }',
+            ],
+            'issetOfAnArrayOffsetOfAnArrayAccessObject' => [
+                'code' => '<?php
+                    /** @param ArrayAccess<string, string> $o */
+                    function f(ArrayAccess $o): string {
+                        return $o["k"] ?? "";
+                    }',
+            ],
         ];
     }
 
@@ -1182,41 +1207,6 @@ final class RedundantConditionTest extends TestCase
     public static function providerInvalidCodeParse(): iterable
     {
         return [
-            'coalesceOfAListOffsetThatAlwaysExists' => [
-                'code' => '<?php
-                    function f(string $q): string {
-                        $a = explode(",", $q);
-
-                        return $a[0] ?? "";
-                    }',
-                'error_message' => 'RedundantConditionGivenDocblockType - src' . DIRECTORY_SEPARATOR . 'somefile.php:5:32 - Docblock-defined type string for $a[0] is always isset',
-            ],
-            'coalesceOfAnArrayShapeKeyThatAlwaysExists' => [
-                'code' => '<?php
-                    function f(): string {
-                        $a = ["k" => "v"];
-
-                        return $a["k"] ?? "x";
-                    }',
-                'error_message' => 'RedundantCondition - src' . DIRECTORY_SEPARATOR . 'somefile.php:5:32 - Type \'v\' for $a[\'k\'] is always isset',
-            ],
-            'issetOfAnArrayShapeKeyThatAlwaysExists' => [
-                'code' => '<?php
-                    function f(): string {
-                        $a = ["k" => "v"];
-
-                        return isset($a["k"]) ? $a["k"] : "x";
-                    }',
-                'error_message' => 'RedundantCondition - src' . DIRECTORY_SEPARATOR . 'somefile.php:5:32 - Type \'v\' for $a[\'k\'] is always isset',
-            ],
-            'issetOfAnArrayShapeKeyThatAlwaysExistsFromADocblock' => [
-                'code' => '<?php
-                    /** @param array{k: int} $a */
-                    function f(array $a): int {
-                        return $a["k"] ?? 0;
-                    }',
-                'error_message' => 'RedundantConditionGivenDocblockType',
-            ],
             'inequalityWithAnEmptyArrayOfANonEmptyArrayIsRedundant' => [
                 'code' => '<?php
                     $a = [1, 2];
@@ -1932,6 +1922,41 @@ final class RedundantConditionTest extends TestCase
 
                     if (array_key_exists("10", $a) && array_key_exists(10, $a)) {}',
                 'error_message' => 'RedundantCondition',
+            ],
+            'coalesceOfAListOffsetThatAlwaysExists' => [
+                'code' => '<?php
+                    function f(string $q): string {
+                        $a = explode(",", $q);
+
+                        return $a[0] ?? "";
+                    }',
+                'error_message' => 'RedundantConditionGivenDocblockType - src' . DIRECTORY_SEPARATOR . 'somefile.php:5:32 - Docblock-defined type string for $a[0] is always isset',
+            ],
+            'coalesceOfAnArrayShapeKeyThatAlwaysExists' => [
+                'code' => '<?php
+                    function f(): string {
+                        $a = ["k" => "v"];
+
+                        return $a["k"] ?? "x";
+                    }',
+                'error_message' => 'RedundantCondition - src' . DIRECTORY_SEPARATOR . 'somefile.php:5:32 - Type \'v\' for $a[\'k\'] is always isset',
+            ],
+            'issetOfAnArrayShapeKeyThatAlwaysExists' => [
+                'code' => '<?php
+                    function f(): string {
+                        $a = ["k" => "v"];
+
+                        return isset($a["k"]) ? $a["k"] : "x";
+                    }',
+                'error_message' => 'RedundantCondition - src' . DIRECTORY_SEPARATOR . 'somefile.php:5:32 - Type \'v\' for $a[\'k\'] is always isset',
+            ],
+            'issetOfAnArrayShapeKeyThatAlwaysExistsFromADocblock' => [
+                'code' => '<?php
+                    /** @param array{k: int} $a */
+                    function f(array $a): int {
+                        return $a["k"] ?? 0;
+                    }',
+                'error_message' => 'RedundantConditionGivenDocblockType',
             ],
         ];
     }
