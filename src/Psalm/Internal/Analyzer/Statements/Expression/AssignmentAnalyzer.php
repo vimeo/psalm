@@ -219,7 +219,10 @@ final class AssignmentAnalyzer
             unset($context->cond_referenced_var_ids[$extended_var_id]);
             $context->assigned_var_ids[$extended_var_id] = (int) $assign_var->getAttribute('startFilePos');
             $context->possibly_assigned_var_ids[$extended_var_id] = true;
-            unset($context->array_union_assigned_var_ids[$extended_var_id]);
+
+            if (!$assign_var instanceof PhpParser\Node\Expr\ArrayDimFetch) {
+                $context->fully_assigned_var_ids[$extended_var_id] = true;
+            }
         }
 
         $root_expr = $assign_var;
@@ -1069,12 +1072,11 @@ final class AssignmentAnalyzer
                 $statements_analyzer,
             )
             : null;
-        // only where no full assignment of it came before in the branch, whichever union follows
+        // only where it was not assigned as a whole before in the branch, whichever union follows
         $array_union_var_id = $union_var_id !== null
             && isset($context->vars_in_scope[$union_var_id])
             && $context->vars_in_scope[$union_var_id]->isArray()
-            && (!isset($context->assigned_var_ids[$union_var_id])
-                || isset($context->array_union_assigned_var_ids[$union_var_id]))
+            && !isset($context->fully_assigned_var_ids[$union_var_id])
                 ? $union_var_id
                 : null;
 
@@ -1096,7 +1098,8 @@ final class AssignmentAnalyzer
         }
 
         if ($array_union_var_id !== null) {
-            $context->array_union_assigned_var_ids[$array_union_var_id] = true;
+            // the union is not an assignment of the array as a whole
+            unset($context->fully_assigned_var_ids[$array_union_var_id]);
 
             foreach ($kept_offsets as $offset_var_id => $offset_type) {
                 $context->vars_in_scope[$offset_var_id] ??= $offset_type;

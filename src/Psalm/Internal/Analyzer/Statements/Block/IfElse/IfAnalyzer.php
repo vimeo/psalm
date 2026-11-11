@@ -42,7 +42,6 @@ use function in_array;
 use function preg_match;
 use function preg_quote;
 use function spl_object_id;
-use function str_starts_with;
 
 /**
  * @internal
@@ -157,6 +156,7 @@ final class IfAnalyzer
         $assigned_var_ids = $if_context->assigned_var_ids;
         $possibly_assigned_var_ids = $if_context->possibly_assigned_var_ids;
         $if_context->assigned_var_ids = [];
+        $if_context->fully_assigned_var_ids = [];
         $if_context->possibly_assigned_var_ids = [];
 
         if ($statements_analyzer->analyze(
@@ -487,22 +487,7 @@ final class IfAnalyzer
         }
 
         $if_scope->possibly_assigned_var_ids += $possibly_assigned_var_ids;
-        // a variable is assigned as a whole where no offset or property of it is assigned next to it (writing
-        // an offset of a property also lists the property)
-        foreach ($assigned_var_ids as $var_id => $_) {
-            // `$a += [...]` keeps the offsets `$a` had
-            if (isset($if_context->array_union_assigned_var_ids[$var_id])) {
-                continue;
-            }
-
-            foreach ($assigned_var_ids as $other_var_id => $_other) {
-                if (str_starts_with($other_var_id, $var_id . '[') || str_starts_with($other_var_id, $var_id . '->')) {
-                    continue 2;
-                }
-            }
-
-            $if_scope->reassigned_var_ids[$var_id] = true;
-        }
+        $if_scope->reassigned_var_ids += $if_context->fully_assigned_var_ids;
 
         if ($if_scope->redefined_vars === null) {
             $if_scope->redefined_vars = $redefined_vars;

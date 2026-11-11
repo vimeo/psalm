@@ -344,12 +344,12 @@ final class Context
     public array $possibly_assigned_var_ids = [];
 
     /**
-     * The variables of this context whose last assignment was the union of an array into them (`$a += [...]`),
-     * which keeps every offset they had
+     * The variables (and properties) that were assigned as a whole in this context, not only an offset of them and
+     * not by the union of an array into them (`$a += [...]`, which keeps every offset the array had)
      *
      * @var array<string, bool>
      */
-    public array $array_union_assigned_var_ids = [];
+    public array $fully_assigned_var_ids = [];
 
     /**
      * A list of classes or interfaces that may have been thrown
