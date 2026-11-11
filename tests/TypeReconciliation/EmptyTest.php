@@ -48,6 +48,39 @@ final class EmptyTest extends TestCase
                         }
                     }',
             ],
+            'emptyOfAnOffsetWithAKeyThatMayBeAnyString' => [
+                'code' => '<?php
+                    function f(string $k): void {
+                        $a = ["key" => "test"];
+                        if (empty($a[$k])) {
+                            echo "empty";
+                        }
+                    }',
+            ],
+            'emptyOfAnOptionalOffsetWithALiteralKeyVariable' => [
+                'code' => '<?php
+                    /** @param array{key?: non-empty-string} $a */
+                    function f(array $a): void {
+                        $k = "key";
+                        if (empty($a[$k])) {
+                            echo "empty";
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => ['RiskyTruthyFalsyComparison'],
+            ],
+            'emptyOfAnOffsetOfAnOpenShapeWithALiteralKeyVariable' => [
+                'code' => '<?php
+                    /** @param array<string, string> $a */
+                    function f(array $a): void {
+                        $k = "key";
+                        if (empty($a[$k])) {
+                            echo "empty";
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => ['RiskyTruthyFalsyComparison'],
+            ],
             'ifNotUndefinedAndEmpty' => [
                 'code' => '<?php
                     $a = !empty($b) ? $b : null;',
@@ -712,6 +745,15 @@ final class EmptyTest extends TestCase
                         }
                     }',
                 'error_message' => 'DocblockTypeContradiction',
+            ],
+            'emptyOfAnOffsetWithALiteralKeyVariable' => [
+                'code' => '<?php
+                    $a = ["key" => "test"];
+                    $k = "key";
+                    if (empty($a[$k])) {
+                        echo "empty";
+                    }',
+                'error_message' => 'TypeDoesNotContainType',
             ],
             'preventImpossibleEmpty' => [
                 'code' => '<?php
