@@ -39,9 +39,13 @@ if [ "${#stale[@]}" -gt 0 ]; then
     if [ "$failed" -ne 0 ]; then
         exit 1
     fi
-
-    php bin/stubs/build_docker.php --record "${stale[@]}"
 fi
 
 php bin/stubs/gen_callmap.php
 php bin/stubs/gen_callmap.php
+
+# gen_callmap.php rewrites the reflected callmaps too, so they are stamped after it. Every version is: the stale ones
+# were reflected above, and the others matched their inputs, so only gen_callmap.php changed them.
+all_versions="$(php bin/stubs/build_docker.php --versions-plain)"
+read -r -a versions <<< "$all_versions"
+php bin/stubs/build_docker.php --record "${versions[@]}"
