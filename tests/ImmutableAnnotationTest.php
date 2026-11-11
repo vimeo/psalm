@@ -732,6 +732,37 @@ final class ImmutableAnnotationTest extends TestCase
     public static function providerInvalidCodeParse(): iterable
     {
         return [
+            'mutatedCallResultIsNotKeptByTheConstructorInitializationPass' => [
+                'code' => '<?php
+                    final class Foo {
+                        private ?DateTimeImmutable $date = null;
+
+                        public function getDate(): ?DateTimeImmutable {
+                            return $this->date;
+                        }
+
+                        public function setDate(?DateTimeImmutable $date): void {
+                            $this->date = $date;
+                        }
+                    }
+
+                    final class Bar {
+                        public ?string $tz;
+
+                        public function __construct(Foo $foo) {
+                            if ($foo->getDate()) {
+                                $foo->setDate(null);
+                                if ($foo->getDate() === null) {
+                                    return;
+                                }
+                                $this->tz = "x";
+                            } else {
+                                $this->tz = "y";
+                            }
+                        }
+                    }',
+                'error_message' => 'PropertyNotSetInConstructor',
+            ],
             'impureGlobalImmutable' => [
                 'code' => '<?php
                     /**
