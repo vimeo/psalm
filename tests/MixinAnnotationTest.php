@@ -26,6 +26,93 @@ final class MixinAnnotationTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'nearestMixinWinsForAStaticMethodOfNestedMixins' => [
+                'code' => '<?php
+                    final class Deep
+                    {
+                        public static function foo(): int
+                        {
+                            return 1;
+                        }
+                    }
+
+                    /**
+                     * @mixin Deep
+                     */
+                    final class Near
+                    {
+                        public static function foo(): string
+                        {
+                            return "";
+                        }
+                    }
+
+                    /**
+                     * @mixin Near
+                     */
+                    final class Host {}
+
+                    $a = Host::foo();',
+                'assertions' => [
+                    '$a' => 'string',
+                ],
+            ],
+            'staticMethodOnlyOfTheDeeperOfNestedMixins' => [
+                'code' => '<?php
+                    final class Deep
+                    {
+                        public static function deepOnly(): int
+                        {
+                            return 1;
+                        }
+                    }
+
+                    /**
+                     * @mixin Deep
+                     */
+                    final class Near {}
+
+                    /**
+                     * @mixin Near
+                     */
+                    final class Host {}
+
+                    $a = Host::deepOnly();',
+                'assertions' => [
+                    '$a' => 'int',
+                ],
+            ],
+            'nearestMixinWinsForAMethodOfNestedMixins' => [
+                'code' => '<?php
+                    final class Deep
+                    {
+                        public function foo(): int
+                        {
+                            return 1;
+                        }
+                    }
+
+                    /**
+                     * @mixin Deep
+                     */
+                    final class Near
+                    {
+                        public function foo(): string
+                        {
+                            return "";
+                        }
+                    }
+
+                    /**
+                     * @mixin Near
+                     */
+                    final class Host {}
+
+                    $a = (new Host())->foo();',
+                'assertions' => [
+                    '$a' => 'string',
+                ],
+            ],
             'staticMethodsOfSeveralMixins' => [
                 'code' => '<?php
                     interface Mixin

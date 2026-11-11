@@ -62,6 +62,7 @@ use Psalm\Type\Atomic\TTemplateParam;
 use Psalm\Type\Union;
 
 use function array_filter;
+use function array_reverse;
 use function array_values;
 use function assert;
 use function count;
@@ -430,7 +431,8 @@ final class AtomicStaticCallAnalyzer
             && $class_storage->mixin_declaring_fqcln
             && $class_storage->namedMixins
         ) {
-            foreach ($class_storage->getNamedMixinsForLookup() as $mixin) {
+            // the first mixin with the method is the one called, so the nearest comes first
+            foreach (array_reverse($class_storage->getNamedMixinsForLookup()) as $mixin) {
                 $new_method_id = new MethodIdentifier(
                     $mixin->value,
                     $method_name_lc,
