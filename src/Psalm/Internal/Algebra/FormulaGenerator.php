@@ -15,7 +15,10 @@ use Psalm\Internal\Clause;
 use Psalm\Node\Expr\BinaryOp\VirtualBooleanAnd;
 use Psalm\Node\Expr\BinaryOp\VirtualBooleanOr;
 use Psalm\Node\Expr\VirtualBooleanNot;
+use Psalm\Storage\Assertion\Falsy;
+use Psalm\Storage\Assertion\IsNotType;
 use Psalm\Storage\Assertion\Truthy;
+use Psalm\Type\Atomic\TNull;
 
 use function array_filter;
 use function array_map;
@@ -442,6 +445,37 @@ final class FormulaGenerator
             );
         }
 
+        $conditional_ref = '*' . (int) $conditional->getAttribute('startFilePos')
+            . ':' . (int) $conditional->getAttribute('endFilePos');
+
+        $nullsafe_call = $conditional instanceof PhpParser\Node\Expr\Assign ? $conditional->expr : $conditional;
+
+        if ($nullsafe_call instanceof PhpParser\Node\Expr\NullsafeMethodCall) {
+            $receiver_id = ExpressionIdentifier::getExtendedVarId($nullsafe_call->var, $this_class_name, $source);
+
+            $result_id = $conditional instanceof PhpParser\Node\Expr\Assign
+                ? ExpressionIdentifier::getExtendedVarId($conditional->var, $this_class_name, $source)
+                : $conditional_ref;
+
+            if ($receiver_id !== null && $result_id !== null) {
+                // a truthy result means the receiver wasn't null, but a falsy one says nothing about it
+                $not_null = new IsNotType(new TNull());
+
+                return [
+                    new Clause(
+                        [$result_id => ['truthy' => new Truthy()]],
+                        $conditional_object_id,
+                        $creating_object_id,
+                    ),
+                    new Clause(
+                        [$result_id => ['falsy' => new Falsy()], $receiver_id => [(string) $not_null => $not_null]],
+                        $conditional_object_id,
+                        $creating_object_id,
+                    ),
+                ];
+            }
+        }
+
         $anded_assertions = null;
 
         if ($cache && $source instanceof StatementsAnalyzer) {
@@ -496,13 +530,11 @@ final class FormulaGenerator
             return $clauses;
         }
 
-        /** @psalm-suppress MixedOperand */
-        $conditional_ref = '*' . $conditional->getAttribute('startFilePos')
-            . ':' . $conditional->getAttribute('endFilePos');
+        $truthy = new Truthy();
 
         return [
             new Clause(
-                [$conditional_ref => ['truthy' => new Truthy()]],
+                [$conditional_ref => [(string) $truthy => $truthy]],
                 $conditional_object_id,
                 $creating_object_id,
             ),
