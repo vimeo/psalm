@@ -444,6 +444,95 @@ final class AssertAnnotationTest extends TestCase
                     '$viaArgumentFalse===' => "'a'|'b'|null",
                 ],
             ],
+            'assertIfTrueAndComplementaryIfFalseOnSameVariable' => [
+                'code' => '<?php
+                    /**
+                     * @psalm-assert-if-true null $x
+                     * @psalm-assert-if-false !null $x
+                     */
+                    function isNull(?int $x): bool {
+                        return $x === null;
+                    }
+
+                    function test(?int $a): int {
+                        if (isNull($a)) {
+                            return 0;
+                        } else {
+                            return $a;
+                        }
+                    }',
+                'assertions' => [],
+            ],
+            'assertIfTrueAndComplementaryIfFalseOnSameVariableNegated' => [
+                'code' => '<?php
+                    /**
+                     * @psalm-assert-if-true null $x
+                     * @psalm-assert-if-false !null $x
+                     */
+                    function isNull(?int $x): bool {
+                        return $x === null;
+                    }
+
+                    function test(?int $a): int {
+                        if (!isNull($a)) {
+                            return $a;
+                        }
+
+                        return 0;
+                    }',
+                'assertions' => [],
+            ],
+            'assertIfTrueAndComplementaryIfFalseOnMethodCallTarget' => [
+                'code' => '<?php
+                    /** @template T */
+                    final class Coll {
+                        /** @return T|null */
+                        public function last() {
+                            return null;
+                        }
+
+                        /**
+                         * @psalm-assert-if-true null $this->last()
+                         * @psalm-assert-if-false !null $this->last()
+                         */
+                        public function isEmpty(): bool {
+                            return $this->last() === null;
+                        }
+                    }
+
+                    /** @param Coll<int> $c */
+                    function test(Coll $c): void {
+                        if ($c->isEmpty()) {
+                            /** @psalm-check-type-exact $c->last() = null */
+                        } else {
+                            /** @psalm-check-type-exact $c->last() = int */
+                        }
+                    }',
+                'assertions' => [],
+            ],
+            'assertIfTrueAndComplementaryIfFalseOnProperty' => [
+                'code' => '<?php
+                    final class Holder {
+                        public ?int $value = null;
+
+                        /**
+                         * @psalm-assert-if-true null $this->value
+                         * @psalm-assert-if-false !null $this->value
+                         */
+                        public function isEmpty(): bool {
+                            return $this->value === null;
+                        }
+                    }
+
+                    function test(Holder $h): int {
+                        if ($h->isEmpty()) {
+                            return 0;
+                        }
+
+                        return $h->value;
+                    }',
+                'assertions' => [],
+            ],
             'reflectionNamedTypeNameOfANonBuiltinTypeMaybeSelfStaticOrParent' => [
                 'code' => '<?php
                     /** @var ReflectionNamedType $type */

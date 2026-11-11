@@ -1388,7 +1388,28 @@ final class AssertionFinder
             }
         }
 
-        return $anded_types;
+        return self::withoutDuplicateAssertions($anded_types);
+    }
+
+    /**
+     * `@psalm-assert-if-true null $x` and `@psalm-assert-if-false !null $x` both assert `null $x` for a true call:
+     * keep one, or the condition reports itself as redundant
+     *
+     * @param list<non-empty-array<string, non-empty-list<non-empty-list<Assertion>>>> $anded_types
+     * @return list<non-empty-array<string, non-empty-list<non-empty-list<Assertion>>>>
+     * @psalm-pure
+     */
+    private static function withoutDuplicateAssertions(array $anded_types): array
+    {
+        $unique = [];
+
+        foreach ($anded_types as $if_types) {
+            if (!in_array($if_types, $unique, false)) {
+                $unique[] = $if_types;
+            }
+        }
+
+        return $unique;
     }
 
     /**
