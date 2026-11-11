@@ -122,6 +122,9 @@ class FileProvider
         unset($this->temp_files[$file_path]);
     }
 
+    /**
+     * @return array<string, string>
+     */
     public function getOpenFilesPath(): array
     {
         return $this->open_files_paths;
