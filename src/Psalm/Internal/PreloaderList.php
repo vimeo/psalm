@@ -1024,6 +1024,7 @@ final class PreloaderList {
         \Psalm\Internal\Scope\IfScope::class,
         \Psalm\Internal\Scope\LoopScope::class,
         \Psalm\Internal\Scope\SwitchScope::class,
+        \Psalm\Internal\SerializedProperties::class,
         \Psalm\Internal\Stubs\Generator\ClassLikeStubGenerator::class,
         \Psalm\Internal\Stubs\Generator\StubsGenerator::class,
         \Psalm\Internal\TypeVisitor\CanContainObjectTypeVisitor::class,
