@@ -3421,6 +3421,29 @@ final class ArrayFunctionCallTest extends TestCase
                 ],
                 'ignored_issues' => ['RiskyTruthyFalsyComparison'],
             ],
+            'arrayMergeSpreadOfAListBuiltWithUnshiftOfMixed' => [
+                'code' => '<?php
+                    function merge(callable $get): array {
+                        $parameters = [];
+                        $parameters[] = $get("label");
+
+                        do {
+                            array_unshift($parameters, $get("label"));
+                        } while (rand() === 0);
+
+                        return array_merge([], ...$parameters);
+                    }',
+                'assertions' => [],
+                'ignored_issues' => ['MixedAssignment', 'MixedArgument'],
+            ],
+            'arrayUnshiftOfMixedOnAListKeepsAList' => [
+                'code' => '<?php
+                    function unshift(callable $get): void {
+                        $list = [$get()];
+                        array_unshift($list, $get());
+                        /** @psalm-check-type-exact $list = list{mixed, mixed} */
+                    }',
+            ],
             'arrayUnshiftOnEmptyArrayMeansNonEmptyList' => [
                 'code' => '<?php
                     /**
@@ -4483,6 +4506,22 @@ final class ArrayFunctionCallTest extends TestCase
                 'code' => '<?php
                     array_combine(["a", "b"], [1, 2, 3]);',
                 'error_message' => 'InvalidArgument',
+            ],
+            'arrayMergeSpreadOfAnArrayThatMayHaveStringKeys' => [
+                'code' => '<?php
+                    /** @param array<array-key, array<int, int>> $lists */
+                    function merge(array $lists): array {
+                        return array_merge(...$lists);
+                    }',
+                'error_message' => 'NamedArgumentNotAllowed',
+            ],
+            'arrayMergeSpreadAfterAnotherArgumentOfAnArrayThatMayHaveStringKeys' => [
+                'code' => '<?php
+                    /** @param array<array-key, array<int, int>> $lists */
+                    function merge(array $lists): array {
+                        return array_merge([], ...$lists);
+                    }',
+                'error_message' => 'NamedArgumentNotAllowed',
             ],
             'arrayMergeNoNamed' => [
                 'code' => '<?php
