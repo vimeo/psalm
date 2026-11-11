@@ -30,7 +30,10 @@ final class IncludeTest extends TestCase
         array $files_to_check,
         bool $hoist_constants = false,
         array $ignored_issues = [],
+        string $php_version = '7.4',
     ): void {
+        $this->project_analyzer->setPhpVersion($php_version, 'tests');
+
         $codebase = $this->project_analyzer->getCodebase();
 
         foreach ($files as $file_path => $contents) {
@@ -105,7 +108,7 @@ final class IncludeTest extends TestCase
     }
 
     /**
-     * @return array<string,array{files:array<string,string>,files_to_check:array<int,string>,hoist_constants?:bool,ignored_issues?:list<string>}>
+     * @return array<string,array{files:array<string,string>,files_to_check:array<int,string>,hoist_constants?:bool,ignored_issues?:list<string>,php_version?:string}>
      */
     public function providerTestValidIncludes(): array
     {
@@ -461,6 +464,18 @@ final class IncludeTest extends TestCase
                     (string) getcwd() . DIRECTORY_SEPARATOR . 'file2.php',
                 ],
                 'hoist_constants' => true,
+            ],
+            'hoistConstantsSkipsFirstClassCallableDefine' => [
+                'files' => [
+                    (string) getcwd() . DIRECTORY_SEPARATOR . 'file1.php' => '<?php
+                        define(...);',
+                ],
+                'files_to_check' => [
+                    (string) getcwd() . DIRECTORY_SEPARATOR . 'file1.php',
+                ],
+                'hoist_constants' => true,
+                'ignored_issues' => [],
+                'php_version' => '8.1',
             ],
             'duplicateClasses' => [
                 'files' => [
