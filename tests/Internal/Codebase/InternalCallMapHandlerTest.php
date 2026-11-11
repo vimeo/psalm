@@ -230,6 +230,8 @@ final class InternalCallMapHandlerTest extends TestCase
     #[Override]
     public static function setUpBeforeClass(): void
     {
+        parent::setUpBeforeClass();
+
         $project_analyzer = new ProjectAnalyzer(
             new TestConfig(),
             new Providers(
@@ -283,7 +285,7 @@ final class InternalCallMapHandlerTest extends TestCase
         $collator_sort_entry = $entries[0];
         $this->assertIsArray($collator_sort_entry->params);
         $this->assertArrayHasKey(1, $collator_sort_entry->params);
-        $this->assertEquals('arr', $collator_sort_entry->params[1]->name);
+        $this->assertSame('arr', $collator_sort_entry->params[1]->name);
     }
 
     public function testSignatureReturnTypesAreSeparateFromAnalysisTypes(): void
@@ -367,7 +369,7 @@ final class InternalCallMapHandlerTest extends TestCase
         $curl_multi_exec_entry = $entries[0];
         $this->assertIsArray($curl_multi_exec_entry->params);
         $this->assertArrayHasKey(1, $curl_multi_exec_entry->params);
-        $this->assertEquals('still_running', $curl_multi_exec_entry->params[1]->name);
+        $this->assertSame('still_running', $curl_multi_exec_entry->params[1]->name);
     }
 
     public function testGetCallablesFromCallmapFollowsTheAnalysedPhpVersion(): void

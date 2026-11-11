@@ -15691,6 +15691,25 @@ final class TaintTest extends TestCase
                     echo $response->getTaint();',
                 'error_message' => 'TaintedHtml',
             ],
+            'taintStaysThroughAnInterpolatedElementOfAnArrayOrString' => [
+                'code' => '<?php // --taint-analysis
+                    echo "A: " . "{$_GET["a"]}";',
+                'error_message' => 'TaintedHtml',
+            ],
+            'taintStaysThroughCastOfAnArrayOrObjectSource' => [
+                'code' => '<?php // --taint-analysis
+                    /**
+                     * @return array<array-key, mixed>|object
+                     * @psalm-taint-source input
+                     */
+                    function source(): array|object {
+                        return new stdClass();
+                    }
+
+                    /** @psalm-suppress InvalidCast */
+                    echo (string) source();',
+                'error_message' => 'TaintedHtml',
+            ],
         ];
     }
 
