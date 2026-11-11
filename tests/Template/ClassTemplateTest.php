@@ -57,72 +57,29 @@ final class ClassTemplateTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
-            'methodParamBoundByTheReceiverAcceptsTheSameTypeArgument' => [
+            'listParamInheritedFromATemplatedParentAcceptsAList' => [
                 'code' => '<?php
                     /** @template T */
-                    interface Validator {}
+                    abstract class P {
+                        /** @param list<string> $x */
+                        abstract public function f(array $x): void;
 
-                    /** @implements Validator<int> */
-                    final class IntValidator implements Validator {}
-
-                    /** @template T */
-                    final class Type {
-                        /** @param Validator<T> $v */
-                        public function one(Validator $v): void {}
-
-                        /** @param list<Validator<T>> $v */
-                        public function many(array $v): void {}
+                        /** @param non-empty-list<string> $x */
+                        abstract public function g(array $x): void;
                     }
 
-                    /** @param Type<int> $t */
-                    function f(Type $t): void {
-                        $t->one(new IntValidator());
-                        $t->many([new IntValidator()]);
-                    }',
-            ],
-            'methodParamBoundByTheReceiverAcceptsASubtypeOfACovariantTemplate' => [
-                'code' => '<?php
-                    /** @template-covariant T */
-                    interface Validator {}
+                    /** @extends P<string> */
+                    final class C extends P {
+                        /** @inheritDoc */
+                        public function f(array $x): void {}
 
-                    /** @implements Validator<positive-int> */
-                    final class MaxValue implements Validator {}
-
-                    /** @template T */
-                    final class Type {
-                        /** @param Validator<T> $v */
-                        public function one(Validator $v): void {}
+                        /** @inheritDoc */
+                        public function g(array $x): void {}
                     }
 
-                    /** @param Type<int> $t */
-                    function f(Type $t): void {
-                        $t->one(new MaxValue());
-                    }',
-            ],
-            'methodTemplateStillInfersFromTheArgumentOfAnInvariantParam' => [
-                'code' => '<?php
-                    /** @template T */
-                    interface Validator {}
-
-                    /** @implements Validator<positive-int> */
-                    final class MaxValue implements Validator {}
-
-                    final class Type {
-                        /**
-                         * @template U
-                         * @param Validator<U> $v
-                         * @return U
-                         */
-                        public function one(Validator $v) {
-                            throw new Exception();
-                        }
-                    }
-
-                    $t = new Type();
-                    $r = $t->one(new MaxValue());',
-                'assertions' => [
-                    '$r===' => 'int<1, max>',
-                ],
+                    $c = new C();
+                    $c->f(["a", "b"]);
+                    $c->g(["a", "b"]);',
             ],
             'sameTypeFromTwoConstructionsOfAGenericClassIsOneType' => [
                 'code' => '<?php
@@ -6015,19 +5972,32 @@ final class ClassTemplateTest extends TestCase
                 'ignored_issues' => [],
                 'php_version' => '8.0',
             ],
-        ];
-    }
-
-    /**
-     * @psalm-pure
-     */
-    #[Override]
-    public static function providerInvalidCodeParse(): iterable
-    {
-        return [
-            'methodParamBoundByTheReceiverIsInvariantOnAnArgument' => [
+            'methodParamBoundByTheReceiverAcceptsTheSameTypeArgument' => [
                 'code' => '<?php
                     /** @template T */
+                    interface Validator {}
+
+                    /** @implements Validator<int> */
+                    final class IntValidator implements Validator {}
+
+                    /** @template T */
+                    final class Type {
+                        /** @param Validator<T> $v */
+                        public function one(Validator $v): void {}
+
+                        /** @param list<Validator<T>> $v */
+                        public function many(array $v): void {}
+                    }
+
+                    /** @param Type<int> $t */
+                    function f(Type $t): void {
+                        $t->one(new IntValidator());
+                        $t->many([new IntValidator()]);
+                    }',
+            ],
+            'methodParamBoundByTheReceiverAcceptsASubtypeOfACovariantTemplate' => [
+                'code' => '<?php
+                    /** @template-covariant T */
                     interface Validator {}
 
                     /** @implements Validator<positive-int> */
@@ -6043,9 +6013,8 @@ final class ClassTemplateTest extends TestCase
                     function f(Type $t): void {
                         $t->one(new MaxValue());
                     }',
-                'error_message' => 'InvalidArgument',
             ],
-            'methodListParamBoundByTheReceiverIsInvariantOnAnArgument' => [
+            'methodTemplateStillInfersFromTheArgumentOfAnInvariantParam' => [
                 'code' => '<?php
                     /** @template T */
                     interface Validator {}
@@ -6053,22 +6022,49 @@ final class ClassTemplateTest extends TestCase
                     /** @implements Validator<positive-int> */
                     final class MaxValue implements Validator {}
 
-                    /** @template T */
-                    interface Type {
+                    final class Type {
                         /**
-                         * @param T $value
-                         * @param non-empty-list<Validator<T>> $validators
+                         * @template U
+                         * @param Validator<U> $v
+                         * @return U
                          */
-                        public function validate(mixed $value, array $validators): void;
+                        public function one(Validator $v) {
+                            throw new Exception();
+                        }
                     }
 
-                    /** @param Type<int> $t */
-                    function f(Type $t): void {
-                        $t->validate(0, [new MaxValue()]);
-                    }',
+                    $t = new Type();
+                    $r = $t->one(new MaxValue());',
+                'assertions' => [
+                    '$r===' => 'int<1, max>',
+                ],
+            ],
+        ];
+    }
+
+    /**
+     * @psalm-pure
+     */
+    #[Override]
+    public static function providerInvalidCodeParse(): iterable
+    {
+        return [
+            'listParamInheritedFromATemplatedParentRejectsAWrongList' => [
+                'code' => '<?php
+                    /** @template T */
+                    abstract class P {
+                        /** @param list<string> $x */
+                        abstract public function f(array $x): void;
+                    }
+
+                    /** @extends P<string> */
+                    final class C extends P {
+                        /** @inheritDoc */
+                        public function f(array $x): void {}
+                    }
+
+                    (new C())->f(["a", 1]);',
                 'error_message' => 'InvalidArgument',
-                'error_levels' => [],
-                'php_version' => '8.0',
             ],
             'differentTypesFromTwoConstructionsOfAGenericClassAreNotOneType' => [
                 'code' => '<?php
@@ -7204,6 +7200,51 @@ final class ClassTemplateTest extends TestCase
                      */
                     final class A {}',
                 'error_message' => 'InvalidDocblock - src' . DIRECTORY_SEPARATOR . 'somefile.php:4:33 - Missing default after = for template T in docblock for A',
+            ],
+            'methodParamBoundByTheReceiverIsInvariantOnAnArgument' => [
+                'code' => '<?php
+                    /** @template T */
+                    interface Validator {}
+
+                    /** @implements Validator<positive-int> */
+                    final class MaxValue implements Validator {}
+
+                    /** @template T */
+                    final class Type {
+                        /** @param Validator<T> $v */
+                        public function one(Validator $v): void {}
+                    }
+
+                    /** @param Type<int> $t */
+                    function f(Type $t): void {
+                        $t->one(new MaxValue());
+                    }',
+                'error_message' => 'InvalidArgument',
+            ],
+            'methodListParamBoundByTheReceiverIsInvariantOnAnArgument' => [
+                'code' => '<?php
+                    /** @template T */
+                    interface Validator {}
+
+                    /** @implements Validator<positive-int> */
+                    final class MaxValue implements Validator {}
+
+                    /** @template T */
+                    interface Type {
+                        /**
+                         * @param T $value
+                         * @param non-empty-list<Validator<T>> $validators
+                         */
+                        public function validate(mixed $value, array $validators): void;
+                    }
+
+                    /** @param Type<int> $t */
+                    function f(Type $t): void {
+                        $t->validate(0, [new MaxValue()]);
+                    }',
+                'error_message' => 'InvalidArgument',
+                'error_levels' => [],
+                'php_version' => '8.0',
             ],
         ];
     }
