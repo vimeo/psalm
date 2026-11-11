@@ -939,6 +939,17 @@ final class FunctionCallTest extends TestCase
 
                     a(["a" => "hello"]);',
             ],
+            'getenvCalledWithOtherCasing' => [
+                'code' => '<?php
+                    $a = getEnv("some_key");
+                    $b = GETENV();
+                    $c = getenv("some_key", true);',
+                'assertions' => [
+                    '$a===' => 'false|string',
+                    '$b===' => 'array<string, string>',
+                    '$c===' => 'false|string',
+                ],
+            ],
             'functionExistsGuardsTheRightOperandInsideAnotherNarrowingCondition' => [
                 'code' => '<?php
                     function a(int $arg): void {
