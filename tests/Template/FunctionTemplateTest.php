@@ -23,57 +23,18 @@ final class FunctionTemplateTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
-            'methodTemplateBoundAfterTheClassStringOfAFinalClassWasExcluded' => [
+            'classStringOfAFinalClassKeepsItsTypeWhereTheValueIsNotItsClassConstant' => [
                 'code' => '<?php
-                    interface StampInterface {}
+                    final class Foo {}
 
-                    final class Envelope {
-                        /**
-                         * @template TStamp of StampInterface
-                         * @param class-string<TStamp> $stampFqcn
-                         * @return TStamp|null
-                         */
-                        public function last(string $stampFqcn): ?StampInterface {
-                            return null;
-                        }
-                    }
+                    /** @var class-string<Foo> $class */
+                    $class = (string) getenv("CLASS");
 
-                    /** @param array<string, array{class-string<Envelope|StampInterface>, bool}> $parameters */
-                    function handle(Envelope $envelope, array $parameters): void {
-                        foreach ($parameters as [$class, $nullable]) {
-                            if (Envelope::class === $class) {
-                                echo "envelope";
-                            } elseif (null !== $stamp = $envelope->last($class)) {
-                                echo get_class($stamp);
-                            }
-                        }
-                    }',
-                'assertions' => [],
-                'ignored_issues' => [],
-                'php_version' => '8.0',
-            ],
-            'functionTemplateBoundAfterTheClassStringOfAFinalClassWasExcluded' => [
-                'code' => '<?php
-                    interface StampInterface {}
-
-                    final class Envelope {}
-
-                    /**
-                     * @template TStamp of StampInterface
-                     * @param class-string<TStamp> $stampFqcn
-                     * @return TStamp|null
-                     */
-                    function last(string $stampFqcn): ?StampInterface {
-                        return null;
-                    }
-
-                    /** @param class-string<Envelope|StampInterface> $class */
-                    function handle(string $class): void {
-                        if (Envelope::class !== $class) {
-                            last($class);
-                        }
-                    }',
-                'assertions' => [],
+                    // class names are case-insensitive: `foo` is a class-string<Foo>
+                    $inner = $class !== Foo::class ? $class : null;',
+                'assertions' => [
+                    '$inner===' => 'class-string<Foo>|null',
+                ],
                 'ignored_issues' => [],
                 'php_version' => '8.0',
             ],
@@ -3381,6 +3342,31 @@ final class FunctionTemplateTest extends TestCase
                         throw new Exception();
                     }',
                 'error_message' => 'UndefinedClass - src' . DIRECTORY_SEPARATOR . 'somefile.php:3:24 - Class, interface or enum named Missing does not exist',
+            ],
+            'methodTemplateBoundAfterTheClassStringOfAFinalClassWasExcluded' => [
+                'code' => '<?php
+                    interface StampInterface {}
+
+                    final class Envelope {
+                        /**
+                         * @template TStamp of StampInterface
+                         * @param class-string<TStamp> $stampFqcn
+                         * @return TStamp|null
+                         */
+                        public function last(string $stampFqcn): ?StampInterface {
+                            return null;
+                        }
+                    }
+
+                    /** @param class-string<Envelope|StampInterface> $class */
+                    function handle(Envelope $envelope, string $class): void {
+                        if (Envelope::class !== $class) {
+                            $envelope->last($class);
+                        }
+                    }',
+                'error_message' => 'PossiblyInvalidArgument',
+                'error_levels' => [],
+                'php_version' => '8.0',
             ],
             'methodClassStringTemplateRejectsAClassOutsideItsBound' => [
                 'code' => '<?php

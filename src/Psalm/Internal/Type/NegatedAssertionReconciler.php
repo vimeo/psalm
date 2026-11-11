@@ -25,7 +25,6 @@ use Psalm\Type\Atomic\TFloat;
 use Psalm\Type\Atomic\TInt;
 use Psalm\Type\Atomic\TIterable;
 use Psalm\Type\Atomic\TKeyedArray;
-use Psalm\Type\Atomic\TLiteralClassString;
 use Psalm\Type\Atomic\TLiteralFloat;
 use Psalm\Type\Atomic\TLiteralInt;
 use Psalm\Type\Atomic\TLiteralString;
@@ -442,23 +441,6 @@ final class NegatedAssertionReconciler extends Reconciler
             }
         } elseif ($assertion_type instanceof TLiteralString) {
             if ($existing_var_type->hasString()) {
-                // the class-string of a final class is the name of that class and no other: nothing is left of it
-                // where the value is not `Foo::class`
-                if ($assertion_type instanceof TLiteralClassString) {
-                    $classlike_storage_provider = $statements_analyzer->getCodebase()->classlike_storage_provider;
-
-                    foreach ($existing_var_type->getAtomicTypes() as $atomic_key => $atomic_type) {
-                        if ($atomic_type instanceof TClassString
-                            && strtolower($atomic_type->as) === strtolower($assertion_type->value)
-                            && $classlike_storage_provider->has($atomic_type->as)
-                            && $classlike_storage_provider->get($atomic_type->as)->final
-                        ) {
-                            $existing_var_type->removeType($atomic_key);
-                            $redundant = false;
-                        }
-                    }
-                }
-
                 if ($existing_var_type->getLiteralStrings()) {
                     $did_match_literal_type = true;
 
