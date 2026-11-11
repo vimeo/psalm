@@ -311,55 +311,6 @@ final class ConditionalReturnTypeTest extends TestCase
                         /** @psalm-check-type-exact $any = bool */
                     }',
             ],
-            'conditionalReturnTypeOnClosureNeverTakesInterfacesIterablesOrBoundedTemplates' => [
-                'code' => '<?php
-                    interface Factory {
-                        /** @psalm-impure */
-                        public function __invoke(): int;
-                    }
-
-                    /**
-                     * @template A
-                     * @template B
-                     * @param A|(Closure(): B) $v
-                     * @return ($v is Closure ? B : A)
-                     * @psalm-pure
-                     */
-                    function pick($v) {
-                        return $v;
-                    }
-
-                    /**
-                     * @template T of string
-                     * @param T $t
-                     * @return T
-                     */
-                    function bounded(string $t): string {
-                        return pick($t);
-                    }
-
-                    /**
-                     * @template T of Countable
-                     * @param T $t
-                     * @return T
-                     */
-                    function boundedObject(Countable $t): Countable {
-                        return pick($t);
-                    }
-
-                    /** @param iterable<int, int> $iterable */
-                    function f(Factory $factory, iterable $iterable): void {
-                        $a = pick($factory);
-                        /** @psalm-check-type-exact $a = Factory */
-                        $b = pick($iterable);
-                        /** @psalm-check-type-exact $b = iterable<int, int> */
-                        $d = pick(static fn(): int => 1);
-                        /** @psalm-check-type-exact $d = 1 */
-                    }',
-                'assertions' => [],
-                'ignored_issues' => [],
-                'php_version' => '8.1',
-            ],
             'conditionalReturnTypeOnIterableThatMayBeAnArray' => [
                 'code' => '<?php
                     /**
@@ -2240,18 +2191,189 @@ final class ConditionalReturnTypeTest extends TestCase
                     }',
                 'ignored_issues' => ['InvalidArgument'],
             ],
-        ];
-    }
-
-    /**
-     * @psalm-pure
-     */
-    #[Override]
-    public static function providerInvalidCodeParse(): iterable
-    {
-        return [
-            'conditionalReturnTypeOnClosureMayTakeAnObjectBoundedTemplate' => [
+            'conditionalTrueBranchTemplateTakesTheBoundOfItsCondition' => [
                 'code' => '<?php
+                    interface Animal {}
+
+                    /** @template TModel of Animal */
+                    final class Zoo
+                    {
+                        /**
+                         * @template TVal
+                         * @param callable(): TVal $cb
+                         * @return (TVal is Animal ? self<TVal> : string)
+                         */
+                        public function map(callable $cb): mixed {
+                            throw new RuntimeException();
+                        }
+
+                        /**
+                         * @template TVal of Countable
+                         * @param callable(): TVal $cb
+                         * @return (TVal is Animal ? self<TVal> : string)
+                         */
+                        public function mapCountable(callable $cb): mixed {
+                            throw new RuntimeException();
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
+            'paramConditionalOnStringKeepsStringableObjectInElseBranch' => [
+                'code' => '<?php
+                    final class H {
+                        public function __toString(): string {
+                            return "";
+                        }
+                    }
+
+                    /**
+                     * @param string|H $str
+                     * @psalm-return ($str is string ? string : H)
+                     */
+                    function strip($str) {
+                        return $str;
+                    }
+
+                    /** @param string|H $x */
+                    function f($x): ?string {
+                        $y = strip($x);
+                        if (!($y instanceof H)) {
+                            return $y;
+                        }
+
+                        return null;
+                    }
+
+                    $obj = strip(new H());
+                    $str = strip("a");',
+                'assertions' => [
+                    '$obj===' => 'H',
+                    '$str===' => 'string',
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'templateConditionalOnStringTreatsStringableObjectAsNotString' => [
+                'code' => '<?php
+                    class Model implements Stringable {
+                        public function __toString(): string {
+                            return "";
+                        }
+                    }
+
+                    /**
+                     * @template T
+                     * @param T $v
+                     * @return (T is string ? string : int)
+                     */
+                    function isString(mixed $v): string|int {
+                        throw new RuntimeException();
+                    }
+
+                    /**
+                     * @template T
+                     * @param T $v
+                     * @return (T is \'\'|\'0\' ? never : T)
+                     */
+                    function unlessFalsyString(mixed $v): mixed {
+                        return $v;
+                    }
+
+                    /**
+                     * @template T
+                     * @param T $v
+                     * @return (T is scalar ? "scalar" : "other")
+                     */
+                    function isScalar(mixed $v): string {
+                        throw new RuntimeException();
+                    }
+
+                    $model = new Model();
+                    $a = isString($model);
+                    $b = isString("x");
+                    $c = unlessFalsyString($model);
+                    $d = isScalar($model);
+                    $e = isScalar("x");',
+                'assertions' => [
+                    '$a===' => 'int',
+                    '$b===' => 'string',
+                    '$c===' => 'Model',
+                    '$d===' => '\'other\'',
+                    '$e===' => '\'scalar\'',
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'templateConditionalOnStringableStillMatchesObjects' => [
+                'code' => '<?php
+                    class Model implements Stringable {
+                        public function __toString(): string {
+                            return "";
+                        }
+                    }
+
+                    /**
+                     * @template T
+                     * @param T $v
+                     * @return (T is Stringable ? "yes" : "no")
+                     */
+                    function isStringable(mixed $v): string {
+                        throw new RuntimeException();
+                    }
+
+                    $a = isStringable(new Model());
+                    $b = isStringable("x");',
+                'assertions' => [
+                    '$a===' => '\'yes\'',
+                    '$b===' => '\'no\'',
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'conditionalReturnTypeMakesATemplateArrayNonEmpty' => [
+                'code' => '<?php
+                    /**
+                     * @template A
+                     * @param A $a
+                     * @return (A is array ? non-empty-array<key-of<A>, value-of<A>> : (A is string ? non-empty-string : A))
+                     */
+                    function notEmpty($a) {
+                        if ($a === [] || $a === "") {
+                            throw new InvalidArgumentException("empty");
+                        }
+
+                        return $a;
+                    }
+
+                    /** @var array<string, bool> $map */
+                    $map = [];
+                    /** @var array{a: int, b?: string} $shape */
+                    $shape = ["a" => 1];
+                    /** @var string $string */
+                    $string = "";
+                    /** @var int $int */
+                    $int = 0;
+
+                    $fromMap = notEmpty($map);
+                    $fromShape = notEmpty($shape);
+                    $fromString = notEmpty($string);
+                    $fromInt = notEmpty($int);',
+                'assertions' => [
+                    '$fromMap===' => 'non-empty-array<string, bool>',
+                    '$fromShape===' => "non-empty-array<'a'|'b', int|string>",
+                    '$fromString===' => 'non-empty-string',
+                    '$fromInt===' => 'int',
+                ],
+            ],
+            'conditionalReturnTypeOnClosureNeverTakesInterfacesIterablesOrBoundedTemplates' => [
+                'code' => '<?php
+                    interface Factory {
+                        /** @psalm-impure */
+                        public function __invoke(): int;
+                    }
+
                     /**
                      * @template A
                      * @template B
@@ -2264,14 +2386,81 @@ final class ConditionalReturnTypeTest extends TestCase
                     }
 
                     /**
-                     * @template T of object
+                     * @template T of string
                      * @param T $t
                      * @return T
                      */
-                    function mayBeAClosure(object $t): object {
+                    function bounded(string $t): string {
                         return pick($t);
+                    }
+
+                    /**
+                     * @template T of Countable
+                     * @param T $t
+                     * @return T
+                     */
+                    function boundedObject(Countable $t): Countable {
+                        return pick($t);
+                    }
+
+                    /** @param iterable<int, int> $iterable */
+                    function f(Factory $factory, iterable $iterable): void {
+                        $a = pick($factory);
+                        /** @psalm-check-type-exact $a = Factory */
+                        $b = pick($iterable);
+                        /** @psalm-check-type-exact $b = iterable<int, int> */
+                        $d = pick(static fn(): int => 1);
+                        /** @psalm-check-type-exact $d = 1 */
                     }',
-                'error_message' => 'MixedReturnStatement',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
+        ];
+    }
+
+    /**
+     * @psalm-pure
+     */
+    #[Override]
+    public static function providerInvalidCodeParse(): iterable
+    {
+        return [
+            'classTemplateBoundedByStringConditionalOnNonFinalStringableClass' => [
+                'code' => '<?php
+                    class Mdl implements Stringable {
+                        public function __toString(): string {
+                            return "";
+                        }
+                    }
+
+                    function sink(int $_a): void {}
+
+                    /**
+                     * @template T of string
+                     * @template U of object
+                     */
+                    class Pg {
+                        /** @return (T is Mdl ? list<T> : array<T>) */
+                        public function strings(): array {
+                            return [];
+                        }
+
+                        /** @return (U is Mdl ? list<U> : array<U>) */
+                        public function objects(): array {
+                            return [];
+                        }
+
+                        public function run(): void {
+                            $a = [$this->strings(), $this->objects()];
+                            sink($a);
+                        }
+                    }',
+                // only the object bound still intersects with the class
+                'error_message' => 'Argument 1 of sink expects int, but list{array<array-key, T:Pg as string>,'
+                    . ' array<array-key, (U:Pg as object)&Mdl|(U:Pg as object)>} provided',
+                'error_levels' => [],
+                'php_version' => '8.0',
             ],
             'conditionalReturnTypeWithoutIsTypeIsReportedInsteadOfCrashing' => [
                 'code' => '<?php
@@ -2337,6 +2526,49 @@ final class ConditionalReturnTypeTest extends TestCase
                     }',
                 'error_message' => 'Method QueryBuilder::extra does not exist',
                 'error_levels' => ['InvalidArgument'],
+            ],
+            'conditionalElseBranchTemplateKeepsItsBound' => [
+                'code' => '<?php
+                    interface Animal {}
+
+                    /** @template TModel of Animal */
+                    final class Zoo
+                    {
+                        /**
+                         * @template TVal
+                         * @param callable(): TVal $cb
+                         * @return (TVal is Animal ? string : self<TVal>)
+                         */
+                        public function map(callable $cb): mixed {
+                            throw new RuntimeException();
+                        }
+                    }',
+                'error_message' => 'InvalidTemplateParam',
+                'error_levels' => [],
+                'php_version' => '8.1',
+            ],
+            'conditionalReturnTypeOnClosureMayTakeAnObjectBoundedTemplate' => [
+                'code' => '<?php
+                    /**
+                     * @template A
+                     * @template B
+                     * @param A|(Closure(): B) $v
+                     * @return ($v is Closure ? B : A)
+                     * @psalm-pure
+                     */
+                    function pick($v) {
+                        return $v;
+                    }
+
+                    /**
+                     * @template T of object
+                     * @param T $t
+                     * @return T
+                     */
+                    function mayBeAClosure(object $t): object {
+                        return pick($t);
+                    }',
+                'error_message' => 'MixedReturnStatement',
             ],
         ];
     }
