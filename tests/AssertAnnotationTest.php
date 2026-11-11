@@ -251,38 +251,43 @@ final class AssertAnnotationTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
-            'callAssertingSeveralPropertiesIsNotRedundantIfOneOfThemChangesAType' => [
-                'code' => <<<'PHP'
-                    <?php
-                    final class Pair {
-                        public ?int $a = null;
-                        public ?int $b = null;
+            'assertObjectShapeOnObject' => [
+                'code' => '<?php
+                    /** @psalm-assert object{a: int} $obj */
+                    function assertShape(mixed $obj): void {}
 
-                        /**
-                         * @psalm-mutation-free
-                         * @psalm-assert !null $this->a
-                         * @psalm-assert !null $this->b
-                         */
-                        public function assertBoth(): void {
-                            if ($this->a === null || $this->b === null) {
-                                throw new Exception();
-                            }
-                        }
-
-                        public function test(): int {
-                            if ($this->a === null) {
-                                return 0;
-                            }
-
-                            $this->assertBoth();
-
-                            return $this->b;
-                        }
+                    function getObject(): object {
+                        return new stdClass;
                     }
-                    PHP,
-                'assertions' => [],
+
+                    $b = getObject();
+                    assertShape($b);',
+                'assertions' => [
+                    '$b===' => 'object{a:int}',
+                ],
                 'ignored_issues' => [],
-                'php_version' => '8.1',
+                'php_version' => '8.0',
+            ],
+            'assertObjectShapeOnObjectKeepsEarlierShape' => [
+                'code' => '<?php
+                    /** @psalm-assert object{a: int} $obj */
+                    function assertA(mixed $obj): void {}
+
+                    /** @psalm-assert object{b: string} $obj */
+                    function assertB(mixed $obj): void {}
+
+                    function getObject(): object {
+                        return new stdClass;
+                    }
+
+                    $b = getObject();
+                    assertA($b);
+                    assertB($b);',
+                'assertions' => [
+                    '$b===' => 'object{a:int}&object{b:string}',
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
             ],
             'negatedArrayAssertionKeepsTheExistingArrayType' => [
                 'code' => '<?php
@@ -4126,17 +4131,7 @@ final class AssertAnnotationTest extends TestCase
                     '$arr===' => 'non-empty-array<int, string>',
                 ],
             ],
-        ];
-    }
-
-    /**
-     * @psalm-pure
-     */
-    #[Override]
-    public static function providerInvalidCodeParse(): iterable
-    {
-        return [
-            'callAssertingSeveralPropertiesIsRedundantIfAllOfThemAre' => [
+            'callAssertingSeveralPropertiesIsNotRedundantIfOneOfThemChangesAType' => [
                 'code' => <<<'PHP'
                     <?php
                     final class Pair {
@@ -4154,19 +4149,31 @@ final class AssertAnnotationTest extends TestCase
                             }
                         }
 
-                        public function test(): void {
-                            if ($this->a === null || $this->b === null) {
-                                return;
+                        public function test(): int {
+                            if ($this->a === null) {
+                                return 0;
                             }
 
                             $this->assertBoth();
+
+                            return $this->b;
                         }
                     }
                     PHP,
-                'error_message' => 'RedundantCondition',
-                'error_levels' => [],
+                'assertions' => [],
+                'ignored_issues' => [],
                 'php_version' => '8.1',
             ],
+        ];
+    }
+
+    /**
+     * @psalm-pure
+     */
+    #[Override]
+    public static function providerInvalidCodeParse(): iterable
+    {
+        return [
             'assertNonEmptyArrayOnANonEmptyArray' => [
                 'code' => '<?php
                     /**
@@ -4670,6 +4677,37 @@ final class AssertAnnotationTest extends TestCase
 
                     if (hasP(Holder::$sh)) {}',
                 'error_message' => 'Variable Holder::$sh is not an object so the assertion cannot be applied',
+            ],
+            'callAssertingSeveralPropertiesIsRedundantIfAllOfThemAre' => [
+                'code' => <<<'PHP'
+                    <?php
+                    final class Pair {
+                        public ?int $a = null;
+                        public ?int $b = null;
+
+                        /**
+                         * @psalm-mutation-free
+                         * @psalm-assert !null $this->a
+                         * @psalm-assert !null $this->b
+                         */
+                        public function assertBoth(): void {
+                            if ($this->a === null || $this->b === null) {
+                                throw new Exception();
+                            }
+                        }
+
+                        public function test(): void {
+                            if ($this->a === null || $this->b === null) {
+                                return;
+                            }
+
+                            $this->assertBoth();
+                        }
+                    }
+                    PHP,
+                'error_message' => 'RedundantCondition',
+                'error_levels' => [],
+                'php_version' => '8.1',
             ],
         ];
     }
