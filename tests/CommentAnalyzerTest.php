@@ -97,17 +97,33 @@ final class CommentAnalyzerTest extends BaseTestCase
         $this->assertSame('Use a string', $comment_docblock[0]->description);
     }
 
+    public function testDocblockVarDescriptionAfterSpacedUnion(): void
+    {
+        $doc = '/**
+ * @var string  |  null $foo Some Description
+ */
+';
+        $php_parser_doc = new Doc($doc);
+        $comment_docblock = CommentAnalyzer::getTypeFromComment($this->codebase, $php_parser_doc, new FileScanner('somefile.php', 'somefile.php', false), new Aliases);
+        $this->assertSame('null|string', $comment_docblock[0]->type?->getId());
+        $this->assertSame('$foo', $comment_docblock[0]->var_id);
+        $this->assertSame('Some Description', $comment_docblock[0]->description);
+    }
+
     /**
-     * @param string[] $expected
+     * @param non-empty-list<string> $expected
      */
     #[DataProvider('providerSplitDocLine')]
     public function testSplitDocLine(string $doc_line, array $expected): void
     {
         $this->assertSame($expected, CommentAnalyzer::splitDocLine($doc_line));
+
+        // the type splits into itself again, as the `@method` parser splits the parts it joins back
+        $this->assertSame([$expected[0]], CommentAnalyzer::splitDocLine($expected[0]));
     }
 
     /**
-     * @return iterable<array-key, array{doc_line: string, expected: string[]}>
+     * @return iterable<array-key, array{doc_line: string, expected: non-empty-list<string>}>
      * @psalm-pure
      */
     public static function providerSplitDocLine(): iterable
@@ -263,6 +279,74 @@ final class CommentAnalyzerTest extends BaseTestCase
                      *     : string
                      * )',
                 ],
+            ],
+            'unionWithSpaceBeforePipe' => [
+                'doc_line' => 'A |null $x',
+                'expected' => ['A |null', '$x'],
+            ],
+            'unionWithSpacesAroundPipe' => [
+                'doc_line' => 'A | null $x the x',
+                'expected' => ['A | null', '$x', 'the', 'x'],
+            ],
+            'unionWithSpaceAfterPipe' => [
+                'doc_line' => 'A|  null',
+                'expected' => ['A|  null'],
+            ],
+            'unionWithRunsOfSpacesAroundPipe' => [
+                'doc_line' => 'A  |  null get()',
+                'expected' => ['A  |  null', 'get()'],
+            ],
+            'unionContinuedOnTheNextLine' => [
+                'doc_line' => "A\n     *     |null \$x",
+                'expected' => ["A\n     *     |null", '$x'],
+            ],
+            'unionWithPipeEndingTheLine' => [
+                'doc_line' => "A|\n     *     null \$x",
+                'expected' => ["A|\n     *     null", '$x'],
+            ],
+            'unionWithSpaceInCallableReturnType' => [
+                'doc_line' => 'callable(): A |null $x',
+                'expected' => ['callable(): A |null', '$x'],
+            ],
+            'intersectionWithSpaceBeforeAmpersand' => [
+                'doc_line' => 'A &B',
+                'expected' => ['A &B'],
+            ],
+            'intersectionWithSpacesAroundAmpersand' => [
+                'doc_line' => 'A & B $x',
+                'expected' => ['A & B', '$x'],
+            ],
+            'byReferenceParam' => [
+                'doc_line' => 'A &$x',
+                'expected' => ['A', '&$x'],
+            ],
+            'byReferenceVariadicParam' => [
+                'doc_line' => 'A &...$x',
+                'expected' => ['A', '&...$x'],
+            ],
+            'byReferenceParamWithSpaceAfterAmpersand' => [
+                'doc_line' => 'A & $x',
+                'expected' => ['A', '&$x'],
+            ],
+            'byReferenceVariadicParamWithSpaceAfterAmpersand' => [
+                'doc_line' => 'A & ...$x',
+                'expected' => ['A', '&...$x'],
+            ],
+            'byReferenceParamOnTheNextLine' => [
+                'doc_line' => "A &\n     *     \$x",
+                'expected' => ['A', '&$x'],
+            ],
+            'byReferenceParamWithAmpersandAfterType' => [
+                'doc_line' => 'A& $x',
+                'expected' => ['A&', '$x'],
+            ],
+            'pipeAfterTheTypeJoinsTheNextWord' => [
+                'doc_line' => 'int | the count',
+                'expected' => ['int | the', 'count'],
+            ],
+            'pipeInDescriptionAfterSpacedUnion' => [
+                'doc_line' => 'A |null description | more',
+                'expected' => ['A |null', 'description', '|', 'more'],
             ],
         ];
     }
