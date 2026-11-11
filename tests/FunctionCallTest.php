@@ -24,35 +24,14 @@ final class FunctionCallTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
-            'arrayIsListOfASealedShapeWithOptionalKeys' => [
+            'zeroIsANonEmptyLowercaseString' => [
                 'code' => <<<'PHP'
                     <?php
-                    /** @param array{a?: string} $onlyAString */
-                    function stringKey(array $onlyAString): void {
-                        if (array_is_list($onlyAString)) {
-                            /** @psalm-check-type-exact $onlyAString = array<never, never> */
-                        }
-                    }
+                    /** @param non-empty-lowercase-string $s */
+                    function takesNonEmptyLowercase(string $s): void {}
 
-                    /** @param array{0?: string, 1?: int} $listKeys */
-                    function listKeys(array $listKeys): void {
-                        if (array_is_list($listKeys)) {
-                            /** @psalm-check-type-exact $listKeys = list{0?: string, 1?: int} */
-                        }
-                    }
-
-                    /** @param array{0?: string, a?: int} $mixedKeys */
-                    function mixedKeys(array $mixedKeys): void {
-                        if (array_is_list($mixedKeys)) {
-                            /** @psalm-check-type-exact $mixedKeys = list{0?: string} */
-                        }
-                    }
-
-                    /** @param array{0?: string, 1?: int} $listKeys */
-                    function nonEmpty(array $listKeys): void {
-                        assert(array_is_list($listKeys) && $listKeys !== []);
-                        /** @psalm-check-type-exact $listKeys = list{0: string, 1?: int} */
-                    }
+                    takesNonEmptyLowercase('0');
+                    takesNonEmptyLowercase('a');
                     PHP,
                 'assertions' => [],
                 'ignored_issues' => [],
@@ -3088,6 +3067,40 @@ final class FunctionCallTest extends TestCase
                 'ignored_issues' => [],
                 'php_version' => '7.4',
             ],
+            'arrayIsListOfASealedShapeWithOptionalKeys' => [
+                'code' => <<<'PHP'
+                    <?php
+                    /** @param array{a?: string} $onlyAString */
+                    function stringKey(array $onlyAString): void {
+                        if (array_is_list($onlyAString)) {
+                            /** @psalm-check-type-exact $onlyAString = array<never, never> */
+                        }
+                    }
+
+                    /** @param array{0?: string, 1?: int} $listKeys */
+                    function listKeys(array $listKeys): void {
+                        if (array_is_list($listKeys)) {
+                            /** @psalm-check-type-exact $listKeys = list{0?: string, 1?: int} */
+                        }
+                    }
+
+                    /** @param array{0?: string, a?: int} $mixedKeys */
+                    function mixedKeys(array $mixedKeys): void {
+                        if (array_is_list($mixedKeys)) {
+                            /** @psalm-check-type-exact $mixedKeys = list{0?: string} */
+                        }
+                    }
+
+                    /** @param array{0?: string, 1?: int} $listKeys */
+                    function nonEmpty(array $listKeys): void {
+                        assert(array_is_list($listKeys) && $listKeys !== []);
+                        /** @psalm-check-type-exact $listKeys = list{0: string, 1?: int} */
+                    }
+                    PHP,
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
         ];
     }
 
@@ -3098,29 +3111,13 @@ final class FunctionCallTest extends TestCase
     public static function providerInvalidCodeParse(): iterable
     {
         return [
-            'arrayIsListOfAShapeWithAGapInItsListKeys' => [
-                'code' => <<<'PHP'
-                    <?php
-                    /** @param array{0?: string, 2?: int} $a */
-                    function f(array $a): void {
-                        if (array_is_list($a)) {}
-                    }
-                    PHP,
-                'error_message' => 'TypeDoesNotContainType',
-                'error_levels' => [],
-                'php_version' => '8.1',
-            ],
-            'arrayIsListOfAShapeWithARequiredStringKey' => [
-                'code' => <<<'PHP'
-                    <?php
-                    /** @param array{a: string} $a */
-                    function f(array $a): void {
-                        if (array_is_list($a)) {}
-                    }
-                    PHP,
-                'error_message' => 'TypeDoesNotContainType',
-                'error_levels' => [],
-                'php_version' => '8.1',
+            'emptyStringIsNotANonEmptyLowercaseString' => [
+                'code' => '<?php
+                    /** @param non-empty-lowercase-string $s */
+                    function takesNonEmptyLowercase(string $s): void {}
+
+                    takesNonEmptyLowercase("");',
+                'error_message' => 'InvalidArgument',
             ],
             'propertyExistsOfADeclaredPropertyIsAlwaysTrue' => [
                 'code' => '<?php
@@ -4049,6 +4046,30 @@ final class FunctionCallTest extends TestCase
                 'error_message' => 'InvalidScalarArgument',
                 'error_levels' => [],
                 'php_version' => '7.4',
+            ],
+            'arrayIsListOfAShapeWithAGapInItsListKeys' => [
+                'code' => <<<'PHP'
+                    <?php
+                    /** @param array{0?: string, 2?: int} $a */
+                    function f(array $a): void {
+                        if (array_is_list($a)) {}
+                    }
+                    PHP,
+                'error_message' => 'TypeDoesNotContainType',
+                'error_levels' => [],
+                'php_version' => '8.1',
+            ],
+            'arrayIsListOfAShapeWithARequiredStringKey' => [
+                'code' => <<<'PHP'
+                    <?php
+                    /** @param array{a: string} $a */
+                    function f(array $a): void {
+                        if (array_is_list($a)) {}
+                    }
+                    PHP,
+                'error_message' => 'TypeDoesNotContainType',
+                'error_levels' => [],
+                'php_version' => '8.1',
             ],
         ];
     }

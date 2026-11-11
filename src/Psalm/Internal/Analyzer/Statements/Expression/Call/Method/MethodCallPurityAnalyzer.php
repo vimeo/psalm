@@ -564,6 +564,15 @@ final class MethodCallPurityAnalyzer
             );
         }
 
+        if ($method_storage->static_property_mutations !== null) {
+            $context->resetMutatedStaticProperties(
+                $method_storage->static_property_mutations,
+                $method_id->fq_class_name,
+                $codebase->methods->getAppearingMethodId($method_id)?->fq_class_name ?? $method_id->fq_class_name,
+                $codebase,
+            );
+        }
+
         if (!$config->remember_property_assignments_after_call
             && ($method_capabilities & (Capabilities::WRITE_PROPS | Capabilities::WRITE_THIS_PROPS)) !== 0
         ) {
