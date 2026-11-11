@@ -13,6 +13,9 @@ final class MethodParamTree extends ParseTree
 {
     public string $default = '';
 
+    /** the offset of the name in the tokenized string */
+    public int $name_offset = 0;
+
     /**
      * @psalm-mutation-free
      */
