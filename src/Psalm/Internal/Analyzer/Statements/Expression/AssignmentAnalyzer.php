@@ -1590,6 +1590,60 @@ final class AssignmentAnalyzer
     }
 
     /**
+     * Report non-array accesses in a destructuring assignment.
+     * A null atomic type is reported later, if no keyed-array item was directly assigned.
+     */
+    private static function checkDestructuredArrayAccess(
+        StatementsAnalyzer $statements_analyzer,
+        Codebase $codebase,
+        PhpParser\Node\Expr $var,
+        Atomic $assign_value_atomic_type,
+        Union $assign_value_type,
+        ?string $extended_var_id,
+    ): bool {
+        if ($assign_value_atomic_type instanceof TMixed) {
+            IssueBuffer::maybeAdd(
+                new MixedArrayAccess(
+                    'Cannot access array value on mixed variable ' . $extended_var_id,
+                    new CodeLocation($statements_analyzer->getSource(), $var),
+                ),
+                $statements_analyzer->getSuppressedIssues(),
+            );
+        } elseif ($assign_value_atomic_type instanceof TNull) {
+            return true;
+        } elseif (!$assign_value_atomic_type instanceof TArray
+            && !$assign_value_atomic_type instanceof TKeyedArray
+            && !$assign_value_type->hasArrayAccessInterface($codebase)
+        ) {
+            if ($assign_value_type->hasArray()) {
+                if ($assign_value_atomic_type instanceof TFalse && $assign_value_type->ignore_falsable_issues) {
+                    // do nothing
+                } else {
+                    IssueBuffer::maybeAdd(
+                        new PossiblyInvalidArrayAccess(
+                            'Cannot access array value on non-array variable '
+                            . $extended_var_id . ' of type ' . $assign_value_atomic_type->getId(),
+                            new CodeLocation($statements_analyzer->getSource(), $var),
+                        ),
+                        $statements_analyzer->getSuppressedIssues(),
+                    );
+                }
+            } else {
+                IssueBuffer::maybeAdd(
+                    new InvalidArrayAccess(
+                        'Cannot access array value on non-array variable '
+                        . $extended_var_id . ' of type ' . $assign_value_atomic_type->getId(),
+                        new CodeLocation($statements_analyzer->getSource(), $var),
+                    ),
+                    $statements_analyzer->getSuppressedIssues(),
+                );
+            }
+        }
+
+        return false;
+    }
+
+    /**
      * @param PhpParser\Node\Expr\List_|PhpParser\Node\Expr\Array_ $assign_var
      * @param list<VarDocblockComment> $var_comments
      */
@@ -1725,43 +1779,15 @@ final class AssignmentAnalyzer
                     }
                 }
 
-                if ($assign_value_atomic_type instanceof TMixed) {
-                    IssueBuffer::maybeAdd(
-                        new MixedArrayAccess(
-                            'Cannot access array value on mixed variable ' . $extended_var_id,
-                            new CodeLocation($statements_analyzer->getSource(), $var),
-                        ),
-                        $statements_analyzer->getSuppressedIssues(),
-                    );
-                } elseif ($assign_value_atomic_type instanceof TNull) {
+                if (self::checkDestructuredArrayAccess(
+                    $statements_analyzer,
+                    $codebase,
+                    $var,
+                    $assign_value_atomic_type,
+                    $assign_value_type,
+                    $extended_var_id,
+                )) {
                     $has_null = true;
-                } elseif (!$assign_value_atomic_type instanceof TArray
-                    && !$assign_value_atomic_type instanceof TKeyedArray
-                    && !$assign_value_type->hasArrayAccessInterface($codebase)
-                ) {
-                    if ($assign_value_type->hasArray()) {
-                        if ($assign_value_atomic_type instanceof TFalse && $assign_value_type->ignore_falsable_issues) {
-                            // do nothing
-                        } else {
-                            IssueBuffer::maybeAdd(
-                                new PossiblyInvalidArrayAccess(
-                                    'Cannot access array value on non-array variable '
-                                    . $extended_var_id . ' of type ' . $assign_value_atomic_type->getId(),
-                                    new CodeLocation($statements_analyzer->getSource(), $var),
-                                ),
-                                $statements_analyzer->getSuppressedIssues(),
-                            );
-                        }
-                    } else {
-                        IssueBuffer::maybeAdd(
-                            new InvalidArrayAccess(
-                                'Cannot access array value on non-array variable '
-                                . $extended_var_id . ' of type ' . $assign_value_atomic_type->getId(),
-                                new CodeLocation($statements_analyzer->getSource(), $var),
-                            ),
-                            $statements_analyzer->getSuppressedIssues(),
-                        );
-                    }
                 }
 
                 if ($var instanceof PhpParser\Node\Expr\List_
@@ -1884,6 +1910,8 @@ final class AssignmentAnalyzer
                     );
                 }
 
+                $has_comment_type = false;
+
                 foreach ($var_comments as $var_comment) {
                     if (!$var_comment->type) {
                         continue;
@@ -1902,6 +1930,7 @@ final class AssignmentAnalyzer
                             $var_comment_type = $var_comment_type->setFromDocblock();
 
                             $new_assign_type = $var_comment_type;
+                            $has_comment_type = true;
                             break;
                         }
                     } catch (UnexpectedValueException $e) {
@@ -1915,6 +1944,23 @@ final class AssignmentAnalyzer
                 }
 
                 if ($list_var_id) {
+                    if ($new_assign_type !== null
+                        && $new_assign_type->hasMixed()
+                        && !$has_comment_type
+                        && !str_contains($list_var_id, '->')
+                        && !str_starts_with($list_var_id, '$_')
+                        && !$context->collect_initializations
+                        && !$context->collect_mutations
+                    ) {
+                        IssueBuffer::maybeAdd(
+                            new MixedAssignment(
+                                'Unable to determine the type that ' . $list_var_id . ' is being assigned to',
+                                new CodeLocation($statements_analyzer->getSource(), $var),
+                            ),
+                            $statements_analyzer->getSuppressedIssues(),
+                        );
+                    }
+
                     $context->vars_in_scope[$list_var_id] = $new_assign_type ?: Type::getMixed();
 
                     if ($statements_analyzer->data_flow_graph) {

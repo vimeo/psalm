@@ -20,6 +20,31 @@ final class EnumTest extends TestCase
     use ValidCodeAnalysisTestTrait;
     use InvalidCodeAnalysisTestTrait;
 
+    private const BINARY_ENUM_CODE = '<?php
+        enum Bom: string {
+            case Utf16Le = "\xFF\xFE";
+        }
+
+        abstract class AbstractCsv {
+            protected ?Bom $bom = null;
+
+            public function getBom(): string {
+                return $this->bom->value ?? "";
+            }
+        }
+
+        final class Reader extends AbstractCsv {}
+
+        function read(Reader $reader): string {
+            return $reader->getBom();
+        }';
+
+    public function testInheritedMethodReturningBinaryEnumValueWithTaintAnalysis(): void
+    {
+        $this->project_analyzer->trackTaintedInputs();
+        $this->testValidCode(self::BINARY_ENUM_CODE, [], [], '8.1');
+    }
+
     public function testAMixedPartOfTheReceiverDoesNotMakeTheValueOfTheEnumPartMixed(): void
     {
         $this->testConfig->throw_exception = false;
@@ -74,6 +99,53 @@ final class EnumTest extends TestCase
                     function listCases(string $string): void {
                         $cases = $string::cases();
                         /** @psalm-check-type-exact $cases = list<UnitEnum> */
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
+            'inheritedMethodReturningBinaryEnumValue' => [
+                'code' => self::BINARY_ENUM_CODE,
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
+            'enumDeclaredInAConditional' => [
+                'code' => '<?php
+                    if (PHP_VERSION_ID >= 80100) {
+                        enum Suit {
+                            case Hearts;
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
+            'valueOfAConstantOfAnEnum' => [
+                'code' => '<?php
+                    enum Level: int {
+                        case Low = 1;
+                        case High = 2;
+
+                        const NAMES = [1 => "low", 2 => "high"];
+
+                        /** @return value-of<self::NAMES> */
+                        public function getName(): string {
+                            return match ($this) {
+                                self::Low => "low",
+                                self::High => "high",
+                            };
+                        }
+                    }
+
+                    /** @param value-of<Level::NAMES> $name */
+                    function f(string $name): void {
+                        $result = $name;
+                    }
+
+                    /** @param value-of<Level> $value */
+                    function g(int $value): void {
+                        $backing = $value;
                     }',
                 'assertions' => [],
                 'ignored_issues' => [],
@@ -1038,6 +1110,22 @@ final class EnumTest extends TestCase
                     }
                 ',
                 'error_message' => 'Trace - src' . DIRECTORY_SEPARATOR . 'somefile.php:16:29 - $suit: enum(Suit::Hearts)|enum(Suit::Spades',
+                'error_levels' => [],
+                'php_version' => '8.1',
+            ],
+            'valueOfAConstantOfAnEnumRejectsAnotherValue' => [
+                'code' => '<?php
+                    enum Level: int {
+                        case Low = 1;
+
+                        const NAMES = [1 => "low"];
+
+                        /** @return value-of<self::NAMES> */
+                        public function getName(): string {
+                            return "high";
+                        }
+                    }',
+                'error_message' => 'InvalidReturnStatement',
                 'error_levels' => [],
                 'php_version' => '8.1',
             ],
