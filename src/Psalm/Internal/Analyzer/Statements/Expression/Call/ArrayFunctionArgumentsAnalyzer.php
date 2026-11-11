@@ -657,7 +657,8 @@ final class ArrayFunctionArgumentsAnalyzer
         $codebase = $statements_analyzer->getCodebase();
 
         if ($arg->value instanceof PhpParser\Node\Expr\ArrayDimFetch
-            && self::writeBackItemWithoutEnd($statements_analyzer, $arg->value, $context, $is_array_shift)
+            && (self::writeBackItemWithoutEnd($statements_analyzer, $arg->value, $context, $is_array_shift)
+                || !self::isTrackedByItsVarId($statements_analyzer, $arg->value, $context))
         ) {
             return;
         }
@@ -785,13 +786,33 @@ final class ArrayFunctionArgumentsAnalyzer
     }
 
     /**
-     * Whether the item lives in arrays only. An item of an ArrayAccess object is re-read through offsetGet(),
-     * which doesn't see changes of the returned value.
+     * Whether an item that is not written back is left to the narrowed type of its own var id, which an array that
+     * is not a shape never stores for the other offsets: not in a loop, nor where a shape holds the item, whose
+     * other offsets a key that is not a literal may select.
      *
      * @psalm-capabilities read-props
      */
-    private static function isHeldByArrays(StatementsAnalyzer $statements_analyzer, PhpParser\Node\Expr $item): bool
-    {
+    private static function isTrackedByItsVarId(
+        StatementsAnalyzer $statements_analyzer,
+        PhpParser\Node\Expr\ArrayDimFetch $item,
+        Context $context,
+    ): bool {
+        return !$context->inside_loop
+            && self::hasVariableRoot($item)
+            && self::isHeldByArrays($statements_analyzer, $item, true);
+    }
+
+    /**
+     * Whether the item lives in arrays only (with $generic_only, in arrays that are not shapes). An item of an
+     * ArrayAccess object is re-read through offsetGet(), which doesn't see changes of the returned value.
+     *
+     * @psalm-capabilities read-props
+     */
+    private static function isHeldByArrays(
+        StatementsAnalyzer $statements_analyzer,
+        PhpParser\Node\Expr $item,
+        bool $generic_only = false,
+    ): bool {
         while ($item instanceof PhpParser\Node\Expr\ArrayDimFetch) {
             $holder_type = $statements_analyzer->node_data->getType($item->var);
 
@@ -800,7 +821,9 @@ final class ArrayFunctionArgumentsAnalyzer
             }
 
             foreach ($holder_type->getAtomicTypes() as $holder_atomic_type) {
-                if (!$holder_atomic_type instanceof TArray && !$holder_atomic_type instanceof TKeyedArray) {
+                if (!$holder_atomic_type instanceof TArray
+                    && (!$holder_atomic_type instanceof TKeyedArray || $generic_only)
+                ) {
                     return false;
                 }
             }
