@@ -6,8 +6,12 @@ namespace Psalm\Tests;
 
 use Override;
 use Psalm\Context;
+use Psalm\IssueBuffer;
 use Psalm\Tests\Traits\InvalidCodeAnalysisTestTrait;
 use Psalm\Tests\Traits\ValidCodeAnalysisTestTrait;
+
+use function array_column;
+use function sort;
 
 use const DIRECTORY_SEPARATOR;
 
@@ -15,6 +19,31 @@ final class ArgTest extends TestCase
 {
     use InvalidCodeAnalysisTestTrait;
     use ValidCodeAnalysisTestTrait;
+
+    public function testRequiredParameterNoUnpackedArrayGives(): void
+    {
+        $this->project_analyzer->getConfig()->throw_exception = false;
+        $this->project_analyzer->setPhpVersion('8.1', 'tests');
+
+        $file_path = self::$src_dir_path . 'somefile.php';
+
+        $this->addFile(
+            $file_path,
+            '<?php
+                function foo(int $a, string $b, float $c): void {
+                    echo $a, $b, $c;
+                }
+
+                foo(...["a" => 0], ...["b" => "b"], ...["b" => "c"]);',
+        );
+
+        $this->analyzeFile($file_path, new Context());
+
+        $types = array_column(IssueBuffer::getIssuesDataForFile($file_path), 'type');
+        sort($types);
+
+        self::assertSame(['InvalidNamedArgument', 'TooFewArguments'], $types);
+    }
 
     public function testPseudoPropertyOfAClassWithoutAMagicGetterIsReadableWithTheConfigOption(): void
     {
@@ -44,15 +73,17 @@ final class ArgTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
-            'multipleUnpackedListsFillParameters' => [
+            'namedKeysSplitOverSeveralUnpackedArrays' => [
                 'code' => '<?php
-                    function f(float $a, float $b, float $c = 1.0): void {}
+                    function foo(int $a, string $b, float $c): void {
+                        echo $a, $b, $c;
+                    }
 
-                    $x = [1.0];
-                    $y = [2.0];
-
-                    f(...$x, ...$y);
-                    f(...$x, ...$y, ...$x);',
+                    foo(...["c" => 1.0], ...["a" => 0], ...["b" => "b"]);
+                    foo(...["a" => 0, "b" => "b"], ...["c" => 1.0]);',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
             ],
             'objectWithPropertiesAcceptsAPseudoPropertyOfAClassThatAllowsDynamicProperties' => [
                 'code' => '<?php
@@ -497,6 +528,16 @@ final class ArgTest extends TestCase
                 'ignored_issues' => [],
                 'php_version' => '8.0',
             ],
+            'multipleUnpackedListsFillParameters' => [
+                'code' => '<?php
+                    function f(float $a, float $b, float $c = 1.0): void {}
+
+                    $x = [1.0];
+                    $y = [2.0];
+
+                    f(...$x, ...$y);
+                    f(...$x, ...$y, ...$x);',
+            ],
         ];
     }
 
@@ -507,28 +548,27 @@ final class ArgTest extends TestCase
     public static function providerInvalidCodeParse(): iterable
     {
         return [
-            'multipleUnpackedListsLeaveParameterUnfilled' => [
+            'namedKeyOfUnpackedArrayOfTheWrongType' => [
                 'code' => '<?php
-                    function f(float $a, float $b): void {}
+                    function foo(int $a, string $b, float $c): void {
+                        echo $a, $b, $c;
+                    }
 
-                    /** @var list{float} $x */
-                    $x = [1.0];
-                    /** @var list{} $empty */
-                    $empty = [];
-
-                    f(...$x, ...$empty);',
-                'error_message' => 'TooFewArguments',
-                'error_levels' => ['NoValue'],
+                    foo(...["a" => "wrong"], ...["b" => "b"], ...["c" => 1.0]);',
+                'error_message' => 'InvalidScalarArgument',
+                'error_levels' => [],
+                'php_version' => '8.1',
             ],
-            'multipleUnpackedListsWrongType' => [
+            'namedKeysOfUnpackedArraysMissingAParameter' => [
                 'code' => '<?php
-                    function f(float $a, float $b): void {}
+                    function foo(int $a, string $b, float $c): void {
+                        echo $a, $b, $c;
+                    }
 
-                    $x = [1.0];
-                    $y = ["a"];
-
-                    f(...$x, ...$y);',
-                'error_message' => 'InvalidScalarArgument - src' . DIRECTORY_SEPARATOR . 'somefile.php:7:33',
+                    foo(...["a" => 0], ...["b" => "b"]);',
+                'error_message' => 'TooFewArguments',
+                'error_levels' => [],
+                'php_version' => '8.1',
             ],
             'objectWithPropertiesRejectsAPseudoPropertyOfAClassWithoutAMagicGetter' => [
                 'code' => '<?php
@@ -865,7 +905,7 @@ final class ArgTest extends TestCase
                     function processUserDataInvalid(array $data) : User {
                         return new User(...$data);
                     }',
-                'error_message' => 'MixedArgument',
+                'error_message' => 'TooFewArguments',
                 'error_levels' => [],
                 'php_version' => '8.0',
             ],
@@ -1157,6 +1197,29 @@ final class ArgTest extends TestCase
 
                     caller("foo");',
                 'error_message' => 'InvalidArgument',
+            ],
+            'multipleUnpackedListsLeaveParameterUnfilled' => [
+                'code' => '<?php
+                    function f(float $a, float $b): void {}
+
+                    /** @var list{float} $x */
+                    $x = [1.0];
+                    /** @var list{} $empty */
+                    $empty = [];
+
+                    f(...$x, ...$empty);',
+                'error_message' => 'TooFewArguments',
+                'error_levels' => ['NoValue'],
+            ],
+            'multipleUnpackedListsWrongType' => [
+                'code' => '<?php
+                    function f(float $a, float $b): void {}
+
+                    $x = [1.0];
+                    $y = ["a"];
+
+                    f(...$x, ...$y);',
+                'error_message' => 'InvalidScalarArgument - src' . DIRECTORY_SEPARATOR . 'somefile.php:7:33',
             ],
         ];
     }
