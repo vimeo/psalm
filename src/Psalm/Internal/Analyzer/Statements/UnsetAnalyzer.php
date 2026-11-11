@@ -214,6 +214,8 @@ final class UnsetAnalyzer
                         }
                     }
 
+                    $context->possibly_assigned_var_ids[$root_var_id] = true;
+
                     $context->vars_in_scope[$root_var_id] = self::taintUnsetOffset(
                         $statements_analyzer,
                         $var,
