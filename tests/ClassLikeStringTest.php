@@ -324,6 +324,31 @@ final class ClassLikeStringTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'classStringComparedToLiteralClassName' => [
+                'code' => '<?php
+                    class Invokable {
+                        public function __invoke(): void {}
+                    }
+
+                    /** @param class-string<callable-object> $callable */
+                    function isClosure(string $callable): bool {
+                        return $callable === "Closure";
+                    }
+
+                    /** @param class-string<Invokable> $class */
+                    function isInvokable(string $class): bool {
+                        return $class === "Invokable" || $class === "\\Invokable";
+                    }
+
+                    /** @param class-string $class */
+                    function isAny(string $class): bool {
+                        return $class === "Invokable";
+                    }
+
+                    function isWhatever(callable $callable): bool {
+                        return is_object($callable) && get_class($callable) === "Closure";
+                    }',
+            ],
             'isSubclassOfKeepsTheTemplateOfAClassString' => [
                 'code' => '<?php
                     /** @psalm-consistent-constructor */
