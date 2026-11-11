@@ -1920,32 +1920,36 @@ final class AnnotationTest extends TestCase
     public static function providerInvalidCodeParse(): iterable
     {
         return [
-            'spaceInsideTypeName' => [
-                'code' => '<?php
-                    /**
-                     * @return array<s t r i n g>
-                     */
-                    function f() {
-                        return ["hello"];
-                    }',
+            'removedSelfAccessingCallableWithParamsIsInvalid' => [
+                'code' => <<<'PHP'
+                    <?php
+                    /** @param self-accessing-callable(): int $f */
+                    function f(callable $f): void {}
+                    PHP,
                 'error_message' => 'InvalidDocblock',
             ],
-            'missingCommaBetweenGenericParams' => [
-                'code' => '<?php
-                    /**
-                     * @return array<int string>
-                     */
-                    function f() {
-                        return [];
-                    }',
+            'removedSelfMutatingCallableWithParamsIsInvalid' => [
+                'code' => <<<'PHP'
+                    <?php
+                    /** @param self-mutating-callable(): int $f */
+                    function f(callable $f): void {}
+                    PHP,
                 'error_message' => 'InvalidDocblock',
             ],
-            'spaceInsideNamespacedTypeName' => [
-                'code' => '<?php
-                    /**
-                     * @param array<Foo\\Bar Baz> $a
-                     */
-                    function f(array $a): void {}',
+            'removedSelfAccessingClosureWithParamsIsInvalid' => [
+                'code' => <<<'PHP'
+                    <?php
+                    /** @param self-accessing-Closure(): int $f */
+                    function f(callable $f): void {}
+                    PHP,
+                'error_message' => 'InvalidDocblock',
+            ],
+            'removedSelfMutatingClosureWithParamsIsInvalid' => [
+                'code' => <<<'PHP'
+                    <?php
+                    /** @param self-mutating-Closure(): int $f */
+                    function f(callable $f): void {}
+                    PHP,
                 'error_message' => 'InvalidDocblock',
             ],
             'psalmVarWithTooManyTemplateParamsOnProperty' => [
@@ -2757,6 +2761,34 @@ final class AnnotationTest extends TestCase
                 'error_message' => 'InvalidDocblock',
                 'error_levels' => [],
                 'php_version' => '8.0',
+            ],
+            'spaceInsideTypeName' => [
+                'code' => '<?php
+                    /**
+                     * @return array<s t r i n g>
+                     */
+                    function f() {
+                        return ["hello"];
+                    }',
+                'error_message' => 'InvalidDocblock',
+            ],
+            'missingCommaBetweenGenericParams' => [
+                'code' => '<?php
+                    /**
+                     * @return array<int string>
+                     */
+                    function f() {
+                        return [];
+                    }',
+                'error_message' => 'InvalidDocblock',
+            ],
+            'spaceInsideNamespacedTypeName' => [
+                'code' => '<?php
+                    /**
+                     * @param array<Foo\\Bar Baz> $a
+                     */
+                    function f(array $a): void {}',
+                'error_message' => 'InvalidDocblock',
             ],
         ];
     }
