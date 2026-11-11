@@ -746,73 +746,34 @@ final class BinaryOperationTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
-            'comparisonNarrowsTheBoundOfATemplate' => [
+            'assignmentInTheRightOperandOfAndMayNotHaveRun' => [
                 'code' => '<?php
-                    /**
-                     * @template T of int<0, max>
-                     * @param T $n
-                     * @return int<2, max>
-                     */
-                    function greater(int $n): int {
-                        return $n > 1 ? $n : 2;
+                    function fetch(): ?float {
+                        return rand(0, 1) ? 1.5 : null;
                     }
 
-                    /**
-                     * @template T of int<0, max>
-                     * @param T $n
-                     * @return int<3, max>
-                     */
-                    function greaterOrEqual(int $n): int {
-                        return $n >= 3 ? $n : 3;
+                    function check(bool $enabled): ?float {
+                        $value = 0.0;
+                        $matched = $enabled && null !== ($value = fetch());
+
+                        return $value;
                     }
 
-                    /**
-                     * @template T of int<0, max>
-                     * @param T $n
-                     * @return int<0, 4>
-                     */
-                    function smaller(int $n): int {
-                        return $n < 5 ? $n : 4;
-                    }
-
-                    /**
-                     * @template T of int<0, max>
-                     * @param T $n
-                     * @return int<0, 6>
-                     */
-                    function smallerOrEqual(int $n): int {
-                        return $n <= 6 ? $n : 6;
-                    }',
+                    $result = check(true);',
+                'assertions' => [
+                    '$result===' => 'float|null',
+                ],
             ],
-            'arithmeticOnATemplateBoundedByAnIntRange' => [
+            'assignmentInTheRightOperandOfAndKeepsTheTypeBeforeIt' => [
                 'code' => '<?php
-                    /**
-                     * @template T of positive-int|0
-                     * @param T $depth
-                     */
-                    function recursiveFn(int $depth = 1): int {
-                        if ($depth > 1) {
-                            return recursiveFn($depth - 1);
-                        }
-
-                        return 0;
+                    function fetch(): ?float {
+                        return rand(0, 1) ? 1.5 : null;
                     }
 
-                    /**
-                     * @template T of int<0, max>
-                     * @param T $n
-                     * @return array{int<-1, max>, int<1, max>, int<0, max>, int<0, max>}
-                     */
-                    function ops(int $n): array {
-                        return [$n - 1, $n + 1, $n * 2, 2 * $n];
-                    }
-
-                    /**
-                     * @template T of float
-                     * @param T $n
-                     */
-                    function floats(float $n): float {
-                        return $n * 2;
+                    function check(bool $enabled): void {
+                        $value = 0;
+                        $matched = $enabled && null !== ($value = fetch());
+                        /** @psalm-check-type-exact $value = 0|float|null */;
                     }',
             ],
             'coalesceOfAStaticAndASelfPropertyOffset' => [
@@ -1205,6 +1166,25 @@ final class BinaryOperationTest extends TestCase
                     $bar = new A();
                     foo("" . $bar);
                 ',
+            ],
+            'concatenateStringableUsesDeclaredStringReturn' => [
+                'code' => '<?php
+                    final class Text {
+                        public function __toString(): string {
+                            return "text";
+                        }
+                    }
+
+                    /** @var lowercase-string $lowercase */
+                    $lowercase = "lowercase";
+                    $prefixed = "abc" . new Text();
+                    $lowercasePrefixed = $lowercase . new Text();',
+                'assertions' => [
+                    '$prefixed===' => 'non-falsy-string',
+                    '$lowercasePrefixed===' => 'string',
+                ],
+                'ignored_issues' => ['ImplicitToStringCast'],
+                'php_version' => '8.1',
             ],
             'concatenateNegativeIntLeftSideIsNumeric' => [
                 'code' => '<?php
@@ -2149,6 +2129,75 @@ final class BinaryOperationTest extends TestCase
                 'ignored_issues' => ['TypeDoesNotContainType', 'RedundantCondition'],
                 'php_version' => '8.1',
             ],
+            'comparisonNarrowsTheBoundOfATemplate' => [
+                'code' => '<?php
+                    /**
+                     * @template T of int<0, max>
+                     * @param T $n
+                     * @return int<2, max>
+                     */
+                    function greater(int $n): int {
+                        return $n > 1 ? $n : 2;
+                    }
+
+                    /**
+                     * @template T of int<0, max>
+                     * @param T $n
+                     * @return int<3, max>
+                     */
+                    function greaterOrEqual(int $n): int {
+                        return $n >= 3 ? $n : 3;
+                    }
+
+                    /**
+                     * @template T of int<0, max>
+                     * @param T $n
+                     * @return int<0, 4>
+                     */
+                    function smaller(int $n): int {
+                        return $n < 5 ? $n : 4;
+                    }
+
+                    /**
+                     * @template T of int<0, max>
+                     * @param T $n
+                     * @return int<0, 6>
+                     */
+                    function smallerOrEqual(int $n): int {
+                        return $n <= 6 ? $n : 6;
+                    }',
+            ],
+            'arithmeticOnATemplateBoundedByAnIntRange' => [
+                'code' => '<?php
+                    /**
+                     * @template T of positive-int|0
+                     * @param T $depth
+                     */
+                    function recursiveFn(int $depth = 1): int {
+                        if ($depth > 1) {
+                            return recursiveFn($depth - 1);
+                        }
+
+                        return 0;
+                    }
+
+                    /**
+                     * @template T of int<0, max>
+                     * @param T $n
+                     * @return array{int<-1, max>, int<1, max>, int<0, max>, int<0, max>}
+                     */
+                    function ops(int $n): array {
+                        return [$n - 1, $n + 1, $n * 2, 2 * $n];
+                    }
+
+                    /**
+                     * @template T of float
+                     * @param T $n
+                     */
+                    function floats(float $n): float {
+                        return $n * 2;
+                    }',
+            ],
         ];
     }
 
@@ -2159,19 +2208,6 @@ final class BinaryOperationTest extends TestCase
     public static function providerInvalidCodeParse(): iterable
     {
         return [
-            'comparisonOutsideTheBoundOfATemplate' => [
-                'code' => '<?php
-                    /**
-                     * @template T of int<0, 3>
-                     * @param T $n
-                     */
-                    function f(int $n): void {
-                        if ($n > 10) {
-                            echo $n;
-                        }
-                    }',
-                'error_message' => 'DocblockTypeContradiction',
-            ],
             'assignmentToSelfStaticPropertyForgetsTheNarrowingOfStaticOne' => [
                 'code' => '<?php
                     interface Container {}
@@ -2395,6 +2431,19 @@ final class BinaryOperationTest extends TestCase
                         return "hello $s1 $s2";
                     }',
                 'error_message' => 'LessSpecificReturnStatement',
+            ],
+            'comparisonOutsideTheBoundOfATemplate' => [
+                'code' => '<?php
+                    /**
+                     * @template T of int<0, 3>
+                     * @param T $n
+                     */
+                    function f(int $n): void {
+                        if ($n > 10) {
+                            echo $n;
+                        }
+                    }',
+                'error_message' => 'DocblockTypeContradiction',
             ],
         ];
     }
