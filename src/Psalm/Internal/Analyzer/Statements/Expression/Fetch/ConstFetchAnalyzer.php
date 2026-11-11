@@ -32,6 +32,7 @@ use function explode;
 use function implode;
 use function preg_match;
 use function preg_quote;
+use function str_contains;
 use function str_replace;
 use function strtolower;
 
@@ -317,6 +318,7 @@ final class ConstFetchAnalyzer
         ?Context $context,
     ): ?Union {
         $aliased_constants = $statements_analyzer->getAliases()->constants;
+        $is_unqualified = !$is_fully_qualified && !str_contains($const_name, '\\');
 
         if (isset($aliased_constants[$const_name])) {
             $fq_const_name = $aliased_constants[$const_name];
@@ -342,6 +344,12 @@ final class ConstFetchAnalyzer
 
         if ($context && $context->hasVariable($fq_const_name)) {
             return $context->vars_in_scope[$fq_const_name];
+        }
+
+        // an unqualified constant of a namespace is the constant of the global namespace where the namespace has none,
+        // which is what `defined('X')` was told about
+        if ($context && $is_unqualified && $context->hasVariable($const_name)) {
+            return $context->vars_in_scope[$const_name];
         }
 
         $file_path = $statements_analyzer->getRootFilePath();

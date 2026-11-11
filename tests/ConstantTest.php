@@ -250,6 +250,36 @@ final class ConstantTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'constantDefinedByANegatedDefinedGuardInANamespace' => [
+                'code' => '<?php
+                    namespace App\\TextUI;
+
+                    final class Application {
+                        public function run(): int {
+                            if (!defined("APPLICATION_BOOTSTRAP_FILE")) {
+                                return 1;
+                            }
+
+                            $bootstrapFile = APPLICATION_BOOTSTRAP_FILE;
+
+                            return $bootstrapFile === "" ? 1 : 0;
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => ['MixedAssignment'],
+            ],
+            'constantsDefinedByANegatedDefinedGuardOfSeveralOperands' => [
+                'code' => '<?php
+                    function check(): int {
+                        if (!defined("FIRST") || !defined("SECOND")) {
+                            return 1;
+                        }
+
+                        return FIRST + SECOND;
+                    }',
+                'assertions' => [],
+                'ignored_issues' => ['MixedOperand', 'MixedReturnStatement'],
+            ],
             'constantDefinedByANegatedDefinedGuardWithAnExit' => [
                 'code' => '<?php
                     if (!defined("ABSPATH")) {
