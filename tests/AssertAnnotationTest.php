@@ -4238,7 +4238,7 @@ final class AssertAnnotationTest extends TestCase
                     function f(array $arr): void {
                         exceptionIfEmpty($arr);
                     }',
-                'error_message' => 'RedundantCondition',
+                'error_message' => 'RedundantConditionGivenDocblockType',
             ],
             'negatedInstanceofOfAClosedClassEliminatesItsInheritors' => [
                 'code' => '<?php

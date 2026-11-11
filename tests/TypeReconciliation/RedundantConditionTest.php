@@ -2354,7 +2354,7 @@ final class RedundantConditionTest extends TestCase
                     function f(string $s, array $ints): bool {
                         return [$s] === $ints;
                     }',
-                'error_message' => 'TypeDoesNotContainType - src' . DIRECTORY_SEPARATOR . 'somefile.php:4:32 - list{string} cannot be identical to list<int<1, max',
+                'error_message' => 'DocblockTypeContradiction - src' . DIRECTORY_SEPARATOR . 'somefile.php:4:32 - list{string} does not contain list<int<1, max',
             ],
             'identicalComparisonOfShapesWithOtherKeysIsImpossible' => [
                 'code' => '<?php
@@ -2369,7 +2369,7 @@ final class RedundantConditionTest extends TestCase
                     function f(int $i, array $map): bool {
                         return ["id" => $i] === $map;
                     }',
-                'error_message' => 'TypeDoesNotContainType - src' . DIRECTORY_SEPARATOR . 'somefile.php:4:32 - array{id: int} cannot be identical to array<string, string',
+                'error_message' => 'DocblockTypeContradiction - src' . DIRECTORY_SEPARATOR . 'somefile.php:4:32 - array{id: int} does not contain array<string, string',
             ],
             'identicalComparisonOfAListWithAShapeThatSkipsAnIndexIsImpossible' => [
                 'code' => '<?php
@@ -2380,7 +2380,7 @@ final class RedundantConditionTest extends TestCase
                     function f(array $list, array $shape): bool {
                         return $list === $shape;
                     }',
-                'error_message' => 'TypeDoesNotContainType - src' . DIRECTORY_SEPARATOR . 'somefile.php:7:32',
+                'error_message' => 'DocblockTypeContradiction - src' . DIRECTORY_SEPARATOR . 'somefile.php:7:32',
             ],
             'identicalComparisonOfAListWithAShapeWhoseSkippedItemIsOfAnotherTypeIsImpossible' => [
                 'code' => '<?php
@@ -2391,7 +2391,7 @@ final class RedundantConditionTest extends TestCase
                     function f(array $list, array $shape): bool {
                         return $list === $shape;
                     }',
-                'error_message' => 'TypeDoesNotContainType - src' . DIRECTORY_SEPARATOR . 'somefile.php:7:32',
+                'error_message' => 'DocblockTypeContradiction - src' . DIRECTORY_SEPARATOR . 'somefile.php:7:32',
             ],
             'identicalComparisonOfAShapeWithAShorterOneIsImpossible' => [
                 'code' => '<?php
