@@ -1926,6 +1926,17 @@ final class AnnotationTest extends TestCase
                 'ignored_issues' => [],
                 'php_version' => '8.0',
             ],
+            'globalInAFileDocumentingItsThisIsAnIncludedTemplate' => [
+                'code' => '<?php
+                    /**
+                     * @var stdClass $this
+                     */
+
+                    /** @var string $title */
+                    global $title;
+
+                    echo strlen($title);',
+            ],
             'keyOfAndValueOfOfImportedTypeAlias' => [
                 'code' => '<?php
                     /**
@@ -2818,6 +2829,12 @@ final class AnnotationTest extends TestCase
 
                     echo strlen($other);',
                 'error_message' => 'UndefinedGlobalVariable',
+            ],
+            'globalInAFileWithoutADocumentedThisIsInvalid' => [
+                'code' => '<?php
+                    /** @var string $title */
+                    global $title;',
+                'error_message' => 'InvalidGlobal',
             ],
             'keyOfImportedTypeAliasRejectsUnknownKey' => [
                 'code' => '<?php
