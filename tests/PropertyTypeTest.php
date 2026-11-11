@@ -669,6 +669,56 @@ final class PropertyTypeTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'staticOfTheCallerIsNotTheStaticPropertyOfAnotherClassOfTheSameName' => [
+                'code' => '<?php
+                    final class Other {
+                        public static ?int $p = null;
+
+                        public static function clear(): void {
+                            self::$p = null;
+                        }
+                    }
+
+                    final class A {
+                        public static ?int $p = null;
+
+                        public static function get(): int {
+                            static::$p = 1;
+                            Other::clear();
+
+                            return static::$p;
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'parentStaticPropertyRedeclaredByTheParentIsNotTheOneOfTheGrandparent' => [
+                'code' => '<?php
+                    class G {
+                        public static ?int $p = null;
+                    }
+
+                    class P extends G {
+                        public static ?int $p = null;
+                    }
+
+                    final class A extends P {
+                        public static function clear(): void {
+                            parent::$p = null;
+                        }
+                    }
+
+                    function get(): int {
+                        G::$p = 1;
+                        A::clear();
+
+                        return G::$p;
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
             'staticPropertyOfATraitIsOnePropertyPerUsingClass' => [
                 'code' => '<?php
                     trait Holder {

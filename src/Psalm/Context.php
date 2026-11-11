@@ -865,9 +865,11 @@ final class Context
             } elseif ($mutation_class === 'static') {
                 $class_names = [$called_class];
             } elseif ($mutation_class === 'parent') {
-                $class_names = $codebase->classlike_storage_provider->has($self_class)
-                    ? array_values($codebase->classlike_storage_provider->get($self_class)->parent_classes)
-                    : [];
+                // `parent::$p` is the property of the parent: what a class further up has of its own is another one
+                $parent_class = $codebase->classlike_storage_provider->has($self_class)
+                    ? $codebase->classlike_storage_provider->get($self_class)->parent_class
+                    : null;
+                $class_names = $parent_class !== null ? [$parent_class] : [];
             } else {
                 $class_names = [$mutation_class];
             }
@@ -886,7 +888,11 @@ final class Context
         foreach ($var_ids as $var_id) {
             $root_id = substr($var_id, 0, strcspn($var_id, '[-'));
             $class_length = (int) strpos($root_id, '::');
-            $class_name = substr($root_id, 0, $class_length);
+            $class_name = self::resolveClassOfStaticPropertyId(
+                $codebase,
+                substr($root_id, 0, $class_length),
+                $this->self,
+            );
             $property_name = substr($root_id, $class_length + 3);
 
             if (!isset($mutated_classes[$property_name])
@@ -932,7 +938,7 @@ final class Context
     ): bool {
         $class_name_lc = strtolower($class_name);
 
-        // `self::$p`, `static::$p` and `parent::$p` of the caller can be the property of any of them
+        // a `self`, `static` or `parent` of a caller whose class isn't known can be the property of any of them
         if (in_array($class_name_lc, ['self', 'static', 'parent'], true)) {
             return true;
         }
@@ -949,6 +955,29 @@ final class Context
         }
 
         return false;
+    }
+
+    /**
+     * The class a `self::`, `static::` or `parent::` of the code the context is of stands for
+     */
+    private static function resolveClassOfStaticPropertyId(
+        Codebase $codebase,
+        string $class_name,
+        ?string $context_self,
+    ): string {
+        $class_name_lc = strtolower($class_name);
+
+        if ($context_self === null || !in_array($class_name_lc, ['self', 'static', 'parent'], true)) {
+            return $class_name;
+        }
+
+        if ($class_name_lc !== 'parent') {
+            return $context_self;
+        }
+
+        return $codebase->classlike_storage_provider->has($context_self)
+            ? $codebase->classlike_storage_provider->get($context_self)->parent_class ?? $class_name
+            : $class_name;
     }
 
     private static function getStaticPropertyDeclaringClass(
