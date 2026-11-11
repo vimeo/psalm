@@ -186,6 +186,34 @@ final class ClosureTest extends TestCase
                 'ignored_issues' => [],
                 'php_version' => '8.1',
             ],
+            'methodCallableOfATraitMethodResolvesSelfAndParentOfTheParamsToTheUsingClass' => [
+                'code' => <<<'PHP'
+                    <?php
+                    trait T {
+                        public function take(self $other): string { return 'x'; }
+                        public function adopt(parent $other): string { return 'y'; }
+                    }
+
+                    class P {}
+
+                    final class C extends P {
+                        use T;
+                    }
+
+                    /** @param callable(C): string $f */
+                    function run(callable $f, C $c): string { return $f($c); }
+
+                    /** @param callable(P): string $f */
+                    function runParent(callable $f, P $p): string { return $f($p); }
+
+                    $c = new C;
+                    echo run([$c, 'take'], $c);
+                    echo runParent([$c, 'adopt'], $c);
+                    PHP,
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.3',
+            ],
             'paramOutOfMethodClosureResolvesSelfAndStatic' => [
                 'code' => <<<'PHP'
                     <?php

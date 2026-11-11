@@ -428,7 +428,8 @@ final class CallableTypeComparator
                 $callable->params ?? [],
                 $callable->return_type,
                 $callable->getCapabilities(),
-                $method_storage->defining_fqcln,
+                // the class the method appears in: the one using the trait, for a trait method
+                ($codebase->methods->getAppearingMethodId($method_id) ?? $declaring_method_id)->fq_class_name,
                 $method_fqcln,
                 $exact_static || $codebase->classlike_storage_provider->get($method_fqcln)->final,
             );
