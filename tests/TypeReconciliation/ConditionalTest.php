@@ -1831,7 +1831,7 @@ final class ConditionalTest extends TestCase
                     $i = [];
                     $a = $i instanceof ArrayIterator ? $i : null;',
                 'assertions' => [
-                    '$a===' => 'ArrayIterator&Traversable<int, string>|null',
+                    '$a===' => 'ArrayIterator[write-props]<int, string>|null',
                 ],
             ],
             'iterableInstanceofTraversableClassWithoutTemplates' => [
