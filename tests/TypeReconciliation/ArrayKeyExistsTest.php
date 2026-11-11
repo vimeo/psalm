@@ -599,7 +599,7 @@ final class ArrayKeyExistsTest extends TestCase
                      */
                     function stringKeys(array $optionalKeys, string $key): void {
                         if (array_key_exists($key, $optionalKeys)) {
-                            /** @psalm-check-type-exact $optionalKeys = array{bar?: \'hello\'|\'world\', baz?: \'hello\'|\'world\', foo?: \'hello\'|\'world\'} */;
+                            /** @psalm-check-type-exact $optionalKeys = array{bar?: \'world\', baz?: \'hello\'|\'world\', foo?: \'hello\'} */;
                         }
                     }
 
@@ -609,7 +609,7 @@ final class ArrayKeyExistsTest extends TestCase
                      */
                     function intKeys(array $optionalKeys, int $key): void {
                         if (array_key_exists($key, $optionalKeys)) {
-                            /** @psalm-check-type-exact $optionalKeys = array{1?: \'a\'|\'b\', 2?: \'a\'|\'b\'} */;
+                            /** @psalm-check-type-exact $optionalKeys = array{1?: \'a\', 2?: \'b\'} */;
                         }
                     }',
             ],

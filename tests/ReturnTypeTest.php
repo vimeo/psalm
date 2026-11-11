@@ -390,6 +390,25 @@ final class ReturnTypeTest extends TestCase
                         }
                     }',
             ],
+            'voidFunctionThatNeverEndsIsCorrect' => [
+                'code' => '<?php
+                    function work(): void {}
+
+                    class Listener {
+                        /** @return void */
+                        public function listen() {
+                            while (true) {
+                                work();
+                            }
+                        }
+
+                        /** @return void */
+                        public function stop() {
+                            work();
+                            exit(1);
+                        }
+                    }',
+            ],
             'voidNeverDeclaredWithANeverReturningCallPathAndAnImplicitReturn' => [
                 'code' => '<?php
                     function stop(): never {
@@ -450,6 +469,47 @@ final class ReturnTypeTest extends TestCase
                 'assertions' => [],
                 'ignored_issues' => [],
                 'php_version' => '8.0',
+            ],
+            'neverFunctionWithAnEmptyInfiniteLoop' => [
+                'code' => '<?php
+                    function whileLoop(): never {
+                        while (true) {}
+                    }
+
+                    function forLoop(): never {
+                        for (;;) {}
+                    }
+
+                    function doLoop(): never {
+                        do {} while (true);
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
+            'neverFunctionWithAnInfiniteLoopThatMayThrow' => [
+                'code' => '<?php
+                    /** @throws Exception */
+                    function boom(): void {
+                        throw new Exception();
+                    }
+
+                    function run(): never {
+                        while (true) {
+                            if (random_int(0, 100000) === 0) {
+                                boom();
+                            }
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => ['MissingThrowsDocblock'],
+                'php_version' => '8.1',
+            ],
+            'intFunctionWithAnEmptyInfiniteLoop' => [
+                'code' => '<?php
+                    function run(): int {
+                        while (true) {}
+                    }',
             ],
             'nativeNullReturnTypeOfAnInterfaceMethodWithADocblock' => [
                 'code' => '<?php
@@ -2207,6 +2267,72 @@ final class ReturnTypeTest extends TestCase
                 'assertions' => [],
                 'ignored_issues' => ['MissingThrowsDocblock'],
             ],
+            'finalClassOverridesAGenericStaticReturnType' => [
+                'code' => <<<'PHP'
+                    <?php
+                    /** @template T of object */
+                    final class Box
+                    {
+                        /** @param T $value */
+                        public function __construct(public readonly object $value) {}
+                    }
+
+                    class Base
+                    {
+                        /** @return Box<static> */
+                        public function box(): Box
+                        {
+                            return new Box($this);
+                        }
+                    }
+
+                    final class Leaf extends Base
+                    {
+                        /** @return Box<static> */
+                        #[\Override]
+                        public function box(): Box
+                        {
+                            return parent::box();
+                        }
+                    }
+                    PHP,
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.3',
+            ],
+            'finalClassOverridesAGenericThisReturnType' => [
+                'code' => <<<'PHP'
+                    <?php
+                    /** @template T of object */
+                    final class Box
+                    {
+                        /** @param T $value */
+                        public function __construct(public readonly object $value) {}
+                    }
+
+                    class Base
+                    {
+                        /** @return Box<static> */
+                        public function box(): Box
+                        {
+                            return new Box($this);
+                        }
+                    }
+
+                    final class Leaf extends Base
+                    {
+                        /** @return Box<$this> */
+                        #[\Override]
+                        public function box(): Box
+                        {
+                            return parent::box();
+                        }
+                    }
+                    PHP,
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.3',
+            ],
         ];
     }
 
@@ -2217,6 +2343,39 @@ final class ReturnTypeTest extends TestCase
     public static function providerInvalidCodeParse(): iterable
     {
         return [
+            'finalMethodOfASubclassableClassKeepsItsStaticReturnType' => [
+                'code' => <<<'PHP'
+                    <?php
+                    /** @template T of object */
+                    final class Box
+                    {
+                        /** @param T $value */
+                        public function __construct(public readonly object $value) {}
+                    }
+
+                    class Base
+                    {
+                        /** @return Box<Mid> */
+                        public function box(): Box
+                        {
+                            return new Box(new Mid());
+                        }
+                    }
+
+                    class Mid extends Base
+                    {
+                        /** @return Box<static> */
+                        #[\Override]
+                        final public function box(): Box
+                        {
+                            return new Box($this);
+                        }
+                    }
+                    PHP,
+                'error_message' => 'ImplementedReturnTypeMismatch',
+                'error_levels' => [],
+                'php_version' => '8.3',
+            ],
             'docblockStringLiteralWithAUnicodeEscapeThatOverflowsAnInt' => [
                 'code' => '<?php
                     /** @return "\u{FFFFFFFFFFFFFFFF}" */
@@ -2319,6 +2478,28 @@ final class ReturnTypeTest extends TestCase
                         takesIterable($object);
                     }',
                 'error_message' => 'InvalidArgument',
+            ],
+            'neverFunctionWithALoopThatBreaks' => [
+                'code' => '<?php
+                    function run(): never {
+                        while (true) {
+                            if (random_int(0, 9) === 0) {
+                                break;
+                            }
+                        }
+                    }',
+                'error_message' => 'InvalidReturnType',
+                'error_levels' => [],
+                'php_version' => '8.1',
+            ],
+            'neverFunctionWithAFiniteLoop' => [
+                'code' => '<?php
+                    function run(): never {
+                        while (random_int(0, 9) > 0) {}
+                    }',
+                'error_message' => 'InvalidReturnType',
+                'error_levels' => [],
+                'php_version' => '8.1',
             ],
             'unrepresentableScalarIntersection' => [
                 'code' => '<?php
@@ -2966,6 +3147,41 @@ final class ReturnTypeTest extends TestCase
                     }
                     PHP,
                 'error_message' => 'InvalidReturnStatement',
+            ],
+            'finalClassOverridesAGenericStaticReturnTypeWithAnotherType' => [
+                'code' => <<<'PHP'
+                    <?php
+                    /** @template T of object */
+                    final class Box
+                    {
+                        /** @param T $value */
+                        public function __construct(public readonly object $value) {}
+                    }
+
+                    class Base
+                    {
+                        /** @return Box<static> */
+                        public function box(): Box
+                        {
+                            return new Box($this);
+                        }
+                    }
+
+                    final class Other {}
+
+                    final class Leaf extends Base
+                    {
+                        /** @return Box<Other> */
+                        #[\Override]
+                        public function box(): Box
+                        {
+                            return new Box(new Other());
+                        }
+                    }
+                    PHP,
+                'error_message' => 'ImplementedReturnTypeMismatch',
+                'error_levels' => [],
+                'php_version' => '8.3',
             ],
         ];
     }
