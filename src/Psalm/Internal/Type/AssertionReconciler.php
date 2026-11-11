@@ -9,6 +9,7 @@ use Psalm\Codebase;
 use Psalm\Internal\Analyzer\Statements\Expression\Fetch\VariableFetchAnalyzer;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\Internal\Analyzer\TraitAnalyzer;
+use Psalm\Internal\MethodIdentifier;
 use Psalm\Internal\Type\Comparator\AtomicTypeComparator;
 use Psalm\Internal\Type\Comparator\TypeComparisonResult;
 use Psalm\Internal\Type\Comparator\UnionTypeComparator;
@@ -781,6 +782,15 @@ final class AssertionReconciler extends Reconciler
 
         if ($type_1_atomic instanceof TNamedObject) {
             $type_1_atomic = $type_1_atomic->setIsStatic(false);
+        }
+
+        if ($type_1_atomic instanceof TNamedObject
+            && $type_2_atomic instanceof TString
+            && $codebase->classOrInterfaceExists($type_1_atomic->value)
+            && $codebase->methodExists(new MethodIdentifier($type_1_atomic->value, '__tostring'))
+        ) {
+            $any_scalar_type_match_found = true;
+            return $type_1_atomic;
         }
 
         $atomic_comparison_results = new TypeComparisonResult();
