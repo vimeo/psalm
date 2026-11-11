@@ -33,7 +33,6 @@ use Psalm\Type;
 use Psalm\Type\Atomic;
 use Psalm\Type\Atomic\TCallable;
 use Psalm\Type\Atomic\TCallableObject;
-use Psalm\Type\Atomic\TClosure;
 use Psalm\Type\Atomic\TEmptyMixed;
 use Psalm\Type\Atomic\TFalse;
 use Psalm\Type\Atomic\TGenericObject;
@@ -257,16 +256,16 @@ final class AtomicMethodCallAnalyzer extends CallAnalyzer
                             $declaring_class_storage = $codebase->classlike_storage_provider->get(
                                 $declaring_method_id->fq_class_name,
                             );
-                            $method_storage = $codebase->methods->getStorage($declaring_method_id);
+                            [$closure, $method_template_types] = MethodCallReturnTypeFetcher::getInheritedClosure(
+                                $codebase,
+                                $declaring_method_id,
+                                $codebase->methods->getStorage($declaring_method_id),
+                            );
 
                             $return_type_candidate = MethodCallReturnTypeFetcher::getFirstClassCallableType(
                                 $codebase,
                                 $stmt,
-                                new TClosure(
-                                    $method_storage->params,
-                                    $method_storage->return_type,
-                                    $method_storage->capabilities,
-                                ),
+                                $closure,
                                 new TemplateResult([], ClassTemplateParamCollector::collect(
                                     $codebase,
                                     $declaring_class_storage,
@@ -275,7 +274,7 @@ final class AtomicMethodCallAnalyzer extends CallAnalyzer
                                     $lhs_type_part,
                                     $lhs_var_id === '$this',
                                 ) ?? []),
-                                $method_storage->template_types ?? [],
+                                $method_template_types,
                                 $fq_class_name,
                                 $static_type,
                                 $declaring_class_storage->parent_class,
@@ -466,6 +465,7 @@ final class AtomicMethodCallAnalyzer extends CallAnalyzer
             }
 
             if (!$interface_has_method
+                && !$all_intersection_existent_method_ids
                 && $codebase->methodExists(
                     new MethodIdentifier($fq_class_name, '__call'),
                     $context->calling_method_id,
@@ -643,6 +643,7 @@ final class AtomicMethodCallAnalyzer extends CallAnalyzer
 
             /** @var ?Union $intersection_result->return_type */
             $intersection_result->return_type = null;
+            $intersection_result->existent_method_ids = [];
 
             self::analyze(
                 $statements_analyzer,

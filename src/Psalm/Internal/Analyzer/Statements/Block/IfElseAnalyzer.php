@@ -26,12 +26,14 @@ use Psalm\IssueBuffer;
 use Psalm\Node\Expr\VirtualBooleanNot;
 use Psalm\Type;
 use Psalm\Type\Reconciler;
+use Psalm\Type\Union;
 
 use function array_diff;
 use function array_filter;
 use function array_intersect_key;
 use function array_keys;
 use function array_merge;
+use function array_slice;
 use function array_unique;
 use function array_values;
 use function count;
@@ -99,6 +101,14 @@ final class IfElseAnalyzer
 
         $branch_point = $context->branch_point ?: (int) $stmt->getAttribute('startFilePos');
 
+        $pre_cond_reconciled_clauses = $context->reconciled_expression_clauses;
+
+        // the else of an `||` is analysed again from where the condition started, not from where it ended
+        $pre_condition_context = $stmt->cond instanceof PhpParser\Node\Expr\BinaryOp\BooleanOr
+            || $stmt->cond instanceof PhpParser\Node\Expr\BinaryOp\LogicalOr
+                ? clone $context
+                : null;
+
         try {
             $if_conditional_scope = IfConditionalAnalyzer::analyze(
                 $statements_analyzer,
@@ -163,9 +173,20 @@ final class IfElseAnalyzer
 
         $entry_clauses = $context->clauses;
 
+        // the clauses the condition has already reconciled are not established independently of it
+        $already_reconciled_clauses = [
+            ...$if_context->reconciled_expression_clauses,
+            ...array_diff($context->reconciled_expression_clauses, $pre_cond_reconciled_clauses),
+        ];
+
         // this will see whether any of the clauses in set A conflict with the clauses in set B
         AlgebraAnalyzer::checkForParadox(
-            $entry_clauses,
+            $already_reconciled_clauses
+                ? array_values(array_filter(
+                    $entry_clauses,
+                    static fn(Clause $c): bool => !in_array($c->hash, $already_reconciled_clauses, true),
+                ))
+                : $entry_clauses,
             $if_clauses,
             $statements_analyzer,
             $stmt->cond,
@@ -274,6 +295,21 @@ final class IfElseAnalyzer
         // this has to go on a separate line because the phar compactor messes with precedence
         $scope_to_clone = $if_scope->post_leaving_if_context ?? $post_if_context;
         $else_context = clone $scope_to_clone;
+
+        // the else runs when every operand of an `||` was evaluated and falsy, so what they assigned is known there
+        if (!$if_scope->post_leaving_if_context
+            && ($stmt->else || $stmt->elseifs)
+            && array_filter($assigned_in_conditional_var_ids) !== []
+            && $pre_condition_context !== null
+        ) {
+            IfAnalyzer::addConditionallyAssignedVarsToContext(
+                $statements_analyzer,
+                $stmt->cond,
+                $pre_condition_context,
+                $else_context,
+                $assigned_in_conditional_var_ids,
+            );
+        }
         $else_context->clauses = Algebra::simplifyCNF(
             [...$else_context->clauses, ...$if_scope->negated_clauses],
         );
@@ -318,40 +354,21 @@ final class IfElseAnalyzer
                 $context->vars_in_scope[$var_id] = $type;
             }
 
-            foreach ($pre_assignment_else_redefined_vars as $var_id => $reconciled_type) {
-                $first_appearance = $statements_analyzer->getFirstAppearance($var_id);
-
-                if ($first_appearance
-                    && isset($post_if_context->vars_in_scope[$var_id])
-                    && $post_if_context->vars_in_scope[$var_id]->hasMixed()
-                    && !$reconciled_type->hasMixed()
-                ) {
-                    if (!$post_if_context->collect_initializations
-                        && !$post_if_context->collect_mutations
-                        && $statements_analyzer->getFilePath() === $statements_analyzer->getRootFilePath()
-                    ) {
-                        $parent_source = $statements_analyzer->getSource();
-
-                        $functionlike_storage = $parent_source instanceof FunctionLikeAnalyzer
-                            ? $parent_source->getFunctionLikeStorage($statements_analyzer)
-                            : null;
-
-                        if (!$functionlike_storage
-                                || (!$parent_source->getSource() instanceof TraitAnalyzer
-                                    && !isset($functionlike_storage->param_lookup[substr($var_id, 1)]))
-                        ) {
-                            $codebase = $statements_analyzer->getCodebase();
-                            $codebase->analyzer->decrementMixedCount($statements_analyzer->getFilePath());
-                        }
-                    }
-
-                    IssueBuffer::remove(
-                        $statements_analyzer->getFilePath(),
-                        'MixedAssignment',
-                        $first_appearance->raw_file_start,
-                    );
-                }
-            }
+            self::removeMixedAssignmentsOfNarrowedVars(
+                $statements_analyzer,
+                $post_if_context,
+                $pre_assignment_else_redefined_vars,
+            );
+        } elseif ($stmt->elseifs
+            && !$stmt->else
+            && self::everyBranchLeaves($if_scope)
+        ) {
+            // what follows only runs once every condition is false
+            self::removeMixedAssignmentsOfNarrowedVars(
+                $statements_analyzer,
+                $post_if_context,
+                $else_context->getRedefinedVars($context->vars_in_scope, true),
+            );
         }
 
         if ($context->loop_scope) {
@@ -453,5 +470,65 @@ final class IfElseAnalyzer
         }
 
         return null;
+    }
+
+    /**
+     * A mixed variable that is narrowed by the conditions it is checked against is not reported where it is
+     * assigned: the first use of the variable is the check.
+     *
+     * @param array<string, Union> $narrowed_vars
+     */
+    private static function removeMixedAssignmentsOfNarrowedVars(
+        StatementsAnalyzer $statements_analyzer,
+        Context $post_if_context,
+        array $narrowed_vars,
+    ): void {
+        foreach ($narrowed_vars as $var_id => $reconciled_type) {
+            $first_appearance = $statements_analyzer->getFirstAppearance($var_id);
+
+            if ($first_appearance
+                && isset($post_if_context->vars_in_scope[$var_id])
+                && $post_if_context->vars_in_scope[$var_id]->hasMixed()
+                && !$reconciled_type->hasMixed()
+            ) {
+                if (!$post_if_context->collect_initializations
+                    && !$post_if_context->collect_mutations
+                    && $statements_analyzer->getFilePath() === $statements_analyzer->getRootFilePath()
+                ) {
+                    $parent_source = $statements_analyzer->getSource();
+
+                    $functionlike_storage = $parent_source instanceof FunctionLikeAnalyzer
+                        ? $parent_source->getFunctionLikeStorage($statements_analyzer)
+                        : null;
+
+                    if (!$functionlike_storage
+                            || (!$parent_source->getSource() instanceof TraitAnalyzer
+                                && !isset($functionlike_storage->param_lookup[substr($var_id, 1)]))
+                    ) {
+                        $codebase = $statements_analyzer->getCodebase();
+                        $codebase->analyzer->decrementMixedCount($statements_analyzer->getFilePath());
+                    }
+                }
+
+                IssueBuffer::remove(
+                    $statements_analyzer->getFilePath(),
+                    'MixedAssignment',
+                    $first_appearance->raw_file_start,
+                );
+            }
+        }
+    }
+
+    /**
+     * Whether the if and every elseif leave, whatever the implicit else does
+     *
+     * @psalm-capabilities read-props
+     */
+    private static function everyBranchLeaves(IfScope $if_scope): bool
+    {
+        // the first of the actions is that of the implicit else
+        $branch_actions = array_slice($if_scope->final_actions, 1);
+
+        return $branch_actions && !in_array(ScopeAnalyzer::ACTION_NONE, $branch_actions, true);
     }
 }

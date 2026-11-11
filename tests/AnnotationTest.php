@@ -184,6 +184,98 @@ final class AnnotationTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'optionalShapeKeysNamedLikeScalarAliases' => [
+                'code' => '<?php
+                    /** @var array{double?: string, integer?: int, boolean?: bool, real?: float} $a */
+                    $a = [];
+                    $double = $a["double"] ?? null;
+                    $integer = $a["integer"] ?? null;
+                    $boolean = $a["boolean"] ?? null;
+                    $real = $a["real"] ?? null;',
+                'assertions' => [
+                    '$double===' => 'null|string',
+                    '$integer===' => 'int|null',
+                    '$boolean===' => 'bool|null',
+                    '$real===' => 'float|null',
+                ],
+                'ignored_issues' => ['UnusedVariable'],
+            ],
+            'optionalShapeKeysNamedLikeSelfAndParent' => [
+                'code' => '<?php
+                    class P {}
+
+                    class C extends P {
+                        /** @param array{self?: int, parent?: string} $a */
+                        public function f(array $a): void {
+                            echo $a["self"] ?? 0;
+                            echo $a["parent"] ?? "";
+                        }
+                    }',
+            ],
+            'psalmVarOverridesPhpstanVarOnProperty' => [
+                'code' => '<?php
+                    class Foo {}
+
+                    class Bar {
+                        /**
+                         * @phpstan-var Foo<string>|null
+                         * @psalm-var Foo|null
+                         */
+                        private ?Foo $foo = null;
+
+                        public function get(): ?Foo {
+                            return $this->foo;
+                        }
+                    }',
+            ],
+            'psalmVarOverridesVarOnConstant' => [
+                'code' => '<?php
+                    class Foo {}
+
+                    class Bar {
+                        /**
+                         * @var Foo<string>|null
+                         * @psalm-var Foo|null
+                         */
+                        public const ?Foo FOO = null;
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.3',
+            ],
+            'varCommentDropsKnownElementsOfPreviousType' => [
+                'code' => '<?php
+                    function getNullableInt(): ?int {
+                        return random_int(0, 10) > 1 ? null : 1;
+                    }
+
+                    $a = [];
+                    $a["i"] = getNullableInt();
+                    echo json_encode($a);
+                    /** @var array{i: int} $a */;
+                    $v = $a["i"];
+                    echo $v;',
+                'assertions' => [
+                    '$v' => 'int',
+                ],
+            ],
+            'varCommentOfSameTypeKeepsKnownElements' => [
+                'code' => '<?php
+                    class P {
+                        public ?int $n = null;
+                    }
+
+                    function f(P $p): int {
+                        if ($p->n === null) {
+                            return 0;
+                        }
+
+                        /** @var P $p */;
+                        return $p->n;
+                    }',
+                'assertions' => [],
+                'ignored_issues' => ['UnnecessaryVarAnnotation'],
+            ],
             'propertyWithNonAsciiName' => [
                 'code' => '<?php
                     /**
@@ -326,6 +418,27 @@ final class AnnotationTest extends TestCase
                 'assertions' => [],
                 'ignored_issues' => [],
                 'php_version' => '8.1',
+            ],
+            'varDocblockBeforeAUseStatementDefinesTheVariable' => [
+                'code' => '<?php
+                    /**
+                     * @var string $foo
+                     */
+
+                    use StdClass;
+
+                    echo strlen($foo);',
+            ],
+            'varDocblockBeforeAUseStatementInANamespaceDefinesTheVariable' => [
+                'code' => '<?php
+                    namespace App;
+
+                    /**
+                     * @var string $foo
+                     */
+                    use StdClass;
+
+                    echo strlen($foo);',
             ],
             'varWithoutNameDoesNotTakeNameOfPreviousVarLine' => [
                 'code' => '<?php
@@ -1625,6 +1738,284 @@ final class AnnotationTest extends TestCase
                         }
                     };',
             ],
+            'typesWithSpacesAroundPipeAndAmpersand' => [
+                'code' => '<?php
+                    final class A {}
+                    interface I1 {}
+                    interface I2 {}
+
+                    /** @return A |null */
+                    function r1() { return null; }
+
+                    /** @psalm-return A  |  null the result | or not */
+                    function r2() { return null; }
+
+                    /** @phpstan-return A| null */
+                    function r3() { return null; }
+
+                    /** @return I1 &I2 */
+                    function r5() { throw new Exception(); }
+
+                    /**
+                     * @param A |null $x
+                     * @return A|null
+                     */
+                    function p1($x) { return $x; }
+
+                    /**
+                     * @param A  |  null $x the x | or not
+                     * @return A|null
+                     */
+                    function p2($x) { return $x; }
+
+                    /**
+                     * @param I1 & I2 $x
+                     * @return I1&I2
+                     */
+                    function p3($x) { return $x; }
+
+                    /**
+                     * @param A & $x
+                     * @param-out A |null $x
+                     */
+                    function p4(&$x): void { $x = null; }
+
+                    /**
+                     * @template T of A |null
+                     * @param T $x
+                     * @return T
+                     */
+                    function t($x) { return $x; }
+
+                    /**
+                     * @param mixed $x
+                     * @psalm-assert A |null $x
+                     */
+                    function a($x): void { assert($x === null || $x instanceof A); }
+
+                    $_r1 = r1();
+                    $_r2 = r2();
+                    $_r3 = r3();
+                    $_r5 = r5();
+                    $_p1 = p1(null);
+                    $_p2 = p2(null);
+                    /** @var A |null $_v */
+                    $_v = json_decode(\'null\');
+                    $_o = new A();
+                    p4($_o);
+                    $_t = t(null);
+                    $_a = json_decode(\'null\');
+                    a($_a);',
+                'assertions' => [
+                    '$_r1' => 'A|null',
+                    '$_r2' => 'A|null',
+                    '$_r3' => 'A|null',
+                    '$_r5' => 'I1&I2',
+                    '$_p1' => 'A|null',
+                    '$_p2' => 'A|null',
+                    '$_v' => 'A|null',
+                    '$_o' => 'A|null',
+                    '$_t' => 'null',
+                    '$_a' => 'A|null',
+                ],
+            ],
+            'thisUnionWithSpacesAroundPipe' => [
+                'code' => '<?php
+                    class T {
+                        /** @return $this | null */
+                        public function a() { return $this; }
+
+                        /** @return $this |null */
+                        public function b() { return null; }
+
+                        /** @param $this | null $x */
+                        public function c($x): ?self { return $x; }
+                    }
+
+                    $_a = (new T)->a();
+                    $_b = (new T)->b();
+                    $_c = (new T)->c(null);',
+                'assertions' => [
+                    '$_a' => 'T|null',
+                    '$_b' => 'T|null',
+                    '$_c' => 'T|null',
+                ],
+            ],
+            'typesContinuedOnTheNextLine' => [
+                'code' => '<?php
+                    final class A {}
+                    final class B {}
+
+                    /**
+                     * @mixin A
+                     *     |B
+                     */
+                    class T {
+                        /**
+                         * @return $this
+                         *     |null
+                         */
+                        public function a() { return null; }
+                    }
+
+                    /**
+                     * @return A
+                     *     |null
+                     */
+                    function r() { return null; }
+
+                    /**
+                     * @param A|
+                     *     null $x
+                     * @return A|null
+                     */
+                    function p($x) { return $x; }
+
+                    /**
+                     * @global A
+                     *     |null $_g
+                     */
+                    function g(): ?A { global $_g; return $_g; }
+
+                    /**
+                     * @global $this
+                     *     |null $_h
+                     */
+                    function h(): void {}
+
+                    /**
+                     * @param A &
+                     *     $x
+                     */
+                    function pr(&$x): A { return $x; }
+
+                    /**
+                     * @psalm-type Foo = A
+                     *     |null
+                     */
+                    final class F {
+                        /** @return Foo */
+                        public static function f() { return null; }
+                    }
+
+                    $_a = (new T)->a();
+                    $_r = r();
+                    $_p = p(null);
+                    $_f = F::f();',
+                'assertions' => [
+                    '$_a' => 'T|null',
+                    '$_r' => 'A|null',
+                    '$_p' => 'A|null',
+                    '$_f' => 'A|null',
+                ],
+            ],
+            'paramNameWithTrailingSemicolon' => [
+                'code' => '<?php
+                    /**
+                     * @param list<int> $list;
+                     * @return list<int>
+                     */
+                    function foo(array $list): array {
+                        return $list;
+                    }',
+            ],
+            'paramOutNameWithTrailingSemicolon' => [
+                'code' => '<?php
+                    /**
+                     * @param-out non-empty-string $s;
+                     */
+                    function foo(?string &$s): void {
+                        $s = "a";
+                    }
+
+                    foo($a);',
+                'assertions' => [
+                    '$a===' => 'non-empty-string',
+                ],
+            ],
+            'magicPropertyNameWithTrailingSemicolon' => [
+                'code' => '<?php
+                    /**
+                     * @property string $name;
+                     */
+                    final class A {
+                        public function __get(string $name) {
+                            return null;
+                        }
+                    }
+
+                    function foo(A $a): string {
+                        return $a->name;
+                    }',
+            ],
+            'globalNameWithTrailingSemicolon' => [
+                'code' => '<?php
+                    /**
+                     * @global int $foo;
+                     */
+                    function bar(): int {
+                        global $foo;
+
+                        return $foo;
+                    }',
+            ],
+            'fileLevelVarDocblockBeforeAUseStatement' => [
+                'code' => '<?php
+                    /**
+                     * @var string $foo
+                     * @var int $count
+                     */
+
+                    use stdClass;
+                    use Exception as E;
+
+                    echo strlen($foo) + $count;
+                    echo get_class(new stdClass());',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'globalInAFileDocumentingItsThisIsAnIncludedTemplate' => [
+                'code' => '<?php
+                    /**
+                     * @var stdClass $this
+                     */
+
+                    /** @var string $title */
+                    global $title;
+
+                    echo strlen($title);',
+            ],
+            'keyOfAndValueOfOfImportedTypeAlias' => [
+                'code' => '<?php
+                    /**
+                     * @psalm-type ATTRIBUTES=array{a: int, b: string}
+                     */
+                    class Foo {}
+
+                    /**
+                     * @psalm-import-type ATTRIBUTES from Foo as ATTRS
+                     */
+                    class Bar {
+                        /** @return key-of<ATTRS> */
+                        public static function key() {
+                            return "a";
+                        }
+
+                        /** @return value-of<ATTRS> */
+                        public static function value() {
+                            return 1;
+                        }
+                    }
+
+                    $key = Bar::key();
+                    $value = Bar::value();
+                    echo $key, $value;',
+                'assertions' => [
+                    '$key===' => "'a'|'b'",
+                    '$value===' => 'int|string',
+                ],
+            ],
         ];
     }
 
@@ -1635,6 +2026,63 @@ final class AnnotationTest extends TestCase
     public static function providerInvalidCodeParse(): iterable
     {
         return [
+            'removedSelfAccessingCallableWithParamsIsInvalid' => [
+                'code' => <<<'PHP'
+                    <?php
+                    /** @param self-accessing-callable(): int $f */
+                    function f(callable $f): void {}
+                    PHP,
+                'error_message' => 'InvalidDocblock',
+            ],
+            'removedSelfMutatingCallableWithParamsIsInvalid' => [
+                'code' => <<<'PHP'
+                    <?php
+                    /** @param self-mutating-callable(): int $f */
+                    function f(callable $f): void {}
+                    PHP,
+                'error_message' => 'InvalidDocblock',
+            ],
+            'removedSelfAccessingClosureWithParamsIsInvalid' => [
+                'code' => <<<'PHP'
+                    <?php
+                    /** @param self-accessing-Closure(): int $f */
+                    function f(callable $f): void {}
+                    PHP,
+                'error_message' => 'InvalidDocblock',
+            ],
+            'removedSelfMutatingClosureWithParamsIsInvalid' => [
+                'code' => <<<'PHP'
+                    <?php
+                    /** @param self-mutating-Closure(): int $f */
+                    function f(callable $f): void {}
+                    PHP,
+                'error_message' => 'InvalidDocblock',
+            ],
+            'psalmVarWithTooManyTemplateParamsOnProperty' => [
+                'code' => '<?php
+                    class Foo {}
+
+                    class Bar {
+                        /**
+                         * @var Foo|null
+                         * @psalm-var Foo<string>|null
+                         */
+                        private ?Foo $foo = null;
+                    }',
+                'error_message' => 'TooManyTemplateParams',
+            ],
+            'varWithTooManyTemplateParamsOnConstant' => [
+                'code' => '<?php
+                    class Foo {}
+
+                    class Bar {
+                        /** @var Foo<string>|null */
+                        public const ?Foo FOO = null;
+                    }',
+                'error_message' => 'TooManyTemplateParams',
+                'error_levels' => [],
+                'php_version' => '8.3',
+            ],
             'invalidParamDefaultStillReportedForAnotherFunction' => [
                 'code' => '<?php
                     /**
@@ -2419,6 +2867,91 @@ final class AnnotationTest extends TestCase
                 'error_message' => 'InvalidDocblock',
                 'error_levels' => [],
                 'php_version' => '8.0',
+            ],
+            'fileLevelVarDocblockBeforeAUseStatementOnlyDeclaresItsOwnVariables' => [
+                'code' => '<?php
+                    /**
+                     * @var string $foo
+                     */
+
+                    use stdClass;
+
+                    echo strlen($other);',
+                'error_message' => 'UndefinedGlobalVariable',
+            ],
+            'globalInAFileWithoutADocumentedThisIsInvalid' => [
+                'code' => '<?php
+                    /** @var string $title */
+                    global $title;',
+                'error_message' => 'InvalidGlobal',
+            ],
+            'keyOfImportedTypeAliasOfANonArrayIsInvalid' => [
+                'code' => '<?php
+                    /**
+                     * @psalm-type NUMBER=int
+                     */
+                    class Foo {}
+
+                    /**
+                     * @psalm-import-type NUMBER from Foo
+                     */
+                    class Bar {
+                        /** @param key-of<NUMBER> $key */
+                        public static function set($key): void {}
+                    }',
+                'error_message' => 'InvalidDocblock - src' . DIRECTORY_SEPARATOR . 'somefile.php:11:36 - Untemplated key-of param int should be an array',
+            ],
+            'valueOfImportedTypeAliasOfANonArrayIsInvalid' => [
+                'code' => '<?php
+                    /**
+                     * @psalm-type NUMBER=int
+                     */
+                    class Foo {}
+
+                    /**
+                     * @psalm-import-type NUMBER from Foo
+                     */
+                    class Bar {
+                        /** @param value-of<NUMBER> $value */
+                        public static function set($value): void {}
+                    }',
+                'error_message' => 'InvalidDocblock - src' . DIRECTORY_SEPARATOR . 'somefile.php:11:36 - Untemplated value-of param int should be an array',
+            ],
+            'keyOfImportedTypeAliasRejectsUnknownKey' => [
+                'code' => '<?php
+                    /**
+                     * @psalm-type ATTRIBUTES=array{a: int, b: string}
+                     */
+                    class Foo {}
+
+                    /**
+                     * @psalm-import-type ATTRIBUTES from Foo as ATTRS
+                     */
+                    class Bar {
+                        /** @param key-of<ATTRS> $key */
+                        public static function set($key): void {}
+                    }
+
+                    Bar::set("zzz");',
+                'error_message' => 'InvalidArgument',
+            ],
+            'valueOfImportedTypeAliasRejectsWrongValue' => [
+                'code' => '<?php
+                    /**
+                     * @psalm-type ATTRIBUTES=array{a: int, b: int}
+                     */
+                    class Foo {}
+
+                    /**
+                     * @psalm-import-type ATTRIBUTES from Foo as ATTRS
+                     */
+                    class Bar {
+                        /** @param value-of<ATTRS> $value */
+                        public static function set($value): void {}
+                    }
+
+                    Bar::set("str");',
+                'error_message' => 'InvalidArgument',
             ],
         ];
     }
