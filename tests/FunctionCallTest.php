@@ -3067,20 +3067,18 @@ final class FunctionCallTest extends TestCase
                 'ignored_issues' => [],
                 'php_version' => '7.4',
             ],
-            'filterVarIpGlobalRangeFlagOfBothValues' => [
+            'filterVarIpGlobalRangeFlag' => [
                 'code' => <<<'PHP'
                     <?php
                     /** @psalm-pure */
                     function isGlobalIp(string $ip): bool
                     {
-                        // 268435456 up to PHP 8.4, 536870912 from PHP 8.5
-                        return filter_var($ip, FILTER_VALIDATE_IP, 268435456) !== false
-                            || filter_var($ip, FILTER_VALIDATE_IP, 536870912) !== false;
+                        return filter_var($ip, FILTER_VALIDATE_IP, FILTER_FLAG_GLOBAL_RANGE) !== false;
                     }
                     PHP,
                 'assertions' => [],
                 'ignored_issues' => [],
-                'php_version' => '8.5',
+                'php_version' => '8.2',
             ],
         ];
     }
