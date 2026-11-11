@@ -21,6 +21,56 @@ final class ConditionalReturnTypeTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'conditionalOnNeverOfAnOptionalKeyIsTheKeyTypeWhenSet' => [
+                'code' => '<?php
+                    /**
+                     * @template TReturnOpt as "string"|"int"|"float"
+                     * @param array{ret?: TReturnOpt} $opts
+                     * @return (TReturnOpt is never ? "stringEmpty" : TReturnOpt)
+                     */
+                    function test(array $opts = []): string {
+                        return "stringEmpty";
+                    }
+
+                    $unset = test();
+                    $set = test(["ret" => "int"]);',
+                'assertions' => [
+                    '$unset===' => "'stringEmpty'",
+                    '$set===' => "'int'",
+                ],
+            ],
+            'conditionalOnNeverIsOnlyTrueForNever' => [
+                'code' => '<?php
+                    /**
+                     * @template T as string|int
+                     * @param T $t
+                     * @return (T is never ? "e" : T)
+                     */
+                    function f($t) { return $t; }
+
+                    $zero = f(0);
+                    $text = f("abc");',
+                'assertions' => [
+                    '$zero===' => '0',
+                    '$text===' => "'abc'",
+                ],
+            ],
+            'conditionalOnNotNeverKeepsTheTypeOfAValue' => [
+                'code' => '<?php
+                    /**
+                     * @template T as string|int
+                     * @param T $t
+                     * @return (T is not never ? T : "e")
+                     */
+                    function f($t) { return $t; }
+
+                    $zero = f(0);
+                    $text = f("abc");',
+                'assertions' => [
+                    '$zero===' => '0',
+                    '$text===' => "'abc'",
+                ],
+            ],
             'arrayAccessOnAParamWithAConditionalType' => [
                 'code' => '<?php
                     /**
@@ -2140,6 +2190,118 @@ final class ConditionalReturnTypeTest extends TestCase
                         }
                     }',
                 'ignored_issues' => ['InvalidArgument'],
+            ],
+            'paramConditionalOnStringKeepsStringableObjectInElseBranch' => [
+                'code' => '<?php
+                    final class H {
+                        public function __toString(): string {
+                            return "";
+                        }
+                    }
+
+                    /**
+                     * @param string|H $str
+                     * @psalm-return ($str is string ? string : H)
+                     */
+                    function strip($str) {
+                        return $str;
+                    }
+
+                    /** @param string|H $x */
+                    function f($x): ?string {
+                        $y = strip($x);
+                        if (!($y instanceof H)) {
+                            return $y;
+                        }
+
+                        return null;
+                    }
+
+                    $obj = strip(new H());
+                    $str = strip("a");',
+                'assertions' => [
+                    '$obj===' => 'H',
+                    '$str===' => 'string',
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'templateConditionalOnStringTreatsStringableObjectAsNotString' => [
+                'code' => '<?php
+                    class Model implements Stringable {
+                        public function __toString(): string {
+                            return "";
+                        }
+                    }
+
+                    /**
+                     * @template T
+                     * @param T $v
+                     * @return (T is string ? string : int)
+                     */
+                    function isString(mixed $v): string|int {
+                        throw new RuntimeException();
+                    }
+
+                    /**
+                     * @template T
+                     * @param T $v
+                     * @return (T is \'\'|\'0\' ? never : T)
+                     */
+                    function unlessFalsyString(mixed $v): mixed {
+                        return $v;
+                    }
+
+                    /**
+                     * @template T
+                     * @param T $v
+                     * @return (T is scalar ? "scalar" : "other")
+                     */
+                    function isScalar(mixed $v): string {
+                        throw new RuntimeException();
+                    }
+
+                    $model = new Model();
+                    $a = isString($model);
+                    $b = isString("x");
+                    $c = unlessFalsyString($model);
+                    $d = isScalar($model);
+                    $e = isScalar("x");',
+                'assertions' => [
+                    '$a===' => 'int',
+                    '$b===' => 'string',
+                    '$c===' => 'Model',
+                    '$d===' => '\'other\'',
+                    '$e===' => '\'scalar\'',
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'templateConditionalOnStringableStillMatchesObjects' => [
+                'code' => '<?php
+                    class Model implements Stringable {
+                        public function __toString(): string {
+                            return "";
+                        }
+                    }
+
+                    /**
+                     * @template T
+                     * @param T $v
+                     * @return (T is Stringable ? "yes" : "no")
+                     */
+                    function isStringable(mixed $v): string {
+                        throw new RuntimeException();
+                    }
+
+                    $a = isStringable(new Model());
+                    $b = isStringable("x");',
+                'assertions' => [
+                    '$a===' => '\'yes\'',
+                    '$b===' => '\'no\'',
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
             ],
         ];
     }

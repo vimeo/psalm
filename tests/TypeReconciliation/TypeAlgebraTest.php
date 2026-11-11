@@ -48,6 +48,38 @@ final class TypeAlgebraTest extends TestCase
                 'ignored_issues' => [],
                 'php_version' => '8.2',
             ],
+            'instanceofStoredInVariableNarrowsInIfBody' => [
+                'code' => '<?php
+                    interface Foo {}
+                    interface Bar {
+                        public function bar(): void;
+                    }
+
+                    function f(Foo $obj): void {
+                        $isBar = $obj instanceof Bar;
+
+                        if ($isBar) {
+                            $obj->bar();
+                        }
+                    }',
+            ],
+            'instanceofStoredInVariableNarrowsAfterEarlyReturn' => [
+                'code' => '<?php
+                    interface Foo {}
+                    interface Bar {
+                        public function bar(): void;
+                    }
+
+                    function f(Foo $obj): void {
+                        $isBar = $obj instanceof Bar;
+
+                        if (!$isBar) {
+                            return;
+                        }
+
+                        $obj->bar();
+                    }',
+            ],
             'nullsafeCallFalsyResultDoesNotNarrowReceiver' => [
                 'code' => <<<'PHP'
                     <?php
@@ -1622,6 +1654,42 @@ final class TypeAlgebraTest extends TestCase
                 'error_message' => 'InvalidReturnStatement',
                 'error_levels' => [],
                 'php_version' => '8.0',
+            ],
+            'instanceofStoredInVariableIsForgottenWhenTheVariableIsReassigned' => [
+                'code' => '<?php
+                    interface Foo {}
+                    interface Bar {
+                        public function bar(): void;
+                    }
+                    class Baz implements Foo {}
+
+                    function f(Foo $obj): void {
+                        $isBar = $obj instanceof Bar;
+                        $obj = new Baz();
+
+                        if ($isBar) {
+                            $obj->bar();
+                        }
+                    }',
+                'error_message' => 'UndefinedMethod',
+            ],
+            'instanceofStoredInVariableDoesNotNarrowTheElseBranch' => [
+                'code' => '<?php
+                    interface Foo {}
+                    interface Bar {
+                        public function bar(): void;
+                    }
+
+                    function f(Foo $obj): void {
+                        $isBar = $obj instanceof Bar;
+
+                        if ($isBar) {
+                            echo "bar";
+                        } else {
+                            $obj->bar();
+                        }
+                    }',
+                'error_message' => 'UndefinedInterfaceMethod',
             ],
             'booleanVariableNarrowingNotKeptInElseOfOr' => [
                 'code' => <<<'PHP'
