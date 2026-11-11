@@ -6,15 +6,19 @@ namespace Psalm\Internal\Analyzer\Statements\Expression;
 
 use PhpParser;
 use Psalm\CodeLocation;
+use Psalm\Codebase;
 use Psalm\Context;
 use Psalm\Internal\Analyzer\Statements\ExpressionAnalyzer;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
+use Psalm\Internal\Scope\TryScope;
 use Psalm\Internal\Type\Comparator\UnionTypeComparator;
 use Psalm\Issue\InvalidThrow;
 use Psalm\IssueBuffer;
 use Psalm\Type;
 use Psalm\Type\Atomic\TNamedObject;
 use Psalm\Type\Union;
+
+use function strtolower;
 
 /**
  * @internal
@@ -34,12 +38,19 @@ final class ThrowAnalyzer
         $context->inside_throw = false;
         $context->has_returned = true;
 
-        // a branch that throws never joins the rest of the try body, but what it assigned can still be seen
-        if ($context->try_scope !== null) {
+        // a branch that throws never joins the rest of the try body, but where a catch can take the exception what it
+        // assigned can still be seen
+        $try_scope = self::getCatchingTryScope(
+            $statements_analyzer->getCodebase(),
+            $context->try_scope,
+            $statements_analyzer->node_data->getType($stmt->expr),
+        );
+
+        if ($try_scope !== null) {
             foreach ($context->assigned_var_ids as $var_id => $_) {
                 if (isset($context->vars_in_scope[$var_id])) {
-                    $context->try_scope->parent_nodes[$var_id] = [
-                        ...($context->try_scope->parent_nodes[$var_id] ?? []),
+                    $try_scope->parent_nodes[$var_id] = [
+                        ...($try_scope->parent_nodes[$var_id] ?? []),
                         ...$context->vars_in_scope[$var_id]->parent_nodes,
                     ];
                 }
@@ -99,5 +110,47 @@ final class ThrowAnalyzer
         $statements_analyzer->node_data->setType($stmt, Type::getNever());
 
         return true;
+    }
+
+    /**
+     * The innermost try with a catch that may take the thrown exception: the exception leaves the ones before it
+     */
+    private static function getCatchingTryScope(
+        Codebase $codebase,
+        ?TryScope $try_scope,
+        ?Union $thrown_type,
+    ): ?TryScope {
+        while ($try_scope !== null) {
+            foreach ($try_scope->catch_classes as $catch_class) {
+                if (self::mayBeCaughtBy($codebase, $thrown_type, $catch_class)) {
+                    return $try_scope;
+                }
+            }
+
+            $try_scope = $try_scope->outer;
+        }
+
+        return null;
+    }
+
+    private static function mayBeCaughtBy(Codebase $codebase, ?Union $thrown_type, string $catch_class): bool
+    {
+        if ($thrown_type === null || !$codebase->classOrInterfaceExists($catch_class)) {
+            return true;
+        }
+
+        foreach ($thrown_type->getAtomicTypes() as $atomic_type) {
+            if (!$atomic_type instanceof TNamedObject
+                || !$codebase->classOrInterfaceExists($atomic_type->value)
+                || strtolower($atomic_type->value) === $catch_class
+                || $codebase->classExtendsOrImplements($atomic_type->value, $catch_class)
+                // a thrown supertype may be an instance of the caught class
+                || $codebase->classExtendsOrImplements($catch_class, $atomic_type->value)
+            ) {
+                return true;
+            }
+        }
+
+        return false;
     }
 }

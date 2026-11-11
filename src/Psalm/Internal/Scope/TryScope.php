@@ -17,4 +17,16 @@ final class TryScope
      * @var array<string, array<string, DataFlowNode>>
      */
     public array $parent_nodes = [];
+
+    /**
+     * The classes the catches of the try name, in lowercase
+     *
+     * @var list<string>
+     */
+    public array $catch_classes = [];
+
+    /**
+     * The try the body of this one is in
+     */
+    public ?TryScope $outer = null;
 }

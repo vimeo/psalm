@@ -81,6 +81,16 @@ final class TryAnalyzer
         $was_inside_try = $context->inside_try;
         $outer_try_scope = $context->try_scope;
         $try_scope = new TryScope();
+        $try_scope->outer = $outer_try_scope;
+
+        foreach ($stmt->catches as $catch) {
+            foreach ($catch->types as $catch_type) {
+                $try_scope->catch_classes[] = strtolower($codebase->classlikes->getUnAliasedName(
+                    ClassLikeAnalyzer::getFQCLNFromNameObject($catch_type, $statements_analyzer->getAliases()),
+                ));
+            }
+        }
+
         $context->inside_try = true;
         $context->try_scope = $try_scope;
 
