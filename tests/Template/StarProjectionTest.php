@@ -2892,26 +2892,22 @@ final class StarProjectionTest extends TestCase
      */
     public static function providerTemplateAtomicByPosition(): array
     {
-        // the closure's parameter keeps `properties-of<Model>` unexpanded, as on a `Holder<object, ..., Model>`
-        $properties_handed_to_callback = 'Argument 1 of Holder::map expects Closure[impure](array{id: int}):array{id: '
-            . 'int}, but Closure[pure](properties-of<Model>):array{id: int} provided';
-
         $rows = [
-            [TTemplateParam::class, 'T', 'new stdClass()', 'object', 'object', 'stdClass'],
-            [TTemplateParamClass::class, 'class-string<T>', 'stdClass::class', 'class-string', 'class-string', 'stdClass::class'],
-            [TTemplateKeyOf::class, 'key-of<TArr>', '"a"', "'a'|'b'", "'a'|'b'", "'a'"],
-            [TTemplateValueOf::class, 'value-of<TArr>', 'new DateTime()', 'DateTime|Model', 'DateTime|Model', 'DateTime'],
-            [TTemplatePropertiesOf::class, 'properties-of<TModel>', '["id" => 1]', 'array{id: int}', $properties_handed_to_callback, 'array{id: 1}'],
-            [TTemplateIndexedAccess::class, 'TArr[TKey]', 'new DateTime()', 'DateTime|Model', 'DateTime|Model', 'DateTime'],
-            [TConditional::class, '(T is DateTime ? int : string)', '1', 'int|string', 'int|string', '1'],
+            [TTemplateParam::class, 'T', 'new stdClass()', 'object', 'stdClass'],
+            [TTemplateParamClass::class, 'class-string<T>', 'stdClass::class', 'class-string', 'stdClass::class'],
+            [TTemplateKeyOf::class, 'key-of<TArr>', '"a"', "'a'|'b'", "'a'"],
+            [TTemplateValueOf::class, 'value-of<TArr>', 'new DateTime()', 'DateTime|Model', 'DateTime'],
+            [TTemplatePropertiesOf::class, 'properties-of<TModel>', '["id" => 1]', 'array{id: int}', 'array{id: 1}'],
+            [TTemplateIndexedAccess::class, 'TArr[TKey]', 'new DateTime()', 'DateTime|Model', 'DateTime'],
+            [TConditional::class, '(T is DateTime ? int : string)', '1', 'int|string', '1'],
         ];
 
         $cases = [];
 
-        foreach ($rows as [$atomic_class, $type, $written, $read, $handed_to_callback, $written_type]) {
+        foreach ($rows as [$atomic_class, $type, $written, $read, $written_type]) {
             $positions = [
                 'read' => ['$result = holder()->read();', $read],
-                'callback' => ['$result = holder()->map(fn($value) => $value);', $handed_to_callback],
+                'callback' => ['$result = holder()->map(fn($value) => $value);', $read],
                 'write' => [
                     'holder()->write(' . $written . ');',
                     'Argument 1 of Holder::write expects never, but ' . $written_type . ' provided',
