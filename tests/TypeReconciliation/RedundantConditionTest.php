@@ -1149,6 +1149,14 @@ final class RedundantConditionTest extends TestCase
                 'ignored_issues' => ['RiskyTruthyFalsyComparison'],
                 'php_version' => '8.1',
             ],
+            'issetOfAnOffsetOfANullableShapeAfterAnotherOffsetIsAssigned' => [
+                'code' => '<?php
+                    /** @param array{y: int}|null $a */
+                    function f(?array $a): int {
+                        $a["x"] = 1;
+                        return $a["y"] ?? 0;
+                    }',
+            ],
             'issetOfAnArrayOffsetThatMayBeUnset' => [
                 'code' => '<?php
                     /**
