@@ -23,6 +23,66 @@ final class ForeachTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'foreachOverListKeepsTheEmptyStringOfAnEmptyOrNumericString' => [
+                'code' => '<?php
+                    /** @var list<array{foo: ""|numeric-string}> $rows */
+                    $rows = [];
+                    $row = ["foo" => "1"];
+                    foreach ($rows as $row) {
+                        if ("" === $row["foo"]) {
+                            throw new Exception("empty");
+                        }
+                    }
+
+                    /** @var non-empty-list<""|numeric-string> $values */
+                    $values = ["1"];
+                    $value = "1";
+                    foreach ($values as $value) {
+                    }',
+                'assertions' => [
+                    '$row===' => "array{foo: numeric-string}",
+                    '$value===' => "''|numeric-string",
+                ],
+            ],
+            'postDecrementInTheConditionOfAnIfThatBreaksOverAConcreteArray' => [
+                'code' => '<?php
+                    $count = 3;
+                    $a = [0, 1, 2, 3, 4, 5];
+
+                    foreach ($a as $_) {
+                        if ($count-- === 0) {
+                            break;
+                        }
+                    }',
+            ],
+            'postDecrementInTheConditionOfAnIfThatBreaks' => [
+                'code' => '<?php
+                    /** @param list<int> $items */
+                    function f(array $items): void {
+                        $count = 3;
+
+                        foreach ($items as $_) {
+                            if ($count-- === 0) {
+                                break;
+                            }
+                        }
+                    }',
+            ],
+            'assignmentInTheConditionOfAnIfThatBreaks' => [
+                'code' => '<?php
+                    /** @param list<int> $items */
+                    function f(array $items): int {
+                        foreach ($items as $_) {
+                            if (($found = rand(0, 3)) === 0) {
+                                break;
+                            }
+
+                            /** @psalm-check-type-exact $found = int<1, 3> */;
+                        }
+
+                        return 1;
+                    }',
+            ],
             'foreachOverNullableOrFalsableMayNotRun' => [
                 'code' => <<<'PHP'
                     <?php
