@@ -23,59 +23,26 @@ final class ForeachTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
-            'foreachBreakOfSwitchLeavingAVariableUndefinedIsNotABreakOfTheLoop' => [
+            'foreachOverListKeepsTheEmptyStringOfAnEmptyOrNumericString' => [
                 'code' => '<?php
-                    foreach ([1, 2] as $x) {
-                        if (rand(0, 1)) {
-                            $a = 1;
-                            break;
-                        }
-
-                        $a = 2;
-
-                        switch ($x) {
-                            case 1:
-                                break;
+                    /** @var list<array{foo: ""|numeric-string}> $rows */
+                    $rows = [];
+                    $row = ["foo" => "1"];
+                    foreach ($rows as $row) {
+                        if ("" === $row["foo"]) {
+                            throw new Exception("empty");
                         }
                     }
 
-                    echo $a;',
-            ],
-            'foreachBreakOfSwitchIsNotABreakOfTheLoop' => [
-                'code' => '<?php
-                    foreach ([1, 2] as $x) {
-                        switch ($x) {
-                            case 1:
-                                break;
-                            default:
-                                break;
-                        }
-
-                        $a = 1;
-
-                        if (rand(0, 1)) {
-                            break;
-                        }
-                    }
-
-                    echo $a;',
-            ],
-            'foreachDefinedBeforeEveryBreak' => [
-                'code' => '<?php
-                    foreach ([1, 2, 3, 4] as $_) {
-                        if (rand(0, 1)) {
-                            $car = "Audi";
-                            break;
-                        }
-
-                        $car = "Volvo";
-
-                        if (rand(0, 1)) {
-                            break;
-                        }
-                    }
-
-                    echo $car;',
+                    /** @var non-empty-list<""|numeric-string> $values */
+                    $values = ["1"];
+                    $value = "1";
+                    foreach ($values as $value) {
+                    }',
+                'assertions' => [
+                    '$row===' => "array{foo: numeric-string}",
+                    '$value===' => "''|numeric-string",
+                ],
             ],
             'postDecrementInTheConditionOfAnIfThatBreaksOverAConcreteArray' => [
                 'code' => '<?php
@@ -1701,20 +1668,48 @@ final class ForeachTest extends TestCase
                 'ignored_issues' => [],
                 'php_version' => '8.0',
             ],
-        ];
-    }
+            'foreachBreakOfSwitchLeavingAVariableUndefinedIsNotABreakOfTheLoop' => [
+                'code' => '<?php
+                    foreach ([1, 2] as $x) {
+                        if (rand(0, 1)) {
+                            $a = 1;
+                            break;
+                        }
 
-    /**
-     * @psalm-pure
-     */
-    #[Override]
-    public static function providerInvalidCodeParse(): iterable
-    {
-        return [
-            'foreachBreakBeforeDefinitionAndBreakAfter' => [
+                        $a = 2;
+
+                        switch ($x) {
+                            case 1:
+                                break;
+                        }
+                    }
+
+                    echo $a;',
+            ],
+            'foreachBreakOfSwitchIsNotABreakOfTheLoop' => [
+                'code' => '<?php
+                    foreach ([1, 2] as $x) {
+                        switch ($x) {
+                            case 1:
+                                break;
+                            default:
+                                break;
+                        }
+
+                        $a = 1;
+
+                        if (rand(0, 1)) {
+                            break;
+                        }
+                    }
+
+                    echo $a;',
+            ],
+            'foreachDefinedBeforeEveryBreak' => [
                 'code' => '<?php
                     foreach ([1, 2, 3, 4] as $_) {
                         if (rand(0, 1)) {
+                            $car = "Audi";
                             break;
                         }
 
@@ -1726,8 +1721,17 @@ final class ForeachTest extends TestCase
                     }
 
                     echo $car;',
-                'error_message' => 'PossiblyUndefinedGlobalVariable - src' . DIRECTORY_SEPARATOR . 'somefile.php:14:26',
             ],
+        ];
+    }
+
+    /**
+     * @psalm-pure
+     */
+    #[Override]
+    public static function providerInvalidCodeParse(): iterable
+    {
+        return [
             'iteratorCurrentNullStaysWhenTheTemplateValueIsNullable' => [
                 'code' => '<?php
                     class Foo {
@@ -2066,6 +2070,23 @@ final class ForeachTest extends TestCase
                     foreach ($gen as $i) {}
                 PHP,
                 'error_message' => 'InvalidIterator',
+            ],
+            'foreachBreakBeforeDefinitionAndBreakAfter' => [
+                'code' => '<?php
+                    foreach ([1, 2, 3, 4] as $_) {
+                        if (rand(0, 1)) {
+                            break;
+                        }
+
+                        $car = "Volvo";
+
+                        if (rand(0, 1)) {
+                            break;
+                        }
+                    }
+
+                    echo $car;',
+                'error_message' => 'PossiblyUndefinedGlobalVariable - src' . DIRECTORY_SEPARATOR . 'somefile.php:14:26',
             ],
         ];
     }

@@ -2191,6 +2191,35 @@ final class ConditionalReturnTypeTest extends TestCase
                     }',
                 'ignored_issues' => ['InvalidArgument'],
             ],
+            'conditionalTrueBranchTemplateTakesTheBoundOfItsCondition' => [
+                'code' => '<?php
+                    interface Animal {}
+
+                    /** @template TModel of Animal */
+                    final class Zoo
+                    {
+                        /**
+                         * @template TVal
+                         * @param callable(): TVal $cb
+                         * @return (TVal is Animal ? self<TVal> : string)
+                         */
+                        public function map(callable $cb): mixed {
+                            throw new RuntimeException();
+                        }
+
+                        /**
+                         * @template TVal of Countable
+                         * @param callable(): TVal $cb
+                         * @return (TVal is Animal ? self<TVal> : string)
+                         */
+                        public function mapCountable(callable $cb): mixed {
+                            throw new RuntimeException();
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
             'paramConditionalOnStringKeepsStringableObjectInElseBranch' => [
                 'code' => '<?php
                     final class H {
@@ -2313,6 +2342,42 @@ final class ConditionalReturnTypeTest extends TestCase
     public static function providerInvalidCodeParse(): iterable
     {
         return [
+            'classTemplateBoundedByStringConditionalOnNonFinalStringableClass' => [
+                'code' => '<?php
+                    class Mdl implements Stringable {
+                        public function __toString(): string {
+                            return "";
+                        }
+                    }
+
+                    function sink(int $_a): void {}
+
+                    /**
+                     * @template T of string
+                     * @template U of object
+                     */
+                    class Pg {
+                        /** @return (T is Mdl ? list<T> : array<T>) */
+                        public function strings(): array {
+                            return [];
+                        }
+
+                        /** @return (U is Mdl ? list<U> : array<U>) */
+                        public function objects(): array {
+                            return [];
+                        }
+
+                        public function run(): void {
+                            $a = [$this->strings(), $this->objects()];
+                            sink($a);
+                        }
+                    }',
+                // only the object bound still intersects with the class
+                'error_message' => 'Argument 1 of sink expects int, but list{array<array-key, T:Pg as string>,'
+                    . ' array<array-key, (U:Pg as object)&Mdl|(U:Pg as object)>} provided',
+                'error_levels' => [],
+                'php_version' => '8.0',
+            ],
             'conditionalReturnTypeWithoutIsTypeIsReportedInsteadOfCrashing' => [
                 'code' => '<?php
                     /**
@@ -2377,6 +2442,26 @@ final class ConditionalReturnTypeTest extends TestCase
                     }',
                 'error_message' => 'Method QueryBuilder::extra does not exist',
                 'error_levels' => ['InvalidArgument'],
+            ],
+            'conditionalElseBranchTemplateKeepsItsBound' => [
+                'code' => '<?php
+                    interface Animal {}
+
+                    /** @template TModel of Animal */
+                    final class Zoo
+                    {
+                        /**
+                         * @template TVal
+                         * @param callable(): TVal $cb
+                         * @return (TVal is Animal ? string : self<TVal>)
+                         */
+                        public function map(callable $cb): mixed {
+                            throw new RuntimeException();
+                        }
+                    }',
+                'error_message' => 'InvalidTemplateParam',
+                'error_levels' => [],
+                'php_version' => '8.1',
             ],
         ];
     }
