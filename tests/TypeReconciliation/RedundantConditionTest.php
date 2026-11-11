@@ -23,97 +23,30 @@ final class RedundantConditionTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
-            'instanceofOfAMoreSpecificTypeIsNotRedundant' => [
-                'code' => '<?php
-                    interface I {}
-                    interface J extends I {}
-                    class C {}
-                    class B extends C {}
-
-                    function ofInterface(I $o): bool {
-                        return $o instanceof J;
-                    }
-
-                    function ofClass(C $o): bool {
-                        return $o instanceof B;
-                    }
-
-                    function ofUnrelatedInterface(C $o): bool {
-                        return $o instanceof I;
-                    }
-
-                    function ofNullable(?I $o): bool {
-                        return $o instanceof I;
-                    }',
-            ],
-            'instanceofOfAClassStringVariableNarrowsToItsBound' => [
-                'code' => '<?php
-                    interface I {}
-
-                    /** @param class-string<I> $c */
-                    function f(object $o, string $c): ?I {
-                        $a = $o instanceof $c ? $o : null;
-
-                        return $a;
-                    }',
-            ],
-            'instanceofOfAClassStringVariableDoesNotNarrowTheElseBranch' => [
-                'code' => '<?php
-                    class C {}
-
-                    /** @param class-string<C> $c */
-                    function f(C $o, string $c): void {
-                        if ($o instanceof $c) {
-                            $a = $o;
-                        } else {
-                            $b = $o;
-                        }
-
-                        $x = $o instanceof $c ? $o : null;
-                        $y = $o instanceof $c ? null : $o;
-                    }
-
-                    /** @param class-string<C> $c */
-                    function g(C $o, string $c): C {
-                        if ($o instanceof $c) {
-                            return $o;
-                        }
-
-                        return $o;
-                    }',
-            ],
-            'instanceofOfAClassStringVariableIsNeverRedundant' => [
-                'code' => '<?php
-                    interface I {}
-                    class C {}
-                    final class B extends C {}
-                    final class D extends C {}
-
-                    /** @param class-string<C> $c */
-                    function ofClass(C $o, string $c): void {
-                        if ($o instanceof $c) {
-                            echo "yes";
+            'ctypeCheckOfNumericStringExpressionIsNotRedundant' => [
+                'code' => <<<'PHP'
+                    <?php
+                    function negated(int $id): void {
+                        if (!ctype_digit("$id")) {
+                            throw new InvalidArgumentException("Bad id $id");
                         }
                     }
 
-                    /** @param class-string<I> $c */
-                    function ofInterface(I $o, string $c): void {
-                        if ($o instanceof $c) {
-                            echo "yes";
+                    function positive(int $id): void {
+                        if (ctype_digit("$id")) {
+                            echo "non-negative";
                         }
                     }
 
-                    /**
-                     * @template T of C
-                     * @param class-string<T> $c
-                     */
-                    function ofTemplate(C $o, string $c): void {
-                        if ($o instanceof $c) {
-                            echo "yes";
+                    function lower(): void {
+                        if (ctype_lower("abc" . rand())) {
+                            echo "lower";
                         }
                     }
-
-                    ofClass(new B(), D::class);',
+                    PHP,
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
             ],
             'negatedInstanceofOfAGenericSubclassOnAnInterfaceWithTemplateArguments' => [
                 'code' => '<?php
@@ -1156,6 +1089,98 @@ final class RedundantConditionTest extends TestCase
                         assert(!!$p);
                     }',
             ],
+            'instanceofOfAMoreSpecificTypeIsNotRedundant' => [
+                'code' => '<?php
+                    interface I {}
+                    interface J extends I {}
+                    class C {}
+                    class B extends C {}
+
+                    function ofInterface(I $o): bool {
+                        return $o instanceof J;
+                    }
+
+                    function ofClass(C $o): bool {
+                        return $o instanceof B;
+                    }
+
+                    function ofUnrelatedInterface(C $o): bool {
+                        return $o instanceof I;
+                    }
+
+                    function ofNullable(?I $o): bool {
+                        return $o instanceof I;
+                    }',
+            ],
+            'instanceofOfAClassStringVariableNarrowsToItsBound' => [
+                'code' => '<?php
+                    interface I {}
+
+                    /** @param class-string<I> $c */
+                    function f(object $o, string $c): ?I {
+                        $a = $o instanceof $c ? $o : null;
+
+                        return $a;
+                    }',
+            ],
+            'instanceofOfAClassStringVariableDoesNotNarrowTheElseBranch' => [
+                'code' => '<?php
+                    class C {}
+
+                    /** @param class-string<C> $c */
+                    function f(C $o, string $c): void {
+                        if ($o instanceof $c) {
+                            $a = $o;
+                        } else {
+                            $b = $o;
+                        }
+
+                        $x = $o instanceof $c ? $o : null;
+                        $y = $o instanceof $c ? null : $o;
+                    }
+
+                    /** @param class-string<C> $c */
+                    function g(C $o, string $c): C {
+                        if ($o instanceof $c) {
+                            return $o;
+                        }
+
+                        return $o;
+                    }',
+            ],
+            'instanceofOfAClassStringVariableIsNeverRedundant' => [
+                'code' => '<?php
+                    interface I {}
+                    class C {}
+                    final class B extends C {}
+                    final class D extends C {}
+
+                    /** @param class-string<C> $c */
+                    function ofClass(C $o, string $c): void {
+                        if ($o instanceof $c) {
+                            echo "yes";
+                        }
+                    }
+
+                    /** @param class-string<I> $c */
+                    function ofInterface(I $o, string $c): void {
+                        if ($o instanceof $c) {
+                            echo "yes";
+                        }
+                    }
+
+                    /**
+                     * @template T of C
+                     * @param class-string<T> $c
+                     */
+                    function ofTemplate(C $o, string $c): void {
+                        if ($o instanceof $c) {
+                            echo "yes";
+                        }
+                    }
+
+                    ofClass(new B(), D::class);',
+            ],
         ];
     }
 
@@ -1166,52 +1191,6 @@ final class RedundantConditionTest extends TestCase
     public static function providerInvalidCodeParse(): iterable
     {
         return [
-            'instanceofOfALiteralClassStringAlreadyImplied' => [
-                'code' => '<?php
-                    interface I {}
-
-                    function f(I $o): void {
-                        $class = I::class;
-                        if ($o instanceof $class) {
-                            echo "yes";
-                        }
-                    }',
-                'error_message' => 'RedundantCondition',
-            ],
-            'instanceofOfAClassAlreadyImplied' => [
-                'code' => '<?php
-                    class C {}
-
-                    function f(C $o): void {
-                        if ($o instanceof C) {
-                            echo "yes";
-                        }
-                    }',
-                'error_message' => 'RedundantCondition',
-            ],
-            'instanceofOfAParentInterfaceAlreadyImplied' => [
-                'code' => '<?php
-                    interface I {}
-                    interface J extends I {}
-
-                    function f(J $o): void {
-                        if ($o instanceof I) {
-                            echo "yes";
-                        }
-                    }',
-                'error_message' => 'RedundantCondition',
-            ],
-            'instanceofOfAnInterfaceAlreadyImplied' => [
-                'code' => '<?php
-                    interface I {}
-
-                    function f(I $o): void {
-                        if ($o instanceof I) {
-                            echo "yes";
-                        }
-                    }',
-                'error_message' => 'RedundantCondition',
-            ],
             'inequalityWithAnEmptyArrayOfANonEmptyArrayIsRedundant' => [
                 'code' => '<?php
                     $a = [1, 2];
@@ -1926,6 +1905,52 @@ final class RedundantConditionTest extends TestCase
                      */
 
                     if (array_key_exists("10", $a) && array_key_exists(10, $a)) {}',
+                'error_message' => 'RedundantCondition',
+            ],
+            'instanceofOfALiteralClassStringAlreadyImplied' => [
+                'code' => '<?php
+                    interface I {}
+
+                    function f(I $o): void {
+                        $class = I::class;
+                        if ($o instanceof $class) {
+                            echo "yes";
+                        }
+                    }',
+                'error_message' => 'RedundantCondition',
+            ],
+            'instanceofOfAClassAlreadyImplied' => [
+                'code' => '<?php
+                    class C {}
+
+                    function f(C $o): void {
+                        if ($o instanceof C) {
+                            echo "yes";
+                        }
+                    }',
+                'error_message' => 'RedundantCondition',
+            ],
+            'instanceofOfAParentInterfaceAlreadyImplied' => [
+                'code' => '<?php
+                    interface I {}
+                    interface J extends I {}
+
+                    function f(J $o): void {
+                        if ($o instanceof I) {
+                            echo "yes";
+                        }
+                    }',
+                'error_message' => 'RedundantCondition',
+            ],
+            'instanceofOfAnInterfaceAlreadyImplied' => [
+                'code' => '<?php
+                    interface I {}
+
+                    function f(I $o): void {
+                        if ($o instanceof I) {
+                            echo "yes";
+                        }
+                    }',
                 'error_message' => 'RedundantCondition',
             ],
         ];
