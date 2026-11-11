@@ -1622,6 +1622,104 @@ final class ConfigTest extends DeferredAnalyzerTestCase
         }
     }
 
+    public function testMutableDependencySuppressedForAReferencedClass(): void
+    {
+        $this->project_analyzer = $this->getProjectAnalyzerWithConfig(
+            TestConfig::loadFromXML(
+                dirname(__DIR__, 2),
+                '<?xml version="1.0"?>
+                <psalm>
+                    <issueHandlers>
+                        <MutableDependency>
+                            <errorLevel type="suppress">
+                                <referencedClass name="AbstractSerializable" />
+                            </errorLevel>
+                        </MutableDependency>
+                    </issueHandlers>
+                </psalm>',
+            ),
+        );
+
+        $file_path = (string) getcwd() . '/src/somefile.php';
+
+        $this->addFile(
+            $file_path,
+            '<?php
+                abstract class AbstractSerializable {}
+
+                /** @psalm-immutable */
+                final class Document extends AbstractSerializable {}',
+        );
+
+        $this->analyzeFile($file_path, new Context());
+    }
+
+    public function testImmutableDependencySuppressedForAReferencedClass(): void
+    {
+        $this->project_analyzer = $this->getProjectAnalyzerWithConfig(
+            TestConfig::loadFromXML(
+                dirname(__DIR__, 2),
+                '<?xml version="1.0"?>
+                <psalm>
+                    <issueHandlers>
+                        <ImmutableDependency>
+                            <errorLevel type="suppress">
+                                <referencedClass name="ImmutableParent" />
+                            </errorLevel>
+                        </ImmutableDependency>
+                    </issueHandlers>
+                </psalm>',
+            ),
+        );
+
+        $file_path = (string) getcwd() . '/src/somefile.php';
+
+        $this->addFile(
+            $file_path,
+            '<?php
+                /** @psalm-immutable */
+                abstract class ImmutableParent {}
+
+                final class Child extends ImmutableParent {}',
+        );
+
+        $this->analyzeFile($file_path, new Context());
+    }
+
+    public function testMutableDependencyNotSuppressedForAnotherReferencedClass(): void
+    {
+        $this->expectExceptionMessage('MutableDependency');
+        $this->expectException(CodeException::class);
+        $this->project_analyzer = $this->getProjectAnalyzerWithConfig(
+            TestConfig::loadFromXML(
+                dirname(__DIR__, 2),
+                '<?xml version="1.0"?>
+                <psalm>
+                    <issueHandlers>
+                        <MutableDependency>
+                            <errorLevel type="suppress">
+                                <referencedClass name="SomethingElse" />
+                            </errorLevel>
+                        </MutableDependency>
+                    </issueHandlers>
+                </psalm>',
+            ),
+        );
+
+        $file_path = (string) getcwd() . '/src/somefile.php';
+
+        $this->addFile(
+            $file_path,
+            '<?php
+                abstract class AbstractSerializable {}
+
+                /** @psalm-immutable */
+                final class Document extends AbstractSerializable {}',
+        );
+
+        $this->analyzeFile($file_path, new Context());
+    }
+
     public function testValidThrowInvalidCatch(): void
     {
         $this->expectExceptionMessage('InvalidCatch');
