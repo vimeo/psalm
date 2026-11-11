@@ -1314,6 +1314,92 @@ final class IssetTest extends TestCase
                         }
                     }',
             ],
+            'comparisonOfAnItemWithAUnionKeyKeepsTheTypesOfItemsOfOtherTypes' => [
+                'code' => <<<'PHP'
+                    <?php
+                    /**
+                     * @param array{a: int, b: string} $p
+                     * @param 'a'|'b' $key
+                     */
+                    function comparison(array $p, string $key): int {
+                        if ($p[$key] === $p[$key]) {
+                            /** @psalm-check-type-exact $p = array{a: int, b: string} */
+                            return 1;
+                        }
+
+                        return 0;
+                    }
+
+                    /**
+                     * @param array{a: int, b: string} $p
+                     * @param 'a'|'b' $key
+                     */
+                    function issetOf(array $p, string $key): void {
+                        if (isset($p[$key])) {
+                            /** @psalm-check-type-exact $p = array{a: int, b: string} */
+                        }
+                    }
+
+                    /**
+                     * @param array{a: int, b: string} $p
+                     * @param 'a'|'b' $key
+                     */
+                    function isInt(array $p, string $key): void {
+                        if (is_int($p[$key])) {
+                            /** @psalm-check-type-exact $p = array{a: int, b: string} */
+                        }
+                    }
+                    PHP,
+                'assertions' => [],
+                'ignored_issues' => ['RedundantCondition', 'RedundantConditionGivenDocblockType', 'TypeDoesNotContainType'],
+                'php_version' => '8.1',
+            ],
+            'comparisonOfAnItemWithAUnionKeyKeepsTheOtherItemsDefined' => [
+                'code' => <<<'PHP'
+                    <?php
+                    /**
+                     * @param array{asd: int, qwe: int} $p
+                     * @param 'asd'|'qwe' $key
+                     */
+                    function comparison(array $p, string $key): int {
+                        if ($p[$key] < 0) {
+                            /** @psalm-check-type-exact $p = array{asd: int, qwe: int} */
+                            return 1;
+                        }
+
+                        /** @psalm-check-type-exact $p = array{asd: int, qwe: int} */
+                        return 0;
+                    }
+
+                    /**
+                     * @param array{asd: int, qwe: int} $p
+                     * @param list<'asd'|'qwe'> $keys
+                     */
+                    function loop(array $p, array $keys): int {
+                        $negatives = 0;
+                        foreach ($keys as $key) {
+                            if ($p[$key] < 0) {
+                                ++$negatives;
+                            }
+                        }
+
+                        return $negatives;
+                    }
+
+                    /**
+                     * @param array{asd?: int, qwe?: int} $p
+                     * @param 'asd'|'qwe' $key
+                     */
+                    function optional(array $p, string $key): void {
+                        if (isset($p[$key])) {
+                            /** @psalm-check-type-exact $p = array{asd?: int, qwe?: int} */
+                        }
+                    }
+                    PHP,
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
         ];
     }
 
