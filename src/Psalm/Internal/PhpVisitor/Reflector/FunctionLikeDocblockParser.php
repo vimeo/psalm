@@ -175,22 +175,24 @@ final class FunctionLikeDocblockParser
                 }
 
                 if (count($line_parts) > 1) {
-                    if (preg_match('/^(\.\.\.)?&?\$[A-Za-z0-9_\x80-\xff]+,?$/', $line_parts[1])
+                    if (preg_match('/^(\.\.\.)?&?\$[A-Za-z0-9_\x80-\xff]+[,;]?$/', $line_parts[1])
                         && $line_parts[0][0] !== '{'
                     ) {
                         if ($line_parts[1][0] === '&') {
                             $line_parts[1] = substr($line_parts[1], 1);
                         }
 
-                        if ($line_parts[0][0] === '$' && !preg_match('/^\$this(\||$)/', $line_parts[0])) {
+                        if ($line_parts[0][0] === '$'
+                            && !preg_match('/^\$this *(\||$)/', CommentAnalyzer::sanitizeDocblockType($line_parts[0]))
+                        ) {
                             throw new IncorrectDocblockException('Misplaced variable');
                         }
 
-                        $line_parts[1] = (string) preg_replace('/,$/', '', $line_parts[1], 1);
+                        $line_parts[1] = (string) preg_replace('/[,;]$/', '', $line_parts[1], 1);
 
                         $info->globals[] = [
                             'name' => $line_parts[1],
-                            'type' => $line_parts[0],
+                            'type' => CommentAnalyzer::sanitizeDocblockType($line_parts[0]),
                             'line_number' => $comment->getStartLine() + substr_count(
                                 $comment_text,
                                 "\n",
@@ -246,9 +248,13 @@ final class FunctionLikeDocblockParser
 
         if (isset($parsed_docblock->tags['throws'])) {
             foreach ($parsed_docblock->tags['throws'] as $offset => $throws_entry) {
-                // Take everything up to the first whitespace that is not inside
-                // generic parameters, e.g. `Foo<int, string>|Bar description`
-                preg_match('/^(?:[^\s<]++|(<(?:[^<>]++|(?1))*+>))++/', $throws_entry, $matches);
+                // Take everything up to the first whitespace that is not inside generic parameters or next to
+                // a `|`, e.g. `Foo<int, string> | Bar description`
+                preg_match(
+                    '/^(?:[^\s<|]++|(<(?:[^<>]++|(?1))*+>)|(?: |\n *\*?)*\|(?: |\n *\*?)*)++/',
+                    $throws_entry,
+                    $matches,
+                );
                 $throws_class = $matches[0] ?? '';
 
                 if ($throws_class === '') {
@@ -632,12 +638,12 @@ final class FunctionLikeDocblockParser
             }
 
             if (count($line_parts) > 1) {
-                if (preg_match('/^&?(\.\.\.)?&?\$[A-Za-z0-9_\x80-\xff]+,?$/', $line_parts[1])
+                if (preg_match('/^&?(\.\.\.)?&?\$[A-Za-z0-9_\x80-\xff]+[,;]?$/', $line_parts[1])
                     && ($line_parts[0] === '' || $line_parts[0][0] !== '{')
                 ) {
                     $line_parts[1] = str_replace('&', '', $line_parts[1]);
 
-                    $line_parts[1] = (string) preg_replace('/,$/', '', $line_parts[1], 1);
+                    $line_parts[1] = (string) preg_replace('/[,;]$/', '', $line_parts[1], 1);
 
                     $end = $offset + strlen($line_parts[0]);
 
@@ -645,7 +651,7 @@ final class FunctionLikeDocblockParser
 
                     if ($line_parts[0] === ''
                         || ($line_parts[0][0] === '$'
-                            && !preg_match('/^\$this(\||$)/', $line_parts[0]))
+                            && !preg_match('/^\$this *(\||$)/', $line_parts[0]))
                     ) {
                         throw new IncorrectDocblockException('Misplaced variable');
                     }
@@ -664,7 +670,12 @@ final class FunctionLikeDocblockParser
                     ];
 
                     if (isset($line_parts[1]) && isset($line_parts[2])) {
-                        $description = substr($param, strlen($line_parts[0]) + strlen($line_parts[1]) + 2);
+                        // the description follows the name as written: `& $x`, or on the next line
+                        $description = (string) preg_replace(
+                            '/^[\s*]*&?[\s*]*\S+/',
+                            '',
+                            substr($param, $end - $offset),
+                        );
                         $info_param['description'] = trim($description);
                         // Handle multiline description.
                         $info_param['description'] = (string) preg_replace(
@@ -761,7 +772,9 @@ final class FunctionLikeDocblockParser
             $line_parts = CommentAnalyzer::splitDocLine($return_block);
 
             if ($line_parts[0][0] !== '{') {
-                if ($line_parts[0][0] === '$' && !preg_match('/^\$this(\||$)/', $line_parts[0])) {
+                if ($line_parts[0][0] === '$'
+                    && !preg_match('/^\$this *(\||$)/', CommentAnalyzer::sanitizeDocblockType($line_parts[0]))
+                ) {
                     throw new IncorrectDocblockException('Misplaced variable');
                 }
 
@@ -946,7 +959,7 @@ final class FunctionLikeDocblockParser
             return null;
         }
 
-        if (!preg_match('/^(\.\.\.)?&?\$[A-Za-z0-9_\x80-\xff]+,?$/', $line_parts[1])
+        if (!preg_match('/^(\.\.\.)?&?\$[A-Za-z0-9_\x80-\xff]+[,;]?$/', $line_parts[1])
             || $line_parts[0][0] === '{'
         ) {
             return null;
@@ -965,12 +978,12 @@ final class FunctionLikeDocblockParser
         $line_parts[0] = CommentAnalyzer::sanitizeDocblockType($line_parts[0]);
 
         if ($line_parts[0] === ''
-            || ($line_parts[0][0] === '$' && !preg_match('/^\$this(\||$)/', $line_parts[0]))
+            || ($line_parts[0][0] === '$' && !preg_match('/^\$this *(\||$)/', $line_parts[0]))
         ) {
             throw new IncorrectDocblockException('Misplaced variable');
         }
 
-        $line_parts[1] = (string) preg_replace('/,$/', '', $line_parts[1], 1);
+        $line_parts[1] = (string) preg_replace('/[,;]$/', '', $line_parts[1], 1);
 
         return [
             'name' => trim($line_parts[1]),

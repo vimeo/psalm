@@ -31,10 +31,10 @@ use function is_string;
 use function json_decode;
 use function ksort;
 use function max;
+use function preg_match;
 use function preg_replace;
 use function sort;
 use function str_replace;
-use function strpos;
 
 use const DIRECTORY_SEPARATOR;
 use const GLOB_NOSORT;
@@ -132,7 +132,7 @@ final class Creator
             }
 
             // exclude some directories that are probably ignorable
-            if (strpos($issue->file_path, 'vendor') || strpos($issue->file_path, 'stub')) {
+            if (preg_match('~(?:^|/)(?:vendor|stubs?)/~', str_replace('\\', '/', $issue->file_name))) {
                 continue;
             }
 
