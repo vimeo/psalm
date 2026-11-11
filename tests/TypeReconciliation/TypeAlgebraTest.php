@@ -78,6 +78,55 @@ final class TypeAlgebraTest extends TestCase
                 'ignored_issues' => [],
                 'php_version' => '8.1',
             ],
+            'coalesceAssignmentOnTheRightOfAndKeepsTheAssignmentAfterTheIf' => [
+                'code' => <<<'PHP'
+                    <?php
+                    final class A {}
+
+                    function make(): ?A {
+                        return rand(0, 1) ? new A() : null;
+                    }
+
+                    /** @param list<string> $names */
+                    function export(array $names): void {
+                        $class = null;
+
+                        foreach ($names as $name) {
+                            if ($name === 'self' && $class ??= make()) {
+                                echo get_class($class);
+                            }
+                        }
+
+                        /** @psalm-check-type-exact $class = A|null */;
+                    }
+                    PHP,
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
+            'coalesceAssignmentAssignedToAVariableOnTheLeftOfOr' => [
+                'code' => <<<'PHP'
+                    <?php
+                    interface I {}
+                    final class Lazy implements I {}
+                    final class Real implements I {}
+
+                    function make(): ?I {
+                        return rand(0, 1) ? new Lazy() : null;
+                    }
+
+                    final class Builder {
+                        private ?I $instantiator = null;
+
+                        public function isReal(): bool {
+                            return !($proxy = $this->instantiator ??= make()) || $proxy instanceof Real;
+                        }
+                    }
+                    PHP,
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
             'instanceofStoredInVariableNarrowsInIfBody' => [
                 'code' => '<?php
                     interface Foo {}

@@ -21,6 +21,16 @@ final class AssignmentInConditionalTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'negatedAssignedVariableIsTruthyOnTheRightOfOr' => [
+                'code' => '<?php
+                    function takesObject(object $o): bool {
+                        return true;
+                    }
+
+                    function check(?object $q): bool {
+                        return !($proxy = $q) || takesObject($proxy);
+                    }',
+            ],
             'assignmentInTheMatchArmsOfTheValueOfAnOuterAssignmentOfTheSameVariable' => [
                 'code' => '<?php
                     interface ViewFactory {
@@ -777,6 +787,17 @@ final class AssignmentInConditionalTest extends TestCase
     public static function providerInvalidCodeParse(): iterable
     {
         return [
+            'assignedVariableIsFalsyOnTheRightOfOr' => [
+                'code' => '<?php
+                    function takesObject(object $o): bool {
+                        return true;
+                    }
+
+                    function check(?object $q): bool {
+                        return ($proxy = $q) || takesObject($proxy);
+                    }',
+                'error_message' => 'NullArgument - src' . DIRECTORY_SEPARATOR . 'somefile.php:7:61',
+            ],
             'assignmentInABranchOfATernaryInAnIfMayBeSkipped' => [
                 'code' => '<?php
                     function label(): string {
