@@ -21,6 +21,18 @@ final class AssignmentInConditionalTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'binaryComparisonAssignedInConditional' => [
+                'code' => '<?php
+                    function f(string $s): void {
+                        if ($b = ($s === "\xFF\xFE")) {}
+                    }',
+            ],
+            'negatedBinaryComparisonAssignedInConditional' => [
+                'code' => '<?php
+                    function f(string $s): void {
+                        if (!($b = ($s === "\xFF\xFE"))) {}
+                    }',
+            ],
             'orWithAssignment' => [
                 'code' => '<?php
                     function maybeString(): ?string {
