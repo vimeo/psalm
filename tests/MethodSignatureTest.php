@@ -445,6 +445,26 @@ final class MethodSignatureTest extends TestCase
                         public function foo(Closure $d, array &$a): void {}
                     }',
             ],
+            'variadicParameterTakesTheOmittedParameters' => [
+                'code' => '<?php
+                    interface I {
+                        public function a(int $x, int $y): void;
+                        public function b(int $x = 1): void;
+                    }
+
+                    final class V implements I {
+                        public function a(int ...$x): void {}
+                        public function b(int ...$x): void {}
+                    }
+
+                    abstract class P {
+                        abstract public function a(int $x, int $y): void;
+                    }
+
+                    final class Q extends P {
+                        public function a(int ...$x): void {}
+                    }',
+            ],
             'abstractConstructorCompatibleChild' => [
                 'code' => '<?php
                     abstract class A {
@@ -1516,6 +1536,63 @@ final class MethodSignatureTest extends TestCase
                         public function foo(Closure $c): void {}
                     }',
                 'error_message' => 'MoreSpecificImplementedParamType',
+            ],
+            'variadicParameterOfAnotherTypeThanTheOmittedParameter' => [
+                'code' => '<?php
+                    interface I {
+                        public function f(int $x, string $y): void;
+                    }
+
+                    final class C implements I {
+                        public function f(int ...$x): void {}
+                    }',
+                'error_message' => 'MethodSignatureMismatch',
+            ],
+            'variadicParameterIsNotPassedByReferenceLikeTheOmittedParameter' => [
+                'code' => '<?php
+                    interface I {
+                        public function f(int $x, int &$y): void;
+                    }
+
+                    final class C implements I {
+                        public function f(int ...$x): void {}
+                    }',
+                'error_message' => 'MethodSignatureMismatch',
+            ],
+            'variadicParameterPassedByReferenceWhereTheOmittedParameterIsNot' => [
+                'code' => '<?php
+                    interface I {
+                        public function f(int $x, int $y): void;
+                    }
+
+                    final class C implements I {
+                        public function f(int &...$x): void {}
+                    }',
+                'error_message' => 'MethodSignatureMismatch',
+            ],
+            'fewerArgumentsThanTheOptionalOnesOfAnInterface' => [
+                'code' => '<?php
+                    interface I {
+                        public function fooFoo(int $a, int $b = 1): void;
+                    }
+
+                    final class A implements I {
+                        public function fooFoo(int $a): void {}
+                    }',
+                'error_message' => 'Method A::fooFoo has fewer parameters than parent method I::fooFoo',
+            ],
+            'fewerArgumentsThanTheOptionalOnesOfAnAbstractTraitMethod' => [
+                'code' => '<?php
+                    trait T {
+                        abstract public function fooFoo(int $a, int $b = 1): void;
+                    }
+
+                    final class A {
+                        use T;
+
+                        public function fooFoo(int $a): void {}
+                    }',
+                'error_message' => 'Method A::fooFoo has fewer parameters than parent method T::fooFoo',
             ],
             'returnTypeMessageOfAMethodWithOneKeepsItsType' => [
                 'code' => '<?php
