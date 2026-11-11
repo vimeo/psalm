@@ -1670,6 +1670,8 @@ final class ClassAnalyzer extends ClassLikeAnalyzer
             && isset($project_analyzer->getIssuesToFix()['MissingPropertyType'])
             && !in_array('MissingPropertyType', $this->getSuppressedIssues())
             && $suggested_type
+            // a type can't be added to a single property of `public $a, $b;`
+            && count($stmt->props) === 1
         ) {
             if ($suggested_type->hasMixed() || $suggested_type->isNull()) {
                 return;

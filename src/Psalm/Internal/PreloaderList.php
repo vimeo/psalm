@@ -1007,6 +1007,7 @@ final class PreloaderList {
         \Psalm\Internal\Type\Comparator\ScalarTypeComparator::class,
         \Psalm\Internal\Type\Comparator\TypeComparisonResult::class,
         \Psalm\Internal\Type\Comparator\UnionTypeComparator::class,
+        \Psalm\Internal\Type\LiteralCast::class,
         \Psalm\Internal\Type\NegatedAssertionReconciler::class,
         \Psalm\Internal\Type\ParseTree::class,
         \Psalm\Internal\Type\ParseTreeCreator::class,
