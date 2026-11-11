@@ -171,6 +171,53 @@ final class IncludeTest extends TestCase
                     (string) getcwd() . DIRECTORY_SEPARATOR . 'file2.php',
                 ],
             ],
+            'includedCodeRefiningThisKeepsTheRefinement' => [
+                'files' => [
+                    (string) getcwd() . DIRECTORY_SEPARATOR . 'file2.php' => '<?php
+                        class ParentExample {
+                            public function main(): int {
+                                require __DIR__ . "/file1.php";
+
+                                return $this->childOnly();
+                            }
+                        }
+
+                        class ChildExample extends ParentExample {
+                            public function childOnly(): int {
+                                return 1;
+                            }
+                        }',
+                    (string) getcwd() . DIRECTORY_SEPARATOR . 'file1.php' => '<?php
+                        if (!$this instanceof ChildExample) {
+                            throw new RuntimeException();
+                        }',
+                ],
+                'files_to_check' => [
+                    (string) getcwd() . DIRECTORY_SEPARATOR . 'file2.php',
+                ],
+                'hoist_constants' => false,
+            ],
+            'includedCodeCheckingThisDoesNotChangeIt' => [
+                'files' => [
+                    (string) getcwd() . DIRECTORY_SEPARATOR . 'file2.php' => '<?php
+                        class Example {
+                            public function main(): Example {
+                                require __DIR__ . "/file1.php";
+
+                                return $this;
+                            }
+                        }',
+                    (string) getcwd() . DIRECTORY_SEPARATOR . 'file1.php' => '<?php
+                        if (!$this instanceof stdClass) {
+                            throw new RuntimeException();
+                        }',
+                ],
+                'files_to_check' => [
+                    (string) getcwd() . DIRECTORY_SEPARATOR . 'file2.php',
+                ],
+                'hoist_constants' => false,
+                'ignored_issues' => ['RedundantCondition'],
+            ],
             'requireSingleStringType' => [
                 'files' => [
                     (string) getcwd() . DIRECTORY_SEPARATOR . 'file2.php' => '<?php

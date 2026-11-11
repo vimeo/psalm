@@ -366,7 +366,10 @@ final class Methods
                 return $params;
             }
 
-            $appearing_method_id = $this->getAppearingMethodId($declaring_method_id);
+            // a trait method appears in the class using it, which holds the docblock it inherits
+            $appearing_method_id = $this->classlike_storage_provider->get($declaring_method_id->fq_class_name)->is_trait
+                ? $this->getAppearingMethodId($method_id)
+                : $this->getAppearingMethodId($declaring_method_id);
 
             if (!$appearing_method_id) {
                 return $params;
