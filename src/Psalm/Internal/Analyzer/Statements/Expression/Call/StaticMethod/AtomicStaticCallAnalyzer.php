@@ -9,6 +9,7 @@ use PhpParser;
 use Psalm\CodeLocation;
 use Psalm\Codebase;
 use Psalm\Context;
+use Psalm\Internal\Analyzer\ClassAnalyzer;
 use Psalm\Internal\Analyzer\ClassLikeAnalyzer;
 use Psalm\Internal\Analyzer\ClassLikeNameOptions;
 use Psalm\Internal\Analyzer\MethodAnalyzer;
@@ -17,6 +18,7 @@ use Psalm\Internal\Analyzer\Statements\Expression\Call\ArgumentMapPopulator;
 use Psalm\Internal\Analyzer\Statements\Expression\Call\ArgumentsAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\Call\CallPurityResolver;
 use Psalm\Internal\Analyzer\Statements\Expression\Call\ClassTemplateParamCollector;
+use Psalm\Internal\Analyzer\Statements\Expression\Call\Method\MethodCallPurityAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\Call\Method\MethodCallReturnTypeFetcher;
 use Psalm\Internal\Analyzer\Statements\Expression\Call\Method\MethodVisibilityAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\Call\MethodCallAnalyzer;
@@ -652,7 +654,17 @@ final class AtomicStaticCallAnalyzer
         $with_pseudo = $callstatic_method_exists
             || $codebase->config->use_phpdoc_method_without_magic_or_parent;
 
-        if ($codebase->methods->getDeclaringMethodId($method_id, $with_pseudo)) {
+        // PHP doesn't call a method the caller can't access, but __callStatic()
+        $forwarded_to_callstatic = $naive_method_exists
+            && $callstatic_method_exists
+            && $stmt->getAttribute(ClassAnalyzer::FAKE_CONSTRUCTOR_CALL_ATTRIBUTE) !== true
+            && !MethodAnalyzer::isMethodVisible(
+                $method_id,
+                $context,
+                $statements_analyzer->getSource(),
+            );
+
+        if (!$forwarded_to_callstatic && $codebase->methods->getDeclaringMethodId($method_id, $with_pseudo)) {
             if ((!$stmt->class instanceof PhpParser\Node\Name
                     || $stmt->class->getFirst() !== 'parent'
                     || $statements_analyzer->isStatic())
@@ -770,6 +782,31 @@ final class AtomicStaticCallAnalyzer
                         return false;
                     }
                 }
+
+                // the call of a method the caller can't access is the call of __callStatic()
+                if ($forwarded_to_callstatic) {
+                    $callstatic_self_class = null;
+                    $callstatic_return_type = $codebase->methods->getMethodReturnType(
+                        $codebase,
+                        $callstatic_id,
+                        $callstatic_self_class,
+                    );
+
+                    if ($callstatic_return_type !== null) {
+                        $statements_analyzer->node_data->setType(
+                            $stmt,
+                            TypeExpander::expandUnion(
+                                $codebase,
+                                $callstatic_return_type,
+                                $callstatic_self_class ?? $fq_class_name,
+                                $fq_class_name,
+                                $class_storage->parent_class,
+                            ),
+                        );
+
+                        return true;
+                    }
+                }
             } elseif ($found_method_and_class_storage && ($naive_method_exists || $with_pseudo)) {
                 [$pseudo_method_storage, $defining_class_storage] = $found_method_and_class_storage;
 
@@ -859,7 +896,9 @@ final class AtomicStaticCallAnalyzer
             }
         }
 
-        if ($naive_method_exists || !$callstatic_method_exists || $class_storage->hasSealedMethods($config)) {
+        if (!$forwarded_to_callstatic
+            && ($naive_method_exists || !$callstatic_method_exists || $class_storage->hasSealedMethods($config))
+        ) {
             $does_method_exist = MethodAnalyzer::checkMethodExists(
                 $codebase,
                 $method_id,
@@ -913,11 +952,13 @@ final class AtomicStaticCallAnalyzer
             );
         }
 
-        if ($context->self && ! NamespaceAnalyzer::isWithinAny($context->self, $class_storage->internal)) {
+        $caller_identifier = $statements_analyzer->getFullyQualifiedFunctionMethodOrNamespaceName() ?? '';
+
+        if (!NamespaceAnalyzer::isWithinAny($caller_identifier, $class_storage->internal)) {
             IssueBuffer::maybeAdd(
                 new InternalClass(
                     $fq_class_name . ' is internal to ' . InternalClass::listToPhrase($class_storage->internal)
-                        . ' but called from ' . $context->self,
+                        . ' but called from ' . ($caller_identifier ?: 'root namespace'),
                     new CodeLocation($statements_analyzer->getSource(), $stmt),
                     $fq_class_name,
                 ),
@@ -1380,6 +1421,8 @@ final class AtomicStaticCallAnalyzer
         ) === false) {
             return false;
         }
+
+        MethodCallPurityAnalyzer::forwardReturnsThis($fake_method_call_expr, $stmt);
 
         $fake_method_call_type = $statements_analyzer->node_data->getType($fake_method_call_expr);
 

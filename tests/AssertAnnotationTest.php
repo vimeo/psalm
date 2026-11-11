@@ -251,6 +251,77 @@ final class AssertAnnotationTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'negatedArrayAssertionKeepsTheExistingArrayType' => [
+                'code' => '<?php
+                    /**
+                     * @param mixed $value
+                     * @psalm-assert-if-true array<string, string> $value
+                     */
+                    function isStringMap($value): bool {
+                        return true;
+                    }
+
+                    /**
+                     * @param mixed $value
+                     * @psalm-assert-if-true array{name: string} $value
+                     */
+                    function isNamed($value): bool {
+                        return true;
+                    }
+
+                    /** @param list<int> $numbers */
+                    function withMap(array $numbers): void {
+                        if (!isStringMap($numbers)) {
+                            /** @psalm-check-type-exact $numbers = list<int> */;
+                        }
+                    }
+
+                    /** @param list<int> $numbers */
+                    function withShape(array $numbers): void {
+                        if (!isNamed($numbers)) {
+                            /** @psalm-check-type-exact $numbers = list<int> */;
+                        }
+                    }',
+            ],
+            'assertIfTrueAndIfFalseOfAUnionTypeKeepEveryMember' => [
+                'code' => <<<'PHP'
+                    <?php
+                    /**
+                     * @psalm-assert-if-true int|string $value
+                     */
+                    function isIntOrString(mixed $value): bool {
+                        return is_int($value) || is_string($value);
+                    }
+
+                    /**
+                     * @psalm-assert-if-false int|string $value
+                     */
+                    function isNotIntOrString(mixed $value): bool {
+                        return !is_int($value) && !is_string($value);
+                    }
+
+                    function test(mixed $a, int|string|null $b, mixed $c): void {
+                        if (isIntOrString($a)) {
+                            /** @psalm-check-type-exact $a = int|string */
+                        }
+
+                        if (isIntOrString($b)) {
+                            /** @psalm-check-type-exact $b = int|string */
+                        } else {
+                            /** @psalm-check-type-exact $b = null */
+                        }
+
+                        if (isNotIntOrString($c)) {
+                            return;
+                        }
+
+                        /** @psalm-check-type-exact $c = int|string */
+                    }
+                    PHP,
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
             'assertIfTrueAndFalseKeepEveryAlternativeOfAUnion' => [
                 'code' => '<?php
                     /** @psalm-assert-if-true \'a\'|\'b\' $x */
@@ -574,6 +645,29 @@ final class AssertAnnotationTest extends TestCase
                     '$second' => 'array{j: mixed, ...<array-key, mixed>}',
                 ],
             ],
+            'staticInAnAssertionKeepsTheTemplateArgumentsOfTheReceiver' => [
+                'code' => '<?php
+                    /** @template T */
+                    final class Box {
+                        /** @param T $value */
+                        public function __construct(public mixed $value) {}
+
+                        /** @psalm-assert-if-true static $other */
+                        public function same(object $other): bool {
+                            return $other::class === static::class;
+                        }
+                    }
+
+                    /** @param Box<int> $box */
+                    function check(Box $box, object $other): void {
+                        if ($box->same($other)) {
+                            /** @psalm-check-type-exact $other = Box<int> */;
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
             'negatedAssertIfTrueOfALiteralStringKeepsTheString' => [
                 'code' => '<?php
                     /** @psalm-assert-if-true literal-string $s */
@@ -592,6 +686,56 @@ final class AssertAnnotationTest extends TestCase
                 'assertions' => [],
                 'ignored_issues' => [],
                 'php_version' => '8.1',
+            ],
+            'staticInAnAssertionOfAnInheritedMethodIsTheCalledClass' => [
+                'code' => '<?php
+                    interface Comparable {
+                        /** @psalm-assert-if-true static $object */
+                        public function equals(Comparable $object): bool;
+
+                        /** @psalm-assert-if-false static $object */
+                        public function differs(Comparable $object): bool;
+
+                        /** @psalm-assert static $object */
+                        public function mustEqual(Comparable $object): void;
+                    }
+
+                    final class Money implements Comparable {
+                        public int $amount = 0;
+
+                        public function equals(Comparable $object): bool {
+                            return $object instanceof self && $object->amount === $this->amount;
+                        }
+
+                        public function differs(Comparable $object): bool {
+                            return !$this->equals($object);
+                        }
+
+                        public function mustEqual(Comparable $object): void {
+                        }
+
+                        public function ifTrue(Comparable $object): int {
+                            if ($this->equals($object)) {
+                                return $object->amount;
+                            }
+
+                            return 0;
+                        }
+
+                        public function ifFalse(Comparable $object): int {
+                            if ($this->differs($object)) {
+                                return 0;
+                            }
+
+                            return $object->amount;
+                        }
+
+                        public function always(Comparable $object): int {
+                            $this->mustEqual($object);
+
+                            return $object->amount;
+                        }
+                    }',
             ],
             'negatedAssertIfTrueOfALowercaseStringKeepsTheString' => [
                 'code' => '<?php
@@ -3958,6 +4102,24 @@ final class AssertAnnotationTest extends TestCase
                 'ignored_issues' => [],
                 'php_version' => '8.0',
             ],
+            'assertNonEmptyArrayOnAPossiblyEmptyArray' => [
+                'code' => '<?php
+                    /**
+                     * @psalm-assert non-empty-array $things
+                     */
+                    function exceptionIfEmpty(array $things): void {
+                        if (!$things) {
+                            throw new Exception("empty");
+                        }
+                    }
+
+                    /** @var array<int, string> $arr */
+                    $arr = [];
+                    exceptionIfEmpty($arr);',
+                'assertions' => [
+                    '$arr===' => 'non-empty-array<int, string>',
+                ],
+            ],
         ];
     }
 
@@ -3989,6 +4151,23 @@ final class AssertAnnotationTest extends TestCase
                     }',
                 'error_message' => 'RedundantConditionGivenDocblockType',
             ],
+            'assertNonEmptyArrayOnANonEmptyArray' => [
+                'code' => '<?php
+                    /**
+                     * @psalm-assert non-empty-array $things
+                     */
+                    function exceptionIfEmpty(array $things): void {
+                        if (!$things) {
+                            throw new Exception("empty");
+                        }
+                    }
+
+                    /** @param non-empty-array<int, string> $arr */
+                    function f(array $arr): void {
+                        exceptionIfEmpty($arr);
+                    }',
+                'error_message' => 'RedundantCondition',
+            ],
             'negatedInstanceofOfAClosedClassEliminatesItsInheritors' => [
                 'code' => '<?php
                     /**
@@ -4010,6 +4189,30 @@ final class AssertAnnotationTest extends TestCase
                     /** @psalm-assert array-key-exists $array[$missing] */
                     function check(string $key, array $array): void {}',
                 'error_message' => 'InvalidDocblock - src' . DIRECTORY_SEPARATOR . 'somefile.php:3:21 - Assertion on array[$missing] needs both of its variables to be parameters',
+            ],
+            'staticInAnAssertionOnAnInterfaceReceiverIsTheInterface' => [
+                'code' => '<?php
+                    interface Comparable {
+                        /** @psalm-assert-if-true static $object */
+                        public function equals(Comparable $object): bool;
+                    }
+
+                    final class Money implements Comparable {
+                        public int $amount = 0;
+
+                        public function equals(Comparable $object): bool {
+                            return true;
+                        }
+                    }
+
+                    function total(Comparable $left, Comparable $right): int {
+                        if ($left->equals($right)) {
+                            return $right->amount;
+                        }
+
+                        return 0;
+                    }',
+                'error_message' => 'NoInterfaceProperties - src' . DIRECTORY_SEPARATOR . 'somefile.php:17:36',
             ],
             'assertInstanceOfMultipleInterfaces' => [
                 'code' => '<?php
