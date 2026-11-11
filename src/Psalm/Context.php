@@ -265,6 +265,14 @@ final class Context
     public array $phantom_files = [];
 
     /**
+     * The files of phantom_files that were checked in a negated condition (`!file_exists($s)`): a check that holds
+     * where the condition does not
+     *
+     * @var array<string,bool>
+     */
+    public array $negated_phantom_files = [];
+
+    /**
      * A list of clauses in Conjunctive Normal Form
      *
      * @var list<Clause>
