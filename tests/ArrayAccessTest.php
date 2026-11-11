@@ -233,9 +233,9 @@ final class ArrayAccessTest extends TestCase
         $this->addFile(
             'somefile.php',
             '<?php
-                /** 
+                /**
                  * @psalm-mutation-free
-                 * @param string[][] $arr 
+                 * @param string[][] $arr
                  */
                 function foo(array $arr) : void {
                     if (count($arr) === 1 && count(array_values($arr)[0]) === 1) {}
@@ -1637,6 +1637,51 @@ final class ArrayAccessTest extends TestCase
     public static function providerInvalidCodeParse(): iterable
     {
         return [
+            'intRangeOffsetPartlyInsideTheKeysOfAList' => [
+                'code' => '<?php
+                    function f(int $i): void {
+                        $list = [1, 21, 22];
+
+                        if ($i > 0) {
+                            echo $list[$i];
+                        }
+                    }',
+                'error_message' => 'PossiblyInvalidArrayOffset',
+            ],
+            'intRangeOffsetPartlyInsideTheKeysOfSeveralLists' => [
+                'code' => '<?php
+                    /**
+                     * @param list{1, 21, 22}|list{3, 33} $links
+                     */
+                    function f(array $links, int $i): void {
+                        if ($i > 0) {
+                            echo $links[$i];
+                        }
+                    }',
+                'error_message' => 'PossiblyInvalidArrayOffset',
+            ],
+            'intRangeOffsetPartlyInsideTheLiteralKeysOfAnArray' => [
+                'code' => '<?php
+                    function f(int $i): void {
+                        $array = [0 => 1, 2 => 3];
+
+                        if ($i > 1 && $i < 4) {
+                            echo $array[$i];
+                        }
+                    }',
+                'error_message' => 'PossiblyInvalidArrayOffset',
+            ],
+            'intRangeOffsetOutsideTheKeysOfAList' => [
+                'code' => '<?php
+                    function f(int $i): void {
+                        $list = [1, 21, 22];
+
+                        if ($i > 5) {
+                            echo $list[$i];
+                        }
+                    }',
+                'error_message' => 'InvalidArrayOffset',
+            ],
             'invalidOffsetOfConstantNamesTheConstant' => [
                 'code' => '<?php
                     const ARR = [11 => "foo"];
