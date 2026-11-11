@@ -24,6 +24,19 @@ final class FunctionCallTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'zeroIsANonEmptyLowercaseString' => [
+                'code' => <<<'PHP'
+                    <?php
+                    /** @param non-empty-lowercase-string $s */
+                    function takesNonEmptyLowercase(string $s): void {}
+
+                    takesNonEmptyLowercase('0');
+                    takesNonEmptyLowercase('a');
+                    PHP,
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
             'propertyExistsOfAnUnknownOrDynamicPropertyIsNotReported' => [
                 'code' => '<?php
                     class Page {
@@ -3064,39 +3077,13 @@ final class FunctionCallTest extends TestCase
     public static function providerInvalidCodeParse(): iterable
     {
         return [
-            'languageConstructUnsetCalledAsAQualifiedFunction' => [
+            'emptyStringIsNotANonEmptyLowercaseString' => [
                 'code' => '<?php
-                    $what = 5;
-                    \unset($what);',
-                'error_message' => 'UndefinedFunction',
-            ],
-            'languageConstructIssetCalledAsAQualifiedFunction' => [
-                'code' => '<?php
-                    $what = 5;
-                    if (\isset($what)) {
-                    }',
-                'error_message' => 'UndefinedFunction',
-            ],
-            'languageConstructEmptyCalledAsAQualifiedFunction' => [
-                'code' => '<?php
-                    if (\empty("")) {
-                    }',
-                'error_message' => 'UndefinedFunction',
-            ],
-            'languageConstructPrintCalledAsAQualifiedFunction' => [
-                'code' => '<?php
-                    \print("word");',
-                'error_message' => 'UndefinedFunction',
-            ],
-            'languageConstructsCalledWithoutALeadingBackslashAreNotUndefinedFunctions' => [
-                'code' => '<?php
-                    $what = 5;
-                    unset($what);
-                    print("word");
-                    $other = [];
-                    if (isset($other["a"]) || empty($other)) {
-                    }',
-                'error_message' => 'RedundantCondition',
+                    /** @param non-empty-lowercase-string $s */
+                    function takesNonEmptyLowercase(string $s): void {}
+
+                    takesNonEmptyLowercase("");',
+                'error_message' => 'InvalidArgument',
             ],
             'propertyExistsOfADeclaredPropertyIsAlwaysTrue' => [
                 'code' => '<?php
@@ -4025,6 +4012,40 @@ final class FunctionCallTest extends TestCase
                 'error_message' => 'InvalidScalarArgument',
                 'error_levels' => [],
                 'php_version' => '7.4',
+            ],
+            'languageConstructUnsetCalledAsAQualifiedFunction' => [
+                'code' => '<?php
+                    $what = 5;
+                    \unset($what);',
+                'error_message' => 'UndefinedFunction',
+            ],
+            'languageConstructIssetCalledAsAQualifiedFunction' => [
+                'code' => '<?php
+                    $what = 5;
+                    if (\isset($what)) {
+                    }',
+                'error_message' => 'UndefinedFunction',
+            ],
+            'languageConstructEmptyCalledAsAQualifiedFunction' => [
+                'code' => '<?php
+                    if (\empty("")) {
+                    }',
+                'error_message' => 'UndefinedFunction',
+            ],
+            'languageConstructPrintCalledAsAQualifiedFunction' => [
+                'code' => '<?php
+                    \print("word");',
+                'error_message' => 'UndefinedFunction',
+            ],
+            'languageConstructsCalledWithoutALeadingBackslashAreNotUndefinedFunctions' => [
+                'code' => '<?php
+                    $what = 5;
+                    unset($what);
+                    print("word");
+                    $other = [];
+                    if (isset($other["a"]) || empty($other)) {
+                    }',
+                'error_message' => 'RedundantCondition',
             ],
         ];
     }
