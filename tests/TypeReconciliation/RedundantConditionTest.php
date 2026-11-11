@@ -70,6 +70,31 @@ final class RedundantConditionTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'ctypeCheckOfNumericStringExpressionIsNotRedundant' => [
+                'code' => <<<'PHP'
+                    <?php
+                    function negated(int $id): void {
+                        if (!ctype_digit("$id")) {
+                            throw new InvalidArgumentException("Bad id $id");
+                        }
+                    }
+
+                    function positive(int $id): void {
+                        if (ctype_digit("$id")) {
+                            echo "non-negative";
+                        }
+                    }
+
+                    function lower(): void {
+                        if (ctype_lower("abc" . rand())) {
+                            echo "lower";
+                        }
+                    }
+                    PHP,
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
             'negatedInstanceofOfAGenericSubclassOnAnInterfaceWithTemplateArguments' => [
                 'code' => '<?php
                     /**
@@ -1111,6 +1136,101 @@ final class RedundantConditionTest extends TestCase
                         assert(!!$p);
                     }',
             ],
+            'assignedArrayOffsetNarrowedByLongChain' => [
+                'code' => '<?php
+                    /** @param array<int, string|int> $arr */
+                    function foo(array $arr): void {
+                        if (($y = $arr)
+                            && is_string($y[0])
+                            && $y[0] !== ""
+                            && $y[0] !== "a"
+                        ) {
+                            echo $y[0];
+                        }
+                    }',
+            ],
+            'assignedPropertyNarrowedByLongChain' => [
+                'code' => '<?php
+                    final class Leaf { public ?Leaf $next = null; }
+                    final class Mid { public ?Leaf $leaf = null; }
+                    final class Root { public ?Mid $mid = null; }
+
+                    function make(): ?Root {
+                        return null;
+                    }
+
+                    function foo(): void {
+                        if (($root = make())
+                            && $root->mid instanceof Mid
+                            && $root->mid->leaf !== null
+                            && $root->mid->leaf->next !== null
+                            && $root->mid->leaf->next->next === null
+                        ) {
+                            echo "ok";
+                        }
+                    }',
+            ],
+            'countedArrayOffsetNarrowedByLongChain' => [
+                'code' => '<?php
+                    declare(strict_types=1);
+
+                    final class Node {
+                        /** @var list<Node|Ret>|null */
+                        public ?array $stmts = null;
+                    }
+                    final class Ret {
+                        public ?Node $expr = null;
+                    }
+
+                    function foo(Node $stmt): void {
+                        if ($stmt->stmts
+                            && count($stmt->stmts) === 1
+                            && $stmt->stmts[0] instanceof Ret
+                            && $stmt->stmts[0]->expr instanceof Node
+                            && $stmt->stmts[0]->expr->stmts !== null
+                        ) {
+                            echo "ok";
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => ['RiskyTruthyFalsyComparison'],
+                'php_version' => '8.1',
+            ],
+            'identicalComparisonOfAListWithAShapeWhoseGapItCanFill' => [
+                'code' => '<?php
+                    /**
+                     * @param non-empty-list<int> $list
+                     * @param array{0: int, 2: int, ...<int, int>} $shape
+                     */
+                    function f(array $list, array $shape): bool {
+                        return $list === $shape;
+                    }
+
+                    /**
+                     * @param non-empty-list<int> $list
+                     * @param array{0: int, 1?: int, 2: int} $shape
+                     */
+                    function g(array $list, array $shape): bool {
+                        return $list === $shape;
+                    }',
+            ],
+            'identicalComparisonOfAShapeWithAListOfARangeOfItsValues' => [
+                'code' => '<?php
+                    /** @param list<int<1, max>> $ints */
+                    function one(int $i, array $ints): bool {
+                        return [$i] === $ints;
+                    }
+
+                    /** @param list<int<1, max>> $ints */
+                    function two(int $i, array $ints): bool {
+                        return [$i, $i] === $ints;
+                    }
+
+                    /** @param array{id: int, name?: string, ...<string, int>} $shape */
+                    function keyed(int $i, array $shape): bool {
+                        return ["id" => $i] === $shape;
+                    }',
+            ],
         ];
     }
 
@@ -1121,6 +1241,26 @@ final class RedundantConditionTest extends TestCase
     public static function providerInvalidCodeParse(): iterable
     {
         return [
+            'inequalityWithAnEmptyArrayOfANonEmptyArrayIsRedundant' => [
+                'code' => '<?php
+                    $a = [1, 2];
+                    array_shift($a);
+
+                    if ($a !== []) {
+                        echo 1;
+                    }',
+                'error_message' => 'RedundantCondition - src' . DIRECTORY_SEPARATOR . 'somefile.php:5:25 - list{2} can never be an empty array',
+            ],
+            'inequalityWithAnEmptyArrayOfADocblockNonEmptyArrayIsRedundant' => [
+                'code' => '<?php
+                    /** @var non-empty-list<int> $a */
+                    $a = [];
+
+                    if ($a !== []) {
+                        echo 1;
+                    }',
+                'error_message' => 'RedundantConditionGivenDocblockType - src' . DIRECTORY_SEPARATOR . 'somefile.php:5:25 - Docblock-defined type non-empty-list<int> can never be an empty array',
+            ],
             'negatedTypeCheckOfAKnownTypeExplainsThatItCanNeverBeTrue' => [
                 'code' => '<?php
                     $a = "some";
@@ -2194,6 +2334,71 @@ final class RedundantConditionTest extends TestCase
                         if (in_array($s, [1, 2], true)) {}
                     }',
                 'error_message' => 'TypeDoesNotContainType - src' . DIRECTORY_SEPARATOR . 'somefile.php:4:29',
+            ],
+            'assignedArrayOffsetCheckedTwice' => [
+                'code' => '<?php
+                    /** @param array<int, string|int> $arr */
+                    function foo(array $arr): void {
+                        if (($y = $arr)
+                            && is_string($y[0])
+                            && is_string($y[0])
+                        ) {
+                            echo $y[0];
+                        }
+                    }',
+                'error_message' => 'RedundantCondition',
+            ],
+            'identicalComparisonOfAShapeWithAListOfOtherValuesIsImpossible' => [
+                'code' => '<?php
+                    /** @param list<int<1, max>> $ints */
+                    function f(string $s, array $ints): bool {
+                        return [$s] === $ints;
+                    }',
+                'error_message' => 'TypeDoesNotContainType - src' . DIRECTORY_SEPARATOR . 'somefile.php:4:32 - list{string} cannot be identical to list<int<1, max',
+            ],
+            'identicalComparisonOfShapesWithOtherKeysIsImpossible' => [
+                'code' => '<?php
+                    function f(): bool {
+                        return ["a" => 1] === ["b" => 1];
+                    }',
+                'error_message' => 'TypeDoesNotContainType - src' . DIRECTORY_SEPARATOR . 'somefile.php:3:32 - array{b: 1} cannot be identical to array{a: 1',
+            ],
+            'identicalComparisonOfAShapeWithAMapOfOtherValuesIsImpossible' => [
+                'code' => '<?php
+                    /** @param array<string, string> $map */
+                    function f(int $i, array $map): bool {
+                        return ["id" => $i] === $map;
+                    }',
+                'error_message' => 'TypeDoesNotContainType - src' . DIRECTORY_SEPARATOR . 'somefile.php:4:32 - array{id: int} cannot be identical to array<string, string',
+            ],
+            'identicalComparisonOfAListWithAShapeThatSkipsAnIndexIsImpossible' => [
+                'code' => '<?php
+                    /**
+                     * @param non-empty-list<int> $list
+                     * @param array{0: int, 2: int} $shape
+                     */
+                    function f(array $list, array $shape): bool {
+                        return $list === $shape;
+                    }',
+                'error_message' => 'TypeDoesNotContainType - src' . DIRECTORY_SEPARATOR . 'somefile.php:7:32',
+            ],
+            'identicalComparisonOfAListWithAShapeWhoseSkippedItemIsOfAnotherTypeIsImpossible' => [
+                'code' => '<?php
+                    /**
+                     * @param non-empty-list<int> $list
+                     * @param array{0: int, 1?: string, 2: int} $shape
+                     */
+                    function f(array $list, array $shape): bool {
+                        return $list === $shape;
+                    }',
+                'error_message' => 'TypeDoesNotContainType - src' . DIRECTORY_SEPARATOR . 'somefile.php:7:32',
+            ],
+            'identicalComparisonOfAShapeWithAShorterOneIsImpossible' => [
+                'code' => '<?php
+                    function f(): bool {
+                        return [1, 2] === [3];
+                    }',
+                'error_message' => 'TypeDoesNotContainType - src' . DIRECTORY_SEPARATOR . 'somefile.php:3:32 - list{3} cannot be identical to list{1, 2',
             ],
         ];
     }

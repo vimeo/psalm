@@ -128,6 +128,44 @@ final class ArrayAssignmentTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'assignToTheItemOfAnArrayAFunctionReturnsByReference' => [
+                'code' => '<?php
+                    function &ensureArray(array &$what): array {
+                        return $what;
+                    }
+
+                    $f = [];
+                    ensureArray($f)[] = "foobar";',
+            ],
+            'assignToTheItemOfAnArrayAMethodReturnsByReference' => [
+                'code' => '<?php
+                    final class Bag {
+                        private array $items = [];
+
+                        public function &items(): array {
+                            return $this->items;
+                        }
+
+                        public static function &of(array &$what): array {
+                            return $what;
+                        }
+                    }
+
+                    $bag = new Bag();
+                    $bag->items()[] = "foo";
+                    $a = [];
+                    Bag::of($a)["k"] = "bar";',
+            ],
+            'coalesceAssignmentOnTwoOptionalKeysOfAnArrayWithAShapeIntersection' => [
+                'code' => '<?php
+                    /** @var array{name?: string, age?: int}&array $data */
+                    $data = [];
+                    $data["name"] ??= "noname";
+                    $data["age"] ??= 90;',
+                'assertions' => [
+                    '$data' => 'array{age: int, name: string, ...<array-key, mixed>}',
+                ],
+            ],
             'arrayKeyOfAnIgnoredNullableReturnIsNotNullable' => [
                 'code' => '<?php
                     class TestModel
@@ -2352,6 +2390,34 @@ final class ArrayAssignmentTest extends TestCase
                     ];
                 ',
             ],
+            'assignToNestedKeyOfListWithForeachKey' => [
+                'code' => '<?php
+                    /**
+                     * @param list<array{name: string}> $list
+                     * @return list<array{name: string}>
+                     */
+                    function setNames(array $list): array {
+                        foreach ($list as $index => $value) {
+                            if ($value["name"] === "bar") {
+                                $list[$index]["name"] = "baz";
+                            }
+                        }
+
+                        return $list;
+                    }
+
+                    /**
+                     * @param list<list<int>> $list
+                     * @return list<list<int>>
+                     */
+                    function appendToItems(array $list): array {
+                        foreach ($list as $index => $value) {
+                            $list[$index][] = 1;
+                        }
+
+                        return $list;
+                    }',
+            ],
             'assignWithStaticClassOffsetKeepsTheKeyTypeOfTheProperty' => [
                 'code' => '<?php
                     /**
@@ -2755,6 +2821,63 @@ final class ArrayAssignmentTest extends TestCase
                     $x = ["15" => "a", 17 => "b"];
                     foo($x);',
             ],
+            'nestedAppendToExistingOffsetOfListKeepsList' => [
+                'code' => '<?php
+                    /**
+                     * @param list<list<int>> $l
+                     * @return list<list<int>>
+                     */
+                    function foo(array $l, int $i): array {
+                        if (isset($l[$i])) {
+                            $l[$i][] = 1;
+                        }
+
+                        return $l;
+                    }',
+            ],
+            'nestedAppendToExistingOffsetOfPropertyListKeepsList' => [
+                'code' => '<?php
+                    final class Foo
+                    {
+                        /** @var list<array> */
+                        public array $list = [];
+
+                        public function modifyItem(int $i): void
+                        {
+                            if (!array_key_exists($i, $this->list)) {
+                                throw new InvalidArgumentException("unknown key");
+                            }
+
+                            $this->list[$i][] = [];
+                        }
+                    }',
+            ],
+            'twoLevelNestedAppendToExistingOffsetsKeepsLists' => [
+                'code' => '<?php
+                    /**
+                     * @param list<list<list<int>>> $l
+                     * @return list<list<list<int>>>
+                     */
+                    function foo(array $l, int $i, int $j): array {
+                        if (isset($l[$i][$j])) {
+                            $l[$i][$j][] = 1;
+                        }
+
+                        return $l;
+                    }',
+            ],
+            'nestedAppendToUnknownOffsetOfListIsNotAList' => [
+                'code' => '<?php
+                    /**
+                     * @param list<list<int>> $l
+                     * @return non-empty-array<int, list<int>>
+                     */
+                    function foo(array $l, int $i): array {
+                        $l[$i][] = 1;
+
+                        return $l;
+                    }',
+            ],
         ];
     }
 
@@ -2765,6 +2888,29 @@ final class ArrayAssignmentTest extends TestCase
     public static function providerInvalidCodeParse(): iterable
     {
         return [
+            'assignToTheItemOfAnArrayAFunctionReturnsByValue' => [
+                'code' => '<?php
+                    function getArray(array $what): array {
+                        return $what;
+                    }
+
+                    $f = [];
+                    getArray($f)[] = "foobar";',
+                'error_message' => 'InvalidArrayAssignment',
+            ],
+            'assignToNestedKeyOfListWithUnrelatedKeyIsNotAList' => [
+                'code' => '<?php
+                    /**
+                     * @param list<array{name: string}> $list
+                     * @return list<array{name: string}>
+                     */
+                    function setName(array $list, int $key): array {
+                        $list[$key]["name"] = "baz";
+
+                        return $list;
+                    }',
+                'error_message' => 'LessSpecificReturnStatement',
+            ],
             'arrayKeyOfAnIgnoredNullableReturnDoesNotHideAnotherNullableKey' => [
                 'code' => '<?php
                     class TestModel
