@@ -324,29 +324,77 @@ final class ClassLikeStringTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
-            'classStringComparedToLiteralClassName' => [
+            'isSubclassOfKeepsTheTemplateOfAClassString' => [
                 'code' => '<?php
-                    class Invokable {
-                        public function __invoke(): void {}
+                    /** @psalm-consistent-constructor */
+                    abstract class Message {}
+                    class MessageImpl extends Message {}
+
+                    interface Builder
+                    {
+                        /**
+                         * @template T as object
+                         * @psalm-param class-string<T> $className
+                         * @return T
+                         */
+                        public function build(string $className);
                     }
 
-                    /** @param class-string<callable-object> $callable */
-                    function isClosure(string $callable): bool {
-                        return $callable === "Closure";
+                    class MessageBuilder implements Builder
+                    {
+                        public function build(string $className)
+                        {
+                            if (!is_subclass_of($className, Message::class)) {
+                                throw new \LogicException();
+                            }
+
+                            return new $className();
+                        }
                     }
 
-                    /** @param class-string<Invokable> $class */
-                    function isInvokable(string $class): bool {
-                        return $class === "Invokable" || $class === "\\Invokable";
-                    }
+                    function run(MessageBuilder $builder): MessageImpl
+                    {
+                        return $builder->build(MessageImpl::class);
+                    }',
+                'assertions' => [],
+                'ignored_issues' => ['MissingOverrideAttribute'],
+            ],
+            'isAKeepsTheTemplateOfAClassString' => [
+                'code' => '<?php
+                    /** @psalm-consistent-constructor */
+                    abstract class Message {}
 
-                    /** @param class-string $class */
-                    function isAny(string $class): bool {
-                        return $class === "Invokable";
-                    }
+                    /**
+                     * @template T of object
+                     * @param class-string<T> $className
+                     * @return T
+                     */
+                    function make(string $className): object
+                    {
+                        if (!is_a($className, Message::class, true)) {
+                            throw new \LogicException();
+                        }
 
-                    function isWhatever(callable $callable): bool {
-                        return is_object($callable) && get_class($callable) === "Closure";
+                        return new $className();
+                    }',
+            ],
+            'isSubclassOfOfAClassStringWithAnUnrelatedBound' => [
+                'code' => '<?php
+                    interface HasName {}
+                    interface HasId {}
+
+                    /**
+                     * @template T of HasName
+                     * @param class-string<T> $className
+                     * @return T
+                     */
+                    function make(string $className): object
+                    {
+                        if (!is_subclass_of($className, HasId::class)) {
+                            throw new \LogicException();
+                        }
+
+                        return new $className();
                     }',
             ],
             'staticInAListParameterOfAStaticCallNamingAClass' => [
@@ -1292,25 +1340,6 @@ final class ClassLikeStringTest extends TestCase
     public static function providerInvalidCodeParse(): iterable
     {
         return [
-            'classStringComparedToUnrelatedLiteralClassName' => [
-                'code' => '<?php
-                    class Invokable {}
-                    class Other {}
-
-                    /** @param class-string<Invokable> $class */
-                    function f(string $class): bool {
-                        return $class === "Other";
-                    }',
-                'error_message' => 'DocblockTypeContradiction',
-            ],
-            'classStringComparedToUnknownLiteralClassName' => [
-                'code' => '<?php
-                    /** @param class-string $class */
-                    function f(string $class): bool {
-                        return $class === "Missing";
-                    }',
-                'error_message' => 'DocblockTypeContradiction',
-            ],
             'staticInAStaticCallNamingASubclassRejectsTheParentClassString' => [
                 'code' => '<?php
                     class Foo {
@@ -1575,6 +1604,25 @@ final class ClassLikeStringTest extends TestCase
                         return $s;
                     }',
                 'error_message' => 'InvalidReturnStatement',
+            ],
+            'classStringComparedToUnrelatedLiteralClassName' => [
+                'code' => '<?php
+                    class Invokable {}
+                    class Other {}
+
+                    /** @param class-string<Invokable> $class */
+                    function f(string $class): bool {
+                        return $class === "Other";
+                    }',
+                'error_message' => 'DocblockTypeContradiction',
+            ],
+            'classStringComparedToUnknownLiteralClassName' => [
+                'code' => '<?php
+                    /** @param class-string $class */
+                    function f(string $class): bool {
+                        return $class === "Missing";
+                    }',
+                'error_message' => 'DocblockTypeContradiction',
             ],
         ];
     }
