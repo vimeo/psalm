@@ -155,6 +155,11 @@ final class TernaryAnalyzer
         }
 
         try {
+            if (FormulaGenerator::leavesOutClausesOfAssignedVars($stmt->cond, $context->self)) {
+                // the right side of an `&&` that assigns isn't evaluated where the left one is false
+                throw new ComplicatedExpressionException();
+            }
+
             $if_scope->negated_clauses = Algebra::negateFormula($if_clauses);
         } catch (ComplicatedExpressionException) {
             try {

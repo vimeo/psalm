@@ -767,6 +767,40 @@ final class AssignmentInConditionalTest extends TestCase
                         if ($a) {}
                     }',
             ],
+            'assignmentInRightOperandOfAndKeepsThePreviousValueWhereTheLeftOneIsFalse' => [
+                'code' => '<?php
+                    function fresh(): ?string {
+                        return null;
+                    }
+
+                    function elseBranch(?string $name): void {
+                        if (null === $name && null !== $name = fresh()) {
+                            echo "assigned";
+                        } else {
+                            /** @psalm-check-type-exact $name = null|string */
+                            echo "else";
+                        }
+                    }
+
+                    function afterIf(?string $name): void {
+                        if (null === $name && null !== $name = fresh()) {
+                            return;
+                        }
+
+                        /** @psalm-check-type-exact $name = null|string */
+                        echo "after";
+                    }
+
+                    function ternary(?string $name): string {
+                        $result = null === $name && null !== ($name = fresh()) ? "assigned" : $name;
+                        /** @psalm-check-type-exact $name = null|string */
+
+                        return (string) $result;
+                    }',
+                'assertions' => [],
+                'ignored_issues' => ['RedundantCondition'],
+                'php_version' => '8.1',
+            ],
             'assignmentInRightOperandOfAndForgetsWhatTheLeftOneTestedOfThePreviousValue' => [
                 'code' => '<?php
                     function fresh(): ?string {
