@@ -1121,6 +1121,26 @@ final class RedundantConditionTest extends TestCase
                     }',
                 'error_message' => 'TypeDoesNotContainType - src' . DIRECTORY_SEPARATOR . 'somefile.php:3:32 - list{3} cannot be identical to list{1, 2',
             ],
+            'inequalityWithAnEmptyArrayOfANonEmptyArrayIsRedundant' => [
+                'code' => '<?php
+                    $a = [1, 2];
+                    array_shift($a);
+
+                    if ($a !== []) {
+                        echo 1;
+                    }',
+                'error_message' => 'RedundantCondition - src' . DIRECTORY_SEPARATOR . 'somefile.php:5:25 - list{2} can never be an empty array',
+            ],
+            'inequalityWithAnEmptyArrayOfADocblockNonEmptyArrayIsRedundant' => [
+                'code' => '<?php
+                    /** @var non-empty-list<int> $a */
+                    $a = [];
+
+                    if ($a !== []) {
+                        echo 1;
+                    }',
+                'error_message' => 'RedundantConditionGivenDocblockType - src' . DIRECTORY_SEPARATOR . 'somefile.php:5:25 - Docblock-defined type non-empty-list<int> can never be an empty array',
+            ],
             'negatedTypeCheckOfAKnownTypeExplainsThatItCanNeverBeTrue' => [
                 'code' => '<?php
                     $a = "some";
