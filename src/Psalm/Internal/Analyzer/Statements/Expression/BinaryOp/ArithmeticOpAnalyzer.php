@@ -1165,14 +1165,14 @@ final class ArithmeticOpAnalyzer
      * round(), floor() and ceil() return floats, and the functions that read a number in a base ints or floats, that
      * are whole numbers: converting them to int loses nothing
      *
-     * @psalm-pure
+     * @psalm-capabilities read-props
      */
     private static function isCallOfAFunctionReturningWholeNumbers(PhpParser\Node\Expr $expr): bool
     {
         return $expr instanceof PhpParser\Node\Expr\FuncCall
             && $expr->name instanceof PhpParser\Node\Name
             && in_array(
-                strtolower($expr->name->getLast()),
+                strtolower($expr->name->name),
                 ['round', 'floor', 'ceil', 'hexdec', 'octdec', 'bindec'],
                 true,
             );
