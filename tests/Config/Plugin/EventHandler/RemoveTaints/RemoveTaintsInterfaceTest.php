@@ -10,12 +10,10 @@ use Psalm\Context;
 use Psalm\Exception\CodeException;
 use Psalm\Internal\Analyzer\ProjectAnalyzer;
 use Psalm\Internal\IncludeCollector;
-use Psalm\Internal\Provider\FakeFileProvider;
 use Psalm\Internal\Provider\Providers;
-use Psalm\Internal\RuntimeCaches;
 use Psalm\Report\ReportOptions;
+use Psalm\Tests\DeferredAnalyzerTestCase;
 use Psalm\Tests\Internal\Provider\FakeParserCacheProvider;
-use Psalm\Tests\TestCase;
 use Psalm\Tests\TestConfig;
 
 use function define;
@@ -25,7 +23,7 @@ use function getcwd;
 
 use const DIRECTORY_SEPARATOR;
 
-final class RemoveTaintsInterfaceTest extends TestCase
+final class RemoveTaintsInterfaceTest extends DeferredAnalyzerTestCase
 {
     #[Override]
     public static function setUpBeforeClass(): void
@@ -39,6 +37,8 @@ final class RemoveTaintsInterfaceTest extends TestCase
         if (!defined('PHP_PARSER_VERSION')) {
             define('PHP_PARSER_VERSION', '4.0.0');
         }
+
+        parent::setUpBeforeClass();
     }
 
     private function getProjectAnalyzerWithConfig(Config $config): ProjectAnalyzer
@@ -55,16 +55,6 @@ final class RemoveTaintsInterfaceTest extends TestCase
         $p->initExtraFiles();
         $p->initProjectFiles();
         return $p;
-    }
-
-    /**
-     * @psalm-external-mutation-free
-     */
-    #[Override]
-    public function setUp(): void
-    {
-        RuntimeCaches::clearAll();
-        $this->file_provider = new FakeFileProvider();
     }
 
 

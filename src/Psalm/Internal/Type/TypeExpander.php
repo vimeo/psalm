@@ -11,6 +11,7 @@ use Psalm\Exception\UnresolvableConstantException;
 use Psalm\Internal\Analyzer\Statements\Expression\ArrayAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\Fetch\AtomicPropertyFetchAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\Fetch\ConstFetchAnalyzer;
+use Psalm\Internal\TypeVisitor\ContainsStaticVisitor;
 use Psalm\Storage\Assertion\IsType;
 use Psalm\Storage\Capabilities;
 use Psalm\Type;
@@ -49,8 +50,10 @@ use ReflectionProperty;
 use function array_all;
 use function array_any;
 use function array_filter;
+use function array_keys;
 use function array_map;
 use function array_merge;
+use function array_shift;
 use function array_values;
 use function count;
 use function is_string;
@@ -130,6 +133,23 @@ final class TypeExpander
             : null;
 
         return $fleshed_out_type;
+    }
+
+    /**
+     * The type expanded with $static_class_type when it has `static`, as is otherwise
+     */
+    public static function expandStatic(
+        Codebase $codebase,
+        Union $type,
+        string|TNamedObject $static_class_type,
+        bool $final,
+    ): Union {
+        $static_visitor = new ContainsStaticVisitor();
+        $static_visitor->traverse($type);
+
+        return $static_visitor->matches()
+            ? self::expandUnion($codebase, $type, null, $static_class_type, null, true, false, $final)
+            : $type;
     }
 
     /**
@@ -862,6 +882,16 @@ final class TypeExpander
             $return_type = $return_type->setIntersectionTypes($return_type_types)
                 ->setIsStatic(true, true);
         } elseif ($return_type->is_static
+            && !$return_type->is_static_resolved
+            && $return_type::class === TNamedObject::class
+            && is_string($static_class_type)
+            && !$final
+            && $codebase->classOrInterfaceExists($static_class_type)
+            && (strtolower($static_class_type) === strtolower($return_type->value)
+                || $codebase->classExtendsOrImplements($static_class_type, $return_type->value))
+        ) {
+            $return_type = $return_type->setValueIsStatic($static_class_type, true, true);
+        } elseif ($return_type->is_static
             && is_string($static_class_type)
             && $final
             && (
@@ -1213,7 +1243,29 @@ final class TypeExpander
             if (!$storage->final) {
                 $all_sealed = false;
             }
-            foreach ($storage->properties as $key => $property) {
+
+            // the properties a class declares come before those of the traits it uses
+            $property_sources = [$storage];
+            $traits_to_visit = array_keys($storage->used_traits);
+            $visited_traits = [];
+            while ($traits_to_visit) {
+                $used_trait = array_shift($traits_to_visit);
+                if (isset($visited_traits[$used_trait]) || !$codebase->classlike_storage_provider->has($used_trait)) {
+                    continue;
+                }
+
+                $visited_traits[$used_trait] = true;
+                $trait_storage = $codebase->classlike_storage_provider->get($used_trait);
+                $property_sources[] = $trait_storage;
+                $traits_to_visit = [...$traits_to_visit, ...array_keys($trait_storage->used_traits)];
+            }
+
+            $source_properties = [];
+            foreach ($property_sources as $property_source) {
+                $source_properties += $property_source->properties;
+            }
+
+            foreach ($source_properties as $key => $property) {
                 if (isset($properties[$key])) {
                     continue;
                 }
