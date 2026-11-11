@@ -453,6 +453,7 @@ final class UnusedCodeTest extends TestCase
                 'PossiblyUnusedMethod',
                 'UndefinedClass',
                 'UndefinedClass',
+                'UndefinedClass',
                 'UnusedProperty',
                 'UnusedProperty',
                 'UnusedProperty',
