@@ -746,66 +746,35 @@ final class BinaryOperationTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
-            'arithmeticOnATemplateBoundedByIntOrFloat' => [
+            'assignmentInTheRightOperandOfAndMayNotHaveRun' => [
                 'code' => '<?php
-                    /**
-                     * @template TNumeric as int|float
-                     * @param TNumeric $n
-                     * @return float|int
-                     */
-                    function sum(int|float $n) {
-                        return 0 + $n;
+                    function fetch(): ?float {
+                        return rand(0, 1) ? 1.5 : null;
                     }
 
-                    /**
-                     * @template TNumeric as int|float
-                     * @param TNumeric $n
-                     * @return float
-                     */
-                    function multiplyByAFloat(int|float $n): float {
-                        return $n * 2.5;
+                    function check(bool $enabled): ?float {
+                        $value = 0.0;
+                        $matched = $enabled && null !== ($value = fetch());
+
+                        return $value;
                     }
 
-                    /**
-                     * @template TNumeric as int|float
-                     * @param TNumeric $n
-                     * @return float
-                     */
-                    function subtractFromAFloat(int|float $n): float {
-                        return 1.5 - $n;
+                    $result = check(true);',
+                'assertions' => [
+                    '$result===' => 'float|null',
+                ],
+            ],
+            'assignmentInTheRightOperandOfAndKeepsTheTypeBeforeIt' => [
+                'code' => '<?php
+                    function fetch(): ?float {
+                        return rand(0, 1) ? 1.5 : null;
                     }
 
-                    /**
-                     * @template TNumeric as int|float
-                     * @param TNumeric $n
-                     * @return int
-                     */
-                    function remainder(int|float $n): int {
-                        return $n % 2;
-                    }
-
-                    /**
-                     * @template A as int|float
-                     * @template B as int|float
-                     * @param A $a
-                     * @param B $b
-                     * @return float|int
-                     */
-                    function sumOfTwo(int|float $a, int|float $b) {
-                        return $a + $b;
-                    }
-
-                    /**
-                     * @template T as int
-                     * @param T $n
-                     * @return int
-                     */
-                    function addToAnInt(int $n): int {
-                        return $n + 1;
+                    function check(bool $enabled): void {
+                        $value = 0;
+                        $matched = $enabled && null !== ($value = fetch());
+                        /** @psalm-check-type-exact $value = 0|float|null */;
                     }',
-                'assertions' => [],
-                'ignored_issues' => [],
-                'php_version' => '8.0',
             ],
             'coalesceOfAStaticAndASelfPropertyOffset' => [
                 'code' => '<?php
@@ -1197,6 +1166,25 @@ final class BinaryOperationTest extends TestCase
                     $bar = new A();
                     foo("" . $bar);
                 ',
+            ],
+            'concatenateStringableUsesDeclaredStringReturn' => [
+                'code' => '<?php
+                    final class Text {
+                        public function __toString(): string {
+                            return "text";
+                        }
+                    }
+
+                    /** @var lowercase-string $lowercase */
+                    $lowercase = "lowercase";
+                    $prefixed = "abc" . new Text();
+                    $lowercasePrefixed = $lowercase . new Text();',
+                'assertions' => [
+                    '$prefixed===' => 'non-falsy-string',
+                    '$lowercasePrefixed===' => 'string',
+                ],
+                'ignored_issues' => ['ImplicitToStringCast'],
+                'php_version' => '8.1',
             ],
             'concatenateNegativeIntLeftSideIsNumeric' => [
                 'code' => '<?php
@@ -2141,6 +2129,67 @@ final class BinaryOperationTest extends TestCase
                 'ignored_issues' => ['TypeDoesNotContainType', 'RedundantCondition'],
                 'php_version' => '8.1',
             ],
+            'arithmeticOnATemplateBoundedByIntOrFloat' => [
+                'code' => '<?php
+                    /**
+                     * @template TNumeric as int|float
+                     * @param TNumeric $n
+                     * @return float|int
+                     */
+                    function sum(int|float $n) {
+                        return 0 + $n;
+                    }
+
+                    /**
+                     * @template TNumeric as int|float
+                     * @param TNumeric $n
+                     * @return float
+                     */
+                    function multiplyByAFloat(int|float $n): float {
+                        return $n * 2.5;
+                    }
+
+                    /**
+                     * @template TNumeric as int|float
+                     * @param TNumeric $n
+                     * @return float
+                     */
+                    function subtractFromAFloat(int|float $n): float {
+                        return 1.5 - $n;
+                    }
+
+                    /**
+                     * @template TNumeric as int|float
+                     * @param TNumeric $n
+                     * @return int
+                     */
+                    function remainder(int|float $n): int {
+                        return $n % 2;
+                    }
+
+                    /**
+                     * @template A as int|float
+                     * @template B as int|float
+                     * @param A $a
+                     * @param B $b
+                     * @return float|int
+                     */
+                    function sumOfTwo(int|float $a, int|float $b) {
+                        return $a + $b;
+                    }
+
+                    /**
+                     * @template T as int
+                     * @param T $n
+                     * @return int
+                     */
+                    function addToAnInt(int $n): int {
+                        return $n + 1;
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
         ];
     }
 
@@ -2151,19 +2200,6 @@ final class BinaryOperationTest extends TestCase
     public static function providerInvalidCodeParse(): iterable
     {
         return [
-            'arithmeticOnATemplateBoundedByAStringIsStillMixed' => [
-                'code' => '<?php
-                    /**
-                     * @template T as int|string
-                     * @param T $n
-                     */
-                    function f(int|string $n): void {
-                        echo 1 + $n;
-                    }',
-                'error_message' => 'MixedOperand',
-                'error_levels' => [],
-                'php_version' => '8.0',
-            ],
             'assignmentToSelfStaticPropertyForgetsTheNarrowingOfStaticOne' => [
                 'code' => '<?php
                     interface Container {}
@@ -2387,6 +2423,19 @@ final class BinaryOperationTest extends TestCase
                         return "hello $s1 $s2";
                     }',
                 'error_message' => 'LessSpecificReturnStatement',
+            ],
+            'arithmeticOnATemplateBoundedByAStringIsStillMixed' => [
+                'code' => '<?php
+                    /**
+                     * @template T as int|string
+                     * @param T $n
+                     */
+                    function f(int|string $n): void {
+                        echo 1 + $n;
+                    }',
+                'error_message' => 'MixedOperand',
+                'error_levels' => [],
+                'php_version' => '8.0',
             ],
         ];
     }
