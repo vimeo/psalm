@@ -53,14 +53,18 @@ final class MutationStatementsCacheTest extends TestCase
         }
     }
 
-    #[DataProvider('provideArrayCache')]
+    #[DataProvider('provideModes')]
     public function testInlinedMethodStatementsAreFetchedOnceAfterTheFirstRetainedFetch(
         bool $array_cache,
+        bool $server_mode,
+        bool $language_server,
         int $expected_fetches,
     ): void {
         $file_path = 'somefile.php';
 
         $this->useParserCache($array_cache);
+        $this->project_analyzer->getCodebase()->server_mode = $server_mode;
+        $this->project_analyzer->getCodebase()->language_server = $language_server;
         $this->addFile(
             $file_path,
             '<?php
@@ -121,15 +125,18 @@ final class MutationStatementsCacheTest extends TestCase
 
     /**
      * Each call fetches the file twice: once for barBar() and once more when inlining setUser() into it.
-     * Without arrayCache only the first two fetches reach the parser cache, the first one is not retained.
+     * Only the first two fetches reach the parser cache, the first one is not retained. In server mode and in the
+     * language server files can change, so every fetch does.
      *
-     * @return iterable<string, array{bool, int}>
+     * @return iterable<string, array{bool, bool, bool, int}>
      * @psalm-pure
      */
-    public static function provideArrayCache(): iterable
+    public static function provideModes(): iterable
     {
-        yield 'arrayCache off' => [false, 2];
-        yield 'arrayCache on' => [true, 10];
+        yield 'arrayCache off' => [false, false, false, 2];
+        yield 'arrayCache on' => [true, false, false, 2];
+        yield 'server mode' => [true, true, false, 10];
+        yield 'language server' => [true, false, true, 10];
     }
 
     private function useParserCache(bool $array_cache): void

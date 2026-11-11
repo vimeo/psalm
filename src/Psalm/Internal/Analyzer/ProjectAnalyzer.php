@@ -1334,7 +1334,8 @@ final class ProjectAnalyzer
     /**
      * Parsed statements of files whose methods getMethodMutations() inlined, least recently used first.
      * Inlining $this->method() and parent::method() calls made by a constructor fetched the declaring file
-     * from the parser cache every time, which is a full unserialize when arrayCache is off.
+     * every time: a full unserialize from the parser cache when arrayCache is off, and for vendor files, which
+     * StatementsProvider keeps serialized, whatever arrayCache says.
      *
      * @var array<string, array{list<Stmt>, int}>
      */
@@ -1355,8 +1356,8 @@ final class ProjectAnalyzer
      */
     private function getStatementsForMutations(string $file_path): array
     {
-        if ($this->config->array_cache || $this->codebase->server_mode || $this->codebase->language_server) {
-            // either the cache already keeps every AST in memory, or files can change under us
+        if ($this->codebase->server_mode || $this->codebase->language_server) {
+            // files can change under us
             return $this->codebase->getStatementsForFile($file_path);
         }
 
