@@ -669,147 +669,526 @@ final class PropertyTypeTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
-            'nullsafeFetchOfANonNullablePropertyChecksTheReceiver' => [
+            'staticOfTheCallerIsNotTheStaticPropertyOfAnotherClassOfTheSameName' => [
                 'code' => '<?php
-                    final class T {}
+                    final class Other {
+                        public static ?int $p = null;
 
-                    final class U {
-                        public function __construct(public T $valueType) {}
-                    }
-
-                    final class N {
-                        public ?U $unsealed = null;
-                    }
-
-                    function truthy(N $n): bool {
-                        if ($n->unsealed?->valueType) {
-                            return get_class($n->unsealed->valueType) === T::class;
+                        public static function clear(): void {
+                            self::$p = null;
                         }
-
-                        return false;
-                    }
-
-                    function notNull(N $n): bool {
-                        if ($n->unsealed?->valueType !== null) {
-                            return get_class($n->unsealed->valueType) === T::class;
-                        }
-
-                        return false;
-                    }',
-                'assertions' => [],
-                'ignored_issues' => [],
-                'php_version' => '8.0',
-            ],
-            'nullsafeFetchOfANonNullablePropertyOfATemplateReceiverChecksTheReceiver' => [
-                'code' => '<?php
-                    final class U {
-                        public string $s = "";
-                    }
-
-                    /**
-                     * @template T of U
-                     * @param T|null $u
-                     */
-                    function check($u): bool {
-                        if ($u?->s !== null) {
-                            return strlen($u->s) > 0;
-                        }
-
-                        return false;
-                    }',
-                'assertions' => [],
-                'ignored_issues' => [],
-                'php_version' => '8.0',
-            ],
-            'nullsafeChainNotNullNarrowsEveryReceiver' => [
-                'code' => '<?php
-                    final class B {
-                        public ?string $value = null;
                     }
 
                     final class A {
-                        public ?B $b = null;
-                    }
+                        public static ?int $p = null;
 
-                    final class Root {
-                        public ?A $a = null;
-                    }
+                        public static function get(): int {
+                            static::$p = 1;
+                            Other::clear();
 
-                    function t(Root $r): void {
-                        if ($r->a?->b?->value !== null) {
-                            echo strlen($r->a->b->value);
+                            return static::$p;
                         }
                     }',
                 'assertions' => [],
                 'ignored_issues' => [],
                 'php_version' => '8.0',
             ],
-            'nullsafePropertyNotNullNarrowsTheReceiver' => [
+            'parentStaticPropertyRedeclaredByTheParentIsNotTheOneOfTheGrandparent' => [
                 'code' => '<?php
-                    final class B { public ?string $value = null; }
-                    final class A { public ?B $b = null; }
-                    /** @var A $a */
-                    $a = $_GET["a"];
-                    if ($a->b?->value !== null) {
-                        $x = $a->b->value;
-                    } else {
-                        $x = "";
-                    }',
-                'assertions' => [
-                    '$x===' => 'string',
-                ],
-                'ignored_issues' => [],
-                'php_version' => '8.0',
-            ],
-            'nullsafePropertyNotNullNarrowsTheNullsafeFetch' => [
-                'code' => '<?php
-                    final class B { public ?string $value = null; }
-                    final class A { public ?B $b = null; }
-                    /** @var A $a */
-                    $a = $_GET["a"];
-                    if ($a->b?->value !== null) {
-                        $x = $a->b?->value;
-                    } else {
-                        $x = "";
-                    }',
-                'assertions' => [
-                    '$x===' => 'string',
-                ],
-                'ignored_issues' => ['TypeDoesNotContainNull', 'RedundantCondition'],
-                'php_version' => '8.0',
-            ],
-            'nullsafePropertyTruthyNarrowsTheReceiver' => [
-                'code' => '<?php
-                    final class B { public ?string $value = null; }
-                    final class A { public ?B $b = null; }
-                    /** @var A $a */
-                    $a = $_GET["a"];
-                    if ($a->b?->value) {
-                        $x = $a->b;
-                    } else {
-                        $x = new B();
-                    }',
-                'assertions' => [
-                    '$x===' => 'B',
-                ],
-                'ignored_issues' => ['RiskyTruthyFalsyComparison'],
-                'php_version' => '8.0',
-            ],
-            'nullsafePropertyStaysNullableOutsideTheCheck' => [
-                'code' => '<?php
-                    final class B { public ?string $value = null; }
-                    final class A { public ?B $b = null; }
-                    /** @var A $a */
-                    $a = $_GET["a"];
-                    if ($a->b?->value !== null) {
-                        echo "set";
+                    class G {
+                        public static ?int $p = null;
                     }
-                    $x = $a->b?->value;',
-                'assertions' => [
-                    '$x===' => 'null|string',
-                ],
+
+                    class P extends G {
+                        public static ?int $p = null;
+                    }
+
+                    final class A extends P {
+                        public static function clear(): void {
+                            parent::$p = null;
+                        }
+                    }
+
+                    function get(): int {
+                        G::$p = 1;
+                        A::clear();
+
+                        return G::$p;
+                    }',
+                'assertions' => [],
                 'ignored_issues' => [],
                 'php_version' => '8.0',
+            ],
+            'staticPropertyOfATraitIsOnePropertyPerUsingClass' => [
+                'code' => '<?php
+                    trait Holder {
+                        public static ?int $v = null;
+                    }
+
+                    final class A {
+                        use Holder;
+
+                        public static function clear(): void {
+                            self::$v = null;
+                        }
+                    }
+
+                    final class B {
+                        use Holder;
+
+                        public static function get(): int {
+                            self::$v = 1;
+                            A::clear();
+
+                            return self::$v;
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'staticPropertyAssignedThroughStaticInAParentCallIsForgottenInTheCallingClass' => [
+                'code' => '<?php
+                    class Base {
+                        public static bool $flag = false;
+
+                        public static function prepare(): void {
+                            static::$flag = true;
+                        }
+                    }
+
+                    final class Child extends Base {
+                        public static bool $flag = false;
+
+                        public static function run(): bool {
+                            Child::$flag = false;
+                            parent::prepare();
+
+                            if (Child::$flag) {
+                                return true;
+                            }
+
+                            return false;
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'staticPropertyAssignedByAStaticMethodIsForgottenAfterTheCall' => [
+                'code' => '<?php
+                    final class Counter {
+                        public static bool $ready = false;
+
+                        public static function prepare(): void {
+                            self::$ready = true;
+                        }
+
+                        public static function run(): void {
+                            self::$ready = false;
+                            self::prepare();
+
+                            if (self::$ready) {
+                                echo "ready";
+                            }
+                        }
+                    }',
+            ],
+            'staticPropertyAssignedByAnInstanceMethodIsForgottenInALoop' => [
+                'code' => '<?php
+                    final class Widget {
+                        private static bool $isSomething = false;
+
+                        /** @param list<string> $values */
+                        public function run(array $values): void {
+                            self::$isSomething = false;
+
+                            foreach ($values as $value) {
+                                if (self::$isSomething) {
+                                    echo $value;
+                                    continue;
+                                }
+
+                                $this->helper();
+                            }
+                        }
+
+                        private function helper(): void {
+                            static::$isSomething = true;
+                        }
+                    }',
+            ],
+            'staticPropertyAssignedThroughParentIsForgottenInTheNamedClass' => [
+                'code' => '<?php
+                    class Base {
+                        public static bool $ready = false;
+                    }
+
+                    final class Child extends Base {
+                        public static function prepare(): void {
+                            parent::$ready = true;
+                        }
+
+                        public static function run(): void {
+                            Base::$ready = false;
+                            self::prepare();
+
+                            if (Base::$ready) {
+                                echo "ready";
+                            }
+                        }
+                    }',
+            ],
+            'staticPropertyAssignedThroughTheNamedClassIsForgottenAsSelf' => [
+                'code' => '<?php
+                    class Base {
+                        public static bool $ready = false;
+                    }
+
+                    final class Child extends Base {
+                        public static function prepare(): void {
+                            Base::$ready = true;
+                        }
+
+                        public static function run(): void {
+                            self::$ready = false;
+                            self::prepare();
+
+                            if (self::$ready) {
+                                echo "ready";
+                            }
+                        }
+                    }',
+            ],
+            'staticPropertyAssignedThroughAChildClassIsForgottenInTheParentClass' => [
+                'code' => '<?php
+                    class Base {
+                        public static bool $ready = false;
+                    }
+
+                    final class Child extends Base {
+                        public static function prepare(): void {
+                            Child::$ready = true;
+                        }
+
+                        public static function run(): void {
+                            Base::$ready = false;
+                            self::prepare();
+
+                            if (Base::$ready) {
+                                echo "ready";
+                            }
+                        }
+                    }',
+            ],
+            'staticPropertyRedeclaredByAChildClassIsAnotherPropertyThanTheOneAssigned' => [
+                'code' => '<?php
+                    class Base {
+                        public static bool $flag = false;
+                    }
+
+                    final class Child extends Base {
+                        public static bool $flag = false;
+
+                        public static function prepare(): void {
+                            Base::$flag = true;
+                        }
+
+                        public static function run(): void {
+                            Child::$flag = false;
+                            self::prepare();
+
+                            /** @psalm-check-type-exact $flag = false */
+                            $flag = Child::$flag;
+                        }
+                    }',
+            ],
+            'firstClassCallableOfAMethodThatAssignsAStaticPropertyKeepsItsType' => [
+                'code' => '<?php
+                    final class Counter {
+                        public static bool $ready = false;
+
+                        public static function prepare(): void {
+                            self::$ready = true;
+                        }
+
+                        public static function run(): void {
+                            self::$ready = false;
+                            $callback = self::prepare(...);
+
+                            /** @psalm-check-type-exact $ready = false */
+                            $ready = self::$ready;
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
+            'selfInAnInheritedMethodIsTheClassThatDeclaresItNotTheRedeclaringChild' => [
+                'code' => '<?php
+                    class Base {
+                        public static bool $flag = false;
+
+                        public static function prepare(): void {
+                            self::$flag = true;
+                        }
+                    }
+
+                    final class Child extends Base {
+                        public static bool $flag = false;
+
+                        public static function runChild(): void {
+                            Child::$flag = false;
+                            Child::prepare();
+
+                            /** @psalm-check-type-exact $child = false */
+                            $child = Child::$flag;
+                        }
+
+                        public static function runBase(): void {
+                            Base::$flag = false;
+                            Child::prepare();
+
+                            /** @psalm-check-type-exact $base = bool */
+                            $base = Base::$flag;
+                        }
+                    }',
+            ],
+            'staticInAnInheritedMethodIsTheClassItIsCalledOn' => [
+                'code' => '<?php
+                    class Base {
+                        public static bool $flag = false;
+
+                        public static function prepare(): void {
+                            static::$flag = true;
+                        }
+                    }
+
+                    final class Child extends Base {
+                        public static bool $flag = false;
+
+                        public static function run(): void {
+                            Child::$flag = false;
+                            Base::$flag = false;
+                            Child::prepare();
+
+                            /** @psalm-check-type-exact $child = bool */
+                            $child = Child::$flag;
+                            /** @psalm-check-type-exact $base = false */
+                            $base = Base::$flag;
+                        }
+                    }',
+            ],
+            'selfInAMethodOfATraitIsTheClassUsingTheTraitNotTheClassItIsCalledOn' => [
+                'code' => '<?php
+                    trait Prepares {
+                        public static function prepare(): void {
+                            self::$flag = true;
+                        }
+                    }
+
+                    class Base {
+                        use Prepares;
+
+                        public static bool $flag = false;
+                    }
+
+                    final class Child extends Base {
+                        public static bool $flag = false;
+
+                        public static function runChild(): void {
+                            Child::$flag = false;
+                            Child::prepare();
+
+                            /** @psalm-check-type-exact $child = false */
+                            $child = Child::$flag;
+                        }
+
+                        public static function runBase(): void {
+                            Base::$flag = false;
+                            Child::prepare();
+
+                            /** @psalm-check-type-exact $base = bool */
+                            $base = Base::$flag;
+                        }
+                    }',
+            ],
+            'staticPropertyIncrementedByAMethodIsForgottenAfterTheCall' => [
+                'code' => '<?php
+                    final class Holder {
+                        public static int $n = 0;
+
+                        public static function change(): void {
+                            self::$n++;
+                        }
+
+                        public static function run(): void {
+                            self::$n = 0;
+                            self::change();
+
+                            /** @psalm-check-type-exact $n = int */
+                            $n = self::$n;
+                        }
+                    }',
+            ],
+            'staticPropertyPreDecrementedByAMethodIsForgottenAfterTheCall' => [
+                'code' => '<?php
+                    final class Holder {
+                        public static int $n = 0;
+
+                        public static function change(): void {
+                            --self::$n;
+                        }
+
+                        public static function run(): void {
+                            self::$n = 0;
+                            self::change();
+
+                            /** @psalm-check-type-exact $n = int */
+                            $n = self::$n;
+                        }
+                    }',
+            ],
+            'staticPropertyInAListAssignedByAMethodIsForgottenAfterTheCall' => [
+                'code' => '<?php
+                    final class Holder {
+                        public static int $n = 0;
+
+                        public static function change(): void {
+                            [self::$n] = [1];
+                        }
+
+                        public static function run(): void {
+                            self::$n = 0;
+                            self::change();
+
+                            /** @psalm-check-type-exact $n = int */
+                            $n = self::$n;
+                        }
+                    }',
+            ],
+            'staticPropertyAForeachTargetOfAMethodIsForgottenAfterTheCall' => [
+                'code' => '<?php
+                    final class Holder {
+                        public static int $n = 0;
+
+                        public static function change(): void {
+                            foreach ([1] as self::$n) {}
+                        }
+
+                        public static function run(): void {
+                            self::$n = 0;
+                            self::change();
+
+                            /** @psalm-check-type-exact $n = int */
+                            $n = self::$n;
+                        }
+                    }',
+            ],
+            'staticPropertyAssignedByAClosureOfAMethodIsAKnownLimit' => [
+                'code' => '<?php
+                    final class Holder {
+                        public static int $n = 0;
+
+                        public static function change(): void {
+                            $set = function (): void {
+                                self::$n = 1;
+                            };
+                            $set();
+                        }
+
+                        public static function run(): void {
+                            self::$n = 0;
+                            self::change();
+
+                            /** @psalm-check-type-exact $n = 0 */
+                            $n = self::$n;
+                        }
+                    }',
+            ],
+            'staticPropertyAssignedByAConstructorIsAKnownLimit' => [
+                'code' => '<?php
+                    final class Holder {
+                        public static int $n = 0;
+
+                        public static function run(): void {
+                            self::$n = 0;
+                            new Setter();
+
+                            /** @psalm-check-type-exact $n = 0 */
+                            $n = self::$n;
+                        }
+                    }
+
+                    final class Setter {
+                        public function __construct() {
+                            Holder::$n = 1;
+                        }
+                    }',
+            ],
+            'staticPropertyAssignedByAFirstClassCallableIsAKnownLimit' => [
+                'code' => '<?php
+                    final class Holder {
+                        public static int $n = 0;
+
+                        public static function change(): void {
+                            self::$n = 1;
+                        }
+
+                        public static function run(): void {
+                            self::$n = 0;
+                            $change = self::change(...);
+                            $change();
+
+                            /** @psalm-check-type-exact $n = 0 */
+                            $n = self::$n;
+                        }
+                    }',
+            ],
+            'staticArrayPropertyChangedByAMethodIsForgottenAfterTheCall' => [
+                'code' => '<?php
+                    final class Queue {
+                        /** @var list<int> */
+                        private static array $items = [];
+
+                        public static function add(int $item): void {
+                            self::$items[] = $item;
+                        }
+
+                        public static function hasItems(): bool {
+                            self::$items = [];
+                            self::add(1);
+
+                            if (self::$items) {
+                                return true;
+                            }
+
+                            return false;
+                        }
+                    }',
+            ],
+            'staticPropertyAssignedByNamedClassIsForgottenAfterTheCall' => [
+                'code' => '<?php
+                    final class Flag {
+                        public static bool $raised = false;
+
+                        public function raise(): void {
+                            Flag::$raised = true;
+                        }
+                    }
+
+                    final class Runner {
+                        public static function run(): bool {
+                            Flag::$raised = false;
+                            (new Flag())->raise();
+
+                            if (Flag::$raised) {
+                                return true;
+                            }
+
+                            return false;
+                        }
+                    }',
             ],
             'propertyReadOnlyWhereIssetHoldsInATraitMayBeLeftUninitialisedByAReturnOfConstructor' => [
                 'code' => '<?php
@@ -3550,6 +3929,148 @@ final class PropertyTypeTest extends TestCase
                 'ignored_issues' => [],
                 'php_version' => '8.4',
             ],
+            'nullsafeFetchOfANonNullablePropertyChecksTheReceiver' => [
+                'code' => '<?php
+                    final class T {}
+
+                    final class U {
+                        public function __construct(public T $valueType) {}
+                    }
+
+                    final class N {
+                        public ?U $unsealed = null;
+                    }
+
+                    function truthy(N $n): bool {
+                        if ($n->unsealed?->valueType) {
+                            return get_class($n->unsealed->valueType) === T::class;
+                        }
+
+                        return false;
+                    }
+
+                    function notNull(N $n): bool {
+                        if ($n->unsealed?->valueType !== null) {
+                            return get_class($n->unsealed->valueType) === T::class;
+                        }
+
+                        return false;
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'nullsafeFetchOfANonNullablePropertyOfATemplateReceiverChecksTheReceiver' => [
+                'code' => '<?php
+                    final class U {
+                        public string $s = "";
+                    }
+
+                    /**
+                     * @template T of U
+                     * @param T|null $u
+                     */
+                    function check($u): bool {
+                        if ($u?->s !== null) {
+                            return strlen($u->s) > 0;
+                        }
+
+                        return false;
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'nullsafeChainNotNullNarrowsEveryReceiver' => [
+                'code' => '<?php
+                    final class B {
+                        public ?string $value = null;
+                    }
+
+                    final class A {
+                        public ?B $b = null;
+                    }
+
+                    final class Root {
+                        public ?A $a = null;
+                    }
+
+                    function t(Root $r): void {
+                        if ($r->a?->b?->value !== null) {
+                            echo strlen($r->a->b->value);
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'nullsafePropertyNotNullNarrowsTheReceiver' => [
+                'code' => '<?php
+                    final class B { public ?string $value = null; }
+                    final class A { public ?B $b = null; }
+                    /** @var A $a */
+                    $a = $_GET["a"];
+                    if ($a->b?->value !== null) {
+                        $x = $a->b->value;
+                    } else {
+                        $x = "";
+                    }',
+                'assertions' => [
+                    '$x===' => 'string',
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'nullsafePropertyNotNullNarrowsTheNullsafeFetch' => [
+                'code' => '<?php
+                    final class B { public ?string $value = null; }
+                    final class A { public ?B $b = null; }
+                    /** @var A $a */
+                    $a = $_GET["a"];
+                    if ($a->b?->value !== null) {
+                        $x = $a->b?->value;
+                    } else {
+                        $x = "";
+                    }',
+                'assertions' => [
+                    '$x===' => 'string',
+                ],
+                'ignored_issues' => ['TypeDoesNotContainNull', 'RedundantCondition'],
+                'php_version' => '8.0',
+            ],
+            'nullsafePropertyTruthyNarrowsTheReceiver' => [
+                'code' => '<?php
+                    final class B { public ?string $value = null; }
+                    final class A { public ?B $b = null; }
+                    /** @var A $a */
+                    $a = $_GET["a"];
+                    if ($a->b?->value) {
+                        $x = $a->b;
+                    } else {
+                        $x = new B();
+                    }',
+                'assertions' => [
+                    '$x===' => 'B',
+                ],
+                'ignored_issues' => ['RiskyTruthyFalsyComparison'],
+                'php_version' => '8.0',
+            ],
+            'nullsafePropertyStaysNullableOutsideTheCheck' => [
+                'code' => '<?php
+                    final class B { public ?string $value = null; }
+                    final class A { public ?B $b = null; }
+                    /** @var A $a */
+                    $a = $_GET["a"];
+                    if ($a->b?->value !== null) {
+                        echo "set";
+                    }
+                    $x = $a->b?->value;',
+                'assertions' => [
+                    '$x===' => 'null|string',
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
         ];
     }
 
@@ -3560,85 +4081,89 @@ final class PropertyTypeTest extends TestCase
     public static function providerInvalidCodeParse(): iterable
     {
         return [
-            'nullsafePropertyIdenticalToNullDoesNotNarrowTheReceiverInTheBranch' => [
+            'staticPropertyOfATraitIsSharedWithTheSubclassesOfTheUsingClass' => [
                 'code' => '<?php
-                    final class B {
-                        public ?string $value = null;
-                        public function m(): int { return 1; }
+                    trait Holder {
+                        public static ?int $v = null;
                     }
 
-                    final class A {
-                        public ?B $b = null;
+                    class A {
+                        use Holder;
+
+                        public static function clear(): void {
+                            self::$v = null;
+                        }
                     }
 
-                    function t(A $a): void {
-                        if ($a->b?->value === null) {
-                            echo $a->b->value;
+                    final class Child extends A {
+                        public static function get(): int {
+                            Child::$v = 1;
+                            A::clear();
+
+                            return Child::$v;
                         }
                     }',
-                'error_message' => 'PossiblyNullPropertyFetch',
+                'error_message' => 'NullableReturnStatement',
                 'error_levels' => [],
                 'php_version' => '8.0',
             ],
-            'nullsafePropertyLooselyEqualToNullDoesNotNarrowTheReceiverInTheBranch' => [
+            'staticPropertyIsKeptAfterACallThatDoesNotAssignIt' => [
                 'code' => '<?php
-                    final class B {
-                        public ?string $value = null;
-                        public function m(): int { return 1; }
-                    }
+                    final class Widget {
+                        private static bool $isSomething = false;
 
-                    final class A {
-                        public ?B $b = null;
-                    }
+                        public function run(): void {
+                            self::$isSomething = false;
+                            $this->helper();
 
-                    function t(A $a): void {
-                        if ($a->b?->value == null) {
-                            echo $a->b->value;
+                            if (self::$isSomething) {
+                                echo "never";
+                            }
+                        }
+
+                        private function helper(): void {
+                            echo "nothing";
                         }
                     }',
-                'error_message' => 'PossiblyNullPropertyFetch',
-                'error_levels' => [],
-                'php_version' => '8.0',
+                'error_message' => 'TypeDoesNotContainType - src' . DIRECTORY_SEPARATOR . 'somefile.php:9:33 - Operand of type false is always falsy',
             ],
-            'nullsafePropertyNotIssetDoesNotNarrowTheReceiverInTheBranch' => [
+            'privateTemplatedPropertyNotInitializedByAFinalParentConstructorChain' => [
                 'code' => '<?php
-                    final class B {
-                        public ?string $value = null;
-                        public function m(): int { return 1; }
-                    }
+                    /**
+                     * @template T
+                     */
+                    class Box {
+                        /**
+                         * @return Box<int>
+                         */
+                        public static function factory(): self {
+                            /** @var Box<int> $instance */
+                            $instance = new self();
 
-                    final class A {
-                        public ?B $b = null;
-                    }
-
-                    function t(A $a): void {
-                        if (!isset($a->b?->value)) {
-                            echo $a->b->value;
+                            return $instance;
                         }
-                    }',
-                'error_message' => 'PossiblyNullPropertyFetch',
-                'error_levels' => [],
-                'php_version' => '8.0',
-            ],
-            'nullsafePropertyIdenticalToNullLeavesTheReceiverNullableAfterAReturn' => [
-                'code' => '<?php
-                    final class B {
-                        public ?string $value = null;
-                        public function m(): int { return 1; }
                     }
 
-                    final class A {
-                        public ?B $b = null;
-                    }
-
-                    function t(A $a): void {
-                        if ($a->b?->value === null) {
-                            return;
+                    abstract class Base {
+                        final public function __construct() {
+                            $this->init();
                         }
 
-                        echo $a->b->m();
+                        abstract protected function init(): void;
+                    }
+
+                    final class Child extends Base {
+                        /** @var Box<int> */
+                        private $box;
+
+                        /** @var Box<int> */
+                        private $other;
+
+                        protected function init(): void {
+                            $this->box = Box::factory();
+                        }
                     }',
-                'error_message' => 'PossiblyNullReference',
+                'error_message' => 'PropertyNotSetInConstructor - src' . DIRECTORY_SEPARATOR . 'somefile.php:30:33 - Property Child::$other',
                 'error_levels' => [],
                 'php_version' => '8.0',
             ],
@@ -3681,46 +4206,6 @@ final class PropertyTypeTest extends TestCase
                         }
                     }',
                 'error_message' => 'PropertyNotSetInConstructor - src' . DIRECTORY_SEPARATOR . 'somefile.php:10:27 - Property BaseUser::$id',
-            ],
-            'privateTemplatedPropertyNotInitializedByAFinalParentConstructorChain' => [
-                'code' => '<?php
-                    /**
-                     * @template T
-                     */
-                    class Box {
-                        /**
-                         * @return Box<int>
-                         */
-                        public static function factory(): self {
-                            /** @var Box<int> $instance */
-                            $instance = new self();
-
-                            return $instance;
-                        }
-                    }
-
-                    abstract class Base {
-                        final public function __construct() {
-                            $this->init();
-                        }
-
-                        abstract protected function init(): void;
-                    }
-
-                    final class Child extends Base {
-                        /** @var Box<int> */
-                        private $box;
-
-                        /** @var Box<int> */
-                        private $other;
-
-                        protected function init(): void {
-                            $this->box = Box::factory();
-                        }
-                    }',
-                'error_message' => 'PropertyNotSetInConstructor - src' . DIRECTORY_SEPARATOR . 'somefile.php:30:33 - Property Child::$other',
-                'error_levels' => [],
-                'php_version' => '8.0',
             ],
             'propertyReadThroughCoalesceAndWithoutAGuardIsNotInitialisedByAReturnOfConstructor' => [
                 'code' => '<?php
@@ -5291,6 +5776,88 @@ final class PropertyTypeTest extends TestCase
                     }
                 PHP,
                 'error_message' => 'MissingConstructor',
+            ],
+            'nullsafePropertyIdenticalToNullDoesNotNarrowTheReceiverInTheBranch' => [
+                'code' => '<?php
+                    final class B {
+                        public ?string $value = null;
+                        public function m(): int { return 1; }
+                    }
+
+                    final class A {
+                        public ?B $b = null;
+                    }
+
+                    function t(A $a): void {
+                        if ($a->b?->value === null) {
+                            echo $a->b->value;
+                        }
+                    }',
+                'error_message' => 'PossiblyNullPropertyFetch',
+                'error_levels' => [],
+                'php_version' => '8.0',
+            ],
+            'nullsafePropertyLooselyEqualToNullDoesNotNarrowTheReceiverInTheBranch' => [
+                'code' => '<?php
+                    final class B {
+                        public ?string $value = null;
+                        public function m(): int { return 1; }
+                    }
+
+                    final class A {
+                        public ?B $b = null;
+                    }
+
+                    function t(A $a): void {
+                        if ($a->b?->value == null) {
+                            echo $a->b->value;
+                        }
+                    }',
+                'error_message' => 'PossiblyNullPropertyFetch',
+                'error_levels' => [],
+                'php_version' => '8.0',
+            ],
+            'nullsafePropertyNotIssetDoesNotNarrowTheReceiverInTheBranch' => [
+                'code' => '<?php
+                    final class B {
+                        public ?string $value = null;
+                        public function m(): int { return 1; }
+                    }
+
+                    final class A {
+                        public ?B $b = null;
+                    }
+
+                    function t(A $a): void {
+                        if (!isset($a->b?->value)) {
+                            echo $a->b->value;
+                        }
+                    }',
+                'error_message' => 'PossiblyNullPropertyFetch',
+                'error_levels' => [],
+                'php_version' => '8.0',
+            ],
+            'nullsafePropertyIdenticalToNullLeavesTheReceiverNullableAfterAReturn' => [
+                'code' => '<?php
+                    final class B {
+                        public ?string $value = null;
+                        public function m(): int { return 1; }
+                    }
+
+                    final class A {
+                        public ?B $b = null;
+                    }
+
+                    function t(A $a): void {
+                        if ($a->b?->value === null) {
+                            return;
+                        }
+
+                        echo $a->b->m();
+                    }',
+                'error_message' => 'PossiblyNullReference',
+                'error_levels' => [],
+                'php_version' => '8.0',
             ],
         ];
     }
