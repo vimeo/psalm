@@ -85299,19 +85299,19 @@ return array (
   ),
   'sodium_crypto_xof_shake128_init' => 
   array (
-    -1 => 'string',
+    -1 => 'SodiumCryptoXofShake128State',
     'domain=' => 'int|null',
   ),
   'sodium_crypto_xof_shake128_squeeze' => 
   array (
     -1 => 'string',
-    '&state' => 'string',
+    'state' => 'SodiumCryptoXofShake128State',
     'length' => 'int',
   ),
   'sodium_crypto_xof_shake128_update' => 
   array (
-    -1 => 'true',
-    '&state' => 'string',
+    -1 => 'void',
+    'state' => 'SodiumCryptoXofShake128State',
     'message' => 'string',
   ),
   'sodium_crypto_xof_shake256' => 
@@ -85322,19 +85322,19 @@ return array (
   ),
   'sodium_crypto_xof_shake256_init' => 
   array (
-    -1 => 'string',
+    -1 => 'SodiumCryptoXofShake256State',
     'domain=' => 'int|null',
   ),
   'sodium_crypto_xof_shake256_squeeze' => 
   array (
     -1 => 'string',
-    '&state' => 'string',
+    'state' => 'SodiumCryptoXofShake256State',
     'length' => 'int',
   ),
   'sodium_crypto_xof_shake256_update' => 
   array (
-    -1 => 'true',
-    '&state' => 'string',
+    -1 => 'void',
+    'state' => 'SodiumCryptoXofShake256State',
     'message' => 'string',
   ),
   'sodium_crypto_xof_turboshake128' => 
@@ -85345,19 +85345,19 @@ return array (
   ),
   'sodium_crypto_xof_turboshake128_init' => 
   array (
-    -1 => 'string',
+    -1 => 'SodiumCryptoXofTurboshake128State',
     'domain=' => 'int|null',
   ),
   'sodium_crypto_xof_turboshake128_squeeze' => 
   array (
     -1 => 'string',
-    '&state' => 'string',
+    'state' => 'SodiumCryptoXofTurboshake128State',
     'length' => 'int',
   ),
   'sodium_crypto_xof_turboshake128_update' => 
   array (
-    -1 => 'true',
-    '&state' => 'string',
+    -1 => 'void',
+    'state' => 'SodiumCryptoXofTurboshake128State',
     'message' => 'string',
   ),
   'sodium_crypto_xof_turboshake256' => 
@@ -85368,19 +85368,19 @@ return array (
   ),
   'sodium_crypto_xof_turboshake256_init' => 
   array (
-    -1 => 'string',
+    -1 => 'SodiumCryptoXofTurboshake256State',
     'domain=' => 'int|null',
   ),
   'sodium_crypto_xof_turboshake256_squeeze' => 
   array (
     -1 => 'string',
-    '&state' => 'string',
+    'state' => 'SodiumCryptoXofTurboshake256State',
     'length' => 'int',
   ),
   'sodium_crypto_xof_turboshake256_update' => 
   array (
-    -1 => 'true',
-    '&state' => 'string',
+    -1 => 'void',
+    'state' => 'SodiumCryptoXofTurboshake256State',
     'message' => 'string',
   ),
   'sodium_hex2bin' => 

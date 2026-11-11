@@ -1703,6 +1703,227 @@ final class AnnotationTest extends TestCase
                         }
                     };',
             ],
+            'typesWithSpacesAroundPipeAndAmpersand' => [
+                'code' => '<?php
+                    final class A {}
+                    interface I1 {}
+                    interface I2 {}
+
+                    /** @return A |null */
+                    function r1() { return null; }
+
+                    /** @psalm-return A  |  null the result | or not */
+                    function r2() { return null; }
+
+                    /** @phpstan-return A| null */
+                    function r3() { return null; }
+
+                    /** @return I1 &I2 */
+                    function r5() { throw new Exception(); }
+
+                    /**
+                     * @param A |null $x
+                     * @return A|null
+                     */
+                    function p1($x) { return $x; }
+
+                    /**
+                     * @param A  |  null $x the x | or not
+                     * @return A|null
+                     */
+                    function p2($x) { return $x; }
+
+                    /**
+                     * @param I1 & I2 $x
+                     * @return I1&I2
+                     */
+                    function p3($x) { return $x; }
+
+                    /**
+                     * @param A & $x
+                     * @param-out A |null $x
+                     */
+                    function p4(&$x): void { $x = null; }
+
+                    /**
+                     * @template T of A |null
+                     * @param T $x
+                     * @return T
+                     */
+                    function t($x) { return $x; }
+
+                    /**
+                     * @param mixed $x
+                     * @psalm-assert A |null $x
+                     */
+                    function a($x): void { assert($x === null || $x instanceof A); }
+
+                    $_r1 = r1();
+                    $_r2 = r2();
+                    $_r3 = r3();
+                    $_r5 = r5();
+                    $_p1 = p1(null);
+                    $_p2 = p2(null);
+                    /** @var A |null $_v */
+                    $_v = json_decode(\'null\');
+                    $_o = new A();
+                    p4($_o);
+                    $_t = t(null);
+                    $_a = json_decode(\'null\');
+                    a($_a);',
+                'assertions' => [
+                    '$_r1' => 'A|null',
+                    '$_r2' => 'A|null',
+                    '$_r3' => 'A|null',
+                    '$_r5' => 'I1&I2',
+                    '$_p1' => 'A|null',
+                    '$_p2' => 'A|null',
+                    '$_v' => 'A|null',
+                    '$_o' => 'A|null',
+                    '$_t' => 'null',
+                    '$_a' => 'A|null',
+                ],
+            ],
+            'thisUnionWithSpacesAroundPipe' => [
+                'code' => '<?php
+                    class T {
+                        /** @return $this | null */
+                        public function a() { return $this; }
+
+                        /** @return $this |null */
+                        public function b() { return null; }
+
+                        /** @param $this | null $x */
+                        public function c($x): ?self { return $x; }
+                    }
+
+                    $_a = (new T)->a();
+                    $_b = (new T)->b();
+                    $_c = (new T)->c(null);',
+                'assertions' => [
+                    '$_a' => 'T|null',
+                    '$_b' => 'T|null',
+                    '$_c' => 'T|null',
+                ],
+            ],
+            'typesContinuedOnTheNextLine' => [
+                'code' => '<?php
+                    final class A {}
+                    final class B {}
+
+                    /**
+                     * @mixin A
+                     *     |B
+                     */
+                    class T {
+                        /**
+                         * @return $this
+                         *     |null
+                         */
+                        public function a() { return null; }
+                    }
+
+                    /**
+                     * @return A
+                     *     |null
+                     */
+                    function r() { return null; }
+
+                    /**
+                     * @param A|
+                     *     null $x
+                     * @return A|null
+                     */
+                    function p($x) { return $x; }
+
+                    /**
+                     * @global A
+                     *     |null $_g
+                     */
+                    function g(): ?A { global $_g; return $_g; }
+
+                    /**
+                     * @global $this
+                     *     |null $_h
+                     */
+                    function h(): void {}
+
+                    /**
+                     * @param A &
+                     *     $x
+                     */
+                    function pr(&$x): A { return $x; }
+
+                    /**
+                     * @psalm-type Foo = A
+                     *     |null
+                     */
+                    final class F {
+                        /** @return Foo */
+                        public static function f() { return null; }
+                    }
+
+                    $_a = (new T)->a();
+                    $_r = r();
+                    $_p = p(null);
+                    $_f = F::f();',
+                'assertions' => [
+                    '$_a' => 'T|null',
+                    '$_r' => 'A|null',
+                    '$_p' => 'A|null',
+                    '$_f' => 'A|null',
+                ],
+            ],
+            'paramNameWithTrailingSemicolon' => [
+                'code' => '<?php
+                    /**
+                     * @param list<int> $list;
+                     * @return list<int>
+                     */
+                    function foo(array $list): array {
+                        return $list;
+                    }',
+            ],
+            'paramOutNameWithTrailingSemicolon' => [
+                'code' => '<?php
+                    /**
+                     * @param-out non-empty-string $s;
+                     */
+                    function foo(?string &$s): void {
+                        $s = "a";
+                    }
+
+                    foo($a);',
+                'assertions' => [
+                    '$a===' => 'non-empty-string',
+                ],
+            ],
+            'magicPropertyNameWithTrailingSemicolon' => [
+                'code' => '<?php
+                    /**
+                     * @property string $name;
+                     */
+                    final class A {
+                        public function __get(string $name) {
+                            return null;
+                        }
+                    }
+
+                    function foo(A $a): string {
+                        return $a->name;
+                    }',
+            ],
+            'globalNameWithTrailingSemicolon' => [
+                'code' => '<?php
+                    /**
+                     * @global int $foo;
+                     */
+                    function bar(): int {
+                        global $foo;
+
+                        return $foo;
+                    }',
+            ],
         ];
     }
 
