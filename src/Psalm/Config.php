@@ -12,6 +12,7 @@ use Composer\Semver\VersionParser;
 use DOMAttr;
 use DOMDocument;
 use DOMElement;
+use FilesystemIterator;
 use Generator;
 use InvalidArgumentException;
 use JsonException;
@@ -55,12 +56,17 @@ use Psalm\Issue\PropertyIssue;
 use Psalm\Issue\VariableIssue;
 use Psalm\Plugin\PluginEntryPointInterface;
 use Psalm\Plugin\PluginFileExtensionsInterface;
+use Psalm\Plugin\PluginFixableIssuesInterface;
 use Psalm\Plugin\PluginInterface;
 use Psalm\Progress\Progress;
 use Psalm\Progress\VoidProgress;
 use Psalm\Type\TaintKind;
+use RecursiveDirectoryIterator;
+use RecursiveIteratorIterator;
+use ReflectionClass;
 use RuntimeException;
 use SimpleXMLElement;
+use SplFileInfo;
 use Symfony\Component\Filesystem\Path;
 use Throwable;
 use UnexpectedValueException;
@@ -91,6 +97,7 @@ use function file_get_contents;
 use function flock;
 use function fopen;
 use function function_exists;
+use function get_debug_type;
 use function get_defined_constants;
 use function get_defined_functions;
 use function getcwd;
@@ -122,6 +129,7 @@ use function rtrim;
 use function scandir;
 use function sha1;
 use function simplexml_import_dom;
+use function sort;
 use function str_contains;
 use function str_ends_with;
 use function str_replace;
@@ -192,7 +200,6 @@ final class Config
         'symfony/framework-bundle' => 'Psalm\SymfonyPsalmPlugin\Plugin',
         'laravel/framework' => 'Psalm\LaravelPlugin\Plugin',
         'orchestra/testbench' => 'Psalm\LaravelPlugin\Plugin',
-        'sabre/event' => 'Psalm\SabreEventPlugin\Plugin',
     ];
 
     /**
@@ -605,6 +612,7 @@ final class Config
     public array $php_extensions = [
         "amqp" => null,
         "apcu" => null,
+        "curl" => null,
         "decimal" => null,
         "dom" => null,
         "ds" => null,
@@ -613,9 +621,12 @@ final class Config
         "gmp" => null,
         "ibm_db2" => null,
         "imagick" => null,
+        "intl" => null,
+        "ldap" => null,
         "memcached" => null,
         "mongodb" => null,
         "mysqli" => null,
+        "openssl" => null,
         "pdo" => null,
         "random" => null,
         "rdkafka" => null,
@@ -623,6 +634,7 @@ final class Config
         "simplexml" => null,
         "soap" => null,
         "xdebug" => null,
+        "zip" => null,
         "zstd" => null,
     ];
 
@@ -1503,34 +1515,48 @@ final class Config
             }
         }
 
-        if (isset($config_xml->stubs) && isset($config_xml->stubs->file)) {
-            /** @var SimpleXMLElement $stub_file */
-            foreach ($config_xml->stubs->file as $stub_file) {
-                $stub_file_name = (string)$stub_file['name'];
-                if (!Path::isAbsolute($stub_file_name)) {
-                    $stub_file_name = $config->base_dir . DIRECTORY_SEPARATOR . $stub_file_name;
-                }
-                $file_path = realpath($stub_file_name);
-
-                if (!$file_path) {
-                    throw new ConfigException(
-                        'Cannot resolve stubfile path '
-                            . $config->base_dir
-                            . DIRECTORY_SEPARATOR
-                            . $stub_file['name'],
-                    );
-                }
-
-                if (isset($stub_file['preloadClasses'])) {
-                    $preload_classes = (string)$stub_file['preloadClasses'];
-
-                    if ($preload_classes === 'true' || $preload_classes === '1') {
-                        $config->addPreloadedStubFile($file_path);
-                    } else {
-                        $config->addStubFile($file_path);
+        if (isset($config_xml->stubs)) {
+            // the files and directories are registered in the order they are listed, as a stub may need another
+            foreach ($config_xml->stubs->children() ?? [] as $stub) {
+                if ($stub->getName() === 'file') {
+                    $stub_file_name = (string)$stub['name'];
+                    if (!Path::isAbsolute($stub_file_name)) {
+                        $stub_file_name = $config->base_dir . DIRECTORY_SEPARATOR . $stub_file_name;
                     }
-                } else {
-                    $config->addStubFile($file_path);
+                    $file_path = realpath($stub_file_name);
+
+                    if (!$file_path) {
+                        throw new ConfigException('Cannot resolve stubfile path ' . $stub_file_name);
+                    }
+
+                    $config->addStubFileFromXml($file_path, $stub);
+                } elseif ($stub->getName() === 'directory') {
+                    $stub_directory_name = (string)$stub['name'];
+                    if (!Path::isAbsolute($stub_directory_name)) {
+                        $stub_directory_name = $config->base_dir . DIRECTORY_SEPARATOR . $stub_directory_name;
+                    }
+                    $directory_path = realpath($stub_directory_name);
+
+                    if ($directory_path === false || !is_dir($directory_path)) {
+                        throw new ConfigException('Cannot resolve stubs directory path ' . $stub_directory_name);
+                    }
+
+                    $stub_file_paths = [];
+                    foreach (new RecursiveIteratorIterator(
+                        new RecursiveDirectoryIterator($directory_path, FilesystemIterator::SKIP_DOTS),
+                    ) as $file) {
+                        assert($file instanceof SplFileInfo);
+                        if (in_array($file->getExtension(), ['php', 'phpstub'], true)) {
+                            $stub_file_paths[] = $file->getPathname();
+                        }
+                    }
+
+                    // a stub may use the classes of another one, so keep the order the same on every machine
+                    sort($stub_file_paths);
+
+                    foreach ($stub_file_paths as $file_path) {
+                        $config->addStubFileFromXml($file_path, $stub);
+                    }
                 }
             }
         }
@@ -1593,19 +1619,18 @@ final class Config
                 $issue_handler_children = $issue_handlers->children();
                 if ($issue_handler_children) {
                     foreach ($issue_handler_children as $key => $issue_handler) {
-                        if ($key === 'PluginIssue') {
-                            $custom_class_name = (string)$issue_handler['name'];
-                            /** @var string $key */
-                            $config->issue_handlers[$custom_class_name] = IssueHandler::loadFromXMLElement(
-                                $issue_handler,
-                                $base_dir,
+                        $handled_issue = $key === 'PluginIssue' ? (string) $issue_handler['name'] : $key;
+
+                        $loaded_handler = IssueHandler::loadFromXMLElement($issue_handler, $base_dir);
+
+                        // an issue named twice keeps what both elements say
+                        if (isset($config->issue_handlers[$handled_issue])) {
+                            $config->issue_handlers[$handled_issue]->mergeLater(
+                                $loaded_handler,
+                                isset($issue_handler['errorLevel']),
                             );
                         } else {
-                            /** @var string $key */
-                            $config->issue_handlers[$key] = IssueHandler::loadFromXMLElement(
-                                $issue_handler,
-                                $base_dir,
-                            );
+                            $config->issue_handlers[$handled_issue] = $loaded_handler;
                         }
                     }
                 }
@@ -1830,6 +1855,58 @@ final class Config
         foreach ($socket->getAdditionalFileTypeAnalyzers() as $extension => $className) {
             $this->filetype_analyzers[$extension] = $className;
         }
+    }
+
+    /**
+     * The types of the issues the plugins can fix (see PluginFixableIssuesInterface)
+     *
+     * @internal
+     * @return list<string>
+     */
+    public function getPluginFixableIssueTypes(ProjectAnalyzer $project_analyzer): array
+    {
+        $issue_types = [];
+
+        foreach ($this->plugin_classes as $plugin_class_entry) {
+            $plugin_class_name = $plugin_class_entry['class'];
+            $plugin = $this->loadPlugin($project_analyzer, $plugin_class_name);
+            if (!$plugin instanceof PluginFixableIssuesInterface) {
+                continue;
+            }
+
+            try {
+                foreach ($plugin->getFixableIssues($plugin_class_entry['config']) as $issue_class) {
+                    $issue_types[] = self::getFixableIssueType($issue_class);
+                }
+            } catch (Throwable $t) {
+                throw new ConfigException(
+                    'Failed to get the fixable issues of plugin ' . $plugin_class_name,
+                    1_635_800_583,
+                    $t,
+                );
+            }
+        }
+
+        return $issue_types;
+    }
+
+    /**
+     * @param mixed $issue_class what a plugin declares, which Psalm may not have analysed
+     * @psalm-pure
+     */
+    private static function getFixableIssueType(mixed $issue_class): string
+    {
+        if (!is_string($issue_class)
+            || !is_a($issue_class, CodeIssue::class, true)
+            || (new ReflectionClass($issue_class))->isAbstract()
+        ) {
+            throw new UnexpectedValueException(
+                (is_string($issue_class) ? $issue_class : get_debug_type($issue_class))
+                . ' is not a concrete ' . CodeIssue::class . ' class',
+            );
+        }
+
+        return $issue_class::getIssueType();
     }
 
     /**
@@ -3282,6 +3359,21 @@ final class Config
         $this->stub_files[$stub_file] = $stub_file;
     }
 
+    private function addStubFileFromXml(string $file_path, SimpleXMLElement $stub): void
+    {
+        if (isset($stub['preloadClasses'])) {
+            $preload_classes = (string)$stub['preloadClasses'];
+
+            if ($preload_classes === 'true' || $preload_classes === '1') {
+                $this->addPreloadedStubFile($file_path);
+
+                return;
+            }
+        }
+
+        $this->addStubFile($file_path);
+    }
+
     /**
      * @psalm-mutation-free
      */
@@ -3384,7 +3476,7 @@ final class Config
 
     public function addUniversalObjectCrate(string $class): void
     {
-        if (!class_exists($class)) {
+        if (!class_exists($class) && !interface_exists($class)) {
             throw new UnexpectedValueException($class . ' is not a known class');
         }
         $this->universal_object_crates[] = strtolower($class);

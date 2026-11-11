@@ -6,17 +6,35 @@ namespace Psalm\Internal\Provider\ReturnTypeProvider;
 
 use Override;
 use Psalm\CodeLocation;
+use Psalm\Codebase;
 use Psalm\Context;
 use Psalm\Internal\Analyzer\SourceAnalyzer;
+use Psalm\Internal\Analyzer\Statements\Expression\ArrayAnalyzer;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
+use Psalm\Internal\MethodIdentifier;
+use Psalm\Internal\Type\TypeCombiner;
+use Psalm\Issue\InvalidArgument;
+use Psalm\Issue\PossiblyInvalidArgument;
+use Psalm\IssueBuffer;
 use Psalm\Plugin\EventHandler\Event\FunctionReturnTypeProviderEvent;
 use Psalm\Plugin\EventHandler\FunctionReturnTypeProviderInterface;
 use Psalm\Type;
 use Psalm\Type\Atomic;
 use Psalm\Type\Atomic\TArray;
+use Psalm\Type\Atomic\TArrayKey;
+use Psalm\Type\Atomic\TBool;
 use Psalm\Type\Atomic\TClassStringMap;
+use Psalm\Type\Atomic\TFalse;
+use Psalm\Type\Atomic\TFloat;
+use Psalm\Type\Atomic\TInt;
 use Psalm\Type\Atomic\TKeyedArray;
+use Psalm\Type\Atomic\TLiteralInt;
+use Psalm\Type\Atomic\TNamedObject;
 use Psalm\Type\Atomic\TNonEmptyArray;
+use Psalm\Type\Atomic\TNull;
+use Psalm\Type\Atomic\TString;
+use Psalm\Type\Atomic\TTemplateParam;
+use Psalm\Type\Atomic\TTrue;
 use Psalm\Type\Union;
 
 use function count;
@@ -218,7 +236,36 @@ final class ArrayColumnReturnTypeProvider implements FunctionReturnTypeProviderI
             }
 
             if ((null !== $key_column_name) && isset($row_shape->properties[$key_column_name])) {
-                $result_key_type = $row_shape->properties[$key_column_name];
+                $key_column_type = $row_shape->properties[$key_column_name];
+                $codebase = $statements_source->getCodebase();
+                $invalid_key_types = self::getTypesThatCannotBeKeys($codebase, $key_column_type);
+
+                if ($invalid_key_types !== []) {
+                    $all_invalid = count($invalid_key_types) === count($key_column_type->getAtomicTypes());
+
+                    IssueBuffer::maybeAdd(
+                        $all_invalid
+                            ? new InvalidArgument(
+                                'The index column has the type ' . $key_column_type->getId()
+                                . ', which cannot be an array key',
+                                $code_location,
+                                'array_column',
+                            )
+                            : new PossiblyInvalidArgument(
+                                'The index column has the type ' . $key_column_type->getId()
+                                . ', which may not be an array key',
+                                $code_location,
+                                'array_column',
+                            ),
+                        $statements_source->getSuppressedIssues(),
+                    );
+
+                    if ($all_invalid && $codebase->analysis_php_version_id >= 8_00_00) {
+                        return Type::getNever();
+                    }
+                }
+
+                $result_key_type = self::castToArrayKey($codebase, $key_column_type);
             }
         }
 
@@ -233,6 +280,80 @@ final class ArrayColumnReturnTypeProvider implements FunctionReturnTypeProviderI
         }
 
         return new Union([$type]);
+    }
+
+    /**
+     * The parts of the index column type that array_column() throws a TypeError for: arrays, and objects that
+     * can't be cast to a string
+     *
+     * @return list<Atomic>
+     */
+    private static function getTypesThatCannotBeKeys(Codebase $codebase, Union $key_type): array
+    {
+        $invalid = [];
+
+        foreach ($key_type->getAtomicTypes() as $atomic_type) {
+            if ($atomic_type instanceof TArray
+                || $atomic_type instanceof TKeyedArray
+                || ($atomic_type instanceof TNamedObject && !self::isStringable($codebase, $atomic_type))
+            ) {
+                $invalid[] = $atomic_type;
+            }
+        }
+
+        return $invalid;
+    }
+
+    private static function isStringable(Codebase $codebase, TNamedObject $object): bool
+    {
+        return $codebase->classOrInterfaceExists($object->value)
+            && $codebase->methodExists(new MethodIdentifier($object->value, '__tostring'));
+    }
+
+    /**
+     * The type of the key array_column() sets for a value: null, bools, floats and objects with a __toString() are
+     * cast to the array key they stand for. What can't be a key is left out (see getTypesThatCannotBeKeys()),
+     * and a type that is nothing but that is an array key.
+     */
+    private static function castToArrayKey(Codebase $codebase, Union $key_type): Union
+    {
+        $atomic_types = [];
+
+        foreach ($key_type->getAtomicTypes() as $atomic_type) {
+            if ($atomic_type instanceof TNull) {
+                $atomic_types[] = Type::getAtomicStringFromLiteral('');
+            } elseif ($atomic_type instanceof TFalse) {
+                $atomic_types[] = new TLiteralInt(0);
+            } elseif ($atomic_type instanceof TTrue) {
+                $atomic_types[] = new TLiteralInt(1);
+            } elseif ($atomic_type instanceof TBool) {
+                $atomic_types[] = new TLiteralInt(0);
+                $atomic_types[] = new TLiteralInt(1);
+            } elseif ($atomic_type instanceof TFloat) {
+                $atomic_types[] = new TInt();
+            } elseif ($atomic_type instanceof TInt
+                || $atomic_type instanceof TString
+                || $atomic_type instanceof TArrayKey
+                || $atomic_type instanceof TTemplateParam
+            ) {
+                $atomic_types[] = $atomic_type;
+            } elseif ($atomic_type instanceof TNamedObject && self::isStringable($codebase, $atomic_type)) {
+                $atomic_types[] = new TString();
+            } elseif ($atomic_type instanceof TArray
+                || $atomic_type instanceof TKeyedArray
+                || $atomic_type instanceof TNamedObject
+            ) {
+                continue;
+            } else {
+                $atomic_types[] = new TArrayKey();
+            }
+        }
+
+        if ($atomic_types === []) {
+            return Type::getArrayKey();
+        }
+
+        return ArrayAnalyzer::castArrayKeyType(TypeCombiner::combine($atomic_types));
     }
 
     /**
