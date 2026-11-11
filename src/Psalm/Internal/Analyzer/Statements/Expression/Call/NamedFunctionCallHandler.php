@@ -190,6 +190,13 @@ final class NamedFunctionCallHandler
 
             if ($var_id) {
                 $context->phantom_files[$var_id] = true;
+
+                if ($context->inside_negation) {
+                    $context->negated_phantom_files[$var_id] = true;
+                } else {
+                    unset($context->negated_phantom_files[$var_id]);
+                }
+
                 return;
             }
 

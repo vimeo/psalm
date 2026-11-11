@@ -38,6 +38,16 @@ final class UnresolvableIncludeTest extends TestCase
                 ',
                 'expectedExceptionLine' => 3,
             ],
+            'file_exists_negated_in_an_and_condition' => [
+                'code' => '<?php
+                    function requireFile(string $s, bool $flag) : void {
+                        if ($flag && !file_exists($s)) {
+                            require_once($s);
+                        }
+                    }
+                ',
+                'expectedExceptionLine' => 4,
+            ],
             'file_exists_in_an_or_condition' => [
                 'code' => '<?php
                     function requireFile(string $s, bool $flag) : void {
