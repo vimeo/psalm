@@ -30,6 +30,47 @@ final class IntMaskComparisonTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'previousFlagsAreComparedWithTheNewOnesOfANamespacedClass' => [
+                'code' => '<?php
+                    final class Decoder {
+                        /** @var int-mask<JSON_BIGINT_AS_STRING, JSON_OBJECT_AS_ARRAY, JSON_THROW_ON_ERROR>|null */
+                        private $previous;
+
+                        /**
+                         * @param int-mask<JSON_BIGINT_AS_STRING, JSON_OBJECT_AS_ARRAY, JSON_THROW_ON_ERROR> $flags
+                         */
+                        public function changed(int $flags): bool {
+                            if ($this->previous !== $flags) {
+                                $this->previous = $flags;
+
+                                return true;
+                            }
+
+                            return false;
+                        }
+                    }',
+            ],
+            'twoMasksAreComparedToTellIfTheyAreTheSameSet' => [
+                'code' => '<?php' . self::FLAG . '
+                    /**
+                     * @param int-mask-of<Flag::*> $a
+                     * @param int-mask-of<Flag::*> $b
+                     */
+                    function same(int $a, int $b): bool {
+                        return $a !== $b;
+                    }',
+            ],
+            'narrowedMaskIsComparedWithAnotherMask' => [
+                'code' => '<?php' . self::FLAG . '
+                    /**
+                     * @param int-mask-of<Flag::*> $a
+                     * @param int-mask-of<Flag::*> $b
+                     * @param int-mask-of<Flag::*> $c
+                     */
+                    function check(int $a, int $b, int $c): bool {
+                        return ($a & $b) === $c;
+                    }',
+            ],
             'compareWithEmptySet' => [
                 'code' => '<?php' . self::FLAG . '
                     /** @param int-mask-of<Flag::*> $m */
@@ -256,17 +297,6 @@ final class IntMaskComparisonTest extends TestCase
                     }',
                 'error_message' => 'IntMaskComparison',
             ],
-            'twoMasks' => [
-                'code' => '<?php' . self::FLAG . '
-                    /**
-                     * @param int-mask-of<Flag::*> $a
-                     * @param int-mask-of<Flag::*> $b
-                     */
-                    function same(int $a, int $b): bool {
-                        return $a !== $b;
-                    }',
-                'error_message' => 'IntMaskComparison',
-            ],
             'maskAndPlainInt' => [
                 'code' => '<?php' . self::FLAG . '
                     /** @param int-mask-of<Flag::*> $m */
@@ -290,18 +320,6 @@ final class IntMaskComparisonTest extends TestCase
                         $ab = $m & Flag::AB;
 
                         return $ab === Flag::B;
-                    }',
-                'error_message' => 'IntMaskComparison',
-            ],
-            'narrowedMaskWithOtherVariable' => [
-                'code' => '<?php' . self::FLAG . '
-                    /**
-                     * @param int-mask-of<Flag::*> $a
-                     * @param int-mask-of<Flag::*> $b
-                     * @param int-mask-of<Flag::*> $c
-                     */
-                    function check(int $a, int $b, int $c): bool {
-                        return ($a & $b) === $c;
                     }',
                 'error_message' => 'IntMaskComparison',
             ],
