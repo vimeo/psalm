@@ -194,11 +194,17 @@ final class DataFlowNode implements Stringable
         string $cased_method_id,
         int $argument_offset,
         bool $specialized_calls = false,
+        ?string $variadic_argument_name = null,
+        bool $any_following = false,
     ): self {
         $label = ($specialized_calls ? 'specialized ' : '') . 'dispatch of ' . $cased_method_id
             . '#' . ($argument_offset + 1);
+        // the names of arguments are case-sensitive
+        $arguments = $variadic_argument_name !== null
+            ? ' (' . $variadic_argument_name . ':)'
+            : ($any_following ? ' (...)' : '');
 
-        return self::make(strtolower($label), $label, null);
+        return self::make(strtolower($label) . $arguments, $label . $arguments, null);
     }
 
     /**
