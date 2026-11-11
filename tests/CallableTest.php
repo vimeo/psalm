@@ -22,22 +22,46 @@ final class CallableTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
-            'protectedCallbackOfASubclassGivenToAParentMethod' => [
+            'byReferenceCallableParamAcceptsByReferenceCallee' => [
                 'code' => '<?php
-                    class Command
-                    {
-                        public function setCode(callable $code): void {}
+                    /** @param callable(int &$i): void $closure */
+                    function takesRefCallable(callable $closure): void {
+                        $v = 1;
+                        $closure($v);
                     }
-
-                    abstract class EndlessCommand extends Command
-                    {
-                        public function __construct()
-                        {
-                            parent::setCode([$this, "runLoop"]);
-                        }
-
-                        protected function runLoop(): void {}
-                    }',
+                    function incr(int &$i): void {
+                        ++$i;
+                    }
+                    takesRefCallable("incr");
+                    takesRefCallable(function (int &$i): void {
+                        ++$i;
+                    });',
+                'assertions' => [],
+            ],
+            'byReferenceCallableParamAcceptsByValueCallee' => [
+                'code' => '<?php
+                    /** @param callable(int &$i): void $closure */
+                    function takesRefCallable(callable $closure): void {
+                        $v = 1;
+                        $closure($v);
+                    }
+                    function show(int $i): void {
+                        echo $i;
+                    }
+                    takesRefCallable("show");
+                    takesRefCallable(function (int $i): void {
+                        echo $i;
+                    });',
+                'assertions' => [],
+            ],
+            'namedOptionalCallableParam' => [
+                'code' => '<?php
+                    /** @param callable(int $i=): void $closure */
+                    function takesOptional(callable $closure): void {
+                        $closure();
+                    }
+                    takesOptional(function (int $i = 0): void {});',
+                'assertions' => [],
             ],
             'stringNamingAFunctionForClosureOrStringParam' => [
                 'code' => <<<'PHP'
@@ -2826,17 +2850,7 @@ final class CallableTest extends TestCase
                         return call_user_func($var);
                     }',
             ],
-        ];
-    }
-
-    /**
-     * @psalm-pure
-     */
-    #[Override]
-    public static function providerInvalidCodeParse(): iterable
-    {
-        return [
-            'privateCallbackOfASubclassGivenToAParentMethod' => [
+            'protectedCallbackOfASubclassGivenToAParentMethod' => [
                 'code' => '<?php
                     class Command
                     {
@@ -2850,28 +2864,19 @@ final class CallableTest extends TestCase
                             parent::setCode([$this, "runLoop"]);
                         }
 
-                        private function runLoop(): void {}
-                    }',
-                'error_message' => 'expects a public callable',
-            ],
-            'protectedCallbackGivenToAnUnrelatedClassMethod' => [
-                'code' => '<?php
-                    class Other
-                    {
-                        public function take(callable $code): void {}
-                    }
-
-                    class Runner
-                    {
-                        public function __construct(private Other $other)
-                        {
-                            $this->other->take([$this, "runLoop"]);
-                        }
-
                         protected function runLoop(): void {}
                     }',
-                'error_message' => 'expects a public callable',
             ],
+        ];
+    }
+
+    /**
+     * @psalm-pure
+     */
+    #[Override]
+    public static function providerInvalidCodeParse(): iterable
+    {
+        return [
             'stringNamingAFunctionForClosureParamOnly' => [
                 'code' => <<<'PHP'
                     <?php
@@ -4233,6 +4238,42 @@ final class CallableTest extends TestCase
 
                     foo([\DateTime::class, "wrongMethod"]);',
                 'error_message' => 'InvalidArgument',
+            ],
+            'privateCallbackOfASubclassGivenToAParentMethod' => [
+                'code' => '<?php
+                    class Command
+                    {
+                        public function setCode(callable $code): void {}
+                    }
+
+                    abstract class EndlessCommand extends Command
+                    {
+                        public function __construct()
+                        {
+                            parent::setCode([$this, "runLoop"]);
+                        }
+
+                        private function runLoop(): void {}
+                    }',
+                'error_message' => 'expects a public callable',
+            ],
+            'protectedCallbackGivenToAnUnrelatedClassMethod' => [
+                'code' => '<?php
+                    class Other
+                    {
+                        public function take(callable $code): void {}
+                    }
+
+                    class Runner
+                    {
+                        public function __construct(private Other $other)
+                        {
+                            $this->other->take([$this, "runLoop"]);
+                        }
+
+                        protected function runLoop(): void {}
+                    }',
+                'error_message' => 'expects a public callable',
             ],
         ];
     }
