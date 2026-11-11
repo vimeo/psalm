@@ -26,6 +26,7 @@ use Psalm\Type;
 use Psalm\Type\Reconciler;
 
 use function array_diff;
+use function array_fill_keys;
 use function array_filter;
 use function array_intersect;
 use function array_intersect_key;
@@ -54,7 +55,13 @@ final class TernaryAnalyzer
 
         try {
             $reassigned_var_ids = FormulaGenerator::getVarsAssignedByOredRightSides($stmt->cond, $context->self);
-            $pre_condition_context = $reassigned_var_ids ? clone $context : null;
+
+            // the else of an `||` is analysed again from where the condition started, not from where it ended
+            $pre_condition_context = $reassigned_var_ids
+                || $stmt->cond instanceof PhpParser\Node\Expr\BinaryOp\BooleanOr
+                || $stmt->cond instanceof PhpParser\Node\Expr\BinaryOp\LogicalOr
+                    ? clone $context
+                    : null;
 
             $if_conditional_scope = IfConditionalAnalyzer::analyze(
                 $statements_analyzer,
@@ -216,13 +223,17 @@ final class TernaryAnalyzer
 
         $t_else_context = clone $context;
 
-        if ($pre_condition_context !== null) {
-            IfAnalyzer::rederiveReassignedVars(
+        // the else runs when every operand of an `||` was evaluated and falsy, so what they assigned is known there
+        $else_rederived_var_ids = array_fill_keys(array_keys($reassigned_var_ids), 1)
+            + array_filter($assigned_in_conditional_var_ids);
+
+        if ($else_rederived_var_ids !== [] && $pre_condition_context !== null) {
+            IfAnalyzer::addConditionallyAssignedVarsToContext(
                 $statements_analyzer,
                 $stmt->cond,
                 $pre_condition_context,
                 $t_else_context,
-                $reassigned_var_ids,
+                $else_rederived_var_ids,
             );
         }
 

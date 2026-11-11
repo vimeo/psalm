@@ -30,7 +30,6 @@ use Psalm\Type\Union;
 use function array_any;
 use function array_combine;
 use function array_diff_key;
-use function array_fill_keys;
 use function array_filter;
 use function array_intersect;
 use function array_intersect_key;
@@ -393,29 +392,6 @@ final class IfAnalyzer
                 $post_if_context->vars_in_scope[$var_id] = $post_leaving_if_context->vars_in_scope[$var_id];
             }
         }
-    }
-
-    /**
-     * Gives the variables the right side of an `||` of the condition assigns the types they have where the condition
-     * is false: the condition is analysed again, from the context before it (a side effect of it must run once), as
-     * the negations of its sides, one after the other, which is the order the sides ran in
-     *
-     * @param array<string, true> $reassigned_var_ids
-     */
-    public static function rederiveReassignedVars(
-        StatementsAnalyzer $statements_analyzer,
-        PhpParser\Node\Expr $cond,
-        Context $pre_condition_context,
-        Context $else_context,
-        array $reassigned_var_ids,
-    ): void {
-        self::addConditionallyAssignedVarsToContext(
-            $statements_analyzer,
-            $cond,
-            $pre_condition_context,
-            $else_context,
-            array_fill_keys(array_keys($reassigned_var_ids), 1),
-        );
     }
 
     /**
