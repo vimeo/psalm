@@ -38,6 +38,7 @@
  - [FalsableReturnStatement](issues/FalsableReturnStatement.md)
  - [FalseOperand](issues/FalseOperand.md)
  - [ForbiddenCode](issues/ForbiddenCode.md)
+ - [HiddenGeneratorReturn](issues/HiddenGeneratorReturn.md)
  - [IfThisIsMismatch](issues/IfThisIsMismatch.md)
  - [ImmutableDependency](issues/ImmutableDependency.md)
  - [ImplementationRequirementViolation](issues/ImplementationRequirementViolation.md)
