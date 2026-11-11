@@ -24,8 +24,10 @@ to `origin/master`, but CI runs on it first.
      `bin/stubs/image_lock.php`. Keep master's side of the stub flow, even where the merge
      raised no conflict:
      `git checkout HEAD -- .github/workflows/build-stubs.yml bin/stubs/build_docker.php bin/stubs/gen_callmap.sh bin/stubs/gen_base_callmap.php bin/stubs/image_lock.php dictionaries/autogen/`.
-     Port 6.x changes of the `build_docker.php` constants (`EXTENSIONS`, `PINS`, …) by
-     hand; the stubs workflow on the PR branch then regenerates the affected versions. The
+     Port 6.x changes of these files by hand (`git diff HEAD...MERGE_HEAD -- <files>` lists
+     them), e.g. new `EXTENSIONS` or `PINS` in `build_docker.php` or a fix in
+     `gen_base_callmap.php`, but never 6.x's `dictionaries/autogen/`: the stubs workflow on
+     the PR branch regenerates the affected versions. The
      `Check PHP syntax` job fails while a stamp in `dictionaries/autogen/CallMapInputs.php`
      doesn't match.
 3. Push the merge commit to a temporary branch on your fork, open a **draft** PR against
