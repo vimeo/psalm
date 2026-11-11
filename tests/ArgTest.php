@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Psalm\Tests;
 
 use Override;
+use Psalm\Context;
 use Psalm\Tests\Traits\InvalidCodeAnalysisTestTrait;
 use Psalm\Tests\Traits\ValidCodeAnalysisTestTrait;
 
@@ -15,6 +16,27 @@ final class ArgTest extends TestCase
     use InvalidCodeAnalysisTestTrait;
     use ValidCodeAnalysisTestTrait;
 
+    public function testPseudoPropertyOfAClassWithoutAMagicGetterIsReadableWithTheConfigOption(): void
+    {
+        $this->project_analyzer->getConfig()->use_phpdoc_property_without_magic_or_parent = true;
+
+        $this->addFile(
+            'somefile.php',
+            '<?php
+                /** @property int $id */
+                class Thing {}
+
+                /** @param object{id: int} $object */
+                function takesObject(object $object): int {
+                    return $object->id;
+                }
+
+                takesObject(new Thing());',
+        );
+
+        $this->analyzeFile('somefile.php', new Context());
+    }
+
     /**
      * @psalm-pure
      */
@@ -22,6 +44,44 @@ final class ArgTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'objectWithPropertiesAcceptsAPseudoPropertyOfAClassThatAllowsDynamicProperties' => [
+                'code' => '<?php
+                    /** @property int $id */
+                    #[AllowDynamicProperties]
+                    class Thing {}
+
+                    /** @param object{id: int} $object */
+                    function takesObject(object $object): int {
+                        return $object->id;
+                    }
+
+                    takesObject(new Thing());',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.2',
+            ],
+            'objectWithPropertiesAcceptsAClassWithPseudoProperties' => [
+                'code' => '<?php
+                    /**
+                     * @property int $id
+                     * @property-read string $name
+                     */
+                    class Thing {
+                        public function __get(string $name): mixed {
+                            return 1;
+                        }
+                    }
+
+                    /** @param object{id: int, name: string} $object */
+                    function takesObject(object $object): int {
+                        return $object->id;
+                    }
+
+                    takesObject(new Thing());',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
             'unpackArrayOrTemplateBoundToTraversable' => [
                 'code' => '<?php
                     function foo(int $a, int $b): void {}
@@ -437,6 +497,65 @@ final class ArgTest extends TestCase
     public static function providerInvalidCodeParse(): iterable
     {
         return [
+            'objectWithPropertiesRejectsAPseudoPropertyOfAClassWithoutAMagicGetter' => [
+                'code' => '<?php
+                    /** @property int $id */
+                    class Thing {}
+
+                    /** @param object{id: int} $object */
+                    function takesObject(object $object): int {
+                        return $object->id;
+                    }
+
+                    takesObject(new Thing());',
+                'error_message' => 'InvalidArgument',
+                'error_levels' => [],
+                'php_version' => '8.0',
+            ],
+            'objectWithPropertiesRejectsAPseudoPropertyOfAnotherType' => [
+                'code' => '<?php
+                    /**
+                     * @property int $id
+                     * @property-read string $name
+                     */
+                    class Thing {
+                        public function __get(string $name): mixed {
+                            return 1;
+                        }
+                    }
+
+                    /** @param object{id: string} $object */
+                    function takesObject(object $object): string {
+                        return $object->id;
+                    }
+
+                    takesObject(new Thing());',
+                'error_message' => 'InvalidArgument',
+                'error_levels' => [],
+                'php_version' => '8.0',
+            ],
+            'objectWithPropertiesRejectsAMissingPseudoProperty' => [
+                'code' => '<?php
+                    /**
+                     * @property int $id
+                     * @property-read string $name
+                     */
+                    class Thing {
+                        public function __get(string $name): mixed {
+                            return 1;
+                        }
+                    }
+
+                    /** @param object{missing: int} $object */
+                    function takesObject(object $object): int {
+                        return $object->missing;
+                    }
+
+                    takesObject(new Thing());',
+                'error_message' => 'InvalidArgument',
+                'error_levels' => [],
+                'php_version' => '8.0',
+            ],
             'unpackClassStringMapOrInt' => [
                 'code' => '<?php
                     class A {}
