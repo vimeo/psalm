@@ -21,6 +21,26 @@ final class ConditionalTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'identicalKeyedArraysWithAnOptionalKeyOfOverlappingTypes' => [
+                'code' => '<?php
+                    /** @param array{a?: int|string} $x */
+                    function f(array $x, string|bool $s): bool {
+                        return $x === ["a" => $s];
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'identicalKeyedArraysWithAFallbackOfOverlappingTypes' => [
+                'code' => '<?php
+                    /** @param array{a: int|string, ...<string, mixed>} $x */
+                    function f(array $x, string|bool $s): bool {
+                        return $x === ["a" => $s];
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
             'mixedStaysMixedAfterAStackedTernaryOnItsType' => [
                 'code' => '<?php
                     /** @var mixed $a */
@@ -4161,26 +4181,6 @@ final class ConditionalTest extends TestCase
     public static function providerInvalidCodeParse(): iterable
     {
         return [
-            'identicalKeyedArraysWithAnOptionalKeyOfOverlappingTypesAreAKnownLimit' => [
-                'code' => '<?php
-                    /** @param array{a?: int|string} $x */
-                    function f(array $x, string|bool $s): bool {
-                        return $x === ["a" => $s];
-                    }',
-                'error_message' => 'TypeDoesNotContainType',
-                'error_levels' => [],
-                'php_version' => '8.0',
-            ],
-            'identicalKeyedArraysWithAFallbackOfOverlappingTypesAreAKnownLimit' => [
-                'code' => '<?php
-                    /** @param array{a: int|string, ...<string, mixed>} $x */
-                    function f(array $x, string|bool $s): bool {
-                        return $x === ["a" => $s];
-                    }',
-                'error_message' => 'TypeDoesNotContainType',
-                'error_levels' => [],
-                'php_version' => '8.0',
-            ],
             'identicalKeyedArraysOfDisjointTypes' => [
                 'code' => '<?php
                     function f(int $x): void {
