@@ -1071,6 +1071,67 @@ final class IncludeTest extends TestCase
     }
 
     /**
+     * The constructor of the parent initializes its property through a helper, in a file that requires the
+     * child's file: collecting what the helper does must not be cut short by the include cycle.
+     */
+    public function testInitializationsAreCollectedAcrossFilesRequiringEachOther(): void
+    {
+        set_time_limit(30);
+
+        $codebase = $this->project_analyzer->getCodebase();
+        $config = $codebase->config;
+        $config->throw_exception = true;
+
+        $child_path = (string) getcwd() . DIRECTORY_SEPARATOR . 'Child.php';
+        $parent_path = (string) getcwd() . DIRECTORY_SEPARATOR . 'ParentClass.php';
+
+        $this->addFile($child_path, '<?php
+            namespace Foo;
+
+            class Child extends ParentClass {
+                public function __construct() {
+                    parent::__construct();
+                }
+            }
+        ');
+        $this->addFile($parent_path, '<?php
+            namespace Foo;
+
+            require_once __DIR__ . "/Child.php";
+
+            class ParentClass {
+                protected int $prop;
+
+                public function __construct() {
+                    $this->init();
+                }
+
+                private function init(): void {
+                    $this->prop = 1;
+                }
+            }
+        ');
+
+        foreach ([$child_path, $parent_path] as $file_path) {
+            $codebase->scanner->addFilesToShallowScan([$file_path => $file_path]);
+            $codebase->addFilesToAnalyze([$file_path => $file_path]);
+        }
+
+        $codebase->scanFiles();
+
+        foreach ([$child_path, $parent_path] as $file_path) {
+            $file_analyzer = new FileAnalyzer(
+                $this->project_analyzer,
+                $file_path,
+                $config->shortenFileName($file_path),
+            );
+            $file_analyzer->analyze();
+        }
+
+        self::assertTrue(true);
+    }
+
+    /**
      * A class whose parent's file requires the class's file made the analysis of the constructor call
      * collect the parent's file again and again. A hang shows as the time limit being hit.
      */
