@@ -123,6 +123,9 @@ final class Populator
         }
 
         foreach ($this->classlike_storage_provider->getNew() as $class_storage) {
+            // `+=` on the typed property would copy the whole array on every merge
+            $dependents = $class_storage->dependent_classlikes;
+
             foreach ($class_storage->dependent_classlikes as $dependent_classlike_lc => $_) {
                 try {
                     $dependee_storage = $this->classlike_storage_provider->get($dependent_classlike_lc);
@@ -130,8 +133,10 @@ final class Populator
                     continue;
                 }
 
-                $class_storage->dependent_classlikes += $dependee_storage->dependent_classlikes;
+                $dependents += $dependee_storage->dependent_classlikes;
             }
+
+            $class_storage->dependent_classlikes = $dependents;
         }
 
         $this->progress->debug('FileStorage is populated' . "\n");
@@ -894,6 +899,20 @@ final class Populator
         $this->inheritMethodsFromParent($storage, $trait_storage);
         $this->inheritPropertiesFromParent($storage, $trait_storage);
 
+        // the visibility a trait gives to the methods it uses from another one, unless the class changes it again,
+        // declares the method itself or uses the one of another trait for it
+        $trait_name_lc = strtolower($trait_storage->name);
+
+        foreach ($trait_storage->trait_visibility_map as $method_name_lc => $visibility) {
+            if (isset($storage->methods[$method_name_lc])
+                || isset($storage->trait_excluded_methods[$method_name_lc][$trait_name_lc])
+            ) {
+                continue;
+            }
+
+            $storage->trait_visibility_map[$method_name_lc] ??= $visibility;
+        }
+
         $this->extendTemplateParams($storage, $trait_storage, false);
 
         $storage->pseudo_property_get_types += $trait_storage->pseudo_property_get_types;
@@ -1313,6 +1332,7 @@ final class Populator
         $this->populateInterfaceData($storage, $parent_interface_storage, $storage_provider, $dependent_classlikes);
 
         $this->inheritMethodsFromParent($storage, $parent_interface_storage);
+        $this->inheritPropertiesFromParent($storage, $parent_interface_storage);
 
         $storage->pseudo_methods += $parent_interface_storage->pseudo_methods;
         $storage->declaring_pseudo_method_ids += $parent_interface_storage->declaring_pseudo_method_ids;
