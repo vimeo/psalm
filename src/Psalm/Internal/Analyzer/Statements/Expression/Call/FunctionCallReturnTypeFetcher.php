@@ -1109,7 +1109,7 @@ final class FunctionCallReturnTypeFetcher
      * The storage of a closure from its id (see ClosureAnalyzer::getClosureId()), which starts with the
      * path of the file it is in.
      */
-    private static function getClosureStorage(
+    public static function getClosureStorage(
         StatementsAnalyzer $statements_analyzer,
         string $closure_id,
     ): ?FunctionLikeStorage {
