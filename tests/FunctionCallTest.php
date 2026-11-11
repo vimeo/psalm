@@ -24,22 +24,14 @@ final class FunctionCallTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
-            'filterVarEmptyStringNullOfTheDefaultFilter' => [
+            'zeroIsANonEmptyLowercaseString' => [
                 'code' => <<<'PHP'
                     <?php
-                    /**
-                     * @param string $s
-                     * @param non-empty-string $non_empty
-                     */
-                    function filter(string $s, string $non_empty): void {
-                        $maybe_empty = filter_var($s, options: FILTER_FLAG_EMPTY_STRING_NULL);
-                        $empty = filter_var('', options: FILTER_FLAG_EMPTY_STRING_NULL);
-                        $filled = filter_var($non_empty, options: FILTER_FLAG_EMPTY_STRING_NULL);
+                    /** @param non-empty-lowercase-string $s */
+                    function takesNonEmptyLowercase(string $s): void {}
 
-                        /** @psalm-check-type-exact $maybe_empty = non-empty-string|null */
-                        /** @psalm-check-type-exact $empty = null */
-                        /** @psalm-check-type-exact $filled = non-empty-string */
-                    }
+                    takesNonEmptyLowercase('0');
+                    takesNonEmptyLowercase('a');
                     PHP,
                 'assertions' => [],
                 'ignored_issues' => [],
@@ -3075,6 +3067,27 @@ final class FunctionCallTest extends TestCase
                 'ignored_issues' => [],
                 'php_version' => '7.4',
             ],
+            'filterVarEmptyStringNullOfTheDefaultFilter' => [
+                'code' => <<<'PHP'
+                    <?php
+                    /**
+                     * @param string $s
+                     * @param non-empty-string $non_empty
+                     */
+                    function filter(string $s, string $non_empty): void {
+                        $maybe_empty = filter_var($s, options: FILTER_FLAG_EMPTY_STRING_NULL);
+                        $empty = filter_var('', options: FILTER_FLAG_EMPTY_STRING_NULL);
+                        $filled = filter_var($non_empty, options: FILTER_FLAG_EMPTY_STRING_NULL);
+
+                        /** @psalm-check-type-exact $maybe_empty = non-empty-string|null */
+                        /** @psalm-check-type-exact $empty = null */
+                        /** @psalm-check-type-exact $filled = non-empty-string */
+                    }
+                    PHP,
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
         ];
     }
 
@@ -3085,6 +3098,14 @@ final class FunctionCallTest extends TestCase
     public static function providerInvalidCodeParse(): iterable
     {
         return [
+            'emptyStringIsNotANonEmptyLowercaseString' => [
+                'code' => '<?php
+                    /** @param non-empty-lowercase-string $s */
+                    function takesNonEmptyLowercase(string $s): void {}
+
+                    takesNonEmptyLowercase("");',
+                'error_message' => 'InvalidArgument',
+            ],
             'propertyExistsOfADeclaredPropertyIsAlwaysTrue' => [
                 'code' => '<?php
                     class Page {
