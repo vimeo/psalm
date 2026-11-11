@@ -249,6 +249,16 @@ final class IfAnalyzer
                 $if_scope->reasonable_clauses = [];
             }
 
+            // unlike its assignments, the constants a `defined()` of the condition recorded exist after it
+            if ($if_scope->post_leaving_if_context) {
+                foreach ($outer_context->constants as $const_name => $const_type) {
+                    if (!isset($if_scope->post_leaving_if_context->constants[$const_name])) {
+                        $if_scope->post_leaving_if_context->constants[$const_name] = $const_type;
+                        $if_scope->post_leaving_if_context->vars_in_scope[$const_name] = $const_type;
+                    }
+                }
+            }
+
             // If we're assigning inside
             if ($if_conditional_scope->assigned_in_conditional_var_ids
                 && $if_scope->post_leaving_if_context
