@@ -16,13 +16,18 @@ use Psalm\Internal\Analyzer\Statements\ExpressionAnalyzer;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\Internal\DataFlow\DataFlowNode;
 use Psalm\Internal\Provider\NodeDataProvider;
+use Psalm\Internal\Type\Comparator\UnionTypeComparator;
 use Psalm\Issue\MissingFile;
 use Psalm\Issue\UnresolvableInclude;
 use Psalm\IssueBuffer;
 use Psalm\Plugin\EventHandler\Event\AddRemoveTaintsEvent;
+use Psalm\Type\Atomic;
+use Psalm\Type\Atomic\TNamedObject;
 use Psalm\Type\TaintKind;
+use Psalm\Type\Union;
 use Symfony\Component\Filesystem\Path;
 
+use function array_map;
 use function constant;
 use function defined;
 use function dirname;
@@ -218,7 +223,6 @@ final class IncludeAnalyzer
                     $include_file_analyzer->addParentFilePath($parent_file_path);
                 }
 
-                // the included code can't make `$this` another object, whatever it checks about it
                 $this_type = $context->vars_in_scope['$this'] ?? null;
 
                 try {
@@ -227,7 +231,21 @@ final class IncludeAnalyzer
                         $global_context,
                     );
 
-                    if ($this_type !== null) {
+                    // the included code can't make `$this` another object: what it checks about it narrows the type
+                    // (`$this instanceof Child`), anything else is not what `$this` is
+                    if ($this_type !== null
+                        && isset($context->vars_in_scope['$this'])
+                        && !UnionTypeComparator::isContainedBy(
+                            $codebase,
+                            $context->vars_in_scope['$this'],
+                            new Union(array_map(
+                                static fn(Atomic $atomic): Atomic => $atomic instanceof TNamedObject
+                                    ? $atomic->setIsStatic(false)
+                                    : $atomic,
+                                $this_type->getAtomicTypes(),
+                            )),
+                        )
+                    ) {
                         $context->vars_in_scope['$this'] = $this_type;
                     }
                 } catch (UnpreparedAnalysisException) {
