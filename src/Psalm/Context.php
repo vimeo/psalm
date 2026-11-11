@@ -20,6 +20,7 @@ use Psalm\Storage\FunctionLikeStorage;
 use Psalm\Type\Atomic\DependentType;
 use Psalm\Type\Atomic\TIntRange;
 use Psalm\Type\Atomic\TNull;
+use Psalm\Type\Atomic\TObjectWithProperties;
 use Psalm\Type\Union;
 use RuntimeException;
 
@@ -36,6 +37,7 @@ use function serialize;
 use function str_contains;
 use function strcspn;
 use function strpos;
+use function strrpos;
 use function strtolower;
 use function substr;
 
@@ -605,9 +607,57 @@ final class Context
         return $redefined_var_ids;
     }
 
+    /**
+     * `isset($foo->bar)` on an `object{bar?: string}` makes `$foo` an `object{bar: string}`. What is known of
+     * `$foo->bar` is gone after an unset, an assignment or a call that makes the context forget properties,
+     * and so is the narrowed property of the shape.
+     */
+    public function forgetNarrowedShapeProperty(string $property_var_id): void
+    {
+        $divider = strrpos($property_var_id, '->');
+
+        if ($divider === false) {
+            return;
+        }
+
+        $var_id = substr($property_var_id, 0, $divider);
+        $property_name = substr($property_var_id, $divider + 2);
+
+        if (!isset($this->vars_in_scope[$var_id])) {
+            return;
+        }
+
+        $type = $this->vars_in_scope[$var_id];
+        $atomic_types = [];
+        $changed = false;
+
+        foreach ($type->getAtomicTypes() as $atomic_type) {
+            if ($atomic_type instanceof TObjectWithProperties
+                && isset($atomic_type->narrowed_from[$property_name])
+            ) {
+                $properties = $atomic_type->properties;
+                $properties[$property_name] = $atomic_type->narrowed_from[$property_name];
+                $narrowed_from = $atomic_type->narrowed_from;
+                unset($narrowed_from[$property_name]);
+                $atomic_type = $atomic_type->setProperties($properties)->setNarrowedFrom($narrowed_from);
+                $changed = true;
+            }
+
+            $atomic_types[] = $atomic_type;
+        }
+
+        if ($changed) {
+            $this->vars_in_scope[$var_id] = $type->getBuilder()->setTypes($atomic_types)->freeze();
+        }
+
+        // the shapes of the objects the object is a property of have it narrowed as well
+        $this->forgetNarrowedShapeProperty($var_id);
+    }
+
     public function remove(string $remove_var_id, bool $removeDescendents = true): void
     {
         if (isset($this->vars_in_scope[$remove_var_id])) {
+            $this->forgetNarrowedShapeProperty($remove_var_id);
             $existing_type = $this->vars_in_scope[$remove_var_id];
             unset($this->vars_in_scope[$remove_var_id]);
 
