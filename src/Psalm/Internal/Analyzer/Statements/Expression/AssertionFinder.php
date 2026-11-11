@@ -1163,7 +1163,6 @@ final class AssertionFinder
                         }
 
                         $arg_value = $args[$var_id_int]->value;
-                        assert($arg_value instanceof PhpParser\Node\Expr\Variable);
 
                         $arg_var_id = ExpressionIdentifier::getExtendedVarId($arg_value, null, $source);
 
@@ -1184,6 +1183,7 @@ final class AssertionFinder
                                 $source->getNodeTypeProvider(),
                                 $source->getCodebase()->classlike_storage_provider,
                                 $arg_value,
+                                $arg_var_id,
                             );
 
                             if (null !== $failedMessage) {
@@ -1290,7 +1290,6 @@ final class AssertionFinder
                             );
                             continue;
                         }
-                        /** @var PhpParser\Node\Expr\Variable $arg_value */
                         $arg_value = $args[$var_id_int]->value;
 
                         $arg_var_id = ExpressionIdentifier::getExtendedVarId($arg_value, null, $source);
@@ -1312,6 +1311,7 @@ final class AssertionFinder
                                 $source->getNodeTypeProvider(),
                                 $source->getCodebase()->classlike_storage_provider,
                                 $arg_value,
+                                $arg_var_id,
                             );
 
                             if (null !== $failedMessage) {
@@ -4378,11 +4378,11 @@ final class AssertionFinder
         string                       $property,
         NodeDataProvider             $node_provider,
         ClassLikeStorageProvider     $class_provider,
-        PhpParser\Node\Expr\Variable $arg_expr,
+        PhpParser\Node\Expr          $arg_expr,
+        string                       $arg_var_id,
     ): ?string {
         $type = $node_provider->getType($arg_expr);
-        /** @var string $name */
-        $name = $arg_expr->name;
+        $name = ltrim($arg_var_id, '$');
 
         if (null === $type) {
             return 'Cannot resolve a type of variable ' . $name;
