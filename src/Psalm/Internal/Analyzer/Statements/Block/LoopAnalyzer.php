@@ -701,6 +701,8 @@ final class LoopAnalyzer
                 ? $pre_conditions
                 : array_slice($pre_conditions, 0, 1);
 
+            $defined_here = [];
+
             foreach ($evaluated_conditions as $evaluated_condition) {
                 self::setVarsAssignedInCondition(
                     $statements_analyzer,
@@ -708,6 +710,7 @@ final class LoopAnalyzer
                     $context,
                     $inner_loop_context,
                     $loop_scope->exit_truths,
+                    $defined_here,
                 );
             }
         }
@@ -736,6 +739,8 @@ final class LoopAnalyzer
      * (and what the condition being false says of it, where the loop is only left by the condition)
      *
      * @param array<string, list<list<Assertion>>> $exit_truths
+     * @param array<string, true> $defined_here the variables an earlier assignment of the conditions defined: a later
+     *                                           one overrides them
      */
     private static function setVarsAssignedInCondition(
         StatementsAnalyzer $statements_analyzer,
@@ -743,14 +748,25 @@ final class LoopAnalyzer
         Context $context,
         Context $inner_loop_context,
         array $exit_truths,
+        array &$defined_here,
     ): void {
         if ($expr instanceof PhpParser\Node\Expr\Assign) {
+            // the value is evaluated before it is assigned
+            self::setVarsAssignedInCondition(
+                $statements_analyzer,
+                $expr->expr,
+                $context,
+                $inner_loop_context,
+                $exit_truths,
+                $defined_here,
+            );
+
             if ($expr->var instanceof PhpParser\Node\Expr\Variable && is_string($expr->var->name)) {
                 $var_id = '$' . $expr->var->name;
                 $assigned_type = $statements_analyzer->node_data->getType($expr->expr);
 
                 if ($assigned_type
-                    && !isset($context->vars_in_scope[$var_id])
+                    && (!isset($context->vars_in_scope[$var_id]) || isset($defined_here[$var_id]))
                     && isset($inner_loop_context->vars_in_scope[$var_id])
                 ) {
                     // the loop was left because the condition is false: that is true of what was assigned
@@ -777,16 +793,9 @@ final class LoopAnalyzer
                     $context->vars_in_scope[$var_id] = $assigned_type->setParentNodes(
                         $inner_loop_context->vars_in_scope[$var_id]->parent_nodes,
                     );
+                    $defined_here[$var_id] = true;
                 }
             }
-
-            self::setVarsAssignedInCondition(
-                $statements_analyzer,
-                $expr->expr,
-                $context,
-                $inner_loop_context,
-                $exit_truths,
-            );
         } elseif ($expr instanceof PhpParser\Node\Expr\BooleanNot) {
             self::setVarsAssignedInCondition(
                 $statements_analyzer,
@@ -794,6 +803,7 @@ final class LoopAnalyzer
                 $context,
                 $inner_loop_context,
                 $exit_truths,
+                $defined_here,
             );
         } elseif ($expr instanceof PhpParser\Node\Expr\BinaryOp) {
             self::setVarsAssignedInCondition(
@@ -802,6 +812,7 @@ final class LoopAnalyzer
                 $context,
                 $inner_loop_context,
                 $exit_truths,
+                $defined_here,
             );
 
             // the right operand of a short-circuiting operator may not be evaluated
@@ -817,6 +828,7 @@ final class LoopAnalyzer
                     $context,
                     $inner_loop_context,
                     $exit_truths,
+                    $defined_here,
                 );
             }
         }

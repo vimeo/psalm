@@ -23,6 +23,17 @@ final class ForTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'variableAssignedSeveralTimesInTheForConditionHasTheLastAssignedType' => [
+                'code' => '<?php
+                    for (; $value = 42, $value = rand(0, 1) === 1;) {
+                        break;
+                    }',
+                'assertions' => [
+                    '$value===' => 'bool',
+                ],
+                'ignored_issues' => ['UnusedVariable'],
+                'php_version' => '8.2',
+            ],
             'variableAssignedInALaterCommaSeparatedForConditionIsDefinedAfterTheLoop' => [
                 'code' => '<?php
                     function next_int(): int {
