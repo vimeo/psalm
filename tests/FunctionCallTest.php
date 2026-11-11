@@ -2696,6 +2696,23 @@ final class FunctionCallTest extends TestCase
                 'ignored_issues' => ['ImplicitToStringCast'],
                 'php_version' => '8.1',
             ],
+            'failedNestedStringCastDoesNotLeakFromArray' => [
+                'code' => '<?php
+                    final class Join {
+                        public function __toString(): string {
+                            return "join";
+                        }
+                    }
+
+                    /**
+                     * @param string|object|list<string>|array{join: array<int|string, object>} $part
+                     */
+                    function add(string|object|array $part): void {}
+
+                    add(["root" => new Join()]);',
+                'ignored_issues' => ['InvalidScalarArgument'],
+                'php_version' => '8.1',
+            ],
             'strReplaceWithAsManyReplacementsAsSearches' => [
                 'code' => '<?php
                     /** @var string $subject */

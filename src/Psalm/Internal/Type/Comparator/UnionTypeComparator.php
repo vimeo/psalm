@@ -20,8 +20,10 @@ use Psalm\Type\Atomic\TIterable;
 use Psalm\Type\Atomic\TLiteralInt;
 use Psalm\Type\Atomic\TLiteralString;
 use Psalm\Type\Atomic\TMixed;
+use Psalm\Type\Atomic\TNamedObject;
 use Psalm\Type\Atomic\TNull;
 use Psalm\Type\Atomic\TNumeric;
+use Psalm\Type\Atomic\TObjectWithProperties;
 use Psalm\Type\Atomic\TTemplateParam;
 use Psalm\Type\Atomic\TTypeAlias;
 use Psalm\Type\Atomic\TTypeVariable;
@@ -328,7 +330,10 @@ final class UnionTypeComparator
                 }
 
                 if ($atomic_comparison_result) {
-                    if ($atomic_comparison_result->to_string_cast === true) {
+                    if ($atomic_comparison_result->to_string_cast === true
+                        && ($input_type_part instanceof TNamedObject
+                            || $input_type_part instanceof TObjectWithProperties)
+                    ) {
                         $some_to_string_cast = true;
                     }
 
