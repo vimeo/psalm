@@ -2253,9 +2253,9 @@ final class InterfaceTest extends TestCase
     {
         $this->assertSame(
             [
-                'MethodSignatureMismatch 8: Method A::foo with return type \'\' is different to return type '
+                'MethodSignatureMismatch 8: Method A::foo with return type \'mixed\' is different to return type '
                     . '\'string\' of inherited method I1::foo',
-                'MethodSignatureMismatch 8: Method A::foo with return type \'\' is different to return type '
+                'MethodSignatureMismatch 8: Method A::foo with return type \'mixed\' is different to return type '
                     . '\'int\' of inherited method I2::foo',
             ],
             $this->getIssues(
