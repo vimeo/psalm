@@ -9,6 +9,8 @@ use Psalm\Tests\TestCase;
 use Psalm\Tests\Traits\InvalidCodeAnalysisTestTrait;
 use Psalm\Tests\Traits\ValidCodeAnalysisTestTrait;
 
+use const DIRECTORY_SEPARATOR;
+
 final class TraitTemplateTest extends TestCase
 {
     use InvalidCodeAnalysisTestTrait;
@@ -21,6 +23,53 @@ final class TraitTemplateTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'receiverWithoutTypeArgumentsOfAGenericClassUsingATraitTakesTheBoundsOfItsTemplates' => [
+                'code' => '<?php
+                    /**
+                     * @template TKey of array-key
+                     * @template TValue
+                     * @extends ArrayAccess<TKey, TValue>
+                     */
+                    interface ArrayInterface extends ArrayAccess {}
+
+                    trait IsIterable {
+                        public function offsetSet(mixed $offset, mixed $value): void {}
+                        public function offsetGet(mixed $offset): mixed { return null; }
+                        public function offsetExists(mixed $offset): bool { return false; }
+                        public function offsetUnset(mixed $offset): void {}
+                    }
+
+                    /**
+                     * @template TKey of array-key
+                     * @template TValue
+                     * @implements ArrayInterface<TKey, TValue>
+                     */
+                    final class ImmutableArray implements ArrayInterface {
+                        use IsIterable;
+                    }
+
+                    final class Element {
+                        private ImmutableArray $scopedVariables;
+
+                        public function __construct() {
+                            $this->scopedVariables = new ImmutableArray();
+                        }
+
+                        public function add(string $name): void {
+                            $this->scopedVariables[$name] = $name;
+                            $this->scopedVariables[5] = new stdClass();
+
+                            if (isset($this->scopedVariables[$name])) {
+                                $value = $this->scopedVariables[$name];
+                            }
+
+                            $this->scopedVariables[$name] ??= "default";
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => ['MixedAssignment'],
+                'php_version' => '8.0',
+            ],
             'subclassOfAGenericClassUsingATraitThroughAnIntermediateInterfaceTakesItsTypeArguments' => [
                 'code' => '<?php
                     /**
@@ -788,6 +837,46 @@ final class TraitTemplateTest extends TestCase
     public static function providerInvalidCodeParse(): iterable
     {
         return [
+            'receiverWithoutTypeArgumentsOfAGenericClassUsingATraitStillChecksTheBound' => [
+                'code' => '<?php
+                    /**
+                     * @template TKey of array-key
+                     * @template TValue
+                     * @extends ArrayAccess<TKey, TValue>
+                     */
+                    interface ArrayInterface extends ArrayAccess {}
+
+                    trait IsIterable {
+                        public function offsetSet(mixed $offset, mixed $value): void {}
+                        public function offsetGet(mixed $offset): mixed { return null; }
+                        public function offsetExists(mixed $offset): bool { return false; }
+                        public function offsetUnset(mixed $offset): void {}
+                    }
+
+                    /**
+                     * @template TKey of array-key
+                     * @template TValue
+                     * @implements ArrayInterface<TKey, TValue>
+                     */
+                    final class ImmutableArray implements ArrayInterface {
+                        use IsIterable;
+                    }
+
+                    final class Element {
+                        private ImmutableArray $scopedVariables;
+
+                        public function __construct() {
+                            $this->scopedVariables = new ImmutableArray();
+                        }
+
+                        public function add(): void {
+                            $this->scopedVariables[1.5] = "x";
+                        }
+                    }',
+                'error_message' => 'InvalidArgument - src' . DIRECTORY_SEPARATOR . 'somefile.php:33:52 - Argument 1 of ImmutableArray::offsetSet expects array-key|null, but float(1.5) provided',
+                'error_levels' => [],
+                'php_version' => '8.0',
+            ],
             'subclassOfAGenericClassUsingATraitChecksTheKeyType' => [
                 'code' => '<?php
                     /**

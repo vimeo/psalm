@@ -250,7 +250,9 @@ final class ClassTemplateParamCollector
                 }
 
                 if (!$self_call) {
-                    if (!isset($class_template_params[$type_name])) {
+                    // a receiver without type arguments is its templates' bounds, also where the templates of the
+                    // classes it extends are mapped already
+                    if (!isset($class_template_params[$type_name][$class_storage->name])) {
                         $class_template_params[$type_name][$class_storage->name] = $type;
                     }
                 }
