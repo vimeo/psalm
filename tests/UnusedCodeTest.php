@@ -2428,6 +2428,19 @@ final class UnusedCodeTest extends TestCase
                     (new Base())->run();
                     (new Child())->other();',
             ],
+            'suppressUnusedPropertyOnAPromotedProperty' => [
+                'code' => '<?php
+                    final class Test
+                    {
+                        public function __construct(
+                            /** @psalm-suppress PossiblyUnusedProperty */
+                            public bool $result,
+                        ) {
+                        }
+                    }
+
+                    new Test(true);',
+            ],
         ];
     }
 
@@ -3518,6 +3531,22 @@ final class UnusedCodeTest extends TestCase
 
                     (new Factory())->run();',
                 'error_message' => 'Cannot find any calls to method Factory::__callStatic',
+            ],
+            'suppressOnAPromotedPropertyDoesNotCoverTheNextOne' => [
+                'code' => '<?php
+                    final class Test
+                    {
+                        public function __construct(
+                            /** @psalm-suppress PossiblyUnusedProperty */
+                            public bool $result,
+                            public bool $other,
+                        ) {
+                        }
+                    }
+
+                    new Test(true, false);',
+                'error_message' => 'PossiblyUnusedProperty',
+                'error_levels' => ['UnusedVariable'],
             ],
         ];
     }

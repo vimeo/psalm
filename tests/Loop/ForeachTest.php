@@ -23,64 +23,25 @@ final class ForeachTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
-            'decrementedCounterOfAListWithAnOptionalKeyIsNotRedundantInAForeach' => [
+            'foreachOverListKeepsTheEmptyStringOfAnEmptyOrNumericString' => [
                 'code' => '<?php
-                    /** @param list{0: string, 1: string, 2: string, 3?: string} $items */
-                    function process(array $items): void {
-                        $count = count($items);
-
-                        foreach ($items as $_) {
-                            if (0 !== --$count) {
-                                continue;
-                            }
-
-                            echo "last";
+                    /** @var list<array{foo: ""|numeric-string}> $rows */
+                    $rows = [];
+                    $row = ["foo" => "1"];
+                    foreach ($rows as $row) {
+                        if ("" === $row["foo"]) {
+                            throw new Exception("empty");
                         }
-                    }',
-                'assertions' => [],
-            ],
-            'rangeOfAnIntegerChangedInALoopLosesTheBoundItMoves' => [
-                'code' => '<?php
-                    function down(int $count): int {
-                        if ($count < 3 || $count > 4) {
-                            return 0;
-                        }
-
-                        foreach ([1, 2, 3, 4] as $_) {
-                            --$count;
-                        }
-
-                        return $count;
                     }
 
-                    function up(int $number): int {
-                        if ($number < 3 || $number > 4) {
-                            return 0;
-                        }
-
-                        foreach ([1, 2, 3, 4] as $_) {
-                            ++$number;
-                        }
-
-                        return $number;
-                    }
-
-                    /** @var int<3, 4> $start */
-                    $start = 3;
-
-                    foreach ([1, 2] as $_) {
-                        --$start;
-                    }
-
-                    /** @var int<3, 4> $limit */
-                    $limit = 3;
-
-                    foreach ([1, 2] as $_) {
-                        ++$limit;
+                    /** @var non-empty-list<""|numeric-string> $values */
+                    $values = ["1"];
+                    $value = "1";
+                    foreach ($values as $value) {
                     }',
                 'assertions' => [
-                    '$start===' => 'int<min, 3>',
-                    '$limit===' => 'int<4, max>',
+                    '$row===' => "array{foo: numeric-string}",
+                    '$value===' => "''|numeric-string",
                 ],
             ],
             'postDecrementInTheConditionOfAnIfThatBreaksOverAConcreteArray' => [
@@ -1706,6 +1667,66 @@ final class ForeachTest extends TestCase
                 'assertions' => [],
                 'ignored_issues' => [],
                 'php_version' => '8.0',
+            ],
+            'decrementedCounterOfAListWithAnOptionalKeyIsNotRedundantInAForeach' => [
+                'code' => '<?php
+                    /** @param list{0: string, 1: string, 2: string, 3?: string} $items */
+                    function process(array $items): void {
+                        $count = count($items);
+
+                        foreach ($items as $_) {
+                            if (0 !== --$count) {
+                                continue;
+                            }
+
+                            echo "last";
+                        }
+                    }',
+                'assertions' => [],
+            ],
+            'rangeOfAnIntegerChangedInALoopLosesTheBoundItMoves' => [
+                'code' => '<?php
+                    function down(int $count): int {
+                        if ($count < 3 || $count > 4) {
+                            return 0;
+                        }
+
+                        foreach ([1, 2, 3, 4] as $_) {
+                            --$count;
+                        }
+
+                        return $count;
+                    }
+
+                    function up(int $number): int {
+                        if ($number < 3 || $number > 4) {
+                            return 0;
+                        }
+
+                        foreach ([1, 2, 3, 4] as $_) {
+                            ++$number;
+                        }
+
+                        return $number;
+                    }
+
+                    /** @var int<3, 4> $start */
+                    $start = 3;
+
+                    foreach ([1, 2] as $_) {
+                        --$start;
+                    }
+
+                    /** @var int<3, 4> $limit */
+                    $limit = 3;
+
+                    foreach ([1, 2] as $_) {
+                        ++$limit;
+                    }',
+                'assertions' => [
+                    '$start===' => 'int<min, 3>',
+                    '$limit===' => 'int<4, max>',
+                ],
             ],
         ];
     }
