@@ -669,6 +669,196 @@ final class PropertyTypeTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'propertyReadOnlyWhereIssetHoldsInATraitMayBeLeftUninitialisedByAReturnOfConstructor' => [
+                'code' => '<?php
+                    final class Canary {
+                        public function cancel(): void {}
+                    }
+
+                    trait CancelsTheCanary {
+                        public function cancel(): void {
+                            if (isset($this->canary)) {
+                                $this->canary->cancel();
+                            }
+                        }
+                    }
+
+                    final class Response {
+                        use CancelsTheCanary;
+
+                        private Canary $canary;
+
+                        public function __construct(bool $pushed) {
+                            if ($pushed) {
+                                return;
+                            }
+
+                            $this->canary = new Canary();
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => ['RedundantPropertyInitializationCheck'],
+            ],
+            'propertyInitialisedByFinallyOfConstructorThatReturns' => [
+                'code' => '<?php
+                    final class A {
+                        private string $value;
+
+                        public function __construct() {
+                            try {
+                                return;
+                            } finally {
+                                $this->value = "ok";
+                            }
+                        }
+                    }',
+            ],
+            'propertyCheckedWithIssetMayBeLeftUninitialisedByAReturnOfConstructor' => [
+                'code' => '<?php
+                    final class Canary {}
+
+                    final class Response {
+                        private Canary $canary;
+
+                        public function __construct(bool $pushed) {
+                            if ($pushed) {
+                                return;
+                            }
+
+                            $this->canary = new Canary();
+                        }
+
+                        public function cancel(): void {
+                            if (isset($this->canary)) {
+                                echo "cancelled";
+                            }
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => ['RedundantPropertyInitializationCheck'],
+            ],
+            'propertyReadOnlyWhereIssetHoldsMayBeLeftUninitialisedByAReturnOfConstructor' => [
+                'code' => '<?php
+                    final class Canary {
+                        public function cancel(): void {}
+                    }
+
+                    final class Response {
+                        private Canary $canary;
+
+                        public function __construct(bool $pushed) {
+                            if ($pushed) {
+                                return;
+                            }
+
+                            $this->canary = new Canary();
+                        }
+
+                        public function a(): void {
+                            isset($this->canary) && $this->canary->cancel();
+                        }
+
+                        public function b(): ?Canary {
+                            return isset($this->canary) ? $this->canary : null;
+                        }
+
+                        public function c(): ?Canary {
+                            return $this->canary ?? null;
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => ['RedundantPropertyInitializationCheck', 'RedundantCondition'],
+            ],
+            'propertyReadOnlyThroughCoalesceMayBeLeftUninitialisedByAReturnOfConstructor' => [
+                'code' => '<?php
+                    final class Canary {
+                        public function cancel(): void {}
+                    }
+
+                    final class Response {
+                        private Canary $canary;
+
+                        public function __construct(bool $pushed) {
+                            if ($pushed) {
+                                return;
+                            }
+
+                            $this->canary = new Canary();
+                        }
+
+                        public function canary(): ?Canary {
+                            return $this->canary ?? null;
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => ['RedundantPropertyInitializationCheck', 'RedundantCondition'],
+            ],
+            'propertyInitialisedBeforeEveryReturnOfConstructor' => [
+                'code' => '<?php
+                    final class A {
+                        private string $value;
+
+                        public function __construct(string $v) {
+                            if ($v !== "") {
+                                $this->value = "foo";
+                                return;
+                            }
+
+                            throw new InvalidArgumentException("empty");
+                        }
+                    }
+
+                    final class B {
+                        private string $value;
+
+                        public function __construct(string $v) {
+                            if ($v === "a") {
+                                $this->value = "a";
+                                return;
+                            }
+
+                            if ($v === "b") {
+                                $this->value = "b";
+                                return;
+                            }
+
+                            $this->value = "c";
+                        }
+                    }
+
+                    final class C {
+                        private string $value;
+
+                        public function __construct(string $v) {
+                            $this->value = "x";
+
+                            if ($v === "") {
+                                return;
+                            }
+
+                            $this->value = $v;
+                        }
+                    }',
+            ],
+            'propertyInitialisedByMethodBeforeReturnOfConstructor' => [
+                'code' => '<?php
+                    final class A {
+                        private string $value;
+
+                        public function __construct(string $v) {
+                            if ($v !== "") {
+                                $this->init($v);
+                                return;
+                            }
+
+                            throw new InvalidArgumentException("empty");
+                        }
+
+                        private function init(string $v): void {
+                            $this->value = $v;
+                        }
+                    }',
+            ],
             'privateTraitPropertyInitializedByTheUsingClassIsNotCheckedInSubclasses' => [
                 'code' => '<?php
                     trait IdTrait {
@@ -3425,6 +3615,34 @@ final class PropertyTypeTest extends TestCase
                     }',
                 'error_message' => 'PropertyNotSetInConstructor - src' . DIRECTORY_SEPARATOR . 'somefile.php:10:27 - Property BaseUser::$id',
             ],
+            'propertyReadThroughCoalesceAndWithoutAGuardIsNotInitialisedByAReturnOfConstructor' => [
+                'code' => '<?php
+                    final class Canary {
+                        public function cancel(): void {}
+                    }
+
+                    final class Response {
+                        private Canary $canary;
+
+                        public function __construct(bool $pushed) {
+                            if ($pushed) {
+                                return;
+                            }
+
+                            $this->canary = new Canary();
+                        }
+
+                        public function canary(): ?Canary {
+                            return $this->canary ?? null;
+                        }
+
+                        public function close(): void {
+                            $this->canary->cancel();
+                        }
+                    }',
+                'error_message' => 'PropertyNotSetInConstructor - src' . DIRECTORY_SEPARATOR . 'somefile.php:7:40 - Property Response::$canary',
+                'error_levels' => ['RedundantPropertyInitializationCheck', 'RedundantCondition'],
+            ],
             'propertyNotInitializedByAnInterfaceStaticMethodCalledInTheConstructor' => [
                 'code' => '<?php
                     interface Limits {
@@ -4019,6 +4237,193 @@ final class PropertyTypeTest extends TestCase
                         public function __construct() {}
                     }',
                 'error_message' => 'PropertyNotSetInConstructor - src' . DIRECTORY_SEPARATOR . 'somefile.php:11',
+            ],
+            'propertyCheckedWithIssetButReadUnconditionallyElsewhereIsReportedAtAReturnOfConstructor' => [
+                'code' => '<?php
+                    final class Canary {
+                        public function cancel(): void {}
+                    }
+
+                    final class Response {
+                        private Canary $canary;
+
+                        public function __construct(bool $pushed) {
+                            if ($pushed) {
+                                return;
+                            }
+
+                            $this->canary = new Canary();
+                        }
+
+                        public function isCancellable(): bool {
+                            return isset($this->canary);
+                        }
+
+                        public function cancel(): void {
+                            $this->canary->cancel();
+                        }
+                    }',
+                'error_message' => 'PropertyNotSetInConstructor',
+                'error_levels' => ['RedundantPropertyInitializationCheck'],
+            ],
+            'propertyReadUnconditionallyInATraitIsReportedAtAReturnOfConstructor' => [
+                'code' => '<?php
+                    final class Canary {
+                        public function cancel(): void {}
+                    }
+
+                    trait CancelsTheCanary {
+                        public function cancel(): void {
+                            $this->canary->cancel();
+                        }
+                    }
+
+                    final class Response {
+                        use CancelsTheCanary;
+
+                        private Canary $canary;
+
+                        public function __construct(bool $pushed) {
+                            if ($pushed) {
+                                return;
+                            }
+
+                            $this->canary = new Canary();
+                        }
+
+                        public function isCancellable(): bool {
+                            return isset($this->canary);
+                        }
+                    }',
+                'error_message' => 'PropertyNotSetInConstructor',
+                'error_levels' => ['RedundantPropertyInitializationCheck'],
+            ],
+            'propertyReadUnconditionallyInATraitUsedByAnAliasIsReportedAtAReturnOfConstructor' => [
+                'code' => '<?php
+                    final class Canary {
+                        public function cancel(): void {}
+                    }
+
+                    trait CancelsTheCanary {
+                        public function cancel(): void {
+                            $this->canary->cancel();
+                        }
+                    }
+                    class_alias(CancelsTheCanary::class, "CancelsTheCanaryAlias");
+
+                    final class Response {
+                        use CancelsTheCanaryAlias;
+
+                        private Canary $canary;
+
+                        public function __construct(bool $pushed) {
+                            if ($pushed) {
+                                return;
+                            }
+
+                            $this->canary = new Canary();
+                        }
+
+                        public function isCancellable(): bool {
+                            return isset($this->canary);
+                        }
+                    }',
+                'error_message' => 'PropertyNotSetInConstructor',
+                'error_levels' => ['RedundantPropertyInitializationCheck'],
+            ],
+            'propertyReadAsAnArgumentOfACoalesceOperandIsReportedAtAReturnOfConstructor' => [
+                'code' => '<?php
+                    final class Canary {
+                        public function name(): string {
+                            return "canary";
+                        }
+                    }
+
+                    function label(Canary $canary): string {
+                        return $canary->name();
+                    }
+
+                    final class Response {
+                        private Canary $canary;
+
+                        public function __construct(bool $pushed) {
+                            if ($pushed) {
+                                return;
+                            }
+
+                            $this->canary = new Canary();
+                        }
+
+                        public function a(): bool {
+                            return isset($this->canary);
+                        }
+
+                        public function b(): string {
+                            return label($this->canary) ?? "none";
+                        }
+                    }',
+                'error_message' => 'PropertyNotSetInConstructor',
+                'error_levels' => ['RedundantPropertyInitializationCheck', 'RedundantConditionGivenDocblockType', 'DocblockTypeContradiction', 'RedundantCondition', 'TypeDoesNotContainNull'],
+            ],
+            'propertyReadAsTheIndexOfAnIssetIsReportedAtAReturnOfConstructor' => [
+                'code' => '<?php
+                    final class Response {
+                        private string $key;
+
+                        /** @var array<string, int> */
+                        private array $items = [];
+
+                        public function __construct(bool $pushed) {
+                            if ($pushed) {
+                                return;
+                            }
+
+                            $this->key = "key";
+                        }
+
+                        public function a(): bool {
+                            return isset($this->key);
+                        }
+
+                        public function b(): bool {
+                            return isset($this->items[$this->key]);
+                        }
+                    }',
+                'error_message' => 'PropertyNotSetInConstructor',
+                'error_levels' => ['RedundantPropertyInitializationCheck'],
+            ],
+            'notSetBeforeReturnOfConstructor' => [
+                'code' => '<?php
+                    final class A {
+                        public string $value;
+
+                        public function __construct(string $v) {
+                            if ($v === "") {
+                                return;
+                            }
+
+                            $this->value = $v;
+                        }
+                    }',
+                'error_message' => 'PropertyNotSetInConstructor - src' . DIRECTORY_SEPARATOR . 'somefile.php:3',
+            ],
+            'returnOfClosureInConstructorDoesNotInitialise' => [
+                'code' => '<?php
+                    final class A {
+                        public string $value;
+
+                        public function __construct(string $v) {
+                            $f = function (): void {
+                                return;
+                            };
+                            $f();
+
+                            if ($v !== "") {
+                                $this->value = $v;
+                            }
+                        }
+                    }',
+                'error_message' => 'PropertyNotSetInConstructor - src' . DIRECTORY_SEPARATOR . 'somefile.php:3',
             ],
             'notSetInAllBranchesOfIf' => [
                 'code' => '<?php
