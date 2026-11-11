@@ -199,10 +199,10 @@ final class TryAnalyzer
 
         $definitely_newly_assigned_var_ids = $newly_assigned_var_ids;
 
-        /** @var int $i */
         // the variables a catch of a try that always exits gave the context: the next catches add to them
         $vars_set_by_catches = [];
 
+        /** @var int $i */
         foreach ($stmt->catches as $i => $catch) {
             $catch_context = clone $original_context;
             $catch_context->has_returned = false;

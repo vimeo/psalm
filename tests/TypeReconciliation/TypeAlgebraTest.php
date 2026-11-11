@@ -5,14 +5,49 @@ declare(strict_types=1);
 namespace Psalm\Tests\TypeReconciliation;
 
 use Override;
+use Psalm\Context;
+use Psalm\IssueBuffer;
 use Psalm\Tests\TestCase;
 use Psalm\Tests\Traits\InvalidCodeAnalysisTestTrait;
 use Psalm\Tests\Traits\ValidCodeAnalysisTestTrait;
+
+use function array_column;
 
 final class TypeAlgebraTest extends TestCase
 {
     use InvalidCodeAnalysisTestTrait;
     use ValidCodeAnalysisTestTrait;
+
+    public function testOffsetOfAPropertyAssignedInTheIfIsKnownAfterIt(): void
+    {
+        $this->testConfig->throw_exception = false;
+        $file_path = self::$src_dir_path . 'somefile.php';
+        $this->addFile(
+            $file_path,
+            '<?php
+                final class Channels {
+                    /** @var array<string, object> */
+                    protected array $channels = [];
+
+                    /** @param mixed $channel */
+                    public function get($channel): object {
+                        if (!isset($this->channels[$channel])) {
+                            $this->channels[$channel] = new stdClass();
+                        }
+
+                        return $this->channels[$channel];
+                    }
+                }',
+        );
+
+        $this->analyzeFile($file_path, new Context(), false);
+
+        // the offset is mixed where it is tested and assigned, not again where it is read after the if
+        self::assertSame(
+            ['MixedArrayOffset', 'MixedArrayOffset', 'MixedPropertyTypeCoercion'],
+            array_column(IssueBuffer::getIssuesDataForFile($file_path), 'type'),
+        );
+    }
 
     /**
      * @psalm-pure
@@ -1704,6 +1739,98 @@ final class TypeAlgebraTest extends TestCase
 
                         return A::$x->y;
                     }',
+            ],
+            'offsetKnownFromTheConditionIsForgottenWhenTheArrayIsReassignedAndThenAnOffsetIsWritten' => [
+                'code' => '<?php
+                    $a = ["test" => rand(0, 1) ? null : "x"];
+
+                    if ($a["test"] === null) {
+                        $a = ["test" => ""];
+                        $a["other"] = 1;
+                    }
+
+                    $var = $a["test"];',
+                'assertions' => [
+                    '$var===' => "''|'x'",
+                ],
+            ],
+            'offsetKnownFromTheConditionIsForgottenWhenTheArrayIsReassignedAndThenUnioned' => [
+                'code' => '<?php
+                    $a = ["test" => rand(0, 1) ? null : "x"];
+
+                    if ($a["test"] === null) {
+                        $a = ["test" => ""];
+                        $a += ["other" => 1];
+                    }
+
+                    $var = $a["test"];',
+                'assertions' => [
+                    '$var===' => "''|'x'",
+                ],
+            ],
+            'offsetKnownFromTheConditionIsKeptWhenTheArrayIsOnlyUnioned' => [
+                'code' => '<?php
+                    $a = ["test" => rand(0, 1) ? null : "x"];
+
+                    if ($a["test"] === null) {
+                        $a += ["other" => 1];
+                    }
+
+                    $var = $a["test"];',
+                'assertions' => [
+                    '$var===' => "'x'|null",
+                ],
+            ],
+            'offsetKnownBeforeAnArrayUnionAssignmentIsKeptAfterTheIf' => [
+                'code' => '<?php
+                    /** @param mixed $extra */
+                    function widget(bool $a, bool $b, $extra): string {
+                        $variables = ["style" => "s", "uri" => "public://x"];
+                        $key = $variables["uri"] . ".dims";
+
+                        if ($a) {
+                            $variables["width"] = 1;
+                        } elseif ($b) {
+                            $variables += $extra;
+                        } else {
+                            $variables["width"] = null;
+                        }
+
+                        $uri = $variables["uri"];
+                        /** @psalm-check-type-exact $uri = "public://x" */
+
+                        return $uri . $key;
+                    }',
+                'assertions' => [],
+                'ignored_issues' => ['MixedAssignment', 'MixedOperand'],
+                'php_version' => '8.0',
+            ],
+            'offsetKnownFromTheConditionIsForgottenWhenTheArrayIsReassigned' => [
+                'code' => '<?php
+                    $dummy = ["test" => ""];
+                    $a = ["test" => rand(0, 1) ? null : "x"];
+
+                    if ($a["test"] === null) {
+                        $a = $dummy;
+                    }
+
+                    $var = $a["test"];',
+                'assertions' => [
+                    '$var===' => "''|'x'",
+                ],
+            ],
+            'offsetKnownFromTheConditionIsKeptWhenTheArrayIsNotReassigned' => [
+                'code' => '<?php
+                    $a = ["test" => rand(0, 1) ? null : "x"];
+
+                    if ($a["test"] === null) {
+                        $a["other"] = 1;
+                    }
+
+                    $var = $a["test"];',
+                'assertions' => [
+                    '$var===' => "'x'|null",
+                ],
             ],
         ];
     }
