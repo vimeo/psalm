@@ -1306,7 +1306,11 @@ final class InstancePropertyAssignmentAnalyzer
                     $fq_class_name = $hook_interface->value;
                 } elseif (!$class_exists) {
                     // a property an isset() found is there: it is the object that has it, not the interface
-                    if ($var_id !== null && $context->hasVariable($var_id)) {
+                    if ($var_id !== null
+                        && isset($context->vars_in_scope[$var_id])
+                        && !$context->vars_in_scope[$var_id]->isNull()
+                        && !$context->vars_in_scope[$var_id]->possibly_undefined
+                    ) {
                         return null;
                     }
 

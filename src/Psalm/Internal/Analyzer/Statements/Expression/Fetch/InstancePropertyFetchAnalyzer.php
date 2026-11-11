@@ -35,6 +35,7 @@ use Psalm\Type\Union;
 
 use function array_merge;
 use function array_shift;
+use function array_values;
 use function rtrim;
 use function strtolower;
 
@@ -352,17 +353,41 @@ final class InstancePropertyFetchAnalyzer
         return true;
     }
 
+    /**
+     * Whether the type is an interface, intersected only with interfaces, that none of declares the property
+     */
     private static function isUndeclaredInterfaceProperty(
         Codebase $codebase,
         Union $object_type,
         string $property_name,
     ): bool {
         foreach ($object_type->getAtomicTypes() as $atomic_type) {
-            if ($atomic_type instanceof TNamedObject
-                && !$codebase->classExists($atomic_type->value)
-                && $codebase->interfaceExists($atomic_type->value)
-                && !isset($codebase->classlike_storage_provider->get($atomic_type->value)->properties[$property_name])
-            ) {
+            if (!$atomic_type instanceof TNamedObject) {
+                continue;
+            }
+
+            $has_interface = false;
+            $declares_property = false;
+
+            foreach ([$atomic_type, ...array_values($atomic_type->getIntersectionTypes() ?: [])] as $part) {
+                if (!$part instanceof TNamedObject) {
+                    continue;
+                }
+
+                if ($codebase->classExists($part->value)) {
+                    $declares_property = true;
+                } elseif ($codebase->interfaceExists($part->value)) {
+                    $has_interface = true;
+
+                    if (isset($codebase->classlike_storage_provider->get($part->value)
+                        ->declaring_property_ids[$property_name])
+                    ) {
+                        $declares_property = true;
+                    }
+                }
+            }
+
+            if ($has_interface && !$declares_property) {
                 return true;
             }
         }
