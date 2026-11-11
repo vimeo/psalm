@@ -3039,7 +3039,7 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
                         $codebase,
                         $param->type,
                         $context->self,
-                        $context->self,
+                        null,
                         $this->getParentFQCLN(),
                     ))
                     : $param;
