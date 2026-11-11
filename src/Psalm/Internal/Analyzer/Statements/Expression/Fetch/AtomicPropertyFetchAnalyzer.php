@@ -205,6 +205,7 @@ final class AtomicPropertyFetchAnalyzer
                 $interface_exists,
                 $fq_class_name,
                 $override_property_visibility,
+                $context->inside_isset,
             );
 
             if (!$class_exists && !$interface_exists) {
@@ -1378,6 +1379,7 @@ final class AtomicPropertyFetchAnalyzer
         bool &$interface_exists,
         string &$fq_class_name,
         bool &$override_property_visibility,
+        bool $inside_isset,
     ): void {
         if ($codebase->interfaceExists($lhs_type_part->value)) {
             $interface_exists = true;
@@ -1453,7 +1455,8 @@ final class AtomicPropertyFetchAnalyzer
                 $lhs_type_part = $hook_interface;
                 $fq_class_name = $hook_interface->value;
             } elseif (!$is_enum_interface && !$intersects_with_shape_property) {
-                if (IssueBuffer::accepts(
+                // isset() and ?? only test whether the property is there
+                if (!$inside_isset && IssueBuffer::accepts(
                     new NoInterfaceProperties(
                         'Interfaces cannot have properties',
                         new CodeLocation($statements_analyzer->getSource(), $stmt),
