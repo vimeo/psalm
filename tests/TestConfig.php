@@ -37,6 +37,9 @@ final class TestConfig extends Config
     public const INIT_PROJECT_FILES_NOW = true;
     private static ?ProjectFileFilter $cached_project_files = null;
 
+    /** @var array<string, string> */
+    public array $composer_files = [];
+
     /** @var array<string, array{array<lowercase-string, true>, list<lowercase-string>}> */
     private static array $extension_symbols = [];
 
@@ -192,10 +195,11 @@ final class TestConfig extends Config
         }
 
         $functions_by_returned_class = [];
-        foreach (InternalCallMapHandler::getCallMap() as $function => [$return_type]) {
+        foreach (InternalCallMapHandler::getCallMap() as $function => $signature) {
             if (str_contains($function, '::')) {
                 continue;
             }
+            $return_type = $signature[0] ?? $signature[-1] ?? '';
             preg_match_all('/[a-z_\\\\][a-z0-9_\\\\]*/i', $return_type, $matches);
             foreach ($matches[0] as $class) {
                 $functions_by_returned_class[strtolower(ltrim($class, '\\'))][] = strtolower($function);
@@ -221,13 +225,12 @@ final class TestConfig extends Config
     }
 
     /**
-     * @return false
-     * @psalm-pure
+     * @psalm-capabilities read-props
      */
     #[Override]
-    public function getComposerFilePathForClassLike(string $fq_classlike_name): bool
+    public function getComposerFilePathForClassLike(string $fq_classlike_name): string|bool
     {
-        return false;
+        return $this->composer_files[$fq_classlike_name] ?? false;
     }
 
     /**
