@@ -23,6 +23,69 @@ final class ForeachTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'foreachOverNullableOrFalsableMayNotRun' => [
+                'code' => <<<'PHP'
+                    <?php
+                    /** @var array<int>|null $nullable */
+                    $nullable = null;
+                    $nullableEmpty = true;
+                    foreach ($nullable as $_) {
+                        $nullableEmpty = false;
+                    }
+
+                    /** @var array<int>|false $falsable */
+                    $falsable = false;
+                    $falsableEmpty = true;
+                    foreach ($falsable as $_) {
+                        $falsableEmpty = false;
+                    }
+
+                    /** @var non-empty-array<int> $nonEmpty */
+                    $nonEmpty = [1];
+                    $nonEmptyEmpty = true;
+                    foreach ($nonEmpty as $_) {
+                        $nonEmptyEmpty = false;
+                    }
+                    PHP,
+                'assertions' => [
+                    '$nullableEmpty===' => 'bool',
+                    '$falsableEmpty===' => 'bool',
+                    '$nonEmptyEmpty===' => 'false',
+                    '$nullable===' => 'array<array-key, int>|null',
+                    '$falsable===' => 'array<array-key, int>|false',
+                ],
+                'ignored_issues' => ['PossiblyNullIterator', 'PossiblyFalseIterator'],
+            ],
+            'foreachOverAClassStringMapReturnedByAMethodWithATemplateOfTheSameName' => [
+                'code' => <<<'PHP'
+                    <?php
+                    interface MappingAttribute {}
+
+                    /** @template T of MappingAttribute */
+                    final class RepeatableAttributeCollection {}
+
+                    final class AttributeReader {
+                        /**
+                         * @return class-string-map<T, T|RepeatableAttributeCollection<T>>
+                         *
+                         * @template T of MappingAttribute
+                         */
+                        public function read(): array {
+                            return [];
+                        }
+                    }
+
+                    function iterate(AttributeReader $reader): void {
+                        foreach ($reader->read() as $class => $attribute) {
+                            /** @psalm-check-type-exact $class = class-string<MappingAttribute> */
+                            /** @psalm-check-type-exact $attribute = MappingAttribute|RepeatableAttributeCollection<MappingAttribute> */
+                        }
+                    }
+                    PHP,
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
             'foreachSourceIsEvaluatedBeforeTheValueIsAssigned' => [
                 'code' => <<<'PHP'
                     <?php
@@ -37,6 +100,36 @@ final class ForeachTest extends TestCase
                     function keys(array $data, string $name): void {
                         foreach ($data[$name] as $name => $value) {
                             echo $name, $value;
+                        }
+                    }
+                    PHP,
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
+            'foreachOverAClassStringMap' => [
+                'code' => <<<'PHP'
+                    <?php
+                    class Foo {}
+
+                    /**
+                     * @param class-string-map<T of Foo, T> $map
+                     * @param class-string-map<U, U> $unbounded
+                     * @param class-string-map<V of Foo, list<V>> $lists
+                     */
+                    function iterate(array $map, array $unbounded, array $lists): void {
+                        foreach ($map as $class => $instance) {
+                            /** @psalm-check-type-exact $class = class-string<Foo> */
+                            /** @psalm-check-type-exact $instance = Foo */
+                        }
+
+                        foreach ($unbounded as $class => $instance) {
+                            /** @psalm-check-type-exact $class = class-string */
+                            /** @psalm-check-type-exact $instance = object */
+                        }
+
+                        foreach ($lists as $list) {
+                            /** @psalm-check-type-exact $list = list<Foo> */
                         }
                     }
                     PHP,
