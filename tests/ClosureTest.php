@@ -240,6 +240,53 @@ final class ClosureTest extends TestCase
                 'assertions' => [],
                 'ignored_issues' => [],
             ],
+            'closureWithSelfParamCalledInATrait' => [
+                'code' => '<?php
+                    trait Walks {
+                        public function direct(): void {
+                            $f = function (self $other): void {};
+                            $f($this);
+                        }
+
+                        public function recursive(): void {
+                            $f = null;
+                            $f = function (self $other, int $depth) use (&$f): void {
+                                if ($depth > 0) {
+                                    $f($other, $depth - 1);
+                                }
+                            };
+                            $f($this, 3);
+                        }
+
+                        public function arrow(): int {
+                            $f = fn (self $other): int => 1;
+                            return $f($this);
+                        }
+                    }
+
+                    final class Walker {
+                        use Walks;
+                    }',
+            ],
+            'closureWithSelfParamFromATraitPassedToAnotherClass' => [
+                'code' => '<?php
+                    trait Hands {
+                        public function handOver(Taker $t): void {
+                            $t->take(function (self $other): void {});
+                        }
+                    }
+
+                    final class Giver {
+                        use Hands;
+                    }
+
+                    final class Taker {
+                        /** @param Closure(Giver): void $f */
+                        public function take(Closure $f): void {
+                            $f(new Giver());
+                        }
+                    }',
+            ],
             'byRefUseVarUnsetInClosure' => [
                 'code' => '<?php
                     function reserve(): Closure {
@@ -992,6 +1039,159 @@ final class ClosureTest extends TestCase
                     '$result' => 'int<0, max>',
                 ],
                 'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
+            'FirstClassCallable:InstanceMethod:InheritedReturnType' => [
+                'code' => '<?php
+                    interface Counter {
+                        /** @return positive-int */
+                        public function count();
+                    }
+
+                    final class Items implements Counter {
+                        #[Override]
+                        public function count() {
+                            return 1;
+                        }
+                    }
+
+                    $items = new Items();
+                    $count = $items->count(...);
+                    $result = $count();',
+                'assertions' => [
+                    '$count===' => 'Closure[impure]():int<1, max>',
+                    '$result' => 'int<1, max>',
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
+            'FirstClassCallable:DynamicMethodName:InheritedReturnType' => [
+                'code' => '<?php
+                    interface Counter {
+                        /** @return positive-int */
+                        public function count();
+
+                        /** @return positive-int */
+                        public static function total();
+                    }
+
+                    final class Items implements Counter {
+                        #[Override]
+                        public function count() {
+                            return 1;
+                        }
+
+                        #[Override]
+                        public static function total() {
+                            return 1;
+                        }
+                    }
+
+                    $items = new Items();
+                    $count = $items->{"count"}(...);
+                    $total = Items::{"total"}(...);',
+                'assertions' => [
+                    '$count===' => 'Closure[impure]():int<1, max>',
+                    '$total===' => 'Closure[impure]():int<1, max>',
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
+            'FirstClassCallable:InstanceMethod:InheritedStaticReturnType' => [
+                'code' => '<?php
+                    class Items {
+                        /** @return static */
+                        public function make() {
+                            return $this;
+                        }
+                    }
+
+                    final class SubItems extends Items {
+                        #[Override]
+                        public function make() {
+                            return $this;
+                        }
+                    }
+
+                    $items = new SubItems();
+                    $make = $items->make(...);
+                    $result = $make();',
+                'assertions' => [
+                    '$make===' => 'Closure[impure]():SubItems',
+                    '$result' => 'SubItems',
+                ],
+                'ignored_issues' => ['ClassMustBeFinal'],
+                'php_version' => '8.1',
+            ],
+            'FirstClassCallable:InstanceMethod:InheritedReturnTypeKeepsTheOwnParameters' => [
+                'code' => '<?php
+                    interface Counter {
+                        /** @return positive-int */
+                        public function count();
+                    }
+
+                    final class Items implements Counter {
+                        #[Override]
+                        public function count(int $step = 1) {
+                            return 1;
+                        }
+                    }
+
+                    $count = (new Items())->count(...);
+                    $result = $count(5);',
+                'assertions' => [
+                    '$count===' => 'Closure[impure](int=):int<1, max>',
+                    '$result' => 'int<1, max>',
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
+            'FirstClassCallable:InstanceMethod:InheritedParameterType' => [
+                'code' => '<?php
+                    interface Sink {
+                        /** @param positive-int $count */
+                        public function take($count): void;
+                    }
+
+                    final class Box implements Sink {
+                        #[Override]
+                        public function take($count): void {
+                        }
+                    }
+
+                    $take = (new Box())->take(...);',
+                'assertions' => [
+                    '$take===' => 'Closure[impure](int<1, max>):void',
+                ],
+                'ignored_issues' => ['MissingParamType'],
+                'php_version' => '8.1',
+            ],
+            'FirstClassCallable:InstanceMethod:InheritedTemplate' => [
+                'code' => '<?php
+                    interface Identity {
+                        /**
+                         * @template T
+                         * @param T $x
+                         * @return T
+                         */
+                        public function id($x);
+                    }
+
+                    final class Same implements Identity {
+                        #[Override]
+                        public function id($x) {
+                            return $x;
+                        }
+                    }
+
+                    $same = new Same();
+                    $id = $same->id(...);
+                    $result = $id("s");',
+                'assertions' => [
+                    '$id===' => 'Closure[impure](mixed):mixed',
+                    '$result' => 'mixed',
+                ],
+                'ignored_issues' => ['MixedAssignment'],
                 'php_version' => '8.1',
             ],
             'FirstClassCallable:InstanceMethod:UserDefined' => [
@@ -1935,12 +2135,66 @@ final class ClosureTest extends TestCase
     public static function providerInvalidCodeParse(): iterable
     {
         return [
+            'FirstClassCallable:InstanceMethod:InheritedReturnTypeKeepsTheOwnParameterType' => [
+                'code' => '<?php
+                    interface Fmt {
+                        /** @return non-empty-string */
+                        public function fmt($x);
+                    }
+
+                    final class F implements Fmt {
+                        #[Override]
+                        public function fmt(int|string $x) {
+                            return "a" . $x;
+                        }
+                    }
+
+                    $fmt = (new F())->fmt(...);
+                    $fmt([]);',
+                'error_message' => 'InvalidArgument',
+                'error_levels' => ['MissingParamType'],
+                'php_version' => '8.1',
+            ],
             'byValueUseOfAVariableThatIsNotDefinedYet' => [
                 'code' => '<?php
                     $f = function () use ($total): int {
                         return 1;
                     };',
                 'error_message' => 'UndefinedVariable',
+            ],
+            'closureWithSelfParamCalledInATraitRejectsAnotherClass' => [
+                'code' => '<?php
+                    trait Walks {
+                        public function direct(): void {
+                            $f = function (self $other): void {};
+                            $f(new stdClass());
+                        }
+                    }
+
+                    final class Walker {
+                        use Walks;
+                    }',
+                'error_message' => 'InvalidArgument - src' . DIRECTORY_SEPARATOR . 'somefile.php:5:32 - Argument 1 expects Walker',
+            ],
+            'closureWithSelfParamFromATraitIsTheUsingClassInAnotherClass' => [
+                'code' => '<?php
+                    trait Hands {
+                        public function handOver(Taker $t): void {
+                            $t->take(function (self $other): void {});
+                        }
+                    }
+
+                    final class Giver {
+                        use Hands;
+                    }
+
+                    final class Taker {
+                        /** @param Closure(Taker): void $f */
+                        public function take(Closure $f): void {
+                            $f($this);
+                        }
+                    }',
+                'error_message' => 'expects Closure[impure](Taker):void, but Closure[pure](Giver):void provided',
             ],
             'wrongArg' => [
                 'code' => '<?php
