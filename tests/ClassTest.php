@@ -959,6 +959,31 @@ final class ClassTest extends TestCase
                 'assertions' => [],
                 'ignored_issues' => [],
             ],
+            'classExistsInAnArgumentOfANegatedCall' => [
+                'code' => '<?php
+                    final class Validator {
+                        /**
+                         * @param mixed $validation
+                         */
+                        public function isValid(string $email, $validation): bool {
+                            return $email !== "" && $validation !== null;
+                        }
+                    }
+
+                    function checkMethod(Validator $validator, string $email, object $fallback): void {
+                        if (!$validator->isValid($email, class_exists(MessageIDValidation::class) ? new MessageIDValidation() : $fallback)) {
+                            throw new LogicException();
+                        }
+                    }
+
+                    function checkFunction(): void {
+                        if (!is_object(class_exists(OtherValidation::class) ? new OtherValidation() : null)) {
+                            throw new LogicException();
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+            ],
             'noErrorsAfterClassExists' => [
                 'code' => '<?php
                     if (class_exists(A::class)) {

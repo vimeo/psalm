@@ -313,6 +313,10 @@ final class ArgumentsAnalyzer
             $was_inside_isset = $context->inside_isset;
             $context->inside_isset = false;
 
+            // a `!` around the call does not negate what its arguments check
+            $was_inside_negation = $context->inside_negation;
+            $context->inside_negation = false;
+
             if (ExpressionAnalyzer::analyze(
                 $statements_analyzer,
                 $arg->value,
@@ -322,12 +326,14 @@ final class ArgumentsAnalyzer
                 null,
                 $high_order_template_result,
             ) === false) {
+                $context->inside_negation = $was_inside_negation;
                 $context->inside_isset = $was_inside_isset;
                 $context->inside_call = $was_inside_call;
 
                 return false;
             }
 
+            $context->inside_negation = $was_inside_negation;
             $context->inside_isset = $was_inside_isset;
             $context->inside_call = $was_inside_call;
 
