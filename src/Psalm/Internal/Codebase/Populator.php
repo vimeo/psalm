@@ -825,7 +825,26 @@ final class Populator
 
         $storage->documenting_method_ids = [];
 
-        foreach ($storage->methods as $method_name => $method_storage) {
+        // the storage of a method a class takes from a trait is shared by every class using the trait, so what is
+        // inherited by one class's method is recorded on the class only
+        $method_storages = $storage->methods;
+
+        foreach ($storage->declaring_method_ids as $method_name => $trait_method_id) {
+            if (isset($storage->methods[$method_name]) || !isset($storage->overridden_method_ids[$method_name])) {
+                continue;
+            }
+
+            $trait_storage = $storage_provider->get($trait_method_id->fq_class_name);
+
+            if ($trait_storage->is_trait && isset($trait_storage->methods[$trait_method_id->method_name])) {
+                $method_storages[$method_name] = $trait_storage->methods[$trait_method_id->method_name];
+            }
+        }
+
+        foreach ($method_storages as $method_name => $method_storage) {
+            $is_own_method = isset($storage->methods[$method_name]);
+            $inherited_return_type = $is_own_method ? $method_storage->inherited_return_type : false;
+
             if (isset($storage->overridden_method_ids[$method_name])) {
                 $overridden_method_ids = $storage->overridden_method_ids[$method_name];
 
@@ -865,21 +884,21 @@ final class Populator
                             || $declaring_method_storage->has_docblock_return_type)
                         && !$method_storage->has_docblock_param_types
                         && !$method_storage->has_docblock_return_type
-                        && $method_storage->inherited_return_type !== null
+                        && $inherited_return_type !== null
                     ) {
                         if (!isset($storage->documenting_method_ids[$method_name])
                             || (string) $storage->documenting_method_ids[$method_name]
                                 === (string) $declaring_method_id
                         ) {
                             $storage->documenting_method_ids[$method_name] = $declaring_method_id;
-                            $method_storage->inherited_return_type = true;
+                            $inherited_return_type = true;
                         } else {
                             if (in_array(
                                 $storage->documenting_method_ids[$method_name]->fq_class_name,
                                 $declaring_class_storage->parent_interfaces,
                             )) {
                                 $storage->documenting_method_ids[$method_name] = $declaring_method_id;
-                                $method_storage->inherited_return_type = true;
+                                $inherited_return_type = true;
                             } else {
                                 $documenting_class_storage = $declaring_class_storages
                                     [$storage->documenting_method_ids[$method_name]->fq_class_name];
@@ -890,10 +909,14 @@ final class Populator
                                 ) && $documenting_class_storage->is_interface
                                 ) {
                                     unset($storage->documenting_method_ids[$method_name]);
-                                    $method_storage->inherited_return_type = null;
+                                    $inherited_return_type = null;
                                 }
                             }
                         }
+                    }
+
+                    if (!$is_own_method) {
+                        continue;
                     }
 
                     // tell the declaring class it's overridden downstream
@@ -910,6 +933,10 @@ final class Populator
                     ) {
                         $method_storage->throws += $declaring_method_storage->throws;
                     }
+                }
+
+                if ($is_own_method) {
+                    $method_storage->inherited_return_type = $inherited_return_type;
                 }
             }
         }
