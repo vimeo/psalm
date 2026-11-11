@@ -2611,18 +2611,18 @@ final class AssertionFinder
                     if ($var_type->from_docblock) {
                         IssueBuffer::maybeAdd(
                             new RedundantConditionGivenDocblockType(
-                                'Docblock-defined type ' . $var_type->getId() . ' can never contain null',
+                                'Docblock-defined type ' . $var_type->getId() . ' can never be an empty array',
                                 new CodeLocation($source, $conditional),
-                                $var_type->getId() . ' null',
+                                $var_type->getId() . ' []',
                             ),
                             $source->getSuppressedIssues(),
                         );
                     } else {
                         IssueBuffer::maybeAdd(
                             new RedundantCondition(
-                                $var_type->getId() . ' can never contain null',
+                                $var_type->getId() . ' can never be an empty array',
                                 new CodeLocation($source, $conditional),
-                                $var_type->getId() . ' null',
+                                $var_type->getId() . ' []',
                             ),
                             $source->getSuppressedIssues(),
                         );
@@ -4021,20 +4021,23 @@ final class AssertionFinder
                     && $source instanceof StatementsAnalyzer
                     && ($first_var_type = $source->node_data->getType($expr->getArgs()[0]->value))
                 ) {
-                    foreach ($first_var_type->getLiteralStrings() as $array_literal_type) {
+                    // only one key is known to exist: it is not any of the keys of a union
+                    if ($first_var_type->isSingleStringLiteral()) {
+                        $array_literal_type = $first_var_type->getSingleStringLiteral();
                         $string_to_int = ArrayAnalyzer::getLiteralArrayKeyInt($array_literal_type->value);
                         $literal_key = $string_to_int === false
                             ? "'" . $array_literal_type->value . "'"
                             : $string_to_int;
                         $if_types[$array_root . "[" . $literal_key . "]"] = [[new ArrayKeyExists()]];
-                    }
-                    foreach ($first_var_type->getLiteralInts() as $array_literal_type) {
+                    } elseif ($first_var_type->isSingleIntLiteral()) {
+                        $array_literal_type = $first_var_type->getSingleIntLiteral();
                         $if_types[$array_root . "[" . $array_literal_type->value . "]"] = [[new ArrayKeyExists()]];
                     }
                 }
 
                 if ($first_var_name !== null
-                    && !strpos($first_var_name, '->')
+                    && (!strpos($first_var_name, '->')
+                        || $expr->getArgs()[0]->value instanceof PhpParser\Node\Expr\PropertyFetch)
                     && !strpos($first_var_name, '[')
                 ) {
                     $if_types[$array_root . '[' . $first_var_name . ']'] = [[new ArrayKeyExists()]];
