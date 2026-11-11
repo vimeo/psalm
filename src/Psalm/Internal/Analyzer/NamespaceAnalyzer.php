@@ -52,7 +52,7 @@ final class NamespaceAnalyzer extends SourceAnalyzer
         $this->namespace_name = $this->namespace->name ? $this->namespace->name->toString() : '';
     }
 
-    public function collectAnalyzableInformation(): void
+    public function collectAnalyzableInformation(bool $analyze_statements): void
     {
         $leftover_stmts = [];
 
@@ -72,8 +72,11 @@ final class NamespaceAnalyzer extends SourceAnalyzer
             } elseif ($stmt instanceof PhpParser\Node\Stmt\GroupUse) {
                 $this->visitGroupUse($stmt);
             } elseif ($stmt instanceof PhpParser\Node\Stmt\Const_) {
-                foreach ($stmt->consts as $const) {
-                    self::$public_namespace_constants[$this->namespace_name][$const->name->name] = Type::getMixed();
+                // a placeholder until the statement is analysed below; without that it would hide the type found before
+                if ($analyze_statements) {
+                    foreach ($stmt->consts as $const) {
+                        self::$public_namespace_constants[$this->namespace_name][$const->name->name] = Type::getMixed();
+                    }
                 }
 
                 $leftover_stmts[] = $stmt;
@@ -82,7 +85,7 @@ final class NamespaceAnalyzer extends SourceAnalyzer
             }
         }
 
-        if ($leftover_stmts) {
+        if ($leftover_stmts && $analyze_statements) {
             $statements_analyzer = new StatementsAnalyzer($this, new NodeDataProvider(), true);
             $file_context = $this->source->context;
 

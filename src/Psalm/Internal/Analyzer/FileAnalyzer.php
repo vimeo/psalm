@@ -302,7 +302,7 @@ class FileAnalyzer extends SourceAnalyzer
      * @param  array<int, PhpParser\Node\Stmt>  $stmts
      * @return list<PhpParser\Node\Stmt>
      */
-    public function populateCheckers(array $stmts): array
+    public function populateCheckers(array $stmts, bool $analyze_namespace_statements = true): array
     {
         $leftover_stmts = [];
 
@@ -315,7 +315,7 @@ class FileAnalyzer extends SourceAnalyzer
                 $namespace_name = $stmt->name ? $stmt->name->toString() : '';
 
                 $namespace_analyzer = new NamespaceAnalyzer($stmt, $this);
-                $namespace_analyzer->collectAnalyzableInformation();
+                $namespace_analyzer->collectAnalyzableInformation($analyze_namespace_statements);
 
                 $this->namespace_aliased_classes[$namespace_name] = $namespace_analyzer->getAliases()->uses;
                 $this->namespace_aliased_classes_flipped[$namespace_name] =

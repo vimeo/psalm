@@ -4,14 +4,22 @@ declare(strict_types=1);
 
 namespace Psalm\Tests;
 
+use Override;
 use PHPUnit\Framework\Attributes\DataProvider;
+use PhpParser\Node\Expr\FuncCall;
+use PhpParser\Node\Name;
 use Psalm\Config;
 use Psalm\Exception\CodeException;
 use Psalm\Internal\Analyzer\FileAnalyzer;
 use Psalm\Internal\Provider\ClassLikeStorageProvider;
+use Psalm\IssueBuffer;
+use Psalm\Plugin\EventHandler\AfterExpressionAnalysisInterface;
+use Psalm\Plugin\EventHandler\Event\AfterExpressionAnalysisEvent;
 use Psalm\Storage\ClassLikeStorage;
 use ReflectionProperty;
 
+use function array_combine;
+use function array_keys;
 use function getcwd;
 use function preg_quote;
 use function strpos;
@@ -761,6 +769,39 @@ final class IncludeTest extends TestCase
                     (string) getcwd() . DIRECTORY_SEPARATOR . 'test_1.php',
                 ],
             ],
+            'namespaceConstantKeepsItsTypeAfterASubclassCallsTheParentConstructor' => [
+                'files' => [
+                    (string) getcwd() . DIRECTORY_SEPARATOR . 'Base.php' => '<?php
+                        namespace App;
+
+                        const LIMIT = 5;
+
+                        class Base {
+                            public int $limit;
+
+                            public function __construct() {
+                                $this->limit = 1;
+                            }
+                        }',
+                    (string) getcwd() . DIRECTORY_SEPARATOR . 'Child.php' => '<?php
+                        namespace App;
+
+                        final class Child extends Base {
+                            public function __construct() {
+                                parent::__construct();
+                            }
+                        }',
+                    (string) getcwd() . DIRECTORY_SEPARATOR . 'limit.php' => '<?php
+                        function limit(): int {
+                            return \App\LIMIT;
+                        }',
+                ],
+                'files_to_check' => [
+                    (string) getcwd() . DIRECTORY_SEPARATOR . 'Base.php',
+                    (string) getcwd() . DIRECTORY_SEPARATOR . 'Child.php',
+                    (string) getcwd() . DIRECTORY_SEPARATOR . 'limit.php',
+                ],
+            ],
         ];
     }
 
@@ -1114,5 +1155,164 @@ final class IncludeTest extends TestCase
         // This must not crash — previously threw UnexpectedValueException
         // from MethodAnalyzer when the method was missing from storage.
         $file_analyzer->analyze();
+    }
+
+    /**
+     * Analysing a subclass follows the constructor it calls into the parent's file. The statements outside the
+     * parent's class are analysed with the parent's file, which knows the functions its includes declare, not again
+     * for the subclass, whose file doesn't include them. Taint analysis also analyses the parent's body for the
+     * subclass: there those statements add their taints, but their issues are the parent file's.
+     */
+    #[DataProvider('providerTaintAnalysis')]
+    public function testStatementsOutsideTheClassOfAFollowedFileAreNotAnalysedForTheSubclass(bool $taint): void
+    {
+        if ($taint) {
+            $this->project_analyzer->trackTaintedInputs();
+        }
+
+        $codebase = $this->project_analyzer->getCodebase();
+        $config = $codebase->config;
+        $config->throw_exception = false;
+
+        $dir = self::$src_dir_path;
+        $files = [
+            $dir . 'bootstrap.php' => '<?php
+                function first(): void {
+                    second();
+                }
+
+                function second(): void {}',
+            $dir . 'Base.php' => '<?php
+                namespace App;
+
+                require_once __DIR__ . "/bootstrap.php";
+
+                class Base {
+                    public string $name;
+
+                    public function __construct() {
+                        $this->name = "base";
+                    }
+                }',
+            $dir . 'Child.php' => '<?php
+                namespace App;
+
+                final class Child extends Base {
+                    public function __construct() {
+                        parent::__construct();
+                    }
+
+                    public function report(): void {
+                        missing();
+                    }
+                }',
+        ];
+
+        foreach ($files as $file_path => $contents) {
+            $this->addFile($file_path, $contents);
+            $codebase->scanner->addFilesToShallowScan([$file_path => $file_path]);
+        }
+
+        $codebase->addFilesToAnalyze(array_combine(array_keys($files), array_keys($files)));
+        $codebase->scanFiles();
+
+        foreach (array_keys($files) as $file_path) {
+            (new FileAnalyzer($this->project_analyzer, $file_path, $config->shortenFileName($file_path)))->analyze();
+        }
+
+        $issues = [];
+
+        foreach (array_keys($files) as $file_path) {
+            foreach (IssueBuffer::getIssuesDataForFile($file_path) as $issue) {
+                $issues[] = $issue->type . ' ' . $issue->file_name . ':' . $issue->line_from;
+            }
+        }
+
+        // the issues of the files themselves are still reported
+        $this->assertSame(['UndefinedFunction src' . DIRECTORY_SEPARATOR . 'Child.php:10'], $issues);
+    }
+
+    /**
+     * @return iterable<string, array{bool}>
+     * @psalm-pure
+     */
+    public static function providerTaintAnalysis(): iterable
+    {
+        yield 'without taint analysis' => [false];
+        yield 'with taint analysis' => [true];
+    }
+
+    /**
+     * The statements outside the class of a file are analysed once, with the file, however many subclasses follow
+     * a method of the class
+     */
+    public function testStatementsOutsideTheClassOfAFollowedFileAreAnalysedOnce(): void
+    {
+        $hook = new class implements AfterExpressionAnalysisInterface {
+            public static int $count = 0;
+
+            #[Override]
+            public static function afterExpressionAnalysis(AfterExpressionAnalysisEvent $event): ?bool
+            {
+                $expr = $event->getExpr();
+
+                if ($expr instanceof FuncCall && $expr->name instanceof Name && $expr->name->toString() === 'strlen') {
+                    self::$count++;
+                }
+
+                return null;
+            }
+        };
+
+        $hook::$count = 0;
+
+        $codebase = $this->project_analyzer->getCodebase();
+        $config = $codebase->config;
+        $config->throw_exception = false;
+        $config->eventDispatcher->after_expression_checks[] = $hook::class;
+
+        $dir = self::$src_dir_path;
+        $files = [
+            $dir . 'Base.php' => '<?php
+                namespace App;
+
+                \strlen("namespace level");
+
+                class Base {
+                    public string $name;
+
+                    public function __construct() {
+                        $this->name = "base";
+                    }
+                }',
+            $dir . 'Children.php' => '<?php
+                namespace App;
+
+                final class FirstChild extends Base {
+                    public function __construct() {
+                        parent::__construct();
+                    }
+                }
+
+                final class SecondChild extends Base {
+                    public function __construct() {
+                        parent::__construct();
+                    }
+                }',
+        ];
+
+        foreach ($files as $file_path => $contents) {
+            $this->addFile($file_path, $contents);
+            $codebase->scanner->addFilesToShallowScan([$file_path => $file_path]);
+        }
+
+        $codebase->addFilesToAnalyze(array_combine(array_keys($files), array_keys($files)));
+        $codebase->scanFiles();
+
+        foreach (array_keys($files) as $file_path) {
+            (new FileAnalyzer($this->project_analyzer, $file_path, $config->shortenFileName($file_path)))->analyze();
+        }
+
+        $this->assertSame(1, $hook::$count);
     }
 }

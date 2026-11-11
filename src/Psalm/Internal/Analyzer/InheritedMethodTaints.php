@@ -130,7 +130,15 @@ final class InheritedMethodTaints
             $statements_analyzer->getRootFilePath(),
             $statements_analyzer->getRootFileName(),
         );
-        $file_analyzer->populateCheckers($codebase->getStatementsForFile($file_analyzer->getFilePath()));
+        // the statements outside the file's classes add their taints, but their issues are reported when the file
+        // itself is analysed, so the ones recorded here are dropped
+        IssueBuffer::startRecording();
+
+        try {
+            $file_analyzer->populateCheckers($codebase->getStatementsForFile($file_analyzer->getFilePath()));
+        } finally {
+            IssueBuffer::stopRecording();
+        }
 
         $class_analyzer = $file_analyzer->class_analyzers_to_analyze[strtolower($declaring_class)] ?? null;
 
