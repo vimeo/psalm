@@ -44,6 +44,17 @@ final class ArgTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'unpackedListBeyondTheDeclaredParametersFitsTheVariadic' => [
+                'code' => '<?php
+                    function test(int $a, int $b, int ...$rest): void {
+                        echo $a, $b, count($rest);
+                    }
+
+                    test(...[1, 2, 3], ...[4]);',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
             'secondUnpackedListStartsAfterTheParametersOfTheFirst' => [
                 'code' => '<?php
                     function test(int $a, int $b, array $c): void {
@@ -562,6 +573,17 @@ final class ArgTest extends TestCase
     public static function providerInvalidCodeParse(): iterable
     {
         return [
+            'unpackedListBeyondTheDeclaredParametersIsCheckedAgainstTheVariadic' => [
+                'code' => '<?php
+                    function test(int $a, int $b, int ...$rest): void {
+                        echo $a, $b, count($rest);
+                    }
+
+                    test(...[1, 2, 3], ...["bad"]);',
+                'error_message' => 'InvalidScalarArgument',
+                'error_levels' => [],
+                'php_version' => '8.0',
+            ],
             'secondUnpackedListIsCheckedAgainstTheNextParameter' => [
                 'code' => '<?php
                     function test(int $a, int $b, array $c): void {

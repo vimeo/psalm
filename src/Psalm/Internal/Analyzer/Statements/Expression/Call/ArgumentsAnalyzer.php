@@ -1250,6 +1250,9 @@ final class ArgumentsAnalyzer
 
                         $arg_function_params[$argument_offset][] = $function_params[$i];
                     }
+                } elseif ($last_param && $last_param->is_variadic) {
+                    // what the arguments before consumed already is every parameter: the rest goes to the variadic
+                    $arg_function_params[$argument_offset][] = $last_param;
                 }
 
                 if (($arg_value_type = $statements_analyzer->node_data->getType($arg->value))
