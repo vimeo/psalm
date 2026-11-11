@@ -1223,9 +1223,10 @@ final class TypeParser
 
                     $constant_tree = $parse_tree->children[$generic_param_offset] ?? null;
 
-                    // an unqualified constant of a namespace falls back to the global one, a qualified one doesn't
+                    // only an unqualified constant of a namespace falls back to the global one: not `\A\B`, nor `A\B`
                     if (!defined($constant_name)
-                        && !($constant_tree instanceof Value && str_starts_with($constant_tree->text ?? '', '\\'))
+                        && $constant_tree instanceof Value
+                        && !str_contains($constant_tree->text ?? '\\', '\\')
                         && ($separator_position = strrpos($constant_name, '\\')) !== false
                     ) {
                         $constant_name = substr($constant_name, $separator_position + 1);
