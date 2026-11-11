@@ -73,8 +73,10 @@ use function array_keys;
 use function array_merge;
 use function array_search;
 use function count;
+use function is_nan;
 use function is_numeric;
 use function is_string;
+use function strtolower;
 
 /**
  * @internal
@@ -441,6 +443,7 @@ final class AssertionReconciler extends Reconciler
                 if ($existing_var_type_part instanceof TNamedObject
                     && ($codebase->classExists($existing_var_type_part->value)
                         || $codebase->interfaceExists($existing_var_type_part->value))
+                    && self::canBeIntersected($codebase, $existing_var_type_part, $new_type_part)
                 ) {
                     $intersected_type_part = $new_type_part;
 
@@ -691,6 +694,27 @@ final class AssertionReconciler extends Reconciler
         );
     }
 
+    /**
+     * The object half of an iterable is a Traversable, which can be narrowed to any of its subclasses
+     *
+     * @return array{Atomic, Atomic}
+     */
+    private static function narrowIterableToItsTraversableHalf(
+        Codebase $codebase,
+        Atomic $type_1_atomic,
+        Atomic $type_2_atomic,
+    ): array {
+        if ($type_1_atomic instanceof TIterable && $type_2_atomic instanceof TNamedObject) {
+            $type_1_atomic = AtomicTypeComparator::getTraversableHalf($codebase, $type_1_atomic, $type_2_atomic)
+                ?? $type_1_atomic;
+        } elseif ($type_2_atomic instanceof TIterable && $type_1_atomic instanceof TNamedObject) {
+            $type_2_atomic = AtomicTypeComparator::getTraversableHalf($codebase, $type_2_atomic, $type_1_atomic)
+                ?? $type_2_atomic;
+        }
+
+        return [$type_1_atomic, $type_2_atomic];
+    }
+
     private static function filterAtomicWithAnother(
         Atomic &$type_1_atomic,
         Atomic $type_2_atomic,
@@ -703,6 +727,12 @@ final class AssertionReconciler extends Reconciler
             $any_scalar_type_match_found = true;
             return $type_2_atomic;
         }
+
+        [$type_1_atomic, $type_2_atomic] = self::narrowIterableToItsTraversableHalf(
+            $codebase,
+            $type_1_atomic,
+            $type_2_atomic,
+        );
 
         if ($type_1_atomic instanceof TNamedObject) {
             $type_1_atomic = $type_1_atomic->setIsStatic(false);
@@ -758,6 +788,7 @@ final class AssertionReconciler extends Reconciler
             && $type_2_atomic instanceof TNamedObject
             && ($codebase->interfaceExists($type_1_atomic->value)
                 || $codebase->interfaceExists($type_2_atomic->value))
+            && self::canBeIntersected($codebase, $type_1_atomic, $type_2_atomic)
         ) {
             if ($type_1_atomic instanceof TGenericObject && !$type_2_atomic instanceof TGenericObject) {
                 $type_2_atomic = self::inferTemplateParamsFromParent($codebase, $type_2_atomic, $type_1_atomic);
@@ -940,13 +971,16 @@ final class AssertionReconciler extends Reconciler
                 $fallback_types = [$type_1_atomic->fallback_params[0], $type_2_param];
             }
 
-            $matching_atomic_type = TKeyedArray::make(
+            $filtered_atomic_type = TKeyedArray::make(
                 $type_1_properties,
                 $type_1_atomic->class_strings,
                 $fallback_types,
                 $type_1_atomic->is_list,
                 $type_1_atomic->from_docblock,
             );
+            $matching_atomic_type = $filtered_atomic_type instanceof TKeyedArray
+                ? $filtered_atomic_type->setIsCallable($type_1_atomic->is_callable)
+                : $filtered_atomic_type;
             $atomic_comparison_results->type_coerced = true;
         }
 
@@ -1307,7 +1341,7 @@ final class AssertionReconciler extends Reconciler
 
             if ($assertion instanceof IsLooselyEqual
                 && $existing_var_atomic_type instanceof TLiteralFloat
-                && (int)$existing_var_atomic_type->value === $value
+                && $existing_var_atomic_type->value == $value
             ) {
                 return new Union([$existing_var_atomic_type]);
             }
@@ -1459,6 +1493,7 @@ final class AssertionReconciler extends Reconciler
 
             if ($assertion instanceof IsLooselyEqual
                 && $existing_var_atomic_type instanceof TLiteralFloat
+                && !is_nan($existing_var_atomic_type->value) // NAN is not equal to anything
                 && (string)$existing_var_atomic_type->value === $value
             ) {
                 return new Union([$existing_var_atomic_type]);
@@ -1881,5 +1916,58 @@ final class AssertionReconciler extends Reconciler
         } else {
             return [new TMixed()];
         }
+    }
+
+    /**
+     * No object is an instance of two classes that don't extend one another, or of a final class and an interface
+     * it doesn't implement
+     *
+     * @psalm-capabilities read-props|write-props
+     */
+    private static function canBeIntersected(
+        Codebase $codebase,
+        TNamedObject $existing_type_part,
+        TNamedObject $new_type_part,
+    ): bool {
+        $existing_names = [$existing_type_part->value];
+
+        foreach ($existing_type_part->extra_types as $extra_type) {
+            if ($extra_type instanceof TNamedObject) {
+                $existing_names[] = $extra_type->value;
+            }
+        }
+
+        foreach ($existing_names as $existing_name) {
+            if (!$codebase->classOrInterfaceExists($existing_name)
+                || !$codebase->classOrInterfaceExists($new_type_part->value)
+            ) {
+                continue;
+            }
+
+            $existing_storage = $codebase->classlike_storage_provider->get($existing_name);
+            $new_storage = $codebase->classlike_storage_provider->get($new_type_part->value);
+
+            $existing_is_class = !$existing_storage->is_interface && !$existing_storage->is_trait;
+            $new_is_class = !$new_storage->is_interface && !$new_storage->is_trait;
+
+            if ($existing_is_class && $new_is_class) {
+                if (!$codebase->classExtends($existing_name, $new_type_part->value)
+                    && !$codebase->classExtends($new_type_part->value, $existing_name)
+                    && strtolower($existing_name) !== strtolower($new_type_part->value)
+                ) {
+                    return false;
+                }
+            } elseif ($existing_is_class && $existing_storage->final) {
+                if (!$codebase->classImplements($existing_name, $new_type_part->value)) {
+                    return false;
+                }
+            } elseif ($new_is_class && $new_storage->final) {
+                if (!$codebase->classImplements($new_type_part->value, $existing_name)) {
+                    return false;
+                }
+            }
+        }
+
+        return true;
     }
 }

@@ -7,6 +7,7 @@ namespace Psalm\Tests\EndToEnd;
 use Exception;
 use Override;
 use PHPUnit\Framework\TestCase;
+use Psalm\Internal\Analyzer\ProjectAnalyzer;
 use Symfony\Component\Process\Process;
 
 use function assert;
@@ -17,6 +18,7 @@ use function file_get_contents;
 use function file_put_contents;
 use function getcwd;
 use function glob;
+use function implode;
 use function is_dir;
 use function is_string;
 use function mkdir;
@@ -25,12 +27,14 @@ use function preg_replace;
 use function readdir;
 use function rmdir;
 use function str_replace;
+use function substr_count;
 use function sys_get_temp_dir;
 use function tempnam;
 use function unlink;
 
 use const DIRECTORY_SEPARATOR;
 use const PHP_BINARY;
+use const PHP_EOL;
 
 /**
  * Tests some of the most important use cases of the psalm and psalter commands, by launching a new
@@ -109,6 +113,41 @@ final class PsalmEndToEndTest extends TestCase
         $this->assertStringContainsString('Usage:', $this->runPsalm(['--help'], self::$tmpDir)['STDOUT']);
     }
 
+    public function testVersionIsPrintedWithoutTheAutoloadersOfTheProject(): void
+    {
+        $project_dir = tempnam(sys_get_temp_dir(), 'PsalmEndToEndVersion_');
+        assert($project_dir !== false);
+        unlink($project_dir);
+        mkdir($project_dir);
+
+        try {
+            file_put_contents($project_dir . '/composer.json', '{"require": {}}');
+
+            $long = new Process([PHP_BINARY, $this->psalm, '--version'], $project_dir, self::agentEnvVarsToUnset());
+            $long->run();
+            $short = new Process([PHP_BINARY, $this->psalm, '-v'], $project_dir, self::agentEnvVarsToUnset());
+            $short->run();
+            $language_server = new Process(
+                [PHP_BINARY, __DIR__ . '/../../psalm-language-server', '--version'],
+                $project_dir,
+                self::agentEnvVarsToUnset(),
+            );
+            $language_server->run();
+            $analysis = new Process([PHP_BINARY, $this->psalm], $project_dir, self::agentEnvVarsToUnset());
+            $analysis->run();
+        } finally {
+            self::recursiveRemoveDirectory($project_dir);
+        }
+
+        $this->assertSame(0, $long->getExitCode());
+        $this->assertStringStartsWith('Psalm ', $long->getOutput());
+        $this->assertSame('', $long->getErrorOutput());
+        $this->assertSame($long->getOutput(), $short->getOutput());
+        $this->assertSame($long->getOutput(), $language_server->getOutput());
+        $this->assertSame(1, $analysis->getExitCode());
+        $this->assertStringContainsString('Could not find any composer autoloaders', $analysis->getErrorOutput());
+    }
+
     public function testInit(): void
     {
         $this->assertStringContainsString(
@@ -174,6 +213,64 @@ final class PsalmEndToEndTest extends TestCase
         $this->assertSame(0, $this->runPsalm([], self::$tmpDir)['CODE']);
     }
 
+    public function testPsalterAddsPurityAnnotationsWithoutTheConfigFlag(): void
+    {
+        $this->runPsalmInit();
+        $psalmXml = file_get_contents(self::$tmpDir . '/psalm.xml');
+        $psalmXml = str_replace('<psalm', '<psalm runTaintAnalysis="false"', (string)$psalmXml);
+        file_put_contents(self::$tmpDir . '/psalm.xml', $psalmXml);
+        file_put_contents(
+            self::$tmpDir . '/src/Slug.php',
+            "<?php\n\nfunction slug(string \$text): string\n{\n    return strtolower(trim(\$text));\n}\n",
+        );
+
+        (new Process([PHP_BINARY, $this->psalter, '--alter', '--issues=MissingPureAnnotation'], self::$tmpDir))->mustRun();
+
+        $this->assertStringContainsString('@psalm-pure', (string) file_get_contents(self::$tmpDir . '/src/Slug.php'));
+    }
+
+    public function testPsalterFixesTheIssuesAPluginDeclares(): void
+    {
+        $this->runPsalmInit(1);
+        $psalm_xml = (string) file_get_contents(self::$tmpDir . '/psalm.xml');
+        file_put_contents(self::$tmpDir . '/psalm.xml', str_replace(
+            ['<psalm', '</psalm>'],
+            [
+                '<psalm runTaintAnalysis="false"',
+                '<plugins><pluginClass class="Psalm\Tests\Config\Plugin\FixableIssuePlugin" /></plugins></psalm>',
+            ],
+            $psalm_xml,
+        ));
+        unlink(self::$tmpDir . '/src/FileWithErrors.php');
+        file_put_contents(
+            self::$tmpDir . '/src/functions.php',
+            "<?php\n\nfunction legacy_call(): int\n{\n    return 1;\n}\n\nfunction modern_call(): int\n{\n    return 2;\n}\n",
+        );
+
+        $list = new Process([PHP_BINARY, $this->psalter, '--list-supported-issues'], self::$tmpDir);
+        $list->mustRun();
+        $this->assertSame(
+            implode(',', [...ProjectAnalyzer::getSupportedIssuesToFix(), 'LegacyCall']) . PHP_EOL,
+            $list->getOutput(),
+        );
+
+        foreach (['a', 'b', 'c'] as $file) {
+            file_put_contents(
+                self::$tmpDir . '/src/' . $file . '.php',
+                "<?php\n\nfunction $file(): int\n{\n    return legacy_call();\n}\n",
+            );
+        }
+
+        (new Process([PHP_BINARY, $this->psalter, '--issues=LegacyCall', '--threads=2'], self::$tmpDir))->mustRun();
+
+        foreach (['a', 'b', 'c'] as $file) {
+            $this->assertStringContainsString(
+                'return modern_call();',
+                (string) file_get_contents(self::$tmpDir . '/src/' . $file . '.php'),
+            );
+        }
+    }
+
     public function testPsalm(): void
     {
         $this->runPsalmInit(1);
@@ -192,6 +289,26 @@ final class PsalmEndToEndTest extends TestCase
         $this->assertSame(2, $result['CODE']);
     }
 
+    public function testParseErrorIsReportedOnEveryRunWithAWarmCache(): void
+    {
+        $this->runPsalmInit(1);
+        file_put_contents(self::$tmpDir . '/src/Clean.php', "<?php\nfunction clean(): void {}\n");
+        $broken_file = self::$tmpDir . '/src/Broken.php';
+        file_put_contents($broken_file, "<?php\nfunction f() {\n    echo 1\n}\n");
+
+        for ($run = 1; $run <= 3; $run++) {
+            $result = $this->runPsalm(['--no-progress'], self::$tmpDir, true);
+
+            $this->assertSame(1, substr_count($result['STDOUT'], 'ParseError'), "run $run");
+        }
+
+        file_put_contents($broken_file, "<?php\nfunction f() {\n    echo 1;\n}\n");
+
+        $result = $this->runPsalm(['--no-progress'], self::$tmpDir, true);
+
+        $this->assertSame(0, substr_count($result['STDOUT'], 'ParseError'));
+    }
+
     public function testPsalmWithPHPVersionOverride(): void
     {
         $this->runPsalmInit(1);
@@ -208,6 +325,26 @@ final class PsalmEndToEndTest extends TestCase
         $result = $this->runPsalm([], self::$tmpDir, true);
         $this->assertStringContainsString(
             'Target PHP version: 7.4 (set by config file)',
+            $result['STDERR'],
+        );
+    }
+
+    public function testPsalmWithPHP86VersionOverride(): void
+    {
+        $this->runPsalmInit(1);
+        $result = $this->runPsalm(['--php-version=8.6'], self::$tmpDir, true);
+        $this->assertStringContainsString(
+            'Target PHP version: 8.6 (set by CLI argument)',
+            $result['STDERR'],
+        );
+    }
+
+    public function testPsalmWithPHP86VersionFromConfig(): void
+    {
+        $this->runPsalmInit(1, '8.6');
+        $result = $this->runPsalm([], self::$tmpDir, true);
+        $this->assertStringContainsString(
+            'Target PHP version: 8.6 (set by config file)',
             $result['STDERR'],
         );
     }
@@ -250,6 +387,8 @@ final class PsalmEndToEndTest extends TestCase
         $this->assertStringContainsString('TaintedHtml', $result['STDOUT']);
         $this->assertStringContainsString('TaintedTextWithQuotes', $result['STDOUT']);
         $this->assertStringContainsString('4 errors', $result['STDOUT']);
+        $this->assertStringContainsString('Psalm can automatically fix', $result['STDOUT']);
+        $this->assertStringContainsString('--alter --issues=InvalidReturnType', $result['STDOUT']);
         $this->assertSame(2, $result['CODE']);
     }
 
