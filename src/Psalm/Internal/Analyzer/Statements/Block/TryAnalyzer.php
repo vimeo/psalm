@@ -445,6 +445,12 @@ final class TryAnalyzer
 
                 $statements_analyzer->analyze($stmt->finally->stmts, $finally_context);
 
+                $context->constructor_exits?->applyFinally(
+                    $try_context->finally_scope,
+                    $finally_context->vars_in_scope,
+                    $finally_context->assigned_var_ids,
+                );
+
                 $finally_has_returned = $finally_context->has_returned;
 
                 /** @var string $var_id */
@@ -455,16 +461,12 @@ final class TryAnalyzer
                         $possibly_undefined = $context->vars_in_scope[$var_id]->possibly_undefined
                             && $context->vars_in_scope[$var_id]->possibly_undefined_from_try;
 
-                        $context->vars_in_scope[$var_id] = Type::combineUnionTypes(
-                            $context->vars_in_scope[$var_id],
-                            $finally_context->vars_in_scope[$var_id],
-                            $codebase,
-                        );
+                        // the finally block started from every state the try and the catches can end in
+                        $context->vars_in_scope[$var_id] = $finally_context->vars_in_scope[$var_id];
+
                         if ($possibly_undefined) {
-                            /** @psalm-suppress InaccessibleProperty We just created this type */
-                            $context->vars_in_scope[$var_id]->possibly_undefined = false;
-                            /** @psalm-suppress InaccessibleProperty We just created this type */
-                            $context->vars_in_scope[$var_id]->possibly_undefined_from_try = false;
+                            $context->vars_in_scope[$var_id] = $context->vars_in_scope[$var_id]
+                                ->setPossiblyUndefined(false, false);
                         }
                     } elseif (isset($finally_context->vars_in_scope[$var_id])) {
                         $context->vars_in_scope[$var_id] = $finally_context->vars_in_scope[$var_id];
