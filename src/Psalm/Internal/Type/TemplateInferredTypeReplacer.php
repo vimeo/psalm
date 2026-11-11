@@ -547,6 +547,11 @@ final class TemplateInferredTypeReplacer
 
                 $matching_else_types[] = $candidate_atomic_type;
 
+                // no value is of the type `never`
+                if ($conditional_type->isNever()) {
+                    continue;
+                }
+
                 // a string and an object with __toString() are never of each other's type
                 if (self::isOnlyStringCastRelated($codebase, $candidate_atomic_type, $conditional_type)) {
                     continue;
