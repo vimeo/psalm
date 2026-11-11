@@ -3313,6 +3313,25 @@ final class FunctionTemplateTest extends TestCase
                     function takesIntOrString($_v): void {}',
                 'assertions' => [],
             ],
+            'narrowTemplateBoundOnInstanceofOfASupertypeAfterNegatedInstanceof' => [
+                'code' => '<?php
+                    /**
+                     * @template T of DateTimeInterface|string
+                     * @param T $value
+                     */
+                    function f($value): void {
+                        if ($value instanceof DateTimeImmutable) {
+                            return;
+                        }
+
+                        if ($value instanceof DateTimeInterface) {
+                            DateTimeImmutable::createFromInterface($value);
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
             'narrowTemplateBoundedByTemplateOnTypeAssertionAfterNegatedInstanceof' => [
                 'code' => '<?php
                     interface PromiseInterface {}
