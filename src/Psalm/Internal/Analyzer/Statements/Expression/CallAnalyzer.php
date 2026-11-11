@@ -123,6 +123,7 @@ abstract class CallAnalyzer
                     $context,
                     $source->getRootFilePath(),
                     $source->getRootFileName(),
+                    $source->getFileAnalyzer(),
                 );
             }
         } elseif ($context->collect_initializations &&
@@ -263,6 +264,7 @@ abstract class CallAnalyzer
                         $context,
                         $source->getRootFilePath(),
                         $source->getRootFileName(),
+                        $source->getFileAnalyzer(),
                     );
                     $context->self = $old_self;
                 }

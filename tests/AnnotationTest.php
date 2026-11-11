@@ -1986,6 +1986,36 @@ final class AnnotationTest extends TestCase
 
                     echo strlen($title);',
             ],
+            'keyOfAndValueOfOfImportedTypeAlias' => [
+                'code' => '<?php
+                    /**
+                     * @psalm-type ATTRIBUTES=array{a: int, b: string}
+                     */
+                    class Foo {}
+
+                    /**
+                     * @psalm-import-type ATTRIBUTES from Foo as ATTRS
+                     */
+                    class Bar {
+                        /** @return key-of<ATTRS> */
+                        public static function key() {
+                            return "a";
+                        }
+
+                        /** @return value-of<ATTRS> */
+                        public static function value() {
+                            return 1;
+                        }
+                    }
+
+                    $key = Bar::key();
+                    $value = Bar::value();
+                    echo $key, $value;',
+                'assertions' => [
+                    '$key===' => "'a'|'b'",
+                    '$value===' => 'int|string',
+                ],
+            ],
         ];
     }
 
@@ -2854,6 +2884,74 @@ final class AnnotationTest extends TestCase
                     /** @var string $title */
                     global $title;',
                 'error_message' => 'InvalidGlobal',
+            ],
+            'keyOfImportedTypeAliasOfANonArrayIsInvalid' => [
+                'code' => '<?php
+                    /**
+                     * @psalm-type NUMBER=int
+                     */
+                    class Foo {}
+
+                    /**
+                     * @psalm-import-type NUMBER from Foo
+                     */
+                    class Bar {
+                        /** @param key-of<NUMBER> $key */
+                        public static function set($key): void {}
+                    }',
+                'error_message' => 'InvalidDocblock - src' . DIRECTORY_SEPARATOR . 'somefile.php:11:36 - Untemplated key-of param int should be an array',
+            ],
+            'valueOfImportedTypeAliasOfANonArrayIsInvalid' => [
+                'code' => '<?php
+                    /**
+                     * @psalm-type NUMBER=int
+                     */
+                    class Foo {}
+
+                    /**
+                     * @psalm-import-type NUMBER from Foo
+                     */
+                    class Bar {
+                        /** @param value-of<NUMBER> $value */
+                        public static function set($value): void {}
+                    }',
+                'error_message' => 'InvalidDocblock - src' . DIRECTORY_SEPARATOR . 'somefile.php:11:36 - Untemplated value-of param int should be an array',
+            ],
+            'keyOfImportedTypeAliasRejectsUnknownKey' => [
+                'code' => '<?php
+                    /**
+                     * @psalm-type ATTRIBUTES=array{a: int, b: string}
+                     */
+                    class Foo {}
+
+                    /**
+                     * @psalm-import-type ATTRIBUTES from Foo as ATTRS
+                     */
+                    class Bar {
+                        /** @param key-of<ATTRS> $key */
+                        public static function set($key): void {}
+                    }
+
+                    Bar::set("zzz");',
+                'error_message' => 'InvalidArgument',
+            ],
+            'valueOfImportedTypeAliasRejectsWrongValue' => [
+                'code' => '<?php
+                    /**
+                     * @psalm-type ATTRIBUTES=array{a: int, b: int}
+                     */
+                    class Foo {}
+
+                    /**
+                     * @psalm-import-type ATTRIBUTES from Foo as ATTRS
+                     */
+                    class Bar {
+                        /** @param value-of<ATTRS> $value */
+                        public static function set($value): void {}
+                    }
+
+                    Bar::set("str");',
+                'error_message' => 'InvalidArgument',
             ],
         ];
     }
