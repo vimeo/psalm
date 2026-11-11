@@ -4417,6 +4417,194 @@ final class ConditionalTest extends TestCase
                         }
                     }',
             ],
+            'sideEffectInTheOrConditionRunsOnceInTheElse' => [
+                'code' => '<?php
+                    /** @return list<string> */
+                    function getData(): array {
+                        return [];
+                    }
+
+                    function plain(): void {
+                        $i = 0;
+
+                        if ($i++ > 5 || !($d = getData())) {
+                            echo 1;
+                        } else {
+                            /** @psalm-check-type-exact $i = 1 */;
+                            echo count($d);
+                        }
+                    }
+
+                    function chained(bool $flag): void {
+                        $i = 0;
+
+                        if ($flag) {
+                            echo 0;
+                        } elseif ($i++ > 5 || !($d = getData())) {
+                            echo 1;
+                        } else {
+                            /** @psalm-check-type-exact $i = 1 */;
+                            echo count($d);
+                        }
+                    }
+
+                    /** @psalm-return 1 */
+                    function ternary(): int {
+                        $i = 0;
+
+                        return $i++ > 5 || !($d = getData()) ? 1 : $i;
+                    }',
+                'assertions' => [],
+                'ignored_issues' => ['RiskyTruthyFalsyComparison'],
+                'php_version' => '8.0',
+            ],
+            'elseifElseKnowsVarAssignedInOrCondition' => [
+                'code' => '<?php
+                    /** @return string[] */
+                    function getData(): array { return []; }
+                    function check(): bool { return true; }
+                    if (check() || !($data = getData())) {
+                        $r = 1;
+                    } elseif (check()) {
+                        $r = $data;
+                    } else {
+                        $r = $data;
+                    }',
+                'assertions' => [
+                    '$r===' => '1|non-empty-array<array-key, string>',
+                ],
+            ],
+            'elseifWithoutElseKnowsVarAssignedInOrCondition' => [
+                'code' => '<?php
+                    /** @return string[] */
+                    function getData(): array { return []; }
+                    function check(): bool { return true; }
+                    $r = 1;
+                    if (check() || !($data = getData())) {
+                        $r = 2;
+                    } elseif (check()) {
+                        $r = $data;
+                    }',
+                'assertions' => [
+                    '$r===' => '1|2|non-empty-array<array-key, string>',
+                ],
+            ],
+            'ifElseKnowsVarAssignedInOrCondition' => [
+                'code' => '<?php
+                    /** @return string[] */
+                    function getData(): array { return []; }
+                    function check(): bool { return true; }
+                    if (check() || !($data = getData())) {
+                        $r = 1;
+                    } else {
+                        $r = $data;
+                    }',
+                'assertions' => [
+                    '$r===' => '1|non-empty-array<array-key, string>',
+                ],
+            ],
+            'ternaryElseKnowsVarAssignedInNonNegatedOrCondition' => [
+                'code' => '<?php
+                    function getN(): ?int { return null; }
+                    function check(): bool { return true; }
+                    $r = (check() || ($d = getN())) ? 1 : $d;',
+                'assertions' => [
+                    '$r===' => '0|1|null',
+                ],
+                'ignored_issues' => ['RiskyTruthyFalsyComparison'],
+            ],
+            'ternaryElseKnowsPropertyAssignedInOrCondition' => [
+                'code' => '<?php
+                    /** @return string[] */
+                    function getData(): array { return []; }
+                    function check(): bool { return true; }
+                    final class Holder { public mixed $p = null; }
+                    function run(Holder $o): void {
+                        $r = (check() || !($o->p = getData())) ? 1 : $o->p;
+                        /** @psalm-check-type-exact $r = 1|non-empty-array<array-key, string> */;
+                    }',
+            ],
+            'elseifOwnElseKnowsVarAssignedInOrCondition' => [
+                'code' => '<?php
+                    /** @return string[] */
+                    function getData(): array { return []; }
+                    function check(): bool { return true; }
+                    function run(bool $x): void {
+                        if ($x) {
+                            $r = 1;
+                        } elseif (check() || !($d = getData())) {
+                            $r = 2;
+                        } else {
+                            $r = $d;
+                        }
+                        /** @psalm-check-type-exact $r = 1|2|non-empty-array<array-key, string> */;
+                    }',
+            ],
+            'elseifOwnElseKnowsVarAssignedInNonNegatedOrCondition' => [
+                'code' => '<?php
+                    function getN(): ?int { return null; }
+                    function check(): bool { return true; }
+                    function run(bool $x): void {
+                        $r = 0;
+                        if ($x) {
+                            $r = 1;
+                        } elseif (check() || ($d = getN())) {
+                            $r = 2;
+                        } else {
+                            $r = $d;
+                        }
+                        /** @psalm-check-type-exact $r = 0|1|2|null */;
+                    }',
+                'assertions' => [],
+                'ignored_issues' => ['RiskyTruthyFalsyComparison'],
+            ],
+            'elseifOwnElseKnowsPropertyAssignedInOrCondition' => [
+                'code' => '<?php
+                    /** @return string[] */
+                    function getData(): array { return []; }
+                    function check(): bool { return true; }
+                    final class Holder { public mixed $p = null; }
+                    function run(Holder $o, bool $x): void {
+                        if ($x) {
+                            $r = 1;
+                        } elseif (check() || !($o->p = getData())) {
+                            $r = 2;
+                        } else {
+                            $r = $o->p;
+                        }
+                        /** @psalm-check-type-exact $r = 1|2|non-empty-array<array-key, string> */;
+                    }',
+            ],
+            'ternaryElseKnowsVarAssignedInLongOrCondition' => [
+                'code' => '<?php
+                    /** @return string[] */
+                    function getData(): array { return []; }
+                    function check(): bool { return true; }
+                    $r = (check() || check() || !($data = getData())) ? 1 : $data;',
+                'assertions' => [
+                    '$r===' => '1|non-empty-array<array-key, string>',
+                ],
+            ],
+            'ternaryElseKnowsVarAssignedInLogicalOrCondition' => [
+                'code' => '<?php
+                    /** @return string[] */
+                    function getData(): array { return []; }
+                    function check(): bool { return true; }
+                    $r = (check() or !($data = getData())) ? 1 : $data;',
+                'assertions' => [
+                    '$r===' => '1|non-empty-array<array-key, string>',
+                ],
+            ],
+            'ternaryElseKnowsVarAssignedInOrCondition' => [
+                'code' => '<?php
+                    /** @return string[] */
+                    function getData(): array { return []; }
+                    function check(): bool { return true; }
+                    $r = (check() || !($data = getData())) ? 1 : $data;',
+                'assertions' => [
+                    '$r===' => '1|non-empty-array<array-key, string>',
+                ],
+            ],
         ];
     }
 
@@ -5040,6 +5228,13 @@ final class ConditionalTest extends TestCase
                         echo $i;
                     }',
                 'error_message' => 'TypeDoesNotContainType',
+            ],
+            'ternaryElseOfAndDoesNotKnowVarAssignedInCondition' => [
+                'code' => '<?php
+                    function getData(): ?array { return null; }
+                    function check(): bool { return true; }
+                    $r = (check() && ($data = getData()) !== null) ? 1 : $data;',
+                'error_message' => 'UndefinedGlobalVariable',
             ],
         ];
     }
