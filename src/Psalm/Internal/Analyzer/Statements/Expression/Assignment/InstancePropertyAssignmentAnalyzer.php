@@ -165,6 +165,14 @@ final class InstancePropertyAssignmentAnalyzer
             );
         }
 
+        if ($stmt instanceof PropertyFetch) {
+            $assigned_var_id = ExpressionIdentifier::getExtendedVarId($stmt, $context->self, $statements_analyzer);
+
+            if ($assigned_var_id !== null) {
+                $context->forgetNarrowedShapeProperty($assigned_var_id);
+            }
+        }
+
         if (!$assigned_properties) {
             return;
         }

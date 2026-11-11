@@ -22,6 +22,29 @@ final class TypeAnnotationTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'typeImportRenamedWithAs' => [
+                'code' => '<?php
+                    namespace A {
+                        /**
+                         * @psalm-type Phone = array{phone: string}
+                         */
+                        final class Phone {}
+                    }
+
+                    namespace B {
+                        use A\Phone;
+
+                        /**
+                         * @psalm-import-type Phone from Phone as PhoneType
+                         */
+                        final class User {
+                            /** @param PhoneType $arg */
+                            public function foo(array $arg): string {
+                                return $arg["phone"];
+                            }
+                        }
+                    }',
+            ],
             'typeAliasOfAClassWithATemplateNamedLikeAShapeKey' => [
                 'code' => '<?php
                     /**
@@ -1179,6 +1202,34 @@ final class TypeAnnotationTest extends TestCase
                     }
                 PHP,
             ],
+            'checkTypeOverSeveralDocblockLines' => [
+                'code' => '<?php
+                    function f(): void {
+                        $response = ["status" => 0, "message" => "success"];
+
+                        /**
+                         * @psalm-check-type $response = array{
+                         *   status: int,
+                         *   message: string
+                         * }
+                         */
+                        echo json_encode($response);
+                    }',
+            ],
+            'checkTypeExactOverSeveralDocblockLines' => [
+                'code' => '<?php
+                    function f(): void {
+                        $response = ["status" => 0, "message" => "success"];
+
+                        /**
+                         * @psalm-check-type-exact $response = array{
+                         *   message: "success",
+                         *   status: 0
+                         * }
+                         */
+                        echo json_encode($response);
+                    }',
+            ],
         ];
     }
 
@@ -1189,6 +1240,25 @@ final class TypeAnnotationTest extends TestCase
     public static function providerInvalidCodeParse(): iterable
     {
         return [
+            'typeImportNamedLikeAnExistingClass' => [
+                'code' => '<?php
+                    namespace A {
+                        /**
+                         * @psalm-type Phone = array{phone: string}
+                         */
+                        final class Phone {}
+                    }
+
+                    namespace B {
+                        use A\Phone;
+
+                        /**
+                         * @psalm-import-type Phone from Phone
+                         */
+                        final class User {}
+                    }',
+                'error_message' => 'InvalidTypeImport - src' . DIRECTORY_SEPARATOR . 'somefile.php:13:47 - Type alias Phone imported from A\Phone is named like the class A\Phone',
+            ],
             'typeAliasUsingTheTemplateOfItsClassInANamespace' => [
                 'code' => '<?php
                     namespace Some\\Ns;
