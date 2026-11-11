@@ -210,7 +210,10 @@ final class InstancePropertyAssignmentAnalyzer
 
             if ($type_match_found && $union_comparison_results->replacement_union_type) {
                 if ($var_id) {
-                    $context->vars_in_scope[$var_id] = $union_comparison_results->replacement_union_type;
+                    $context->vars_in_scope[$var_id] = $union_comparison_results->replacement_union_type
+                        ->setProperties([
+                            'initialized_class' => ($context->vars_in_scope[$var_id] ?? null)?->initialized_class,
+                        ]);
                 }
             }
 
@@ -1202,9 +1205,9 @@ final class InstancePropertyAssignmentAnalyzer
         // stdClass and SimpleXMLElement are special cases where we cannot infer the return types
         // but we don't want to throw an error
         // Hack has a similar issue: https://github.com/facebook/hhvm/issues/5164
-        if ($lhs_type_part instanceof TObject ||
-            (
-            in_array(
+        if ($lhs_type_part instanceof TObject
+            || $codebase->classlikes->isUniversalObjectCrate($lhs_type_part->value)
+            || in_array(
                 strtolower($lhs_type_part->value),
                 Config::getInstance()->getUniversalObjectCrates() + [
                     'dateinterval',
@@ -1212,7 +1215,6 @@ final class InstancePropertyAssignmentAnalyzer
                     'domnode',
                 ],
                 true,
-            )
             )
         ) {
             if ($var_id) {
@@ -1245,6 +1247,17 @@ final class InstancePropertyAssignmentAnalyzer
         $class_exists = false;
         $interface_exists = false;
 
+        // a private property of the current class, assigned on an object of a child class
+        $is_recovered_by_self = static fn(string $class_name): bool => $context->self !== null
+            && $class_name !== $context->self
+            && $codebase->classlikes->classExtends($class_name, $context->self)
+            && $codebase->propertyExists(
+                $context->self . '::$' . $prop_name,
+                false,
+                $statements_analyzer,
+                $context,
+            );
+
         if (!$codebase->classExists($lhs_type_part->value, null, $context)) {
             if ($codebase->interfaceExists($lhs_type_part->value, null, $context)) {
                 $interface_exists = true;
@@ -1254,22 +1267,36 @@ final class InstancePropertyAssignmentAnalyzer
 
                 $override_property_visibility = $interface_storage->override_property_visibility;
 
-                foreach ($intersection_types as $intersection_type) {
-                    if ($intersection_type instanceof TNamedObject
-                        && $codebase->classExists($intersection_type->value, null, $context)
-                    ) {
-                        $fq_class_name = $intersection_type->value;
-                        $class_exists = true;
-                        break;
+                // of the classes the interface is intersected with, the one that declares the property wins,
+                // then an interface with a matching hook, then any other class
+                $hook_interface = AtomicPropertyFetchAnalyzer::findInterfaceWithPropertyHook(
+                    $codebase,
+                    $lhs_type_part,
+                    $prop_name,
+                    true,
+                );
+
+                foreach ([true, false] as $declaring_only) {
+                    foreach ($intersection_types as $intersection_type) {
+                        if ($intersection_type instanceof TNamedObject
+                            && $codebase->classExists($intersection_type->value, null, $context)
+                            && ($declaring_only
+                                ? isset($codebase->classlike_storage_provider->get($intersection_type->value)
+                                    ->declaring_property_ids[$prop_name])
+                                : $hook_interface === null
+                                    || $codebase->classlike_storage_provider->get($intersection_type->value)->final
+                                    || $is_recovered_by_self($intersection_type->value))
+                        ) {
+                            $fq_class_name = $intersection_type->value;
+                            $class_exists = true;
+                            break 2;
+                        }
                     }
                 }
 
-                // Test if the property has a 'set' hook
-                $interface_property = $interface_storage->properties[$prop_name] ?? null;
-                $has_set_hook = $codebase->analysis_php_version_id >= 8_04_00
-                    && $interface_property?->hook_set !== null;
-
-                if (!$class_exists && !$has_set_hook) {
+                if ($hook_interface !== null && !$class_exists) {
+                    $fq_class_name = $hook_interface->value;
+                } elseif (!$class_exists) {
                     if (IssueBuffer::accepts(
                         new NoInterfaceProperties(
                             'Interfaces cannot have properties',
@@ -1306,6 +1333,38 @@ final class InstancePropertyAssignmentAnalyzer
             }
         } else {
             $class_exists = true;
+
+            $closed_by_final_class = false;
+
+            foreach ([$lhs_type_part, ...$intersection_types] as $type_part) {
+                $closed_by_final_class = $closed_by_final_class
+                    || ($type_part instanceof TNamedObject
+                        && $codebase->classExists($type_part->value)
+                        && $codebase->classlike_storage_provider->get($type_part->value)->final);
+            }
+
+            if ($intersection_types !== []
+                && !$closed_by_final_class
+                && !$codebase->propertyExists(
+                    $lhs_type_part->value . '::$' . $prop_name,
+                    false,
+                    $statements_analyzer,
+                    $context,
+                )
+                && !$is_recovered_by_self($lhs_type_part->value)
+            ) {
+                $hook_interface = AtomicPropertyFetchAnalyzer::findInterfaceWithPropertyHook(
+                    $codebase,
+                    $lhs_type_part,
+                    $prop_name,
+                    true,
+                );
+
+                if ($hook_interface !== null) {
+                    $fq_class_name = $hook_interface->value;
+                    $class_exists = false;
+                }
+            }
         }
 
         $property_id = $fq_class_name . '::$' . $prop_name;
@@ -1444,6 +1503,21 @@ final class InstancePropertyAssignmentAnalyzer
             }
         }
 
+        // a private property of the current class, assigned on an object of a child class
+        if ($context->self !== null
+            && $fq_class_name !== $context->self
+            && !$codebase->propertyExists($property_id, false, $statements_analyzer, $context)
+            && $codebase->classlikes->classExtends($fq_class_name, $context->self)
+            && $codebase->propertyExists(
+                $context->self . '::$' . $prop_name,
+                false,
+                $statements_analyzer,
+                $context,
+            )
+        ) {
+            $property_id = $context->self . '::$' . $prop_name;
+        }
+
         if ($statements_analyzer->data_flow_graph
             && !$context->collect_initializations
             && !$context->collect_mutations
@@ -1579,11 +1653,13 @@ final class InstancePropertyAssignmentAnalyzer
                 );
             }
 
-            if ($context->self && !NamespaceAnalyzer::isWithinAny($context->self, $property_storage->internal)) {
+            $caller_identifier = $statements_analyzer->getFullyQualifiedFunctionMethodOrNamespaceName() ?? '';
+
+            if (!NamespaceAnalyzer::isWithinAny($caller_identifier, $property_storage->internal)) {
                 IssueBuffer::maybeAdd(
                     new InternalProperty(
                         $property_id . ' is internal to ' . InternalClass::listToPhrase($property_storage->internal)
-                            . ' but called from ' . $context->self,
+                            . ' but called from ' . ($caller_identifier ?: 'root namespace'),
                         new CodeLocation($statements_analyzer->getSource(), $stmt),
                         $property_id,
                     ),

@@ -52,7 +52,8 @@
                             "properties": {
                                 "tags": [
                                     "security"
-                                ]
+                                ],
+                                "security-severity": "9.8"
                             },
                             "helpUri": "https:\/\/psalm.dev\/246",
                             "help": {
@@ -69,7 +70,8 @@
                             "properties": {
                                 "tags": [
                                     "security"
-                                ]
+                                ],
+                                "security-severity": "6.1"
                             },
                             "helpUri": "https:\/\/psalm.dev\/245",
                             "help": {
@@ -86,7 +88,8 @@
                             "properties": {
                                 "tags": [
                                     "security"
-                                ]
+                                ],
+                                "security-severity": "6.1"
                             },
                             "helpUri": "https:\/\/psalm.dev\/274",
                             "help": {
