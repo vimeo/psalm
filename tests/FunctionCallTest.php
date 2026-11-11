@@ -24,64 +24,18 @@ final class FunctionCallTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
-            'pureFunctionCalledWithLiteralsRemembersWhatTheConditionTold' => [
-                'code' => '<?php
-                    /** @psalm-pure */
-                    function lookup(string $name): ?string {
-                        return $name === "test" ? "found" : null;
-                    }
+            'zeroIsANonEmptyLowercaseString' => [
+                'code' => <<<'PHP'
+                    <?php
+                    /** @param non-empty-lowercase-string $s */
+                    function takesNonEmptyLowercase(string $s): void {}
 
-                    $a = "";
-                    if (lookup("test") !== null) {
-                        $a = lookup("test");
-                    }',
-                'assertions' => [
-                    '$a===' => 'string',
-                ],
-            ],
-            'pureFunctionCalledWithLiteralsRemembersAnEarlyReturnGuard' => [
-                'code' => '<?php
-                    /** @psalm-pure */
-                    function lookup(string $name): ?string {
-                        return $name === "test" ? "found" : null;
-                    }
-
-                    function guarded(): string {
-                        if (lookup("test") === null) {
-                            return "";
-                        }
-
-                        return lookup("test");
-                    }',
-            ],
-            'pureFunctionCalledWithLiteralsInALoopIsNotPossiblyUndefined' => [
-                'code' => '<?php
-                    /** @psalm-pure */
-                    function lookup(string $name): ?string {
-                        return $name === "test" ? "found" : null;
-                    }
-
-                    function loop(int $times): void {
-                        for ($i = 0; $i < $times; $i++) {
-                            $found = lookup("test");
-                            echo $found;
-                        }
-                    }',
-            ],
-            'pureFunctionCalledWithOtherArgumentsIsAnotherCall' => [
-                'code' => '<?php
-                    /** @psalm-pure */
-                    function lookup(string $name): ?string {
-                        return $name === "test" ? "found" : null;
-                    }
-
-                    $other = "";
-                    if (lookup("test") !== null) {
-                        $other = lookup("other");
-                    }',
-                'assertions' => [
-                    '$other===' => 'null|string',
-                ],
+                    takesNonEmptyLowercase('0');
+                    takesNonEmptyLowercase('a');
+                    PHP,
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
             ],
             'propertyExistsOfAnUnknownOrDynamicPropertyIsNotReported' => [
                 'code' => '<?php
@@ -3113,6 +3067,65 @@ final class FunctionCallTest extends TestCase
                 'ignored_issues' => [],
                 'php_version' => '7.4',
             ],
+            'pureFunctionCalledWithLiteralsRemembersWhatTheConditionTold' => [
+                'code' => '<?php
+                    /** @psalm-pure */
+                    function lookup(string $name): ?string {
+                        return $name === "test" ? "found" : null;
+                    }
+
+                    $a = "";
+                    if (lookup("test") !== null) {
+                        $a = lookup("test");
+                    }',
+                'assertions' => [
+                    '$a===' => 'string',
+                ],
+            ],
+            'pureFunctionCalledWithLiteralsRemembersAnEarlyReturnGuard' => [
+                'code' => '<?php
+                    /** @psalm-pure */
+                    function lookup(string $name): ?string {
+                        return $name === "test" ? "found" : null;
+                    }
+
+                    function guarded(): string {
+                        if (lookup("test") === null) {
+                            return "";
+                        }
+
+                        return lookup("test");
+                    }',
+            ],
+            'pureFunctionCalledWithLiteralsInALoopIsNotPossiblyUndefined' => [
+                'code' => '<?php
+                    /** @psalm-pure */
+                    function lookup(string $name): ?string {
+                        return $name === "test" ? "found" : null;
+                    }
+
+                    function loop(int $times): void {
+                        for ($i = 0; $i < $times; $i++) {
+                            $found = lookup("test");
+                            echo $found;
+                        }
+                    }',
+            ],
+            'pureFunctionCalledWithOtherArgumentsIsAnotherCall' => [
+                'code' => '<?php
+                    /** @psalm-pure */
+                    function lookup(string $name): ?string {
+                        return $name === "test" ? "found" : null;
+                    }
+
+                    $other = "";
+                    if (lookup("test") !== null) {
+                        $other = lookup("other");
+                    }',
+                'assertions' => [
+                    '$other===' => 'null|string',
+                ],
+            ],
         ];
     }
 
@@ -3123,6 +3136,14 @@ final class FunctionCallTest extends TestCase
     public static function providerInvalidCodeParse(): iterable
     {
         return [
+            'emptyStringIsNotANonEmptyLowercaseString' => [
+                'code' => '<?php
+                    /** @param non-empty-lowercase-string $s */
+                    function takesNonEmptyLowercase(string $s): void {}
+
+                    takesNonEmptyLowercase("");',
+                'error_message' => 'InvalidArgument',
+            ],
             'propertyExistsOfADeclaredPropertyIsAlwaysTrue' => [
                 'code' => '<?php
                     class Page {
