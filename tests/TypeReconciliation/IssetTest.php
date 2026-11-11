@@ -81,6 +81,27 @@ final class IssetTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'issetOfAnOptionalKeyOfAnUnsealedShapeKeepsTheShape' => [
+                'code' => '<?php
+                    /** @var array{name?: string, id: string, ...} $a */
+                    $a = ["id" => "x"];
+
+                    $name = $a["name"] ?? "";
+                    $afterCoalesce = $a;
+
+                    $whenSet = isset($a["name"]) ? $a : null;
+                    $whenNotSet = isset($a["name"]) ? null : $a;
+
+                    /** @var array{name?: string, ...} $b */
+                    $b = [];
+                    $onlyOptionalKey = isset($b["name"]) ? null : $b;',
+                'assertions' => [
+                    '$afterCoalesce===' => 'array{id: string, name?: string, ...<array-key, mixed>}',
+                    '$whenSet===' => 'array{id: string, name: string, ...<array-key, mixed>}|null',
+                    '$whenNotSet===' => 'array{id: string, name?: string, ...<array-key, mixed>}|null',
+                    '$onlyOptionalKey===' => 'array{name?: string, ...<array-key, mixed>}|null',
+                ],
+            ],
             'variableAssertedNotSetAndThenDefinedStaysDefined' => [
                 'code' => '<?php
                     if (random_int(0, 1)) {
@@ -1260,6 +1281,37 @@ final class IssetTest extends TestCase
                     /** @param object{bar: object{baz: string}} $foo */
                     function testConcrete(object $foo): void {
                         echo $foo->bar->baz;
+                    }',
+            ],
+            'issetRemovesNullFromTheBoundOfATemplateProperty' => [
+                'code' => '<?php
+                    interface Item {
+                        public function name(): string;
+                    }
+
+                    /**
+                     * @template T of Item|null
+                     */
+                    final class Holder {
+                        /** @var T */
+                        public $item;
+
+                        /** @param T $item */
+                        public function __construct($item) {
+                            $this->item = $item;
+                        }
+
+                        public function viaCoalesce(): Item {
+                            return $this->item ?? throw new Exception("none");
+                        }
+
+                        public function viaIsset(): string {
+                            if (isset($this->item)) {
+                                return $this->item->name();
+                            }
+
+                            return "";
+                        }
                     }',
             ],
         ];
