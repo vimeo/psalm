@@ -250,6 +250,49 @@ final class ConstantTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'staticConstantMapOffsetWithANullDefaultOfDestructuredValues' => [
+                'code' => '<?php
+                    class Handler
+                    {
+                        protected const MAP = [
+                            "view" => ["read", "show"],
+                            "revert" => ["write", "update"],
+                        ];
+
+                        public function check(string $operation): string
+                        {
+                            [$permission, $entity_operation] = static::MAP[$operation] ?? [null, null];
+
+                            if ($permission) {
+                                return $permission . ($entity_operation ?? "");
+                            }
+
+                            return "";
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => ['MissingClassConstType'],
+            ],
+            'staticConstantMapOffsetAfterAnIssetOfTheSameOffset' => [
+                'code' => '<?php
+                    class Handler
+                    {
+                        protected const MAP = [
+                            "view" => ["read", "show"],
+                        ];
+
+                        public function check(string $operation): string
+                        {
+                            if (!isset(static::MAP[$operation])) {
+                                return "";
+                            }
+
+                            return static::MAP[$operation][0];
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => ['MissingClassConstType'],
+            ],
             'staticClassConstantComparedWithNullIsNarrowedInTheBranch' => [
                 'code' => '<?php
                     function greet(string $name = "default"): void {

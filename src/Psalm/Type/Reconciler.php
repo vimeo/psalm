@@ -734,6 +734,33 @@ class Reconciler
     }
 
     /**
+     * The type of the class constant a key such as `Foo::BAR` or `static::BAR` stands for.
+     */
+    private static function getClassConstantTypeOfKey(
+        Codebase $codebase,
+        string $key,
+        ?StatementsAnalyzer $statements_analyzer,
+    ): ?Union {
+        [$fq_class_name, $const_name] = explode('::', $key);
+
+        // the class of `static::NAME` is the one the code is in, as for a static property
+        if (strtolower($fq_class_name) === 'static') {
+            $fq_class_name = $statements_analyzer?->getFQCLN() ?? $fq_class_name;
+        }
+
+        if (!$codebase->classlikes->classOrInterfaceExists($fq_class_name)) {
+            return null;
+        }
+
+        return $codebase->classlikes->getClassConstantType(
+            $fq_class_name,
+            $const_name,
+            ReflectionProperty::IS_PRIVATE,
+            null,
+        );
+    }
+
+    /**
      * Gets the type for a given (non-existent key) based on the passed keys
      *
      * @param array<string, Union>  $existing_keys
@@ -759,6 +786,10 @@ class Reconciler
         if (count($key_parts) === 1) {
             if ($key === Context::PHP_VERSION_ID_VAR_ID) {
                 return $existing_keys[$key] ?? Type::getIntRange(1, null);
+            }
+
+            if (!isset($existing_keys[$key_parts[0]]) && str_contains($key, '::') && !str_contains($key, '$')) {
+                return self::getClassConstantTypeOfKey($codebase, $key, $statements_analyzer);
             }
 
             return $existing_keys[$key_parts[0]] ?? null;
@@ -797,28 +828,15 @@ class Reconciler
                 $existing_keys[$base_key] = $static_property_type;
             }
         } elseif (!isset($existing_keys[$base_key])) {
-            if (strpos($base_key, '::')) {
-                [$fq_class_name, $const_name] = explode('::', $base_key);
+            $class_constant = strpos($base_key, '::')
+                ? self::getClassConstantTypeOfKey($codebase, $base_key, $statements_analyzer)
+                : null;
 
-                if (!$codebase->classlikes->classOrInterfaceExists($fq_class_name)) {
-                    return null;
-                }
-
-                $class_constant = $codebase->classlikes->getClassConstantType(
-                    $fq_class_name,
-                    $const_name,
-                    ReflectionProperty::IS_PRIVATE,
-                    null,
-                );
-
-                if ($class_constant) {
-                    $existing_keys[$base_key] = $class_constant;
-                } else {
-                    return null;
-                }
-            } else {
+            if (!$class_constant) {
                 return null;
             }
+
+            $existing_keys[$base_key] = $class_constant;
         }
 
         while ($key_parts) {
