@@ -1163,6 +1163,36 @@ final class TaintTest extends TestCase
                         }
                     }',
             ],
+            'guardUnpackedCallResultOfUntaintedTextIntoAVariadicParameter' => [
+                'code' => '<?php // --taint-analysis
+                    function show(string ...$parts): void {
+                        echo $parts[0];
+                    }
+
+                    show(...explode(",", "a,b"));
+                    show(...explode(",", htmlspecialchars((string) $_GET["a"], ENT_QUOTES)));',
+            ],
+            'guardUnpackedArrayShapeTakesTheTaintOfTheItemOfItsParameterOnly' => [
+                'code' => '<?php // --taint-analysis
+                    function show(string $safe, string $other): void {
+                        echo $safe;
+                    }
+
+                    show(...["safe" => "text", "other" => (string) $_GET["a"]]);',
+            ],
+            'guardUnpackedOpenArrayShapeTakesTheTaintOfTheKnownItemOfItsParameterOnly' => [
+                'code' => '<?php // --taint-analysis
+                    function show(string $safe, string $other = ""): void {
+                        echo $safe;
+                    }
+
+                    /** @param array{safe: string, ...<string, string>} $items */
+                    function spread(array $items): void {
+                        show(...$items);
+                    }
+
+                    spread(["safe" => "text", "other" => (string) $_GET["a"]]);',
+            ],
             'taintSourceUnderAKeyOfTheReturnOnly' => [
                 'code' => '<?php // --taint-analysis
                     /**
@@ -14017,6 +14047,68 @@ final class TaintTest extends TestCase
                     foreach ([...explode(",", (string) $_GET["a"])] as $v) {
                         echo $v;
                     }',
+                'error_message' => 'TaintedHtml',
+            ],
+            'taintThroughUnpackedCallResultIntoAVariadicParameter' => [
+                'code' => '<?php // --taint-analysis
+                    function show(string ...$parts): void {
+                        echo $parts[0];
+                    }
+
+                    show(...explode(",", (string) $_GET["a"]));',
+                'error_message' => 'TaintedHtml',
+            ],
+            'taintThroughUnpackedVariableIntoAFixedParameter' => [
+                'code' => '<?php // --taint-analysis
+                    function show(string $first, string $second): void {
+                        echo $second;
+                    }
+
+                    $parts = explode(",", (string) $_GET["a"]);
+                    show(...$parts);',
+                'error_message' => 'TaintedHtml',
+            ],
+            'taintThroughUnpackedArrayAFunctionReturns' => [
+                'code' => '<?php // --taint-analysis
+                    /** @return list<string> */
+                    function words(string $text): array {
+                        return [$text];
+                    }
+
+                    function show(string $word): void {
+                        echo $word;
+                    }
+
+                    show(...words((string) $_GET["a"]));',
+                'error_message' => 'TaintedHtml',
+            ],
+            'taintThroughUnpackedArrayIntoAMethodVariadic' => [
+                'code' => '<?php // --taint-analysis
+                    final class Printer {
+                        public function show(string ...$parts): void {
+                            echo $parts[0];
+                        }
+                    }
+
+                    (new Printer())->show(...explode(",", (string) $_GET["a"]));',
+                'error_message' => 'TaintedHtml',
+            ],
+            'taintThroughUnpackedItemsWithIntegerKeysThatDoNotStartAtZero' => [
+                'code' => '<?php // --taint-analysis
+                    function show(string $sink = "", string ...$rest): void {
+                        echo $sink;
+                    }
+
+                    show(...[5 => (string) $_GET["a"], 6 => ""]);',
+                'error_message' => 'TaintedHtml',
+            ],
+            'taintThroughUnpackedItemsWithIntegerKeysIntoALaterParameter' => [
+                'code' => '<?php // --taint-analysis
+                    function show(string $first = "", string $sink = ""): void {
+                        echo $sink;
+                    }
+
+                    show(...[5 => "", 6 => (string) $_GET["a"]]);',
                 'error_message' => 'TaintedHtml',
             ],
             'taintThroughReferenceToArrayItem' => [

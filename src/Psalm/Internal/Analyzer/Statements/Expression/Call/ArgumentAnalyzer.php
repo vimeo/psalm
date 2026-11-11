@@ -76,6 +76,7 @@ use function count;
 use function explode;
 use function implode;
 use function in_array;
+use function is_int;
 use function is_string;
 use function max;
 use function mb_ord;
@@ -576,39 +577,16 @@ final class ArgumentAnalyzer
                         $arg_key_allowed = false;
                     }
 
-                    if ($function_param->is_variadic) {
-                        $arg_value_type = $unpacked_atomic_array->getGenericValueType();
-                    } elseif ($codebase->analysis_php_version_id >= 8_00_00
-                        && $allow_named_args
-                        && isset($unpacked_atomic_array->properties[$function_param->name])
-                    ) {
-                        $arg_value_type = $unpacked_atomic_array->properties[$function_param->name];
-                    } elseif ($unpacked_atomic_array->is_list
-                        && isset($unpacked_atomic_array->properties[$unpacked_argument_offset])
-                    ) {
-                        $arg_value_type = $unpacked_atomic_array->properties[$unpacked_argument_offset];
-                    } elseif ($unpacked_atomic_array->fallback_params) {
-                        $arg_value_type = $unpacked_atomic_array->fallback_params[1];
-                    } elseif ($function_param->is_optional && $function_param->default_type) {
-                        if ($function_param->default_type instanceof Union) {
-                            $arg_value_type = $function_param->default_type;
-                        } else {
-                            $arg_value_type_atomic = ConstantTypeResolver::resolve(
-                                $codebase->classlikes,
-                                $function_param->default_type,
-                                $statements_analyzer,
-                            );
+                    $arg_value_type = self::getUnpackedKeyedElementType(
+                        $statements_analyzer,
+                        $unpacked_atomic_array,
+                        $function_param,
+                        $unpacked_argument_offset,
+                        $allow_named_args,
+                    );
 
-                            $arg_value_type = new Union([$arg_value_type_atomic]);
-                        }
-                    } elseif ($codebase->analysis_php_version_id >= 8_00_00
-                        && $allow_named_args
-                        && $unpacked_atomic_array->getGenericKeyType()->allStringLiterals()
-                    ) {
-                        // the parameter has no key here: another unpacked argument can give it
+                    if ($arg_value_type === null) {
                         return null;
-                    } else {
-                        $arg_value_type = Type::getMixed();
                     }
                 } elseif ($unpacked_atomic_array instanceof TClassStringMap) {
                     $arg_value_type = Type::getMixed();
@@ -618,6 +596,13 @@ final class ArgumentAnalyzer
                     }
                     $arg_value_type = $unpacked_atomic_array->type_params[1];
                 }
+
+                $arg_value_type = self::addTaintOfUnpackedArray(
+                    $statements_analyzer,
+                    $arg->value,
+                    $unpacked_atomic_array,
+                    $arg_value_type,
+                );
 
                 if (!$arg_key_allowed) {
                     IssueBuffer::maybeAdd(
@@ -1888,6 +1873,121 @@ final class ArgumentAnalyzer
     }
 
     /**
+     * The type of the element an unpacked array of a known shape gives the parameter, null if another unpacked
+     * argument can give the parameter, which the array has no key for.
+     */
+    private static function getUnpackedKeyedElementType(
+        StatementsAnalyzer $statements_analyzer,
+        TKeyedArray $unpacked_array,
+        FunctionLikeParameter $function_param,
+        int $unpacked_argument_offset,
+        bool $allow_named_args,
+    ): ?Union {
+        $codebase = $statements_analyzer->getCodebase();
+        $named_args_allowed = $codebase->analysis_php_version_id >= 8_00_00 && $allow_named_args;
+
+        if ($function_param->is_variadic) {
+            return $unpacked_array->getGenericValueType();
+        }
+
+        if ($named_args_allowed && isset($unpacked_array->properties[$function_param->name])) {
+            return $unpacked_array->properties[$function_param->name];
+        }
+
+        $positional_element = self::getPositionalElement($unpacked_array, $unpacked_argument_offset);
+
+        if ($positional_element) {
+            return $positional_element;
+        }
+
+        if ($unpacked_array->fallback_params) {
+            return $unpacked_array->fallback_params[1];
+        }
+
+        if ($function_param->is_optional && $function_param->default_type) {
+            if ($function_param->default_type instanceof Union) {
+                return $function_param->default_type;
+            }
+
+            return new Union([ConstantTypeResolver::resolve(
+                $codebase->classlikes,
+                $function_param->default_type,
+                $statements_analyzer,
+            )]);
+        }
+
+        // the parameter has no key here: another unpacked argument can give it
+        if ($named_args_allowed && $unpacked_array->getGenericKeyType()->allStringLiterals()) {
+            return null;
+        }
+
+        return Type::getMixed();
+    }
+
+    /**
+     * The element an unpacked array gives the parameter at $offset, if it is of a known shape: PHP binds its
+     * integer keys in their order, whatever they are.
+     *
+     * @psalm-pure
+     */
+    private static function getPositionalElement(TKeyedArray $array, int $offset): ?Union
+    {
+        $position = 0;
+
+        foreach ($array->properties as $key => $property) {
+            if (is_int($key) && $position++ === $offset) {
+                return $property;
+            }
+        }
+
+        return null;
+    }
+
+    /**
+     * The elements of an unpacked array that its type doesn't tell apart (what explode() returns) take the
+     * taint of the array, which has no part of it in $element_type, the type of the one the parameter takes.
+     */
+    private static function addTaintOfUnpackedArray(
+        StatementsAnalyzer $statements_analyzer,
+        PhpParser\Node\Expr $expr,
+        Atomic $unpacked_atomic_array,
+        Union $element_type,
+    ): Union {
+        $taint_flow_graph = $statements_analyzer->getTaintFlowGraphWithSuppressed();
+        $array_type = $statements_analyzer->node_data->getType($expr);
+
+        if (!$taint_flow_graph || !$array_type || !$array_type->parent_nodes) {
+            return $element_type;
+        }
+
+        if ($unpacked_atomic_array instanceof TKeyedArray) {
+            // a shape tells the items it has apart, but not those the fallback has
+            if ($unpacked_atomic_array->fallback_params === null) {
+                return $element_type;
+            }
+
+            foreach ($unpacked_atomic_array->properties as $property) {
+                if ($property === $element_type && !$property->possibly_undefined) {
+                    return $element_type;
+                }
+            }
+        }
+
+        $element_node = DataFlowNode::getForAssignment(
+            'unpacked argument',
+            new CodeLocation($statements_analyzer->getSource(), $expr),
+        );
+
+        $taint_flow_graph->addNode($element_node);
+
+        foreach ($array_type->parent_nodes as $array_parent_node) {
+            $taint_flow_graph->addPath($array_parent_node, $element_node, 'arrayvalue-fetch');
+        }
+
+        return $element_type->addParentNodes([$element_node->id => $element_node]);
+    }
+
+    /**
      * @param TKeyedArray|TArray|TClassStringMap $unpacked_atomic_array
      */
     private static function coerceValueAfterGatekeeperArgument(
@@ -2235,8 +2335,10 @@ final class ArgumentAnalyzer
             );
         }
 
+        // an unpacked array gives each parameter an element of its own
         $argument_value_node = DataFlowNode::getForAssignment(
-            'call to ' . $cased_method_id,
+            'call to ' . $cased_method_id
+                . ($unpacked_argument_offset !== null ? ' (' . $function_param->name . ')' : ''),
             $arg_location,
         );
 
