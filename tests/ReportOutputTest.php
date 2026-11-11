@@ -10,9 +10,7 @@ use Psalm\Config;
 use Psalm\Context;
 use Psalm\Internal\Analyzer\IssueData;
 use Psalm\Internal\Analyzer\ProjectAnalyzer;
-use Psalm\Internal\Provider\FakeFileProvider;
 use Psalm\Internal\Provider\Providers;
-use Psalm\Internal\RuntimeCaches;
 use Psalm\IssueBuffer;
 use Psalm\Report;
 use Psalm\Report\JsonReport;
@@ -33,13 +31,8 @@ use const JSON_THROW_ON_ERROR;
 final class ReportOutputTest extends TestCase
 {
     #[Override]
-    public function setUp(): void
+    protected function setUpProjectAnalyzer(): void
     {
-        // `TestCase::setUp()` creates its own ProjectAnalyzer and Config instance, but we don't want to do that in this
-        // case, so don't run a `parent::setUp()` call here.
-        RuntimeCaches::clearAll();
-        $this->file_provider = new FakeFileProvider();
-
         $config = new TestConfig();
         $config->throw_exception = false;
         $config->setCustomErrorLevel('PossiblyUndefinedGlobalVariable', Config::REPORT_INFO);
@@ -64,7 +57,7 @@ final class ReportOutputTest extends TestCase
 
         // No exception
         foreach (['.xml', '.txt', '.json', '.emacs'] as $extension) {
-            ProjectAnalyzer::getFileReportOptions(['/tmp/report' . $extension]);
+            self::assertNotEmpty(ProjectAnalyzer::getFileReportOptions(['/tmp/report' . $extension]));
         }
     }
 
@@ -74,7 +67,7 @@ final class ReportOutputTest extends TestCase
         $config = new TestConfig();
         $config->throw_exception = false;
 
-        ProjectAnalyzer::getFileReportOptions(['/tmp/report.log']);
+        self::assertNotEmpty(ProjectAnalyzer::getFileReportOptions(['/tmp/report.log']));
     }
 
     public function analyzeTaintFlowFilesForReport(): void
