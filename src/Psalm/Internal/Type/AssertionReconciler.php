@@ -55,6 +55,7 @@ use Psalm\Type\Atomic\TMixed;
 use Psalm\Type\Atomic\TNamedObject;
 use Psalm\Type\Atomic\TNonDecimalIntString;
 use Psalm\Type\Atomic\TNonEmptyLowercaseString;
+use Psalm\Type\Atomic\TNonEmptyMixed;
 use Psalm\Type\Atomic\TNonEmptyNonspecificLiteralString;
 use Psalm\Type\Atomic\TNonEmptyString;
 use Psalm\Type\Atomic\TNull;
@@ -290,9 +291,11 @@ final class AssertionReconciler extends Reconciler
         Assertion $assertion,
         bool $inside_loop,
     ): Union {
-        if (($assertion instanceof IsIsset || $assertion instanceof IsEqualIsset)
-            || $assertion instanceof NonEmpty
-        ) {
+        if ($assertion instanceof NonEmpty) {
+            return new Union([new TNonEmptyMixed($inside_loop)]);
+        }
+
+        if ($assertion instanceof IsIsset || $assertion instanceof IsEqualIsset) {
             return Type::getMixed($inside_loop);
         }
 
@@ -1889,6 +1892,41 @@ final class AssertionReconciler extends Reconciler
             } else {
                 if (!$assertion_type instanceof TNamedObject) {
                     return [$assertion_type];
+                }
+
+                // a `class-string<T>` stays one of `T`, restricted to the asserted class
+                $template_class_strings = [];
+
+                foreach ($existing_var_type->getAtomicTypes() as $existing_type_part) {
+                    if (!$existing_type_part instanceof TTemplateParamClass) {
+                        $template_class_strings = [];
+                        break;
+                    }
+
+                    $bound = $existing_type_part->as_type;
+
+                    if ($bound === null
+                        || AtomicTypeComparator::isContainedBy($codebase, $assertion_type, $bound)
+                    ) {
+                        $refined_bound = $assertion_type;
+                    } elseif (AtomicTypeComparator::isContainedBy($codebase, $bound, $assertion_type)) {
+                        $refined_bound = $bound;
+                    } else {
+                        $refined_bound = $bound->addIntersectionType($assertion_type);
+                    }
+
+                    $template_class_strings[] = new TTemplateParamClass(
+                        $existing_type_part->param_name,
+                        $refined_bound->value,
+                        $refined_bound,
+                        $existing_type_part->defining_class,
+                    );
+                }
+
+                if ($template_class_strings) {
+                    $should_return = true;
+
+                    return $template_class_strings;
                 }
 
                 $new_type_has_interface_string = $codebase->interfaceExists($assertion_type->value);
