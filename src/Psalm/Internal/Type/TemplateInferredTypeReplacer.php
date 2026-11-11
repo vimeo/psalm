@@ -542,6 +542,11 @@ final class TemplateInferredTypeReplacer
 
                 $matching_else_types[] = $candidate_atomic_type;
 
+                // no value is of the type `never`
+                if ($conditional_type->isNever()) {
+                    continue;
+                }
+
                 // only a candidate that can't be of the condition is decidably in the else branch
                 if (self::isDisjoint($codebase, $candidate_atomic_type, $conditional_type)) {
                     continue;

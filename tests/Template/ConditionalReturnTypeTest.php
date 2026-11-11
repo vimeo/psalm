@@ -64,6 +64,56 @@ final class ConditionalReturnTypeTest extends TestCase
                 ],
                 'ignored_issues' => [],
             ],
+            'conditionalOnNeverOfAnOptionalKeyIsTheKeyTypeWhenSet' => [
+                'code' => '<?php
+                    /**
+                     * @template TReturnOpt as "string"|"int"|"float"
+                     * @param array{ret?: TReturnOpt} $opts
+                     * @return (TReturnOpt is never ? "stringEmpty" : TReturnOpt)
+                     */
+                    function test(array $opts = []): string {
+                        return "stringEmpty";
+                    }
+
+                    $unset = test();
+                    $set = test(["ret" => "int"]);',
+                'assertions' => [
+                    '$unset===' => "'stringEmpty'",
+                    '$set===' => "'int'",
+                ],
+            ],
+            'conditionalOnNeverIsOnlyTrueForNever' => [
+                'code' => '<?php
+                    /**
+                     * @template T as string|int
+                     * @param T $t
+                     * @return (T is never ? "e" : T)
+                     */
+                    function f($t) { return $t; }
+
+                    $zero = f(0);
+                    $text = f("abc");',
+                'assertions' => [
+                    '$zero===' => '0',
+                    '$text===' => "'abc'",
+                ],
+            ],
+            'conditionalOnNotNeverKeepsTheTypeOfAValue' => [
+                'code' => '<?php
+                    /**
+                     * @template T as string|int
+                     * @param T $t
+                     * @return (T is not never ? T : "e")
+                     */
+                    function f($t) { return $t; }
+
+                    $zero = f(0);
+                    $text = f("abc");',
+                'assertions' => [
+                    '$zero===' => '0',
+                    '$text===' => "'abc'",
+                ],
+            ],
             'arrayAccessOnAParamWithAConditionalType' => [
                 'code' => '<?php
                     /**
