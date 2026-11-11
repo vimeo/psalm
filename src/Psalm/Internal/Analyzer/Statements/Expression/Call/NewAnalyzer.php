@@ -568,6 +568,57 @@ final class NewAnalyzer extends CallAnalyzer
             : null;
     }
 
+    private static function applyConstructorAssertions(
+        StatementsAnalyzer $statements_analyzer,
+        Codebase $codebase,
+        Context $context,
+        PhpParser\Node\Expr\New_ $stmt,
+        MethodStorage $method_storage,
+        TemplateResult $template_result,
+    ): void {
+        if ($method_storage->assertions && $stmt->class instanceof PhpParser\Node\Name) {
+            self::applyAssertionsToContext(
+                $stmt->class,
+                null,
+                self::getAssertionsOnArgs($method_storage->assertions, $method_storage, $stmt->getArgs()),
+                $stmt->getArgs(),
+                $template_result,
+                $context,
+                $statements_analyzer,
+            );
+        }
+
+        if ($method_storage->if_true_assertions) {
+            $statements_analyzer->node_data->setIfTrueAssertions(
+                $stmt,
+                array_map(
+                    static fn(Possibilities $assertion): Possibilities
+                        => $assertion->getUntemplatedCopy($template_result, null, $codebase),
+                    self::getAssertionsOnArgs(
+                        $method_storage->if_true_assertions,
+                        $method_storage,
+                        $stmt->getArgs(),
+                    ),
+                ),
+            );
+        }
+
+        if ($method_storage->if_false_assertions) {
+            $statements_analyzer->node_data->setIfFalseAssertions(
+                $stmt,
+                array_map(
+                    static fn(Possibilities $assertion): Possibilities
+                        => $assertion->getUntemplatedCopy($template_result, null, $codebase),
+                    self::getAssertionsOnArgs(
+                        $method_storage->if_false_assertions,
+                        $method_storage,
+                        $stmt->getArgs(),
+                    ),
+                ),
+            );
+        }
+    }
+
     private static function analyzeNamedConstructor(
         StatementsAnalyzer $statements_analyzer,
         Codebase $codebase,
@@ -719,47 +770,14 @@ final class NewAnalyzer extends CallAnalyzer
                     $can_extend,
                 );
 
-                if ($method_storage->assertions && $stmt->class instanceof PhpParser\Node\Name) {
-                    self::applyAssertionsToContext(
-                        $stmt->class,
-                        null,
-                        self::getAssertionsOnArgs($method_storage->assertions, $method_storage, $stmt->getArgs()),
-                        $stmt->getArgs(),
-                        $template_result,
-                        $context,
-                        $statements_analyzer,
-                    );
-                }
-
-                if ($method_storage->if_true_assertions) {
-                    $statements_analyzer->node_data->setIfTrueAssertions(
-                        $stmt,
-                        array_map(
-                            static fn(Possibilities $assertion): Possibilities
-                                => $assertion->getUntemplatedCopy($template_result, null, $codebase),
-                            self::getAssertionsOnArgs(
-                                $method_storage->if_true_assertions,
-                                $method_storage,
-                                $stmt->getArgs(),
-                            ),
-                        ),
-                    );
-                }
-
-                if ($method_storage->if_false_assertions) {
-                    $statements_analyzer->node_data->setIfFalseAssertions(
-                        $stmt,
-                        array_map(
-                            static fn(Possibilities $assertion): Possibilities
-                                => $assertion->getUntemplatedCopy($template_result, null, $codebase),
-                            self::getAssertionsOnArgs(
-                                $method_storage->if_false_assertions,
-                                $method_storage,
-                                $stmt->getArgs(),
-                            ),
-                        ),
-                    );
-                }
+                self::applyConstructorAssertions(
+                    $statements_analyzer,
+                    $codebase,
+                    $context,
+                    $stmt,
+                    $method_storage,
+                    $template_result,
+                );
             }
 
             $generic_param_types = null;
