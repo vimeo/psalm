@@ -591,6 +591,50 @@ final class ArrayKeyExistsTest extends TestCase
                         return $greetings;
                     }',
             ],
+            'arrayKeyExistsOfAUnionOfLiteralKeysDoesNotRequireEachKey' => [
+                'code' => '<?php
+                    /**
+                     * @param array{foo?: "hello", bar?: "world"} $optionalKeys
+                     * @param "foo"|"bar"|"baz" $key
+                     */
+                    function stringKeys(array $optionalKeys, string $key): void {
+                        if (array_key_exists($key, $optionalKeys)) {
+                            /** @psalm-check-type-exact $optionalKeys = array{bar?: \'hello\'|\'world\', baz?: \'hello\'|\'world\', foo?: \'hello\'|\'world\'} */;
+                        }
+                    }
+
+                    /**
+                     * @param array{1?: "a", 2?: "b"} $optionalKeys
+                     * @param 1|2 $key
+                     */
+                    function intKeys(array $optionalKeys, int $key): void {
+                        if (array_key_exists($key, $optionalKeys)) {
+                            /** @psalm-check-type-exact $optionalKeys = array{1?: \'a\'|\'b\', 2?: \'a\'|\'b\'} */;
+                        }
+                    }',
+            ],
+            'arrayKeyExistsOfASingleLiteralKeyRequiresIt' => [
+                'code' => '<?php
+                    /**
+                     * @param array{foo?: "hello", bar?: "world"} $optionalKeys
+                     * @param "foo" $key
+                     */
+                    function stringKey(array $optionalKeys, string $key): void {
+                        if (array_key_exists($key, $optionalKeys)) {
+                            /** @psalm-check-type-exact $optionalKeys = array{bar?: \'world\', foo: \'hello\'} */;
+                        }
+                    }
+
+                    /**
+                     * @param array{1?: "a", 2?: "b"} $optionalKeys
+                     * @param 2 $key
+                     */
+                    function intKey(array $optionalKeys, int $key): void {
+                        if (array_key_exists($key, $optionalKeys)) {
+                            /** @psalm-check-type-exact $optionalKeys = array{1?: \'a\', 2: \'b\'} */;
+                        }
+                    }',
+            ],
         ];
     }
 
