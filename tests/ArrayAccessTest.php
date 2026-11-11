@@ -619,14 +619,6 @@ final class ArrayAccessTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
-            'nestedOffsetAssignmentOnAnArrayObjectOnlyReadsTheOuterOffset' => [
-                'code' => '<?php
-                    /** @var ArrayObject<int, array<int, int>> $rows */
-                    $rows = new ArrayObject();
-
-                    $rows[1][2] = 3;
-                    $rows[1] = [2 => 3];',
-            ],
             'coalesceOnAnIntKeyThatMayBeMissingKeepsTheFoundType' => [
                 'code' => '<?php
                     $a = [1 => "Hello"];
@@ -1635,6 +1627,14 @@ final class ArrayAccessTest extends TestCase
                         return $foo[bar($key)] ?? $default;
                     }',
             ],
+            'nestedOffsetAssignmentOnAnArrayObjectOnlyReadsTheOuterOffset' => [
+                'code' => '<?php
+                    /** @var ArrayObject<int, array<int, int>> $rows */
+                    $rows = new ArrayObject();
+
+                    $rows[1][2] = 3;
+                    $rows[1] = [2 => 3];',
+            ],
         ];
     }
 
@@ -1645,13 +1645,50 @@ final class ArrayAccessTest extends TestCase
     public static function providerInvalidCodeParse(): iterable
     {
         return [
-            'assigningTheWrongValueToAnArrayObjectOffsetIsStillReported' => [
+            'intRangeOffsetPartlyInsideTheKeysOfAList' => [
                 'code' => '<?php
-                    /** @var ArrayObject<int, array<int, int>> $rows */
-                    $rows = new ArrayObject();
+                    function f(int $i): void {
+                        $list = [1, 21, 22];
 
-                    $rows[1] = 3;',
-                'error_message' => 'InvalidArgument - src' . DIRECTORY_SEPARATOR . 'somefile.php:5:32 - Argument 2 of ArrayObject::offsetSet expects array<int, int>, but 3 provided',
+                        if ($i > 0) {
+                            echo $list[$i];
+                        }
+                    }',
+                'error_message' => 'PossiblyInvalidArrayOffset',
+            ],
+            'intRangeOffsetPartlyInsideTheKeysOfSeveralLists' => [
+                'code' => '<?php
+                    /**
+                     * @param list{1, 21, 22}|list{3, 33} $links
+                     */
+                    function f(array $links, int $i): void {
+                        if ($i > 0) {
+                            echo $links[$i];
+                        }
+                    }',
+                'error_message' => 'PossiblyInvalidArrayOffset',
+            ],
+            'intRangeOffsetPartlyInsideTheLiteralKeysOfAnArray' => [
+                'code' => '<?php
+                    function f(int $i): void {
+                        $array = [0 => 1, 2 => 3];
+
+                        if ($i > 1 && $i < 4) {
+                            echo $array[$i];
+                        }
+                    }',
+                'error_message' => 'PossiblyInvalidArrayOffset',
+            ],
+            'intRangeOffsetOutsideTheKeysOfAList' => [
+                'code' => '<?php
+                    function f(int $i): void {
+                        $list = [1, 21, 22];
+
+                        if ($i > 5) {
+                            echo $list[$i];
+                        }
+                    }',
+                'error_message' => 'InvalidArrayOffset',
             ],
             'invalidOffsetOfConstantNamesTheConstant' => [
                 'code' => '<?php
@@ -2048,6 +2085,14 @@ final class ArrayAccessTest extends TestCase
                 }
                 PHP,
                 'error_message' => 'NamedArgumentNotAllowed',
+            ],
+            'assigningTheWrongValueToAnArrayObjectOffsetIsStillReported' => [
+                'code' => '<?php
+                    /** @var ArrayObject<int, array<int, int>> $rows */
+                    $rows = new ArrayObject();
+
+                    $rows[1] = 3;',
+                'error_message' => 'InvalidArgument - src' . DIRECTORY_SEPARATOR . 'somefile.php:5:32 - Argument 2 of ArrayObject::offsetSet expects array<int, int>, but 3 provided',
             ],
         ];
     }
