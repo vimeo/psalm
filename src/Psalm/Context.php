@@ -649,6 +649,9 @@ final class Context
         if ($changed) {
             $this->vars_in_scope[$var_id] = $type->getBuilder()->setTypes($atomic_types)->freeze();
         }
+
+        // the shapes of the objects the object is a property of have it narrowed as well
+        $this->forgetNarrowedShapeProperty($var_id);
     }
 
     public function remove(string $remove_var_id, bool $removeDescendents = true): void

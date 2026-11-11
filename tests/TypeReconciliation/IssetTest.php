@@ -1469,6 +1469,38 @@ final class IssetTest extends TestCase
                     }',
                 'error_message' => 'ReferenceConstraintViolation',
             ],
+            'issetNarrowingOfNestedObjectShapeIsForgottenAfterUnsetOfTheInnerProperty' => [
+                'code' => '<?php
+                    /** @param object{bar?: object{baz?: string}} $foo */
+                    function check(object $foo): void {
+                        if (isset($foo->bar->baz)) {
+                            unset($foo->bar->baz);
+                            requiresBaz($foo);
+                        }
+                    }
+
+                    /** @param object{bar: object{baz: string}} $foo */
+                    function requiresBaz(object $foo): void {
+                        echo $foo->bar->baz;
+                    }',
+                'error_message' => 'InvalidArgument',
+            ],
+            'issetNarrowingOfNestedObjectShapeIsForgottenAfterAssigningTheInnerProperty' => [
+                'code' => '<?php
+                    /** @param object{bar?: object{baz?: string}} $foo */
+                    function check(object $foo): void {
+                        if (isset($foo->bar->baz)) {
+                            $foo->bar->baz = null;
+                            requiresBaz($foo);
+                        }
+                    }
+
+                    /** @param object{bar: object{baz: string}} $foo */
+                    function requiresBaz(object $foo): void {
+                        echo $foo->bar->baz;
+                    }',
+                'error_message' => 'InvalidArgument',
+            ],
             'issetNarrowingOfObjectShapeIsForgottenAfterUnset' => [
                 'code' => '<?php
                     /** @param object{bar?: string} $foo */
