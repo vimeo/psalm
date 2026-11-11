@@ -35,8 +35,8 @@
         <xs:attribute name="longScanWarning" type="xs:float" default="10.0" />
         <xs:attribute name="name" type="xs:string" />
         <xs:attribute name="phpVersion" type="xs:string" />
-        <xs:attribute name="serializer" type="xs:string" />
-        <xs:attribute name="compressor" type="xs:string" />
+        <xs:attribute name="serializer" type="SerializerType" />
+        <xs:attribute name="compressor" type="CompressorType" default="auto" />
 
         <xs:attribute name="addParamDefaultToDocblockType" type="xs:boolean" default="false" />
         <xs:attribute name="allowFileIncludes" type="xs:boolean" default="true" />
@@ -196,9 +196,10 @@
     </xs:complexType>
 
     <xs:complexType name="StubsType">
-        <xs:sequence>
+        <xs:choice maxOccurs="unbounded">
             <xs:element name="file" maxOccurs="unbounded" type="StubsAttributeType" />
-        </xs:sequence>
+            <xs:element name="directory" maxOccurs="unbounded" type="StubsAttributeType" />
+        </xs:choice>
         <xs:anyAttribute processContents="skip" />
     </xs:complexType>
 
@@ -284,6 +285,7 @@
             <xs:element name="FalsableReturnStatement" type="IssueHandlerType" minOccurs="0" />
             <xs:element name="FalseOperand" type="IssueHandlerType" minOccurs="0" />
             <xs:element name="ForbiddenCode" type="IssueHandlerType" minOccurs="0" />
+            <xs:element name="HiddenGeneratorReturn" type="IssueHandlerType" minOccurs="0" />
             <xs:element name="IfThisIsMismatch" type="IssueHandlerType" minOccurs="0" />
             <xs:element name="ImplementationRequirementViolation" type="IssueHandlerType" minOccurs="0" />
             <xs:element name="ImplementedParamTypeMismatch" type="IssueHandlerType" minOccurs="0" />
@@ -778,6 +780,23 @@
         </xs:restriction>
     </xs:simpleType>
 
+    <xs:simpleType name="SerializerType">
+        <xs:restriction base="xs:string">
+            <xs:enumeration value="igbinary"/>
+            <xs:enumeration value="default"/>
+        </xs:restriction>
+    </xs:simpleType>
+
+    <xs:simpleType name="CompressorType">
+        <xs:restriction base="xs:string">
+            <xs:enumeration value="auto"/>
+            <xs:enumeration value="zstd"/>
+            <xs:enumeration value="lz4"/>
+            <xs:enumeration value="deflate"/>
+            <xs:enumeration value="off"/>
+        </xs:restriction>
+    </xs:simpleType>
+
     <xs:simpleType name="TriggerErrorExitsType">
         <xs:restriction base="xs:string">
             <xs:enumeration value="default"/>
@@ -796,6 +815,7 @@
         <xs:restriction base="xs:string">
             <xs:enumeration value="amqp"/>
             <xs:enumeration value="apcu"/>
+            <xs:enumeration value="curl"/>
             <xs:enumeration value="decimal"/>
             <xs:enumeration value="dom"/>
             <xs:enumeration value="ds"/>
@@ -804,9 +824,12 @@
             <xs:enumeration value="gmp"/>
             <xs:enumeration value="ibm_db2"/>
             <xs:enumeration value="imagick"/>
+            <xs:enumeration value="intl"/>
+            <xs:enumeration value="ldap"/>
             <xs:enumeration value="memcached"/>
             <xs:enumeration value="mongodb"/>
             <xs:enumeration value="mysqli"/>
+            <xs:enumeration value="openssl"/>
             <xs:enumeration value="pdo"/>
             <xs:enumeration value="random"/>
             <xs:enumeration value="rdkafka"/>
@@ -814,6 +837,7 @@
             <xs:enumeration value="simplexml"/>
             <xs:enumeration value="soap"/>
             <xs:enumeration value="xdebug"/>
+            <xs:enumeration value="zip"/>
             <xs:enumeration value="zstd"/>
         </xs:restriction>
     </xs:simpleType>

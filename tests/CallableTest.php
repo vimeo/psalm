@@ -11,6 +11,8 @@ use Psalm\Exception\CodeException;
 use Psalm\Tests\Traits\InvalidCodeAnalysisTestTrait;
 use Psalm\Tests\Traits\ValidCodeAnalysisTestTrait;
 
+use const DIRECTORY_SEPARATOR;
+
 final class CallableTest extends TestCase
 {
     use InvalidCodeAnalysisTestTrait;
@@ -153,6 +155,281 @@ final class CallableTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'stringNamingAFunctionForClosureOrStringParam' => [
+                'code' => <<<'PHP'
+                    <?php
+                    function my_url(?string $path = null): string {
+                        return (string) $path;
+                    }
+
+                    /** @param (Closure(int): mixed)|string $column */
+                    function where($column): string {
+                        return is_string($column) ? $column : '';
+                    }
+
+                    echo where('my_url');
+                    echo where('unknown_name');
+                    PHP,
+            ],
+            'stringNamingAFunctionForClosureOrArrayKeyOrScalarParam' => [
+                'code' => <<<'PHP'
+                    <?php
+                    function my_url(?string $path = null): string {
+                        return (string) $path;
+                    }
+
+                    /** @param (Closure(int): mixed)|array-key $key */
+                    function byKey($key): void {}
+
+                    /** @param (Closure(int): mixed)|scalar $value */
+                    function byValue($value): void {}
+
+                    byKey('my_url');
+                    byValue('my_url');
+                    PHP,
+            ],
+            'stringNamingAGenericFunctionKeepsTheTemplatesOfACallableOrStringParam' => [
+                'code' => <<<'PHP'
+                    <?php
+                    /**
+                     * @template A
+                     * @param A $a
+                     * @return A
+                     */
+                    function identity($a) {
+                        return $a;
+                    }
+
+                    /**
+                     * @template U
+                     * @param (callable(int): U)|string $f
+                     * @return list<U>
+                     */
+                    function apply($f): array {
+                        return [];
+                    }
+
+                    $byName = apply('identity');
+                    $byFirstClassCallable = apply(identity(...));
+                    PHP,
+                'assertions' => [
+                    '$byName===' => 'list<int>',
+                    '$byFirstClassCallable===' => 'list<int>',
+                ],
+            ],
+            'arrayCallableOfAnIntersectionWithTheMethodInTheFirstPart' => [
+                'code' => '<?php
+                    interface A
+                    {
+                        public function doSomething(mixed $value): void;
+                    }
+
+                    interface B {}
+
+                    final class MyClass
+                    {
+                        public function __construct(private readonly A&B $ab)
+                        {
+                        }
+
+                        public function run(array $values): void
+                        {
+                            array_walk($values, [$this->ab, "doSomething"]);
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
+            'arrayCallableOfAnIntersectionWithTheMethodInAnyPart' => [
+                'code' => '<?php
+                    interface A {}
+
+                    interface B
+                    {
+                        public function doSomething(mixed $value): void;
+                    }
+
+                    final class MyClass
+                    {
+                        public function __construct(private readonly A&B $ab)
+                        {
+                        }
+
+                        public function run(array $values): void
+                        {
+                            array_walk($values, [$this->ab, "doSomething"]);
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
+            'callableArrayToTraitMethodResolvesReturnType' => [
+                'code' => '<?php
+                    /**
+                     * @template TOut
+                     * @param callable(int): TOut $c
+                     * @return TOut
+                     */
+                    function apply(callable $c) {
+                        return $c(1);
+                    }
+                    trait T {
+                        public function viaTrait(int $x): int {
+                            return $x;
+                        }
+                    }
+                    class E {
+                        use T;
+                    }
+                    $e = new E();
+                    $a = apply([$e, "viaTrait"]);
+                    $b = apply([E::class, "viaTrait"]);',
+                'assertions' => [
+                    '$a===' => 'int',
+                    '$b===' => 'int',
+                ],
+            ],
+            'callableArrayToInheritedMethodResolvesReturnType' => [
+                'code' => '<?php
+                    /**
+                     * @template TOut
+                     * @param callable(int): TOut $c
+                     * @return TOut
+                     */
+                    function apply(callable $c) {
+                        return $c(1);
+                    }
+                    class P {
+                        public function m(int $x): string {
+                            return (string) $x;
+                        }
+                    }
+                    class C extends P {}
+                    $a = apply([new C(), "m"]);',
+                'assertions' => [
+                    '$a===' => 'string',
+                ],
+            ],
+            'callableArrayToTraitMethodExpandsSelfToUsingClass' => [
+                'code' => '<?php
+                    /**
+                     * @template TOut
+                     * @param callable(int): TOut $c
+                     * @return TOut
+                     */
+                    function apply(callable $c) {
+                        return $c(1);
+                    }
+                    trait T {
+                        public static function make(int $x): self {
+                            return new self();
+                        }
+                    }
+                    class E {
+                        use T;
+                    }
+                    $a = apply([E::class, "make"]);',
+                'assertions' => [
+                    '$a===' => 'E',
+                ],
+            ],
+            'callableArrayToInheritedTraitMethodExpandsSelfToTheUsingClass' => [
+                'code' => '<?php
+                    /**
+                     * @template TOut
+                     * @param callable(): TOut $c
+                     * @return TOut
+                     */
+                    function apply(callable $c) {
+                        return $c();
+                    }
+                    trait T {
+                        public function make(): self {
+                            return new self();
+                        }
+                    }
+                    class ParentClass {
+                        use T;
+                    }
+                    class Child extends ParentClass {}
+                    $a = apply([new Child(), "make"]);',
+                'assertions' => [
+                    '$a===' => 'ParentClass',
+                ],
+            ],
+            'callableArrayToInheritedTraitMethodKeepsStaticOfTheCalledClass' => [
+                'code' => '<?php
+                    /**
+                     * @template TOut
+                     * @param callable(): TOut $c
+                     * @return TOut
+                     */
+                    function apply(callable $c) {
+                        return $c();
+                    }
+                    trait T {
+                        public function make(): static {
+                            return $this;
+                        }
+                    }
+                    class ParentClass {
+                        use T;
+                    }
+                    class Child extends ParentClass {}
+                    $a = apply([new Child(), "make"]);',
+                'assertions' => [
+                    '$a===' => 'Child&static',
+                ],
+            ],
+            'callableArrayToInheritedStaticMethodOfFinalClassResolvesStaticToIt' => [
+                'code' => '<?php
+                    abstract class Foo {
+                        final private function __construct() {}
+
+                        public static function create(): static {
+                            return new static();
+                        }
+                    }
+
+                    final class Bar extends Foo {}
+
+                    /**
+                     * @template T
+                     * @param callable(): T $fn
+                     * @return T
+                     */
+                    function apply(callable $fn) {
+                        return $fn();
+                    }
+
+                    $a = apply([Bar::class, "create"]);',
+                'assertions' => [
+                    '$a===' => 'Bar',
+                ],
+            ],
+            'callableArrayToInheritedMethodExpandsSelfToDeclaringClass' => [
+                'code' => '<?php
+                    /**
+                     * @template TOut
+                     * @param callable(int): TOut $c
+                     * @return TOut
+                     */
+                    function apply(callable $c) {
+                        return $c(1);
+                    }
+                    class P {
+                        public function m(int $x): self {
+                            return $this;
+                        }
+                    }
+                    class C extends P {}
+                    $a = apply([new C(), "m"]);',
+                'assertions' => [
+                    '$a===' => 'P',
+                ],
+            ],
             'callableKeyedArrayKeepsTheCallableFlagWhenItsValuesAreNarrowed' => [
                 'code' => '<?php
                     /**
@@ -1573,7 +1850,7 @@ final class CallableTest extends TestCase
 
                         /**
                          * @psalm-mutation-free
-                         * 
+                         *
                          * @psalm-param callable():bool $callable
                          */
                         public function __construct(callable $callable) {
@@ -2675,6 +2952,58 @@ final class CallableTest extends TestCase
     public static function providerInvalidCodeParse(): iterable
     {
         return [
+            'stringNamingAFunctionForClosureParamOnly' => [
+                'code' => <<<'PHP'
+                    <?php
+                    function my_url(?string $path = null): string {
+                        return (string) $path;
+                    }
+
+                    /** @param Closure(int): mixed $column */
+                    function where($column): void {}
+
+                    where('my_url');
+                    PHP,
+                'error_message' => 'InvalidScalarArgument - src' . DIRECTORY_SEPARATOR . 'somefile.php:9:7',
+            ],
+            'stringNamingAFunctionOfTheWrongSignatureForACallableOrLiteralsParam' => [
+                'code' => <<<'PHP'
+                    <?php
+                    function bad(array $a): int {
+                        return count($a);
+                    }
+
+                    /** @param (callable(int): mixed)|'asc'|'desc' $f */
+                    function sortBy($f): void {}
+
+                    sortBy('bad');
+                    PHP,
+                'error_message' => 'InvalidArgument - src' . DIRECTORY_SEPARATOR . 'somefile.php:9:8',
+            ],
+            'arrayCallableOfAnIntersectionWithoutTheMethod' => [
+                'code' => '<?php
+                    interface A {}
+
+                    interface B
+                    {
+                        public function doSomething(mixed $value): void;
+                    }
+
+                    final class MyClass
+                    {
+                        public function __construct(private readonly A&B $ab)
+                        {
+                        }
+
+                        public function run(array $values): void
+                        {
+                            array_walk($values, [$this->ab, "nope"]);
+                        }
+                    }',
+                'error_message' => 'InvalidArgument',
+                'error_levels' => [],
+                'php_version' => '8.1',
+            ],
             'undefinedCallableClass' => [
                 'code' => '<?php
                     class A {
