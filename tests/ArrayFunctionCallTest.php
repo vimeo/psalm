@@ -100,32 +100,36 @@ final class ArrayFunctionCallTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
-            'arrayFilterOfAnArrayOrMixedKeepsAnArrayType' => [
-                'code' => '<?php
-                    /** @var mixed $maybe */
-                    $maybe = 1;
-                    $bar = $maybe ?? [];
-                    $filtered = array_filter($bar);',
-                'assertions' => [
-                    '$filtered' => 'array<array-key, non-empty-mixed>',
-                ],
-                'ignored_issues' => ['MixedAssignment', 'MixedArgument'],
-            ],
-            'arrayFilterOfAnArrayOrMixedIsNotEmpty' => [
-                'code' => '<?php
-                    /**
-                     * @param array<string, mixed> $array
-                     */
-                    function foo(array $array): void {
-                        $bar = $array["key"] ?? [];
-                        $filtered = array_filter($bar);
+            'arrayPopOfAListWithAnOptionalLastItem' => [
+                'code' => <<<'PHP'
+                    <?php
+                    function pop(bool $one, bool $two): void {
+                        $always = [0, 1];
+                        array_pop($always);
 
-                        if (count($filtered) !== 1) {
-                            throw new Exception();
+                        $maybe = [0];
+                        if ($one) {
+                            $maybe[] = 2;
                         }
-                    }',
+                        array_pop($maybe);
+
+                        $maybe_twice = [0];
+                        if ($one) {
+                            $maybe_twice[] = 2;
+                        }
+                        if ($two) {
+                            $maybe_twice[] = 3;
+                        }
+                        array_pop($maybe_twice);
+
+                        /** @psalm-check-type-exact $always = list{0: 0} */
+                        /** @psalm-check-type-exact $maybe = list{0?: 0} */
+                        /** @psalm-check-type-exact $maybe_twice = list{0?: 0, 1?: 2|3} */
+                    }
+                    PHP,
                 'assertions' => [],
-                'ignored_issues' => ['MixedAssignment', 'MixedArgument'],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
             ],
             'arrayUdiffKeepsTheTypeOfTheFirstArray' => [
                 'code' => '<?php
@@ -3824,6 +3828,33 @@ final class ArrayFunctionCallTest extends TestCase
                 'ignored_issues' => [],
                 'php_version' => '8.4',
             ],
+            'arrayFilterOfAnArrayOrMixedKeepsAnArrayType' => [
+                'code' => '<?php
+                    /** @var mixed $maybe */
+                    $maybe = 1;
+                    $bar = $maybe ?? [];
+                    $filtered = array_filter($bar);',
+                'assertions' => [
+                    '$filtered' => 'array<array-key, non-empty-mixed>',
+                ],
+                'ignored_issues' => ['MixedAssignment', 'MixedArgument'],
+            ],
+            'arrayFilterOfAnArrayOrMixedIsNotEmpty' => [
+                'code' => '<?php
+                    /**
+                     * @param array<string, mixed> $array
+                     */
+                    function foo(array $array): void {
+                        $bar = $array["key"] ?? [];
+                        $filtered = array_filter($bar);
+
+                        if (count($filtered) !== 1) {
+                            throw new Exception();
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => ['MixedAssignment', 'MixedArgument'],
+            ],
         ];
     }
 
@@ -3834,6 +3865,21 @@ final class ArrayFunctionCallTest extends TestCase
     public static function providerInvalidCodeParse(): iterable
     {
         return [
+            'arrayPopOfAListWithAnOptionalLastItemMayEmptyIt' => [
+                'code' => '<?php
+                    /** @param non-empty-list<int> $a */
+                    function foo(array $a): void {}
+
+                    function bar(bool $one): void {
+                        $d = [0];
+                        if ($one) {
+                            $d[] = 2;
+                        }
+                        array_pop($d);
+                        foo($d);
+                    }',
+                'error_message' => 'InvalidArgument',
+            ],
             'arrayColumnIndexColumnOfAnObjectIsNotAnArrayKey' => [
                 'code' => '<?php
                     $result = array_column([[new stdClass, 1]], 1, 0);',
