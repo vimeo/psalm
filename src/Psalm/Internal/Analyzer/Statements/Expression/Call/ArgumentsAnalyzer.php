@@ -2471,7 +2471,10 @@ final class ArgumentsAnalyzer
             return;
         }
 
-        if (count($args) < count($function_params)) {
+        // an unpacked array can give less (or more) than one argument
+        if (count($args) < count($function_params)
+            || array_any($args, static fn(PhpParser\Node\Arg $arg): bool => $arg->unpack)
+        ) {
             $all_function_params = $function_params;
 
             //we're gonna loop over given args and unset them from the function_params.
