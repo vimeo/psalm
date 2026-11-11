@@ -677,11 +677,20 @@ final class MissingMethodCallHandler
                 }
 
                 if ($param_offset === null) {
-                    if ($variadic) {
-                        continue;
+                    if (!$variadic) {
+                        return false;
                     }
 
-                    return false;
+                    // a name that no parameter has is collected by the variadic one, which types it
+                    $param_type = $params[$last_offset]->type;
+
+                    if ($param_type && $arg_types[$offset]
+                        && !UnionTypeComparator::isContainedBy($codebase, $arg_types[$offset], $param_type)
+                    ) {
+                        return false;
+                    }
+
+                    continue;
                 }
 
                 if (isset($bound[$param_offset])) {
