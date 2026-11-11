@@ -26,6 +26,118 @@ final class MixinAnnotationTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'nearestMixinWinsForAStaticMethodOfNestedMixins' => [
+                'code' => '<?php
+                    final class Deep
+                    {
+                        public static function foo(): int
+                        {
+                            return 1;
+                        }
+                    }
+
+                    /**
+                     * @mixin Deep
+                     */
+                    final class Near
+                    {
+                        public static function foo(): string
+                        {
+                            return "";
+                        }
+                    }
+
+                    /**
+                     * @mixin Near
+                     */
+                    final class Host {}
+
+                    $a = Host::foo();',
+                'assertions' => [
+                    '$a' => 'string',
+                ],
+            ],
+            'staticMethodOnlyOfTheDeeperOfNestedMixins' => [
+                'code' => '<?php
+                    final class Deep
+                    {
+                        public static function deepOnly(): int
+                        {
+                            return 1;
+                        }
+                    }
+
+                    /**
+                     * @mixin Deep
+                     */
+                    final class Near {}
+
+                    /**
+                     * @mixin Near
+                     */
+                    final class Host {}
+
+                    $a = Host::deepOnly();',
+                'assertions' => [
+                    '$a' => 'int',
+                ],
+            ],
+            'nearestMixinWinsForAMethodOfNestedMixins' => [
+                'code' => '<?php
+                    final class Deep
+                    {
+                        public function foo(): int
+                        {
+                            return 1;
+                        }
+                    }
+
+                    /**
+                     * @mixin Deep
+                     */
+                    final class Near
+                    {
+                        public function foo(): string
+                        {
+                            return "";
+                        }
+                    }
+
+                    /**
+                     * @mixin Near
+                     */
+                    final class Host {}
+
+                    $a = (new Host())->foo();',
+                'assertions' => [
+                    '$a' => 'string',
+                ],
+            ],
+            'staticMethodsOfSeveralMixins' => [
+                'code' => '<?php
+                    interface Mixin
+                    {
+                        public static function mix(): string;
+                    }
+
+                    interface OtherMixin
+                    {
+                        public static function otherMix(): int;
+                    }
+
+                    /**
+                     * @mixin Mixin
+                     * @mixin OtherMixin
+                     */
+                    class Bar {}
+
+                    $a = Bar::mix();
+                    $b = Bar::otherMix();',
+                'assertions' => [
+                    '$a' => 'string',
+                    '$b' => 'int',
+                ],
+            ],
             'mixinMethodChargesWhatCallDoes' => [
                 'code' => '<?php
                     final class Connection {
@@ -1130,6 +1242,27 @@ final class MixinAnnotationTest extends TestCase
     public static function providerInvalidCodeParse(): iterable
     {
         return [
+            'staticMethodOfNoneOfSeveralMixins' => [
+                'code' => '<?php
+                    interface Mixin
+                    {
+                        public static function mix(): void;
+                    }
+
+                    interface OtherMixin
+                    {
+                        public static function otherMix(): void;
+                    }
+
+                    /**
+                     * @mixin Mixin
+                     * @mixin OtherMixin
+                     */
+                    class Bar {}
+
+                    Bar::missing();',
+                'error_message' => 'UndefinedMethod',
+            ],
             'mixinMethodChargesTheCallOfTheClassUsingTheMixin' => [
                 'code' => '<?php
                     final class Connection {

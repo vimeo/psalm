@@ -5,6 +5,8 @@ declare(strict_types=1);
 namespace Psalm\Tests;
 
 use Override;
+use Psalm\Context;
+use Psalm\IssueBuffer;
 use Psalm\Tests\Traits\InvalidCodeAnalysisTestTrait;
 use Psalm\Tests\Traits\ValidCodeAnalysisTestTrait;
 
@@ -15,6 +17,47 @@ final class InterfaceTest extends TestCase
     use InvalidCodeAnalysisTestTrait;
     use ValidCodeAnalysisTestTrait;
 
+    public function testEveryAccessOfAnUndeclaredPropertyOfAnInterfaceIsReported(): void
+    {
+        $this->project_analyzer->getConfig()->throw_exception = false;
+        $file_path = self::$src_dir_path . 'somefile.php';
+
+        $this->addFile(
+            $file_path,
+            '<?php
+                interface Shape {}
+
+                function readThenWrite(Shape $shape): void {
+                    echo $shape->name;
+                    $shape->name = "renamed";
+                }
+
+                function issetThenWrite(Shape $shape): void {
+                    if (isset($shape->name)) {
+                        $shape->name = "renamed";
+                    }
+                }
+
+                function negatedIssetThenWrite(Shape $shape): void {
+                    if (!isset($shape->name)) {
+                        $shape->name = "renamed";
+                    }
+                }',
+        );
+        $this->analyzeFile($file_path, new Context());
+
+        $lines = [];
+        foreach (IssueBuffer::getIssuesDataForFile($file_path) as $issue) {
+            if ($issue->type === 'NoInterfaceProperties') {
+                $lines[] = $issue->line_from;
+            }
+        }
+
+        // the read and the assignment after it, and the assignment where the isset() did not find the property;
+        // nothing in the function that checks with isset() first
+        $this->assertSame([5, 6, 17], $lines);
+    }
+
     /**
      * @psalm-pure
      */
@@ -22,6 +65,75 @@ final class InterfaceTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'assignmentToAPropertyOfAnInterfaceAfterIsset' => [
+                'code' => '<?php
+                    interface Shape {}
+
+                    function renameShape(Shape $shape): void {
+                        if (!isset($shape->name)) {
+                            return;
+                        }
+
+                        $shape->name = "renamed";
+                    }
+
+                    function renameShapeIfNamed(Shape $shape): void {
+                        if (isset($shape->name)) {
+                            $shape->name = "renamed";
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.2',
+            ],
+            'propertyOfAnInterfaceThatAnIntersectedInterfaceDeclaresIsRemembered' => [
+                'code' => '<?php
+                    final class Address {
+                        public function __construct(public string $email) {}
+                    }
+
+                    interface MailerConfig {}
+
+                    interface ProvidesDefaultSender {
+                        public ?Address $defaultSender { get; }
+                    }
+
+                    final class Mapper {
+                        public function __construct(private MailerConfig $mailerConfig) {}
+
+                        public function email(): string {
+                            if ($this->mailerConfig instanceof ProvidesDefaultSender
+                                && $this->mailerConfig->defaultSender
+                            ) {
+                                return $this->mailerConfig->defaultSender->email;
+                            }
+
+                            return "";
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.4',
+            ],
+            'issetOfAPropertyOfAnInterfaceIsNotAnInterfaceProperty' => [
+                'code' => '<?php
+                    interface Shape {}
+
+                    function check(Shape $shape): string {
+                        if (isset($shape->name)) {
+                            return "named";
+                        }
+
+                        return empty($shape->label) ? "none" : "labelled";
+                    }
+
+                    function fallback(Shape $shape): mixed {
+                        return $shape->name ?? null;
+                    }',
+                'assertions' => [],
+                'ignored_issues' => ['MixedReturnStatement', 'MixedInferredReturnType', 'RiskyTruthyFalsyComparison'],
+                'php_version' => '8.2',
+            ],
             'interfaceDeclaredInAConditional' => [
                 'code' => '<?php
                     if (PHP_VERSION_ID < 80000) {
@@ -1084,23 +1196,56 @@ final class InterfaceTest extends TestCase
             'classPropertyWinsOverInterfaceHookInIntersection' => [
                 'code' => '<?php
                     class Decl {
-                        public int $x = 1;
+                        public int $v = 1;
                     }
 
                     interface L {
-                        public int $x { get; set; }
+                        public string $v { get; }
                     }
 
-                    function classFirst(Decl&L $o): int {
-                        $o->x = 5;
-                        return $o->x;
+                    /** @return Decl&L */
+                    function classFirst(): Decl&L {
+                        throw new RuntimeException();
                     }
 
-                    function interfaceFirst(L&Decl $o): int {
-                        $o->x = 5;
-                        return $o->x;
-                    }',
-                'assertions' => [],
+                    /** @return L&Decl */
+                    function interfaceFirst(): L&Decl {
+                        throw new RuntimeException();
+                    }
+
+                    $v = classFirst()->v;
+                    $w = interfaceFirst()->v;',
+                'assertions' => [
+                    '$v===' => 'int',
+                    '$w===' => 'int',
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.4',
+            ],
+            'interfacePropertyWithObjectShapePropertyKeepsShapeType' => [
+                'code' => '<?php
+                    class C {}
+
+                    interface L {
+                        public mixed $x { get; }
+                    }
+
+                    /** @return L&C&object{x: int} */
+                    function interfaceFirst(): L&C {
+                        throw new RuntimeException();
+                    }
+
+                    /** @return C&L&object{x: int} */
+                    function classFirst(): C&L {
+                        throw new RuntimeException();
+                    }
+
+                    $x = interfaceFirst()->x;
+                    $y = classFirst()->x;',
+                'assertions' => [
+                    '$x===' => 'int',
+                    '$y===' => 'int',
+                ],
                 'ignored_issues' => [],
                 'php_version' => '8.4',
             ],
@@ -1114,6 +1259,19 @@ final class InterfaceTest extends TestCase
     public static function providerInvalidCodeParse(): iterable
     {
         return [
+            'assignmentToAPropertyOfAnInterfaceAfterAnIssetOfAnotherOne' => [
+                'code' => '<?php
+                    interface Shape {}
+
+                    function renameShape(Shape $shape): void {
+                        if (!isset($shape->name)) {
+                            return;
+                        }
+
+                        $shape->label = "renamed";
+                    }',
+                'error_message' => 'NoInterfaceProperties',
+            ],
             'interfaceExtendsUndefinedInterface' => [
                 'code' => '<?php
                     interface Foo extends Bar {}',
@@ -1279,6 +1437,97 @@ final class InterfaceTest extends TestCase
                         $o->x = true;
                     }',
                 'error_message' => 'UndefinedPropertyAssignment',
+                'error_levels' => [],
+                'php_version' => '8.4',
+            ],
+            'noInterfacePropertyFetchOnInterfaceAndFinalClassWithPlainClassIntersection' => [
+                'code' => '<?php
+                    class C {}
+                    final class Fin extends C {}
+                    interface L {
+                        public bool $x { get; set; }
+                    }
+
+                    function fooFoo(L&C&Fin $o): bool {
+                        return $o->x;
+                    }',
+                'error_message' => 'UndefinedPropertyFetch',
+                'error_levels' => [],
+                'php_version' => '8.4',
+            ],
+            'noInterfacePropertyAssignmentOnInterfaceAndFinalClassWithPlainClassIntersection' => [
+                'code' => '<?php
+                    class C {}
+                    final class Fin extends C {}
+                    interface L {
+                        public bool $x { get; set; }
+                    }
+
+                    function fooFoo(L&C&Fin $o): void {
+                        $o->x = true;
+                    }',
+                'error_message' => 'UndefinedPropertyAssignment',
+                'error_levels' => [],
+                'php_version' => '8.4',
+            ],
+            'noInterfacePropertyAssignmentOnClassWithFinalMemberAndInterfaceIntersection' => [
+                'code' => '<?php
+                    class C {}
+                    final class Fin extends C {}
+                    interface L {
+                        public bool $x { get; set; }
+                    }
+
+                    function fooFoo(C&Fin&L $o): void {
+                        $o->x = true;
+                    }',
+                'error_message' => 'UndefinedPropertyAssignment',
+                'error_levels' => [],
+                'php_version' => '8.4',
+            ],
+            'readonlyPrivateParentPropertyAssignedThroughChildAndInterfaceIntersection' => [
+                'code' => '<?php
+                    interface L {
+                        public int $x { get; set; }
+                    }
+
+                    class ParentClass {
+                        private readonly int $x;
+
+                        public function __construct() {
+                            $this->x = 1;
+                        }
+
+                        public function write(Child&L $o): void {
+                            $o->x = 2;
+                        }
+                    }
+
+                    class Child extends ParentClass {}',
+                'error_message' => 'InaccessibleProperty',
+                'error_levels' => [],
+                'php_version' => '8.4',
+            ],
+            'readonlyPrivateParentPropertyAssignedThroughInterfaceAndChildIntersection' => [
+                'code' => '<?php
+                    interface L {
+                        public int $x { get; set; }
+                    }
+
+                    class ParentClass {
+                        private readonly int $x;
+
+                        public function __construct() {
+                            $this->x = 1;
+                        }
+
+                        public function write(L&Child $o): void {
+                            $o->x = 2;
+                        }
+                    }
+
+                    class Child extends ParentClass {}',
+                'error_message' => 'InaccessibleProperty',
                 'error_levels' => [],
                 'php_version' => '8.4',
             ],

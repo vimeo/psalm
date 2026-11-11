@@ -165,6 +165,14 @@ final class InstancePropertyAssignmentAnalyzer
             );
         }
 
+        if ($stmt instanceof PropertyFetch) {
+            $assigned_var_id = ExpressionIdentifier::getExtendedVarId($stmt, $context->self, $statements_analyzer);
+
+            if ($assigned_var_id !== null) {
+                $context->forgetNarrowedShapeProperty($assigned_var_id);
+            }
+        }
+
         if (!$assigned_properties) {
             return;
         }
@@ -1247,6 +1255,17 @@ final class InstancePropertyAssignmentAnalyzer
         $class_exists = false;
         $interface_exists = false;
 
+        // a private property of the current class, assigned on an object of a child class
+        $is_recovered_by_self = static fn(string $class_name): bool => $context->self !== null
+            && $class_name !== $context->self
+            && $codebase->classlikes->classExtends($class_name, $context->self)
+            && $codebase->propertyExists(
+                $context->self . '::$' . $prop_name,
+                false,
+                $statements_analyzer,
+                $context,
+            );
+
         if (!$codebase->classExists($lhs_type_part->value, null, $context)) {
             if ($codebase->interfaceExists($lhs_type_part->value, null, $context)) {
                 $interface_exists = true;
@@ -1273,7 +1292,8 @@ final class InstancePropertyAssignmentAnalyzer
                                 ? isset($codebase->classlike_storage_provider->get($intersection_type->value)
                                     ->declaring_property_ids[$prop_name])
                                 : $hook_interface === null
-                                    || $codebase->classlike_storage_provider->get($intersection_type->value)->final)
+                                    || $codebase->classlike_storage_provider->get($intersection_type->value)->final
+                                    || $is_recovered_by_self($intersection_type->value))
                         ) {
                             $fq_class_name = $intersection_type->value;
                             $class_exists = true;
@@ -1285,6 +1305,15 @@ final class InstancePropertyAssignmentAnalyzer
                 if ($hook_interface !== null && !$class_exists) {
                     $fq_class_name = $hook_interface->value;
                 } elseif (!$class_exists) {
+                    // a property an isset() found is there: it is the object that has it, not the interface
+                    if ($var_id !== null
+                        && isset($context->vars_in_scope[$var_id])
+                        && !$context->vars_in_scope[$var_id]->isNull()
+                        && !$context->vars_in_scope[$var_id]->possibly_undefined
+                    ) {
+                        return null;
+                    }
+
                     if (IssueBuffer::accepts(
                         new NoInterfaceProperties(
                             'Interfaces cannot have properties',
@@ -1322,14 +1351,24 @@ final class InstancePropertyAssignmentAnalyzer
         } else {
             $class_exists = true;
 
+            $closed_by_final_class = false;
+
+            foreach ([$lhs_type_part, ...$intersection_types] as $type_part) {
+                $closed_by_final_class = $closed_by_final_class
+                    || ($type_part instanceof TNamedObject
+                        && $codebase->classExists($type_part->value)
+                        && $codebase->classlike_storage_provider->get($type_part->value)->final);
+            }
+
             if ($intersection_types !== []
-                && !$codebase->classlike_storage_provider->get($lhs_type_part->value)->final
+                && !$closed_by_final_class
                 && !$codebase->propertyExists(
                     $lhs_type_part->value . '::$' . $prop_name,
                     false,
                     $statements_analyzer,
                     $context,
                 )
+                && !$is_recovered_by_self($lhs_type_part->value)
             ) {
                 $hook_interface = AtomicPropertyFetchAnalyzer::findInterfaceWithPropertyHook(
                     $codebase,
