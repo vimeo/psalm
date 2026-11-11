@@ -27,6 +27,7 @@ use function array_values;
 use function count;
 use function in_array;
 use function spl_object_id;
+use function str_starts_with;
 
 /**
  * @internal
@@ -98,7 +99,7 @@ final class AndAnalyzer
 
         $left_assigned_var_ids = array_diff_key($left_context->assigned_var_ids, $pre_assigned_var_ids);
 
-        $left_referenced_var_ids = array_diff_key($left_referenced_var_ids, $left_assigned_var_ids);
+        $left_referenced_var_ids = self::removeAssignedVarIds($left_referenced_var_ids, $left_assigned_var_ids);
 
         $context_clauses = array_merge($left_context->clauses, $left_clauses);
 
@@ -181,6 +182,13 @@ final class AndAnalyzer
             $context->phantom_classes += $right_context->phantom_classes;
             $context->phantom_functions += $right_context->phantom_functions;
 
+            // where both sides hold, so does a file_exists() check of either, unless it was negated
+            $context->phantom_files = [
+                ...$context->phantom_files,
+                ...array_diff_key($left_context->phantom_files, $left_context->negated_phantom_files),
+                ...array_diff_key($right_context->phantom_files, $right_context->negated_phantom_files),
+            ];
+
             $context->vars_possibly_in_scope = array_merge(
                 $right_context->vars_possibly_in_scope,
                 $left_context->vars_possibly_in_scope,
@@ -231,6 +239,10 @@ final class AndAnalyzer
             $if_body_context->updateChecks($context);
             $if_body_context->phantom_classes += $context->phantom_classes;
             $if_body_context->phantom_functions += $context->phantom_functions;
+            $if_body_context->phantom_files = [
+                ...$if_body_context->phantom_files,
+                ...array_diff_key($context->phantom_files, $context->negated_phantom_files),
+            ];
         } else {
             $context->vars_in_scope = $left_context->vars_in_scope;
 
@@ -249,5 +261,30 @@ final class AndAnalyzer
         }
 
         return true;
+    }
+
+    /**
+     * Drops the assigned variables and the keys nested in them, which the left side already narrowed.
+     *
+     * @param array<string, bool> $referenced_var_ids
+     * @param array<string, int> $assigned_var_ids
+     * @return array<string, bool>
+     * @psalm-pure
+     */
+    private static function removeAssignedVarIds(array $referenced_var_ids, array $assigned_var_ids): array
+    {
+        foreach ($referenced_var_ids as $referenced_var_id => $_) {
+            foreach ($assigned_var_ids as $assigned_var_id => $__) {
+                if ($referenced_var_id === $assigned_var_id
+                    || str_starts_with($referenced_var_id, $assigned_var_id . '[')
+                    || str_starts_with($referenced_var_id, $assigned_var_id . '->')
+                ) {
+                    unset($referenced_var_ids[$referenced_var_id]);
+                    break;
+                }
+            }
+        }
+
+        return $referenced_var_ids;
     }
 }
