@@ -5,8 +5,11 @@ declare(strict_types=1);
 namespace Psalm\Tests;
 
 use Override;
+use PHPUnit\Framework\Attributes\DataProvider;
 use Psalm\Context;
 use Psalm\Exception\CodeException;
+use Psalm\Internal\Analyzer\MethodComparator;
+use Psalm\Internal\Codebase\InternalCallMapHandler;
 use Psalm\Tests\Traits\InvalidCodeAnalysisTestTrait;
 use Psalm\Tests\Traits\InvalidCodeAnalysisWithIssuesTestTrait;
 use Psalm\Tests\Traits\ValidCodeAnalysisTestTrait;
@@ -18,6 +21,102 @@ final class MethodSignatureTest extends TestCase
     use InvalidCodeAnalysisWithIssuesTestTrait;
     use ValidCodeAnalysisTestTrait;
     use InvalidCodeAnalysisTestTrait;
+
+    public function testStubNativeReturnWithoutGeneratedMetadata(): void
+    {
+        $this->project_analyzer->setPhpVersion('8.5', 'tests');
+        self::assertNull(InternalCallMapHandler::getSignatureReturnType('Ds\\Collection::isEmpty'));
+        $this->addFile(
+            'somefile.php',
+            '<?php
+                use Ds\\Collection;
+
+                final class Bag {
+                    /** @psalm-mutation-free */
+                    public function isEmpty(): int {
+                        return 1;
+                    }
+                }',
+        );
+        $this->analyzeFile('somefile.php', new Context());
+        $codebase = $this->project_analyzer->getCodebase();
+        $implementer = $codebase->classlike_storage_provider->get('Bag');
+        $guide = $codebase->classlike_storage_provider->get('Ds\\Collection');
+        $method = $implementer->methods['isempty'];
+        self::assertNotNull($method->location);
+
+        $this->expectException(CodeException::class);
+        $this->expectExceptionMessage('MethodSignatureMismatch');
+        MethodComparator::compare(
+            $codebase,
+            null,
+            $implementer,
+            $guide,
+            $method,
+            $guide->methods['isempty'],
+            'Bag',
+            $method->visibility,
+            $method->location,
+            [],
+        );
+    }
+
+    public function testCallmapOnlyNativeReturnRequiresSignature(): void
+    {
+        $this->project_analyzer->setPhpVersion('8.1', 'tests');
+        // Declare the API without its native type, as extension stubs need not duplicate callmap metadata.
+        $this->addStubFile(
+            'mysqli-result.phpstub',
+            '<?php
+                /** @template TValue */
+                class mysqli_result {
+                    /** @return false|float|int|null|string */
+                    public function fetch_column(int $column = 0) {}
+                }',
+        );
+        $this->addFile(
+            'somefile.php',
+            '<?php
+                /** @extends mysqli_result<array<string, mixed>> */
+                abstract class Result extends mysqli_result {
+                    /** @return int */
+                    public function fetch_column(int $column = 0) {
+                        return 1;
+                    }
+                }',
+        );
+
+        $this->expectException(CodeException::class);
+        $this->expectExceptionMessage('MethodSignatureMustProvideReturnType');
+        $this->analyzeFile('somefile.php', new Context());
+    }
+
+    /**
+     * @return iterable<string, array{string}>
+     * @psalm-pure
+     */
+    public static function providerLegacyTentativeReturnVersions(): iterable
+    {
+        return ['php74' => ['7.4'], 'php80' => ['8.0']];
+    }
+
+    #[DataProvider('providerLegacyTentativeReturnVersions')]
+    public function testLegacyVersionDoesNotRequireTentativeReturnSignature(string $php_version): void
+    {
+        $this->project_analyzer->setPhpVersion($php_version, 'tests');
+        // The regression introduced a level-8 native-signature error, independently of PHPDoc compatibility.
+        $this->project_analyzer->getConfig()->level = 8;
+        $this->addFile(
+            'somefile.php',
+            '<?php
+                /** @extends LimitIterator<int, string, Iterator<int, string>> */
+                final class Window extends LimitIterator {
+                    /** @psalm-capabilities read-props */
+                    public function getPosition() { return 0; }
+                }',
+        );
+        $this->analyzeFile('somefile.php', new Context());
+    }
 
     public function testExtendSoapClientWithDocblockTypes(): void
     {
@@ -301,6 +400,72 @@ final class MethodSignatureTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'variadicParameterTakesTheOmittedParameters' => [
+                'code' => '<?php
+                    interface I {
+                        public function a(int $x, int $y): void;
+                        public function b(int $x = 1): void;
+                    }
+
+                    final class V implements I {
+                        public function a(int ...$x): void {}
+                        public function b(int ...$x): void {}
+                    }
+
+                    abstract class P {
+                        abstract public function a(int $x, int $y): void;
+                    }
+
+                    final class Q extends P {
+                        public function a(int ...$x): void {}
+                    }',
+            ],
+            'abstractConstructorCompatibleChild' => [
+                'code' => '<?php
+                    abstract class A {
+                        abstract public function __construct(int $a);
+                    }
+                    class B extends A {
+                        public function __construct(int $a, int $b = 0) {}
+                    }
+                    new B(1);',
+            ],
+            'nonAbstractConstructorMayDiffer' => [
+                'code' => '<?php
+                    abstract class A {
+                        public function __construct(int $a) {}
+                    }
+                    class B extends A {
+                        public function __construct(string $a) {}
+                    }
+                    new B("a");',
+            ],
+            'staticReturnOfAnInheritedMethodSatisfiesAnInterface' => [
+                'code' => '<?php
+                    interface ModelInterface {
+                        public function setId(?string $value): static;
+                    }
+
+                    abstract class BaseModel {
+                        public function setId(?string $value): static {
+                            return $this;
+                        }
+                    }
+
+                    class ConcreteModel extends BaseModel implements ModelInterface {}
+
+                    interface SelfInterface {
+                        public function make(): self;
+                    }
+
+                    class Maker implements SelfInterface {
+                        public function make(): static {
+                            return $this;
+                        }
+                    }
+
+                    class ConcreteMaker extends Maker implements SelfInterface {}',
+            ],
             'overrideDateTimeDiffWithTheNativeParameterName' => [
                 'code' => '<?php
                     class Date extends DateTime {
@@ -773,6 +938,150 @@ final class MethodSignatureTest extends TestCase
                         public function getTraceAsString(): string;
                     }',
             ],
+            'implicitStringableWithoutReturnSignature' => [
+                'code' => '<?php
+                    final class Text {
+                        public function __toString() {
+                            return "text";
+                        }
+                    }
+                    $text = (new Text())->__toString();',
+                'assertions' => ['$text' => 'string'],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
+            'untypedAmqpValueDoesNotRequireNativeReturnType' => [
+                'code' => '<?php
+                    final class Value implements AMQPValue {
+                        /** @return string */
+                        public function toAmqpValue() {
+                            return "value";
+                        }
+                    }
+                    $value = (new Value())->toAmqpValue();',
+                'assertions' => ['$value' => 'string'],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
+            'tentativeReturnTypeWillChangeRemainsSupported' => [
+                'code' => '<?php
+                    final class Value implements JsonSerializable {
+                        /** @return int */
+                        #[ReturnTypeWillChange]
+                        public function jsonSerialize() {
+                            return 1;
+                        }
+                    }
+                    $value = (new Value())->jsonSerialize();',
+                'assertions' => ['$value' => 'int'],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
+            'tentativeExplicitReturnTypeWillChangeIn81' => [
+                'code' => '<?php
+                    final class Date extends DateTimeImmutable {
+                        /** @psalm-capabilities read-props */
+                        #[ReturnTypeWillChange]
+                        public function modify(string $modifier): int { return 1; }
+                    }
+                    $value = (new Date())->modify("+1 day");',
+                'assertions' => ['$value' => 'int'],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
+            'tentativeExplicitReturnTypeWillChangeIn82' => [
+                'code' => '<?php
+                    final class Date extends DateTimeImmutable {
+                        /** @psalm-capabilities read-props */
+                        #[ReturnTypeWillChange]
+                        public function modify(string $modifier): int { return 1; }
+                    }
+                    $value = (new Date())->modify("+1 day");',
+                'assertions' => ['$value' => 'int'],
+                'ignored_issues' => [],
+                'php_version' => '8.2',
+            ],
+            'untypedJsonSerializableBeforeTentativeReturns' => [
+                'code' => '<?php
+                    final class Value implements JsonSerializable {
+                        /** @return int */
+                        public function jsonSerialize() {
+                            return 1;
+                        }
+                    }
+                    $value = (new Value())->jsonSerialize();',
+                'assertions' => ['$value' => 'int'],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'explicitStringableWithoutReturnSignature' => [
+                'code' => '<?php
+                    final class Text implements Stringable {
+                        public function __toString() {
+                            return "text";
+                        }
+                    }
+                    $text = (new Text())->__toString();',
+                'assertions' => ['$text' => 'string'],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
+            'nativeToStringWithoutReturnSignatureIn80' => [
+                'code' => '<?php
+                    final class E extends Exception {
+                        public function __toString() { return "exception"; }
+                    }
+                    final class Failure extends Error {
+                        public function __toString() { return "error"; }
+                    }
+                    /** @extends ReflectionClass<object> */
+                    final class Reflection extends ReflectionClass {
+                        public function __toString() { return "reflection"; }
+                    }
+                    final class ReflectionInterface implements Reflector {
+                        public function __toString() { return "reflector"; }
+                    }
+                    $exception = (new E())->__toString();
+                    $error = (new Failure())->__toString();
+                    $reflection = (new Reflection(stdClass::class))->__toString();
+                    $reflector = (new ReflectionInterface())->__toString();',
+                'assertions' => [
+                    '$exception' => 'string',
+                    '$error' => 'string',
+                    '$reflection' => 'string',
+                    '$reflector' => 'string',
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'nativeToStringWithoutReturnSignatureIn84' => [
+                'code' => '<?php
+                    final class E extends Exception {
+                        public function __toString() { return "exception"; }
+                    }
+                    final class Failure extends Error {
+                        public function __toString() { return "error"; }
+                    }
+                    /** @extends ReflectionClass<object> */
+                    final class Reflection extends ReflectionClass {
+                        public function __toString() { return "reflection"; }
+                    }
+                    final class ReflectionInterface implements Reflector {
+                        public function __toString() { return "reflector"; }
+                    }
+                    $exception = (new E())->__toString();
+                    $error = (new Failure())->__toString();
+                    $reflection = (new Reflection(stdClass::class))->__toString();
+                    $reflector = (new ReflectionInterface())->__toString();',
+                'assertions' => [
+                    '$exception' => 'string',
+                    '$error' => 'string',
+                    '$reflection' => 'string',
+                    '$reflector' => 'string',
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.4',
+            ],
             'allowExceptionToStringWithNoType' => [
                 'code' => '<?php
                     class E extends Exception {
@@ -1127,6 +1436,29 @@ final class MethodSignatureTest extends TestCase
                 'ignored_issues' => [],
                 'php_version' => '8.5',
             ],
+            'nativeToStringFromTraits' => [
+                'code' => '<?php
+                    trait StringableTrait {
+                        public function __TOSTRING() { return "exception"; }
+                    }
+                    trait Renderer {
+                        public function render(): string { return "error"; }
+                    }
+                    final class E extends Exception {
+                        use StringableTrait;
+                    }
+                    final class Failure extends Error {
+                        use Renderer { render as __toString; }
+                    }
+                    $exception = (new E())->__toString();
+                    $error = (new Failure())->__toString();',
+                'assertions' => [
+                    '$exception' => 'string',
+                    '$error' => 'string',
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
         ];
     }
 
@@ -1137,6 +1469,138 @@ final class MethodSignatureTest extends TestCase
     public static function providerInvalidCodeParse(): iterable
     {
         return [
+            'variadicParameterOfAnotherTypeThanTheOmittedParameter' => [
+                'code' => '<?php
+                    interface I {
+                        public function f(int $x, string $y): void;
+                    }
+
+                    final class C implements I {
+                        public function f(int ...$x): void {}
+                    }',
+                'error_message' => 'MethodSignatureMismatch',
+            ],
+            'variadicParameterIsNotPassedByReferenceLikeTheOmittedParameter' => [
+                'code' => '<?php
+                    interface I {
+                        public function f(int $x, int &$y): void;
+                    }
+
+                    final class C implements I {
+                        public function f(int ...$x): void {}
+                    }',
+                'error_message' => 'MethodSignatureMismatch',
+            ],
+            'variadicParameterPassedByReferenceWhereTheOmittedParameterIsNot' => [
+                'code' => '<?php
+                    interface I {
+                        public function f(int $x, int $y): void;
+                    }
+
+                    final class C implements I {
+                        public function f(int &...$x): void {}
+                    }',
+                'error_message' => 'MethodSignatureMismatch',
+            ],
+            'fewerArgumentsThanTheOptionalOnesOfAnInterface' => [
+                'code' => '<?php
+                    interface I {
+                        public function fooFoo(int $a, int $b = 1): void;
+                    }
+
+                    final class A implements I {
+                        public function fooFoo(int $a): void {}
+                    }',
+                'error_message' => 'Method A::fooFoo has fewer parameters than parent method I::fooFoo',
+            ],
+            'fewerArgumentsThanTheOptionalOnesOfAnAbstractTraitMethod' => [
+                'code' => '<?php
+                    trait T {
+                        abstract public function fooFoo(int $a, int $b = 1): void;
+                    }
+
+                    final class A {
+                        use T;
+
+                        public function fooFoo(int $a): void {}
+                    }',
+                'error_message' => 'Method A::fooFoo has fewer parameters than parent method T::fooFoo',
+            ],
+            'returnTypeMessageOfAMethodWithOneKeepsItsType' => [
+                'code' => '<?php
+                    abstract class A {
+                        abstract public function run(): string;
+                    }
+
+                    class B extends A {
+                        public function run(): int {
+                            return 1;
+                        }
+                    }',
+                'error_message' => "MethodSignatureMismatch - src" . DIRECTORY_SEPARATOR . "somefile.php:7:25 - Method B::run"
+                    . " with return type 'int' is different to return type 'string' of inherited method A::run",
+                'error_levels' => [],
+                'php_version' => '8.1',
+            ],
+            'returnTypeMessageOfAMethodWithoutOneIsMixed' => [
+                'code' => '<?php
+                    abstract class A {
+                        abstract public function run(): array|false;
+                    }
+
+                    class B extends A {
+                        public function run() {
+                            return false;
+                        }
+                    }',
+                'error_message' => "MethodSignatureMismatch - src" . DIRECTORY_SEPARATOR . "somefile.php:7:25 - Method B::run"
+                    . " with return type 'mixed' is different to return type",
+                'error_levels' => [],
+                'php_version' => '8.1',
+            ],
+            'staticReturnOfAnInheritedMethodDoesNotSatisfyAnUnrelatedInterface' => [
+                'code' => '<?php
+                    interface OtherInterface {
+                        public function make(): Other;
+                    }
+
+                    class Other {}
+
+                    class Maker {
+                        public function make(): static {
+                            return $this;
+                        }
+                    }
+
+                    class ConcreteMaker extends Maker implements OtherInterface {}',
+                'error_message' => 'MethodSignatureMismatch',
+            ],
+            'returnTypeWillChangeDoesNotSuppressNativeContract' => [
+                'code' => '<?php
+                    final class Connection extends mysqli {
+                        #[ReturnTypeWillChange]
+                        public function execute_query(string $query, ?array $params = null): int {
+                            return 1;
+                        }
+                    }',
+                'error_message' => 'MethodSignatureMismatch',
+                'error_levels' => [],
+                'php_version' => '8.5',
+            ],
+            'returnTypeWillChangeDoesNotSuppressMissingNativeContract' => [
+                'code' => '<?php
+                    trait Renderer {
+                        /** @return string */
+                        #[ReturnTypeWillChange]
+                        public function render() { return "exception"; }
+                    }
+                    final class E extends Exception {
+                        use Renderer { render as __toString; }
+                    }',
+                'error_message' => 'MethodSignatureMustProvideReturnType',
+                'error_levels' => [],
+                'php_version' => '8.1',
+            ],
             'oneParam' => [
                 'code' => '<?php
                     interface I {
@@ -1734,6 +2198,37 @@ final class MethodSignatureTest extends TestCase
                     }',
                 'error_message' => 'ConstructorSignatureMismatch',
             ],
+            'abstractConstructorParamTypeMismatch' => [
+                'code' => '<?php
+                    abstract class A {
+                        abstract public function __construct(int $a);
+                    }
+                    class B extends A {
+                        public function __construct(string $a) {}
+                    }',
+                'error_message' => 'ConstructorSignatureMismatch',
+            ],
+            'abstractConstructorMoreRequiredParams' => [
+                'code' => '<?php
+                    abstract class A {
+                        abstract public function __construct(int $a);
+                    }
+                    class B extends A {
+                        public function __construct(int $a, int $b) {}
+                    }',
+                'error_message' => 'ConstructorSignatureMismatch',
+            ],
+            'abstractConstructorInGrandparent' => [
+                'code' => '<?php
+                    abstract class A {
+                        abstract public function __construct(int $a);
+                    }
+                    abstract class B extends A {}
+                    class C extends B {
+                        public function __construct(string $a) {}
+                    }',
+                'error_message' => 'ConstructorSignatureMismatch',
+            ],
             'inconsistentConstructorImplicitParentConstructor' => [
                 'code' => '<?php
                     /**
@@ -1791,6 +2286,20 @@ final class MethodSignatureTest extends TestCase
                 'error_levels' => [],
                 'php_version' => '8.0',
             ],
+            'stringableChildInterfaceStillRequiresDeclaredReturnType' => [
+                'code' => '<?php
+                    interface TextInterface extends Stringable {
+                        public function __toString(): string;
+                    }
+                    final class Text implements TextInterface {
+                        public function __toString() {
+                            return "text";
+                        }
+                    }',
+                'error_message' => 'MethodSignatureMismatch',
+                'error_levels' => [],
+                'php_version' => '8.1',
+            ],
             'noTypehintInNativeDescendant' => [
                 'code' => '<?php
                     class a implements JsonSerializable {
@@ -1800,6 +2309,59 @@ final class MethodSignatureTest extends TestCase
                     }
                 ',
                 'error_message' => 'MethodSignatureMustProvideReturnType',
+                'error_levels' => [],
+                'php_version' => '8.1',
+            ],
+            'nativeToStringRejectsIncompatibleExplicitReturnType' => [
+                'code' => '<?php
+                    final class E extends Exception {
+                        public function __toString(): int { return 1; }
+                    }',
+                'error_message' => 'MethodSignatureMismatch',
+                'error_levels' => [],
+                'php_version' => '8.0',
+            ],
+            'nativeMysqliSignatureIn82' => [
+                'code' => '<?php
+                    final class Connection extends mysqli {
+                        public function execute_query(string $query, ?array $params = null): int {
+                            return 1;
+                        }
+                    }',
+                'error_message' => 'MethodSignatureMismatch',
+                'error_levels' => [],
+                'php_version' => '8.2',
+            ],
+            'nativeMysqliSignatureIn85' => [
+                'code' => '<?php
+                    final class Connection extends mysqli {
+                        public function execute_query(string $query, ?array $params = null): int {
+                            return 1;
+                        }
+                    }',
+                'error_message' => 'MethodSignatureMismatch',
+                'error_levels' => [],
+                'php_version' => '8.5',
+            ],
+            'nativeMysqliRequiresReturnSignature' => [
+                'code' => '<?php
+                    final class Connection extends mysqli {
+                        public function execute_query(string $query, ?array $params = null) {
+                            return false;
+                        }
+                    }',
+                'error_message' => 'MethodSignatureMustProvideReturnType',
+                'error_levels' => [],
+                'php_version' => '8.2',
+            ],
+            'nativeCallmapSignatureRejectsIncompatibleReturnType' => [
+                'code' => '<?php
+                    final class Counter implements Countable {
+                        public function count(): string {
+                            return "one";
+                        }
+                    }',
+                'error_message' => 'MethodSignatureMismatch',
                 'error_levels' => [],
                 'php_version' => '8.1',
             ],
@@ -1989,6 +2551,19 @@ final class MethodSignatureTest extends TestCase
                 'error_message' => 'MethodSignatureMismatch',
                 'error_levels' => [],
                 'php_version' => '8.4',
+            ],
+            'nativeToStringTraitAliasRequiresReturnSignature' => [
+                'code' => '<?php
+                    trait Renderer {
+                        /** @return string */
+                        public function render() { return "exception"; }
+                    }
+                    final class E extends Exception {
+                        use Renderer { render as __toString; }
+                    }',
+                'error_message' => 'MethodSignatureMustProvideReturnType',
+                'error_levels' => [],
+                'php_version' => '8.1',
             ],
         ];
     }

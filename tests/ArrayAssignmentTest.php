@@ -126,6 +126,138 @@ final class ArrayAssignmentTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'coalesceAssignmentOnTwoOptionalKeysOfAnArrayWithAShapeIntersection' => [
+                'code' => '<?php
+                    /** @var array{name?: string, age?: int}&array $data */
+                    $data = [];
+                    $data["name"] ??= "noname";
+                    $data["age"] ??= 90;',
+                'assertions' => [
+                    '$data' => 'array{age: int, name: string, ...<array-key, mixed>}',
+                ],
+            ],
+            'arrayKeyOfAnIgnoredNullableReturnIsNotNullable' => [
+                'code' => '<?php
+                    class TestModel
+                    {
+                        /** @psalm-ignore-nullable-return */
+                        public function getName(): ?string
+                        {
+                            return mt_rand(1, 100) > 1 ? "foo" : null;
+                        }
+                    }
+
+                    $model = new TestModel();
+                    $a = [$model->getName() => ["bar" => "baz"]];
+                    $b = [$model->getName() => 1, "x" => 2];',
+                'assertions' => [
+                    '$a===' => 'non-empty-array<string, array{bar: \'baz\'}>',
+                    '$b===' => 'array{x: 2, ...<string, 1>}',
+                ],
+            ],
+            'keyedArrayWithKeysThatAreTypeOperators' => [
+                'code' => '<?php
+                    /**
+                     * @param array{as?: string, of: int, is: bool} $shape
+                     * @return array{as: string, of: int}
+                     */
+                    function read(array $shape): array {
+                        return [
+                            "as" => $shape["as"] ?? "x",
+                            "of" => $shape["of"],
+                        ];
+                    }
+
+                    /** @var array{as: int} $check */
+                    $check = ["as" => 1];
+                    $value = $check["as"];',
+                'assertions' => ['$value===' => 'int'],
+            ],
+            'typeOperatorsAfterAShapeKeyStayOperators' => [
+                'code' => '<?php
+                    /**
+                     * @template T as array{as: int}
+                     * @param T $shape
+                     * @return (T is array{as: 1} ? string : int)
+                     */
+                    function pick(array $shape): string|int {
+                        return $shape["as"] === 1 ? "one" : 2;
+                    }
+
+                    $result = pick(["as" => 2]);',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'mixedOrStringOffsetAssignedToAnEmptyArrayMakesAnArrayKey' => [
+                'code' => '<?php
+                    /** @var list<mixed> $items */
+                    $items = [];
+                    $final = [];
+                    foreach ($items as $value) {
+                        if (!isset($value["bar"]) || !is_string($value["bar"])) {
+                            continue;
+                        }
+
+                        $negative = $value["bar"];
+                        $final[$negative] = "abc";
+                    }',
+                'assertions' => [
+                    '$final' => 'array<array-key, string>',
+                ],
+                'ignored_issues' => [
+                    'MixedArgument', 'MixedArrayAccess', 'MixedArrayOffset', 'MixedAssignment', 'MixedOperand',
+                ],
+            ],
+            'mixedOrStringOffsetAssignedToAShapeMakesAnArrayKey' => [
+                'code' => '<?php
+                    /** @var list<mixed> $items */
+                    $items = [];
+                    $keyed = ["x" => 1];
+                    foreach ($items as $value) {
+                        if (!isset($value["bar"]) || !is_string($value["bar"])) {
+                            continue;
+                        }
+
+                        $negative = $value["bar"];
+                        $keyed[$negative] = 2;
+                    }',
+                'assertions' => [
+                    '$keyed' => 'non-empty-array<array-key, int>',
+                ],
+                'ignored_issues' => [
+                    'MixedArgument', 'MixedArrayAccess', 'MixedArrayOffset', 'MixedAssignment', 'MixedOperand',
+                ],
+            ],
+            'templateKeyInferredFromAMixedOrStringArgumentMakesAnArrayKey' => [
+                'code' => '<?php
+                    /**
+                     * @template K of array-key
+                     * @param K $k
+                     * @return array<K, int>
+                     */
+                    function mk($k): array {
+                        return [$k => 1];
+                    }
+
+                    /** @var list<mixed> $items */
+                    $items = [];
+                    $made = [];
+                    foreach ($items as $value) {
+                        if (!isset($value["bar"]) || !is_string($value["bar"])) {
+                            continue;
+                        }
+
+                        $negative = $value["bar"];
+                        $made = mk($negative);
+                    }',
+                'assertions' => [
+                    '$made' => 'array<array-key, int>',
+                ],
+                'ignored_issues' => [
+                    'MixedArgument', 'MixedArrayAccess', 'MixedArrayOffset', 'MixedAssignment', 'MixedOperand',
+                ],
+            ],
             'floatLiteralKeysOutsideTheRangeOfAnIntAreInts' => [
                 'code' => '<?php
                     $big = [1.0e30 => 1];
@@ -2228,6 +2360,50 @@ final class ArrayAssignmentTest extends TestCase
                     ];
                 ',
             ],
+            'assignToNestedKeyOfListWithForeachKey' => [
+                'code' => '<?php
+                    /**
+                     * @param list<array{name: string}> $list
+                     * @return list<array{name: string}>
+                     */
+                    function setNames(array $list): array {
+                        foreach ($list as $index => $value) {
+                            if ($value["name"] === "bar") {
+                                $list[$index]["name"] = "baz";
+                            }
+                        }
+
+                        return $list;
+                    }
+
+                    /**
+                     * @param list<list<int>> $list
+                     * @return list<list<int>>
+                     */
+                    function appendToItems(array $list): array {
+                        foreach ($list as $index => $value) {
+                            $list[$index][] = 1;
+                        }
+
+                        return $list;
+                    }',
+            ],
+            'assignWithStaticClassOffsetKeepsTheKeyTypeOfTheProperty' => [
+                'code' => '<?php
+                    /**
+                     * @psalm-consistent-constructor
+                     */
+                    abstract class Singleton {
+                        /** @var array<class-string<static>, static> */
+                        private static array $instances = [];
+
+                        protected function __construct() {}
+
+                        public static function getInstance(): static {
+                            return self::$instances[static::class] ??= new static();
+                        }
+                    }',
+            ],
             'assignToListWithForeachKey' => [
                 'code' => '<?php
                     /**
@@ -2615,6 +2791,63 @@ final class ArrayAssignmentTest extends TestCase
                     $x = ["15" => "a", 17 => "b"];
                     foo($x);',
             ],
+            'nestedAppendToExistingOffsetOfListKeepsList' => [
+                'code' => '<?php
+                    /**
+                     * @param list<list<int>> $l
+                     * @return list<list<int>>
+                     */
+                    function foo(array $l, int $i): array {
+                        if (isset($l[$i])) {
+                            $l[$i][] = 1;
+                        }
+
+                        return $l;
+                    }',
+            ],
+            'nestedAppendToExistingOffsetOfPropertyListKeepsList' => [
+                'code' => '<?php
+                    final class Foo
+                    {
+                        /** @var list<array> */
+                        public array $list = [];
+
+                        public function modifyItem(int $i): void
+                        {
+                            if (!array_key_exists($i, $this->list)) {
+                                throw new InvalidArgumentException("unknown key");
+                            }
+
+                            $this->list[$i][] = [];
+                        }
+                    }',
+            ],
+            'twoLevelNestedAppendToExistingOffsetsKeepsLists' => [
+                'code' => '<?php
+                    /**
+                     * @param list<list<list<int>>> $l
+                     * @return list<list<list<int>>>
+                     */
+                    function foo(array $l, int $i, int $j): array {
+                        if (isset($l[$i][$j])) {
+                            $l[$i][$j][] = 1;
+                        }
+
+                        return $l;
+                    }',
+            ],
+            'nestedAppendToUnknownOffsetOfListIsNotAList' => [
+                'code' => '<?php
+                    /**
+                     * @param list<list<int>> $l
+                     * @return non-empty-array<int, list<int>>
+                     */
+                    function foo(array $l, int $i): array {
+                        $l[$i][] = 1;
+
+                        return $l;
+                    }',
+            ],
         ];
     }
 
@@ -2625,6 +2858,50 @@ final class ArrayAssignmentTest extends TestCase
     public static function providerInvalidCodeParse(): iterable
     {
         return [
+            'assignToNestedKeyOfListWithUnrelatedKeyIsNotAList' => [
+                'code' => '<?php
+                    /**
+                     * @param list<array{name: string}> $list
+                     * @return list<array{name: string}>
+                     */
+                    function setName(array $list, int $key): array {
+                        $list[$key]["name"] = "baz";
+
+                        return $list;
+                    }',
+                'error_message' => 'LessSpecificReturnStatement',
+            ],
+            'arrayKeyOfAnIgnoredNullableReturnDoesNotHideAnotherNullableKey' => [
+                'code' => '<?php
+                    class TestModel
+                    {
+                        /** @psalm-ignore-nullable-return */
+                        public function getName(): ?string
+                        {
+                            return mt_rand(1, 100) > 1 ? "foo" : null;
+                        }
+                    }
+
+                    function f(TestModel $model, ?string $key): array
+                    {
+                        return [$model->getName() => 1, $key => 2];
+                    }',
+                'error_message' => 'InvalidArrayOffset',
+            ],
+            'arrayKeyOfANullableReturnIsInvalid' => [
+                'code' => '<?php
+                    class TestModel
+                    {
+                        public function getName(): ?string
+                        {
+                            return mt_rand(1, 100) > 1 ? "foo" : null;
+                        }
+                    }
+
+                    $model = new TestModel();
+                    $a = [$model->getName() => 1];',
+                'error_message' => 'InvalidArrayOffset',
+            ],
             'templateBoundedByDecimalIntStringIsNotItsKeyType' => [
                 'code' => '<?php
                     /**
