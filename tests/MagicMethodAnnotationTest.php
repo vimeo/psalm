@@ -260,6 +260,27 @@ final class MagicMethodAnnotationTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'methodNamedLikeATypeKeyword' => [
+                'code' => '<?php
+                    /**
+                     * @method static string callable(int $a)
+                     * @method int Closure()
+                     * @method float pure(string $s): float
+                     */
+                    class Foo {
+                        public function __call(string $name, array $arguments) { return null; }
+                        public static function __callStatic(string $name, array $arguments) { return null; }
+                    }
+
+                    $a = Foo::callable(1);
+                    $b = (new Foo)->Closure();
+                    $c = (new Foo)->pure("x");',
+                'assertions' => [
+                    '$a===' => 'string',
+                    '$b===' => 'int',
+                    '$c===' => 'float',
+                ],
+            ],
             'trailingReturnTypes' => [
                 'code' => '<?php
                     class ParentClass {
@@ -1286,6 +1307,169 @@ final class MagicMethodAnnotationTest extends TestCase
                     '$d' => 'SingleQuoteChild',
                 ],
             ],
+            'conditionalReturnTypeInMethodTag' => [
+                'code' => '<?php
+                    /**
+                     * @method ($asText is true ? string : list<string>) words(int $nb = 3, bool $asText = false)
+                     * @method static ($asText is true ? string : list<string>) staticWords(bool $asText = false)
+                     */
+                    class Gen {
+                        public function __call(string $name, array $arguments) { return null; }
+                        public static function __callStatic(string $name, array $arguments) { return null; }
+                    }
+
+                    $g = new Gen();
+                    $a = $g->words(3, false);
+                    $b = $g->words(3, true);
+                    $c = Gen::staticWords(false);
+                    $d = Gen::staticWords(true);
+                    $e = $g->words();
+                    $f = $g->words(asText: true);
+                    $h = Gen::staticWords();',
+                'assertions' => [
+                    '$a' => 'list<string>',
+                    '$b' => 'string',
+                    '$c' => 'list<string>',
+                    '$d' => 'string',
+                    '$e' => 'list<string>',
+                    '$f' => 'string',
+                    '$h' => 'list<string>',
+                ],
+            ],
+            'conditionalReturnTypeWithClassTemplateInInheritedMethodTag' => [
+                'code' => '<?php
+                    /**
+                     * @template T
+                     * @method ($flag is true ? T : null) get(bool $flag)
+                     * @method static ($flag is true ? T : null) staticGet(bool $flag)
+                     * @method static list<T> staticList()
+                     */
+                    class Box {
+                        public function __call(string $name, array $arguments) { return null; }
+                        public static function __callStatic(string $name, array $arguments) { return null; }
+                    }
+
+                    /** @extends Box<int> */
+                    final class IntBox extends Box {
+                        /** @return array{int, null} */
+                        public function fromInside(): array {
+                            return [static::staticGet(true), self::staticGet(false)];
+                        }
+                    }
+
+                    $a = (new IntBox())->get(true);
+                    $b = IntBox::staticGet(true);
+                    $c = IntBox::staticGet(false);
+                    $d = IntBox::staticList();',
+                'assertions' => [
+                    '$a' => 'int',
+                    '$b' => 'int',
+                    '$c' => 'null',
+                    '$d' => 'list<int>',
+                ],
+            ],
+            'staticPseudoMethodAnalyzesNarrowingArgumentOnce' => [
+                'code' => '<?php
+                    /** @method static int foo(DateTimeImmutable $x) */
+                    final class StatPseudo
+                    {
+                        public static function __callStatic(string $name, array $arguments): mixed
+                        {
+                            return 1;
+                        }
+                    }
+
+                    function f(?DateTimeImmutable $d): void
+                    {
+                        StatPseudo::foo($d ?? throw new LogicException());
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'staticCallOnUnionOfMagicAndRealClassAnalyzesNarrowingArgumentOnce' => [
+                'code' => '<?php
+                    final class Real
+                    {
+                        public static function foo(?DateTimeImmutable $d): void {}
+                    }
+
+                    /** @psalm-no-seal-methods */
+                    final class Magic
+                    {
+                        public static function __callStatic(string $name, array $arguments): mixed
+                        {
+                            return 1;
+                        }
+                    }
+
+                    function f(Magic|Real $o, ?DateTimeImmutable $d): void
+                    {
+                        $o::foo($d ?? throw new LogicException());
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'methodTypesWithSpacesAroundPipeAndAmpersand' => [
+                'code' => '<?php
+                    final class A {}
+                    interface I1 {}
+                    interface I2 {}
+
+                    class ParentClass {
+                        public function __call(string $name, array $args) {}
+                        public static function __callStatic(string $name, array $args) {}
+                    }
+
+                    /**
+                     * @method static A | null a()
+                     * @method static A |null b()
+                     * @method static A  |  null c()
+                     * @method A |null d()
+                     * @method static e(): A |null
+                     * @method f(): A  |  null
+                     * @method A
+                     *     |null g()
+                     * @method I1 & I2 h()
+                     * @method I1 &I2 i()
+                     * @method void j(A |null $x, A | null $y)
+                     * @method static k(): I1 &I2
+                     * @method l(): A
+                     *     |null
+                     * @method m(): A |
+                     *     null
+                     */
+                    class Child extends ParentClass {}
+
+                    $a = Child::a();
+                    $b = Child::b();
+                    $c = Child::c();
+                    $d = (new Child)->d();
+                    $e = Child::e();
+                    $f = (new Child)->f();
+                    $g = (new Child)->g();
+                    $h = (new Child)->h();
+                    $i = (new Child)->i();
+                    (new Child)->j(null, null);
+                    $k = Child::k();
+                    $l = (new Child)->l();
+                    $m = (new Child)->m();',
+                'assertions' => [
+                    '$a' => 'A|null',
+                    '$b' => 'A|null',
+                    '$c' => 'A|null',
+                    '$d' => 'A|null',
+                    '$e' => 'A|null',
+                    '$f' => 'A|null',
+                    '$g' => 'A|null',
+                    '$h' => 'I1&I2',
+                    '$i' => 'I1&I2',
+                    '$k' => 'I1&I2',
+                    '$l' => 'A|null',
+                    '$m' => 'A|null',
+                ],
+            ],
         ];
     }
 
@@ -1296,6 +1480,14 @@ final class MagicMethodAnnotationTest extends TestCase
     public static function providerInvalidCodeParse(): iterable
     {
         return [
+            'invalidMagicMethodKeepsItsNameInTheMessage' => [
+                'code' => '<?php
+                    /**
+                     * @method callable(int)
+                     */
+                    class Foo {}',
+                'error_message' => 'InvalidDocblock - src' . DIRECTORY_SEPARATOR . 'somefile.php:5:27 - callable(int) is not a valid method',
+            ],
             'wildcardPurityPropagatesImpureClosure' => [
                 'code' => '<?php
                     /**
