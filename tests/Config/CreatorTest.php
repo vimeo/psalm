@@ -4,11 +4,10 @@ declare(strict_types=1);
 
 namespace Psalm\Tests\Config;
 
-use Override;
 use PHPUnit\Framework\Attributes\DataProvider;
+use PHPUnit\Framework\TestCase;
 use Psalm\Config\Creator;
 use Psalm\Internal\Analyzer\IssueData;
-use Psalm\Tests\TestCase;
 
 use function dirname;
 
@@ -16,22 +15,6 @@ use const DIRECTORY_SEPARATOR;
 
 final class CreatorTest extends TestCase
 {
-    /**
-     * @psalm-mutation-free
-     */
-    #[Override]
-    public static function setUpBeforeClass(): void
-    {
-    }
-
-    /**
-     * @psalm-mutation-free
-     */
-    #[Override]
-    public function setUp(): void
-    {
-    }
-
     public function testDiscoverLibDirectory(): void
     {
         $lib_contents = Creator::getContents(
