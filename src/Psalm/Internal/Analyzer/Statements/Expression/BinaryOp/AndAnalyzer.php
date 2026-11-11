@@ -16,6 +16,7 @@ use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\Internal\Clause;
 use Psalm\Node\Stmt\VirtualExpression;
 use Psalm\Node\Stmt\VirtualIf;
+use Psalm\Type;
 use Psalm\Type\Reconciler;
 
 use function array_diff_key;
@@ -233,6 +234,19 @@ final class AndAnalyzer
             $if_body_context->phantom_functions += $context->phantom_functions;
         } else {
             $context->vars_in_scope = $left_context->vars_in_scope;
+
+            // the right operand is skipped when the left one is false
+            foreach ($right_context->assigned_var_ids as $var_id => $assigned_offset) {
+                if ((!isset($left_context->assigned_var_ids[$var_id])
+                        || $left_context->assigned_var_ids[$var_id] !== $assigned_offset)
+                    && isset($context->vars_in_scope[$var_id], $right_context->vars_in_scope[$var_id])
+                ) {
+                    $context->vars_in_scope[$var_id] = Type::combineUnionTypes(
+                        $context->vars_in_scope[$var_id],
+                        $right_context->vars_in_scope[$var_id],
+                    );
+                }
+            }
         }
 
         return true;
