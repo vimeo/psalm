@@ -50,6 +50,26 @@ final class InterfaceTest extends TestCase
                         }
                     }',
             ],
+            'interfaceExtendingSeekableIteratorHasTheIteratorMethods' => [
+                'code' => '<?php
+                    /** @extends \SeekableIterator<int, string> */
+                    interface PathIterator extends \SeekableIterator
+                    {
+                        public function isIndex(): bool;
+                    }
+
+                    /** @var PathIterator $it */
+                    $valid = $it->valid();
+                    $key = $it->key();
+                    $current = $it->current();
+                    $it->next();
+                    $it->seek(1);',
+                'assertions' => [
+                    '$valid===' => 'bool',
+                    '$key===' => 'int|null',
+                    '$current===' => 'null|string',
+                ],
+            ],
             'extendsAndImplements' => [
                 'code' => '<?php
                     interface A

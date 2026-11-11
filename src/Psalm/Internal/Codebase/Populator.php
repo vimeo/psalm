@@ -545,9 +545,6 @@ final class Populator
 
         $dependent_classlikes[$fq_classlike_name_lc] = true;
 
-        // a storage populated again still holds the `@method`s it inherited the last time
-        self::removeInheritedPseudoMethods($storage);
-
         $trait_storages = [];
 
         foreach ($storage->used_traits as $used_trait_lc => $_) {
@@ -754,7 +751,7 @@ final class Populator
                     }
                 } while (!empty($dependencies));
 
-                $dependency->populated = false;
+                $dependency->unpopulate();
                 unset($dependency->invalid_dependencies[$fq_classlike_name_lc]);
                 $this->populateClassLikeStorage($dependency, $dependent_classlikes);
             }
@@ -1167,26 +1164,6 @@ final class Populator
                 ->methods[$declaring_method_id->method_name] ?? null)?->visibility;
 
         return $visibility === ClassLikeAnalyzer::VISIBILITY_PUBLIC;
-    }
-
-    private static function removeInheritedPseudoMethods(ClassLikeStorage $storage): void
-    {
-        $fq_class_name_lc = strtolower($storage->name);
-
-        foreach ($storage->declaring_pseudo_method_ids as $method_name => $method_id) {
-            if (strtolower($method_id->fq_class_name) !== $fq_class_name_lc) {
-                unset($storage->pseudo_methods[$method_name], $storage->declaring_pseudo_method_ids[$method_name]);
-            }
-        }
-
-        foreach ($storage->declaring_pseudo_static_method_ids as $method_name => $method_id) {
-            if (strtolower($method_id->fq_class_name) !== $fq_class_name_lc) {
-                unset(
-                    $storage->pseudo_static_methods[$method_name],
-                    $storage->declaring_pseudo_static_method_ids[$method_name],
-                );
-            }
-        }
     }
 
     /**
