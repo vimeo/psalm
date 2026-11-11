@@ -1312,7 +1312,7 @@ final class AtomicPropertyFetchAnalyzer
     ): void {
         if ($context->inside_isset || $context->collect_initializations) {
             // isset() sees null where the object doesn't have the property
-            $missing_in_isset = $context->inside_isset && !$has_magic_getter;
+            $missing_in_isset = $missing_in_isset || ($context->inside_isset && !$has_magic_getter);
 
             $statements_analyzer->signalMutation(
                 Capabilities::READ_PROPS, // Strange but matches previous code

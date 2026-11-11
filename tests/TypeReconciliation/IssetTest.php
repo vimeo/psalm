@@ -1314,6 +1314,27 @@ final class IssetTest extends TestCase
                         }
                     }',
             ],
+            'issetOnPropertyOfUnionWhereALaterMemberHasAMagicGetterStillSeesTheMissingOne' => [
+                'code' => '<?php
+                    final class A {
+                        public string $a = "";
+                    }
+
+                    final class B {}
+
+                    final class C {
+                        public function __get(string $name): string {
+                            return "";
+                        }
+                    }
+
+                    function f(A|C|B $x): string {
+                        return isset($x->a) ? $x->a : "";
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.2',
+            ],
             'issetOnPropertyOfOnlyOneMemberOfUnion' => [
                 'code' => '<?php
                     class A {
