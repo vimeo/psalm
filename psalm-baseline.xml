@@ -91,9 +91,6 @@
     <PossiblyNullArgument>
       <code><![CDATA[$deprecated_element_xml]]></code>
     </PossiblyNullArgument>
-    <PossiblyNullReference>
-      <code><![CDATA[addAttribute]]></code>
-    </PossiblyNullReference>
     <PropertyTypeCoercion>
       <code><![CDATA[$this]]></code>
       <code><![CDATA[$this]]></code>

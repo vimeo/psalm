@@ -93,10 +93,6 @@ final class ConfigTest extends DeferredAnalyzerTestCase
     {
         parent::setUpBeforeClass();
 
-        // hack to isolate Psalm from PHPUnit cli arguments
-        global $argv;
-        $argv = [];
-
         new TestConfig();
     }
 
@@ -3264,5 +3260,90 @@ final class ConfigTest extends DeferredAnalyzerTestCase
 
         // an accepted call: the analysis went through without an exception
         $this->addToAssertionCount(1);
+    }
+
+    public function testLoadingTheConfigDoesNotReadTheProcessArguments(): void
+    {
+        global $argv;
+        $original_argv = $argv;
+
+        $xml = '<?xml version="1.0"?><psalm><projectFiles><directory name="src" /></projectFiles></psalm>';
+
+        try {
+            // CliUtils::getPathsToCheck() exits on a path that doesn't exist
+            $argv = ['psalm', 'does/not/exist.php'];
+
+            Config::loadFromXML(dirname(__DIR__, 2), $xml);
+
+            $argv = ['psalm', __FILE__];
+
+            $config = Config::loadFromXML(dirname(__DIR__, 2), $xml);
+        } finally {
+            $argv = $original_argv;
+        }
+
+        $this->assertFalse($config->isInProjectDirs(__FILE__));
+        $this->assertSame([], $config->getProjectFiles());
+    }
+
+    public function testPathsAreAddedToTheProjectFiles(): void
+    {
+        $config = Config::loadFromXML(
+            dirname(__DIR__, 2),
+            '<?xml version="1.0"?>
+            <psalm>
+                <projectFiles>
+                    <directory name="src" />
+                </projectFiles>
+            </psalm>',
+        );
+
+        $inside_project = (string) realpath(dirname(__DIR__, 2) . '/src/Psalm/Config.php');
+        $outside_project_file = (string) realpath(__DIR__ . '/Plugin/TestPluginIssue.php');
+        $outside_project_directory = dirname($outside_project_file);
+
+        $this->assertFalse($config->isInProjectDirs(__FILE__));
+        $this->assertFalse($config->isInProjectDirs($outside_project_file));
+
+        $config->addPathsToProjectFiles([__FILE__, $outside_project_directory, $inside_project]);
+
+        $this->assertTrue($config->isInProjectDirs(__FILE__));
+        $this->assertTrue($config->isInProjectDirs($outside_project_file));
+        $this->assertTrue($config->isInProjectDirs($inside_project));
+        $this->assertSame([__FILE__], $config->getProjectFiles());
+        $this->assertCount(2, $config->getProjectDirectories());
+    }
+
+    public function testPathsAreAddedWhenTheConfigHasNoProjectFiles(): void
+    {
+        $config = Config::loadFromXML(dirname(__DIR__, 2), '<?xml version="1.0"?><psalm/>');
+
+        $this->assertFalse($config->isInProjectDirs(__FILE__));
+
+        $config->addPathsToProjectFiles([__FILE__]);
+
+        $this->assertTrue($config->isInProjectDirs(__FILE__));
+        $this->assertSame([__FILE__], $config->getProjectFiles());
+    }
+
+    public function testPathsInIgnoredProjectFilesStayIgnored(): void
+    {
+        $config = Config::loadFromXML(
+            dirname(__DIR__, 2),
+            '<?xml version="1.0"?>
+            <psalm>
+                <projectFiles>
+                    <directory name="src" />
+                    <ignoreFiles>
+                        <file name="tests/Config/ConfigTest.php" />
+                    </ignoreFiles>
+                </projectFiles>
+            </psalm>',
+        );
+
+        $config->addPathsToProjectFiles([__DIR__]);
+
+        $this->assertTrue($config->isInProjectDirs((string) realpath(__DIR__ . '/Plugin/TestPluginIssue.php')));
+        $this->assertFalse($config->isInProjectDirs(__FILE__));
     }
 }

@@ -263,6 +263,10 @@ final class Psalter
             $autoloaders,
         );
 
+        if ($paths_to_check !== null) {
+            $config->addPathsToProjectFiles($paths_to_check);
+        }
+
         if (isset($options['no-cache'])) {
             $config->cache_directory = null;
         }

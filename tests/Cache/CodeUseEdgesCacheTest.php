@@ -76,16 +76,6 @@ final class CodeUseEdgesCacheTest extends TestCase
     private ProjectCacheProvider $project_cache;
 
     #[Override]
-    public static function setUpBeforeClass(): void
-    {
-        parent::setUpBeforeClass();
-
-        // hack to isolate Psalm from PHPUnit cli arguments
-        global $argv;
-        $argv = [];
-    }
-
-    #[Override]
     public function setUp(): void
     {
         parent::setUp();

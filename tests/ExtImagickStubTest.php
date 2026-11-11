@@ -19,16 +19,6 @@ final class ExtImagickStubTest extends TestCase
 {
     use ValidCodeAnalysisTestTrait;
 
-    #[Override]
-    public static function setUpBeforeClass(): void
-    {
-        parent::setUpBeforeClass();
-
-        // hack to isolate Psalm from PHPUnit cli arguments
-        global $argv;
-        $argv = [];
-    }
-
     public function testClassesAreUndefinedWhenExtensionIsDisabled(): void
     {
         if (extension_loaded('imagick')) {
