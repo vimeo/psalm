@@ -427,6 +427,9 @@ final class Context
     public bool $inside_attribute = false;
 
     /**
+     * The variables whose clauses were invalidated in this scope, for the scope it branched from to invalidate too.
+     * A branch starts empty (see forkBranch()): what its parent invalidated before is not its to report.
+     *
      * @var array<string, true>
      */
     public array $parent_remove_vars = [];
@@ -831,6 +834,27 @@ final class Context
         }
 
         return $clauses_to_keep;
+    }
+
+    /**
+     * A copy for a branch of the code (an operand, a ternary arm, an else) that reports back what it invalidates
+     * with mergeBranchRemovals().
+     *
+     * @psalm-capabilities read-props
+     */
+    public function forkBranch(): self
+    {
+        $branch = clone $this;
+        $branch->parent_remove_vars = [];
+
+        return $branch;
+    }
+
+    public function mergeBranchRemovals(self $branch): void
+    {
+        foreach ($branch->parent_remove_vars as $var_id => $_) {
+            $this->removeVarFromConflictingClauses($var_id);
+        }
     }
 
     public function removeVarFromConflictingClauses(

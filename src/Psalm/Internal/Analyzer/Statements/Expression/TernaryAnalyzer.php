@@ -204,12 +204,14 @@ final class TernaryAnalyzer
             );
         }
 
-        $t_else_context = clone $context;
+        $t_else_context = $context->forkBranch();
 
         if ($stmt->if) {
             if (ExpressionAnalyzer::analyze($statements_analyzer, $stmt->if, $if_context) === false) {
                 return false;
             }
+
+            $context->mergeBranchRemovals($if_context);
 
             $context->cond_referenced_var_ids = [
                 ...$context->cond_referenced_var_ids,
@@ -243,6 +245,8 @@ final class TernaryAnalyzer
         if (ExpressionAnalyzer::analyze($statements_analyzer, $stmt->else, $t_else_context) === false) {
             return false;
         }
+
+        $context->mergeBranchRemovals($t_else_context);
 
         // a branch that never finishes (throw, exit) leaves the other one as the only way past the ternary
         $if_type = $stmt->if ? $statements_analyzer->node_data->getType($stmt->if) : null;

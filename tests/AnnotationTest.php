@@ -1988,19 +1988,76 @@ final class AnnotationTest extends TestCase
     public static function providerInvalidCodeParse(): iterable
     {
         return [
-            'boolFlagLosesNarrowingOfVarReassignedInElseifCondition' => [
+            'boolFlagLosesNarrowingOfVarReassignedInAndOperand' => [
                 'code' => '<?php
                     final class Slot {
                         public string $attributes = "";
                     }
-                    function f(?Slot $action, ?Slot $other, bool $b): void {
+                    function f(?Slot $source, ?Slot $other, bool $b, bool $c): void {
+                        $action = $source;
+                        $action = $source;
                         $hasAction = $action !== null;
-                        if ($b) {
-                        } elseif (($action = $other) !== null) {
+                        if ($b && (($action = $other) !== null)) {
                         }
                         if ($hasAction) {
                             echo $action->attributes;
                         }
+                        echo $c;
+                    }',
+                'error_message' => 'PossiblyNullPropertyFetch',
+            ],
+            'boolFlagLosesNarrowingOfVarReassignedInOrOperand' => [
+                'code' => '<?php
+                    final class Slot {
+                        public string $attributes = "";
+                    }
+                    function f(?Slot $source, ?Slot $other, bool $b, bool $c): void {
+                        $action = $source;
+                        $action = $source;
+                        $hasAction = $action !== null;
+                        if ($b || (($action = $other) !== null)) {
+                        }
+                        if ($hasAction) {
+                            echo $action->attributes;
+                        }
+                        echo $c;
+                    }',
+                'error_message' => 'PossiblyNullPropertyFetch',
+            ],
+            'boolFlagLosesNarrowingOfVarReassignedInElseifAndOperand' => [
+                'code' => '<?php
+                    final class Slot {
+                        public string $attributes = "";
+                    }
+                    function f(?Slot $source, ?Slot $other, bool $b, bool $c): void {
+                        $action = $source;
+                        $action = $source;
+                        $hasAction = $action !== null;
+                        if ($b) {
+                        } elseif ($c && (($action = $other) !== null)) {
+                        }
+                        if ($hasAction) {
+                            echo $action->attributes;
+                        }
+                        echo $c;
+                    }',
+                'error_message' => 'PossiblyNullPropertyFetch',
+            ],
+            'boolFlagLosesNarrowingOfVarReassignedInTernaryArm' => [
+                'code' => '<?php
+                    final class Slot {
+                        public string $attributes = "";
+                    }
+                    function f(?Slot $source, ?Slot $other, bool $b, bool $c): void {
+                        $action = $source;
+                        $action = $source;
+                        $hasAction = $action !== null;
+                        $result = $b ? ($action = $other) : null;
+                        echo json_encode($result);
+                        if ($hasAction) {
+                            echo $action->attributes;
+                        }
+                        echo $c;
                     }',
                 'error_message' => 'PossiblyNullPropertyFetch',
             ],

@@ -115,8 +115,7 @@ final class IfConditionalAnalyzer
         $pre_assigned_var_ids = $outer_context->assigned_var_ids;
         $outer_context->assigned_var_ids = [];
 
-        // what the outer context removed earlier is already gone from it: the if body only reports what the
-        // condition and the body remove
+        // the if context reports what its condition and body invalidate, not what the outer context did before
         $pre_parent_remove_vars = $outer_context->parent_remove_vars;
         $outer_context->parent_remove_vars = [];
 
@@ -190,6 +189,8 @@ final class IfConditionalAnalyzer
             }
 
             $if_conditional_context->inside_conditional = $was_inside_conditional;
+
+            $if_context->parent_remove_vars += $if_conditional_context->parent_remove_vars;
 
             /** @var array<string, bool> */
             $more_cond_referenced_var_ids = $if_conditional_context->cond_referenced_var_ids;

@@ -59,7 +59,7 @@ final class AndAnalyzer
 
         $pre_assigned_var_ids = $context->assigned_var_ids;
 
-        $left_context = clone $context;
+        $left_context = $context->forkBranch();
 
         $left_context->cond_referenced_var_ids = [];
         $left_context->assigned_var_ids = [];
@@ -70,6 +70,8 @@ final class AndAnalyzer
         if (ExpressionAnalyzer::analyze($statements_analyzer, $stmt->left, $left_context) === false) {
             return false;
         }
+
+        $context->mergeBranchRemovals($left_context);
 
         IfConditionalAnalyzer::handleParadoxicalCondition($statements_analyzer, $stmt->left);
 
@@ -134,7 +136,7 @@ final class AndAnalyzer
         $changed_var_ids = [];
 
         if ($left_type_assertions) {
-            $right_context = clone $context;
+            $right_context = $context->forkBranch();
             // what the left side guards (function_exists(), class_exists(), defined()...) holds for the right one
             $right_context->updateChecks($left_context);
             $right_context->phantom_classes += $left_context->phantom_classes;
@@ -155,7 +157,7 @@ final class AndAnalyzer
                 $context->inside_negation,
             );
         } else {
-            $right_context = clone $left_context;
+            $right_context = $left_context->forkBranch();
         }
 
         $partitioned_clauses = Context::removeReconciledClauses(
@@ -168,6 +170,8 @@ final class AndAnalyzer
         if (ExpressionAnalyzer::analyze($statements_analyzer, $stmt->right, $right_context) === false) {
             return false;
         }
+
+        $context->mergeBranchRemovals($right_context);
 
         IfConditionalAnalyzer::handleParadoxicalCondition($statements_analyzer, $stmt->right);
 
