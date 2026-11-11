@@ -61,6 +61,7 @@ use function is_numeric;
 use function max;
 use function min;
 use function preg_match;
+use function strlen;
 use function strtolower;
 
 use const PHP_INT_MIN;
@@ -1162,20 +1163,59 @@ final class ArithmeticOpAnalyzer
     }
 
     /**
-     * round(), floor() and ceil() return floats, and the functions that read a number in a base ints or floats, that
-     * are whole numbers: converting them to int loses nothing
+     * A call whose result is a whole number in the range of an int, so that converting it loses nothing: floor() and
+     * ceil(), round() without decimals, and the functions that read a number in a base of what is too short to
+     * overflow (a literal, or a substr() of a few characters)
      *
      * @psalm-capabilities read-props
      */
     private static function isCallOfAFunctionReturningWholeNumbers(PhpParser\Node\Expr $expr): bool
     {
-        return $expr instanceof PhpParser\Node\Expr\FuncCall
-            && $expr->name instanceof PhpParser\Node\Name
-            && in_array(
-                strtolower($expr->name->name),
-                ['round', 'floor', 'ceil', 'hexdec', 'octdec', 'bindec'],
-                true,
-            );
+        if (!$expr instanceof PhpParser\Node\Expr\FuncCall || !$expr->name instanceof PhpParser\Node\Name) {
+            return false;
+        }
+
+        $function_name = strtolower($expr->name->name);
+        $args = $expr->getArgs();
+
+        if ($function_name === 'floor' || $function_name === 'ceil') {
+            return count($args) === 1;
+        }
+
+        if ($function_name === 'round') {
+            // the second argument is the number of decimals
+            return count($args) === 1
+                || (count($args) === 2
+                    && $args[1]->value instanceof PhpParser\Node\Scalar\Int_
+                    && $args[1]->value->value === 0);
+        }
+
+        // the digits that fit in an int: 15 hexadecimal, 20 octal (3 bits each), 62 binary
+        $max_digits = match ($function_name) {
+            'hexdec' => 15,
+            'octdec' => 20,
+            'bindec' => 62,
+            default => null,
+        };
+
+        if ($max_digits === null || count($args) !== 1) {
+            return false;
+        }
+
+        $digits = $args[0]->value;
+
+        if ($digits instanceof PhpParser\Node\Scalar\String_) {
+            return strlen($digits->value) <= $max_digits;
+        }
+
+        // substr($string, $offset, $length) with a literal length
+        return $digits instanceof PhpParser\Node\Expr\FuncCall
+            && $digits->name instanceof PhpParser\Node\Name
+            && in_array(strtolower($digits->name->name), ['substr', 'mb_substr'], true)
+            && isset($digits->getArgs()[2])
+            && $digits->getArgs()[2]->value instanceof PhpParser\Node\Scalar\Int_
+            && $digits->getArgs()[2]->value->value >= 0
+            && $digits->getArgs()[2]->value->value <= $max_digits;
     }
 
     /**

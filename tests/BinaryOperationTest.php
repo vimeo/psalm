@@ -2434,6 +2434,24 @@ final class BinaryOperationTest extends TestCase
     public static function providerInvalidCodeParse(): iterable
     {
         return [
+            'bitwiseOperationsOfFunctionsThatMayLoseSomethingAreReported' => [
+                'code' => '<?php
+                    function f(string $digits, float $x): int {
+                        return round($x, 2) | 1;
+                    }',
+                'error_message' => 'ImplicitFloatToIntCast',
+                'error_levels' => [],
+                'php_version' => '8.3',
+            ],
+            'bitwiseOperationOfAnOctalNumberOutOfTheRangeOfAnIntIsReported' => [
+                'code' => '<?php
+                    function f(): int {
+                        return octdec("7777777777777777777777") | 1;
+                    }',
+                'error_message' => 'ImplicitFloatToIntCast',
+                'error_levels' => [],
+                'php_version' => '8.3',
+            ],
             'interpolatedStringEndingInZeroIsNotNonFalsy' => [
                 'code' => '<?php
                     /** @return non-falsy-string */
