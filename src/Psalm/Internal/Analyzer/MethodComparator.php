@@ -339,6 +339,13 @@ final class MethodComparator
 
                     $parent_storage = $codebase->classlike_storage_provider->get($overridden_fq_class_name);
 
+                    // a call from outside reaches `__call` or `__callStatic` instead of a method that isn't public
+                    if (($parent_storage->trait_visibility_map[$overridden_method_id->method_name]
+                            ?? $parent_method_storage->visibility) !== ClassLikeAnalyzer::VISIBILITY_PUBLIC
+                    ) {
+                        continue;
+                    }
+
                     self::compare(
                         $codebase,
                         null,
@@ -500,6 +507,7 @@ final class MethodComparator
                         . ' additionally requires '
                         . Capabilities::toString($implementer_capabilities, $guide_capabilities),
                     $code_location,
+                    $guide_classlike_storage->name,
                 ),
                 $suppressed_issues + $implementer_classlike_storage->suppressed_issues,
             );
@@ -1109,6 +1117,36 @@ final class MethodComparator
     }
 
     /**
+     * The class, $implementer or a parent of it, that takes the methods of $guide from it, if $guide is a trait:
+     * the `self` of such a method is that class, not the trait.
+     *
+     * @psalm-capabilities read-props
+     */
+    private static function getClassUsingTrait(
+        Codebase $codebase,
+        ClassLikeStorage $implementer,
+        ClassLikeStorage $guide,
+    ): ?string {
+        if (!$guide->is_trait) {
+            return null;
+        }
+
+        if (isset($implementer->used_traits[strtolower($guide->name)])) {
+            return $implementer->name;
+        }
+
+        foreach ($implementer->parent_classes as $parent_class) {
+            $parent_storage = $codebase->classlike_storage_provider->get($parent_class);
+
+            if (isset($parent_storage->used_traits[strtolower($guide->name)])) {
+                return $parent_storage->name;
+            }
+        }
+
+        return null;
+    }
+
+    /**
      * @param  string[]         $suppressed_issues
      */
     private static function compareMethodSignatureReturnTypes(
@@ -1135,7 +1173,8 @@ final class MethodComparator
             $guide_signature_return_type,
             $guide_classlike_storage->is_trait && $guide_method_storage->abstract
                 ? $implementer_classlike_storage->name
-                : $guide_classlike_storage->name,
+                : self::getClassUsingTrait($codebase, $implementer_classlike_storage, $guide_classlike_storage)
+                    ?? $guide_classlike_storage->name,
             ($guide_classlike_storage->is_trait && $guide_method_storage->abstract)
                 || $guide_classlike_storage->final
                 || $resolve_static_to_final_class

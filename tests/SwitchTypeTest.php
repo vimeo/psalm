@@ -61,42 +61,18 @@ final class SwitchTypeTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
-            'variableDefinedByTheBreaksOfACaseFallingThroughToAThrowingDefault' => [
+            'switchTrueCaseThatCanMatch' => [
                 'code' => '<?php
-                    function f(int $a): int {
-                        switch ($a) {
-                            case 1:
-                                $b = 10;
-                                break;
-                            case 2:
-                                if (rand(1, 10) === 5) {
-                                    $b = 20;
-                                    break;
-                                }
-                            default:
-                                throw new Exception("unexpected");
-                        }
+                    class Foo {}
+                    class Bar extends Foo {}
 
-                        return $b;
-                    }',
-            ],
-            'variableDefinedByTheBreaksOfACaseFallingThroughToAReturningDefault' => [
-                'code' => '<?php
-                    function f(int $a): int {
-                        switch ($a) {
-                            case 1:
-                                $b = 10;
-                                break;
-                            case 2:
-                                if (rand(1, 10) === 5) {
-                                    $b = 20;
-                                    break;
-                                }
+                    function f(Foo $a): int {
+                        switch (true) {
+                            case $a instanceof Bar:
+                                return 1;
                             default:
-                                return 0;
+                                return 2;
                         }
-
-                        return $b;
                     }',
             ],
             'switchNarrowsAnArrayKeyToTheNonNumericStringsOfItsCases' => [
@@ -1214,6 +1190,44 @@ final class SwitchTypeTest extends TestCase
                         return -1;
                     }',
             ],
+            'variableDefinedByTheBreaksOfACaseFallingThroughToAThrowingDefault' => [
+                'code' => '<?php
+                    function f(int $a): int {
+                        switch ($a) {
+                            case 1:
+                                $b = 10;
+                                break;
+                            case 2:
+                                if (rand(1, 10) === 5) {
+                                    $b = 20;
+                                    break;
+                                }
+                            default:
+                                throw new Exception("unexpected");
+                        }
+
+                        return $b;
+                    }',
+            ],
+            'variableDefinedByTheBreaksOfACaseFallingThroughToAReturningDefault' => [
+                'code' => '<?php
+                    function f(int $a): int {
+                        switch ($a) {
+                            case 1:
+                                $b = 10;
+                                break;
+                            case 2:
+                                if (rand(1, 10) === 5) {
+                                    $b = 20;
+                                    break;
+                                }
+                            default:
+                                return 0;
+                        }
+
+                        return $b;
+                    }',
+            ],
         ];
     }
 
@@ -1224,24 +1238,20 @@ final class SwitchTypeTest extends TestCase
     public static function providerInvalidCodeParse(): iterable
     {
         return [
-            'variableNotDefinedByEveryBreakOfACaseFallingThroughToAThrowingDefault' => [
+            'switchTrueCaseThatCannotMatch' => [
                 'code' => '<?php
-                    function f(int $a): int {
-                        switch ($a) {
-                            case 1:
-                                $b = 10;
-                                break;
-                            case 2:
-                                if (rand(1, 10) === 5) {
-                                    break;
-                                }
-                            default:
-                                throw new Exception("unexpected");
-                        }
+                    class Foo {}
+                    class Bar {}
 
-                        return $b;
+                    function f(Foo $a): int {
+                        switch (true) {
+                            case $a instanceof Bar:
+                                return 1;
+                            default:
+                                return 2;
+                        }
                     }',
-                'error_message' => 'PossiblyUndefinedVariable',
+                'error_message' => 'TypeDoesNotContainType - src' . DIRECTORY_SEPARATOR . 'somefile.php:7:34 - Cannot resolve types for $a - Foo does not contain Bar',
             ],
             'switchReturnTypeWithFallthroughAndBreak' => [
                 'code' => '<?php
@@ -1542,6 +1552,25 @@ final class SwitchTypeTest extends TestCase
                         }
                     }',
                 'error_message' => 'UndefinedMethod',
+            ],
+            'variableNotDefinedByEveryBreakOfACaseFallingThroughToAThrowingDefault' => [
+                'code' => '<?php
+                    function f(int $a): int {
+                        switch ($a) {
+                            case 1:
+                                $b = 10;
+                                break;
+                            case 2:
+                                if (rand(1, 10) === 5) {
+                                    break;
+                                }
+                            default:
+                                throw new Exception("unexpected");
+                        }
+
+                        return $b;
+                    }',
+                'error_message' => 'PossiblyUndefinedVariable',
             ],
         ];
     }
