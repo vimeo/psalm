@@ -185,10 +185,18 @@ final class NamedFunctionCallHandler
         }
 
         if (in_array($function_id, ['is_file', 'file_exists']) && $first_arg) {
-            $var_id = ExpressionIdentifier::getExtendedVarId($first_arg->value, null);
+            $var_id = ExpressionIdentifier::getExtendedVarId($first_arg->value, null)
+                ?? IncludeAnalyzer::getConstantPhantomFileId($first_arg->value);
 
             if ($var_id) {
                 $context->phantom_files[$var_id] = true;
+
+                if ($context->inside_negation) {
+                    $context->negated_phantom_files[$var_id] = true;
+                } else {
+                    unset($context->negated_phantom_files[$var_id]);
+                }
+
                 return;
             }
 
@@ -204,7 +212,14 @@ final class NamedFunctionCallHandler
             );
 
             if ($path_to_file) {
-                $context->phantom_files[IncludeAnalyzer::normalizeFilePath($path_to_file)] = true;
+                $normalized_path = IncludeAnalyzer::normalizeFilePath($path_to_file);
+                $context->phantom_files[$normalized_path] = true;
+
+                if ($context->inside_negation) {
+                    $context->negated_phantom_files[$normalized_path] = true;
+                } else {
+                    unset($context->negated_phantom_files[$normalized_path]);
+                }
             }
 
             return;
