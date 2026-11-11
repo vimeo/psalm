@@ -102,6 +102,34 @@ final class FunctionLikeDocblockParserTest extends BaseTestCase
         $this->assertSame('The blah tags that has a very long multiline description.', $function_docblock->params[1]['description']);
     }
 
+    public function testDocblockParamDescriptionAfterSpacedUnion(): void
+    {
+        $doc = '/**
+ * @param string  |  null $bli The BLI | or not.
+ * @param string & $out The out.
+ * @param string &
+ *     $next The next.
+ * @return string |null The result.
+ */
+';
+        $php_parser_doc = new Doc($doc);
+        $function_docblock = FunctionLikeDocblockParser::parse(
+            ProjectAnalyzer::getInstance()->getCodebase(),
+            $php_parser_doc,
+            $this->test_code_location,
+            $this->test_cased_function_id,
+        );
+
+        $this->assertSame('string | null', $function_docblock->params[0]['type'] ?? null);
+        $this->assertSame('The BLI | or not.', $function_docblock->params[0]['description'] ?? null);
+        $this->assertSame('$out', $function_docblock->params[1]['name'] ?? null);
+        $this->assertSame('The out.', $function_docblock->params[1]['description'] ?? null);
+        $this->assertSame('$next', $function_docblock->params[2]['name'] ?? null);
+        $this->assertSame('The next.', $function_docblock->params[2]['description'] ?? null);
+        $this->assertSame('string |null', $function_docblock->return_type);
+        $this->assertSame('The result.', $function_docblock->return_type_description);
+    }
+
     public function testMisplacedVariableOnNextLine(): void
     {
         $doc = '/**
@@ -134,6 +162,48 @@ final class FunctionLikeDocblockParserTest extends BaseTestCase
             $this->test_cased_function_id,
         );
         $this->assertSame([['T', 'of', 'string', false]], $function_docblock->templates);
+    }
+
+    public function testTemplateDefaults(): void
+    {
+        $doc = <<<'DOC'
+            /**
+             * @psalm-template T of string = 'a'
+             * @phpstan-template T = int
+             * @template U of callable(int=): void = callable(int=): void
+             * @template V
+             * @template W of 'b\'=c'
+             * @template X of "d\"=e" = "d\"=e"
+             * @template Y of int =
+             */
+            DOC;
+        $php_parser_doc = new Doc($doc, 20);
+        $function_docblock = FunctionLikeDocblockParser::parse(
+            ProjectAnalyzer::getInstance()->getCodebase(),
+            $php_parser_doc,
+            $this->test_code_location,
+            $this->test_cased_function_id,
+        );
+        $this->assertSame(
+            [
+                ['T', 'of', 'string', false],
+                ['U', 'of', 'callable(int=): void', false],
+                ['V', null, null, false],
+                ['W', 'of', '\'b\\\'=c\'', false],
+                ['X', 'of', '"d\\"=e"', false],
+                ['Y', 'of', 'int', false],
+            ],
+            $function_docblock->templates,
+        );
+        $this->assertSame(
+            [
+                'T' => ['type' => '\'a\'', 'line_number' => 21],
+                'U' => ['type' => 'callable(int=): void', 'line_number' => 23],
+                'X' => ['type' => '"d\\"=e"', 'line_number' => 26],
+                'Y' => ['type' => '', 'line_number' => 27],
+            ],
+            $function_docblock->template_defaults,
+        );
     }
 
     public function testReturnsUnexpectedTags(): void

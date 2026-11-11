@@ -15,6 +15,7 @@ use Psalm\Internal\Codebase\ConstantTypeResolver;
 use Psalm\Internal\Codebase\NosqlEqualityOperand;
 use Psalm\Internal\DataFlow\DataFlowNode;
 use Psalm\Internal\Type\Comparator\UnionTypeComparator;
+use Psalm\Internal\Type\LiteralCast;
 use Psalm\Internal\Type\TypeCombiner;
 use Psalm\Issue\DuplicateArrayKey;
 use Psalm\Issue\InvalidArrayOffset;
@@ -189,7 +190,8 @@ final class ArrayAnalyzer
                         $good_types[] = new TLiteralInt(0);
                         $good_types[] = new TLiteralInt(1);
                     } elseif ($atomic_key_type instanceof TLiteralFloat) {
-                        $good_types[] = new TLiteralInt((int) $atomic_key_type->value);
+                        $int = LiteralCast::toInt($atomic_key_type->value);
+                        $good_types[] = $int === null ? new TInt : new TLiteralInt($int);
                     } elseif ($atomic_key_type instanceof TFloat) {
                         $good_types[] = new TInt;
                     } else {
@@ -400,6 +402,13 @@ final class ArrayAnalyzer
 
             if ($item_key_type = $statements_analyzer->node_data->getType($item->key)) {
                 $key_type = $item_key_type;
+
+                // null is what a nullable type that is asked to be ignored (e.g. a return type) doesn't have
+                if ($key_type->ignore_nullable_issues && $key_type->isNullable() && !$key_type->isNull()) {
+                    $key_type_without_null = $key_type->getBuilder();
+                    $key_type_without_null->removeType('null');
+                    $key_type = $key_type_without_null->freeze();
+                }
 
                 if ($key_type->isNull()) {
                     $key_type = Type::getString('');
