@@ -112,9 +112,15 @@ final class AtomicStaticCallAnalyzer
 
             $intersection_types = $lhs_type_part->extra_types;
         } elseif ($lhs_type_part instanceof TClassString
-            && $lhs_type_part->as_type
+            && ($lhs_type_part->as_type
+                || ($lhs_type_part->is_enum
+                    && $stmt->name instanceof PhpParser\Node\Identifier
+                    && $statements_analyzer->getCodebase()->methodExists('UnitEnum::' . $stmt->name->name)
+                )
+            )
         ) {
-            $fq_class_name = $lhs_type_part->as_type->value;
+            // any enum implements UnitEnum, but only what UnitEnum declares is known of an unspecified one
+            $fq_class_name = $lhs_type_part->as_type->value ?? 'UnitEnum';
 
             if (!ClassLikeAnalyzer::checkFullyQualifiedClassLikeName(
                 $statements_analyzer,
@@ -127,7 +133,7 @@ final class AtomicStaticCallAnalyzer
                 return;
             }
 
-            $intersection_types = $lhs_type_part->as_type->extra_types;
+            $intersection_types = $lhs_type_part->as_type->extra_types ?? [];
         } elseif ($lhs_type_part instanceof TDependentGetClass
             && !$lhs_type_part->as_type->hasObject()
         ) {
@@ -523,14 +529,15 @@ final class AtomicStaticCallAnalyzer
 
         $config = $codebase->config;
 
+        $method_visible = $naive_method_exists
+            && MethodAnalyzer::isMethodVisible($method_id, $context, $statements_analyzer->getSource());
+
         $found_method_and_class_storage = self::findPseudoMethodAndClassStorages(
             $codebase,
             $class_storage,
             $method_name_lc,
+            $method_visible,
         );
-
-        $method_visible = $naive_method_exists
-            && MethodAnalyzer::isMethodVisible($method_id, $context, $statements_analyzer->getSource());
 
         self::recordCallStaticReference($statements_analyzer, $stmt, $context, $method_id, $method_visible);
 
@@ -1355,6 +1362,7 @@ final class AtomicStaticCallAnalyzer
      *
      * @param ClassLikeStorage $static_class_storage The called class
      * @param lowercase-string $method_name_lc
+     * @param bool $method_visible Whether the call reaches a real method instead of `__callStatic`
      * @return array{MethodStorage, ClassLikeStorage}|null
      * @psalm-mutation-free
      */
@@ -1362,14 +1370,19 @@ final class AtomicStaticCallAnalyzer
         Codebase $codebase,
         ClassLikeStorage $static_class_storage,
         string $method_name_lc,
+        bool $method_visible,
     ): ?array {
         if ($pseudo_method_storage = $static_class_storage->pseudo_static_methods[$method_name_lc] ?? null) {
             return [$pseudo_method_storage, $static_class_storage];
         }
 
-        $ancestors = $static_class_storage->class_implements + $static_class_storage->parent_classes;
+        // the class already has the ones of its parents that its own public methods don't override, and the ones of
+        // its interfaces don't override a method the call reaches
+        if ($method_visible) {
+            return null;
+        }
 
-        foreach ($ancestors as $fq_class_name => $_) {
+        foreach ($static_class_storage->class_implements as $fq_class_name => $_) {
             $class_storage = $codebase->classlikes->getStorageFor($fq_class_name);
 
             if ($class_storage && isset($class_storage->pseudo_static_methods[$method_name_lc])) {

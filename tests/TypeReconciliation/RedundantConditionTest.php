@@ -23,72 +23,30 @@ final class RedundantConditionTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
-            'pathBelowAVariablePassedToCountInAnAndChainIsNotRedundant' => [
-                'code' => '<?php
-                    declare(strict_types=1);
-
-                    abstract class Expr {}
-                    final class Variable extends Expr {}
-                    final class Prop extends Expr {
-                        public ?Expr $var = null;
-                    }
-                    abstract class Stmt {}
-                    final class Return_ extends Stmt {
-                        public ?Expr $expr = null;
-                    }
-                    final class Method {
-                        /** @var Stmt[]|null */
-                        public ?array $stmts = null;
-                    }
-
-                    function f(Method $stmt): bool {
-                        if ($stmt->stmts
-                            && count($stmt->stmts) === 1
-                            && $stmt->stmts[0] instanceof Return_
-                            && $stmt->stmts[0]->expr instanceof Prop
-                            && $stmt->stmts[0]->expr->var instanceof Variable
-                        ) {
-                            return true;
+            'ctypeCheckOfNumericStringExpressionIsNotRedundant' => [
+                'code' => <<<'PHP'
+                    <?php
+                    function negated(int $id): void {
+                        if (!ctype_digit("$id")) {
+                            throw new InvalidArgumentException("Bad id $id");
                         }
-
-                        return false;
-                    }',
-                'assertions' => [],
-                'ignored_issues' => ['RiskyTruthyFalsyComparison'],
-            ],
-            'pathBelowAnAssignedVariableInAnAndChainIsNotRedundant' => [
-                'code' => '<?php
-                    /** @return array{x: int|null}|null */
-                    function f(): ?array {
-                        return null;
                     }
 
-                    function g(bool $c): bool {
-                        if (($b = f()) && $b["x"] !== null && $b["x"] > 0 && $c) {
-                            return true;
+                    function positive(int $id): void {
+                        if (ctype_digit("$id")) {
+                            echo "non-negative";
                         }
-
-                        return false;
-                    }',
-                'assertions' => [],
-                'ignored_issues' => ['RiskyTruthyFalsyComparison'],
-            ],
-            'pathBelowAnAssignedVariableInAnOrChainIsNotRedundant' => [
-                'code' => '<?php
-                    /** @return array{x: int|null}|null */
-                    function f(): ?array {
-                        return null;
                     }
 
-                    function g(bool $c): bool {
-                        if (!($b = f()) || $b["x"] === null || $b["x"] < 0 || $c) {
-                            return false;
+                    function lower(): void {
+                        if (ctype_lower("abc" . rand())) {
+                            echo "lower";
                         }
-
-                        return true;
-                    }',
+                    }
+                    PHP,
                 'assertions' => [],
-                'ignored_issues' => ['RiskyTruthyFalsyComparison'],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
             ],
             'negatedInstanceofOfAGenericSubclassOnAnInterfaceWithTemplateArguments' => [
                 'code' => '<?php
@@ -1131,6 +1089,73 @@ final class RedundantConditionTest extends TestCase
                         assert(!!$p);
                     }',
             ],
+            'pathBelowAVariablePassedToCountInAnAndChainIsNotRedundant' => [
+                'code' => '<?php
+                    declare(strict_types=1);
+
+                    abstract class Expr {}
+                    final class Variable extends Expr {}
+                    final class Prop extends Expr {
+                        public ?Expr $var = null;
+                    }
+                    abstract class Stmt {}
+                    final class Return_ extends Stmt {
+                        public ?Expr $expr = null;
+                    }
+                    final class Method {
+                        /** @var Stmt[]|null */
+                        public ?array $stmts = null;
+                    }
+
+                    function f(Method $stmt): bool {
+                        if ($stmt->stmts
+                            && count($stmt->stmts) === 1
+                            && $stmt->stmts[0] instanceof Return_
+                            && $stmt->stmts[0]->expr instanceof Prop
+                            && $stmt->stmts[0]->expr->var instanceof Variable
+                        ) {
+                            return true;
+                        }
+
+                        return false;
+                    }',
+                'assertions' => [],
+                'ignored_issues' => ['RiskyTruthyFalsyComparison'],
+            ],
+            'pathBelowAnAssignedVariableInAnAndChainIsNotRedundant' => [
+                'code' => '<?php
+                    /** @return array{x: int|null}|null */
+                    function f(): ?array {
+                        return null;
+                    }
+
+                    function g(bool $c): bool {
+                        if (($b = f()) && $b["x"] !== null && $b["x"] > 0 && $c) {
+                            return true;
+                        }
+
+                        return false;
+                    }',
+                'assertions' => [],
+                'ignored_issues' => ['RiskyTruthyFalsyComparison'],
+            ],
+            'pathBelowAnAssignedVariableInAnOrChainIsNotRedundant' => [
+                'code' => '<?php
+                    /** @return array{x: int|null}|null */
+                    function f(): ?array {
+                        return null;
+                    }
+
+                    function g(bool $c): bool {
+                        if (!($b = f()) || $b["x"] === null || $b["x"] < 0 || $c) {
+                            return false;
+                        }
+
+                        return true;
+                    }',
+                'assertions' => [],
+                'ignored_issues' => ['RiskyTruthyFalsyComparison'],
+            ],
         ];
     }
 
@@ -1141,24 +1166,6 @@ final class RedundantConditionTest extends TestCase
     public static function providerInvalidCodeParse(): iterable
     {
         return [
-            'repeatedPathBelowAnAssignedVariableInAnAndChainIsStillRedundant' => [
-                'code' => '<?php
-                    declare(strict_types=1);
-
-                    /** @return array{x: int|null}|null */
-                    function f(): ?array {
-                        return null;
-                    }
-
-                    function g(): void {
-                        if (($a = f()) && $a["x"] !== null && $a["x"] !== null) {
-                            echo 1;
-                        }
-                    }',
-                'error_message' => 'RedundantConditionGivenDocblockType - src' . DIRECTORY_SEPARATOR
-                    . 'somefile.php:10:63',
-                'error_levels' => ['RiskyTruthyFalsyComparison'],
-            ],
             'inequalityWithAnEmptyArrayOfANonEmptyArrayIsRedundant' => [
                 'code' => '<?php
                     $a = [1, 2];
@@ -1874,6 +1881,24 @@ final class RedundantConditionTest extends TestCase
 
                     if (array_key_exists("10", $a) && array_key_exists(10, $a)) {}',
                 'error_message' => 'RedundantCondition',
+            ],
+            'repeatedPathBelowAnAssignedVariableInAnAndChainIsStillRedundant' => [
+                'code' => '<?php
+                    declare(strict_types=1);
+
+                    /** @return array{x: int|null}|null */
+                    function f(): ?array {
+                        return null;
+                    }
+
+                    function g(): void {
+                        if (($a = f()) && $a["x"] !== null && $a["x"] !== null) {
+                            echo 1;
+                        }
+                    }',
+                'error_message' => 'RedundantConditionGivenDocblockType - src' . DIRECTORY_SEPARATOR
+                    . 'somefile.php:10:63',
+                'error_levels' => ['RiskyTruthyFalsyComparison'],
             ],
         ];
     }
