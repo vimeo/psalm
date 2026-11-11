@@ -23,19 +23,26 @@ final class ForeachTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
-            'mixedIteratedByForeachMayStillBeEmptyAfterIt' => [
+            'foreachOverListKeepsTheEmptyStringOfAnEmptyOrNumericString' => [
                 'code' => '<?php
-                    function check(mixed $vals): void {
-                        foreach ($vals as $_val) {
+                    /** @var list<array{foo: ""|numeric-string}> $rows */
+                    $rows = [];
+                    $row = ["foo" => "1"];
+                    foreach ($rows as $row) {
+                        if ("" === $row["foo"]) {
+                            throw new Exception("empty");
                         }
+                    }
 
-                        if ($vals) {
-                            throw new Exception("asdf");
-                        }
+                    /** @var non-empty-list<""|numeric-string> $values */
+                    $values = ["1"];
+                    $value = "1";
+                    foreach ($values as $value) {
                     }',
-                'assertions' => [],
-                'ignored_issues' => [],
-                'php_version' => '8.0',
+                'assertions' => [
+                    '$row===' => "array{foo: numeric-string}",
+                    '$value===' => "''|numeric-string",
+                ],
             ],
             'postDecrementInTheConditionOfAnIfThatBreaksOverAConcreteArray' => [
                 'code' => '<?php
@@ -1661,6 +1668,20 @@ final class ForeachTest extends TestCase
                 'ignored_issues' => [],
                 'php_version' => '8.0',
             ],
+            'mixedIteratedByForeachMayStillBeEmptyAfterIt' => [
+                'code' => '<?php
+                    function check(mixed $vals): void {
+                        foreach ($vals as $_val) {
+                        }
+
+                        if ($vals) {
+                            throw new Exception("asdf");
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
         ];
     }
 
@@ -1671,19 +1692,6 @@ final class ForeachTest extends TestCase
     public static function providerInvalidCodeParse(): iterable
     {
         return [
-            'arrayIteratedByForeachIsNotNonEmptyAfterIt' => [
-                'code' => '<?php
-                    /** @param non-empty-array<int> $vals */
-                    function check(array $vals): void {
-                        foreach ($vals as $_val) {
-                        }
-
-                        if ($vals) {
-                            echo 1;
-                        }
-                    }',
-                'error_message' => 'RedundantCondition',
-            ],
             'iteratorCurrentNullStaysWhenTheTemplateValueIsNullable' => [
                 'code' => '<?php
                     class Foo {
@@ -2022,6 +2030,19 @@ final class ForeachTest extends TestCase
                     foreach ($gen as $i) {}
                 PHP,
                 'error_message' => 'InvalidIterator',
+            ],
+            'arrayIteratedByForeachIsNotNonEmptyAfterIt' => [
+                'code' => '<?php
+                    /** @param non-empty-array<int> $vals */
+                    function check(array $vals): void {
+                        foreach ($vals as $_val) {
+                        }
+
+                        if ($vals) {
+                            echo 1;
+                        }
+                    }',
+                'error_message' => 'RedundantCondition',
             ],
         ];
     }
