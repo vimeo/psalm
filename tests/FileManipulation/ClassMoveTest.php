@@ -185,6 +185,38 @@ final class ClassMoveTest extends DeferredAnalyzerTestCase
                     'Ns\A' => 'Ns\B',
                 ],
             ],
+            'renameClassInDocblockUnionsWithSpacesAroundPipe' => [
+                'input' => '<?php
+                    namespace Ns;
+
+                    class A {}
+
+                    /**
+                     * @param A |null $a the a
+                     * @param A  |  null $b
+                     * @return A
+                     *     |null
+                     */
+                    function foo($a, $b) {
+                        return $a ?? $b;
+                    }',
+                'output' => '<?php
+                    namespace Ns;
+
+                    class B {}
+
+                    /**
+                     * @param B|null $a the a
+                     * @param B|null $b
+                     * @return B|null
+                     */
+                    function foo($a, $b) {
+                        return $a ?? $b;
+                    }',
+                'migrations' => [
+                    'Ns\A' => 'Ns\B',
+                ],
+            ],
             'renameClassWithInstanceMethod' => [
                 'input' => '<?php
                     namespace Ns;
@@ -787,6 +819,54 @@ final class ClassMoveTest extends DeferredAnalyzerTestCase
                 ',
                 'migrations' => [
                     'Foo\Bar' => 'Zoo\Baz',
+                ],
+            ],
+            'renameClassKeepsSelfStaticAndParentPropertyFetches' => [
+                'input' => '<?php
+                    namespace Ns;
+
+                    class P {
+                        /** @var ?int */
+                        public static $bar;
+                    }
+
+                    class A extends P {
+                        /** @var ?int */
+                        public static $foo;
+
+                        public static function baz(): void {
+                            self::$foo = 1;
+                            static::$foo = 2;
+                            parent::$bar = 3;
+                            echo self::$foo;
+                            echo static::$foo;
+                            echo parent::$bar;
+                        }
+                    }',
+                'output' => '<?php
+                    namespace Ns;
+
+                    class Q {
+                        /** @var int|null */
+                        public static $bar;
+                    }
+
+                    class B extends Q {
+                        /** @var int|null */
+                        public static $foo;
+
+                        public static function baz(): void {
+                            self::$foo = 1;
+                            static::$foo = 2;
+                            parent::$bar = 3;
+                            echo self::$foo;
+                            echo static::$foo;
+                            echo parent::$bar;
+                        }
+                    }',
+                'migrations' => [
+                    'Ns\A' => 'Ns\B',
+                    'Ns\P' => 'Ns\Q',
                 ],
             ],
         ];

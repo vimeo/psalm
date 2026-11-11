@@ -324,6 +324,79 @@ final class ClassLikeStringTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'isSubclassOfKeepsTheTemplateOfAClassString' => [
+                'code' => '<?php
+                    /** @psalm-consistent-constructor */
+                    abstract class Message {}
+                    class MessageImpl extends Message {}
+
+                    interface Builder
+                    {
+                        /**
+                         * @template T as object
+                         * @psalm-param class-string<T> $className
+                         * @return T
+                         */
+                        public function build(string $className);
+                    }
+
+                    class MessageBuilder implements Builder
+                    {
+                        public function build(string $className)
+                        {
+                            if (!is_subclass_of($className, Message::class)) {
+                                throw new \LogicException();
+                            }
+
+                            return new $className();
+                        }
+                    }
+
+                    function run(MessageBuilder $builder): MessageImpl
+                    {
+                        return $builder->build(MessageImpl::class);
+                    }',
+                'assertions' => [],
+                'ignored_issues' => ['MissingOverrideAttribute'],
+            ],
+            'isAKeepsTheTemplateOfAClassString' => [
+                'code' => '<?php
+                    /** @psalm-consistent-constructor */
+                    abstract class Message {}
+
+                    /**
+                     * @template T of object
+                     * @param class-string<T> $className
+                     * @return T
+                     */
+                    function make(string $className): object
+                    {
+                        if (!is_a($className, Message::class, true)) {
+                            throw new \LogicException();
+                        }
+
+                        return new $className();
+                    }',
+            ],
+            'isSubclassOfOfAClassStringWithAnUnrelatedBound' => [
+                'code' => '<?php
+                    interface HasName {}
+                    interface HasId {}
+
+                    /**
+                     * @template T of HasName
+                     * @param class-string<T> $className
+                     * @return T
+                     */
+                    function make(string $className): object
+                    {
+                        if (!is_subclass_of($className, HasId::class)) {
+                            throw new \LogicException();
+                        }
+
+                        return new $className();
+                    }',
+            ],
             'staticInAListParameterOfAStaticCallNamingAClass' => [
                 'code' => '<?php
                     class Example {
