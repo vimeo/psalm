@@ -425,6 +425,14 @@ class Reconciler
             if ($type_changed || $failed_reconciliation) {
                 $changed_var_ids[$key] = true;
 
+                if (!$has_inverted_isset
+                    && !$has_inverted_key_exists
+                    && !$has_empty
+                    && !$is_equality
+                ) {
+                    self::adjustTObjectWithPropertiesType($key_parts, $existing_types, $changed_var_ids, $result_type);
+                }
+
                 if (str_ends_with($key, ']')
                     && !$has_inverted_isset
                     && !$has_inverted_key_exists
@@ -1174,7 +1182,17 @@ class Reconciler
                 $fq_class_name,
             );
 
-            return $declaring_class_storage->pseudo_property_get_types['$' . $property_name] ?? null;
+            $pseudo_property_type = $declaring_class_storage->pseudo_property_get_types['$' . $property_name] ?? null;
+
+            return $pseudo_property_type
+                ? TypeExpander::expandUnion(
+                    $codebase,
+                    $pseudo_property_type,
+                    $declaring_class_storage->name,
+                    $declaring_class_storage->name,
+                    $declaring_class_storage->parent_class,
+                )
+                : null;
         }
 
         $declaring_property_class = $codebase->properties->getDeclaringClassForProperty(
@@ -1399,8 +1417,10 @@ class Reconciler
         $shape_changed = false;
 
         foreach ($base_type->getAtomicTypes() as $atomic_type) {
+            // with a fallback, dropping the offset would let the fallback type stand for it
             if ($atomic_type instanceof TKeyedArray
                 && !$atomic_type->is_list
+                && !$atomic_type->fallback_params
                 && isset($atomic_type->properties[$offset->value])
                 && $atomic_type->properties[$offset->value]->possibly_undefined
                 && ($is_absent
@@ -1412,8 +1432,6 @@ class Reconciler
 
                 if ($properties) {
                     $atomic_type = $atomic_type->setProperties($properties);
-                } elseif ($atomic_type->fallback_params) {
-                    $atomic_type = new TArray($atomic_type->fallback_params);
                 } else {
                     $atomic_type = new TArray([new Union([new TNever()]), new Union([new TNever()])]);
                 }
@@ -1615,6 +1633,65 @@ class Reconciler
                 }
             }
         }
+    }
+
+    /**
+     * Narrowing `$obj->prop` also narrows `prop` in the object shape of `$obj`.
+     *
+     * @psalm-capabilities read-props|write-this-props|write-refs
+     * @param list<string> $key_parts
+     * @param array<string, Union> $existing_types
+     * @param array<string, bool> $changed_var_ids
+     */
+    private static function adjustTObjectWithPropertiesType(
+        array $key_parts,
+        array &$existing_types,
+        array &$changed_var_ids,
+        Union $result_type,
+    ): void {
+        $property_name = array_pop($key_parts);
+        $divider = array_pop($key_parts);
+
+        if ($divider !== '->' || $property_name === null || !$key_parts) {
+            return;
+        }
+
+        $base_key = implode('', $key_parts);
+
+        if (!isset($existing_types[$base_key])) {
+            return;
+        }
+
+        $base_type = $existing_types[$base_key];
+        $narrowed_type = $result_type->setPossiblyUndefined(false);
+        $new_atomic_types = [];
+        $changed = false;
+
+        foreach ($base_type->getAtomicTypes() as $base_atomic_type) {
+            if ($base_atomic_type instanceof TObjectWithProperties
+                && isset($base_atomic_type->properties[$property_name])
+                && !$base_atomic_type->properties[$property_name]->equals($narrowed_type)
+            ) {
+                $properties = $base_atomic_type->properties;
+                $narrowed_from = $base_atomic_type->narrowed_from;
+                $narrowed_from[$property_name] ??= $properties[$property_name];
+                $properties[$property_name] = $narrowed_type;
+                $base_atomic_type = $base_atomic_type->setProperties($properties)->setNarrowedFrom($narrowed_from);
+                $changed = true;
+            }
+
+            $new_atomic_types[] = $base_atomic_type;
+        }
+
+        if (!$changed) {
+            return;
+        }
+
+        $new_base_type = $base_type->getBuilder()->setTypes($new_atomic_types)->freeze();
+        $existing_types[$base_key] = $new_base_type;
+        $changed_var_ids[$base_key . '->' . $property_name] = true;
+
+        self::adjustTObjectWithPropertiesType($key_parts, $existing_types, $changed_var_ids, $new_base_type);
     }
 
     /**

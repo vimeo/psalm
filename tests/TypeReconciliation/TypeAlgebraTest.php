@@ -21,97 +21,37 @@ final class TypeAlgebraTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
-            'notIdenticalKeepsTheIgnoredFalseOfTheNarrowedVariable' => [
+            'instanceofStoredInVariableNarrowsInIfBody' => [
                 'code' => '<?php
-                    /** @psalm-ignore-falsable-return */
-                    function path(string $p): string|false {
-                        return $p === "" ? false : $p;
+                    interface Foo {}
+                    interface Bar {
+                        public function bar(): void;
                     }
 
-                    /** @return non-empty-string|false */
-                    function other(string $p) {
-                        return $p === "" ? false : $p;
+                    function f(Foo $obj): void {
+                        $isBar = $obj instanceof Bar;
+
+                        if ($isBar) {
+                            $obj->bar();
+                        }
+                    }',
+            ],
+            'instanceofStoredInVariableNarrowsAfterEarlyReturn' => [
+                'code' => '<?php
+                    interface Foo {}
+                    interface Bar {
+                        public function bar(): void;
                     }
 
-                    function takesString(string $s): void {
-                        echo $s;
-                    }
+                    function f(Foo $obj): void {
+                        $isBar = $obj instanceof Bar;
 
-                    function f(): void {
-                        $file = path("a");
-
-                        if (other("b") !== $file) {
+                        if (!$isBar) {
                             return;
                         }
 
-                        takesString($file);
+                        $obj->bar();
                     }',
-                'assertions' => [],
-                'ignored_issues' => [],
-                'php_version' => '8.2',
-            ],
-            'notIdenticalToAStringVariableThenExitingGivesTheString' => [
-                'code' => '<?php
-                    /** @param mixed $b */
-                    function f(string $a, $b): string {
-                        if ($b !== $a) {
-                            throw new Exception("not equal");
-                        }
-
-                        /** @psalm-check-type-exact $b = string */
-
-                        return $b;
-                    }',
-                'assertions' => [],
-                'ignored_issues' => [],
-                'php_version' => '8.2',
-            ],
-            'notIdenticalWithTheTypedVariableOnTheLeftGivesTheString' => [
-                'code' => '<?php
-                    /** @param mixed $b */
-                    function f(string $a, $b): string {
-                        if ($a !== $b) {
-                            throw new Exception("not equal");
-                        }
-
-                        /** @psalm-check-type-exact $b = string */
-
-                        return $b;
-                    }',
-                'assertions' => [],
-                'ignored_issues' => [],
-                'php_version' => '8.2',
-            ],
-            'notIdenticalOfTwoUnionsKeepsTheUnion' => [
-                'code' => '<?php
-                    function f(int|string $a, int|string $b): int|string {
-                        if ($a !== $b) {
-                            return 0;
-                        }
-
-                        /** @psalm-check-type-exact $a = int|string */
-                        /** @psalm-check-type-exact $b = int|string */
-
-                        return $b;
-                    }',
-                'assertions' => [],
-                'ignored_issues' => [],
-                'php_version' => '8.2',
-            ],
-            'notIdenticalElseBranchOfAnUnrelatedPairIsUnchanged' => [
-                'code' => '<?php
-                    function f(string $a, string $b): string {
-                        if ($a !== $b) {
-                            return $a;
-                        }
-
-                        /** @psalm-check-type-exact $b = string */
-
-                        return $b;
-                    }',
-                'assertions' => [],
-                'ignored_issues' => [],
-                'php_version' => '8.2',
             ],
             'nullsafeCallFalsyResultDoesNotNarrowReceiver' => [
                 'code' => <<<'PHP'
@@ -1659,6 +1599,98 @@ final class TypeAlgebraTest extends TestCase
                         return A::$x->y;
                     }',
             ],
+            'notIdenticalKeepsTheIgnoredFalseOfTheNarrowedVariable' => [
+                'code' => '<?php
+                    /** @psalm-ignore-falsable-return */
+                    function path(string $p): string|false {
+                        return $p === "" ? false : $p;
+                    }
+
+                    /** @return non-empty-string|false */
+                    function other(string $p) {
+                        return $p === "" ? false : $p;
+                    }
+
+                    function takesString(string $s): void {
+                        echo $s;
+                    }
+
+                    function f(): void {
+                        $file = path("a");
+
+                        if (other("b") !== $file) {
+                            return;
+                        }
+
+                        takesString($file);
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.2',
+            ],
+            'notIdenticalToAStringVariableThenExitingGivesTheString' => [
+                'code' => '<?php
+                    /** @param mixed $b */
+                    function f(string $a, $b): string {
+                        if ($b !== $a) {
+                            throw new Exception("not equal");
+                        }
+
+                        /** @psalm-check-type-exact $b = string */
+
+                        return $b;
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.2',
+            ],
+            'notIdenticalWithTheTypedVariableOnTheLeftGivesTheString' => [
+                'code' => '<?php
+                    /** @param mixed $b */
+                    function f(string $a, $b): string {
+                        if ($a !== $b) {
+                            throw new Exception("not equal");
+                        }
+
+                        /** @psalm-check-type-exact $b = string */
+
+                        return $b;
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.2',
+            ],
+            'notIdenticalOfTwoUnionsKeepsTheUnion' => [
+                'code' => '<?php
+                    function f(int|string $a, int|string $b): int|string {
+                        if ($a !== $b) {
+                            return 0;
+                        }
+
+                        /** @psalm-check-type-exact $a = int|string */
+                        /** @psalm-check-type-exact $b = int|string */
+
+                        return $b;
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.2',
+            ],
+            'notIdenticalElseBranchOfAnUnrelatedPairIsUnchanged' => [
+                'code' => '<?php
+                    function f(string $a, string $b): string {
+                        if ($a !== $b) {
+                            return $a;
+                        }
+
+                        /** @psalm-check-type-exact $b = string */
+
+                        return $b;
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.2',
+            ],
         ];
     }
 
@@ -1669,6 +1701,42 @@ final class TypeAlgebraTest extends TestCase
     public static function providerInvalidCodeParse(): iterable
     {
         return [
+            'instanceofStoredInVariableIsForgottenWhenTheVariableIsReassigned' => [
+                'code' => '<?php
+                    interface Foo {}
+                    interface Bar {
+                        public function bar(): void;
+                    }
+                    class Baz implements Foo {}
+
+                    function f(Foo $obj): void {
+                        $isBar = $obj instanceof Bar;
+                        $obj = new Baz();
+
+                        if ($isBar) {
+                            $obj->bar();
+                        }
+                    }',
+                'error_message' => 'UndefinedMethod',
+            ],
+            'instanceofStoredInVariableDoesNotNarrowTheElseBranch' => [
+                'code' => '<?php
+                    interface Foo {}
+                    interface Bar {
+                        public function bar(): void;
+                    }
+
+                    function f(Foo $obj): void {
+                        $isBar = $obj instanceof Bar;
+
+                        if ($isBar) {
+                            echo "bar";
+                        } else {
+                            $obj->bar();
+                        }
+                    }',
+                'error_message' => 'UndefinedInterfaceMethod',
+            ],
             'booleanVariableNarrowingNotKeptInElseOfOr' => [
                 'code' => <<<'PHP'
                     <?php
