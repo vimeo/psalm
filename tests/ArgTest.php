@@ -22,6 +22,17 @@ final class ArgTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'secondUnpackedListStartsAfterTheParametersOfTheFirst' => [
+                'code' => '<?php
+                    function test(int $a, int $b, array $c): void {
+                        echo $a, $b, count($c);
+                    }
+
+                    test(...[1, 2], ...[[3]]);',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
             'twoUnpackedShapesPassTheirOwnParameters' => [
                 'code' => '<?php
                     function test(string $a, int $b): void {
@@ -491,6 +502,28 @@ final class ArgTest extends TestCase
     public static function providerInvalidCodeParse(): iterable
     {
         return [
+            'secondUnpackedListIsCheckedAgainstTheNextParameter' => [
+                'code' => '<?php
+                    function test(int $a, int $b, array $c): void {
+                        echo $a, $b, count($c);
+                    }
+
+                    test(...[1, 2], ...["bad"]);',
+                'error_message' => 'Argument 3 of test expects array',
+                'error_levels' => [],
+                'php_version' => '8.0',
+            ],
+            'unpackedVariadicIsCheckedNextToANamedArgumentOfTheSameName' => [
+                'code' => '<?php
+                    function test(int ...$args): void {
+                        echo count($args);
+                    }
+
+                    test(...["bad"], args: 1);',
+                'error_message' => 'InvalidScalarArgument',
+                'error_levels' => [],
+                'php_version' => '8.0',
+            ],
             'unpackedShapeStillChecksTheTypeOfItsOwnParameter' => [
                 'code' => '<?php
                     function test(string $a, int $b): void {

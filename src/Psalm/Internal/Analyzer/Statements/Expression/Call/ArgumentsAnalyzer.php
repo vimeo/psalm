@@ -79,6 +79,7 @@ use function implode;
 use function in_array;
 use function is_int;
 use function is_string;
+use function ksort;
 use function max;
 use function min;
 use function reset;
@@ -470,6 +471,37 @@ final class ArgumentsAnalyzer
         ]);
 
         return new FunctionLikeParameter('function', false, $type, $type);
+    }
+
+    /**
+     * What a sealed unpacked shape can pass: the parameters named by its string keys, or as many parameters as a list
+     * has elements. Null for what is not known.
+     *
+     * @return array{list<int|string>|null, int|null}
+     * @psalm-capabilities read-props
+     */
+    private static function getUnpackedShape(StatementsAnalyzer $statements_analyzer, PhpParser\Node\Arg $arg): array
+    {
+        $unpacked_type = $statements_analyzer->node_data->getType($arg->value);
+
+        if (!$unpacked_type
+            || !$unpacked_type->isSingle()
+            || !($unpacked_atomic = $unpacked_type->getSingleAtomic()) instanceof TKeyedArray
+            || $unpacked_atomic->fallback_params !== null
+        ) {
+            return [null, null];
+        }
+
+        if ($unpacked_atomic->is_list) {
+            return [null, count($unpacked_atomic->properties)];
+        }
+
+        $keys = array_keys($unpacked_atomic->properties);
+
+        return [
+            array_all($keys, static fn(int|string $key): bool => is_string($key)) ? $keys : null,
+            null,
+        ];
     }
 
     /**
@@ -1163,6 +1195,22 @@ final class ArgumentsAnalyzer
         $named_variadic_args = [];
         $named_args_was_used = false;
 
+        // the parameter each argument starts at: an unpacked list of known length consumes several parameters
+        $param_offsets = [];
+        $next_param_offset = 0;
+        $args_in_order = $args;
+        ksort($args_in_order);
+
+        foreach ($args_in_order as $argument_offset => $arg) {
+            $param_offsets[$argument_offset] = $next_param_offset;
+
+            if ($arg->unpack) {
+                $next_param_offset += self::getUnpackedShape($statements_analyzer, $arg)[1] ?? 0;
+            } elseif (!$arg->name) {
+                $next_param_offset++;
+            }
+        }
+
         foreach ($args as $argument_offset => $arg) {
             if ($named_args_was_used && !$arg->name) {
                 IssueBuffer::maybeAdd(
@@ -1176,39 +1224,23 @@ final class ArgumentsAnalyzer
             }
 
             if ($arg->unpack) {
-                // what a sealed unpacked shape can pass: the parameters named by its string keys, or as many
-                // parameters as a list has elements
-                $unpacked_names = null;
-                $unpacked_count = null;
-                $unpacked_type = $statements_analyzer->node_data->getType($arg->value);
+                [$unpacked_names, $unpacked_count] = self::getUnpackedShape($statements_analyzer, $arg);
 
-                if ($unpacked_type
-                    && $unpacked_type->isSingle()
-                    && ($unpacked_atomic = $unpacked_type->getSingleAtomic()) instanceof TKeyedArray
-                    && $unpacked_atomic->fallback_params === null
-                ) {
-                    if ($unpacked_atomic->is_list) {
-                        $unpacked_count = count($unpacked_atomic->properties);
-                    } elseif (array_all(
-                        array_keys($unpacked_atomic->properties),
-                        static fn(int|string $key): bool => is_string($key),
-                    )) {
-                        $unpacked_names = array_keys($unpacked_atomic->properties);
-                    }
-                }
+                $param_offset = $param_offsets[$argument_offset];
 
-                if ($function_param_count > $argument_offset) {
-                    for ($i = $argument_offset; $i < $function_param_count; $i++) {
+                if ($function_param_count > $param_offset) {
+                    for ($i = $param_offset; $i < $function_param_count; $i++) {
                         if (!$function_params[$i]->is_variadic
                             && (($unpacked_names !== null
                                     && !in_array($function_params[$i]->name, $unpacked_names, true))
-                                || ($unpacked_count !== null && $i >= $argument_offset + $unpacked_count))
+                                || ($unpacked_count !== null && $i >= $param_offset + $unpacked_count))
                         ) {
                             continue;
                         }
 
-                        // a parameter passed by name cannot also receive an unpacked value
-                        if (array_any(
+                        // a parameter passed by name cannot also receive an unpacked value, but a named argument
+                        // for the variadic parameter is collected next to the unpacked ones
+                        if (!$function_params[$i]->is_variadic && array_any(
                             $args,
                             static fn(PhpParser\Node\Arg $named_arg): bool => $named_arg->name !== null
                                 && $named_arg->name->name === $function_params[$i]->name,
@@ -1327,9 +1359,10 @@ final class ArgumentsAnalyzer
                         $statements_analyzer->getSuppressedIssues(),
                     );
                 }
-            } elseif ($function_param_count > $argument_offset) {
-                $arg_function_params[$argument_offset] = [$function_params[$argument_offset]];
-                $matched_args[$function_params[$argument_offset]->name] = true;
+            } elseif ($function_param_count > $param_offsets[$argument_offset]) {
+                $param = $function_params[$param_offsets[$argument_offset]];
+                $arg_function_params[$argument_offset] = [$param];
+                $matched_args[$param->name] = true;
             } elseif ($last_param && $last_param->is_variadic) {
                 $arg_function_params[$argument_offset] = [$last_param];
                 $matched_args[$last_param->name] = true;
@@ -1376,7 +1409,7 @@ final class ArgumentsAnalyzer
                     $code_location,
                     $function_storage,
                     $function_param,
-                    $argument_offset + $i,
+                    $param_offsets[$argument_offset] + $i,
                     $i,
                     $function_storage->allow_named_arg_calls ?? true,
                     $arg,
