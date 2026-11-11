@@ -215,6 +215,15 @@ final class StaticCallAnalyzer extends CallAnalyzer
                 }
 
                 if ($context->isPhantomClass($fq_class_name)) {
+                    ArgumentsAnalyzer::analyze(
+                        $statements_analyzer,
+                        $stmt->isFirstClassCallable() ? [] : $stmt->getArgs(),
+                        null,
+                        null,
+                        true,
+                        $context,
+                    );
+
                     return true;
                 }
 
@@ -247,6 +256,19 @@ final class StaticCallAnalyzer extends CallAnalyzer
                 }
 
                 if (!$does_class_exist) {
+                    // PHP resolves the class first: the arguments of a call of a class that is missing are never
+                    // evaluated, but where the classes aren't checked the call may well run
+                    if (!$context->check_classes) {
+                        ArgumentsAnalyzer::analyze(
+                            $statements_analyzer,
+                            $stmt->isFirstClassCallable() ? [] : $stmt->getArgs(),
+                            null,
+                            null,
+                            true,
+                            $context,
+                        );
+                    }
+
                     return $does_class_exist !== false;
                 }
             }
