@@ -528,6 +528,29 @@ final class MagicMethodAnnotationTest extends TestCase
                 'ignored_issues' => [],
                 'php_version' => '8.1',
             ],
+            'magicMethodOverloadWithAVariadicTypesTheNamesNoParameterHas' => [
+                'code' => '<?php
+                    /**
+                     * @method int pick(int ...$values)
+                     * @method string pick(string $name)
+                     */
+                    final class Many {
+                        public function __call(string $name, array $args): mixed {
+                            return null;
+                        }
+                    }
+
+                    $many = new Many();
+
+                    $byName = $many->pick(name: "hello");
+                    $byValues = $many->pick(first: 1, second: 2);',
+                'assertions' => [
+                    '$byName===' => 'string',
+                    '$byValues===' => 'int',
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
             'magicMethodOverloadDoesNotLoseTheNarrowingOfAnArgument' => [
                 'code' => '<?php
                     final class Foo {
