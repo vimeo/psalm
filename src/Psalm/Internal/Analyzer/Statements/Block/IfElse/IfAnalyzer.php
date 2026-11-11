@@ -42,7 +42,6 @@ use function in_array;
 use function preg_match;
 use function preg_quote;
 use function spl_object_id;
-use function strtolower;
 
 /**
  * @internal
@@ -159,13 +158,6 @@ final class IfAnalyzer
         $if_context->assigned_var_ids = [];
         $if_context->possibly_assigned_var_ids = [];
 
-        $negated_exists_class = self::getClassOfNegatedExistsCheck($stmt->cond);
-
-        if ($negated_exists_class !== null && isset($if_context->phantom_classes[$negated_exists_class])) {
-            unset($if_context->phantom_classes[$negated_exists_class]);
-            $if_context->suspended_phantom_classes[$negated_exists_class] = true;
-        }
-
         if ($statements_analyzer->analyze(
             $stmt->stmts,
             $if_context,
@@ -255,6 +247,16 @@ final class IfAnalyzer
         } else {
             if (!$has_break_statement) {
                 $if_scope->reasonable_clauses = [];
+            }
+
+            // unlike its assignments, the constants a `defined()` of the condition recorded exist after it
+            if ($if_scope->post_leaving_if_context) {
+                foreach ($outer_context->constants as $const_name => $const_type) {
+                    if (!isset($if_scope->post_leaving_if_context->constants[$const_name])) {
+                        $if_scope->post_leaving_if_context->constants[$const_name] = $const_type;
+                        $if_scope->post_leaving_if_context->vars_in_scope[$const_name] = $const_type;
+                    }
+                }
             }
 
             // If we're assigning inside
@@ -390,46 +392,6 @@ final class IfAnalyzer
                 $post_if_context->vars_in_scope[$var_id] = $post_leaving_if_context->vars_in_scope[$var_id];
             }
         }
-    }
-
-    /**
-     * @return lowercase-string|null
-     */
-    private static function getClassOfNegatedExistsCheck(PhpParser\Node\Expr $cond): ?string
-    {
-        if (!$cond instanceof PhpParser\Node\Expr\BooleanNot
-            || !$cond->expr instanceof PhpParser\Node\Expr\FuncCall
-            || !$cond->expr->name instanceof PhpParser\Node\Name
-            || !in_array(
-                strtolower($cond->expr->name->getFirst()),
-                ['class_exists', 'interface_exists', 'enum_exists'],
-                true,
-            )
-        ) {
-            return null;
-        }
-
-        $args = $cond->expr->getArgs();
-
-        if (!isset($args[0])) {
-            return null;
-        }
-
-        $first_arg = $args[0]->value;
-
-        if ($first_arg instanceof PhpParser\Node\Scalar\String_) {
-            return strtolower($first_arg->value);
-        }
-
-        if ($first_arg instanceof PhpParser\Node\Expr\ClassConstFetch
-            && $first_arg->class instanceof PhpParser\Node\Name
-            && $first_arg->name instanceof PhpParser\Node\Identifier
-            && $first_arg->name->name === 'class'
-        ) {
-            return strtolower((string) $first_arg->class->getAttribute('resolvedName'));
-        }
-
-        return null;
     }
 
     /**

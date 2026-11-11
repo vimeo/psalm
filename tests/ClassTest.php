@@ -929,16 +929,35 @@ final class ClassTest extends TestCase
                         Polyfill::run();
                     }',
                 'assertions' => [],
-                'ignored_issues' => ['UndefinedClass'],
+                'ignored_issues' => [],
             ],
-            'classUsedAfterTheFirstStatementOfANegatedClassExistsBlock' => [
+            'classNameOfAClassThatANegatedClassExistsFoundMissing' => [
                 'code' => '<?php
-                    if (!class_exists("Polyfill")) {
-                        $loaded = false;
-                        Polyfill::run();
+                    function install(): void {
+                        if (!class_exists(Missing::class)) {
+                            throw new LogicException(sprintf("Run: composer require %s", Missing::class));
+                        }
+
+                        Missing::run();
+                    }
+
+                    function install2(): void {
+                        if (!class_exists("Missing2")) {
+                            return;
+                        }
+
+                        Missing2::run();
+                    }
+
+                    function install3(): void {
+                        if (!class_exists(Missing3::class)) {
+                            echo Missing3::class;
+                        } else {
+                            Missing3::run();
+                        }
                     }',
                 'assertions' => [],
-                'ignored_issues' => ['UnusedVariable'],
+                'ignored_issues' => [],
             ],
             'noErrorsAfterClassExists' => [
                 'code' => '<?php
@@ -1463,6 +1482,15 @@ final class ClassTest extends TestCase
     public static function providerInvalidCodeParse(): iterable
     {
         return [
+            'staticCallOnTheClassOfANegatedClassExistsAfterOtherStatements' => [
+                'code' => '<?php
+                    if (!class_exists("Polyfill")) {
+                        $loaded = false;
+                        Polyfill::run();
+                    }',
+                'error_message' => 'UndefinedClass',
+                'error_levels' => ['UnusedVariable'],
+            ],
             'staticCallOnTheClassOfANegatedClassExists' => [
                 'code' => '<?php
                     if (!class_exists(Really::class)) {

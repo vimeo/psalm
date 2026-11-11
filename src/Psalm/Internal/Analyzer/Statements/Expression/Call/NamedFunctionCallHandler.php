@@ -118,11 +118,22 @@ final class NamedFunctionCallHandler
             return;
         }
 
+        if ($function_id === 'class_alias') {
+            // the alias is declared from here on, whatever was checked about it before
+            $alias_arg = $stmt->getArgs()[1] ?? null;
+
+            if ($alias_arg && $alias_arg->value instanceof PhpParser\Node\Scalar\String_) {
+                $context->phantom_classes[strtolower(ltrim($alias_arg->value->value, '\\'))] = true;
+            }
+
+            return;
+        }
+
         if ($function_id === 'class_exists') {
             if ($first_arg) {
                 if ($first_arg->value instanceof PhpParser\Node\Scalar\String_) {
                     if (!$codebase->classlikes->classExists($first_arg->value->value, null, $context)) {
-                        $context->phantom_classes[strtolower($first_arg->value->value)] = true;
+                        $context->addPhantomClass(strtolower($first_arg->value->value));
                     }
                 } elseif ($first_arg->value instanceof PhpParser\Node\Expr\ClassConstFetch
                     && $first_arg->value->class instanceof PhpParser\Node\Name
@@ -132,7 +143,7 @@ final class NamedFunctionCallHandler
                     $resolved_name = (string) $first_arg->value->class->getAttribute('resolvedName');
 
                     if (!$codebase->classlikes->classExists($resolved_name, null, $context)) {
-                        $context->phantom_classes[strtolower($resolved_name)] = true;
+                        $context->addPhantomClass(strtolower($resolved_name));
                     }
                 }
             }
@@ -144,7 +155,7 @@ final class NamedFunctionCallHandler
             if ($first_arg) {
                 if ($first_arg->value instanceof PhpParser\Node\Scalar\String_) {
                     if (!$codebase->classlikes->interfaceExists($first_arg->value->value, null, $context)) {
-                        $context->phantom_classes[strtolower($first_arg->value->value)] = true;
+                        $context->addPhantomClass(strtolower($first_arg->value->value));
                     }
                 } elseif ($first_arg->value instanceof PhpParser\Node\Expr\ClassConstFetch
                     && $first_arg->value->class instanceof PhpParser\Node\Name
@@ -154,7 +165,7 @@ final class NamedFunctionCallHandler
                     $resolved_name = (string) $first_arg->value->class->getAttribute('resolvedName');
 
                     if (!$codebase->classlikes->interfaceExists($resolved_name, null, $context)) {
-                        $context->phantom_classes[strtolower($resolved_name)] = true;
+                        $context->addPhantomClass(strtolower($resolved_name));
                     }
                 }
             }
@@ -166,7 +177,7 @@ final class NamedFunctionCallHandler
             if ($first_arg) {
                 if ($first_arg->value instanceof PhpParser\Node\Scalar\String_) {
                     if (!$codebase->classlikes->enumExists($first_arg->value->value, null, $context)) {
-                        $context->phantom_classes[strtolower($first_arg->value->value)] = true;
+                        $context->addPhantomClass(strtolower($first_arg->value->value));
                     }
                 } elseif ($first_arg->value instanceof PhpParser\Node\Expr\ClassConstFetch
                     && $first_arg->value->class instanceof PhpParser\Node\Name
@@ -176,7 +187,7 @@ final class NamedFunctionCallHandler
                     $resolved_name = (string) $first_arg->value->class->getAttribute('resolvedName');
 
                     if (!$codebase->classlikes->enumExists($resolved_name, null, $context)) {
-                        $context->phantom_classes[strtolower($resolved_name)] = true;
+                        $context->addPhantomClass(strtolower($resolved_name));
                     }
                 }
             }
