@@ -40,6 +40,30 @@ final class MagicPropertyTest extends TestCase
         $this->analyzeFile('somefile.php', new Context());
     }
 
+    public function testPhpDocPropertyWithoutMagicGetterIsExpanded(): void
+    {
+        Config::getInstance()->use_phpdoc_property_without_magic_or_parent = true;
+
+        $this->addFile(
+            'somefile.php',
+            '<?php
+                enum Foo: string {
+                    case Bar = "bar";
+                    case Lee = "lee";
+                }
+
+                /** @property value-of<Foo> $attr */
+                class Holder {}
+
+                $holder = new Holder();
+                $attr = $holder->attr;
+                /** @psalm-check-type-exact $attr = \'bar\'|\'lee\' */',
+        );
+
+        $this->project_analyzer->setPhpVersion('8.1', 'tests');
+        $this->analyzeFile('somefile.php', new Context());
+    }
+
     /**
      * @psalm-pure
      */
@@ -47,6 +71,36 @@ final class MagicPropertyTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'valueOfPseudoPropertyIsNarrowedByAnEqualityCheck' => [
+                'code' => '<?php
+                    enum Foo: string {
+                        case Bar = "bar";
+                        case Lee = "lee";
+                    }
+
+                    /** @property value-of<Foo> $attr */
+                    class Holder {
+                        public function __set(string $name, mixed $value): void {}
+                        public function __get(string $name): mixed {
+                            return null;
+                        }
+
+                        public function check(): string {
+                            if ($this->attr === Foo::Bar->value) {
+                                return "bar";
+                            }
+
+                            if ($this->attr === Foo::Lee->value) {
+                                return "lee";
+                            }
+
+                            return "";
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => ['RedundantConditionGivenDocblockType', 'UnevaluatedCode'],
+                'php_version' => '8.1',
+            ],
             'magicGetNameKeepsItsClassStringType' => [
                 'code' => '<?php
                     interface MakeMe {
@@ -1038,6 +1092,37 @@ final class MagicPropertyTest extends TestCase
                 'ignored_issues' => [],
                 'php_version' => '8.1',
             ],
+            'propertyTypesWithSpacesAroundPipe' => [
+                'code' => '<?php
+                    final class B {}
+
+                    /**
+                     * @property B |null $a
+                     * @property-read B | null $b
+                     * @psalm-property B  |  null $c
+                     * @property B
+                     *     |null $d
+                     */
+                    class A {
+                        public function __get(string $name) {
+                            return null;
+                        }
+
+                        /** @param mixed $value */
+                        public function __set(string $name, $value): void {}
+                    }
+
+                    $a = (new A)->a;
+                    $b = (new A)->b;
+                    $c = (new A)->c;
+                    $d = (new A)->d;',
+                'assertions' => [
+                    '$a' => 'B|null',
+                    '$b' => 'B|null',
+                    '$c' => 'B|null',
+                    '$d' => 'B|null',
+                ],
+            ],
         ];
     }
 
@@ -1522,7 +1607,7 @@ final class MagicPropertyTest extends TestCase
                 'code' => '<?php
                     /**
                      * @property-read string|null $p
-                     * 
+                     *
                      * @psalm-no-seal-properties // For the test
                      */
                     class A {
@@ -1534,6 +1619,25 @@ final class MagicPropertyTest extends TestCase
                         }
                     }',
                 'error_message' => 'MixedReturnStatement',
+            ],
+            'propertyWriteTypeWithSpaceBeforePipe' => [
+                'code' => '<?php
+                    /**
+                     * @property-write string |null $foo
+                     */
+                    class A {
+                        public function __get(string $name): ?string {
+                            return null;
+                        }
+
+                        /** @param mixed $value */
+                        public function __set(string $name, $value): void {
+                        }
+                    }
+
+                    $a = new A();
+                    $a->foo = 5;',
+                'error_message' => 'InvalidPropertyAssignmentValue',
             ],
         ];
     }

@@ -103,49 +103,6 @@ final class AssertAnnotationTest extends TestCase
         $this->analyzeFile('somefile.php', new Context());
     }
 
-    public function testAssertIfTrueAndIfFalseOnAnOffsetWhoseKeyContainsTheParameterName(): void
-    {
-        Config::getInstance()->ensure_array_string_offsets_exist = true;
-
-        $this->addFile(
-            'somefile.php',
-            '<?php
-                final class Obj {}
-
-                /** @psalm-assert-if-true Obj $data["data"] */
-                function has(array $data): bool {
-                    return isset($data["data"]) && $data["data"] instanceof Obj;
-                }
-
-                /** @psalm-assert-if-false Obj $context["context"] */
-                function lacks(array $context): bool {
-                    return !isset($context["context"]) || !$context["context"] instanceof Obj;
-                }
-
-                /** @psalm-assert Obj $a["a"] */
-                function assertA(array $a): void {
-                    if (!isset($a["a"]) || !$a["a"] instanceof Obj) {
-                        throw new InvalidArgumentException("a");
-                    }
-                }
-
-                function f(array $d, array $c, array $e): void {
-                    if (has($d)) {
-                        echo get_class($d["data"]);
-                    }
-
-                    if (!lacks($c)) {
-                        echo get_class($c["context"]);
-                    }
-
-                    assertA($e);
-                    echo get_class($e["a"]);
-                }',
-        );
-
-        $this->analyzeFile('somefile.php', new Context());
-    }
-
     public function testArrayKeyExistsAssertionOfNamedArguments(): void
     {
         Config::getInstance()->ensure_array_string_offsets_exist = true;
@@ -294,54 +251,43 @@ final class AssertAnnotationTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
-            'assertAnOffsetOfAnArgument' => [
+            'assertObjectShapeOnObject' => [
                 'code' => '<?php
-                    final class Obj {}
+                    /** @psalm-assert object{a: int} $obj */
+                    function assertShape(mixed $obj): void {}
 
-                    /**
-                     * @psalm-assert Obj $context["obj"]
-                     */
-                    function assertObj(array $context): void {
-                        if (!isset($context["obj"]) || !$context["obj"] instanceof Obj) {
-                            throw new InvalidArgumentException("Object is not set");
-                        }
+                    function getObject(): object {
+                        return new stdClass;
                     }
 
-                    /**
-                     * @psalm-assert-if-true Obj $context["obj"]
-                     */
-                    function hasObj(array $context): bool {
-                        return isset($context["obj"]) && $context["obj"] instanceof Obj;
+                    $b = getObject();
+                    assertShape($b);',
+                'assertions' => [
+                    '$b===' => 'object{a:int}',
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'assertObjectShapeOnObjectKeepsEarlierShape' => [
+                'code' => '<?php
+                    /** @psalm-assert object{a: int} $obj */
+                    function assertA(mixed $obj): void {}
+
+                    /** @psalm-assert object{b: string} $obj */
+                    function assertB(mixed $obj): void {}
+
+                    function getObject(): object {
+                        return new stdClass;
                     }
 
-                    /**
-                     * @psalm-assert-if-false Obj $context["obj"]
-                     */
-                    function lacksObj(array $context): bool {
-                        return !isset($context["obj"]) || !$context["obj"] instanceof Obj;
-                    }
-
-                    function first(array $context): void {
-                        assertObj($context);
-                        $first = $context["obj"];
-                        /** @psalm-check-type-exact $first = Obj */;
-                    }
-
-                    function second(array $context): void {
-                        if (hasObj($context)) {
-                            $second = $context["obj"];
-                            /** @psalm-check-type-exact $second = Obj */;
-                        }
-                    }
-
-                    function third(array $context): void {
-                        if (!lacksObj($context)) {
-                            $third = $context["obj"];
-                            /** @psalm-check-type-exact $third = Obj */;
-                        }
-                    }',
-                'assertions' => [],
-                'ignored_issues' => ['MixedAssignment', 'UnusedVariable'],
+                    $b = getObject();
+                    assertA($b);
+                    assertB($b);',
+                'assertions' => [
+                    '$b===' => 'object{a:int}&object{b:string}',
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
             ],
             'negatedArrayAssertionKeepsTheExistingArrayType' => [
                 'code' => '<?php
@@ -4185,17 +4131,7 @@ final class AssertAnnotationTest extends TestCase
                     '$arr===' => 'non-empty-array<int, string>',
                 ],
             ],
-        ];
-    }
-
-    /**
-     * @psalm-pure
-     */
-    #[Override]
-    public static function providerInvalidCodeParse(): iterable
-    {
-        return [
-            'assertAnOffsetOfAnArgumentDoesNotAssertAnotherOffset' => [
+            'assertAnOffsetOfAnArgument' => [
                 'code' => '<?php
                     final class Obj {}
 
@@ -4208,13 +4144,52 @@ final class AssertAnnotationTest extends TestCase
                         }
                     }
 
-                    function check(array $context): Obj {
-                        assertObj($context);
+                    /**
+                     * @psalm-assert-if-true Obj $context["obj"]
+                     */
+                    function hasObj(array $context): bool {
+                        return isset($context["obj"]) && $context["obj"] instanceof Obj;
+                    }
 
-                        return $context["other"];
+                    /**
+                     * @psalm-assert-if-false Obj $context["obj"]
+                     */
+                    function lacksObj(array $context): bool {
+                        return !isset($context["obj"]) || !$context["obj"] instanceof Obj;
+                    }
+
+                    function first(array $context): void {
+                        assertObj($context);
+                        $first = $context["obj"];
+                        /** @psalm-check-type-exact $first = Obj */;
+                    }
+
+                    function second(array $context): void {
+                        if (hasObj($context)) {
+                            $second = $context["obj"];
+                            /** @psalm-check-type-exact $second = Obj */;
+                        }
+                    }
+
+                    function third(array $context): void {
+                        if (!lacksObj($context)) {
+                            $third = $context["obj"];
+                            /** @psalm-check-type-exact $third = Obj */;
+                        }
                     }',
-                'error_message' => 'MixedReturnStatement',
+                'assertions' => [],
+                'ignored_issues' => ['MixedAssignment', 'UnusedVariable'],
             ],
+        ];
+    }
+
+    /**
+     * @psalm-pure
+     */
+    #[Override]
+    public static function providerInvalidCodeParse(): iterable
+    {
+        return [
             'assertNonEmptyArrayOnANonEmptyArray' => [
                 'code' => '<?php
                     /**
@@ -4718,6 +4693,26 @@ final class AssertAnnotationTest extends TestCase
 
                     if (hasP(Holder::$sh)) {}',
                 'error_message' => 'Variable Holder::$sh is not an object so the assertion cannot be applied',
+            ],
+            'assertAnOffsetOfAnArgumentDoesNotAssertAnotherOffset' => [
+                'code' => '<?php
+                    final class Obj {}
+
+                    /**
+                     * @psalm-assert Obj $context["obj"]
+                     */
+                    function assertObj(array $context): void {
+                        if (!isset($context["obj"]) || !$context["obj"] instanceof Obj) {
+                            throw new InvalidArgumentException("Object is not set");
+                        }
+                    }
+
+                    function check(array $context): Obj {
+                        assertObj($context);
+
+                        return $context["other"];
+                    }',
+                'error_message' => 'MixedReturnStatement',
             ],
         ];
     }

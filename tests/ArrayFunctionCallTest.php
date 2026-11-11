@@ -100,6 +100,37 @@ final class ArrayFunctionCallTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'arrayPopOfAListWithAnOptionalLastItem' => [
+                'code' => <<<'PHP'
+                    <?php
+                    function pop(bool $one, bool $two): void {
+                        $always = [0, 1];
+                        array_pop($always);
+
+                        $maybe = [0];
+                        if ($one) {
+                            $maybe[] = 2;
+                        }
+                        array_pop($maybe);
+
+                        $maybe_twice = [0];
+                        if ($one) {
+                            $maybe_twice[] = 2;
+                        }
+                        if ($two) {
+                            $maybe_twice[] = 3;
+                        }
+                        array_pop($maybe_twice);
+
+                        /** @psalm-check-type-exact $always = list{0: 0} */
+                        /** @psalm-check-type-exact $maybe = list{0?: 0} */
+                        /** @psalm-check-type-exact $maybe_twice = list{0?: 0, 1?: 2|3} */
+                    }
+                    PHP,
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
             'arrayUdiffKeepsTheTypeOfTheFirstArray' => [
                 'code' => '<?php
                     $removed = array_udiff(
@@ -3797,6 +3828,154 @@ final class ArrayFunctionCallTest extends TestCase
                 'ignored_issues' => [],
                 'php_version' => '8.4',
             ],
+            'arrayIntersectKeyDropsKeysTheFirstArrayCannotHave' => [
+                'code' => <<<'PHP'
+                    <?php
+                    /** @var array<string, int> $a */
+                    $a = [];
+                    $r = array_intersect_key($a, [1 => 'a']);
+
+                    /** @psalm-check-type-exact $r = array<string, int> */
+                    PHP,
+                'assertions' => [],
+            ],
+            'arrayIntersectKeyWithUnpackedArgumentKeepsTheKeys' => [
+                'code' => <<<'PHP'
+                    <?php
+                    /** @var array<string, int> $a */
+                    $a = [];
+                    $others = [['x' => 1]];
+                    $r = array_intersect_key($a, ...$others);
+
+                    /** @psalm-check-type-exact $r = array<string, int> */
+                    PHP,
+                'assertions' => [],
+            ],
+            'arrayIntersectKeyWithoutSealedShapeKeepsTheKeys' => [
+                'code' => <<<'PHP'
+                    <?php
+                    /** @var array<string, int> $a */
+                    $a = [];
+                    /** @var array<string, int> $b */
+                    $b = [];
+                    $r = array_intersect_key($a, $b);
+
+                    /** @psalm-check-type-exact $r = array<string, int> */
+                    PHP,
+                'assertions' => [],
+            ],
+            'arrayIntersectKeyKeepsTheKeysSharedByAllSealedShapes' => [
+                'code' => <<<'PHP'
+                    <?php
+                    /** @var array<string, int> $a */
+                    $a = [];
+                    /** @var array<string, int> $unknown */
+                    $unknown = [];
+                    $r = array_intersect_key($a, ['x' => 1, 'y' => 2, 'z' => 3], $unknown, ['y' => 1, 'z' => 1, 'w' => 1]);
+
+                    /** @psalm-check-type-exact $r = array<'y'|'z', int> */
+                    PHP,
+                'assertions' => [],
+            ],
+            'arrayIntersectKeyKeepsTheKeysOfASealedShape' => [
+                'code' => <<<'PHP'
+                    <?php
+                    $default = ['foo' => 'foo', 'bar' => 'bar'];
+
+                    /** @var array<string, int> $a */
+                    $a = [];
+                    $r = array_intersect_key($a, $default);
+
+                    /** @psalm-check-type-exact $r = array<'bar'|'foo', int> */
+                    PHP,
+                'assertions' => [],
+            ],
+            'arrayIntersectKeyOfMergedDefaultsIsStringKeyed' => [
+                'code' => <<<'PHP'
+                    <?php
+                    /** @return array<string, mixed> */
+                    function foo(array $values) {
+                        $default = ['foo' => 'foo', 'bar' => 'bar'];
+
+                        return array_intersect_key(array_merge($default, $values), $default);
+                    }
+                    PHP,
+                'assertions' => [],
+            ],
+            'arrayFilterOfAnArrayOrMixedKeepsAnArrayType' => [
+                'code' => '<?php
+                    /** @var mixed $maybe */
+                    $maybe = 1;
+                    $bar = $maybe ?? [];
+                    $filtered = array_filter($bar);',
+                'assertions' => [
+                    '$filtered' => 'array<array-key, non-empty-mixed>',
+                ],
+                'ignored_issues' => ['MixedAssignment', 'MixedArgument'],
+            ],
+            'arrayFilterOfAnArrayOrMixedIsNotEmpty' => [
+                'code' => '<?php
+                    /**
+                     * @param array<string, mixed> $array
+                     */
+                    function foo(array $array): void {
+                        $bar = $array["key"] ?? [];
+                        $filtered = array_filter($bar);
+
+                        if (count($filtered) !== 1) {
+                            throw new Exception();
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => ['MixedAssignment', 'MixedArgument'],
+            ],
+            'arrayUniqueOfStringableObjects' => [
+                'code' => '<?php
+                    /**
+                     * @param list<stringable-object> $objects
+                     * @return list<stringable-object>
+                     */
+                    function unique(array $objects): array {
+                        return array_values(array_unique($objects));
+                    }',
+            ],
+            'arrayUniqueOfValuesThatConvertToStrings' => [
+                'code' => '<?php
+                    final class Name {
+                        public function __toString(): string {
+                            return "name";
+                        }
+                    }
+
+                    /** @var list<string> $strings */
+                    $strings = [];
+                    /** @var array<string, int|float|bool|null> $scalars */
+                    $scalars = [];
+                    /** @var list<Name> $names */
+                    $names = [];
+                    /** @var list<array<array-key, mixed>> $arrays */
+                    $arrays = [];
+                    /** @var list<mixed> $mixed */
+                    $mixed = [];
+                    /** @var list<stdClass> $objects */
+                    $objects = [];
+
+                    $a = array_unique($strings);
+                    $b = array_unique($scalars, SORT_STRING);
+                    $c = array_unique($names, SORT_LOCALE_STRING);
+                    $d = array_unique($arrays);
+                    $e = array_unique($mixed);
+                    $f = array_unique($objects, SORT_REGULAR);
+                    $g = array_unique(array: $objects, flags: SORT_REGULAR);
+                    $h = array_unique($objects, SORT_NUMERIC);
+                    $i = array_unique($objects, (int) $mixed[0]);
+                    $j = array_unique($objects, ...[SORT_REGULAR]);',
+                'assertions' => [
+                    '$a===' => 'array<int<0, max>, string>',
+                ],
+                'ignored_issues' => ['MixedArgumentTypeCoercion', 'MixedArgument', 'MixedAssignment'],
+                'php_version' => '8.0',
+            ],
         ];
     }
 
@@ -3807,6 +3986,21 @@ final class ArrayFunctionCallTest extends TestCase
     public static function providerInvalidCodeParse(): iterable
     {
         return [
+            'arrayPopOfAListWithAnOptionalLastItemMayEmptyIt' => [
+                'code' => '<?php
+                    /** @param non-empty-list<int> $a */
+                    function foo(array $a): void {}
+
+                    function bar(bool $one): void {
+                        $d = [0];
+                        if ($one) {
+                            $d[] = 2;
+                        }
+                        array_pop($d);
+                        foo($d);
+                    }',
+                'error_message' => 'InvalidArgument',
+            ],
             'arrayColumnIndexColumnOfAnObjectIsNotAnArrayKey' => [
                 'code' => '<?php
                     $result = array_column([[new stdClass, 1]], 1, 0);',
@@ -4372,6 +4566,46 @@ final class ArrayFunctionCallTest extends TestCase
                         return array_pop($a[0]);
                     }',
                 'error_message' => 'InvalidReturnStatement',
+            ],
+            'arrayUniqueOfObjectsThatAreNotStringable' => [
+                'code' => '<?php
+                    /** @var list<stdClass> $objects */
+                    $objects = [];
+
+                    array_unique($objects);',
+                'error_message' => 'InvalidArgument',
+            ],
+            'arrayUniqueOfObjectsWithTheStringFlag' => [
+                'code' => '<?php
+                    /** @var list<stdClass> $objects */
+                    $objects = [];
+
+                    array_unique($objects, SORT_STRING);',
+                'error_message' => 'InvalidArgument',
+            ],
+            'arrayUniqueOfObjectsWithTheLocaleStringFlag' => [
+                'code' => '<?php
+                    /** @var list<stdClass> $objects */
+                    $objects = [];
+
+                    array_unique($objects, SORT_LOCALE_STRING);',
+                'error_message' => 'InvalidArgument',
+            ],
+            'arrayUniqueOfObjectsWithANamedStringFlag' => [
+                'code' => '<?php
+                    /** @var list<stdClass> $objects */
+                    $objects = [];
+
+                    array_unique(flags: SORT_STRING, array: $objects);',
+                'error_message' => 'InvalidArgument',
+            ],
+            'arrayUniqueOfSomeObjectsThatAreNotStringable' => [
+                'code' => '<?php
+                    /** @var list<string|stdClass> $values */
+                    $values = [];
+
+                    array_unique($values);',
+                'error_message' => 'PossiblyInvalidArgument',
             ],
         ];
     }
