@@ -172,6 +172,9 @@ class FileAnalyzer extends SourceAnalyzer
 
         $leftover_stmts = $this->populateCheckers($stmts);
 
+        // statements outside a namespace (a shebang line) come before it, so its return or exit doesn't affect them
+        $this->context->has_returned = false;
+
         $this->node_data = new NodeDataProvider();
         $statements_analyzer = new StatementsAnalyzer($this, $this->node_data, true);
 
@@ -421,6 +424,7 @@ class FileAnalyzer extends SourceAnalyzer
                     $this_context,
                     $this->getRootFilePath(),
                     $this->getRootFileName(),
+                    $this,
                 );
             }
 
@@ -588,6 +592,22 @@ class FileAnalyzer extends SourceAnalyzer
     public function addParentFilePath(string $file_path): void
     {
         $this->parent_file_paths[$file_path] = true;
+    }
+
+    /**
+     * The files this one is analysed from, for a file analysed because of a call from this one
+     */
+    public function passIncludeChainTo(self $other): void
+    {
+        $other->parent_file_paths[$this->file_path] = true;
+
+        foreach ($this->parent_file_paths as $parent_file_path => $_) {
+            $other->parent_file_paths[$parent_file_path] = true;
+        }
+
+        foreach ($this->required_file_paths as $required_file_path => $_) {
+            $other->required_file_paths[$required_file_path] = true;
+        }
     }
 
     /** @psalm-mutation-free */

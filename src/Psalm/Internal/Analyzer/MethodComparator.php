@@ -180,9 +180,16 @@ final class MethodComparator
             );
         }
 
+        // a trait method takes the docblock of the parent method per using class (see Populator), not per storage
+        $inherits_return_type = $implementer_method_storage->inherited_return_type
+            || (!$implementer_method_storage->has_docblock_param_types
+                && !$implementer_method_storage->has_docblock_return_type
+                && isset($codebase->classlike_storage_provider->get($implementer_called_class_name)
+                    ->documenting_method_ids[strtolower($guide_method_storage->cased_name ?? '')]));
+
         if ($guide_method_storage->return_type
             && $implementer_method_storage->return_type
-            && !$implementer_method_storage->inherited_return_type
+            && !$inherits_return_type
             && ($guide_method_storage->signature_return_type !== $guide_method_storage->return_type
                 || $implementer_method_storage->signature_return_type !== $implementer_method_storage->return_type)
             && $implementer_classlike_storage->user_defined
@@ -260,7 +267,13 @@ final class MethodComparator
                 $implementer_called_class_name,
                 $guide_method_storage,
                 $implementer_method_storage,
-                $guide_param,
+                self::getDocumentedGuideParam(
+                    $codebase,
+                    $guide_classlike_storage,
+                    $guide_method_storage,
+                    $guide_param,
+                    $i,
+                ),
                 $implementer_method_storage->params[$i],
                 $i,
                 $cased_guide_method_id,
@@ -796,6 +809,49 @@ final class MethodComparator
     }
 
     /**
+     * A method with no docblock of its own is documented by the one it inherits it from (see Populator), and a
+     * method overriding it is compared with the param type of that docblock
+     */
+    private static function getDocumentedGuideParam(
+        Codebase $codebase,
+        ClassLikeStorage $guide_classlike_storage,
+        MethodStorage $guide_method_storage,
+        FunctionLikeParameter $guide_param,
+        int $i,
+    ): FunctionLikeParameter {
+        if ($guide_method_storage->has_docblock_param_types) {
+            return $guide_param;
+        }
+
+        $documenting_method_id = $guide_classlike_storage->documenting_method_ids[
+            strtolower($guide_method_storage->cased_name ?? '')
+        ] ?? null;
+
+        if ($documenting_method_id === null
+            || strtolower($documenting_method_id->fq_class_name) === strtolower($guide_classlike_storage->name)
+        ) {
+            return $guide_param;
+        }
+
+        $documenting_param = $codebase->methods->getStorage($documenting_method_id)->params[$i] ?? null;
+
+        // its templates are the ones of the class it is declared in; a type that is only the native one of the
+        // inherited method documents nothing, and a docblock type broader than the native type of the method
+        // itself does not widen what overriding methods may declare
+        if ($documenting_param === null
+            || $documenting_param->type === null
+            || !$documenting_param->has_docblock_type
+            || $documenting_param->type->hasTemplate()
+            || ($guide_param->type !== null
+                && !UnionTypeComparator::isContainedBy($codebase, $documenting_param->type, $guide_param->type))
+        ) {
+            return $guide_param;
+        }
+
+        return $guide_param->setType($documenting_param->type);
+    }
+
+    /**
      * @param  string[]         $suppressed_issues
      */
     private static function compareMethodSignatureParams(
@@ -1270,6 +1326,9 @@ final class MethodComparator
                 : $implementer_classlike_storage->name,
             $implementer_called_class_name,
             $implementer_classlike_storage->parent_class,
+            true,
+            false,
+            $implementer_classlike_storage->final,
         );
 
         $guide_method_storage_return_type = TypeExpander::expandUnion(
@@ -1285,7 +1344,7 @@ final class MethodComparator
             $guide_classlike_storage->parent_class,
             true,
             true,
-            $implementer_method_storage->final,
+            $implementer_classlike_storage->final,
         );
 
         $guide_class_name = $guide_classlike_storage->name;
