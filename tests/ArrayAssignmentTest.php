@@ -140,6 +140,34 @@ final class ArrayAssignmentTest extends TestCase
                     $nested = ["a" => [9223372036854775807 => 1]];
                     $nested["b"][] = 2;',
             ],
+            'assignToTheItemOfAnArrayAFunctionReturnsByReference' => [
+                'code' => '<?php
+                    function &ensureArray(array &$what): array {
+                        return $what;
+                    }
+
+                    $f = [];
+                    ensureArray($f)[] = "foobar";',
+            ],
+            'assignToTheItemOfAnArrayAMethodReturnsByReference' => [
+                'code' => '<?php
+                    final class Bag {
+                        private array $items = [];
+
+                        public function &items(): array {
+                            return $this->items;
+                        }
+
+                        public static function &of(array &$what): array {
+                            return $what;
+                        }
+                    }
+
+                    $bag = new Bag();
+                    $bag->items()[] = "foo";
+                    $a = [];
+                    Bag::of($a)["k"] = "bar";',
+            ],
             'coalesceAssignmentOnTwoOptionalKeysOfAnArrayWithAShapeIntersection' => [
                 'code' => '<?php
                     /** @var array{name?: string, age?: int}&array $data */
@@ -2877,6 +2905,16 @@ final class ArrayAssignmentTest extends TestCase
                     $array = [9223372036854775807 => "last"];
                     $array[] = "one more";',
                 'error_message' => 'InvalidArrayOffset - src' . DIRECTORY_SEPARATOR . 'somefile.php:3:21 - Cannot add an element to the array as the next element is already occupied',
+            ],
+            'assignToTheItemOfAnArrayAFunctionReturnsByValue' => [
+                'code' => '<?php
+                    function getArray(array $what): array {
+                        return $what;
+                    }
+
+                    $f = [];
+                    getArray($f)[] = "foobar";',
+                'error_message' => 'InvalidArrayAssignment',
             ],
             'assignToNestedKeyOfListWithUnrelatedKeyIsNotAList' => [
                 'code' => '<?php
