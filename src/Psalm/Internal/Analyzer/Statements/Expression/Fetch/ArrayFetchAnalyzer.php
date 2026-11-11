@@ -1383,7 +1383,7 @@ final class ArrayFetchAnalyzer
                 );
 
                 $literal_access = $string_to_int === false
-                    ? '\'' . $offset_type_part->value . '\''
+                    ? ExpressionIdentifier::quoteOffset($offset_type_part->value)
                     : $string_to_int;
                 if (isset(
                     $context->vars_in_scope[

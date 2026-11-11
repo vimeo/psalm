@@ -836,7 +836,9 @@ class Reconciler
 
                     if ($array_key[0] === '$' && isset($existing_keys[$array_key])) {
                         if ($existing_keys[$array_key]->isSingleStringLiteral()) {
-                            $lookup_key = '\'' . $existing_keys[$array_key]->getSingleStringLiteral()->value . '\'';
+                            $lookup_key = ExpressionIdentifier::quoteOffset(
+                                $existing_keys[$array_key]->getSingleStringLiteral()->value,
+                            );
                         } elseif ($existing_keys[$array_key]->isSingleIntLiteral()) {
                             $lookup_key = (string) $existing_keys[$array_key]->getSingleIntLiteral()->value;
                         }

@@ -3981,7 +3981,7 @@ final class AssertionFinder
                     if ($first_arg->value instanceof PhpParser\Node\Scalar\String_) {
                         $string_to_int = ArrayAnalyzer::getLiteralArrayKeyInt($first_arg->value->value);
                         $first_var_name = $string_to_int === false
-                            ? '\'' . $first_arg->value->value . '\''
+                            ? ExpressionIdentifier::quoteOffset($first_arg->value->value)
                             : (string) $string_to_int;
                     } elseif ($first_arg->value instanceof PhpParser\Node\Scalar\LNumber) {
                         $first_var_name = (string)$first_arg->value->value;
@@ -4004,7 +4004,7 @@ final class AssertionFinder
                                 $const_type->getSingleStringLiteral()->value,
                             );
                             $first_var_name = $string_to_int === false
-                                ? '\'' . $const_type->getSingleStringLiteral()->value . '\''
+                                ? ExpressionIdentifier::quoteOffset($const_type->getSingleStringLiteral()->value)
                                 : (string) $string_to_int;
                         } elseif ($const_type->isSingleIntLiteral()) {
                             $first_var_name = (string)$const_type->getSingleIntLiteral()->value;
