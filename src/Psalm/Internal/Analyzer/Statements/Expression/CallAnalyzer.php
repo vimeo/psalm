@@ -249,6 +249,9 @@ abstract class CallAnalyzer
 
                 $local_vars_possibly_in_scope = $context->vars_possibly_in_scope;
 
+                // the followed method starts without the conditions of its caller (see ClassLikeAnalyzer)
+                $local_clauses = $context->clauses;
+
                 $old_calling_method_id = $context->calling_method_id;
 
                 // the class analyzer only knows the methods of its own class and its traits
@@ -275,6 +278,8 @@ abstract class CallAnalyzer
                 foreach ($local_vars_in_scope as $var => $type) {
                     $context->vars_in_scope[$var] = $type;
                 }
+
+                $context->clauses = $local_clauses;
 
                 if ($local_this_type !== null) {
                     $context->vars_in_scope['$this'] = $local_this_type;
