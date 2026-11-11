@@ -83,6 +83,15 @@ const PINS = [
 const PIE_VERSION = '1.5.3';
 
 /**
+ * The ZooKeeper C client the zookeeper extension links, installed before install-php-extensions: for a versioned
+ * zookeeper it would build the newest stable release itself, which floats and doesn't build on the older base images.
+ */
+const ZOOKEEPER_CLIENT = [
+    'url' => 'https://archive.apache.org/dist/zookeeper/zookeeper-3.5.9/apache-zookeeper-3.5.9.tar.gz',
+    'sha256' => 'fd5a9ddaf5d4171a0159da2b4ab27ff36057dbf3a94b3f5e998e0ddd6d8de17d',
+];
+
+/**
  * PECL extensions installed with PIE, from Packagist, wherever their newest stable
  * PIE release supports the PHP version (install-php-extensions installs them
  * elsewhere): the PIE package, the Alpine packages it builds against, the
@@ -722,6 +731,7 @@ function resolveVersion(array $lock, string $version, bool $refresh): array
 function probe(string $version, string $installer, string $php, array $installs): array
 {
     $dockerfile = fromStep($version, $php) . " AS probe\n"
+        . zookeeperStep($version)
         . installerStep($version, $installer) . "\n"
         . installStep($version, array_values($installs)) . "\n"
         . 'RUN php -r ' . escapeshellarg(PROBE_SCRIPT) . ' -- ' . implode(' ', array_keys($installs)) . " > /versions.txt\n\n"
@@ -875,6 +885,23 @@ function cflags(string $version): string
     return isset(BASE_IMAGE_TAGS[$version]) ? "CFLAGS='-DXtOffsetOf=offsetof' " : '';
 }
 
+/** A RUN instruction building the ZooKeeper C client the way install-php-extensions does, or nothing. */
+function zookeeperStep(string $version): string
+{
+    if (!isset(lockedExtensions($version)['zookeeper'])) {
+        return '';
+    }
+    ['url' => $url, 'sha256' => $sha256] = ZOOKEEPER_CLIENT;
+    return "\nRUN apk add --no-cache --virtual .zookeeper-build \$PHPIZE_DEPS maven automake libtool openjdk8 && \\\n"
+        . "    curl -fsSL --retry 5 --retry-delay 2 -o /tmp/zookeeper.tar.gz $url && \\\n"
+        . "    echo '$sha256  /tmp/zookeeper.tar.gz' | sha256sum -c - && \\\n"
+        . "    mkdir /tmp/zookeeper && tar -xzf /tmp/zookeeper.tar.gz -C /tmp/zookeeper --strip-components=1 && \\\n"
+        . "    cd /tmp/zookeeper && mvn -q -pl zookeeper-jute compile && \\\n"
+        . "    cd zookeeper-client/zookeeper-client-c && autoreconf -if && ./configure --without-cppunit && \\\n"
+        . "    make -j\"\$(nproc)\" CFLAGS='-Wno-stringop-truncation -Wno-format-overflow' && make install && \\\n"
+        . "    cd / && rm -rf /tmp/zookeeper /tmp/zookeeper.tar.gz ~/.m2 && apk del .zookeeper-build\n";
+}
+
 /** @param list<string> $arguments */
 function installStep(string $version, array $arguments): string
 {
@@ -946,7 +973,7 @@ function generateDockerfile(string $version, array $lock): string
         static fn(string $extension): bool => PIE_PACKAGES[explode('-', $extension, 2)[0]]['own_layer'] ?? false,
         ARRAY_FILTER_USE_KEY,
     );
-    $ownLayerStep = pieStep($ownLayerInstalls, $cflags);
+    $ownLayerStep = pieStep($ownLayerInstalls, $cflags) . zookeeperStep($version);
     // after install-php-extensions, which installs igbinary for the memcached and redis serializers
     $pieStep = pieStep(array_diff_key($pieInstalls, $ownLayerInstalls), $cflags);
     $fromStep = fromStep($version, $entry['php']);
