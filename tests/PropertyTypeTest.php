@@ -669,6 +669,62 @@ final class PropertyTypeTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'staticPropertyOfATraitIsOnePropertyPerUsingClass' => [
+                'code' => '<?php
+                    trait Holder {
+                        public static ?int $v = null;
+                    }
+
+                    final class A {
+                        use Holder;
+
+                        public static function clear(): void {
+                            self::$v = null;
+                        }
+                    }
+
+                    final class B {
+                        use Holder;
+
+                        public static function get(): int {
+                            self::$v = 1;
+                            A::clear();
+
+                            return self::$v;
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'staticPropertyAssignedThroughStaticInAParentCallIsForgottenInTheCallingClass' => [
+                'code' => '<?php
+                    class Base {
+                        public static bool $flag = false;
+
+                        public static function prepare(): void {
+                            static::$flag = true;
+                        }
+                    }
+
+                    final class Child extends Base {
+                        public static bool $flag = false;
+
+                        public static function run(): bool {
+                            Child::$flag = false;
+                            parent::prepare();
+
+                            if (Child::$flag) {
+                                return true;
+                            }
+
+                            return false;
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
             'staticPropertyAssignedByAStaticMethodIsForgottenAfterTheCall' => [
                 'code' => '<?php
                     final class Counter {
@@ -3833,6 +3889,32 @@ final class PropertyTypeTest extends TestCase
     public static function providerInvalidCodeParse(): iterable
     {
         return [
+            'staticPropertyOfATraitIsSharedWithTheSubclassesOfTheUsingClass' => [
+                'code' => '<?php
+                    trait Holder {
+                        public static ?int $v = null;
+                    }
+
+                    class A {
+                        use Holder;
+
+                        public static function clear(): void {
+                            self::$v = null;
+                        }
+                    }
+
+                    final class Child extends A {
+                        public static function get(): int {
+                            Child::$v = 1;
+                            A::clear();
+
+                            return Child::$v;
+                        }
+                    }',
+                'error_message' => 'NullableReturnStatement',
+                'error_levels' => [],
+                'php_version' => '8.0',
+            ],
             'staticPropertyIsKeptAfterACallThatDoesNotAssignIt' => [
                 'code' => '<?php
                     final class Widget {

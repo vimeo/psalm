@@ -960,6 +960,21 @@ final class Context
             ? $codebase->properties->getDeclaringClassForProperty($class_name . '::$' . $property_name, true)
             : null;
 
+        // every class using a trait has a property of its own, which its subclasses share
+        if ($declaring_class !== null
+            && $codebase->classlike_storage_provider->get($declaring_class)->is_trait
+        ) {
+            $class_storage = $codebase->classlike_storage_provider->get($class_name);
+
+            foreach ([$class_name, ...array_values($class_storage->parent_classes)] as $candidate) {
+                if (isset($codebase->classlike_storage_provider->get($candidate)->used_traits[
+                    strtolower($declaring_class)
+                ])) {
+                    return strtolower($candidate);
+                }
+            }
+        }
+
         return strtolower($declaring_class ?? $class_name);
     }
 

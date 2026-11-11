@@ -209,9 +209,13 @@ final class ExistingAtomicStaticCallAnalyzer
             $appearing_class = $codebase->methods->getAppearingMethodId($method_id)?->fq_class_name
                 ?? $declaring_method_id->fq_class_name;
 
+            // parent::, self:: and static:: forward the late static binding of the caller
+            $forwards_static = $stmt->class instanceof PhpParser\Node\Name
+                && in_array(strtolower($stmt->class->getFirst()), ['parent', 'self', 'static'], true);
+
             $context->resetMutatedStaticProperties(
                 $static_property_mutations,
-                $method_id->fq_class_name,
+                $forwards_static && $context->self !== null ? $context->self : $method_id->fq_class_name,
                 $appearing_class,
                 $codebase,
             );
