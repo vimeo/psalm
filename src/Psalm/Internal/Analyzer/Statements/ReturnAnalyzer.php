@@ -76,6 +76,17 @@ final class ReturnAnalyzer
     ): void {
         self::analyzeReturn($statements_analyzer, $stmt, $context);
 
+        // what a closure wrote to a variable it captures by reference stays written when it returns
+        $closure = $statements_analyzer->getSource();
+
+        if ($closure instanceof ClosureAnalyzer) {
+            foreach ($context->captured_by_ref as $var_id => $_) {
+                if (isset($context->vars_in_scope[$var_id])) {
+                    $closure->captured_by_ref_types_at_return[$var_id][] = $context->vars_in_scope[$var_id];
+                }
+            }
+        }
+
         ConstructorExits::record($statements_analyzer, $context);
     }
 
@@ -945,12 +956,17 @@ final class ReturnAnalyzer
             ->getCodebase()
             ->getFunctionLikeStorage($statements_analyzer, $closure_id);
 
-        $parent_fn_storage = $statements_analyzer
-            ->getCodebase()
-            ->getFunctionLikeStorage(
-                $statements_analyzer,
-                $context->calling_function_id ?: $context->calling_method_id,
-            );
+        // a closure returned from a closure takes its types from the closure it is returned from
+        $source = $statements_analyzer->getSource();
+
+        $parent_fn_storage = $source instanceof ClosureAnalyzer
+            ? $source->getFunctionLikeStorage($statements_analyzer)
+            : $statements_analyzer
+                ->getCodebase()
+                ->getFunctionLikeStorage(
+                    $statements_analyzer,
+                    $context->calling_function_id ?: $context->calling_method_id,
+                );
 
         if ($parent_fn_storage->return_type === null) {
             return;
