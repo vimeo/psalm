@@ -271,11 +271,46 @@ final class TypeCombinationTest extends TestCase
                     'Error',
                 ],
             ],
+            'objectShapesWithOptionalProperty' => [
+                'object{bar?:string}',
+                [
+                    'object{bar: string}',
+                    'object{bar?: string}',
+                ],
+            ],
+            'objectShapeInObject' => [
+                'object',
+                [
+                    'object{a: int}',
+                    'object',
+                ],
+            ],
             'complexArrayFallback1' => [
                 'array{other_references: list<Psalm\Internal\Analyzer\DataFlowNodeData>|null, taint_trace: list<array<array-key, mixed>>|null, ...<string, mixed>}',
                 [
                     'array{other_references: list<Psalm\Internal\Analyzer\DataFlowNodeData>|null, taint_trace: null}&array<string, mixed>',
                     'array{other_references: list<Psalm\Internal\Analyzer\DataFlowNodeData>|null, taint_trace: list<array<array-key, mixed>>}&array<string, mixed>',
+                ],
+            ],
+            'optionalKeyOfAnUnsealedShapeKeepsItsTypeWhenCombinedWithTheSameKeyRequired' => [
+                'array{id: string, name?: string, ...<array-key, mixed>}',
+                [
+                    'array{id: string, name: string, ...<array-key, mixed>}',
+                    'array{id: string, name?: string, ...<array-key, mixed>}',
+                ],
+            ],
+            'keyOfAnUnsealedShapeIsOptionalWhenAnotherShapeLacksItButItsFallbackMayHoldIt' => [
+                'array{id: string, name?: int|string, ...<string, int|string>}',
+                [
+                    'array{id: string, name: string, ...<string, string>}',
+                    'array{id: string, ...<string, int>}',
+                ],
+            ],
+            'keyOfASealedShapeIsOptionalWhenAnotherShapeDeclaresItOptional' => [
+                'array{a?: int|string, ...<string, mixed>}',
+                [
+                    'array{a: int, ...<string, mixed>}',
+                    'array{a?: string}',
                 ],
             ],
             'complexArrayFallback2' => [
@@ -769,6 +804,21 @@ final class TypeCombinationTest extends TestCase
                 [
                     'non-falsy-string&numeric-string',
                     "'abc'",
+                ],
+            ],
+            'combineEmptyLiteralWithRepeatedNumericString' => [
+                "''|numeric-string",
+                [
+                    "''",
+                    'numeric-string',
+                    'numeric-string',
+                ],
+            ],
+            'combineNumericStringWithEmptyLiteral' => [
+                "''|numeric-string",
+                [
+                    'numeric-string',
+                    "''",
                 ],
             ],
             'combineLowercaseNumericStringWithUppercaseNumericLiteral' => [
