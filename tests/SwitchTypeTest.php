@@ -61,69 +61,19 @@ final class SwitchTypeTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
-            'switchWithoutDefaultNarrowsTheSubjectWhenEveryCaseReturns' => [
+            'switchTrueCaseThatCanMatch' => [
                 'code' => '<?php
-                    /** @param "a"|"b"|"c" $letter */
-                    function f(string $letter): string {
-                        switch ($letter) {
-                            case "a":
-                                return "A";
-                            case "b":
-                                return "B";
-                        }
+                    class Foo {}
+                    class Bar extends Foo {}
 
-                        return $letter;
-                    }
-
-                    /** @return "a"|"b"|"c" */
-                    function letter(): string {
-                        return "a";
-                    }
-
-                    $letter = letter();
-                    switch ($letter) {
-                        case "a":
-                            throw new Exception();
-                        case "b":
-                            throw new Exception();
-                    }
-
-                    $rest = $letter;',
-                'assertions' => ['$rest===' => "'c'"],
-                'ignored_issues' => [],
-                'php_version' => '8.0',
-            ],
-            'switchWithoutDefaultNarrowsNullWhenEveryCaseReturns' => [
-                'code' => '<?php
-                    function f(?string $type): int {
-                        switch ($type) {
-                            case null:
-                                return 0;
-                            case "a":
+                    function f(Foo $a): int {
+                        switch (true) {
+                            case $a instanceof Bar:
                                 return 1;
+                            default:
+                                return 2;
                         }
-
-                        throw new InvalidArgumentException(sprintf("Unknown %s", $type));
                     }',
-            ],
-            'switchWithoutDefaultKeepsTheSubjectWhenACaseBreaks' => [
-                'code' => '<?php
-                    /** @return "a"|"b"|"c" */
-                    function letter(): string {
-                        return "a";
-                    }
-
-                    $letter = letter();
-                    switch ($letter) {
-                        case "a":
-                            break;
-                        case "b":
-                            throw new Exception();
-                    }
-                    $rest = $letter;',
-                'assertions' => ['$rest===' => "'a'|'b'|'c'"],
-                'ignored_issues' => [],
-                'php_version' => '8.0',
             ],
             'switchNarrowsAnArrayKeyToTheNonNumericStringsOfItsCases' => [
                 'code' => '<?php
@@ -1240,6 +1190,70 @@ final class SwitchTypeTest extends TestCase
                         return -1;
                     }',
             ],
+            'switchWithoutDefaultNarrowsTheSubjectWhenEveryCaseReturns' => [
+                'code' => '<?php
+                    /** @param "a"|"b"|"c" $letter */
+                    function f(string $letter): string {
+                        switch ($letter) {
+                            case "a":
+                                return "A";
+                            case "b":
+                                return "B";
+                        }
+
+                        return $letter;
+                    }
+
+                    /** @return "a"|"b"|"c" */
+                    function letter(): string {
+                        return "a";
+                    }
+
+                    $letter = letter();
+                    switch ($letter) {
+                        case "a":
+                            throw new Exception();
+                        case "b":
+                            throw new Exception();
+                    }
+
+                    $rest = $letter;',
+                'assertions' => ['$rest===' => "'c'"],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'switchWithoutDefaultNarrowsNullWhenEveryCaseReturns' => [
+                'code' => '<?php
+                    function f(?string $type): int {
+                        switch ($type) {
+                            case null:
+                                return 0;
+                            case "a":
+                                return 1;
+                        }
+
+                        throw new InvalidArgumentException(sprintf("Unknown %s", $type));
+                    }',
+            ],
+            'switchWithoutDefaultKeepsTheSubjectWhenACaseBreaks' => [
+                'code' => '<?php
+                    /** @return "a"|"b"|"c" */
+                    function letter(): string {
+                        return "a";
+                    }
+
+                    $letter = letter();
+                    switch ($letter) {
+                        case "a":
+                            break;
+                        case "b":
+                            throw new Exception();
+                    }
+                    $rest = $letter;',
+                'assertions' => ['$rest===' => "'a'|'b'|'c'"],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
         ];
     }
 
@@ -1250,6 +1264,21 @@ final class SwitchTypeTest extends TestCase
     public static function providerInvalidCodeParse(): iterable
     {
         return [
+            'switchTrueCaseThatCannotMatch' => [
+                'code' => '<?php
+                    class Foo {}
+                    class Bar {}
+
+                    function f(Foo $a): int {
+                        switch (true) {
+                            case $a instanceof Bar:
+                                return 1;
+                            default:
+                                return 2;
+                        }
+                    }',
+                'error_message' => 'TypeDoesNotContainType - src' . DIRECTORY_SEPARATOR . 'somefile.php:7:34 - Cannot resolve types for $a - Foo does not contain Bar',
+            ],
             'switchReturnTypeWithFallthroughAndBreak' => [
                 'code' => '<?php
                     class A {
