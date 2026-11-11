@@ -12,6 +12,8 @@ use function array_map;
 use function implode;
 use function range;
 
+use const DIRECTORY_SEPARATOR;
+
 final class MatchTest extends TestCase
 {
     use InvalidCodeAnalysisTestTrait;
@@ -38,6 +40,76 @@ final class MatchTest extends TestCase
                 'assertions' => [],
                 'ignored_issues' => [],
                 'php_version' => '8.1',
+            ],
+            'matchAssignsVarInEveryArm' => [
+                'code' => '<?php
+                    $case = rand(0, 2);
+
+                    match ($case) {
+                        0 => $o = 1,
+                        1 => $o = 2,
+                        default => $o = 3,
+                    };
+
+                    $r = $o;',
+                'assertions' => [
+                    '$r===' => '1|2|3',
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'matchAssignsVarWithThrowingDefault' => [
+                'code' => '<?php
+                    $case = rand(0, 2);
+
+                    match ($case) {
+                        0 => $o = 1,
+                        1 => $o = 2,
+                        default => throw new RuntimeException("x"),
+                    };
+
+                    $r = $o;',
+                'assertions' => [
+                    '$r===' => '1|2',
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'nestedTernaryWithAThrowingBranchAssignsVarInTheParent' => [
+                'code' => '<?php
+                    function pick(bool $a, bool $b): int {
+                        $a ? ($value = 1) : ($b ? ($value = 2) : throw new RuntimeException("none"));
+
+                        return $value;
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'nestedTernaryAssignsVarInEveryBranch' => [
+                'code' => '<?php
+                    $c = (bool) rand(0, 1);
+                    $d = (bool) rand(0, 1);
+
+                    $c ? $o = 1 : ($d ? $o = 2 : $o = 3);
+
+                    $r = $o;',
+                'assertions' => [
+                    '$r===' => '1|2|3',
+                ],
+            ],
+            'ternaryAssignsVarWithThrowingBranch' => [
+                'code' => '<?php
+                    $c = (bool) rand(0, 1);
+
+                    $c ? $o = 1 : throw new RuntimeException("x");
+
+                    $r = $o;',
+                'assertions' => [
+                    '$r===' => '1',
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
             ],
             'subjectIsOneOfTheArmValuesAfterAMatchWithoutDefault' => [
                 'code' => '<?php
@@ -252,6 +324,37 @@ final class MatchTest extends TestCase
                 'ignored_issues' => [],
                 'php_version' => '8.0',
             ],
+            'matchTrueArmWithSeveralMethodCalls' => [
+                'code' => '<?php
+                    interface Environment {
+                        public function isProduction(): bool;
+                        public function isBackup(): bool;
+                        public function isAcceptance(): bool;
+                    }
+
+                    function baseUrl(Environment $environment): string {
+                        return match (true) {
+                            $environment->isProduction(),
+                            $environment->isBackup(),
+                            $environment->isAcceptance() => "https://x.example",
+                            default => "https://y.example",
+                        };
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'firstClassCallableInMatchSubject' => [
+                'code' => <<<'PHP'
+                    <?php
+                    echo match (count(...)) { default => 0 };
+                    echo match (gettype(...)) { default => 0 };
+                    echo match (get_class(...)) { default => 0 };
+                    PHP,
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
         ];
     }
 
@@ -276,6 +379,31 @@ final class MatchTest extends TestCase
                 'error_message' => 'values enum(Id::ID_105',
                 'error_levels' => [],
                 'php_version' => '8.1',
+            ],
+            'nestedTernaryAssignsVarInOnlySomeBranches' => [
+                'code' => '<?php
+                    $c = (bool) rand(0, 1);
+                    $d = (bool) rand(0, 1);
+
+                    $c ? $o = 1 : ($d ? $o = 2 : 3);
+
+                    echo $o;',
+                'error_message' => 'PossiblyUndefinedGlobalVariable',
+            ],
+            'matchAssignsVarInOnlySomeArms' => [
+                'code' => '<?php
+                    $case = rand(0, 2);
+
+                    match ($case) {
+                        0 => $o = 1,
+                        1 => 2,
+                        default => $o = 3,
+                    };
+
+                    echo $o;',
+                'error_message' => 'PossiblyUndefinedGlobalVariable',
+                'error_levels' => [],
+                'php_version' => '8.0',
             ],
             'getClassArgWrongClass' => [
                 'code' => '<?php
@@ -378,6 +506,19 @@ final class MatchTest extends TestCase
                         };
                     };',
                 'error_message' => 'ParadoxicalCondition',
+                'error_levels' => [],
+                'php_version' => '8.0',
+            ],
+            'matchArmConditionIssueIsLocatedAtTheCondition' => [
+                'code' => '<?php
+                    function f(int $i): int {
+                        return match ($i) {
+                            1 => 1,
+                            2, "b" => 2,
+                            default => 3,
+                        };
+                    }',
+                'error_message' => 'TypeDoesNotContainType - src' . DIRECTORY_SEPARATOR . 'somefile.php:5:32',
                 'error_levels' => [],
                 'php_version' => '8.0',
             ],
