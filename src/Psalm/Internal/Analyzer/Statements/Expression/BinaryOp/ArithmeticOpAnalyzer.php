@@ -52,11 +52,11 @@ use Psalm\Type\Atomic\TTemplateParam;
 use Psalm\Type\Atomic\TTypeVariable;
 use Psalm\Type\Union;
 
+use function abs;
 use function array_diff_key;
 use function array_values;
 use function count;
 use function floor;
-use function in_array;
 use function is_int;
 use function is_numeric;
 use function max;
@@ -1166,9 +1166,10 @@ final class ArithmeticOpAnalyzer
     }
 
     /**
-     * A call whose result is a whole number in the range of an int, so that converting it loses nothing: floor() and
-     * ceil(), round() without decimals, and the functions that read a number in a base of what is too short to
-     * overflow (a literal, or a substr() of a few characters)
+     * A call of a function that returns a whole number (floor(), ceil(), round() without decimals) or reads one in a
+     * base (hexdec(), octdec(), bindec()), unless what it is given is known to put the result out of the range of an
+     * int or to leave a fraction. Conversion is lossless for them whatever the arguments are, as far as Psalm can
+     * tell: only an argument it can see is checked.
      *
      * @psalm-capabilities read-props
      */
@@ -1181,16 +1182,19 @@ final class ArithmeticOpAnalyzer
         $function_name = strtolower($expr->name->name);
         $args = $expr->getArgs();
 
-        if ($function_name === 'floor' || $function_name === 'ceil') {
-            return count($args) === 1;
-        }
+        if ($function_name === 'floor' || $function_name === 'ceil' || $function_name === 'round') {
+            // round()'s second argument is the number of decimals
+            if ($function_name === 'round'
+                && isset($args[1])
+                && !($args[1]->value instanceof PhpParser\Node\Scalar\Int_ && $args[1]->value->value === 0)
+            ) {
+                return false;
+            }
 
-        if ($function_name === 'round') {
-            // the second argument is the number of decimals
-            return count($args) === 1
-                || (count($args) === 2
-                    && $args[1]->value instanceof PhpParser\Node\Scalar\Int_
-                    && $args[1]->value->value === 0);
+            $number = $args[0]->value ?? null;
+
+            return !(($number instanceof PhpParser\Node\Scalar\Float_ || $number instanceof PhpParser\Node\Scalar\Int_)
+                && abs($number->value) >= -(float) PHP_INT_MIN);
         }
 
         // the digits that fit in an int: 15 hexadecimal, 20 octal (3 bits each), 62 binary
@@ -1201,24 +1205,13 @@ final class ArithmeticOpAnalyzer
             default => null,
         };
 
-        if ($max_digits === null || count($args) !== 1) {
+        if ($max_digits === null) {
             return false;
         }
 
-        $digits = $args[0]->value;
+        $digits = $args[0]->value ?? null;
 
-        if ($digits instanceof PhpParser\Node\Scalar\String_) {
-            return strlen($digits->value) <= $max_digits;
-        }
-
-        // substr($string, $offset, $length) with a literal length
-        return $digits instanceof PhpParser\Node\Expr\FuncCall
-            && $digits->name instanceof PhpParser\Node\Name
-            && in_array(strtolower($digits->name->name), ['substr', 'mb_substr'], true)
-            && isset($digits->getArgs()[2])
-            && $digits->getArgs()[2]->value instanceof PhpParser\Node\Scalar\Int_
-            && $digits->getArgs()[2]->value->value >= 0
-            && $digits->getArgs()[2]->value->value <= $max_digits;
+        return !($digits instanceof PhpParser\Node\Scalar\String_ && strlen($digits->value) > $max_digits);
     }
 
     /**

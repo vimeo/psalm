@@ -2443,6 +2443,15 @@ final class BinaryOperationTest extends TestCase
                 'error_levels' => [],
                 'php_version' => '8.3',
             ],
+            'bitwiseOperationOfAFloorOutOfTheRangeOfAnIntIsReported' => [
+                'code' => '<?php
+                    function f(): int {
+                        return floor(1e30) | 1;
+                    }',
+                'error_message' => 'ImplicitFloatToIntCast',
+                'error_levels' => [],
+                'php_version' => '8.3',
+            ],
             'bitwiseOperationOfAnOctalNumberOutOfTheRangeOfAnIntIsReported' => [
                 'code' => '<?php
                     function f(): int {
