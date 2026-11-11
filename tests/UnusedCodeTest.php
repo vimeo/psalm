@@ -11,13 +11,9 @@ use Psalm\Context;
 use Psalm\Exception\CodeException;
 use Psalm\Internal\Analyzer\ProjectAnalyzer;
 use Psalm\Internal\Codebase\CodeUseGraph;
-use Psalm\Internal\Provider\FakeFileProvider;
-use Psalm\Internal\Provider\Providers;
-use Psalm\Internal\RuntimeCaches;
 use Psalm\IssueBuffer;
 use Psalm\Plugin\EventHandler\Event\MethodExistenceProviderEvent;
 use Psalm\Storage\Capabilities;
-use Psalm\Tests\Internal\Provider\FakeParserCacheProvider;
 
 use function array_column;
 use function getcwd;
@@ -34,17 +30,7 @@ final class UnusedCodeTest extends TestCase
     #[Override]
     public function setUp(): void
     {
-        RuntimeCaches::clearAll();
-
-        $this->file_provider = new FakeFileProvider();
-
-        $this->project_analyzer = new ProjectAnalyzer(
-            new TestConfig(),
-            new Providers(
-                $this->file_provider,
-                new FakeParserCacheProvider(),
-            ),
-        );
+        parent::setUp();
 
         $this->project_analyzer->getCodebase()->reportUnusedCode();
         $this->project_analyzer->setPhpVersion('7.3', 'tests');
@@ -533,6 +519,28 @@ final class UnusedCodeTest extends TestCase
     public static function providerValidCodeParse(): array
     {
         return [
+            'preIncrementAsArrayAssignmentKey' => [
+                'code' => '<?php
+                    /** @psalm-api */
+                    function f(): array {
+                        $row = 1;
+                        $array = [];
+                        $array[$row] = "1";
+                        $array[++$row] = "2";
+                        $array[++$row] = "3";
+
+                        return $array;
+                    }',
+            ],
+            'preDecrementAsArrayLiteralKey' => [
+                'code' => '<?php
+                    /** @psalm-api */
+                    function f(): array {
+                        $i = 3;
+
+                        return [--$i => 1];
+                    }',
+            ],
             'classExistsGuardedStaticFirstClassCallable' => [
                 'code' => '<?php
                     if (class_exists("Nope")) {
@@ -733,6 +741,20 @@ final class UnusedCodeTest extends TestCase
                         return takesString($s) . takesString($t);
                     }',
                 'ignored_issues' => ['PossiblyInvalidArgument', 'InvalidArgument'],
+            ],
+            'shebangBeforeNamespaceWithExit' => [
+                'code' => '#!/usr/bin/env php
+<?php
+                    namespace Foo;
+
+                    exit(1);',
+            ],
+            'shebangBeforeNamespaceWithReturn' => [
+                'code' => '#!/usr/bin/env php
+<?php
+                    namespace Foo;
+
+                    return [];',
             ],
             'usedExceptionsAreNotReported' => [
                 'code' => '<?php
@@ -2420,6 +2442,57 @@ final class UnusedCodeTest extends TestCase
                     (new Base())->run();
                     (new Child())->other();',
             ],
+            'suppressUnusedPropertyOnAPromotedProperty' => [
+                'code' => '<?php
+                    final class Test
+                    {
+                        public function __construct(
+                            /** @psalm-suppress PossiblyUnusedProperty */
+                            public bool $result,
+                        ) {
+                        }
+                    }
+
+                    new Test(true);',
+            ],
+            'paramOfAMethodIsNotUnusedAfterEval' => [
+                'code' => <<<'PHP'
+                    <?php
+                    /** @psalm-api */
+                    final class Demo
+                    {
+                        public function run(): void
+                        {
+                            $this->test(['k' => '1']);
+                        }
+
+                        protected function test(array $in): void
+                        {
+                            echo count($in);
+                            eval('1;');
+                        }
+                    }
+                    PHP,
+            ],
+            'paramOfAMethodIsNotUnusedAfterExtract' => [
+                'code' => <<<'PHP'
+                    <?php
+                    /** @psalm-api */
+                    final class Demo
+                    {
+                        public function run(): void
+                        {
+                            $this->test(['k' => '1']);
+                        }
+
+                        protected function test(array $in): void
+                        {
+                            echo count($in);
+                            extract($_GET);
+                        }
+                    }
+                    PHP,
+            ],
         ];
     }
 
@@ -2430,6 +2503,25 @@ final class UnusedCodeTest extends TestCase
     public static function providerInvalidCodeParse(): array
     {
         return [
+            'postIncrementAsArrayKeyIsAnUnusedAssignment' => [
+                'code' => '<?php
+                    /** @psalm-api */
+                    function f(): array {
+                        $i = 0;
+
+                        return [$i++ => 1];
+                    }',
+                'error_message' => 'UnusedVariable',
+            ],
+            'preIncrementStatementIsAnUnusedAssignment' => [
+                'code' => '<?php
+                    /** @psalm-api */
+                    function f(): void {
+                        $i = 0;
+                        ++$i;
+                    }',
+                'error_message' => 'UnusedVariable',
+            ],
             'undefinedClassStaticFirstClassCallable' => [
                 'code' => '<?php
                     $callable = Nope::stat(...);',
@@ -2571,6 +2663,15 @@ final class UnusedCodeTest extends TestCase
                         return "$s";
                     }',
                 'error_message' => 'PossiblyInvalidCast',
+            ],
+            'unevaluatedCodeAfterExitInNamespaceWithShebang' => [
+                'code' => '#!/usr/bin/env php
+<?php
+                    namespace Foo;
+
+                    exit(1);
+                    echo "unreachable";',
+                'error_message' => 'UnevaluatedCode',
             ],
             'unusedClass' => [
                 'code' => '<?php
@@ -3491,6 +3592,22 @@ final class UnusedCodeTest extends TestCase
 
                     (new Factory())->run();',
                 'error_message' => 'Cannot find any calls to method Factory::__callStatic',
+            ],
+            'suppressOnAPromotedPropertyDoesNotCoverTheNextOne' => [
+                'code' => '<?php
+                    final class Test
+                    {
+                        public function __construct(
+                            /** @psalm-suppress PossiblyUnusedProperty */
+                            public bool $result,
+                            public bool $other,
+                        ) {
+                        }
+                    }
+
+                    new Test(true, false);',
+                'error_message' => 'PossiblyUnusedProperty',
+                'error_levels' => ['UnusedVariable'],
             ],
         ];
     }

@@ -11,6 +11,8 @@ use Psalm\Exception\UnresolvableConstantException;
 use Psalm\Internal\Analyzer\Statements\Expression\ArrayAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\Fetch\AtomicPropertyFetchAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\Fetch\ConstFetchAnalyzer;
+use Psalm\Internal\TypeVisitor\ContainsStaticVisitor;
+use Psalm\Internal\TypeVisitor\TemplateBoundNarrower;
 use Psalm\Storage\Assertion\IsType;
 use Psalm\Storage\Capabilities;
 use Psalm\Type;
@@ -132,6 +134,23 @@ final class TypeExpander
             : null;
 
         return $fleshed_out_type;
+    }
+
+    /**
+     * The type expanded with $static_class_type when it has `static`, as is otherwise
+     */
+    public static function expandStatic(
+        Codebase $codebase,
+        Union $type,
+        string|TNamedObject $static_class_type,
+        bool $final,
+    ): Union {
+        $static_visitor = new ContainsStaticVisitor();
+        $static_visitor->traverse($type);
+
+        return $static_visitor->matches()
+            ? self::expandUnion($codebase, $type, null, $static_class_type, null, true, false, $final)
+            : $type;
     }
 
     /**
@@ -1013,9 +1032,21 @@ final class TypeExpander
                 }
             }
 
+            $if_type = $return_type->if_type;
+
+            // in the true branch the template is what the condition says
+            if ($return_type->subject_type === null) {
+                (new TemplateBoundNarrower(
+                    $return_type->param_name,
+                    $return_type->defining_class,
+                    $return_type->conditional_type,
+                    $codebase,
+                ))->traverse($if_type);
+            }
+
             $if_conditional_return_types = [];
 
-            foreach ($return_type->if_type->getAtomicTypes() as $if_atomic_type) {
+            foreach ($if_type->getAtomicTypes() as $if_atomic_type) {
                 $candidate_types = self::expandAtomic(
                     $codebase,
                     $if_atomic_type,

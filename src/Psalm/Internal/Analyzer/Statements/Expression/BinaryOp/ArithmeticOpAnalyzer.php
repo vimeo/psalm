@@ -212,8 +212,10 @@ final class ArithmeticOpAnalyzer
             $has_valid_right_operand = false;
             $has_string_increment = false;
 
-            foreach ($left_type->getAtomicTypes() as $left_type_part) {
-                foreach ($right_type->getAtomicTypes() as $right_type_part) {
+            $right_type_parts = self::expandNumericTemplates($right_type);
+
+            foreach (self::expandNumericTemplates($left_type) as $left_type_part) {
+                foreach ($right_type_parts as $right_type_part) {
                     $candidate_result_type = self::analyzeOperands(
                         $statements_source,
                         $codebase,
@@ -296,6 +298,43 @@ final class ArithmeticOpAnalyzer
     }
 
     /**
+     * A template whose bound is only ints and floats is the sum of the results for each of them
+     *
+     * @psalm-pure
+     * @return list<Atomic>
+     */
+    private static function expandNumericTemplates(Union $type): array
+    {
+        $parts = [];
+
+        foreach ($type->getAtomicTypes() as $part) {
+            if ($part instanceof TTemplateParam && self::isNumeric($part->as)) {
+                foreach ($part->as->getAtomicTypes() as $bound_part) {
+                    $parts[] = $bound_part;
+                }
+            } else {
+                $parts[] = $part;
+            }
+        }
+
+        return $parts;
+    }
+
+    /**
+     * @psalm-pure
+     */
+    private static function isNumeric(Union $type): bool
+    {
+        foreach ($type->getAtomicTypes() as $part) {
+            if (!$part instanceof TInt && !$part instanceof TFloat) {
+                return false;
+            }
+        }
+
+        return true;
+    }
+
+    /**
      * @psalm-pure
      */
     private static function getNumericalType(int|float $result): Union
@@ -342,6 +381,7 @@ final class ArithmeticOpAnalyzer
             if ($statements_source !== null
                 && $config->strict_binary_operands
                 && $left_type_part::class !== $right_type_part::class
+                && !$parent instanceof PhpParser\Node\Expr\BinaryOp\Pow
             ) {
                 IssueBuffer::maybeAdd(
                     new InvalidOperand(
@@ -782,7 +822,7 @@ final class ArithmeticOpAnalyzer
             if (($left_type_part instanceof TNumeric || $right_type_part instanceof TNumeric)
                 && ($left_type_part->isNumericType() && $right_type_part->isNumericType())
             ) {
-                if ($config->strict_binary_operands) {
+                if ($config->strict_binary_operands && !$parent instanceof PhpParser\Node\Expr\BinaryOp\Pow) {
                     if ($statements_source) {
                         IssueBuffer::maybeAdd(
                             new InvalidOperand(
@@ -935,7 +975,7 @@ final class ArithmeticOpAnalyzer
             if (($left_type_part instanceof TFloat && $right_type_part instanceof TInt)
                 || ($left_type_part instanceof TInt && $right_type_part instanceof TFloat)
             ) {
-                if ($config->strict_binary_operands) {
+                if ($config->strict_binary_operands && !$parent instanceof PhpParser\Node\Expr\BinaryOp\Pow) {
                     if ($statements_source) {
                         IssueBuffer::maybeAdd(
                             new InvalidOperand(
@@ -961,7 +1001,7 @@ final class ArithmeticOpAnalyzer
             }
 
             if ($left_type_part->isNumericType() && $right_type_part->isNumericType()) {
-                if ($config->strict_binary_operands) {
+                if ($config->strict_binary_operands && !$parent instanceof PhpParser\Node\Expr\BinaryOp\Pow) {
                     if ($statements_source) {
                         IssueBuffer::maybeAdd(
                             new InvalidOperand(

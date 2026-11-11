@@ -178,6 +178,14 @@ final class ExistingAtomicStaticCallAnalyzer
                 true,
             )->is_static;
 
+        // the arguments, the hints of closure params and the conditionals of the return type are read with `static` of
+        // the call only when it is that class: forwarding calls and template classes keep `static` as declared, and so
+        // does a call in a trait, whose closures every class using it shares
+        if ($static_is_called_class && !CallAnalyzer::isInTrait($statements_analyzer)) {
+            $template_result->static_class_type = $method_id->fq_class_name;
+            $template_result->static_class_is_final = true;
+        }
+
         if (CallAnalyzer::checkMethodArgs(
             $method_id,
             $args,
@@ -188,6 +196,29 @@ final class ExistingAtomicStaticCallAnalyzer
             $static_is_called_class,
         ) === false) {
             return;
+        }
+
+        $declaring_method_id = $codebase->methods->getDeclaringMethodId($method_id) ?? $method_id;
+        $static_property_mutations = $codebase->methods->getStorage($declaring_method_id, true)
+            ->static_property_mutations;
+
+        if ($static_property_mutations !== null
+            && !$context->collect_mutations
+            && !$context->collect_initializations
+        ) {
+            $appearing_class = $codebase->methods->getAppearingMethodId($method_id)?->fq_class_name
+                ?? $declaring_method_id->fq_class_name;
+
+            // parent::, self:: and static:: forward the late static binding of the caller
+            $forwards_static = $stmt->class instanceof PhpParser\Node\Name
+                && in_array(strtolower($stmt->class->getFirst()), ['parent', 'self', 'static'], true);
+
+            $context->resetMutatedStaticProperties(
+                $static_property_mutations,
+                $forwards_static && $context->self !== null ? $context->self : $method_id->fq_class_name,
+                $appearing_class,
+                $codebase,
+            );
         }
 
         $fq_class_name = $stmt->class instanceof PhpParser\Node\Name && $stmt->class->getParts() === ['parent']

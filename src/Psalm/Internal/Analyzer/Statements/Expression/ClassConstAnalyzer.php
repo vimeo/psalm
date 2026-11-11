@@ -21,6 +21,7 @@ use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\Internal\Analyzer\TraitAnalyzer;
 use Psalm\Internal\FileManipulation\FileManipulationBuffer;
 use Psalm\Internal\Type\Comparator\UnionTypeComparator;
+use Psalm\Internal\Type\TypeExpander;
 use Psalm\Issue\AmbiguousConstantInheritance;
 use Psalm\Issue\CircularReference;
 use Psalm\Issue\DeprecatedClass;
@@ -369,16 +370,17 @@ final class ClassConstAnalyzer
                 }
             }
 
-            if ($context->self
-                && !$context->collect_initializations
+            $caller_identifier = $statements_analyzer->getFullyQualifiedFunctionMethodOrNamespaceName() ?? '';
+
+            if (!$context->collect_initializations
                 && !$context->collect_mutations
-                && !NamespaceAnalyzer::isWithinAny($context->self, $const_class_storage->internal)
+                && !NamespaceAnalyzer::isWithinAny($caller_identifier, $const_class_storage->internal)
             ) {
                 IssueBuffer::maybeAdd(
                     new InternalClass(
                         $fq_class_name . ' is internal to '
                             . InternalClass::listToPhrase($const_class_storage->internal)
-                            . ' but called from ' . $context->self,
+                            . ' but called from ' . ($caller_identifier ?: 'root namespace'),
                         new CodeLocation($statements_analyzer->getSource(), $stmt),
                         $fq_class_name,
                     ),
@@ -414,8 +416,22 @@ final class ClassConstAnalyzer
             ) {
                 $stmt_type = $class_constant_type;
 
+                if ($first_part_lc === 'static') {
+                    // a condition on `static::NAME` holds for the next `static::NAME`, not for `self::NAME`
+                    // (a subclass may override the constant)
+                    $static_const_id = 'static::' . $stmt->name->name;
+
+                    $stmt_type = $context->vars_in_scope[$static_const_id] ?? $stmt_type;
+                    $context->vars_in_scope[$static_const_id] = $stmt_type;
+
+                    if ($context->inside_conditional) {
+                        $context->cond_referenced_var_ids[$static_const_id] = true;
+                    }
+                } else {
+                    $context->vars_in_scope[$const_id] = $stmt_type;
+                }
+
                 $statements_analyzer->node_data->setType($stmt, $stmt_type);
-                $context->vars_in_scope[$const_id] = $stmt_type;
             }
 
             return true;
@@ -431,6 +447,16 @@ final class ClassConstAnalyzer
         }
 
         $context->inside_general_use = $was_inside_general_use;
+
+        if ($stmt->name instanceof PhpParser\Node\Expr) {
+            $context->inside_general_use = true;
+            $name_analyzed = ExpressionAnalyzer::analyze($statements_analyzer, $stmt->name, $context);
+            $context->inside_general_use = $was_inside_general_use;
+
+            if ($name_analyzed === false) {
+                return false;
+            }
+        }
 
         $lhs_type = $statements_analyzer->node_data->getType($stmt->class);
 
@@ -659,16 +685,17 @@ final class ClassConstAnalyzer
                 }
             }
 
-            if ($context->self
-                && !$context->collect_initializations
+            $caller_identifier = $statements_analyzer->getFullyQualifiedFunctionMethodOrNamespaceName() ?? '';
+
+            if (!$context->collect_initializations
                 && !$context->collect_mutations
-                && !NamespaceAnalyzer::isWithinAny($context->self, $const_class_storage->internal)
+                && !NamespaceAnalyzer::isWithinAny($caller_identifier, $const_class_storage->internal)
             ) {
                 IssueBuffer::maybeAdd(
                     new InternalClass(
                         $fq_class_name . ' is internal to '
                             . InternalClass::listToPhrase($const_class_storage->internal)
-                            . ' but called from ' . $context->self,
+                            . ' but called from ' . ($caller_identifier ?: 'root namespace'),
                         new CodeLocation($statements_analyzer->getSource(), $stmt),
                         $fq_class_name,
                     ),
@@ -697,7 +724,12 @@ final class ClassConstAnalyzer
                 );
             }
 
-            if ($const_class_storage->final || $lhs_type_definite_class === true) {
+            if ($const_class_storage->final
+                || $lhs_type_definite_class === true
+                || (isset($const_class_storage->constants[$stmt->name->name])
+                    && $const_class_storage->constants[$stmt->name->name]->final
+                )
+            ) {
                 $stmt_type = $class_constant_type;
 
                 $statements_analyzer->node_data->setType($stmt, $stmt_type);
@@ -758,7 +790,16 @@ final class ClassConstAnalyzer
                     && !UnionTypeComparator::isContainedBy(
                         $statements_analyzer->getCodebase(),
                         $assigned_type,
-                        $const_storage_type,
+                        TypeExpander::expandUnion(
+                            $statements_analyzer->getCodebase(),
+                            $const_storage_type,
+                            $class_storage->name,
+                            $class_storage->name,
+                            $class_storage->parent_class,
+                            true,
+                            false,
+                            $class_storage->final,
+                        ),
                     )
                 ) {
                     IssueBuffer::maybeAdd(

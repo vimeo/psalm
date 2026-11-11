@@ -22,6 +22,169 @@ final class TraitTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'selfReturnOfTraitMethodIsTheClassUsingTheTrait' => [
+                'code' => <<<'PHP'
+                    <?php
+                    interface SomeInterface
+                    {
+                        public function duplicate(): self;
+                    }
+
+                    trait SomeTrait
+                    {
+                        public function duplicate(): self
+                        {
+                            return new self();
+                        }
+                    }
+
+                    class Concrete implements SomeInterface
+                    {
+                        use SomeTrait;
+                    }
+
+                    class ConcreteChild extends Concrete
+                    {
+                        public function duplicate(): self
+                        {
+                            return new self();
+                        }
+                    }
+
+                    class Other implements SomeInterface
+                    {
+                        use SomeTrait;
+
+                        public function duplicate(): self
+                        {
+                            return new self();
+                        }
+                    }
+                    PHP,
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
+            'constructorInitializesPropertyThroughMethodOfNestedTrait' => [
+                'code' => '<?php
+                    class MyClass {
+                        use Outer;
+
+                        public function __construct(string $text) {
+                            $this->setContent($text);
+                        }
+                    }
+
+                    trait Outer {
+                        use Inner;
+                    }
+
+                    trait Inner {
+                        protected string $content;
+
+                        public function setContent(string $text): void {
+                            $this->content = $text;
+                        }
+                    }',
+            ],
+            'constructorInitializesPropertyThroughMethodOfTwiceNestedTrait' => [
+                'code' => '<?php
+                    class MyClass {
+                        use Outer;
+
+                        public function __construct(string $text) {
+                            $this->setContent($text);
+                        }
+                    }
+
+                    trait Outer {
+                        use Middle;
+                    }
+
+                    trait Middle {
+                        use Inner;
+                    }
+
+                    trait Inner {
+                        protected string $content;
+
+                        public function setContent(string $text): void {
+                            $this->content = $text;
+                        }
+                    }',
+            ],
+            'methodOfTheClassIsNotMadePrivateByTheVisibilityOfANestedTrait' => [
+                'code' => '<?php
+                    trait Inner {
+                        public function f(): void {}
+                    }
+
+                    trait Outer {
+                        use Inner {
+                            f as private;
+                        }
+                    }
+
+                    class Consumer {
+                        use Outer;
+
+                        public function f(): void {}
+                    }
+
+                    (new Consumer)->f();',
+            ],
+            'methodExcludedByInsteadofIsNotMadePrivateByTheVisibilityOfANestedTrait' => [
+                'code' => '<?php
+                    trait Inner {
+                        public function f(): void {}
+                    }
+
+                    trait Other {
+                        public function f(): void {}
+                    }
+
+                    trait Outer {
+                        use Inner {
+                            f as private;
+                        }
+                    }
+
+                    class Consumer {
+                        use Outer, Other {
+                            Other::f insteadof Outer;
+                        }
+                    }
+
+                    (new Consumer)->f();',
+            ],
+            'visibilityChangedInANestedTraitReachesTheClass' => [
+                'code' => '<?php
+                    trait Inner {
+                        protected function exposed(): void {}
+                        protected function overridden(): void {}
+                    }
+
+                    trait Outer {
+                        use Inner {
+                            exposed as public;
+                            overridden as public;
+                        }
+                    }
+
+                    class Plain {
+                        use Outer;
+                    }
+
+                    class Narrowing {
+                        use Outer {
+                            overridden as protected;
+                        }
+                    }
+
+                    (new Plain)->exposed();
+                    (new Plain)->overridden();
+                    (new Narrowing)->exposed();',
+            ],
             'insteadofPicksTheTraitListedSecond' => [
                 'code' => <<<'PHP'
                     <?php
@@ -180,6 +343,26 @@ final class TraitTest extends TestCase
                     }
 
                     class Child extends Implementor {}',
+            ],
+            'constructorCallsAPrivateAliasOfATraitMethodThatSetsAProperty' => [
+                'code' => '<?php
+                    trait TraitA {
+                        private string $foo;
+
+                        public function init(string $foo): void {
+                            $this->foo = $foo;
+                        }
+                    }
+
+                    class A {
+                        use TraitA {
+                            TraitA::init as private initTraitA;
+                        }
+
+                        public function __construct(string $foo) {
+                            $this->initTraitA($foo);
+                        }
+                    }',
             ],
             'accessiblePrivateMethodFromTrait' => [
                 'code' => '<?php
@@ -1373,6 +1556,31 @@ final class TraitTest extends TestCase
 
                     test(function(string ...$args): void {});',
             ],
+            'anonymousClassUsingTheTraitThatCreatesIt' => [
+                'code' => '<?php
+                    class Operator {}
+
+                    interface SupportsOperator {
+                        public function operator(): Operator;
+                    }
+
+                    trait NestsOperatorTrait {
+                        public function operator(): Operator&SupportsOperator {
+                            return new class extends Operator implements SupportsOperator {
+                                use NestsOperatorTrait;
+                            };
+                        }
+                    }
+
+                    final class NestingBuilder implements SupportsOperator {
+                        use NestsOperatorTrait;
+                    }
+
+                    echo get_class((new NestingBuilder())->operator());',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
         ];
     }
 
@@ -1383,6 +1591,201 @@ final class TraitTest extends TestCase
     public static function providerInvalidCodeParse(): iterable
     {
         return [
+            'selfReturnOfTraitMethodRejectsTheParentOfTheClassUsingTheTrait' => [
+                'code' => <<<'PHP'
+                    <?php
+                    trait SomeTrait
+                    {
+                        public function duplicate(): self
+                        {
+                            return new self();
+                        }
+                    }
+
+                    class Concrete
+                    {
+                        use SomeTrait;
+                    }
+
+                    class ConcreteChild extends Concrete
+                    {
+                        public function duplicate(): self
+                        {
+                            return new self();
+                        }
+                    }
+
+                    class GrandChild extends ConcreteChild
+                    {
+                        public function duplicate(): Concrete
+                        {
+                            return new Concrete();
+                        }
+                    }
+                    PHP,
+                'error_message' => 'Method GrandChild::duplicate with return type',
+                'error_levels' => [],
+                'php_version' => '8.1',
+            ],
+            'constructorCallsMethodOfNestedTraitThatDoesNotInitializeProperty' => [
+                'code' => '<?php
+                    class MyClass {
+                        use Outer;
+
+                        public function __construct(string $text) {
+                            $this->setContent($text);
+                        }
+                    }
+
+                    trait Outer {
+                        use Inner;
+                    }
+
+                    trait Inner {
+                        protected string $content;
+
+                        public function setContent(string $text): void {
+                            echo $text;
+                        }
+                    }',
+                'error_message' => 'PropertyNotSetInConstructor',
+            ],
+            'constructorCallsAPublicAliasOfATraitMethodThatSetsAPrivateProperty' => [
+                'code' => '<?php
+                    trait TraitA {
+                        private string $foo;
+
+                        public function init(string $foo): void {
+                            $this->foo = $foo;
+                        }
+                    }
+
+                    class A {
+                        use TraitA {
+                            TraitA::init as public initTraitA;
+                        }
+
+                        public function __construct(string $foo) {
+                            $this->initTraitA($foo);
+                        }
+                    }',
+                'error_message' => 'PropertyNotSetInConstructor',
+            ],
+            'constructorCallsMethodOfNestedTraitThatTheOuterTraitOverrides' => [
+                'code' => '<?php
+                    class MyClass {
+                        use Outer;
+
+                        public function __construct(string $text) {
+                            $this->setContent($text);
+                        }
+                    }
+
+                    trait Outer {
+                        use Inner;
+
+                        public function setContent(string $text): void {
+                            echo $text;
+                        }
+                    }
+
+                    trait Inner {
+                        protected string $content;
+
+                        public function setContent(string $text): void {
+                            $this->content = $text;
+                        }
+                    }',
+                'error_message' => 'PropertyNotSetInConstructor',
+            ],
+            'constructorCallsMethodOfATraitThatTheClassOverrides' => [
+                'code' => '<?php
+                    trait Inner {
+                        protected string $content;
+
+                        public function setContent(string $text): void {
+                            $this->content = $text;
+                        }
+                    }
+
+                    class MyClass {
+                        use Inner;
+
+                        public function __construct(string $text) {
+                            $this->setContent($text);
+                        }
+
+                        public function setContent(string $text): void {
+                            echo $text;
+                        }
+                    }',
+                'error_message' => 'PropertyNotSetInConstructor',
+            ],
+            'visibilityNarrowedInANestedTraitReachesTheClass' => [
+                'code' => '<?php
+                    trait Inner {
+                        public function hidden(): void {}
+                    }
+
+                    trait Outer {
+                        use Inner {
+                            hidden as private;
+                        }
+                    }
+
+                    class Plain {
+                        use Outer;
+                    }
+
+                    (new Plain)->hidden();',
+                'error_message' => 'InaccessibleMethod - src' . DIRECTORY_SEPARATOR . 'somefile.php:16:34 - Cannot access private method Plain::hidden',
+            ],
+            'classChangesTheVisibilityOfANestedTraitMethodAgain' => [
+                'code' => '<?php
+                    trait Inner {
+                        protected function f(): void {}
+                    }
+
+                    trait Outer {
+                        use Inner {
+                            f as public;
+                        }
+                    }
+
+                    class Narrowing {
+                        use Outer {
+                            f as protected;
+                        }
+                    }
+
+                    (new Narrowing)->f();',
+                'error_message' => 'InaccessibleMethod - src' . DIRECTORY_SEPARATOR . 'somefile.php:18:38 - Cannot access protected method Narrowing::f',
+            ],
+            'constructorCallsAnAliasOfATraitMethodThatTheClassOverrides' => [
+                'code' => '<?php
+                    trait Setup {
+                        private int $value;
+
+                        public function init(): void {
+                            echo "trait";
+                        }
+                    }
+
+                    final class MyClass {
+                        use Setup {
+                            Setup::init as private initTrait;
+                        }
+
+                        public function __construct() {
+                            $this->initTrait();
+                        }
+
+                        public function init(): void {
+                            $this->value = 1;
+                        }
+                    }',
+                'error_message' => 'PropertyNotSetInConstructor',
+            ],
             'docblockPropertyTypeNotContainedBySignatureTypeSelf' => [
                 'code' => '<?php
                     class Child {}
