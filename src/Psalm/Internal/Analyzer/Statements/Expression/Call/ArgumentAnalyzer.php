@@ -50,6 +50,7 @@ use Psalm\Issue\PossiblyNullArgument;
 use Psalm\IssueBuffer;
 use Psalm\Node\VirtualArg;
 use Psalm\Plugin\EventHandler\Event\AddRemoveTaintsEvent;
+use Psalm\Storage\ClassLikeStorage;
 use Psalm\Storage\FunctionLikeParameter;
 use Psalm\Storage\FunctionLikeStorage;
 use Psalm\Type;
@@ -336,30 +337,9 @@ final class ArgumentAnalyzer
             $bindable_template_params = $param_type->getTemplateTypes();
         }
 
-        $parent_class = null;
-
-        $classlike_storage = null;
-        $static_classlike_storage = null;
-
-        if ($self_fq_class_name) {
-            $classlike_storage = $codebase->classlike_storage_provider->get($self_fq_class_name);
-            $parent_class = $classlike_storage->parent_class;
-            $static_classlike_storage = $classlike_storage;
-
-            $static_fq_class_name = $static_class_type instanceof TNamedObject
-                ? $static_class_type->value
-                : $static_class_type;
-
-            if ($static_fq_class_name && $static_fq_class_name !== $self_fq_class_name) {
-                $static_classlike_storage = $codebase->classlike_storage_provider->get($static_fq_class_name);
-            }
-        }
-
-        // the receiver keeps its type arguments in the expansion of the declared `static`
-        $static_type = $static_class_type instanceof TNamedObject
-            ? $static_class_type
-            : $static_classlike_storage->name ?? null;
-        $static_class_is_final = $static_class_is_final || ($static_classlike_storage->final ?? false);
+        [$classlike_storage, $static_classlike_storage, $static_type, $static_class_is_final]
+            = self::getClassesOfCall($codebase, $self_fq_class_name, $static_class_type, $static_class_is_final);
+        $parent_class = $classlike_storage->parent_class ?? null;
 
         $param_type = TypeExpander::expandUnion(
             $codebase,
@@ -416,38 +396,9 @@ final class ArgumentAnalyzer
         }
 
         if ($template_result && $template_result->template_types) {
-            $arg_type_param = $arg_value_type;
-
-            if ($arg->unpack) {
-                $arg_type_param = null;
-
-                foreach ($arg_value_type->getAtomicTypes() as $arg_atomic_type) {
-                    if ($arg_atomic_type instanceof TArray
-                        || $arg_atomic_type instanceof TKeyedArray
-                    ) {
-                        if ($arg_atomic_type instanceof TKeyedArray) {
-                            $arg_type_param = $arg_atomic_type->getGenericValueType();
-                        } else {
-                            $arg_type_param = $arg_atomic_type->type_params[1];
-                        }
-                    } elseif ($arg_atomic_type instanceof TIterable) {
-                        $arg_type_param = $arg_atomic_type->type_params[1];
-                    } elseif ($arg_atomic_type instanceof TNamedObject) {
-                        ForeachAnalyzer::getKeyValueParamsForTraversableObject(
-                            $arg_atomic_type,
-                            $codebase,
-                            $key_type,
-                            $arg_type_param,
-                        );
-                    }
-                }
-
-                if (!$arg_type_param) {
-                    $arg_type_param = new Union([
-                        new TMixed(),
-                    ], ['parent_nodes' => $arg_value_type->parent_nodes]);
-                }
-            }
+            $arg_type_param = $arg->unpack
+                ? self::getUnpackedValueType($codebase, $arg_value_type)
+                : $arg_value_type;
 
             $param_type = TemplateStandinTypeReplacer::replace(
                 $param_type,
@@ -767,6 +718,81 @@ final class ArgumentAnalyzer
         }
 
         return null;
+    }
+
+    /**
+     * The type of the values of the array or iterable $arg_value_type that is unpacked into an argument
+     *
+     * @psalm-capabilities read-props|write-this-props|write-refs
+     */
+    private static function getUnpackedValueType(Codebase $codebase, Union $arg_value_type): Union
+    {
+        $arg_type_param = null;
+
+        foreach ($arg_value_type->getAtomicTypes() as $arg_atomic_type) {
+            if ($arg_atomic_type instanceof TArray
+                || $arg_atomic_type instanceof TKeyedArray
+            ) {
+                if ($arg_atomic_type instanceof TKeyedArray) {
+                    $arg_type_param = $arg_atomic_type->getGenericValueType();
+                } else {
+                    $arg_type_param = $arg_atomic_type->type_params[1];
+                }
+            } elseif ($arg_atomic_type instanceof TIterable) {
+                $arg_type_param = $arg_atomic_type->type_params[1];
+            } elseif ($arg_atomic_type instanceof TNamedObject) {
+                ForeachAnalyzer::getKeyValueParamsForTraversableObject(
+                    $arg_atomic_type,
+                    $codebase,
+                    $key_type,
+                    $arg_type_param,
+                );
+            }
+        }
+
+        return $arg_type_param ?? new Union([
+            new TMixed(),
+        ], ['parent_nodes' => $arg_value_type->parent_nodes]);
+    }
+
+    /**
+     * The class the method is called from and the one `static` is in the call, as storages, with `static` for
+     * expanding the declared one (the receiver keeps its type arguments in it) and whether it is that class exactly
+     *
+     * @psalm-capabilities read-props
+     *
+     * @return array{ClassLikeStorage|null, ClassLikeStorage|null, TNamedObject|string|null, bool}
+     */
+    private static function getClassesOfCall(
+        Codebase $codebase,
+        ?string $self_fq_class_name,
+        string|TNamedObject|null $static_class_type,
+        bool $static_class_is_final,
+    ): array {
+        $classlike_storage = null;
+        $static_classlike_storage = null;
+
+        if ($self_fq_class_name) {
+            $classlike_storage = $codebase->classlike_storage_provider->get($self_fq_class_name);
+            $static_classlike_storage = $classlike_storage;
+
+            $static_fq_class_name = $static_class_type instanceof TNamedObject
+                ? $static_class_type->value
+                : $static_class_type;
+
+            if ($static_fq_class_name && $static_fq_class_name !== $self_fq_class_name) {
+                $static_classlike_storage = $codebase->classlike_storage_provider->get($static_fq_class_name);
+            }
+        }
+
+        return [
+            $classlike_storage,
+            $static_classlike_storage,
+            $static_class_type instanceof TNamedObject
+                ? $static_class_type
+                : $static_classlike_storage->name ?? null,
+            $static_class_is_final || ($static_classlike_storage->final ?? false),
+        ];
     }
 
     /**
