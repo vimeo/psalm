@@ -1,10 +1,11 @@
 name: Build docker image for stubs
 
 # A newer push cancels a running build, except on master and 6.x: there it waits, so
-# that a build of a busy branch finishes and caches its slow extension layers.
+# that a build of a busy branch finishes and caches its slow extension layers. A
+# refresh has a group of its own, so a push never cancels it.
 concurrency:
-  group: ${{ github.workflow }}-${{ github.ref }}
-  cancel-in-progress: ${{ github.ref != 'refs/heads/master' && github.ref != 'refs/heads/6.x' }}
+  group: ${{ github.workflow }}-${{ github.ref }}${{ (github.event_name == 'schedule' || inputs.refresh) && '-refresh' || '' }}
+  cancel-in-progress: ${{ github.event_name != 'schedule' && !inputs.refresh && github.ref != 'refs/heads/master' && github.ref != 'refs/heads/6.x' }}
 
 # Branch pushes only: tags and releases never build the stub images (a
 # `branches` filter on `push` excludes tag pushes).
@@ -14,12 +15,25 @@ on:
       - '**'
   # dispatched by bin/ci/apply-queued-changes.php after merging, which doesn't trigger pushes
   workflow_dispatch:
+    inputs:
+      refresh:
+        description: Resolve the newest version of every input of the stub images, and propose the result as a pull request
+        type: boolean
+        default: false
+  # the weekly refresh of master
+  schedule:
+    - cron: '17 5 * * 1'
 
 permissions:
   contents: read
 
+env:
+  # A refresh resolves every input of the images again; other runs only resolve the inputs the lock lacks.
+  REFRESH: ${{ (github.event_name == 'schedule' || inputs.refresh) && 'true' || 'false' }}
+
 jobs:
   pre_job:
+    if: ${{ github.event_name != 'schedule' || github.repository == 'vimeo/psalm' }}
     permissions:
       actions: write
       contents: read
@@ -27,13 +41,12 @@ jobs:
     outputs:
       should_skip: ${{ steps.skip_check.outputs.should_skip }}
       versions: ${{ steps.versions.outputs.versions }}
-      tag_suffix: ${{ steps.tag.outputs.suffix }}
     steps:
       - id: skip_check
         uses: fkirc/skip-duplicate-actions@b974a9395958c231af965b70070979a577efa578 # v5.3.2
         with:
           cancel_others: ${{ github.ref != 'refs/heads/master' && github.ref != 'refs/heads/6.x' }}
-          do_not_skip: '["release"]'
+          do_not_skip: '["workflow_dispatch", "schedule", "release"]'
 
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v6
 
@@ -43,31 +56,40 @@ jobs:
           php-version: '8.2'
           coverage: none
 
-      # The PHP version matrix is derived from the single VERSIONS constant in the build script.
-      - id: versions
-        run: echo "versions=$(php bin/stubs/build_docker.php --versions)" >> "$GITHUB_OUTPUT"
-
-      # Canonical builds (the default branch, tags and releases) push the shared
-      # internal_stubs_<version> tag; every other branch gets a branch-scoped tag
-      # so concurrent branches never clobber each other's images.
-      - id: tag
+      # Once here, so that the images of every version use the same installer release and phpstorm-stubs commit.
+      - name: Resolve the inputs every image shares
         env:
-          IS_CANONICAL: ${{ github.event_name == 'release' || github.ref_type == 'tag' || github.ref_name == github.event.repository.default_branch }}
-          REF_NAME: ${{ github.ref_name }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          if [ "$IS_CANONICAL" = "true" ]; then
-            suffix=""
+          if [ "$REFRESH" = true ]; then
+            php bin/stubs/build_docker.php --refresh --globals
           else
-            suffix="$(printf '%s' "$REF_NAME" | tr -c 'A-Za-z0-9._-' '-')"
+            php bin/stubs/build_docker.php --globals
           fi
-          echo "suffix=$suffix" >> "$GITHUB_OUTPUT"
+          mkdir -p "$RUNNER_TEMP/image-lock"
+          php bin/stubs/build_docker.php --lock-part > "$RUNNER_TEMP/image-lock/globals.json"
+
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: image-lock-globals
+          path: ${{ runner.temp }}/image-lock/globals.json
+
+      # The PHP version matrix: every version in a refresh, else the versions whose reflected callmaps don't match
+      # the lock (none when a branch doesn't touch the stub inputs).
+      - id: versions
+        run: |
+          if [ "$REFRESH" = true ]; then
+            echo "versions=$(php bin/stubs/build_docker.php --versions)" >> "$GITHUB_OUTPUT"
+          else
+            echo "versions=$(php bin/stubs/build_docker.php --stale)" >> "$GITHUB_OUTPUT"
+          fi
 
   build-stubs-docker:
     permissions:
       contents: read
       packages: write
     needs: pre_job
-    if: ${{ needs.pre_job.outputs.should_skip != 'true' }}
+    if: ${{ needs.pre_job.outputs.should_skip != 'true' && needs.pre_job.outputs.versions != '[]' }}
     runs-on: ubuntu-latest
     strategy:
       # A failure for one PHP version must not cancel the others, so every
@@ -96,20 +118,41 @@ jobs:
         id: buildx
         uses: docker/setup-buildx-action@f87e5991a6d7451dcb8d9637bfbc97413f497069 # v4
 
+      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+        with:
+          name: image-lock-globals
+          path: ${{ runner.temp }}/image-lock
+
+      # Resolves the inputs the lock lacks (all of them in a refresh), then builds and pushes the image unless its
+      # tag, a hash of its Dockerfile, exists already.
       - name: Build and push docker image
         env:
           ACTOR: ${{ github.repository_owner }}
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          TAG_SUFFIX: ${{ needs.pre_job.outputs.tag_suffix }}
+          VERSION: ${{ matrix.version }}
         run: |
-          echo "$GITHUB_TOKEN" | docker login ghcr.io -u ${{ github.repository_owner }} --password-stdin
-          php bin/stubs/build_docker.php ${{ matrix.version }}
+          echo "$GITHUB_TOKEN" | docker login ghcr.io -u "$ACTOR" --password-stdin
+          php bin/stubs/build_docker.php --merge-lock "$RUNNER_TEMP/image-lock"
+          if [ "$REFRESH" = true ]; then
+            php bin/stubs/build_docker.php --refresh "$VERSION"
+          else
+            php bin/stubs/build_docker.php "$VERSION"
+          fi
+          mkdir -p "$RUNNER_TEMP/image-lock-part"
+          php bin/stubs/build_docker.php --lock-part "$VERSION" > "$RUNNER_TEMP/image-lock-part/$VERSION.json"
+
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: image-lock-${{ matrix.version }}
+          path: ${{ runner.temp }}/image-lock-part/${{ matrix.version }}.json
 
   composer-build:
     permissions:
       contents: read
       packages: read
     needs: [pre_job, build-stubs-docker]
+    # also when no image needed building
+    if: ${{ !cancelled() && needs.pre_job.result == 'success' && needs.pre_job.outputs.should_skip != 'true' && (needs.build-stubs-docker.result == 'success' || needs.build-stubs-docker.result == 'skipped') }}
     runs-on: ubuntu-latest
     outputs:
       patch: ${{ steps.build.outputs.patch }}
@@ -130,17 +173,23 @@ jobs:
           composer update --no-install
           composer install -o
 
-      # Regenerate the callmaps (from the images built above) and everything else
-      # `composer build` produces, writing any change to a committed file to a
-      # patch that push-composer-build commits.
+      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+        with:
+          pattern: image-lock-*
+          merge-multiple: true
+          path: ${{ runner.temp }}/image-lock
+
+      # Regenerates the callmaps (reflecting, in the images built above, only the versions
+      # whose inputs changed) and everything else `composer build` produces, writing any
+      # change to a committed file to a patch that push-composer-build commits.
       - name: Run composer build and check for a diff
         id: build
         env:
           STUBS_IMAGE_OWNER: ${{ github.repository_owner }}
-          STUBS_IMAGE_TAG_SUFFIX: ${{ needs.pre_job.outputs.tag_suffix }}
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          echo "$GITHUB_TOKEN" | docker login ghcr.io -u ${{ github.repository_owner }} --password-stdin
+          echo "$GITHUB_TOKEN" | docker login ghcr.io -u "$STUBS_IMAGE_OWNER" --password-stdin
+          php bin/stubs/build_docker.php --merge-lock "$RUNNER_TEMP/image-lock"
           composer build
           if ! git diff --quiet; then
             git diff > composer-build.patch
@@ -161,6 +210,7 @@ jobs:
     permissions:
       contents: write # to push the patch
       actions: write # to dispatch the workflows the push doesn't trigger
+      pull-requests: write # to propose new image inputs
     needs: composer-build
     if: needs.composer-build.outputs.patch == 'true'
     runs-on: ubuntu-latest
@@ -180,22 +230,35 @@ jobs:
           name: composer-build-patch
           path: ${{ runner.temp }}
 
-      # If the patch is for a commit this job pushed, composer build doesn't
-      # reach a fixed point, and pushing again would loop. The check runs from a
-      # copy made before applying the patch, which could otherwise change it.
+      # The check runs from a copy made before applying the patch, which could otherwise change it.
+      # A refresh, and on master and 6.x any change of the image inputs or of the reflected callmaps,
+      # goes to stubs-refresh/<branch> to be reviewed in a pull request instead of being pushed.
       - name: Apply and check the patch
+        id: apply
         env:
           MESSAGE: Update the files composer build generates
+          BRANCH: ${{ github.ref_name }}
         run: |
-          if [ "$(git log -1 --format=%s)" = "$MESSAGE" ]; then
-            echo "::error::composer build changed the files of its own commit. Apply its patch from the repo root with: bin/ci/apply-composer-build-patch.sh"
-            exit 1
-          fi
+          last_message="$(git log -1 --format=%s)"
           cp bin/ci/check-composer-build-patch.php "$RUNNER_TEMP/check-composer-build-patch.php"
           git apply "$RUNNER_TEMP/composer-build.patch"
           if ! php "$RUNNER_TEMP/check-composer-build-patch.php"; then
             echo "::error::Not pushing the patch. Review it, then apply it from the repo root with: bin/ci/apply-composer-build-patch.sh"
             exit 1
+          fi
+          if [ "$REFRESH" = true ] || {
+            { [ "$BRANCH" = master ] || [ "$BRANCH" = 6.x ]; } &&
+              ! git diff --quiet -- bin/stubs/image_lock.php dictionaries/autogen/
+          }; then
+            echo "target=stubs-refresh/$BRANCH" >> "$GITHUB_OUTPUT"
+          else
+            # If the patch is for a commit this job pushed, composer build doesn't
+            # reach a fixed point, and pushing again would loop.
+            if [ "$last_message" = "$MESSAGE" ]; then
+              echo "::error::composer build changed the files of its own commit. Apply its patch from the repo root with: bin/ci/apply-composer-build-patch.sh"
+              exit 1
+            fi
+            echo "target=$BRANCH" >> "$GITHUB_OUTPUT"
           fi
           git config user.name 'github-actions[bot]'
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
@@ -204,23 +267,42 @@ jobs:
       - name: Push the patch
         env:
           BRANCH: ${{ github.ref_name }}
+          TARGET: ${{ steps.apply.outputs.target }}
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          PR_BODY: >-
+            New versions of the inputs of the stub images (`bin/stubs/image_lock.php`), and the callmap changes they
+            cause. See docs/contributing/editing_callmaps.md.
         run: |
           gh auth setup-git
-          if ! git push origin "HEAD:refs/heads/$BRANCH"; then
-            if [ "$(git ls-remote origin "refs/heads/$BRANCH" | cut -f1)" != "$GITHUB_SHA" ]; then
-              echo "::notice::$BRANCH moved past $GITHUB_SHA, whose newer head gets its own composer build"
-              exit 0
-            fi
-            exit 1
-          fi
-
           # Pushes made with the workflow's token don't trigger workflows, so the
           # ones a push runs are dispatched (the same as in bin/ci/apply-queued-changes.php).
           workflows=(ci.yml windows-ci.yml macos-scan.yml shepherd.yml build-stubs.yml)
-          if [ "$BRANCH" = master ] || [ "$BRANCH" = 6.x ]; then
-            workflows+=(build-phar.yml build-docker.yml)
+
+          if [ "$TARGET" = "$BRANCH" ]; then
+            if ! git push origin "HEAD:refs/heads/$BRANCH"; then
+              if [ "$(git ls-remote origin "refs/heads/$BRANCH" | cut -f1)" != "$GITHUB_SHA" ]; then
+                echo "::notice::$BRANCH moved past $GITHUB_SHA, whose newer head gets its own composer build"
+                exit 0
+              fi
+              exit 1
+            fi
+            if [ "$BRANCH" = master ] || [ "$BRANCH" = 6.x ]; then
+              workflows+=(build-phar.yml build-docker.yml)
+            fi
+            for workflow in "${workflows[@]}"; do
+              gh workflow run "$workflow" --repo "$GITHUB_REPOSITORY" --ref "$BRANCH"
+            done
+            exit 0
           fi
+
+          # each refresh starts again from the head of the branch
+          git push --force origin "HEAD:refs/heads/$TARGET"
           for workflow in "${workflows[@]}"; do
-            gh workflow run "$workflow" --repo "$GITHUB_REPOSITORY" --ref "$BRANCH"
+            gh workflow run "$workflow" --repo "$GITHUB_REPOSITORY" --ref "$TARGET"
           done
+          open="$(gh pr list --repo "$GITHUB_REPOSITORY" --head "$TARGET" --base "$BRANCH" --state open --json number --jq length)"
+          if [ "$open" = 0 ] && ! gh pr create --repo "$GITHUB_REPOSITORY" --base "$BRANCH" --head "$TARGET" \
+            --label release:internal --title "Refresh the stub images of $BRANCH" --body "$PR_BODY"; then
+            echo "::error::Could not open the pull request of $TARGET. Open it from $GITHUB_SERVER_URL/$GITHUB_REPOSITORY/compare/$BRANCH...$TARGET?expand=1"
+            exit 1
+          fi
