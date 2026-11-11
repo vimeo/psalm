@@ -2657,6 +2657,24 @@ final class ConstantTest extends TestCase
 
                     Child::ternary();',
             ],
+            'finalConstantFetchedOnNarrowedInstance' => [
+                'code' => '<?php
+                    class Clazz {
+                        /** @var string */
+                        final public const NAME = "string";
+
+                        public function test(object $c): int {
+                            if (!$c instanceof Clazz) {
+                                return 0;
+                            }
+
+                            return strlen($c::NAME);
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
         ];
     }
 
@@ -3391,6 +3409,23 @@ final class ConstantTest extends TestCase
                         }
                     }',
                 'error_message' => 'PossiblyNullArgument - src' . DIRECTORY_SEPARATOR . 'somefile.php:11:35',
+            ],
+            'nonFinalConstantFetchedOnNarrowedInstanceIsMixed' => [
+                'code' => '<?php
+                    class Clazz {
+                        public const NAME = "string";
+
+                        public function test(object $c): int {
+                            if (!$c instanceof Clazz) {
+                                return 0;
+                            }
+
+                            return strlen($c::NAME);
+                        }
+                    }',
+                'error_message' => 'MixedArgument',
+                'error_levels' => ['MissingClassConstType'],
+                'php_version' => '8.1',
             ],
         ];
     }
