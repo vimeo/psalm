@@ -6,6 +6,7 @@ namespace Psalm\Storage;
 
 use Override;
 use Psalm\CodeLocation;
+use Psalm\CodeLocation\DocblockTypeLocation;
 use Psalm\Internal\Analyzer\ClassLikeAnalyzer;
 use Psalm\Issue\CodeIssue;
 use Psalm\Type\Union;
@@ -48,6 +49,8 @@ abstract class FunctionLikeStorage implements HasAttributesInterface, Stringable
 
     public ?Union $signature_return_type = null;
 
+    public bool $has_tentative_return_type = false;
+
     public ?CodeLocation $signature_return_type_location = null;
 
     public ?string $cased_name = null;
@@ -56,6 +59,15 @@ abstract class FunctionLikeStorage implements HasAttributesInterface, Stringable
      * @var array<int, string>
      */
     public array $suppressed_issues = [];
+
+    /**
+     * The subset of $suppressed_issues written in this function-like's own docblock, keyed by the
+     * char offset of the issue name. Plugins append to $suppressed_issues, never to this, so only
+     * these entries have a source location to report as unused.
+     *
+     * @var array<int, string>
+     */
+    public array $docblock_suppressed_issues = [];
 
     public ?bool $deprecated = null;
 
@@ -96,6 +108,11 @@ abstract class FunctionLikeStorage implements HasAttributesInterface, Stringable
     public array $global_types = [];
 
     /**
+     * @var array<string, DocblockTypeLocation>
+     */
+    public array $global_type_locations = [];
+
+    /**
      * An array holding the class template "as" types.
      *
      * It's the de-facto list of all templates on a given class.
@@ -107,6 +124,21 @@ abstract class FunctionLikeStorage implements HasAttributesInterface, Stringable
      * @var array<string, non-empty-array<string, Union>>|null
      */
     public ?array $template_types = null;
+
+    /**
+     * What each template with a default (`@template T of Bound = Default`) is when a call does not infer it, the
+     * earlier templates of the function-like and those of its class standing for what they are at the call.
+     *
+     * @var array<string, Union>
+     */
+    public array $template_defaults = [];
+
+    /**
+     * Where each template default is, for the issues about it.
+     *
+     * @var array<string, CodeLocation>
+     */
+    public array $template_default_locations = [];
 
     /**
      * @var array<int, Possibilities>

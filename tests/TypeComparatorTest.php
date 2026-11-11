@@ -4,17 +4,11 @@ declare(strict_types=1);
 
 namespace Psalm\Tests;
 
-use Override;
 use PHPUnit\Framework\Attributes\DataProvider;
-use Psalm\Internal\Analyzer\ProjectAnalyzer;
-use Psalm\Internal\Provider\FakeFileProvider;
-use Psalm\Internal\Provider\Providers;
-use Psalm\Internal\RuntimeCaches;
 use Psalm\Internal\Type\Comparator\AtomicTypeComparator;
 use Psalm\Internal\Type\Comparator\TypeComparisonResult;
 use Psalm\Internal\Type\Comparator\UnionTypeComparator;
 use Psalm\Internal\Type\TypeTokenizer;
-use Psalm\Tests\Internal\Provider\FakeParserCacheProvider;
 use Psalm\Type;
 use Psalm\Type\Atomic\TLiteralInt;
 use Psalm\Type\Atomic\TLiteralString;
@@ -30,24 +24,7 @@ use function is_int;
 
 final class TypeComparatorTest extends TestCase
 {
-    #[Override]
-    public function setUp(): void
-    {
-        RuntimeCaches::clearAll();
-        $this->file_provider = new FakeFileProvider();
-
-        $config = new TestConfig();
-
-        $providers = new Providers(
-            $this->file_provider,
-            new FakeParserCacheProvider(),
-        );
-
-        $this->project_analyzer = new ProjectAnalyzer(
-            $config,
-            $providers,
-        );
-    }
+    protected const ANALYSIS_PHP_VERSION = null;
 
     #[DataProvider('getAllBasicTypes')]
     public function testTypeAcceptsItself(string $type_string): void
@@ -197,6 +174,14 @@ final class TypeComparatorTest extends TestCase
                 'iterable',
                 'array',
             ],
+            'arrayOrObjectAcceptsIterable' => [
+                'array|object',
+                'iterable<int>',
+            ],
+            'arrayOrObjectOrNullAcceptsIterable' => [
+                'array|object|null',
+                'iterable<string, int>',
+            ],
             'listAcceptsEmptyArray' => [
                 'list',
                 'array<never, never>',
@@ -342,6 +327,14 @@ final class TypeComparatorTest extends TestCase
      */
     public static function getUnsuccessfulComparisons(): iterable
     {
+        yield 'objectOrStringDoesNotAcceptIterable' => [
+            'object|string',
+            'iterable<int>',
+        ];
+        yield 'arrayOrIntDoesNotAcceptIterable' => [
+            'array|int',
+            'iterable<int>',
+        ];
         yield 'nonFalsyLowercaseStringDoesNotAcceptFalsyLiteral' => [
             'lowercase-string&non-falsy-string',
             "'0'",
