@@ -29,17 +29,15 @@ use function assert;
 use function count;
 use function in_array;
 use function is_int;
-use function json_encode;
 use function preg_match;
 use function preg_quote;
 use function preg_replace;
+use function serialize;
 use function str_contains;
 use function strcspn;
 use function strpos;
 use function strtolower;
 use function substr;
-
-use const JSON_THROW_ON_ERROR;
 
 /**
  * @api
@@ -952,7 +950,7 @@ final class Context
             $summary[$k] = $v->getId();
         }
 
-        return json_encode($summary, JSON_THROW_ON_ERROR);
+        return serialize($summary);
     }
 
     public function defineGlobals(): void
