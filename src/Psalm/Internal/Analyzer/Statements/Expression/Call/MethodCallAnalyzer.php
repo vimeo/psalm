@@ -234,7 +234,12 @@ final class MethodCallAnalyzer extends CallAnalyzer
             && !$stmt->getArgs()
             && $lhs_var_id && $stmt->name instanceof PhpParser\Node\Identifier
         ) {
-            if ($codebase->config->memoize_method_calls || $result->can_memoize) {
+            // the initialization and mutation passes skip the purity analysis that decides it,
+            // so they rely on what the normal pass of this call found
+            $was_memoizable = ($context->collect_initializations || $context->collect_mutations)
+                && $stmt->getAttribute('memoizable', false);
+
+            if ($codebase->config->memoize_method_calls || $result->can_memoize || $was_memoizable) {
                 $method_var_id = $lhs_var_id . '->' . strtolower($stmt->name->name) . '()';
 
                 if (isset($context->vars_in_scope[$method_var_id])) {

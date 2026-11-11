@@ -6,15 +6,9 @@ namespace Psalm\Tests;
 
 use ArrayAccess;
 use Countable;
-use Override;
 use Psalm\Codebase;
 use Psalm\Exception\TypeParseTreeException;
-use Psalm\Internal\Analyzer\ProjectAnalyzer;
 use Psalm\Internal\Codebase\InternalCallMapHandler;
-use Psalm\Internal\Provider\FakeFileProvider;
-use Psalm\Internal\Provider\Providers;
-use Psalm\Internal\RuntimeCaches;
-use Psalm\Tests\Internal\Provider\FakeParserCacheProvider;
 use Psalm\Type;
 use Psalm\Type\Atomic\TClassConstant;
 use Psalm\Type\Atomic\TLiteralFloat;
@@ -35,24 +29,7 @@ use function stripos;
 
 final class TypeParseTest extends TestCase
 {
-    #[Override]
-    public function setUp(): void
-    {
-        RuntimeCaches::clearAll();
-        $this->file_provider = new FakeFileProvider();
-
-        $config = new TestConfig();
-
-        $providers = new Providers(
-            $this->file_provider,
-            new FakeParserCacheProvider(),
-        );
-
-        $this->project_analyzer = new ProjectAnalyzer(
-            $config,
-            $providers,
-        );
-    }
+    protected const ANALYSIS_PHP_VERSION = null;
 
     public function testThisToStatic(): void
     {
@@ -1048,6 +1025,54 @@ final class TypeParseTest extends TestCase
         );
     }
 
+    public function testCallableWithByReferenceParam(): void
+    {
+        $this->assertSame(
+            'callable[impure](int &$_, string, int...):void',
+            (string)Type::parseString('callable(int &$foo, string $bar, int ...$baz) : void'),
+        );
+    }
+
+    public function testCallableWithByReferenceVariadicParam(): void
+    {
+        $this->assertSame(
+            'callable[impure](string, int &...$_):void',
+            (string)Type::parseString('callable(string $bar, int &...$baz) : void'),
+        );
+    }
+
+    public function testCallableWithByReferenceVariadicParamRoundTrips(): void
+    {
+        $id = (string)Type::parseString('Closure(int &$a, int &...$b): void');
+
+        $this->assertSame('Closure[impure](int &$_, int &...$_):void', $id);
+        $this->assertSame($id, (string)Type::parseString($id));
+    }
+
+    public function testCallableWithByReferenceVariadicParamPrintsInANamespace(): void
+    {
+        $this->assertSame(
+            'callable[impure](string, int &...$_):void',
+            Type::parseString('callable(string $bar, int &...$baz) : void')->toNamespacedString(null, [], null, false),
+        );
+    }
+
+    public function testCallableWithByReferenceOptionalParam(): void
+    {
+        $this->assertSame(
+            'callable[impure](int &$_=):void',
+            (string)Type::parseString('callable(int &$foo=) : void'),
+        );
+    }
+
+    public function testCallableWithOptionalParamNamedBeforeTheEquals(): void
+    {
+        $this->assertSame(
+            'callable[impure](int=):void',
+            (string)Type::parseString('callable(int $foo=) : void'),
+        );
+    }
+
     public function testCallableReturningIntersection(): void
     {
         $this->assertSame(
@@ -2005,5 +2030,19 @@ final class TypeParseTest extends TestCase
                 }
             }
         }
+    }
+
+    public function testClassStringOfAGenericKeepsItsArgumentsInNamespacedString(): void
+    {
+        $type = Type::parseString('class-string<Ns\Box<int>>');
+        self::assertSame('class-string<\Ns\Box<int>>', $type->toNamespacedString(null, [], null, false));
+        self::assertSame('class-string<Box<int>>', $type->toNamespacedString('Ns', [], null, false));
+        self::assertTrue($type->equals(Type::parseString($type->toNamespacedString(null, [], null, false))));
+    }
+
+    public function testInterfaceStringKeepsItsKindInNamespacedString(): void
+    {
+        $type = Type::parseString('interface-string');
+        self::assertSame('interface-string', $type->toNamespacedString(null, [], null, false));
     }
 }

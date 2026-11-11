@@ -104,15 +104,18 @@ use function array_unique;
 use function array_unshift;
 use function array_values;
 use function assert;
+use function chr;
 use function constant;
 use function count;
 use function defined;
 use function end;
 use function explode;
+use function hexdec;
 use function in_array;
 use function is_int;
 use function is_numeric;
 use function ltrim;
+use function octdec;
 use function preg_match;
 use function preg_replace;
 use function reset;
@@ -125,6 +128,8 @@ use function strpos;
 use function strtolower;
 use function strtr;
 use function substr;
+
+use const PHP_INT_MAX;
 
 /**
  * @psalm-suppress InaccessibleProperty Allowed during construction
@@ -575,7 +580,10 @@ final class TypeParser
         }
 
         if ($parse_tree->value[0] === '"' || $parse_tree->value[0] === '\'') {
-            return Type::getAtomicStringFromLiteral(substr($parse_tree->value, 1, -1), $from_docblock);
+            return Type::getAtomicStringFromLiteral(
+                self::unescapeStringLiteral(substr($parse_tree->value, 1, -1), $parse_tree->value[0]),
+                $from_docblock,
+            );
         }
 
         if (strpos($parse_tree->value, '::')) {
@@ -2229,7 +2237,17 @@ final class TypeParser
         foreach ($parse_tree->children as $child_tree) {
             $is_variadic = false;
             $is_optional = false;
+            $is_by_ref = false;
             $param_name = '';
+
+            // `$x=` wraps the named parameter in a parameter that only carries the default
+            if ($child_tree instanceof CallableParamTree
+                && isset($child_tree->children[0])
+                && $child_tree->children[0] instanceof CallableParamTree
+            ) {
+                $is_optional = $child_tree->has_default;
+                $child_tree = $child_tree->children[0];
+            }
 
             if ($child_tree instanceof CallableParamTree) {
                 if (isset($child_tree->children[0])) {
@@ -2246,7 +2264,8 @@ final class TypeParser
                 }
 
                 $is_variadic = $child_tree->variadic;
-                $is_optional = $child_tree->has_default;
+                $is_optional = $is_optional || $child_tree->has_default;
+                $is_by_ref = $child_tree->by_ref;
                 $param_name = $child_tree->name ?? '';
             } else {
                 if ($child_tree instanceof Value && strpos($child_tree->value, '$') > 0) {
@@ -2265,7 +2284,7 @@ final class TypeParser
 
             $param = new FunctionLikeParameter(
                 $param_name,
-                false,
+                $is_by_ref,
                 $tree_type instanceof Union ? $tree_type : new Union([$tree_type]),
                 null,
                 null,
@@ -2842,5 +2861,80 @@ final class TypeParser
         }
 
         return true;
+    }
+
+    /**
+     * The value of the string literal `$quote . $literal . $quote`, as PHP reads it
+     *
+     * @psalm-pure
+     */
+    private static function unescapeStringLiteral(string $literal, string $quote): string
+    {
+        if ($quote === '\'') {
+            return strtr($literal, ['\\\\' => '\\', '\\\'' => '\'']);
+        }
+
+        $simple_escapes = ['n' => "\n", 'r' => "\r", 't' => "\t", 'v' => "\v", 'e' => "\e", 'f' => "\f",
+            '\\' => '\\', '$' => '$', '"' => '"'];
+
+        $value = '';
+        $length = strlen($literal);
+
+        for ($i = 0; $i < $length; $i++) {
+            if ($literal[$i] !== '\\' || $i + 1 === $length) {
+                $value .= $literal[$i];
+
+                continue;
+            }
+
+            $next = $literal[$i + 1];
+
+            if (isset($simple_escapes[$next])) {
+                $value .= $simple_escapes[$next];
+                $i++;
+            } elseif (preg_match(
+                '/\G(?:([0-7]{1,3})|x([0-9A-Fa-f]{1,2})|u\{([0-9A-Fa-f]+)\})/',
+                $literal,
+                $match,
+                0,
+                $i + 1,
+            )) {
+                if (isset($match[1]) && $match[1] !== '') {
+                    $value .= chr(((int) octdec($match[1])) & 0xFF);
+                } elseif (isset($match[2]) && $match[2] !== '') {
+                    $value .= chr((int) hexdec($match[2]));
+                } else {
+                    // checked before the conversion: more digits than the largest code point has overflow an int
+                    $hex_digits = ltrim($match[3] ?? '0', '0');
+                    $code_point = strlen($hex_digits) > 6 ? PHP_INT_MAX : (int) hexdec($hex_digits);
+
+                    // as PHP: always UTF-8, a surrogate is encoded like any other code point
+                    if ($code_point > 0x10FFFF) {
+                        throw new TypeParseTreeException(
+                            'Invalid UTF-8 codepoint escape sequence: Codepoint too large',
+                        );
+                    }
+
+                    $value .= $code_point < 0x80
+                        ? chr($code_point)
+                        : ($code_point < 0x800
+                            ? chr(0xC0 | $code_point >> 6) . chr(0x80 | $code_point & 0x3F)
+                            : ($code_point < 0x10000
+                                ? chr(0xE0 | $code_point >> 12)
+                                    . chr(0x80 | $code_point >> 6 & 0x3F)
+                                    . chr(0x80 | $code_point & 0x3F)
+                                : chr(0xF0 | $code_point >> 18)
+                                    . chr(0x80 | $code_point >> 12 & 0x3F)
+                                    . chr(0x80 | $code_point >> 6 & 0x3F)
+                                    . chr(0x80 | $code_point & 0x3F)));
+                }
+
+                $i += strlen($match[0] ?? '');
+            } else {
+                $value .= '\\';
+            }
+        }
+
+        return $value;
     }
 }

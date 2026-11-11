@@ -1135,10 +1135,7 @@ abstract class Type
             }
         }
 
-        if (self::mayHaveIntersection($type_1_atomic, $codebase)
-            && self::mayHaveIntersection($type_2_atomic, $codebase)
-        ) {
-            /** @psalm-suppress TypeDoesNotContainType */
+        if (self::mayIntersect($type_1_atomic, $type_2_atomic, $codebase)) {
             if ($type_1_atomic instanceof TNamedObject && $type_2_atomic instanceof TNamedObject) {
                 try {
                     $first = $codebase->classlike_storage_provider->get($type_1_atomic->value);
@@ -1192,6 +1189,25 @@ abstract class Type
         }
 
         return $intersection_atomic;
+    }
+
+    /**
+     * Both types support intersection, and a template whose bound no object can satisfy (e.g. `string`)
+     * isn't intersected with a class
+     */
+    private static function mayIntersect(Atomic $type_1, Atomic $type_2, Codebase $codebase): bool
+    {
+        if (!self::mayHaveIntersection($type_1, $codebase) || !self::mayHaveIntersection($type_2, $codebase)) {
+            return false;
+        }
+
+        if ($type_2 instanceof TTemplateParam) {
+            [$type_1, $type_2] = [$type_2, $type_1];
+        }
+
+        return !($type_1 instanceof TTemplateParam
+            && $type_2 instanceof TNamedObject
+            && !UnionTypeComparator::canExpressionTypesBeIdentical($codebase, $type_1->as, new Union([$type_2])));
     }
 
     /**
