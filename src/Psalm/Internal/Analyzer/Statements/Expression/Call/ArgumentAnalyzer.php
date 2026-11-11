@@ -2469,11 +2469,10 @@ final class ArgumentAnalyzer
                     );
 
                     if ($named_offset !== null) {
-                        if ($dependent_storage->params[$named_offset]->is_variadic) {
-                            $dependent_offsets[] = $function_param->is_variadic
-                                ? max($param_offset, $named_offset)
-                                : $named_offset;
-                        } elseif ($positional_arguments === null || $named_offset >= $positional_arguments) {
+                        if ($positional_arguments === null
+                            || $named_offset >= $positional_arguments
+                            || $dependent_storage->params[$named_offset]->is_variadic
+                        ) {
                             $dependent_offsets[] = $named_offset;
                         }
                     }
