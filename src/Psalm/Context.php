@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Psalm;
 
 use InvalidArgumentException;
+use Psalm\Internal\Analyzer\ConstructorExits;
 use Psalm\Internal\Analyzer\Statements\Expression\Fetch\VariableFetchAnalyzer;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\Internal\Clause;
@@ -28,17 +29,15 @@ use function assert;
 use function count;
 use function in_array;
 use function is_int;
-use function json_encode;
 use function preg_match;
 use function preg_quote;
 use function preg_replace;
+use function serialize;
 use function str_contains;
 use function strcspn;
 use function strpos;
 use function strtolower;
 use function substr;
-
-use const JSON_THROW_ON_ERROR;
 
 /**
  * @api
@@ -288,6 +287,11 @@ final class Context
      * Whether or not to do a deep analysis and collect initializations from public non-final methods
      */
     public bool $collect_nonprivate_initializations = false;
+
+    /**
+     * @internal
+     */
+    public ?ConstructorExits $constructor_exits = null;
 
     /**
      * Stored to prevent re-analysing methods when checking for initialised properties
@@ -946,7 +950,7 @@ final class Context
             $summary[$k] = $v->getId();
         }
 
-        return json_encode($summary, JSON_THROW_ON_ERROR);
+        return serialize($summary);
     }
 
     public function defineGlobals(): void
