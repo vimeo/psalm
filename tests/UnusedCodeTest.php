@@ -2551,6 +2551,24 @@ final class UnusedCodeTest extends TestCase
 
                     test(true);',
             ],
+            'assignmentInABranchThatThrowsIsSeenInTheLaterCatchThatTakesIt' => [
+                'code' => '<?php
+                    function test(bool $b): void {
+                        $test = "test";
+
+                        try {
+                            if ($b) {
+                                $test = "thrown";
+                                throw new RuntimeException();
+                            }
+                        } catch (LogicException $e) {
+                        } catch (RuntimeException $e) {
+                            echo $test;
+                        }
+                    }
+
+                    test(true);',
+            ],
             'assignmentInABranchThatThrowsInANestedTryIsSeenAfterTheOuterTry' => [
                 'code' => '<?php
                     function test(bool $b): string {
@@ -3760,6 +3778,26 @@ final class UnusedCodeTest extends TestCase
 
                     echo test(true);',
                 'error_message' => 'UnusedVariable',
+                'error_levels' => [],
+            ],
+            'assignmentBeforeAThrowIsNotSeenInACatchThatCannotTakeIt' => [
+                'code' => '<?php
+                    function test(bool $b): void {
+                        $test = "test";
+
+                        try {
+                            if ($b) {
+                                $test = "thrown";
+                                throw new RuntimeException();
+                            }
+                        } catch (RuntimeException $e) {
+                        } catch (LogicException $e) {
+                            echo $test;
+                        }
+                    }
+
+                    test(true);',
+                'error_message' => 'UnusedVariable - src' . DIRECTORY_SEPARATOR . 'somefile.php:7:33',
                 'error_levels' => [],
             ],
             'assignmentBeforeAThrowThatOnlyTheOuterTryCatchesIsNotSeenAfterTheInnerTry' => [

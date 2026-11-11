@@ -59,13 +59,11 @@ final class ThrowAnalyzer
                 ),
             );
 
+            $throw_nodes = [];
+
             foreach ($context->assigned_var_ids as $var_id => $_) {
                 if (isset($context->vars_in_scope[$var_id])) {
-                    $nodes = [
-                        ...($try_scope->parent_nodes[$var_id] ?? []),
-                        ...$context->vars_in_scope[$var_id]->parent_nodes,
-                    ];
-                    $try_scope->parent_nodes[$var_id] = $nodes;
+                    $throw_nodes[$var_id] = $context->vars_in_scope[$var_id]->parent_nodes;
 
                     if ($continues_after_try) {
                         $try_scope->post_try_parent_nodes[$var_id] = [
@@ -75,6 +73,8 @@ final class ThrowAnalyzer
                     }
                 }
             }
+
+            $try_scope->throws[] = ['type' => $thrown_type, 'nodes' => $throw_nodes];
         }
 
         if ($context->finally_scope) {
@@ -153,7 +153,7 @@ final class ThrowAnalyzer
         return null;
     }
 
-    private static function mayBeCaughtBy(Codebase $codebase, ?Union $thrown_type, string $catch_class): bool
+    public static function mayBeCaughtBy(Codebase $codebase, ?Union $thrown_type, string $catch_class): bool
     {
         if ($thrown_type === null || !$codebase->classOrInterfaceExists($catch_class)) {
             return true;

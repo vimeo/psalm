@@ -10,6 +10,7 @@ use Psalm\Context;
 use Psalm\Internal\Analyzer\ClassLikeAnalyzer;
 use Psalm\Internal\Analyzer\ClassLikeNameOptions;
 use Psalm\Internal\Analyzer\ScopeAnalyzer;
+use Psalm\Internal\Analyzer\Statements\Expression\ThrowAnalyzer;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\Internal\DataFlow\DataFlowNode;
 use Psalm\Internal\Scope\FinallyScope;
@@ -91,6 +92,7 @@ final class TryAnalyzer
                 ));
 
                 $try_scope->catch_classes[] = $catch_class;
+                $try_scope->catch_classes_by_catch[$catch_i][] = $catch_class;
 
                 if (in_array(ScopeAnalyzer::ACTION_NONE, $catch_actions[$catch_i], true)) {
                     $try_scope->continuing_catch_classes[] = $catch_class;
@@ -112,21 +114,6 @@ final class TryAnalyzer
         $context->finally_scope = $outer_finally_scope;
         $context->inside_try = $was_inside_try;
         $context->try_scope = $outer_try_scope;
-
-        foreach ($try_scope->post_try_parent_nodes as $try_var_id => $try_parent_nodes) {
-            if ($outer_try_scope !== null) {
-                $outer_try_scope->parent_nodes[$try_var_id] = [
-                    ...($outer_try_scope->parent_nodes[$try_var_id] ?? []),
-                    ...$try_parent_nodes,
-                ];
-            }
-
-            if (isset($context->vars_in_scope[$try_var_id])) {
-                $context->vars_in_scope[$try_var_id] = $context->vars_in_scope[$try_var_id]->setParentNodes(
-                    $context->vars_in_scope[$try_var_id]->parent_nodes + $try_parent_nodes,
-                );
-            }
-        }
 
         $context->has_returned = false;
 
@@ -189,6 +176,20 @@ final class TryAnalyzer
         // the try was applied
         $original_context = clone $try_context;
 
+        // what the throwing branches assigned reaches the code after the try only through a catch that goes on, so the
+        // catches take it from their own throws (above), not from the types the try context is built from
+        foreach ($try_scope->post_try_parent_nodes as $try_var_id => $try_parent_nodes) {
+            if ($outer_try_scope !== null) {
+                $outer_try_scope->throws[] = ['type' => null, 'nodes' => [$try_var_id => $try_parent_nodes]];
+            }
+
+            if (isset($context->vars_in_scope[$try_var_id])) {
+                $context->vars_in_scope[$try_var_id] = $context->vars_in_scope[$try_var_id]->setParentNodes(
+                    $context->vars_in_scope[$try_var_id]->parent_nodes + $try_parent_nodes,
+                );
+            }
+        }
+
         $issues_to_suppress = [
             'RedundantCondition',
             'RedundantConditionGivenDocblockType',
@@ -203,11 +204,24 @@ final class TryAnalyzer
             $catch_context = clone $original_context;
             $catch_context->has_returned = false;
 
-            // what a branch that throws assigned is there for the catches, also those that never go on
-            foreach ($try_scope->parent_nodes as $try_var_id => $try_parent_nodes) {
-                if (isset($catch_context->vars_in_scope[$try_var_id])) {
-                    $catch_context->vars_in_scope[$try_var_id] = $catch_context->vars_in_scope[$try_var_id]
-                        ->setParentNodes($catch_context->vars_in_scope[$try_var_id]->parent_nodes + $try_parent_nodes);
+            // what a branch that throws assigned is there for the catches that can take its exception, also those that
+            // never go on
+            foreach ($try_scope->throws as $throw) {
+                foreach ($try_scope->catch_classes_by_catch[$i] as $catch_class) {
+                    if (!ThrowAnalyzer::mayBeCaughtBy($codebase, $throw['type'], $catch_class)) {
+                        continue;
+                    }
+
+                    foreach ($throw['nodes'] as $try_var_id => $try_parent_nodes) {
+                        if (isset($catch_context->vars_in_scope[$try_var_id])) {
+                            $catch_context->vars_in_scope[$try_var_id] = $catch_context->vars_in_scope[$try_var_id]
+                                ->setParentNodes(
+                                    $catch_context->vars_in_scope[$try_var_id]->parent_nodes + $try_parent_nodes,
+                                );
+                        }
+                    }
+
+                    break;
                 }
             }
 

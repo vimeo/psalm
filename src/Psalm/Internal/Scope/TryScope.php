@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Psalm\Internal\Scope;
 
 use Psalm\Internal\DataFlow\DataFlowNode;
+use Psalm\Type\Union;
 
 /**
  * Collects what a try body assigned to variables, also inside branches that leave the body by throwing: what a
@@ -15,9 +16,12 @@ use Psalm\Internal\DataFlow\DataFlowNode;
 final class TryScope
 {
     /**
-     * @var array<string, array<string, DataFlowNode>>
+     * What each throw in the body assigned, with the type of the exception: a catch sees only the throws it
+     * can take
+     *
+     * @var list<array{type: ?Union, nodes: array<string, array<string, DataFlowNode>>}>
      */
-    public array $parent_nodes = [];
+    public array $throws = [];
 
     /**
      * What the throwing branches assigned that is seen after the try: only through a catch that goes on
@@ -32,6 +36,13 @@ final class TryScope
      * @var list<string>
      */
     public array $catch_classes = [];
+
+    /**
+     * The classes each catch names, in lowercase
+     *
+     * @var array<int, list<string>>
+     */
+    public array $catch_classes_by_catch = [];
 
     /**
      * The classes of the catches that can continue after the try (the others always return or throw)
