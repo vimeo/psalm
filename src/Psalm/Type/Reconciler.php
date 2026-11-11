@@ -71,6 +71,7 @@ use function array_keys;
 use function array_merge;
 use function array_pop;
 use function array_shift;
+use function array_slice;
 use function array_values;
 use function count;
 use function explode;
@@ -84,6 +85,7 @@ use function preg_quote;
 use function str_contains;
 use function str_ends_with;
 use function str_split;
+use function str_starts_with;
 use function strlen;
 use function strpos;
 use function strtolower;
@@ -175,9 +177,11 @@ class Reconciler
         $codebase = $statements_analyzer->getCodebase();
 
         foreach ($new_types as $key => $new_type_parts) {
+            // a class constant is what it is, but the one of `static` depends on the called class
             if (strpos($key, '::')
                 && !strpos($key, '$')
                 && !strpos($key, '[')
+                && !str_starts_with($key, 'static::')
             ) {
                 continue;
             }
@@ -255,6 +259,15 @@ class Reconciler
 
             foreach ($new_type_parts as $offset => $new_type_part_parts) {
                 $orred_type = null;
+                $report_location = $code_location
+                    && isset($referenced_var_ids[$key])
+                    && isset($active_new_types[$key][$offset])
+                    ? $code_location
+                    : null;
+                // of several alternatives, one that cannot be the value is only a problem when none can
+                $record_alternatives = $report_location !== null && count($new_type_part_parts) > 1;
+                $recorded_issues = [];
+                $any_alternative_possible = false;
 
                 foreach ($new_type_part_parts as $new_type_part_part) {
                     if ($new_type_part_part instanceof NestedAssertions
@@ -289,6 +302,10 @@ class Reconciler
                         $new_type_part_part = $nested_negated ? new Falsy() : new Truthy();
                     }
 
+                    if ($record_alternatives) {
+                        IssueBuffer::startRecording();
+                    }
+
                     $result_type_candidate = AssertionReconciler::reconcile(
                         $new_type_part_part,
                         $result_type,
@@ -296,15 +313,31 @@ class Reconciler
                         $statements_analyzer,
                         $inside_loop,
                         $template_type_map,
-                        $code_location
-                            && isset($referenced_var_ids[$key])
-                            && isset($active_new_types[$key][$offset])
-                            ? $code_location
-                            : null,
+                        $report_location,
                         $suppressed_issues,
                         $failed_reconciliation,
                         $negated,
                     );
+
+                    if ($record_alternatives) {
+                        $alternative_issues = IssueBuffer::clearRecordingLevel();
+                        IssueBuffer::stopRecording();
+
+                        $recorded_issues[] = $alternative_issues;
+
+                        $is_impossible = false;
+
+                        foreach ($alternative_issues as $alternative_issue) {
+                            if ($alternative_issue instanceof TypeDoesNotContainType
+                                || $alternative_issue instanceof TypeDoesNotContainNull
+                                || $alternative_issue instanceof DocblockTypeContradiction
+                            ) {
+                                $is_impossible = true;
+                            }
+                        }
+
+                        $any_alternative_possible = $any_alternative_possible || !$is_impossible;
+                    }
 
                     if ($result_type_candidate->isUnionEmpty()) {
                         $result_type_candidate = $result_type_candidate->getBuilder()->addType(new TNever)->freeze();
@@ -315,6 +348,31 @@ class Reconciler
                         $orred_type,
                         $codebase,
                     );
+                }
+
+                if ($record_alternatives) {
+                    // when one alternative can be the value, what the others say about being impossible is dropped
+                    $reported_alternatives = $any_alternative_possible
+                        ? $recorded_issues
+                        : array_slice($recorded_issues, 0, 1);
+
+                    foreach ($reported_alternatives as $alternative_issues) {
+                        foreach ($alternative_issues as $alternative_issue) {
+                            if ($any_alternative_possible
+                                && ($alternative_issue instanceof TypeDoesNotContainType
+                                    || $alternative_issue instanceof TypeDoesNotContainNull
+                                    || $alternative_issue instanceof DocblockTypeContradiction)
+                            ) {
+                                continue;
+                            }
+
+                            IssueBuffer::bubbleUp($alternative_issue);
+                        }
+                    }
+
+                    if ($any_alternative_possible) {
+                        $failed_reconciliation = self::RECONCILIATION_OK;
+                    }
                 }
 
                 $result_type = $orred_type;
@@ -739,6 +797,33 @@ class Reconciler
     }
 
     /**
+     * The type of the class constant a key such as `Foo::BAR` or `static::BAR` stands for.
+     */
+    private static function getClassConstantTypeOfKey(
+        Codebase $codebase,
+        string $key,
+        ?StatementsAnalyzer $statements_analyzer,
+    ): ?Union {
+        [$fq_class_name, $const_name] = explode('::', $key);
+
+        // the class of `static::NAME` is the one the code is in, as for a static property
+        if (strtolower($fq_class_name) === 'static') {
+            $fq_class_name = $statements_analyzer?->getFQCLN() ?? $fq_class_name;
+        }
+
+        if (!$codebase->classlikes->classOrInterfaceExists($fq_class_name)) {
+            return null;
+        }
+
+        return $codebase->classlikes->getClassConstantType(
+            $fq_class_name,
+            $const_name,
+            ReflectionProperty::IS_PRIVATE,
+            null,
+        );
+    }
+
+    /**
      * Gets the type for a given (non-existent key) based on the passed keys
      *
      * @param array<string, Union>  $existing_keys
@@ -764,6 +849,10 @@ class Reconciler
         if (count($key_parts) === 1) {
             if ($key === Context::PHP_VERSION_ID_VAR_ID) {
                 return $existing_keys[$key] ?? Type::getIntRange(1, null);
+            }
+
+            if (!isset($existing_keys[$key_parts[0]]) && str_contains($key, '::') && !str_contains($key, '$')) {
+                return self::getClassConstantTypeOfKey($codebase, $key, $statements_analyzer);
             }
 
             return $existing_keys[$key_parts[0]] ?? null;
@@ -802,28 +891,15 @@ class Reconciler
                 $existing_keys[$base_key] = $static_property_type;
             }
         } elseif (!isset($existing_keys[$base_key])) {
-            if (strpos($base_key, '::')) {
-                [$fq_class_name, $const_name] = explode('::', $base_key);
+            $class_constant = strpos($base_key, '::')
+                ? self::getClassConstantTypeOfKey($codebase, $base_key, $statements_analyzer)
+                : null;
 
-                if (!$codebase->classlikes->classOrInterfaceExists($fq_class_name)) {
-                    return null;
-                }
-
-                $class_constant = $codebase->classlikes->getClassConstantType(
-                    $fq_class_name,
-                    $const_name,
-                    ReflectionProperty::IS_PRIVATE,
-                    null,
-                );
-
-                if ($class_constant) {
-                    $existing_keys[$base_key] = $class_constant;
-                } else {
-                    return null;
-                }
-            } else {
+            if (!$class_constant) {
                 return null;
             }
+
+            $existing_keys[$base_key] = $class_constant;
         }
 
         while ($key_parts) {
@@ -1169,7 +1245,17 @@ class Reconciler
                 $fq_class_name,
             );
 
-            return $declaring_class_storage->pseudo_property_get_types['$' . $property_name] ?? null;
+            $pseudo_property_type = $declaring_class_storage->pseudo_property_get_types['$' . $property_name] ?? null;
+
+            return $pseudo_property_type
+                ? TypeExpander::expandUnion(
+                    $codebase,
+                    $pseudo_property_type,
+                    $declaring_class_storage->name,
+                    $declaring_class_storage->name,
+                    $declaring_class_storage->parent_class,
+                )
+                : null;
         }
 
         $declaring_property_class = $codebase->properties->getDeclaringClassForProperty(
@@ -1394,8 +1480,10 @@ class Reconciler
         $shape_changed = false;
 
         foreach ($base_type->getAtomicTypes() as $atomic_type) {
+            // with a fallback, dropping the offset would let the fallback type stand for it
             if ($atomic_type instanceof TKeyedArray
                 && !$atomic_type->is_list
+                && !$atomic_type->fallback_params
                 && isset($atomic_type->properties[$offset->value])
                 && $atomic_type->properties[$offset->value]->possibly_undefined
                 && ($is_absent
@@ -1407,8 +1495,6 @@ class Reconciler
 
                 if ($properties) {
                     $atomic_type = $atomic_type->setProperties($properties);
-                } elseif ($atomic_type->fallback_params) {
-                    $atomic_type = new TArray($atomic_type->fallback_params);
                 } else {
                     $atomic_type = new TArray([new Union([new TNever()]), new Union([new TNever()])]);
                 }

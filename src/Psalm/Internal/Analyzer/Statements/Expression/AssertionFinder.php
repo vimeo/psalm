@@ -97,6 +97,7 @@ use Psalm\Type\Atomic\TMixed;
 use Psalm\Type\Atomic\TNamedObject;
 use Psalm\Type\Atomic\TNull;
 use Psalm\Type\Atomic\TObject;
+use Psalm\Type\Atomic\TObjectWithProperties;
 use Psalm\Type\Atomic\TResource;
 use Psalm\Type\Atomic\TTemplateParam;
 use Psalm\Type\Atomic\TTemplateParamClass;
@@ -2080,6 +2081,8 @@ final class AssertionFinder
             } elseif ($first_var_type
                 && $codebase
                 && $assertion_type instanceof IsType
+                // a string passing a ctype check is of the type, but a string of the type may not pass it ("-5")
+                && !str_starts_with($function_name, 'ctype_')
             ) {
                 self::processIrreconcilableFunctionCall(
                     $first_var_type,
@@ -4540,6 +4543,18 @@ final class AssertionFinder
         }
 
         foreach ($type->getAtomicTypes() as $type) {
+            if ($type instanceof TObjectWithProperties) {
+                if (!isset($type->properties[$property])) {
+                    return sprintf(
+                        'Property %s is not defined on variable %s so the assertion cannot be applied',
+                        $property,
+                        $name,
+                    );
+                }
+
+                continue;
+            }
+
             if (!$type instanceof TNamedObject) {
                 return 'Variable ' . $name . ' is not an object so the assertion cannot be applied';
             }
