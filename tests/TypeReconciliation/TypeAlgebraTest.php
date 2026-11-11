@@ -21,32 +21,111 @@ final class TypeAlgebraTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
-            'traitExistsWithoutAutoloadNarrowsTheName' => [
-                'code' => '<?php
-                    function checkTrait(string $name): void {
-                        if (!trait_exists($name, false)) {
-                            return;
+            'coalesceAssignmentInConditionNarrowsTheVariable' => [
+                'code' => <<<'PHP'
+                    <?php
+                    function make(): ?object { return null; }
+
+                    function negated(?object $s): object {
+                        if (!($s ??= make())) {
+                            exit;
                         }
 
-                        /** @psalm-check-type-exact $name = trait-string */
-                    }',
+                        return $s;
+                    }
+
+                    function branches(?object $s): void {
+                        if ($s ??= make()) {
+                            /** @psalm-check-type-exact $s = object */;
+                        } else {
+                            /** @psalm-check-type-exact $s = null */;
+                        }
+                    }
+
+                    /** @param array{k?: object|null} $arr */
+                    function arrayItem(array $arr): object {
+                        if (!($arr['k'] ??= make())) {
+                            exit;
+                        }
+
+                        return $arr['k'];
+                    }
+
+                    final class Holder {
+                        private ?object $item = null;
+                        public ?self $child = null;
+
+                        public function item(): object {
+                            if (!($this->item ??= make())) {
+                                throw new Exception();
+                            }
+
+                            return $this->item;
+                        }
+
+                        public function untracked(): void {
+                            if ($this->self()->child ??= null) {
+                                echo 1;
+                            }
+                        }
+
+                        public function self(): self {
+                            return $this;
+                        }
+                    }
+                    PHP,
                 'assertions' => [],
                 'ignored_issues' => [],
-                'php_version' => '8.2',
+                'php_version' => '8.1',
             ],
-            'negatedTraitExistsWithAutoloadKeepsATraitStringParam' => [
-                'code' => '<?php
-                    /** @param trait-string $name */
-                    function checkTrait(string $name, bool $autoload = true): string {
-                        if (!trait_exists($name, $autoload)) {
-                            throw new Exception($name);
+            'coalesceAssignmentOnTheRightOfAndKeepsTheAssignmentAfterTheIf' => [
+                'code' => <<<'PHP'
+                    <?php
+                    final class A {}
+
+                    function make(): ?A {
+                        return rand(0, 1) ? new A() : null;
+                    }
+
+                    /** @param list<string> $names */
+                    function export(array $names): void {
+                        $class = null;
+
+                        foreach ($names as $name) {
+                            if ($name === 'self' && $class ??= make()) {
+                                echo get_class($class);
+                            }
                         }
 
-                        return $name;
-                    }',
+                        /** @psalm-check-type-exact $class = A|null */;
+                    }
+                    PHP,
                 'assertions' => [],
                 'ignored_issues' => [],
-                'php_version' => '8.2',
+                'php_version' => '8.1',
+            ],
+            'coalesceAssignmentAssignedToAVariableOnTheLeftOfOr' => [
+                'code' => <<<'PHP'
+                    <?php
+                    interface I {}
+                    final class Lazy implements I {}
+                    final class Real implements I {}
+
+                    function make(): ?I {
+                        return rand(0, 1) ? new Lazy() : null;
+                    }
+
+                    final class Builder {
+                        private ?I $instantiator = null;
+
+                        public function isReal(): bool {
+                            return !($proxy = $this->instantiator ??= make()) || $proxy instanceof Real;
+                        }
+                    }
+                    PHP,
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
             ],
             'instanceofStoredInVariableNarrowsInIfBody' => [
                 'code' => '<?php
@@ -1626,6 +1705,33 @@ final class TypeAlgebraTest extends TestCase
                         return A::$x->y;
                     }',
             ],
+            'traitExistsWithoutAutoloadNarrowsTheName' => [
+                'code' => '<?php
+                    function checkTrait(string $name): void {
+                        if (!trait_exists($name, false)) {
+                            return;
+                        }
+
+                        /** @psalm-check-type-exact $name = trait-string */
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.2',
+            ],
+            'negatedTraitExistsWithAutoloadKeepsATraitStringParam' => [
+                'code' => '<?php
+                    /** @param trait-string $name */
+                    function checkTrait(string $name, bool $autoload = true): string {
+                        if (!trait_exists($name, $autoload)) {
+                            throw new Exception($name);
+                        }
+
+                        return $name;
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.2',
+            ],
         ];
     }
 
@@ -1636,25 +1742,6 @@ final class TypeAlgebraTest extends TestCase
     public static function providerInvalidCodeParse(): iterable
     {
         return [
-            'negationOfAConjunctionKeepsAClauseThatSaysNothingWhenFalse' => [
-                'code' => '<?php
-                    class A {}
-                    class B {}
-
-                    /** @param A|B|stdClass $x */
-                    function test(object $x, string $needle): A {
-                        if (!$x instanceof A
-                            && !($x instanceof B && !str_contains($needle, "a"))
-                        ) {
-                            throw new Exception("x");
-                        }
-
-                        return $x;
-                    }',
-                'error_message' => 'InvalidReturnStatement',
-                'error_levels' => [],
-                'php_version' => '8.0',
-            ],
             'instanceofStoredInVariableIsForgottenWhenTheVariableIsReassigned' => [
                 'code' => '<?php
                     interface Foo {}
@@ -2028,6 +2115,25 @@ final class TypeAlgebraTest extends TestCase
                     foobar($list);
                 ',
                 'error_message' => 'InvalidArgument',
+            ],
+            'negationOfAConjunctionKeepsAClauseThatSaysNothingWhenFalse' => [
+                'code' => '<?php
+                    class A {}
+                    class B {}
+
+                    /** @param A|B|stdClass $x */
+                    function test(object $x, string $needle): A {
+                        if (!$x instanceof A
+                            && !($x instanceof B && !str_contains($needle, "a"))
+                        ) {
+                            throw new Exception("x");
+                        }
+
+                        return $x;
+                    }',
+                'error_message' => 'InvalidReturnStatement',
+                'error_levels' => [],
+                'php_version' => '8.0',
             ],
         ];
     }

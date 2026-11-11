@@ -14,6 +14,8 @@ use Psalm\Storage\MethodStorage;
 
 use function array_intersect_key;
 use function array_pop;
+use function array_unique;
+use function array_values;
 use function md5;
 use function str_contains;
 use function strpos;
@@ -561,7 +563,10 @@ final class CodeUseGraph
             }
         }
 
-        $this->mutation_info = $other->mutation_info + $this->mutation_info;
+        foreach ($other->mutation_info as $node_id => $info) {
+            $this->mutation_info[$node_id] = self::combineMutationInfo($this->mutation_info[$node_id] ?? null, $info);
+        }
+
         $this->mutation_levels = null;
     }
 
@@ -593,13 +598,48 @@ final class CodeUseGraph
      */
     public function addMutationInfo(string $node_id, array $info): void
     {
-        $this->mutation_info[$node_id] = $info;
+        $this->mutation_info[$node_id] = self::combineMutationInfo($this->mutation_info[$node_id] ?? null, $info);
         $this->mutation_levels = null;
 
         if (!$this->record_edges) {
             // stale info is pruned by file, which addReference() notes only while edges are recorded
             $this->noteNodeFile($node_id, $info['location']->file_path);
         }
+    }
+
+    /**
+     * A function-like analysed more than once in a run (e.g. an inherited method under the `$this`
+     * of each subclass) may have branches that are only reachable in some of those analyses: it
+     * does everything any of them does. Info from an earlier run is replaced.
+     *
+     * @param MutationInfo|null $existing
+     * @param MutationInfo $info
+     * @return MutationInfo
+     * @psalm-pure
+     */
+    private static function combineMutationInfo(?array $existing, array $info): array
+    {
+        if ($existing === null || !$existing['fresh'] || !$info['fresh']) {
+            return $info;
+        }
+
+        $info['intrinsic'] |= $existing['intrinsic'];
+        $info['default_intrinsic'] |= $existing['default_intrinsic'];
+
+        foreach ($existing['callees'] as $callee_id => $internal_mutations_ok) {
+            $info['callees'][$callee_id] = ($info['callees'][$callee_id] ?? true) && $internal_mutations_ok;
+        }
+
+        foreach ($existing['default_callees'] as $callee_id => $internal_mutations_ok) {
+            $info['default_callees'][$callee_id]
+                = ($info['default_callees'][$callee_id] ?? true) && $internal_mutations_ok;
+        }
+
+        foreach ($existing['wildcards'] ?? [] as $param => $paths) {
+            $info['wildcards'][$param] = array_values(array_unique([...($info['wildcards'][$param] ?? []), ...$paths]));
+        }
+
+        return $info;
     }
 
     /**

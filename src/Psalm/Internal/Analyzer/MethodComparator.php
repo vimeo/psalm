@@ -260,7 +260,13 @@ final class MethodComparator
                 $implementer_called_class_name,
                 $guide_method_storage,
                 $implementer_method_storage,
-                $guide_param,
+                self::getDocumentedGuideParam(
+                    $codebase,
+                    $guide_classlike_storage,
+                    $guide_method_storage,
+                    $guide_param,
+                    $i,
+                ),
                 $implementer_method_storage->params[$i],
                 $i,
                 $cased_guide_method_id,
@@ -507,6 +513,7 @@ final class MethodComparator
                         . ' additionally requires '
                         . Capabilities::toString($implementer_capabilities, $guide_capabilities),
                     $code_location,
+                    $guide_classlike_storage->name,
                 ),
                 $suppressed_issues + $implementer_classlike_storage->suppressed_issues,
             );
@@ -792,6 +799,49 @@ final class MethodComparator
                 $suppressed_issues + $implementer_classlike_storage->suppressed_issues,
             );
         }
+    }
+
+    /**
+     * A method with no docblock of its own is documented by the one it inherits it from (see Populator), and a
+     * method overriding it is compared with the param type of that docblock
+     */
+    private static function getDocumentedGuideParam(
+        Codebase $codebase,
+        ClassLikeStorage $guide_classlike_storage,
+        MethodStorage $guide_method_storage,
+        FunctionLikeParameter $guide_param,
+        int $i,
+    ): FunctionLikeParameter {
+        if ($guide_method_storage->has_docblock_param_types) {
+            return $guide_param;
+        }
+
+        $documenting_method_id = $guide_classlike_storage->documenting_method_ids[
+            strtolower($guide_method_storage->cased_name ?? '')
+        ] ?? null;
+
+        if ($documenting_method_id === null
+            || strtolower($documenting_method_id->fq_class_name) === strtolower($guide_classlike_storage->name)
+        ) {
+            return $guide_param;
+        }
+
+        $documenting_param = $codebase->methods->getStorage($documenting_method_id)->params[$i] ?? null;
+
+        // its templates are the ones of the class it is declared in; a type that is only the native one of the
+        // inherited method documents nothing, and a docblock type broader than the native type of the method
+        // itself does not widen what overriding methods may declare
+        if ($documenting_param === null
+            || $documenting_param->type === null
+            || !$documenting_param->has_docblock_type
+            || $documenting_param->type->hasTemplate()
+            || ($guide_param->type !== null
+                && !UnionTypeComparator::isContainedBy($codebase, $documenting_param->type, $guide_param->type))
+        ) {
+            return $guide_param;
+        }
+
+        return $guide_param->setType($documenting_param->type);
     }
 
     /**

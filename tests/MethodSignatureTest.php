@@ -8,11 +8,15 @@ use Override;
 use PHPUnit\Framework\Attributes\DataProvider;
 use Psalm\Context;
 use Psalm\Exception\CodeException;
+use Psalm\Internal\Analyzer\IssueData;
 use Psalm\Internal\Analyzer\MethodComparator;
 use Psalm\Internal\Codebase\InternalCallMapHandler;
+use Psalm\IssueBuffer;
 use Psalm\Tests\Traits\InvalidCodeAnalysisTestTrait;
 use Psalm\Tests\Traits\InvalidCodeAnalysisWithIssuesTestTrait;
 use Psalm\Tests\Traits\ValidCodeAnalysisTestTrait;
+
+use function array_map;
 
 use const DIRECTORY_SEPARATOR;
 
@@ -393,6 +397,51 @@ final class MethodSignatureTest extends TestCase
         $this->analyzeFile('somefile.php', new Context());
     }
 
+    public function testOverrideOfAMethodInheritingADocblockBroaderThanItsNativeParamIsComparedWithTheNativeOne(): void
+    {
+        $this->testConfig->throw_exception = false;
+        $file_path = self::$src_dir_path . 'somefile.php';
+        $this->addFile(
+            $file_path,
+            '<?php
+                interface I {
+                    /**
+                     * @param object $record
+                     */
+                    public function preSaveRevision(stdClass $record): void;
+                }
+
+                class Base implements I {
+                    /**
+                     * {@inheritdoc}
+                     */
+                    public function preSaveRevision(stdClass $record): void {}
+                }
+
+                class Node extends Base {
+                    public function preSaveRevision(stdClass $record): void {}
+                }',
+        );
+
+        $this->analyzeFile($file_path, new Context(), false);
+
+        // Node matches the native param of Base, which is what it overrides: only the docblock of the interface
+        // is broader than the native param, and it is reported where the interface is implemented
+        self::assertSame(
+            [
+                "Parameter \$record has wrong type 'object', should be 'stdClass'",
+                "Argument 1 of Base::preSaveRevision has the more specific type 'stdClass', expecting 'object' as"
+                    . ' defined by I::preSaveRevision',
+                "Argument 1 of Node::preSaveRevision has the more specific type 'stdClass', expecting 'object' as"
+                    . ' defined by I::preSaveRevision',
+            ],
+            array_map(
+                static fn(IssueData $issue): string => $issue->message,
+                IssueBuffer::getIssuesDataForFile($file_path),
+            ),
+        );
+    }
+
     /**
      * @psalm-pure
      */
@@ -400,6 +449,51 @@ final class MethodSignatureTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'overrideOfAMethodDocumentedByTheInterfaceItImplements' => [
+                'code' => '<?php
+                    interface I {
+                        /**
+                         * @param Closure $c
+                         * @psalm-param Closure():string $c
+                         */
+                        public function foo(Closure $c): void;
+                    }
+
+                    class A implements I {
+                        public function foo(Closure $c): void {}
+                    }
+
+                    class B extends A {
+                        /**
+                         * @param Closure $c
+                         * @psalm-param Closure():string $c
+                         */
+                        public function foo(Closure $c): void {}
+                    }',
+            ],
+            'overrideOfAMethodDocumentedByTheInterfaceKeepsTheParamOfItsParent' => [
+                'code' => '<?php
+                    interface I {
+                        /**
+                         * @no-named-arguments
+                         * @param Closure $c
+                         * @psalm-param Closure():string $c
+                         */
+                        public function foo(Closure $c, array &$a): void;
+                    }
+
+                    class A implements I {
+                        public function foo(Closure $d, array &$a): void {}
+                    }
+
+                    class B extends A {
+                        /**
+                         * @param Closure $d
+                         * @psalm-param Closure():string $d
+                         */
+                        public function foo(Closure $d, array &$a): void {}
+                    }',
+            ],
             'variadicParameterTakesTheOmittedParameters' => [
                 'code' => '<?php
                     interface I {
@@ -1469,6 +1563,29 @@ final class MethodSignatureTest extends TestCase
     public static function providerInvalidCodeParse(): iterable
     {
         return [
+            'overrideOfAMethodDocumentedByTheInterfaceWithAMoreSpecificParam' => [
+                'code' => '<?php
+                    interface I {
+                        /**
+                         * @param Closure $c
+                         * @psalm-param Closure():string $c
+                         */
+                        public function foo(Closure $c): void;
+                    }
+
+                    class A implements I {
+                        public function foo(Closure $c): void {}
+                    }
+
+                    class B extends A {
+                        /**
+                         * @param Closure $c
+                         * @psalm-param Closure():non-empty-string $c
+                         */
+                        public function foo(Closure $c): void {}
+                    }',
+                'error_message' => 'MoreSpecificImplementedParamType',
+            ],
             'variadicParameterOfAnotherTypeThanTheOmittedParameter' => [
                 'code' => '<?php
                     interface I {
