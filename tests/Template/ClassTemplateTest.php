@@ -6039,6 +6039,60 @@ final class ClassTemplateTest extends TestCase
                     '$r===' => 'int<1, max>',
                 ],
             ],
+            'templateNestedInAnInvariantGenericParamOfAConstructorIsInferred' => [
+                'code' => '<?php
+                    /**
+                     * @template K
+                     * @template V
+                     */
+                    class Map {}
+
+                    /** @template T */
+                    class A {
+                        /** @param T $t */
+                        public function __construct(private mixed $t) {}
+                    }
+
+                    /** @template T */
+                    class ContainerClass {
+                        /** @param Map<int, A<T>> $m */
+                        public function __construct(private Map $m) {}
+                    }
+
+                    /** @var Map<int, A<string>> $map */
+                    $map = new Map();
+                    $test = new ContainerClass($map);',
+                'assertions' => [
+                    '$test===' => 'ContainerClass<string>',
+                ],
+                'ignored_issues' => ['UnusedProperty'],
+                'php_version' => '8.0',
+            ],
+            'templateNestedInAnInvariantGenericParamOfAFunctionIsInferred' => [
+                'code' => '<?php
+                    /**
+                     * @template K
+                     * @template V
+                     */
+                    class Map {}
+
+                    /** @template T */
+                    class A {}
+
+                    /**
+                     * @template T
+                     * @param Map<int, A<T>> $m
+                     * @return T
+                     */
+                    function f(Map $m) { throw new Exception(); }
+
+                    /** @var Map<int, A<string>> $map */
+                    $map = new Map();
+                    $r = f($map);',
+                'assertions' => [
+                    '$r===' => 'string',
+                ],
+            ],
         ];
     }
 
@@ -7245,6 +7299,61 @@ final class ClassTemplateTest extends TestCase
                 'error_message' => 'InvalidArgument',
                 'error_levels' => [],
                 'php_version' => '8.0',
+            ],
+            'nestedTemplateInAUnionWithAnotherAlternativeStaysInvariant' => [
+                'code' => '<?php
+                    /** @template T */
+                    final class A {
+                        /** @param T $v */
+                        public function __construct(public $v) {}
+                    }
+
+                    final class B {}
+
+                    /**
+                     * @template K of array-key
+                     * @template V
+                     */
+                    final class Map {
+                        /** @param array<K, V> $items */
+                        public function __construct(public array $items = []) {}
+                    }
+
+                    /**
+                     * @template T
+                     * @param Map<int, A<T>|B> $m
+                     * @return T|null
+                     */
+                    function take(Map $m) { return null; }
+
+                    /** @param Map<int, A<string>> $onlyA */
+                    function f(Map $onlyA): void {
+                        take($onlyA);
+                    }',
+                'error_message' => 'InvalidArgument',
+            ],
+            'templateNestedInAnInvariantGenericParamStillConflictsWithAnotherArgument' => [
+                'code' => '<?php
+                    /**
+                     * @template K
+                     * @template V
+                     */
+                    class Map {}
+
+                    /** @template T */
+                    class A {}
+
+                    /**
+                     * @template T
+                     * @param Map<int, A<T>> $m
+                     * @param T $x
+                     */
+                    function f(Map $m, $x): void {}
+
+                    /** @var Map<int, A<string>> $map */
+                    $map = new Map();
+                    f($map, 5);',
+                'error_message' => 'InvalidArgument',
             ],
         ];
     }
