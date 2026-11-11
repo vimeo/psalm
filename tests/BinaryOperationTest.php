@@ -283,6 +283,81 @@ final class BinaryOperationTest extends TestCase
         $this->analyzeFile('somefile.php', new Context());
     }
 
+    public function testPowOfDifferingNumericLiteralTypesInStrictMode(): void
+    {
+        Config::getInstance()->strict_binary_operands = true;
+
+        $this->addFile(
+            'somefile.php',
+            '<?php
+                    $a = 1.5 ** 10;
+                    $b = 2 ** 0.5;
+                    $c = 2 ** 3;',
+        );
+
+        $this->analyzeFile('somefile.php', new Context());
+    }
+
+    public function testPowOfDifferingNumericTypesInStrictMode(): void
+    {
+        Config::getInstance()->strict_binary_operands = true;
+
+        $this->addFile(
+            'somefile.php',
+            '<?php
+                    /**
+                     * @param int|float $number
+                     * @param numeric $numeric
+                     */
+                    function f(int $int, float $float, $number, $numeric): void {
+                        echo $int ** $float;
+                        echo $float ** $int;
+                        echo $number ** $int;
+                        echo $numeric ** $int;
+                        $int **= $float;
+                        $float **= $int;
+                    }',
+        );
+
+        $this->analyzeFile('somefile.php', new Context());
+    }
+
+    public function testPowOfNonNumericTypesInStrictModeIsStillReported(): void
+    {
+        Config::getInstance()->strict_binary_operands = true;
+
+        $this->addFile(
+            'somefile.php',
+            '<?php
+                    function f(string $s): void {
+                        echo $s ** 2;
+                    }',
+        );
+
+        $this->expectException(CodeException::class);
+        $this->expectExceptionMessage('InvalidOperand');
+
+        $this->analyzeFile('somefile.php', new Context());
+    }
+
+    public function testDifferingNumericTypesMultiplicationInStrictModeIsStillReported(): void
+    {
+        Config::getInstance()->strict_binary_operands = true;
+
+        $this->addFile(
+            'somefile.php',
+            '<?php
+                    function f(int $int, float $float): void {
+                        echo $int * $float;
+                    }',
+        );
+
+        $this->expectException(CodeException::class);
+        $this->expectExceptionMessage('InvalidOperand');
+
+        $this->analyzeFile('somefile.php', new Context());
+    }
+
     public function testConcatenationWithIntInStrictMode(): void
     {
         $config = Config::getInstance();
@@ -671,6 +746,156 @@ final class BinaryOperationTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'coalesceOfAStaticAndASelfPropertyOffset' => [
+                'code' => '<?php
+                    class Test1
+                    {
+                        protected static array $var = ["item" => "Test1"];
+
+                        public static function testmethod(string $item): string
+                        {
+                            return (string) (static::$var[$item] ?? self::$var[$item] ?? "none");
+                        }
+                    }
+
+                    class Test2 extends Test1
+                    {
+                        protected static array $var = ["item" => "Test2"];
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '7.4',
+            ],
+            'issetOfAStaticPropertyOffsetNarrowsTheSameFetch' => [
+                'code' => '<?php
+                    class Cache
+                    {
+                        protected static array $items = [];
+
+                        public static function get(string $key): string
+                        {
+                            if (isset(static::$items[$key])) {
+                                return (string) static::$items[$key];
+                            }
+
+                            return "none";
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '7.4',
+            ],
+            'offsetsOfAStaticPropertyAreKeptWhenAnotherOffsetOfItIsAssigned' => [
+                'code' => '<?php
+                    final class Registry
+                    {
+                        /** @var array<string, array<string, int>> */
+                        private static array $cache = [];
+
+                        public static function get(string $class): int
+                        {
+                            self::$cache[$class] = ["x" => 1];
+                            self::$cache[$class]["y"] = 2;
+                            $entry = self::$cache[$class];
+                            /** @psalm-check-type-exact $entry = array{x: 1, y: 2} */
+                            $value = self::$cache[$class]["x"];
+                            /** @psalm-check-type-exact $value = 1 */
+
+                            return $value;
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '7.4',
+            ],
+            'staticPropertyOfATraitIsIndexedByStaticClassInTheClassUsingIt' => [
+                'code' => '<?php
+                    interface Coll {}
+
+                    trait HasCollection
+                    {
+                        /** @var class-string<Coll> */
+                        protected static string $collectionClass;
+
+                        /** @var array<class-string<static>, class-string<Coll>> */
+                        protected static array $resolved = [];
+
+                        public function newCollection(): Coll
+                        {
+                            static::$resolved[static::class] ??= static::$collectionClass;
+
+                            return new static::$resolved[static::class]();
+                        }
+                    }
+
+                    abstract class Model
+                    {
+                        use HasCollection;
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'staticPropertyOfATraitCheckedBeforeItIsCalled' => [
+                'code' => '<?php
+                    trait ResolvesDumpSource
+                    {
+                        /** @var callable|null|false */
+                        protected static $resolver;
+
+                        public function resolve(): mixed
+                        {
+                            if (static::$resolver === false) {
+                                return null;
+                            }
+
+                            if (static::$resolver) {
+                                return call_user_func(static::$resolver);
+                            }
+
+                            return null;
+                        }
+                    }
+
+                    abstract class Model
+                    {
+                        use ResolvesDumpSource;
+                    }',
+                'assertions' => [],
+                'ignored_issues' => ['RiskyTruthyFalsyComparison'],
+                'php_version' => '8.0',
+            ],
+            'staticPropertyGuardedByANullCheckIsNotNullAfterIt' => [
+                'code' => '<?php
+                    interface Container {}
+
+                    class Locator
+                    {
+                        /** @var Container|null */
+                        protected static $container;
+
+                        public static function getContainer(): Container
+                        {
+                            if (static::$container === null) {
+                                throw new RuntimeException("not initialized");
+                            }
+
+                            return static::$container;
+                        }
+
+                        public static function getSelfContainer(): Container
+                        {
+                            if (self::$container === null) {
+                                throw new RuntimeException("not initialized");
+                            }
+
+                            return self::$container;
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '7.4',
+            ],
             'interpolatedStringWithAnIntIsNotALiteralUnion' => [
                 'code' => '<?php
                     /** @var "a"|"b" $lit */
@@ -1865,6 +2090,30 @@ final class BinaryOperationTest extends TestCase
     public static function providerInvalidCodeParse(): iterable
     {
         return [
+            'assignmentToSelfStaticPropertyForgetsTheNarrowingOfStaticOne' => [
+                'code' => '<?php
+                    interface Container {}
+
+                    class Locator
+                    {
+                        /** @var Container|null */
+                        protected static $container;
+
+                        public static function getContainer(): Container
+                        {
+                            if (static::$container === null) {
+                                throw new RuntimeException("not initialized");
+                            }
+
+                            self::$container = null;
+
+                            return static::$container;
+                        }
+                    }',
+                'error_message' => 'NullableReturnStatement',
+                'error_levels' => [],
+                'php_version' => '7.4',
+            ],
             'bcMathNumberPlusNonNumericString' => [
                 'code' => '<?php
                     namespace BcMath {
