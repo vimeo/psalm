@@ -204,6 +204,7 @@ final class AtomicPropertyFetchAnalyzer
                 $interface_exists,
                 $fq_class_name,
                 $override_property_visibility,
+                $context->inside_isset,
             );
 
             if (!$class_exists && !$interface_exists) {
@@ -1370,6 +1371,7 @@ final class AtomicPropertyFetchAnalyzer
         bool &$interface_exists,
         string &$fq_class_name,
         bool &$override_property_visibility,
+        bool $inside_isset,
     ): void {
         if ($codebase->interfaceExists($lhs_type_part->value)) {
             $interface_exists = true;
@@ -1400,6 +1402,7 @@ final class AtomicPropertyFetchAnalyzer
             }
 
             $first_class_type = null;
+            $intersects_with_final_class = false;
 
             foreach ($intersection_types as $intersection_type) {
                 if ($intersection_type instanceof TObjectWithProperties
@@ -1413,6 +1416,8 @@ final class AtomicPropertyFetchAnalyzer
                     && $codebase->classExists($intersection_type->value)
                 ) {
                     $first_class_type ??= $intersection_type;
+                    $intersects_with_final_class = $intersects_with_final_class
+                        || $codebase->classlike_storage_provider->get($intersection_type->value)->final;
                 } elseif ($intersection_type instanceof TNamedObject
                     && (in_array($intersection_type->value, ['UnitEnum', 'BackedEnum'], true)
                         || in_array('UnitEnum', $codebase->getParentInterfaces($intersection_type->value)))
@@ -1422,7 +1427,7 @@ final class AtomicPropertyFetchAnalyzer
             }
 
             $hook_interface = $first_class_type !== null
-                && $codebase->classlike_storage_provider->get($first_class_type->value)->final
+                && ($intersects_with_final_class || $intersects_with_shape_property)
                 ? null
                 : self::findInterfaceWithPropertyHook($codebase, $lhs_type_part, $prop_name, false);
 
@@ -1442,7 +1447,8 @@ final class AtomicPropertyFetchAnalyzer
                 $lhs_type_part = $hook_interface;
                 $fq_class_name = $hook_interface->value;
             } elseif (!$is_enum_interface && !$intersects_with_shape_property) {
-                if (IssueBuffer::accepts(
+                // isset() and ?? only test whether the property is there
+                if (!$inside_isset && IssueBuffer::accepts(
                     new NoInterfaceProperties(
                         'Interfaces cannot have properties',
                         new CodeLocation($statements_analyzer->getSource(), $stmt),
@@ -1587,7 +1593,13 @@ final class AtomicPropertyFetchAnalyzer
             || $class_storage->hasAttributeIncludingParents('AllowDynamicProperties', $codebase))
             && isset($class_storage->pseudo_property_get_types['$' . $prop_name])
         ) {
-            $stmt_type = $class_storage->pseudo_property_get_types['$' . $prop_name];
+            $stmt_type = TypeExpander::expandUnion(
+                $codebase,
+                $class_storage->pseudo_property_get_types['$' . $prop_name],
+                $class_storage->name,
+                $class_storage->name,
+                $class_storage->parent_class,
+            );
 
             if (count($template_types = $class_storage->getClassTemplateTypes()) !== 0) {
                 if (!$lhs_type_part instanceof TGenericObject) {

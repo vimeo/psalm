@@ -986,6 +986,54 @@ final class TypeParseTest extends TestCase
         );
     }
 
+    public function testCallableWithByReferenceParam(): void
+    {
+        $this->assertSame(
+            'callable[impure](int &$_, string, int...):void',
+            (string)Type::parseString('callable(int &$foo, string $bar, int ...$baz) : void'),
+        );
+    }
+
+    public function testCallableWithByReferenceVariadicParam(): void
+    {
+        $this->assertSame(
+            'callable[impure](string, int &...$_):void',
+            (string)Type::parseString('callable(string $bar, int &...$baz) : void'),
+        );
+    }
+
+    public function testCallableWithByReferenceVariadicParamRoundTrips(): void
+    {
+        $id = (string)Type::parseString('Closure(int &$a, int &...$b): void');
+
+        $this->assertSame('Closure[impure](int &$_, int &...$_):void', $id);
+        $this->assertSame($id, (string)Type::parseString($id));
+    }
+
+    public function testCallableWithByReferenceVariadicParamPrintsInANamespace(): void
+    {
+        $this->assertSame(
+            'callable[impure](string, int &...$_):void',
+            Type::parseString('callable(string $bar, int &...$baz) : void')->toNamespacedString(null, [], null, false),
+        );
+    }
+
+    public function testCallableWithByReferenceOptionalParam(): void
+    {
+        $this->assertSame(
+            'callable[impure](int &$_=):void',
+            (string)Type::parseString('callable(int &$foo=) : void'),
+        );
+    }
+
+    public function testCallableWithOptionalParamNamedBeforeTheEquals(): void
+    {
+        $this->assertSame(
+            'callable[impure](int=):void',
+            (string)Type::parseString('callable(int $foo=) : void'),
+        );
+    }
+
     public function testCallableReturningIntersection(): void
     {
         $this->assertSame(

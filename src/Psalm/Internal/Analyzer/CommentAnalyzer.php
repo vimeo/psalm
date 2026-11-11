@@ -195,6 +195,7 @@ final class CommentAnalyzer
                 $var_comment->line_number = $var_line_number;
                 $var_comment->type_start = $type_start;
                 $var_comment->type_end = $type_end;
+                $var_comment->from_phpstan = isset($parsed_docblock->tags['phpstan-var'][$offset]);
                 $var_comment->description = $description;
 
                 self::decorateVarDocblockComment($codebase, $var_comment, $parsed_docblock);

@@ -1175,27 +1175,31 @@ final class MissingReturnTypeTest extends FileManipulationTestCase
                 'safe_types' => true,
                 'allow_backwards_incompatible_changes' => true,
             ],
-            'selfStaticPropertyFetch' => [
+            'inheritedStaticPropertyFetch' => [
                 'input' => '<?php
-                    final class Holder
+                    class ParentHolder
                     {
-                        public static string $name = "";
+                        public static ?string $name = null;
+                    }
 
-                        public static function get()
-                        {
-                            return self::$name;
-                        }
+                    final class Holder extends ParentHolder {}
+
+                    function fromInherited()
+                    {
+                        return Holder::$name;
                     }
                     ',
                 'output' => '<?php
-                    final class Holder
+                    class ParentHolder
                     {
-                        public static string $name = "";
+                        public static ?string $name = null;
+                    }
 
-                        public static function get(): string
-                        {
-                            return self::$name;
-                        }
+                    final class Holder extends ParentHolder {}
+
+                    function fromInherited(): ?string
+                    {
+                        return Holder::$name;
                     }
                     ',
                 'php_version' => '7.4',
