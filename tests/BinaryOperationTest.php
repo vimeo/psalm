@@ -746,143 +746,35 @@ final class BinaryOperationTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
-            'stringLengthCallsThatDoNotMeasureTheirFirstArgument' => [
+            'assignmentInTheRightOperandOfAndMayNotHaveRun' => [
                 'code' => '<?php
-                    /** @var string $s */
-                    $s = getenv("X");
-                    /** @var string $enc */
-                    $enc = getenv("Y");
-                    /** @var array{string} $parts */
-                    $parts = ["a"];
-
-                    $a = mb_strlen(encoding: $enc, str: $s) > 0 ? $enc : "x";
-                    $b = strlen(...$parts) > 0 ? $parts : ["x"];
-                    $c = strlen(...) > 0;',
-                'assertions' => [
-                    '$a===' => 'string',
-                    '$b===' => 'list{string}',
-                    '$c===' => 'bool',
-                ],
-            ],
-            'stringLengthInConditionMatchesANonEmptyReturnType' => [
-                'code' => '<?php
-                    /** @return non-empty-string */
-                    function nonEmptyString(string $str): string {
-                        return strlen($str) > 0 ? $str : "string";
+                    function fetch(): ?float {
+                        return rand(0, 1) ? 1.5 : null;
                     }
 
-                    /** @return non-empty-string */
-                    function nonEmptyMbString(string $str): string {
-                        return mb_strlen($str) > 0 ? $str : "string";
+                    function check(bool $enabled): ?float {
+                        $value = 0.0;
+                        $matched = $enabled && null !== ($value = fetch());
+
+                        return $value;
+                    }
+
+                    $result = check(true);',
+                'assertions' => [
+                    '$result===' => 'float|null',
+                ],
+            ],
+            'assignmentInTheRightOperandOfAndKeepsTheTypeBeforeIt' => [
+                'code' => '<?php
+                    function fetch(): ?float {
+                        return rand(0, 1) ? 1.5 : null;
+                    }
+
+                    function check(bool $enabled): void {
+                        $value = 0;
+                        $matched = $enabled && null !== ($value = fetch());
+                        /** @psalm-check-type-exact $value = 0|float|null */;
                     }',
-            ],
-            'stringLengthComparisonsThatKeepAPossiblyEmptyString' => [
-                'code' => '<?php
-                    /** @var string $s */
-                    $s = getenv("X");
-                    /** @var int $n */
-                    $n = 1;
-
-                    $a = strlen($s) >= 0 ? $s : "x";
-                    $b = strlen($s) < 2 ? $s : "x";
-                    $c = strlen($s) !== 1 ? $s : "x";
-                    $d = strlen($s) <= 3 ? $s : "x";
-                    $e = strlen($s) > $n ? $s : "x";
-                    $f = strlen($s) > -1 ? $s : "x";
-                    $g = strlen(trim($s)) > 0 ? $s : "x";
-                    $h = count([$s]) > 0 ? $s : "x";
-                    $i = strlen($s) > 4 ? $s : "x";
-                    $j = strlen($s) > 4 ? "x" : $s;
-                    $k = strlen($s) === 3 ? $s : "x";
-                    $l = strlen($s) === 3 ? "x" : $s;
-                    $m = 3 == strlen($s) ? "x" : $s;
-                    $o = strlen($s) >= 2 ? "x" : $s;
-                    $p = strlen($s) != 1 ? "x" : $s;
-                    $q = strlen($s) < 3 ? "x" : $s;
-                    $r = strlen($s) <= 1 ? "x" : $s;
-                    $t = strlen($s) == 1 ? "x" : $s;',
-                'assertions' => [
-                    '$a===' => 'string',
-                    '$b===' => 'string',
-                    '$c===' => 'string',
-                    '$d===' => 'string',
-                    '$e===' => 'string',
-                    '$f===' => 'string',
-                    '$g===' => 'string',
-                    '$h===' => 'string',
-                    '$i===' => 'string',
-                    '$j===' => 'string',
-                    '$k===' => 'string',
-                    '$l===' => 'string',
-                    '$m===' => 'string',
-                    '$o===' => 'string',
-                    '$p===' => 'string',
-                    '$q===' => 'string',
-                    '$r===' => 'string',
-                    '$t===' => 'string',
-                ],
-            ],
-            'stringLengthOfZeroAssertsAnEmptyString' => [
-                'code' => '<?php
-                    /** @var string $s */
-                    $s = getenv("X");
-
-                    $a = strlen($s) === 0 ? $s : "x";
-                    $b = strlen($s) === 0 ? "x" : $s;
-                    $c = strlen($s) == 0 ? "x" : $s;
-                    $d = strlen($s) <= 0 ? "x" : $s;
-                    $e = strlen($s) < 1 ? "x" : $s;
-                    $f = 0 === strlen($s) ? "x" : $s;
-                    $g = 1 > strlen($s) ? "x" : $s;
-                    $h = 0 >= strlen($s) ? "x" : $s;
-                    $i = mb_strlen($s) === 0 ? "x" : $s;
-                    $j = strlen($s) !== 0 ? "x" : $s;
-                    $k = strlen($s) <= 0 ? $s : "x";
-                    $l = strlen($s) < 1 ? $s : "x";',
-                'assertions' => [
-                    '$a===' => '\'\'|\'x\'',
-                    '$b===' => 'non-empty-string',
-                    '$c===' => 'non-empty-string',
-                    '$d===' => 'non-empty-string',
-                    '$e===' => 'non-empty-string',
-                    '$f===' => 'non-empty-string',
-                    '$g===' => 'non-empty-string',
-                    '$h===' => 'non-empty-string',
-                    '$i===' => 'non-empty-string',
-                    '$j===' => '\'\'|\'x\'',
-                    '$k===' => '\'\'|\'x\'',
-                    '$l===' => '\'\'|\'x\'',
-                ],
-            ],
-            'stringLengthLargerThanZeroAssertsANonEmptyString' => [
-                'code' => '<?php
-                    /** @var string $s */
-                    $s = getenv("X");
-                    /** @var array{k: string} $arr */
-                    $arr = ["k" => ""];
-
-                    $a = strlen($s) > 0 ? $s : "x";
-                    $b = strlen($s) >= 1 ? $s : "x";
-                    $c = strlen($s) !== 0 ? $s : "x";
-                    $d = strlen($s) != 0 ? $s : "x";
-                    $e = 0 < strlen($s) ? $s : "x";
-                    $f = 1 <= strlen($s) ? $s : "x";
-                    $g = mb_strlen($s) > 0 ? $s : "x";
-                    $h = mb_strlen($s, "UTF-8") > 0 ? $s : "x";
-                    $i = STRLEN($s) > 0 ? $s : "x";
-                    $j = strlen($arr["k"]) > 0 ? $arr["k"] : "x";',
-                'assertions' => [
-                    '$a===' => 'non-empty-string',
-                    '$b===' => 'non-empty-string',
-                    '$c===' => 'non-empty-string',
-                    '$d===' => 'non-empty-string',
-                    '$e===' => 'non-empty-string',
-                    '$f===' => 'non-empty-string',
-                    '$g===' => 'non-empty-string',
-                    '$h===' => 'non-empty-string',
-                    '$i===' => 'non-empty-string',
-                    '$j===' => 'non-empty-string',
-                ],
             ],
             'coalesceOfAStaticAndASelfPropertyOffset' => [
                 'code' => '<?php
@@ -1274,6 +1166,25 @@ final class BinaryOperationTest extends TestCase
                     $bar = new A();
                     foo("" . $bar);
                 ',
+            ],
+            'concatenateStringableUsesDeclaredStringReturn' => [
+                'code' => '<?php
+                    final class Text {
+                        public function __toString(): string {
+                            return "text";
+                        }
+                    }
+
+                    /** @var lowercase-string $lowercase */
+                    $lowercase = "lowercase";
+                    $prefixed = "abc" . new Text();
+                    $lowercasePrefixed = $lowercase . new Text();',
+                'assertions' => [
+                    '$prefixed===' => 'non-falsy-string',
+                    '$lowercasePrefixed===' => 'string',
+                ],
+                'ignored_issues' => ['ImplicitToStringCast'],
+                'php_version' => '8.1',
             ],
             'concatenateNegativeIntLeftSideIsNumeric' => [
                 'code' => '<?php
@@ -2218,6 +2129,144 @@ final class BinaryOperationTest extends TestCase
                 'ignored_issues' => ['TypeDoesNotContainType', 'RedundantCondition'],
                 'php_version' => '8.1',
             ],
+            'stringLengthCallsThatDoNotMeasureTheirFirstArgument' => [
+                'code' => '<?php
+                    /** @var string $s */
+                    $s = getenv("X");
+                    /** @var string $enc */
+                    $enc = getenv("Y");
+                    /** @var array{string} $parts */
+                    $parts = ["a"];
+
+                    $a = mb_strlen(encoding: $enc, str: $s) > 0 ? $enc : "x";
+                    $b = strlen(...$parts) > 0 ? $parts : ["x"];
+                    $c = strlen(...) > 0;',
+                'assertions' => [
+                    '$a===' => 'string',
+                    '$b===' => 'list{string}',
+                    '$c===' => 'bool',
+                ],
+            ],
+            'stringLengthInConditionMatchesANonEmptyReturnType' => [
+                'code' => '<?php
+                    /** @return non-empty-string */
+                    function nonEmptyString(string $str): string {
+                        return strlen($str) > 0 ? $str : "string";
+                    }
+
+                    /** @return non-empty-string */
+                    function nonEmptyMbString(string $str): string {
+                        return mb_strlen($str) > 0 ? $str : "string";
+                    }',
+            ],
+            'stringLengthComparisonsThatKeepAPossiblyEmptyString' => [
+                'code' => '<?php
+                    /** @var string $s */
+                    $s = getenv("X");
+                    /** @var int $n */
+                    $n = 1;
+
+                    $a = strlen($s) >= 0 ? $s : "x";
+                    $b = strlen($s) < 2 ? $s : "x";
+                    $c = strlen($s) !== 1 ? $s : "x";
+                    $d = strlen($s) <= 3 ? $s : "x";
+                    $e = strlen($s) > $n ? $s : "x";
+                    $f = strlen($s) > -1 ? $s : "x";
+                    $g = strlen(trim($s)) > 0 ? $s : "x";
+                    $h = count([$s]) > 0 ? $s : "x";
+                    $i = strlen($s) > 4 ? $s : "x";
+                    $j = strlen($s) > 4 ? "x" : $s;
+                    $k = strlen($s) === 3 ? $s : "x";
+                    $l = strlen($s) === 3 ? "x" : $s;
+                    $m = 3 == strlen($s) ? "x" : $s;
+                    $o = strlen($s) >= 2 ? "x" : $s;
+                    $p = strlen($s) != 1 ? "x" : $s;
+                    $q = strlen($s) < 3 ? "x" : $s;
+                    $r = strlen($s) <= 1 ? "x" : $s;
+                    $t = strlen($s) == 1 ? "x" : $s;',
+                'assertions' => [
+                    '$a===' => 'string',
+                    '$b===' => 'string',
+                    '$c===' => 'string',
+                    '$d===' => 'string',
+                    '$e===' => 'string',
+                    '$f===' => 'string',
+                    '$g===' => 'string',
+                    '$h===' => 'string',
+                    '$i===' => 'string',
+                    '$j===' => 'string',
+                    '$k===' => 'string',
+                    '$l===' => 'string',
+                    '$m===' => 'string',
+                    '$o===' => 'string',
+                    '$p===' => 'string',
+                    '$q===' => 'string',
+                    '$r===' => 'string',
+                    '$t===' => 'string',
+                ],
+            ],
+            'stringLengthOfZeroAssertsAnEmptyString' => [
+                'code' => '<?php
+                    /** @var string $s */
+                    $s = getenv("X");
+
+                    $a = strlen($s) === 0 ? $s : "x";
+                    $b = strlen($s) === 0 ? "x" : $s;
+                    $c = strlen($s) == 0 ? "x" : $s;
+                    $d = strlen($s) <= 0 ? "x" : $s;
+                    $e = strlen($s) < 1 ? "x" : $s;
+                    $f = 0 === strlen($s) ? "x" : $s;
+                    $g = 1 > strlen($s) ? "x" : $s;
+                    $h = 0 >= strlen($s) ? "x" : $s;
+                    $i = mb_strlen($s) === 0 ? "x" : $s;
+                    $j = strlen($s) !== 0 ? "x" : $s;
+                    $k = strlen($s) <= 0 ? $s : "x";
+                    $l = strlen($s) < 1 ? $s : "x";',
+                'assertions' => [
+                    '$a===' => '\'\'|\'x\'',
+                    '$b===' => 'non-empty-string',
+                    '$c===' => 'non-empty-string',
+                    '$d===' => 'non-empty-string',
+                    '$e===' => 'non-empty-string',
+                    '$f===' => 'non-empty-string',
+                    '$g===' => 'non-empty-string',
+                    '$h===' => 'non-empty-string',
+                    '$i===' => 'non-empty-string',
+                    '$j===' => '\'\'|\'x\'',
+                    '$k===' => '\'\'|\'x\'',
+                    '$l===' => '\'\'|\'x\'',
+                ],
+            ],
+            'stringLengthLargerThanZeroAssertsANonEmptyString' => [
+                'code' => '<?php
+                    /** @var string $s */
+                    $s = getenv("X");
+                    /** @var array{k: string} $arr */
+                    $arr = ["k" => ""];
+
+                    $a = strlen($s) > 0 ? $s : "x";
+                    $b = strlen($s) >= 1 ? $s : "x";
+                    $c = strlen($s) !== 0 ? $s : "x";
+                    $d = strlen($s) != 0 ? $s : "x";
+                    $e = 0 < strlen($s) ? $s : "x";
+                    $f = 1 <= strlen($s) ? $s : "x";
+                    $g = mb_strlen($s) > 0 ? $s : "x";
+                    $h = mb_strlen($s, "UTF-8") > 0 ? $s : "x";
+                    $i = STRLEN($s) > 0 ? $s : "x";
+                    $j = strlen($arr["k"]) > 0 ? $arr["k"] : "x";',
+                'assertions' => [
+                    '$a===' => 'non-empty-string',
+                    '$b===' => 'non-empty-string',
+                    '$c===' => 'non-empty-string',
+                    '$d===' => 'non-empty-string',
+                    '$e===' => 'non-empty-string',
+                    '$f===' => 'non-empty-string',
+                    '$g===' => 'non-empty-string',
+                    '$h===' => 'non-empty-string',
+                    '$i===' => 'non-empty-string',
+                    '$j===' => 'non-empty-string',
+                ],
+            ],
         ];
     }
 
@@ -2228,11 +2277,6 @@ final class BinaryOperationTest extends TestCase
     public static function providerInvalidCodeParse(): iterable
     {
         return [
-            'stringLengthWithoutArguments' => [
-                'code' => '<?php
-                    echo strlen() > 0;',
-                'error_message' => 'TooFewArguments',
-            ],
             'assignmentToSelfStaticPropertyForgetsTheNarrowingOfStaticOne' => [
                 'code' => '<?php
                     interface Container {}
@@ -2456,6 +2500,11 @@ final class BinaryOperationTest extends TestCase
                         return "hello $s1 $s2";
                     }',
                 'error_message' => 'LessSpecificReturnStatement',
+            ],
+            'stringLengthWithoutArguments' => [
+                'code' => '<?php
+                    echo strlen() > 0;',
+                'error_message' => 'TooFewArguments',
             ],
         ];
     }
