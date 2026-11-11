@@ -717,6 +717,162 @@ final class InternalAnnotationTest extends TestCase
                 };
                 PHP,
             ],
+            'internalSymbolsUsedFromFunctionAndTopLevelCodeInSameNamespace' => [
+                'code' => '<?php
+                    namespace A\B {
+                        /** @internal */
+                        final class Inner {
+                            public const C = 1;
+                            public static function make(): self { return new self(); }
+                        }
+                        final class Box {
+                            /** @internal */
+                            public int $p = 1;
+                        }
+                    }
+
+                    namespace A\C {
+                        function f(\A\B\Box $b, \A\B\Inner $i): int {
+                            new \A\B\Inner();
+                            \A\B\Inner::make();
+                            $b->p = 2;
+                            return \A\B\Inner::C + $i::C + $b->p;
+                        }
+
+                        new \A\B\Inner();
+                        $box = new \A\B\Box();
+                        $box->p = 2;
+                        echo \A\B\Inner::C + $box->p;
+                    }',
+            ],
+            'psalmInternalSymbolsUsedFromFunctionAndTopLevelCodeInMatchingNamespace' => [
+                'code' => '<?php
+                    namespace A\B {
+                        /** @psalm-internal A\B */
+                        final class Inner {
+                            public const C = 1;
+                            public static function make(): self { return new self(); }
+                        }
+                        final class Box {
+                            /** @psalm-internal A\B */
+                            public int $p = 1;
+                        }
+                    }
+
+                    namespace A\B\C {
+                        function f(\A\B\Box $b): int {
+                            new \A\B\Inner();
+                            \A\B\Inner::make();
+                            $b->p = 2;
+                            return \A\B\Inner::C + $b->p;
+                        }
+
+                        new \A\B\Inner();
+                        $box = new \A\B\Box();
+                        $box->p = 2;
+                        echo \A\B\Inner::C + $box->p;
+                    }',
+            ],
+            'psalmInternalToClassUsedInItsClassLevelCode' => [
+                'code' => '<?php
+                    namespace A {
+                        /** @psalm-internal A\Owner */
+                        final class OwnerOnly {
+                            public const C = 1;
+                        }
+
+                        final class Owner {
+                            public const K = OwnerOnly::C;
+                            public int $d = OwnerOnly::C;
+                        }
+                    }',
+            ],
+            'psalmInternalToClassUsedInClosureOfItsMethod' => [
+                'code' => '<?php
+                    namespace A {
+                        final class Helper {
+                            /** @psalm-internal A\Owner */
+                            public static function make(): int { return 1; }
+                        }
+
+                        final class Owner {
+                            public function run(): int {
+                                $f = function (): int { return Helper::make(); };
+                                $g = fn(): int => Helper::make();
+                                return $f() + $g();
+                            }
+                        }
+                    }',
+            ],
+            'psalmInternalToMethodClassUsedFromThatMethod' => [
+                'code' => '<?php
+                    namespace X {
+                        /** @psalm-internal Y\Bat::batBat */
+                        final class Foo {
+                            public const C = 1;
+                        }
+                    }
+
+                    namespace Y {
+                        final class Bat {
+                            public function batBat(): int {
+                                new \X\Foo();
+                                return \X\Foo::C;
+                            }
+                        }
+                    }',
+            ],
+            'psalmInternalToClassCloneFromItsMethod' => [
+                'code' => '<?php
+                    namespace A {
+                        final class Foo {
+                            /** @psalm-internal A\Foo */
+                            public function __clone() {}
+
+                            public function copy(): self {
+                                return clone $this;
+                            }
+                        }
+                    }',
+            ],
+            'internalSymbolsUsedInTraitOfOwningNamespace' => [
+                'code' => '<?php
+                    namespace A {
+                        /** @internal */
+                        final class Inner {
+                            public const C = 1;
+                        }
+
+                        trait T {
+                            public function t(): int {
+                                new Inner();
+                                return Inner::C;
+                            }
+                        }
+                    }
+
+                    namespace Other {
+                        final class User {
+                            use \A\T;
+                        }
+                    }',
+            ],
+            'internalSymbolsUsedFromTopLevelCodeWithScopeThis' => [
+                'code' => '<?php
+                    namespace A {
+                        /** @internal */
+                        final class Inner {
+                            public const C = 1;
+                        }
+
+                        final class View {}
+                    }
+
+                    namespace Other {
+                        /** @psalm-scope-this \A\View */
+                        echo \A\Inner::C;
+                    }',
+            ],
         ];
     }
 
@@ -730,8 +886,8 @@ final class InternalAnnotationTest extends TestCase
             'internalConstructorCalledFromNamespacedFunction' => [
                 'code' => '<?php
                     namespace A\B {
-                        /** @internal */
                         final class Inner {
+                            /** @internal */
                             public function __construct() {}
                         }
                     }
@@ -832,7 +988,7 @@ final class InternalAnnotationTest extends TestCase
                             }
                         }
                     }',
-                'error_message' => 'The method A\Foo::__clone is internal to A but called from B',
+                'error_message' => 'The method A\Foo::__clone is internal to A but called from B\Bat::batBat',
             ],
             'internalMethodWithCallFromRootNamespace' => [
                 'code' => '<?php
@@ -870,7 +1026,7 @@ final class InternalAnnotationTest extends TestCase
                             }
                         }
                     }',
-                'error_message' => 'InternalClass',
+                'error_message' => 'A\Foo is internal to A but called from B\Bat::batBat',
             ],
             'internalClassWithInstanceCall' => [
                 'code' => '<?php
@@ -937,7 +1093,7 @@ final class InternalAnnotationTest extends TestCase
                             }
                         }
                     }',
-                'error_message' => 'InternalClass',
+                'error_message' => 'A\Foo is internal to A but called from B\Bat::batBat',
             ],
             'internalClassWithExtends' => [
                 'code' => '<?php
@@ -972,7 +1128,7 @@ final class InternalAnnotationTest extends TestCase
                             }
                         }
                     }',
-                'error_message' => 'InternalProperty',
+                'error_message' => 'A\Foo::$foo is internal to A but called from B\Bat::batBat',
             ],
             'internalPropertySet' => [
                 'code' => '<?php
@@ -993,7 +1149,7 @@ final class InternalAnnotationTest extends TestCase
                             }
                         }
                     }',
-                'error_message' => 'InternalProperty',
+                'error_message' => 'A\Foo::$foo is internal to A but called from B\Bat::batBat',
             ],
             'magicPropertyGetInternalExplicit' => [
                 'code' => '<?php
@@ -1033,7 +1189,7 @@ final class InternalAnnotationTest extends TestCase
                             }
                         }
                     }',
-                'error_message' => 'InternalClass',
+                'error_message' => 'A\Foo is internal to A but called from B\Bat::batBat',
             ],
             'psalmInternalMethodWithCall' => [
                 'code' => '<?php
@@ -1335,6 +1491,271 @@ final class InternalAnnotationTest extends TestCase
                         }
                     }',
                 'error_message' => 'InternalMethod',
+            ],
+            'internalClassWithNewFromFunction' => [
+                'code' => '<?php
+                    namespace A {
+                        /** @internal */
+                        final class Inner {}
+                    }
+
+                    namespace Other {
+                        function f(): void {
+                            new \A\Inner();
+                        }
+                    }',
+                'error_message' => 'A\Inner is internal to A but called from Other\f',
+            ],
+            'internalClassWithStaticCallFromFunction' => [
+                'code' => '<?php
+                    namespace A {
+                        /** @internal */
+                        final class Inner {
+                            public static function make(): void {}
+                        }
+                    }
+
+                    namespace Other {
+                        function f(): void {
+                            \A\Inner::make();
+                        }
+                    }',
+                'error_message' => 'A\Inner is internal to A but called from Other\f',
+            ],
+            'internalClassConstFromFunction' => [
+                'code' => '<?php
+                    namespace A {
+                        /** @internal */
+                        final class Inner {
+                            public const C = 1;
+                        }
+                    }
+
+                    namespace Other {
+                        function f(): int {
+                            return \A\Inner::C;
+                        }
+                    }',
+                'error_message' => 'A\Inner is internal to A but called from Other\f',
+            ],
+            'internalClassConstOnInstanceFromFunction' => [
+                'code' => '<?php
+                    namespace A {
+                        /** @internal */
+                        final class Inner {
+                            public const C = 1;
+                        }
+                    }
+
+                    namespace Other {
+                        function f(\A\Inner $i): int {
+                            return $i::C;
+                        }
+                    }',
+                'error_message' => 'A\Inner is internal to A but called from Other\f',
+            ],
+            'internalPropertyGetFromFunction' => [
+                'code' => '<?php
+                    namespace A {
+                        final class Box {
+                            /** @internal */
+                            public int $p = 1;
+                        }
+                    }
+
+                    namespace Other {
+                        function f(\A\Box $b): int {
+                            return $b->p;
+                        }
+                    }',
+                'error_message' => 'A\Box::$p is internal to A but called from Other\f',
+            ],
+            'internalPropertySetFromFunction' => [
+                'code' => '<?php
+                    namespace A {
+                        final class Box {
+                            /** @internal */
+                            public int $p = 1;
+                        }
+                    }
+
+                    namespace Other {
+                        function f(\A\Box $b): void {
+                            $b->p = 2;
+                        }
+                    }',
+                'error_message' => 'A\Box::$p is internal to A but called from Other\f',
+            ],
+            'internalClassWithNewFromClosureInFunction' => [
+                'code' => '<?php
+                    namespace A {
+                        /** @internal */
+                        final class Inner {}
+                    }
+
+                    namespace Other {
+                        function f(): void {
+                            $c = function (): void {
+                                new \A\Inner();
+                            };
+                            $c();
+                        }
+                    }',
+                'error_message' => 'A\Inner is internal to A but called from Other\f',
+            ],
+            'internalClassWithNewFromTopLevelCode' => [
+                'code' => '<?php
+                    namespace A {
+                        /** @internal */
+                        final class Inner {}
+                    }
+
+                    namespace Other {
+                        new \A\Inner();
+                    }',
+                'error_message' => 'A\Inner is internal to A but called from Other',
+            ],
+            'internalClassWithStaticCallFromTopLevelCode' => [
+                'code' => '<?php
+                    namespace A {
+                        /** @internal */
+                        final class Inner {
+                            public static function make(): void {}
+                        }
+                    }
+
+                    namespace Other {
+                        \A\Inner::make();
+                    }',
+                'error_message' => 'A\Inner is internal to A but called from Other',
+            ],
+            'internalClassConstFromTopLevelCode' => [
+                'code' => '<?php
+                    namespace A {
+                        /** @internal */
+                        final class Inner {
+                            public const C = 1;
+                        }
+                    }
+
+                    namespace Other {
+                        echo \A\Inner::C;
+                    }',
+                'error_message' => 'A\Inner is internal to A but called from Other',
+            ],
+            'internalClassConstOnInstanceFromTopLevelCode' => [
+                'code' => '<?php
+                    namespace A {
+                        /** @internal */
+                        final class Inner {
+                            public const C = 1;
+                        }
+
+                        function getInner(): Inner {
+                            return new Inner();
+                        }
+                    }
+
+                    namespace Other {
+                        $i = \A\getInner();
+                        echo $i::C;
+                    }',
+                'error_message' => 'A\Inner is internal to A but called from Other',
+            ],
+            'internalPropertyGetFromTopLevelCode' => [
+                'code' => '<?php
+                    namespace A {
+                        final class Box {
+                            /** @internal */
+                            public int $p = 1;
+                        }
+                    }
+
+                    namespace Other {
+                        echo (new \A\Box())->p;
+                    }',
+                'error_message' => 'A\Box::$p is internal to A but called from Other',
+            ],
+            'internalPropertySetFromTopLevelCode' => [
+                'code' => '<?php
+                    namespace A {
+                        final class Box {
+                            /** @internal */
+                            public int $p = 1;
+                        }
+                    }
+
+                    namespace Other {
+                        $b = new \A\Box();
+                        $b->p = 2;
+                    }',
+                'error_message' => 'A\Box::$p is internal to A but called from Other',
+            ],
+            'internalClassWithNewFromRootNamespace' => [
+                'code' => '<?php
+                    namespace A {
+                        /** @internal */
+                        final class Inner {}
+                    }
+
+                    namespace {
+                        new \A\Inner();
+                    }',
+                'error_message' => 'A\Inner is internal to A but called from root namespace',
+            ],
+            'internalClassConstFromClassLevelCode' => [
+                'code' => '<?php
+                    namespace A {
+                        /** @internal */
+                        final class Inner {
+                            public const C = 1;
+                        }
+                    }
+
+                    namespace Other {
+                        final class Consumer {
+                            public const K = \A\Inner::C;
+                        }
+                    }',
+                'error_message' => 'A\Inner is internal to A but called from Other\Consumer',
+            ],
+            'internalAttributeConstructorOnClass' => [
+                'code' => '<?php
+                    namespace A {
+                        #[\Attribute]
+                        final class Attr {
+                            /** @internal */
+                            public function __construct() {}
+                        }
+                    }
+
+                    namespace Other {
+                        #[\A\Attr]
+                        final class Consumer {}
+                    }',
+                'error_message' => 'Constructor A\Attr::__construct is internal to A but called from Other\Consumer',
+                'error_levels' => [],
+                'php_version' => '8.0',
+            ],
+            'internalSymbolUsedInTraitOutsideOwningNamespace' => [
+                'code' => '<?php
+                    namespace A {
+                        /** @internal */
+                        final class Inner {}
+
+                        final class User {
+                            use \Other\T;
+                        }
+                    }
+
+                    namespace Other {
+                        trait T {
+                            public function t(): void {
+                                new \A\Inner();
+                            }
+                        }
+                    }',
+                'error_message' => 'A\Inner is internal to A but called from Other\T::t',
             ],
         ];
     }
