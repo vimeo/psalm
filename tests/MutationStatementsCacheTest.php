@@ -123,6 +123,59 @@ final class MutationStatementsCacheTest extends TestCase
         $this->assertSame($expected_fetches, ($this->parser_cache->loads[$file_path] ?? 0) - $fetches_before);
     }
 
+    public function testReloadingFilesDropsTheKeptStatements(): void
+    {
+        $file_path = 'somefile.php';
+
+        $this->useParserCache(true);
+        $this->addFile(
+            $file_path,
+            '<?php
+                class Controller {
+                    public ?string $title = null;
+
+                    public function setTitle(): void
+                    {
+                        $this->title = "hello";
+                    }
+                }
+
+                class FooController extends Controller {
+                    public function barBar(): void {
+                        $this->setTitle();
+                    }
+                }',
+        );
+
+        new FileAnalyzer($this->project_analyzer, $file_path, $file_path);
+        $codebase = $this->project_analyzer->getCodebase();
+        $codebase->scanFiles();
+
+        $fetches = [];
+
+        for ($run = 0; $run < 2; $run++) {
+            $fetches_before = $this->parser_cache->loads[$file_path] ?? 0;
+
+            for ($i = 0; $i < 5; $i++) {
+                $method_context = new Context();
+                $method_context->collect_mutations = true;
+                $this->project_analyzer->getMethodMutations(
+                    new MethodIdentifier('FooController', 'barbar'),
+                    $method_context,
+                    $file_path,
+                    $file_path,
+                );
+            }
+
+            $fetches[] = ($this->parser_cache->loads[$file_path] ?? 0) - $fetches_before;
+
+            $codebase->reloadFiles($this->project_analyzer, []);
+        }
+
+        // the reload forgets the file, so it is again kept only from its second fetch
+        $this->assertSame([2, 2], $fetches);
+    }
+
     /**
      * Each call fetches the file twice: once for barBar() and once more when inlining setUser() into it.
      * Only the first two fetches reach the parser cache, the first one is not retained. In server mode and in the

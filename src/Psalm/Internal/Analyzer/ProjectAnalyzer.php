@@ -1352,6 +1352,16 @@ final class ProjectAnalyzer
     private array $mutation_statements_seen = [];
 
     /**
+     * @internal
+     */
+    public function clearStatementsForMutations(): void
+    {
+        $this->mutation_statements = [];
+        $this->mutation_statements_bytes = 0;
+        $this->mutation_statements_seen = [];
+    }
+
+    /**
      * @return list<Stmt>
      */
     private function getStatementsForMutations(string $file_path): array
