@@ -1083,6 +1083,26 @@ final class RedundantConditionTest extends TestCase
                     echo count(getArray() ?? []);',
                 'error_message' => 'left operand of ?? at offset',
             ],
+            'inequalityWithAnEmptyArrayOfANonEmptyArrayIsRedundant' => [
+                'code' => '<?php
+                    $a = [1, 2];
+                    array_shift($a);
+
+                    if ($a !== []) {
+                        echo 1;
+                    }',
+                'error_message' => 'RedundantCondition - src' . DIRECTORY_SEPARATOR . 'somefile.php:5:25 - list{2} can never be an empty array',
+            ],
+            'inequalityWithAnEmptyArrayOfADocblockNonEmptyArrayIsRedundant' => [
+                'code' => '<?php
+                    /** @var non-empty-list<int> $a */
+                    $a = [];
+
+                    if ($a !== []) {
+                        echo 1;
+                    }',
+                'error_message' => 'RedundantConditionGivenDocblockType - src' . DIRECTORY_SEPARATOR . 'somefile.php:5:25 - Docblock-defined type non-empty-list<int> can never be an empty array',
+            ],
             'negatedTypeCheckOfAKnownTypeExplainsThatItCanNeverBeTrue' => [
                 'code' => '<?php
                     $a = "some";

@@ -14,8 +14,12 @@ use Psalm\Tests\Traits\InvalidCodeAnalysisTestTrait;
 use Psalm\Tests\Traits\ValidCodeAnalysisTestTrait;
 
 use function array_map;
+use function implode;
+use function range;
+use function sort;
 
 use const DIRECTORY_SEPARATOR;
+use const SORT_STRING;
 
 final class BinaryOperationTest extends TestCase
 {
@@ -271,6 +275,81 @@ final class BinaryOperationTest extends TestCase
                 /** @var float */
                 $b = 4.1;
                 $a = 5 + $b;',
+        );
+
+        $this->expectException(CodeException::class);
+        $this->expectExceptionMessage('InvalidOperand');
+
+        $this->analyzeFile('somefile.php', new Context());
+    }
+
+    public function testPowOfDifferingNumericLiteralTypesInStrictMode(): void
+    {
+        Config::getInstance()->strict_binary_operands = true;
+
+        $this->addFile(
+            'somefile.php',
+            '<?php
+                    $a = 1.5 ** 10;
+                    $b = 2 ** 0.5;
+                    $c = 2 ** 3;',
+        );
+
+        $this->analyzeFile('somefile.php', new Context());
+    }
+
+    public function testPowOfDifferingNumericTypesInStrictMode(): void
+    {
+        Config::getInstance()->strict_binary_operands = true;
+
+        $this->addFile(
+            'somefile.php',
+            '<?php
+                    /**
+                     * @param int|float $number
+                     * @param numeric $numeric
+                     */
+                    function f(int $int, float $float, $number, $numeric): void {
+                        echo $int ** $float;
+                        echo $float ** $int;
+                        echo $number ** $int;
+                        echo $numeric ** $int;
+                        $int **= $float;
+                        $float **= $int;
+                    }',
+        );
+
+        $this->analyzeFile('somefile.php', new Context());
+    }
+
+    public function testPowOfNonNumericTypesInStrictModeIsStillReported(): void
+    {
+        Config::getInstance()->strict_binary_operands = true;
+
+        $this->addFile(
+            'somefile.php',
+            '<?php
+                    function f(string $s): void {
+                        echo $s ** 2;
+                    }',
+        );
+
+        $this->expectException(CodeException::class);
+        $this->expectExceptionMessage('InvalidOperand');
+
+        $this->analyzeFile('somefile.php', new Context());
+    }
+
+    public function testDifferingNumericTypesMultiplicationInStrictModeIsStillReported(): void
+    {
+        Config::getInstance()->strict_binary_operands = true;
+
+        $this->addFile(
+            'somefile.php',
+            '<?php
+                    function f(int $int, float $float): void {
+                        echo $int * $float;
+                    }',
         );
 
         $this->expectException(CodeException::class);
@@ -649,12 +728,174 @@ final class BinaryOperationTest extends TestCase
     }
 
     /**
+     * @param list<int> $suffixes
+     * @psalm-pure
+     */
+    private static function sortedLiteralUnion(string $prefix, array $suffixes): string
+    {
+        $literals = array_map(static fn(int $suffix): string => $prefix . $suffix . "'", $suffixes);
+        sort($literals, SORT_STRING);
+
+        return implode('|', $literals);
+    }
+
+    /**
      * @psalm-pure
      */
     #[Override]
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'coalesceOfAStaticAndASelfPropertyOffset' => [
+                'code' => '<?php
+                    class Test1
+                    {
+                        protected static array $var = ["item" => "Test1"];
+
+                        public static function testmethod(string $item): string
+                        {
+                            return (string) (static::$var[$item] ?? self::$var[$item] ?? "none");
+                        }
+                    }
+
+                    class Test2 extends Test1
+                    {
+                        protected static array $var = ["item" => "Test2"];
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '7.4',
+            ],
+            'issetOfAStaticPropertyOffsetNarrowsTheSameFetch' => [
+                'code' => '<?php
+                    class Cache
+                    {
+                        protected static array $items = [];
+
+                        public static function get(string $key): string
+                        {
+                            if (isset(static::$items[$key])) {
+                                return (string) static::$items[$key];
+                            }
+
+                            return "none";
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '7.4',
+            ],
+            'offsetsOfAStaticPropertyAreKeptWhenAnotherOffsetOfItIsAssigned' => [
+                'code' => '<?php
+                    final class Registry
+                    {
+                        /** @var array<string, array<string, int>> */
+                        private static array $cache = [];
+
+                        public static function get(string $class): int
+                        {
+                            self::$cache[$class] = ["x" => 1];
+                            self::$cache[$class]["y"] = 2;
+                            $entry = self::$cache[$class];
+                            /** @psalm-check-type-exact $entry = array{x: 1, y: 2} */
+                            $value = self::$cache[$class]["x"];
+                            /** @psalm-check-type-exact $value = 1 */
+
+                            return $value;
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '7.4',
+            ],
+            'staticPropertyOfATraitIsIndexedByStaticClassInTheClassUsingIt' => [
+                'code' => '<?php
+                    interface Coll {}
+
+                    trait HasCollection
+                    {
+                        /** @var class-string<Coll> */
+                        protected static string $collectionClass;
+
+                        /** @var array<class-string<static>, class-string<Coll>> */
+                        protected static array $resolved = [];
+
+                        public function newCollection(): Coll
+                        {
+                            static::$resolved[static::class] ??= static::$collectionClass;
+
+                            return new static::$resolved[static::class]();
+                        }
+                    }
+
+                    abstract class Model
+                    {
+                        use HasCollection;
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'staticPropertyOfATraitCheckedBeforeItIsCalled' => [
+                'code' => '<?php
+                    trait ResolvesDumpSource
+                    {
+                        /** @var callable|null|false */
+                        protected static $resolver;
+
+                        public function resolve(): mixed
+                        {
+                            if (static::$resolver === false) {
+                                return null;
+                            }
+
+                            if (static::$resolver) {
+                                return call_user_func(static::$resolver);
+                            }
+
+                            return null;
+                        }
+                    }
+
+                    abstract class Model
+                    {
+                        use ResolvesDumpSource;
+                    }',
+                'assertions' => [],
+                'ignored_issues' => ['RiskyTruthyFalsyComparison'],
+                'php_version' => '8.0',
+            ],
+            'staticPropertyGuardedByANullCheckIsNotNullAfterIt' => [
+                'code' => '<?php
+                    interface Container {}
+
+                    class Locator
+                    {
+                        /** @var Container|null */
+                        protected static $container;
+
+                        public static function getContainer(): Container
+                        {
+                            if (static::$container === null) {
+                                throw new RuntimeException("not initialized");
+                            }
+
+                            return static::$container;
+                        }
+
+                        public static function getSelfContainer(): Container
+                        {
+                            if (self::$container === null) {
+                                throw new RuntimeException("not initialized");
+                            }
+
+                            return self::$container;
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '7.4',
+            ],
             'interpolatedStringWithAnIntIsNotALiteralUnion' => [
                 'code' => '<?php
                     /** @var "a"|"b" $lit */
@@ -1763,6 +2004,39 @@ final class BinaryOperationTest extends TestCase
                     '$a===' => 'float(9.2233720368548E+18)',
                 ],
             ],
+            'concatenatesLiteralsWithSmallIntRanges' => [
+                'code' => <<<'PHP'
+                    <?php
+                    /**
+                     * @var 'a'|'b' $a
+                     * @var int<0, 2> $c
+                     * @var int<-1, 1> $negative
+                     * @var int<0, 1> $bit
+                     * @var int<0, 62> $widest
+                     * @var int<0, 63> $tooWide
+                     * @var int<0, max> $unbounded
+                     * @var int<-9223372036854775808, 9223372036854775807> $everything
+                     */
+                    $right = $a . $c;
+                    $left = $c . $a;
+                    $both = $bit . $bit;
+                    $minus = $a . $negative;
+                    $fits = '.' . $widest;
+                    $wide = '.' . $tooWide;
+                    $open = $a . $unbounded;
+                    $all = $a . $everything;
+                    PHP,
+                'assertions' => [
+                    '$right===' => "'a0'|'a1'|'a2'|'b0'|'b1'|'b2'",
+                    '$left===' => "'0a'|'0b'|'1a'|'1b'|'2a'|'2b'",
+                    '$both===' => "'00'|'01'|'10'|'11'",
+                    '$minus===' => "'a-1'|'a0'|'a1'|'b-1'|'b0'|'b1'",
+                    '$fits===' => self::sortedLiteralUnion("'.", range(0, 62)),
+                    '$wide===' => 'non-empty-lowercase-string',
+                    '$open===' => 'non-empty-lowercase-string',
+                    '$all===' => 'non-empty-lowercase-string',
+                ],
+            ],
             'invalidArrayOperations' => [
                 'code' => <<<'PHP'
                     <?php
@@ -1815,6 +2089,14 @@ final class BinaryOperationTest extends TestCase
                 ],
                 'ignored_issues' => ['InvalidOperand'],
             ],
+            'firstClassCallableInSubstrComparison' => [
+                'code' => '<?php
+                    if (substr(...) === "x") {}
+                    if (substr(...) != "x") {}',
+                'assertions' => [],
+                'ignored_issues' => ['TypeDoesNotContainType', 'RedundantCondition'],
+                'php_version' => '8.1',
+            ],
         ];
     }
 
@@ -1825,6 +2107,58 @@ final class BinaryOperationTest extends TestCase
     public static function providerInvalidCodeParse(): iterable
     {
         return [
+            'assignmentToSelfStaticPropertyForgetsTheNarrowingOfStaticOne' => [
+                'code' => '<?php
+                    interface Container {}
+
+                    class Locator
+                    {
+                        /** @var Container|null */
+                        protected static $container;
+
+                        public static function getContainer(): Container
+                        {
+                            if (static::$container === null) {
+                                throw new RuntimeException("not initialized");
+                            }
+
+                            self::$container = null;
+
+                            return static::$container;
+                        }
+                    }',
+                'error_message' => 'NullableReturnStatement',
+                'error_levels' => [],
+                'php_version' => '7.4',
+            ],
+            'bcMathNumberPlusNonNumericString' => [
+                'code' => '<?php
+                    namespace BcMath {
+                        final class Number {
+                            public function __construct(string $number) {}
+                        }
+                    }
+
+                    namespace {
+                        $a = new \\BcMath\\Number("2");
+                        $b = $a + "abc";
+                    }',
+                'error_message' => 'InvalidOperand - src' . DIRECTORY_SEPARATOR . 'somefile.php:10:30 - Cannot add BcMath\\Number to',
+            ],
+            'bcMathNumberPlusFloat' => [
+                'code' => '<?php
+                    namespace BcMath {
+                        final class Number {
+                            public function __construct(string $number) {}
+                        }
+                    }
+
+                    namespace {
+                        $a = new \\BcMath\\Number("2");
+                        $b = $a + 0.5;
+                    }',
+                'error_message' => 'InvalidOperand - src' . DIRECTORY_SEPARATOR . 'somefile.php:10:30 - Cannot add BcMath\\Number to float',
+            ],
             'shiftLeftByANegativeNumber' => [
                 'code' => '<?php
                     $a = 1 << -1;
@@ -1853,6 +2187,16 @@ final class BinaryOperationTest extends TestCase
                 'code' => '<?php
                     $a = "b" + 5;',
                 'error_message' => 'InvalidOperand',
+            ],
+            'shiftLeftByANegativeLiteralThrows' => [
+                'code' => '<?php
+                    $a = 1 << -1;',
+                'error_message' => 'NoValue',
+            ],
+            'shiftRightByANegativeLiteralThrows' => [
+                'code' => '<?php
+                    $a = 8 >> -2;',
+                'error_message' => 'NoValue',
             ],
             'addArrayToNumber' => [
                 'code' => '<?php
@@ -1988,5 +2332,44 @@ final class BinaryOperationTest extends TestCase
                 'error_message' => 'LessSpecificReturnStatement',
             ],
         ];
+    }
+
+    public function testBcMathNumberOperations(): void
+    {
+        $this->addFile(
+            'somefile.php',
+            '<?php
+                namespace BcMath {
+                    final class Number {
+                        public function __construct(string $number) {}
+                    }
+                }
+
+                namespace {
+                    $a = new \BcMath\Number("2");
+                    $b = new \BcMath\Number("4");
+                    $c = $a + $b;
+                    $d = $a - 1;
+                    $e = 2 * $b;
+                    $f = $a / "3";
+                    $g = $a % $b;
+                    $h = $a ** 2;
+                }',
+        );
+
+        $context = new Context();
+
+        $this->analyzeFile('somefile.php', $context);
+
+        $actual_vars = [];
+        foreach (['$c', '$d', '$e', '$f', '$g', '$h'] as $var) {
+            $actual_vars[$var] = (string) $context->vars_in_scope[$var];
+        }
+
+        $this->assertSame(
+            ['$c' => 'BcMath\\Number', '$d' => 'BcMath\\Number', '$e' => 'BcMath\\Number',
+                '$f' => 'BcMath\\Number', '$g' => 'BcMath\\Number', '$h' => 'BcMath\\Number'],
+            $actual_vars,
+        );
     }
 }
