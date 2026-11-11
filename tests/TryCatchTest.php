@@ -266,6 +266,24 @@ final class TryCatchTest extends TestCase
                         return 0;
                     }',
             ],
+            'typesOfAllCatchesWhenTryAlwaysReturns' => [
+                'code' => '<?php
+                    function f(): string {
+                        try {
+                            return "a";
+                        } catch (\RuntimeException $e) {
+                            $m = "x";
+                        } catch (Throwable $e) {
+                            $m = "y";
+                        }
+
+                        if ($m === "x") {
+                            return "first";
+                        }
+
+                        return "second";
+                    }',
+            ],
             'addThrowableInterfaceType' => [
                 'code' => '<?php
                     interface CustomThrowable {}
