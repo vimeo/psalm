@@ -33,6 +33,16 @@ Configuration file may be split into several files using [XInclude](https://www.
 </projectFiles>
 ```
 
+## Keep the configuration private
+
+`psalm.xml` lists the layout of your code, and a [baseline](dealing_with_code_issues.md#using-a-baseline-file) lists the issues Psalm found, with taint analysis the places that are vulnerable. Don't leave them where a web server serves them (the document root of a web project):
+
+```nginx
+location ~ /(psalm.*|.*baseline.*)\.xml$ {
+    deny all;
+}
+```
+
 ## Different configuration file
 
 You can also create a different configuration file, then run Psalm with:
@@ -62,6 +72,22 @@ This corresponds to Psalm‘s [error-detection level](error_levels.md).
 ```
 Setting this to `"false"` hides all issues with `Mixed` types in Psalm’s output. If not given, this defaults to `"false"` when `errorLevel` is 3 or higher, and `"true"` when the error level is 1 or 2.
 
+`"true"` only stops Psalm from hiding them: above level 2 they are reported as `info`, so give the issue the error level you want in `<issueHandlers>`. For a `mixed` value passed to `strtolower()` (`MixedArgument`; `MixedAssignment` behaves the same):
+
+```xml
+<psalm errorLevel="1" />                                  <!-- MixedArgument: error -->
+<psalm errorLevel="2" />                                  <!-- MixedArgument: info -->
+<psalm errorLevel="5" />                                  <!-- nothing -->
+<psalm errorLevel="5" reportMixedIssues="true" />         <!-- MixedArgument: info -->
+<psalm errorLevel="5" reportMixedIssues="true">           <!-- MixedArgument: error -->
+  <issueHandlers><MixedArgument errorLevel="error" /></issueHandlers>
+</psalm>
+<psalm errorLevel="5" reportMixedIssues="false">          <!-- nothing, even with the handler -->
+  <issueHandlers><MixedArgument errorLevel="error" /></issueHandlers>
+</psalm>
+<psalm errorLevel="1" reportMixedIssues="false" />        <!-- nothing -->
+```
+
 #### totallyTyped
 
 \(Deprecated\) This setting has been replaced by `reportMixedIssues` which is automatically enabled when `errorLevel` is 1.
@@ -73,8 +99,8 @@ Setting this to `"false"` hides all issues with `Mixed` types in Psalm’s outpu
   resolveFromConfigFile="[bool]"
 />
 ```
-If this is enabled, relative directories mentioned in the config file will be resolved relative to the location
-of the config file. If it is disabled, or absent they will be resolved relative to the working directory of the Psalm process.
+If this is enabled (the default), relative directories mentioned in the config file will be resolved relative to the location
+of the config file. If it is disabled, they will be resolved relative to the working directory of the Psalm process.
 
 New versions of Psalm enable this option when generating config files. Older versions did not include it.
 
@@ -152,6 +178,16 @@ If true we force strict typing on numerical and string operations (see https://g
 
 If false, disallows comparing a boolean to a literal boolean (mostly a codestyle rule, not a bug detection rule; see [RedundantIdentityWithTrue](https://psalm.dev/docs/running_psalm/issues/RedundantIdentityWithTrue/)). Defaults to `true`.
 
+#### strictNullableComparison
+
+```xml
+<psalm
+  strictNullableComparison="[bool]"
+>
+```
+
+If true, `<`, `>`, `<=` and `>=` report [PossiblyNullOperand](https://psalm.dev/docs/running_psalm/issues/PossiblyNullOperand/) (or [NullOperand](https://psalm.dev/docs/running_psalm/issues/NullOperand/)) for an operand that can be `null`, so the `null` case has to be handled explicitly. Defaults to `false`.
+
 #### rememberPropertyAssignmentsAfterCall
 
 ```xml
@@ -186,7 +222,7 @@ When `true`, disables wildcard suppression of all issues with `@psalm-suppress a
   memoizeMethodCallResults="[bool]"
 >
 ```
-When `true`, the results of method calls without arguments passed are remembered between repeated calls of that method on a given object. Defaults to `false`.
+When `true`, the results of method calls without arguments passed are [memoized](https://en.wikipedia.org/wiki/Memoization) between repeated calls of that method on a given object. Defaults to `false`.
 
 #### hoistConstants
 
@@ -295,6 +331,8 @@ When `false`, Psalm will disable usage of the array cache.
 
 The array cache is used together with the file cache to avoid re-loading cache entries when re-scanning the same file, which offers a nice performance improvement.
 
+A cache created by [`--consolidate-cache`](./command_line_usage.md#consolidating-the-cache) is only read when the array cache is enabled.
+
 Defaults to `true`.
 
 #### disallowLiteralKeysOnUnshapedArrays
@@ -354,6 +392,14 @@ When `true`, Psalm will complain when referencing an explicit integer offset on 
 ```
 When `true`, Psalm will report class and interface methods that override a method on a parent, but do not have an `Override` attribute. Defaults to `true`.
 
+#### suggestPurityAnnotations
+```xml
+<psalm
+  suggestPurityAnnotations="[bool]"
+>
+```
+When `true`, Psalm will report code that could carry a purity annotation: [MissingPureAnnotation](issues/MissingPureAnnotation.md), [MissingImmutableAnnotation](issues/MissingImmutableAnnotation.md), [MissingAbstractPureAnnotation](issues/MissingAbstractPureAnnotation.md) and [MissingInterfaceImmutableAnnotation](issues/MissingInterfaceImmutableAnnotation.md). Defaults to `false`. Running `psalm --alter --issues=MissingPureAnnotation` or `--issues=MissingImmutableAnnotation` turns it on for that run. Capability checks (`ImpureFunctionCall` and the like) compare a call with what the callee declares, whatever this is set to.
+
 #### loadLibraryStubs
 ```xml
 <psalm
@@ -376,7 +422,6 @@ When `true`, Psalm enables these plugins without listing them in [`<plugins>`](p
 | `psalm/plugin-mockery` | `composer.json` requires `mockery/mockery` |
 | `psalm/plugin-symfony` | `composer.json` requires `symfony/framework-bundle` |
 | `psalm/plugin-laravel` | `composer.json` requires `laravel/framework` or `orchestra/testbench` |
-| `psalm/plugin-sabre-event` | `composer.json` requires `sabre/event` |
 | the plugin of `webmozart/assert` (2.4 and later) | `webmozart/assert` is installed |
 
 Psalm itself requires the `psalm/*` plugins, so they don't need installing.
@@ -502,7 +547,7 @@ Whether or not to report issues only for files that were passed explicitly as ar
   cacheDirectory="[string]"
 >
 ```
-The directory used to store Psalm's cache data - if you specify one (and it does not already exist), its parent directory must already exist, otherwise Psalm will throw an error.
+The directory used to store Psalm's cache data. Psalm creates it recursively when initializing the cache.
 
 Defaults to `$XDG_CACHE_HOME/psalm`. If `$XDG_CACHE_HOME` is either not set or empty, a default equal to `$HOME/.cache/psalm` is used or `sys_get_temp_dir() . '/psalm'` when not defined.
 
@@ -544,15 +589,17 @@ Defaults to `false`.
   serializer="['igbinary'|'default']"
 >
 ```
-Allows you to hard-code a serializer for Psalm to use when caching data. By default, Psalm uses `ext-igbinary` *if* the version is greater than or equal to 2.0.5, otherwise it defaults to PHP's built-in serializer.
+Allows you to hard-code a serializer for Psalm to use when caching data. By default, Psalm uses `ext-igbinary` *if* the version is greater than or equal to 2.0.5, otherwise it defaults to PHP's built-in serializer. The value `default` means PHP's built-in serializer, not the automatic choice.
 
 #### compressor
 ```xml
 <psalm
-  compressor="['lz4'|'deflate'|'off']"
+  compressor="['auto'|'zstd'|'lz4'|'deflate'|'off']"
 >
 ```
-Allows you to hard-code a compressor for Psalm's cache. By default, Psalm uses `ext-zlib` deflate, if it's enabled.
+Allows you to hard-code a compressor for Psalm's cache. The default is `auto`: `ext-zstd` (version 0.15.0 or later) if it's enabled, otherwise `ext-zlib` deflate if it's enabled, otherwise no compression.
+If the extension of the compressor you ask for is missing, Psalm warns and uses `auto`.
+Caches are stored per compressor, so to restore a cache built on another machine (for example on CI), set the compressor explicitly.
 
 #### threads
 ```xml
@@ -754,6 +801,16 @@ or interfaces defined in a stub file, this stub should be configured with attrib
 <stubs>
   <file name="path/to/file.php" />
   <file name="path/to/abstract-class.php" preloadClasses="true" />
+</stubs>
+```
+
+A `<directory name="path/to/stubs" />` adds every `.php` and `.phpstub` file below it, in alphabetical order, and takes
+the same `preloadClasses` attribute:
+
+```xml
+<stubs>
+  <directory name="path/to/stubs" />
+  <directory name="path/to/base-classes" preloadClasses="true" />
 </stubs>
 ```
 

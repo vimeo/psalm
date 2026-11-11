@@ -1147,6 +1147,33 @@ final class TypeVariableTest extends TestCase
                 'ignored_issues' => [],
                 'php_version' => '8.1',
             ],
+            'constructorWithSiblingImplementationsSatisfiesInvariantProperty' => [
+                'code' => '<?php
+                    /** @template V */
+                    final class Collection {
+                        /** @param list<V> $items */
+                        public function __construct(public array $items) {}
+                    }
+
+                    interface Foo {}
+                    interface Bar extends Foo {}
+                    interface Baz extends Foo {}
+
+                    function createBar(): Bar { return new class implements Bar {}; }
+                    function createBaz(): Baz { return new class implements Baz {}; }
+
+                    final class Ctx {
+                        /** @var Collection<Foo> */
+                        public Collection $items;
+
+                        public function __construct() {
+                            $this->items = new Collection([createBar(), createBaz()]);
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
         ];
     }
 
@@ -1563,6 +1590,29 @@ final class TypeVariableTest extends TestCase
                     $box->add("nope");',
                 'error_message' => 'IncompatibleTypeParameters - src' . DIRECTORY_SEPARATOR
                     . "somefile.php:11:31 - Type 'nope' should be a subtype of int",
+            ],
+            'typeVariableOfNamespacedFileScopeIsReconciled' => [
+                // the namespace declaration must not skip the reconciliation of
+                // the bounds the file's top-level statements collected
+                'code' => '<?php
+                    namespace Foo;
+
+                    /** @template T */
+                    final class Box {
+                        /** @param T $value */
+                        public function __construct(public mixed $value) {}
+                    }
+
+                    /** @param Box<int> $box */
+                    function takesIntBox(Box $box): int {
+                        return $box->value;
+                    }
+
+                    takesIntBox(new Box("x"));',
+                'error_message' => 'IncompatibleTypeParameters - src' . DIRECTORY_SEPARATOR
+                    . "somefile.php:15:33 - Type 'x' should be a subtype of int",
+                'error_levels' => [],
+                'php_version' => '8.1',
             ],
         ];
     }
