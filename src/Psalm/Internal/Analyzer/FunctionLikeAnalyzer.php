@@ -588,28 +588,28 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
                 // closure wrote through the reference before is not known anymore
                 $end_type = $ref_context->vars_in_scope[$var_id] ?? null;
 
-                // the closure leaves through its returns: where it also has no end, nothing else is possible
                 $types_at_return = $this instanceof ClosureAnalyzer
                     ? $this->captured_by_ref_types_at_return[$var_id] ?? []
                     : [];
 
-                if ($types_at_return !== []) {
-                    $path_types = $end_type !== null ? [$end_type, ...$types_at_return] : $types_at_return;
-                    $byref_type = Type::combineUnionTypeArray($path_types, $codebase);
+                $byref_type = self::combineByRefPathTypes($end_type, $types_at_return, $codebase);
+                $context->vars_in_scope[$var_id] = $byref_type;
 
-                    // a path on which the closure left the variable as it was (mixed in the closure) makes it mixed
-                    foreach ($path_types as $path_type) {
-                        if ($path_type->isMixed()) {
-                            $byref_type = Type::getMixed();
-                            break;
-                        }
-                    }
-                } else {
-                    $byref_type = $end_type ?? Type::getMixed();
+                if ($this instanceof ClosureAnalyzer && isset($this->captured_by_ref_unwidened_types[$var_id])) {
+                    // a path that left the variable as it was leaves the enclosing scope's value, not the widened one
+                    [$widened_type, $enclosing_type] = $this->captured_by_ref_unwidened_types[$var_id];
+
+                    $byref_type = self::combineByRefPathTypes(
+                        $end_type === $widened_type ? $enclosing_type : $end_type,
+                        array_map(
+                            static fn(Union $type): Union => $type === $widened_type ? $enclosing_type : $type,
+                            $types_at_return,
+                        ),
+                        $codebase,
+                    );
                 }
 
                 $byref_vars[$var_id] = $byref_type;
-                $context->vars_in_scope[$var_id] = $byref_type;
             }
         }
 
@@ -3073,6 +3073,31 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
             $cased_method_id,
             $overridden_method_ids,
         ];
+    }
+
+    /**
+     * The type of a variable captured by reference after the closure, from its type at the end of the body and at
+     * each return: the closure leaves through its returns, so where it also has no end, nothing else is possible
+     *
+     * @param list<Union> $types_at_return
+     * @psalm-capabilities read-props|write-this-props|write-refs
+     */
+    private static function combineByRefPathTypes(?Union $end_type, array $types_at_return, Codebase $codebase): Union
+    {
+        if ($types_at_return === []) {
+            return $end_type ?? Type::getMixed();
+        }
+
+        $path_types = $end_type !== null ? [$end_type, ...$types_at_return] : $types_at_return;
+
+        // a path on which the closure left the variable as it was (mixed in the closure) makes it mixed
+        foreach ($path_types as $path_type) {
+            if ($path_type->isMixed()) {
+                return Type::getMixed();
+            }
+        }
+
+        return Type::combineUnionTypeArray($path_types, $codebase);
     }
 
     /**

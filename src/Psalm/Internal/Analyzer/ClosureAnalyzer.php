@@ -103,6 +103,15 @@ final class ClosureAnalyzer extends FunctionLikeAnalyzer
      */
     public array $captured_by_ref_types_at_return = [];
 
+    /**
+     * The variables captured by reference whose literals the closure body sees widened: the widened type and the type
+     * in the enclosing scope. A path of the body that leaves such a variable as it was (the same widened type) leaves
+     * the enclosing scope's value.
+     *
+     * @var array<string, array{Union, Union}>
+     */
+    public array $captured_by_ref_unwidened_types = [];
+
     public function getRecursiveVarId(): ?string
     {
         /** @var mixed $var_id */
@@ -330,9 +339,17 @@ final class ClosureAnalyzer extends FunctionLikeAnalyzer
                     $was_by_ref[$use_var_id] = $context->hasVariable($use_var_id)
                         && $context->vars_in_scope[$use_var_id]->by_ref;
 
+                    $captured_type = $use_context->vars_in_scope[$use_var_id];
                     $use_context->vars_in_scope[$use_var_id] = self::widenLiteralsOfByRefCapture(
-                        $use_context->vars_in_scope[$use_var_id],
+                        $captured_type,
                     )->setProperties(['by_ref' => true]);
+
+                    if ($use_context->vars_in_scope[$use_var_id]->getId() !== $captured_type->getId()) {
+                        $closure_analyzer->captured_by_ref_unwidened_types[$use_var_id] = [
+                            $use_context->vars_in_scope[$use_var_id],
+                            $captured_type,
+                        ];
+                    }
                     $use_context->references_to_external_scope[$use_var_id] = true;
 
                     if (isset($context->bound_globals[$use_var_id])) {

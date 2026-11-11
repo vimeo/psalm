@@ -241,6 +241,23 @@ final class ClosureTest extends TestCase
                     '$count===' => '0|5|7',
                 ],
             ],
+            'closureByRefWriteOfAnIntToACapturedLiteralIsKept' => [
+                'code' => '<?php
+                    $count = 0;
+
+                    $f = static function (int $x) use (&$count): int {
+                        if ($x > 1) {
+                            $count = $x * 2;
+
+                            return 0;
+                        }
+
+                        return 1;
+                    };',
+                'assertions' => [
+                    '$count===' => 'int<0, max>',
+                ],
+            ],
             'closureByRefVariableNotWrittenBeforeAReturnKeepsItsType' => [
                 'code' => '<?php
                     $flag = false;
