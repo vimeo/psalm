@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Psalm\Tests;
 
+use Countable;
 use DateTime;
 use Override;
 use Psalm\Config;
@@ -518,6 +519,113 @@ final class PropertyTypeTest extends TestCase
         $this->analyzeFile('somefile.php', new Context());
     }
 
+    public function testUniversalObjectCratesOfAnInterface(): void
+    {
+        Config::getInstance()->addUniversalObjectCrate(Countable::class);
+
+        $this->addFile(
+            'somefile.php',
+            '<?php
+                interface Sized extends \\Countable {}
+
+                class A implements \\Countable {
+                    public function count(): int {
+                        return 0;
+                    }
+                }
+
+                class B implements Sized {
+                    public function count(): int {
+                        return 0;
+                    }
+                }
+
+                function reads(\\Countable $c, A $a, B $b, Sized $s): void {
+                    $c->foo;
+                    $a->foo;
+                    $b->foo;
+                    $s->foo;
+                }
+
+                function sets(\\Countable $c, A $a, B $b, Sized $s): void {
+                    $c->foo = 1;
+                    $a->foo = 2;
+                    $b->foo = 3;
+                    $s->foo = 4;
+                }
+        ',
+        );
+
+        $this->analyzeFile('somefile.php', new Context());
+    }
+
+    public function testUniversalObjectCratesOfAParentClass(): void
+    {
+        Config::getInstance()->addUniversalObjectCrate(DateTime::class);
+
+        $this->addFile(
+            'somefile.php',
+            '<?php
+                class MyDate extends \\DateTime {}
+                class MyOtherDate extends MyDate {}
+
+                function reads(MyDate $a, MyOtherDate $b): void {
+                    $a->foo;
+                    $b->foo;
+                }
+
+                function sets(MyDate $a, MyOtherDate $b): void {
+                    $a->foo = 1;
+                    $b->foo = 2;
+                }
+        ',
+        );
+
+        $this->analyzeFile('somefile.php', new Context());
+    }
+
+    public function testUniversalObjectCratesDoNotMatchOtherClassesOnFetch(): void
+    {
+        Config::getInstance()->addUniversalObjectCrate(Countable::class);
+
+        $this->expectException(CodeException::class);
+        $this->expectExceptionMessage('UndefinedPropertyFetch');
+
+        $this->addFile(
+            'somefile.php',
+            '<?php
+                class Plain {}
+
+                function read(Plain $p): void {
+                    $p->foo;
+                }
+        ',
+        );
+
+        $this->analyzeFile('somefile.php', new Context());
+    }
+
+    public function testUniversalObjectCratesDoNotMatchOtherClassesOnAssignment(): void
+    {
+        Config::getInstance()->addUniversalObjectCrate(Countable::class);
+
+        $this->expectException(CodeException::class);
+        $this->expectExceptionMessage('UndefinedPropertyAssignment');
+
+        $this->addFile(
+            'somefile.php',
+            '<?php
+                class Plain {}
+
+                function set(Plain $p): void {
+                    $p->foo = 1;
+                }
+        ',
+        );
+
+        $this->analyzeFile('somefile.php', new Context());
+    }
+
     public function testForgetPropertyAssignmentsInBranchWithThrowNormally(): void
     {
         $this->addFile(
@@ -561,6 +669,378 @@ final class PropertyTypeTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'propertyReadOnlyWhereIssetHoldsInATraitMayBeLeftUninitialisedByAReturnOfConstructor' => [
+                'code' => '<?php
+                    final class Canary {
+                        public function cancel(): void {}
+                    }
+
+                    trait CancelsTheCanary {
+                        public function cancel(): void {
+                            if (isset($this->canary)) {
+                                $this->canary->cancel();
+                            }
+                        }
+                    }
+
+                    final class Response {
+                        use CancelsTheCanary;
+
+                        private Canary $canary;
+
+                        public function __construct(bool $pushed) {
+                            if ($pushed) {
+                                return;
+                            }
+
+                            $this->canary = new Canary();
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => ['RedundantPropertyInitializationCheck'],
+            ],
+            'propertyInitialisedByFinallyOfConstructorThatReturns' => [
+                'code' => '<?php
+                    final class A {
+                        private string $value;
+
+                        public function __construct() {
+                            try {
+                                return;
+                            } finally {
+                                $this->value = "ok";
+                            }
+                        }
+                    }',
+            ],
+            'propertyCheckedWithIssetMayBeLeftUninitialisedByAReturnOfConstructor' => [
+                'code' => '<?php
+                    final class Canary {}
+
+                    final class Response {
+                        private Canary $canary;
+
+                        public function __construct(bool $pushed) {
+                            if ($pushed) {
+                                return;
+                            }
+
+                            $this->canary = new Canary();
+                        }
+
+                        public function cancel(): void {
+                            if (isset($this->canary)) {
+                                echo "cancelled";
+                            }
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => ['RedundantPropertyInitializationCheck'],
+            ],
+            'propertyReadOnlyWhereIssetHoldsMayBeLeftUninitialisedByAReturnOfConstructor' => [
+                'code' => '<?php
+                    final class Canary {
+                        public function cancel(): void {}
+                    }
+
+                    final class Response {
+                        private Canary $canary;
+
+                        public function __construct(bool $pushed) {
+                            if ($pushed) {
+                                return;
+                            }
+
+                            $this->canary = new Canary();
+                        }
+
+                        public function a(): void {
+                            isset($this->canary) && $this->canary->cancel();
+                        }
+
+                        public function b(): ?Canary {
+                            return isset($this->canary) ? $this->canary : null;
+                        }
+
+                        public function c(): ?Canary {
+                            return $this->canary ?? null;
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => ['RedundantPropertyInitializationCheck', 'RedundantCondition'],
+            ],
+            'propertyReadOnlyThroughCoalesceMayBeLeftUninitialisedByAReturnOfConstructor' => [
+                'code' => '<?php
+                    final class Canary {
+                        public function cancel(): void {}
+                    }
+
+                    final class Response {
+                        private Canary $canary;
+
+                        public function __construct(bool $pushed) {
+                            if ($pushed) {
+                                return;
+                            }
+
+                            $this->canary = new Canary();
+                        }
+
+                        public function canary(): ?Canary {
+                            return $this->canary ?? null;
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => ['RedundantPropertyInitializationCheck', 'RedundantCondition'],
+            ],
+            'propertyInitialisedBeforeEveryReturnOfConstructor' => [
+                'code' => '<?php
+                    final class A {
+                        private string $value;
+
+                        public function __construct(string $v) {
+                            if ($v !== "") {
+                                $this->value = "foo";
+                                return;
+                            }
+
+                            throw new InvalidArgumentException("empty");
+                        }
+                    }
+
+                    final class B {
+                        private string $value;
+
+                        public function __construct(string $v) {
+                            if ($v === "a") {
+                                $this->value = "a";
+                                return;
+                            }
+
+                            if ($v === "b") {
+                                $this->value = "b";
+                                return;
+                            }
+
+                            $this->value = "c";
+                        }
+                    }
+
+                    final class C {
+                        private string $value;
+
+                        public function __construct(string $v) {
+                            $this->value = "x";
+
+                            if ($v === "") {
+                                return;
+                            }
+
+                            $this->value = $v;
+                        }
+                    }',
+            ],
+            'propertyInitialisedByMethodBeforeReturnOfConstructor' => [
+                'code' => '<?php
+                    final class A {
+                        private string $value;
+
+                        public function __construct(string $v) {
+                            if ($v !== "") {
+                                $this->init($v);
+                                return;
+                            }
+
+                            throw new InvalidArgumentException("empty");
+                        }
+
+                        private function init(string $v): void {
+                            $this->value = $v;
+                        }
+                    }',
+            ],
+            'privateTraitPropertyInitializedByTheUsingClassIsNotCheckedInSubclasses' => [
+                'code' => '<?php
+                    trait IdTrait {
+                        private int $id;
+
+                        private function initializeId(): void {
+                            $this->id = 5;
+                        }
+
+                        public function id(): int {
+                            return $this->id;
+                        }
+                    }
+
+                    class BaseUser {
+                        use IdTrait;
+
+                        public function __construct() {
+                            $this->initializeId();
+                        }
+                    }
+
+                    class Admin extends BaseUser {}
+
+                    class Client extends BaseUser {
+                        public function __construct() {
+                            parent::__construct();
+                        }
+                    }',
+            ],
+            'privateTemplatedPropertyInitializedByAFinalParentConstructorChain' => [
+                'code' => '<?php
+                    /**
+                     * @template T
+                     */
+                    class Box {
+                        /**
+                         * @return Box<int>
+                         */
+                        public static function factory(): self {
+                            /** @var Box<int> $instance */
+                            $instance = new self();
+
+                            return $instance;
+                        }
+                    }
+
+                    abstract class Base {
+                        final public function __construct() {
+                            $this->init();
+                        }
+
+                        abstract protected function init(): void;
+                    }
+
+                    final class Child extends Base {
+                        /** @var Box<int> */
+                        private $box;
+
+                        protected function init(): void {
+                            $this->box = Box::factory();
+                        }
+
+                        public function get(): Box {
+                            return $this->box;
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'staticCallOfAnInterfaceMethodInAConstructorHasItsReturnType' => [
+                'code' => '<?php
+                    interface Limits {
+                        public static function minimum(): int;
+                    }
+
+                    abstract class Value implements Limits {
+                        public int $value;
+
+                        public function __construct(int $value) {
+                            $minimum = self::minimum();
+                            $static_minimum = static::minimum();
+
+                            if ($value < $minimum || $value < $static_minimum) {
+                                throw new InvalidArgumentException((string) $minimum);
+                            }
+
+                            $this->value = $value;
+                        }
+                    }',
+            ],
+            'staticMethodWithABodyCalledInAConstructorKeepsItsReturnType' => [
+                'code' => '<?php
+                    class Value {
+                        public int $value;
+
+                        public function __construct() {
+                            $default = self::defaultValue();
+                            $this->value = $default;
+                        }
+
+                        public static function defaultValue(): int {
+                            return 1;
+                        }
+                    }',
+            ],
+            'assignPrivatePropertyOfCurrentClassOnChildInstance' => [
+                'code' => '<?php
+                    class A {
+                        private int $value = 0;
+
+                        public function handle(A $v): void {
+                            if ($v instanceof B) {
+                                $v->value = 123;
+                            } else {
+                                $v->value = 321;
+                            }
+                        }
+                    }
+
+                    class B extends A {}',
+            ],
+            'protectedPropertyRedeclaredInASubclassAccessedFromASibling' => [
+                'code' => '<?php
+                    class A
+                    {
+                        protected string $prop = "";
+                    }
+
+                    class B extends A
+                    {
+                        protected string $prop = "b";
+                    }
+
+                    class C extends A
+                    {
+                        public B $b;
+
+                        public function __construct()
+                        {
+                            $this->b = new B();
+                        }
+
+                        public function read(): string
+                        {
+                            return $this->b->prop;
+                        }
+                    }',
+            ],
+            'protectedPropertyRedeclaredByATraitAccessedFromASibling' => [
+                'code' => '<?php
+                    class A
+                    {
+                        protected string $prop = "";
+                    }
+
+                    trait Mangler
+                    {
+                        protected string $prop = "";
+                    }
+
+                    class B extends A
+                    {
+                        use Mangler;
+                    }
+
+                    class C extends A
+                    {
+                        public B $b;
+
+                        public function __construct()
+                        {
+                            $this->b = new B();
+                        }
+
+                        public function write(): void
+                        {
+                            $this->b->prop = "x";
+                        }
+                    }',
+            ],
             'newVarInIf' => [
                 'code' => '<?php
                     class A {
@@ -2548,6 +3028,41 @@ final class PropertyTypeTest extends TestCase
                         }
                     }',
             ],
+            'issetOfUninitializedPropertyInConstructor' => [
+                'code' => '<?php
+                    class X {
+                        private string $x;
+
+                        /** @param string[] $a */
+                        public function __construct(array $a) {
+                            foreach ($a as $key => $val) {
+                                if ($key === "x") {
+                                    $this->x = $val;
+                                }
+                            }
+
+                            $this->x ??= "";
+                        }
+                    }
+
+                    class Y {
+                        private string $y;
+
+                        public function __construct() {
+                            $this->y ??= "";
+                        }
+                    }
+
+                    class Z {
+                        private string $z;
+
+                        public function __construct() {
+                            if (!isset($this->z)) {
+                                $this->z = "";
+                            }
+                        }
+                    }',
+            ],
             'memoizePropertyAfterSetting' => [
                 'code' => '<?php
                     class A {
@@ -2903,6 +3418,180 @@ final class PropertyTypeTest extends TestCase
     public static function providerInvalidCodeParse(): iterable
     {
         return [
+            'privateTraitPropertyIsNotVisibleInASubclass' => [
+                'code' => '<?php
+                    trait IdTrait {
+                        private int $id = 1;
+                    }
+
+                    class BaseUser {
+                        use IdTrait;
+                    }
+
+                    class Admin extends BaseUser {
+                        public function id(): int {
+                            return $this->id;
+                        }
+                    }',
+                'error_message' => 'UndefinedThisPropertyFetch - src' . DIRECTORY_SEPARATOR . 'somefile.php:12:36 - Instance property Admin::$id is not defined',
+            ],
+            'privateTraitPropertyNotInitializedIsStillReportedInTheUsingClass' => [
+                'code' => '<?php
+                    trait IdTrait {
+                        private int $id;
+
+                        public function id(): int {
+                            return $this->id;
+                        }
+                    }
+
+                    class BaseUser {
+                        use IdTrait;
+
+                        public function __construct() {}
+                    }
+
+                    class Admin extends BaseUser {
+                        public function __construct() {
+                            parent::__construct();
+                        }
+                    }',
+                'error_message' => 'PropertyNotSetInConstructor - src' . DIRECTORY_SEPARATOR . 'somefile.php:10:27 - Property BaseUser::$id',
+            ],
+            'privateTemplatedPropertyNotInitializedByAFinalParentConstructorChain' => [
+                'code' => '<?php
+                    /**
+                     * @template T
+                     */
+                    class Box {
+                        /**
+                         * @return Box<int>
+                         */
+                        public static function factory(): self {
+                            /** @var Box<int> $instance */
+                            $instance = new self();
+
+                            return $instance;
+                        }
+                    }
+
+                    abstract class Base {
+                        final public function __construct() {
+                            $this->init();
+                        }
+
+                        abstract protected function init(): void;
+                    }
+
+                    final class Child extends Base {
+                        /** @var Box<int> */
+                        private $box;
+
+                        /** @var Box<int> */
+                        private $other;
+
+                        protected function init(): void {
+                            $this->box = Box::factory();
+                        }
+                    }',
+                'error_message' => 'PropertyNotSetInConstructor - src' . DIRECTORY_SEPARATOR . 'somefile.php:30:33 - Property Child::$other',
+                'error_levels' => [],
+                'php_version' => '8.0',
+            ],
+            'propertyReadThroughCoalesceAndWithoutAGuardIsNotInitialisedByAReturnOfConstructor' => [
+                'code' => '<?php
+                    final class Canary {
+                        public function cancel(): void {}
+                    }
+
+                    final class Response {
+                        private Canary $canary;
+
+                        public function __construct(bool $pushed) {
+                            if ($pushed) {
+                                return;
+                            }
+
+                            $this->canary = new Canary();
+                        }
+
+                        public function canary(): ?Canary {
+                            return $this->canary ?? null;
+                        }
+
+                        public function close(): void {
+                            $this->canary->cancel();
+                        }
+                    }',
+                'error_message' => 'PropertyNotSetInConstructor - src' . DIRECTORY_SEPARATOR . 'somefile.php:7:40 - Property Response::$canary',
+                'error_levels' => ['RedundantPropertyInitializationCheck', 'RedundantCondition'],
+            ],
+            'propertyNotInitializedByAnInterfaceStaticMethodCalledInTheConstructor' => [
+                'code' => '<?php
+                    interface Limits {
+                        public static function minimum(): int;
+                    }
+
+                    abstract class Value implements Limits {
+                        public int $value;
+
+                        public function __construct() {
+                            echo self::minimum();
+                        }
+                    }',
+                'error_message' => 'PropertyNotSetInConstructor',
+            ],
+            'assignPrivatePropertyOfCurrentClassOnChildInstanceChecksItsType' => [
+                'code' => '<?php
+                    class A {
+                        private int $value = 0;
+
+                        public function handle(A $v): void {
+                            if ($v instanceof B) {
+                                $v->value = "x";
+                            }
+                        }
+                    }
+
+                    class B extends A {}',
+                'error_message' => 'InvalidPropertyAssignmentValue',
+            ],
+            'assignPrivatePropertyOfParentOnChildInstanceFromChildContext' => [
+                'code' => '<?php
+                    class A {
+                        private int $value = 0;
+                    }
+
+                    class B extends A {}
+
+                    class C extends A {
+                        public function handle(B $v): void {
+                            $v->value = 1;
+                        }
+                    }',
+                'error_message' => 'UndefinedPropertyAssignment',
+            ],
+            'protectedPropertyOfAnUnrelatedClassIsInaccessible' => [
+                'code' => '<?php
+                    class A
+                    {
+                        protected string $prop = "";
+                    }
+
+                    class B extends A
+                    {
+                        protected string $prop = "b";
+                    }
+
+                    class Unrelated
+                    {
+                        public function read(B $b): string
+                        {
+                            return $b->prop;
+                        }
+                    }',
+                'error_message' => 'InaccessibleProperty',
+            ],
             'undefinedPropertyAssignment' => [
                 'code' => '<?php
                     class A {
@@ -3431,6 +4120,193 @@ final class PropertyTypeTest extends TestCase
                         public function __construct() {}
                     }',
                 'error_message' => 'PropertyNotSetInConstructor - src' . DIRECTORY_SEPARATOR . 'somefile.php:11',
+            ],
+            'propertyCheckedWithIssetButReadUnconditionallyElsewhereIsReportedAtAReturnOfConstructor' => [
+                'code' => '<?php
+                    final class Canary {
+                        public function cancel(): void {}
+                    }
+
+                    final class Response {
+                        private Canary $canary;
+
+                        public function __construct(bool $pushed) {
+                            if ($pushed) {
+                                return;
+                            }
+
+                            $this->canary = new Canary();
+                        }
+
+                        public function isCancellable(): bool {
+                            return isset($this->canary);
+                        }
+
+                        public function cancel(): void {
+                            $this->canary->cancel();
+                        }
+                    }',
+                'error_message' => 'PropertyNotSetInConstructor',
+                'error_levels' => ['RedundantPropertyInitializationCheck'],
+            ],
+            'propertyReadUnconditionallyInATraitIsReportedAtAReturnOfConstructor' => [
+                'code' => '<?php
+                    final class Canary {
+                        public function cancel(): void {}
+                    }
+
+                    trait CancelsTheCanary {
+                        public function cancel(): void {
+                            $this->canary->cancel();
+                        }
+                    }
+
+                    final class Response {
+                        use CancelsTheCanary;
+
+                        private Canary $canary;
+
+                        public function __construct(bool $pushed) {
+                            if ($pushed) {
+                                return;
+                            }
+
+                            $this->canary = new Canary();
+                        }
+
+                        public function isCancellable(): bool {
+                            return isset($this->canary);
+                        }
+                    }',
+                'error_message' => 'PropertyNotSetInConstructor',
+                'error_levels' => ['RedundantPropertyInitializationCheck'],
+            ],
+            'propertyReadUnconditionallyInATraitUsedByAnAliasIsReportedAtAReturnOfConstructor' => [
+                'code' => '<?php
+                    final class Canary {
+                        public function cancel(): void {}
+                    }
+
+                    trait CancelsTheCanary {
+                        public function cancel(): void {
+                            $this->canary->cancel();
+                        }
+                    }
+                    class_alias(CancelsTheCanary::class, "CancelsTheCanaryAlias");
+
+                    final class Response {
+                        use CancelsTheCanaryAlias;
+
+                        private Canary $canary;
+
+                        public function __construct(bool $pushed) {
+                            if ($pushed) {
+                                return;
+                            }
+
+                            $this->canary = new Canary();
+                        }
+
+                        public function isCancellable(): bool {
+                            return isset($this->canary);
+                        }
+                    }',
+                'error_message' => 'PropertyNotSetInConstructor',
+                'error_levels' => ['RedundantPropertyInitializationCheck'],
+            ],
+            'propertyReadAsAnArgumentOfACoalesceOperandIsReportedAtAReturnOfConstructor' => [
+                'code' => '<?php
+                    final class Canary {
+                        public function name(): string {
+                            return "canary";
+                        }
+                    }
+
+                    function label(Canary $canary): string {
+                        return $canary->name();
+                    }
+
+                    final class Response {
+                        private Canary $canary;
+
+                        public function __construct(bool $pushed) {
+                            if ($pushed) {
+                                return;
+                            }
+
+                            $this->canary = new Canary();
+                        }
+
+                        public function a(): bool {
+                            return isset($this->canary);
+                        }
+
+                        public function b(): string {
+                            return label($this->canary) ?? "none";
+                        }
+                    }',
+                'error_message' => 'PropertyNotSetInConstructor',
+                'error_levels' => ['RedundantPropertyInitializationCheck', 'RedundantConditionGivenDocblockType', 'DocblockTypeContradiction', 'RedundantCondition', 'TypeDoesNotContainNull'],
+            ],
+            'propertyReadAsTheIndexOfAnIssetIsReportedAtAReturnOfConstructor' => [
+                'code' => '<?php
+                    final class Response {
+                        private string $key;
+
+                        /** @var array<string, int> */
+                        private array $items = [];
+
+                        public function __construct(bool $pushed) {
+                            if ($pushed) {
+                                return;
+                            }
+
+                            $this->key = "key";
+                        }
+
+                        public function a(): bool {
+                            return isset($this->key);
+                        }
+
+                        public function b(): bool {
+                            return isset($this->items[$this->key]);
+                        }
+                    }',
+                'error_message' => 'PropertyNotSetInConstructor',
+                'error_levels' => ['RedundantPropertyInitializationCheck'],
+            ],
+            'notSetBeforeReturnOfConstructor' => [
+                'code' => '<?php
+                    final class A {
+                        public string $value;
+
+                        public function __construct(string $v) {
+                            if ($v === "") {
+                                return;
+                            }
+
+                            $this->value = $v;
+                        }
+                    }',
+                'error_message' => 'PropertyNotSetInConstructor - src' . DIRECTORY_SEPARATOR . 'somefile.php:3',
+            ],
+            'returnOfClosureInConstructorDoesNotInitialise' => [
+                'code' => '<?php
+                    final class A {
+                        public string $value;
+
+                        public function __construct(string $v) {
+                            $f = function (): void {
+                                return;
+                            };
+                            $f();
+
+                            if ($v !== "") {
+                                $this->value = $v;
+                            }
+                        }
+                    }',
+                'error_message' => 'PropertyNotSetInConstructor - src' . DIRECTORY_SEPARATOR . 'somefile.php:3',
             ],
             'notSetInAllBranchesOfIf' => [
                 'code' => '<?php
@@ -4085,6 +4961,22 @@ final class PropertyTypeTest extends TestCase
 
                     echo (new A)->foo;',
                 'error_message' => 'InaccessibleProperty',
+            ],
+            'undefinedClassInDocblockOfTypedPropertyIsReportedAtTheDocblock' => [
+                'code' => '<?php
+                    class A {
+                        /** @var class-string<Foobar> */
+                        public string $s = "";
+                    }',
+                'error_message' => 'UndefinedDocblockClass - src' . DIRECTORY_SEPARATOR . 'somefile.php:3:34 - Docblock-defined class, interface or enum named Foobar does not exist',
+            ],
+            'mismatchingDocblockOfTypedPropertyIsReportedAtTheDocblock' => [
+                'code' => '<?php
+                    class A {
+                        /** @var array */
+                        public string $s = [];
+                    }',
+                'error_message' => 'MismatchingDocblockPropertyType - src' . DIRECTORY_SEPARATOR . 'somefile.php:3:34 - Parameter A::$s has wrong type',
             ],
             'overwritePropertyType' => [
                 'code' => '<?php
