@@ -775,6 +775,36 @@ final class BinaryOperationTest extends TestCase
                         return "{$t}" . 5 . "{$t}7";
                     }',
             ],
+            'assignmentInTheRightOperandOfAndMayNotHaveRun' => [
+                'code' => '<?php
+                    function fetch(): ?float {
+                        return rand(0, 1) ? 1.5 : null;
+                    }
+
+                    function check(bool $enabled): ?float {
+                        $value = 0.0;
+                        $matched = $enabled && null !== ($value = fetch());
+
+                        return $value;
+                    }
+
+                    $result = check(true);',
+                'assertions' => [
+                    '$result===' => 'float|null',
+                ],
+            ],
+            'assignmentInTheRightOperandOfAndKeepsTheTypeBeforeIt' => [
+                'code' => '<?php
+                    function fetch(): ?float {
+                        return rand(0, 1) ? 1.5 : null;
+                    }
+
+                    function check(bool $enabled): void {
+                        $value = 0;
+                        $matched = $enabled && null !== ($value = fetch());
+                        /** @psalm-check-type-exact $value = 0|float|null */;
+                    }',
+            ],
             'coalesceOfAStaticAndASelfPropertyOffset' => [
                 'code' => '<?php
                     class Test1
@@ -1165,6 +1195,25 @@ final class BinaryOperationTest extends TestCase
                     $bar = new A();
                     foo("" . $bar);
                 ',
+            ],
+            'concatenateStringableUsesDeclaredStringReturn' => [
+                'code' => '<?php
+                    final class Text {
+                        public function __toString(): string {
+                            return "text";
+                        }
+                    }
+
+                    /** @var lowercase-string $lowercase */
+                    $lowercase = "lowercase";
+                    $prefixed = "abc" . new Text();
+                    $lowercasePrefixed = $lowercase . new Text();',
+                'assertions' => [
+                    '$prefixed===' => 'non-falsy-string',
+                    '$lowercasePrefixed===' => 'string',
+                ],
+                'ignored_issues' => ['ImplicitToStringCast'],
+                'php_version' => '8.1',
             ],
             'concatenateNegativeIntLeftSideIsNumeric' => [
                 'code' => '<?php
