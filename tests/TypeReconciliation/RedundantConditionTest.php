@@ -2048,6 +2048,20 @@ final class RedundantConditionTest extends TestCase
                     }',
                 'error_message' => 'RedundantCondition',
             ],
+            'assertionOfAnInterfaceAlreadyImplied' => [
+                'code' => '<?php
+                    interface Comparable {
+                        /** @psalm-assert-if-true static $object */
+                        public function equals(Comparable $object): bool;
+                    }
+
+                    function f(Comparable $left, Comparable $right): void {
+                        if ($left->equals($right)) {
+                            echo "yes";
+                        }
+                    }',
+                'error_message' => 'RedundantCondition - src' . DIRECTORY_SEPARATOR . 'somefile.php:8:29 - Type Comparable for $right is always Comparable',
+            ],
             'assignedArrayOffsetCheckedTwice' => [
                 'code' => '<?php
                     /** @param array<int, string|int> $arr */
