@@ -205,6 +205,81 @@ final class MethodCallTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'nullsafeCallOnAnAssignmentIsEvaluatedOnceAndNarrowed' => [
+                'code' => <<<'PHP'
+                    <?php
+                    final class Session {
+                        public function has(string $key): bool {
+                            return true;
+                        }
+                    }
+
+                    final class Request {
+                        public function getSession(): ?Session {
+                            return null;
+                        }
+                    }
+
+                    function check(Request $request): bool {
+                        return ($session = $request->getSession())?->has('x') ?? false;
+                    }
+                    PHP,
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.2',
+            ],
+            'nullsafeCallOnAnItemOfAnArrayAccessObjectIsNarrowed' => [
+                'code' => <<<'PHP'
+                    <?php
+                    final class Pkg {
+                        public function isPublic(): bool {
+                            return true;
+                        }
+                    }
+
+                    /** @implements ArrayAccess<string, Pkg> */
+                    final class PkgList implements ArrayAccess {
+                        #[\Override]
+                        public function offsetExists(mixed $offset): bool {
+                            return true;
+                        }
+
+                        #[\Override]
+                        public function offsetGet(mixed $offset): ?Pkg {
+                            return null;
+                        }
+
+                        #[\Override]
+                        public function offsetSet(mixed $offset, mixed $value): void {}
+
+                        #[\Override]
+                        public function offsetUnset(mixed $offset): void {}
+                    }
+
+                    function check(PkgList $list): bool {
+                        return $list['x']?->isPublic() ?? false;
+                    }
+                    PHP,
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.2',
+            ],
+            'definedStaticPropertyGivenToAMethodOfAnUnknownClass' => [
+                'code' => '<?php
+                    class Holder {
+                        public static int $count = 1;
+                        public static ?int $maybe = null;
+                    }
+
+                    /** @param mixed $query */
+                    function run($query): void {
+                        $query->where(Holder::$count);
+                        $query->where(Holder::$maybe);
+                        $result = $query->where("x", Holder::$count);
+                    }',
+                'assertions' => [],
+                'ignored_issues' => ['MixedMethodCall', 'MixedAssignment', 'UnusedVariable'],
+            ],
             'privateConstructorOfAParentWithCallStaticStillInitializesTheProperties' => [
                 'code' => '<?php
                     class Base {
@@ -1944,6 +2019,27 @@ final class MethodCallTest extends TestCase
     public static function providerInvalidCodeParse(): iterable
     {
         return [
+            'undefinedStaticPropertyGivenToAMethodOfAnUnknownClass' => [
+                'code' => '<?php
+                    class Holder {}
+
+                    /** @param mixed $query */
+                    function run($query): void {
+                        $query->where("name", Holder::$missing);
+                    }',
+                'error_message' => 'UndefinedPropertyFetch',
+                'error_levels' => ['MixedMethodCall'],
+            ],
+            'undefinedStaticPropertyGivenToAnUnknownFunction' => [
+                'code' => '<?php
+                    class Holder {}
+
+                    function run(): void {
+                        unknown_function(Holder::$missing);
+                    }',
+                'error_message' => 'UndefinedPropertyFetch',
+                'error_levels' => ['UndefinedFunction'],
+            ],
             'staticCallOfInaccessibleMethodWithoutCallStatic' => [
                 'code' => <<<'PHP'
                     <?php

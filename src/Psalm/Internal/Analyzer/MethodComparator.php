@@ -45,6 +45,8 @@ use Psalm\Type\Atomic\TTemplateParam;
 use Psalm\Type\Union;
 
 use function array_any;
+use function array_diff_key;
+use function array_filter;
 use function array_key_last;
 use function in_array;
 use function str_starts_with;
@@ -180,9 +182,16 @@ final class MethodComparator
             );
         }
 
+        // a trait method takes the docblock of the parent method per using class (see Populator), not per storage
+        $inherits_return_type = $implementer_method_storage->inherited_return_type
+            || (!$implementer_method_storage->has_docblock_param_types
+                && !$implementer_method_storage->has_docblock_return_type
+                && isset($codebase->classlike_storage_provider->get($implementer_called_class_name)
+                    ->documenting_method_ids[strtolower($guide_method_storage->cased_name ?? '')]));
+
         if ($guide_method_storage->return_type
             && $implementer_method_storage->return_type
-            && !$implementer_method_storage->inherited_return_type
+            && !$inherits_return_type
             && ($guide_method_storage->signature_return_type !== $guide_method_storage->return_type
                 || $implementer_method_storage->signature_return_type !== $implementer_method_storage->return_type)
             && $implementer_classlike_storage->user_defined
@@ -260,7 +269,13 @@ final class MethodComparator
                 $implementer_called_class_name,
                 $guide_method_storage,
                 $implementer_method_storage,
-                $guide_param,
+                self::getDocumentedGuideParam(
+                    $codebase,
+                    $guide_classlike_storage,
+                    $guide_method_storage,
+                    $guide_param,
+                    $i,
+                ),
                 $implementer_method_storage->params[$i],
                 $i,
                 $cased_guide_method_id,
@@ -309,60 +324,161 @@ final class MethodComparator
     }
 
     /**
-     * @param array<lowercase-string, MethodStorage> $pseudo_methods
+     * A `@method` the direct parent (each direct parent interface) also has was compared there, or isn't analyzed
+     * there, so here it's only compared with the methods that parent neither declares nor overrides
      */
-    public static function comparePseudoMethods(
-        array $pseudo_methods,
-        string $fq_class_name,
-        Codebase $codebase,
-        ClassLikeStorage $class_storage,
-    ): void {
-        foreach ($pseudo_methods as $pseudo_method_name => $pseudo_method_storage) {
-            $pseudo_method_id = new MethodIdentifier(
-                $fq_class_name,
-                $pseudo_method_name,
-            );
+    public static function comparePseudoMethods(Codebase $codebase, ClassLikeStorage $class_storage): void
+    {
+        if (!$class_storage->pseudo_methods && !$class_storage->pseudo_static_methods) {
+            return;
+        }
 
-            $overridden_method_ids = $codebase->methods->getOverriddenMethodIds($pseudo_method_id);
-            if (isset($class_storage->methods[$pseudo_method_id->method_name])) {
-                $overridden_method_ids[$class_storage->name] = $pseudo_method_id;
-            }
+        $parent_storages = [];
 
-            if ($overridden_method_ids
-                && $pseudo_method_name !== '__construct'
-                && $pseudo_method_storage->location
-            ) {
-                foreach ($overridden_method_ids as $overridden_method_id) {
-                    $parent_method_storage = $codebase->methods->getStorage($overridden_method_id);
+        foreach ($class_storage->is_interface
+            ? $class_storage->direct_interface_parents
+            : array_filter([$class_storage->parent_class]) as $parent_name) {
+            // a parent that doesn't exist has no storage, and is reported as undefined elsewhere
+            $parent_storage = $codebase->classlikes->getStorageFor($parent_name);
 
-                    $overridden_fq_class_name = $overridden_method_id->fq_class_name;
-
-                    $parent_storage = $codebase->classlike_storage_provider->get($overridden_fq_class_name);
-
-                    // a call from outside reaches `__call` or `__callStatic` instead of a method that isn't public
-                    if (($parent_storage->trait_visibility_map[$overridden_method_id->method_name]
-                            ?? $parent_method_storage->visibility) !== ClassLikeAnalyzer::VISIBILITY_PUBLIC
-                    ) {
-                        continue;
-                    }
-
-                    self::compare(
-                        $codebase,
-                        null,
-                        $class_storage,
-                        $parent_storage,
-                        $pseudo_method_storage,
-                        $parent_method_storage,
-                        $fq_class_name,
-                        $pseudo_method_storage->visibility ?: 0,
-                        $class_storage->location ?: $pseudo_method_storage->location,
-                        $class_storage->suppressed_issues,
-                        true,
-                        false,
-                    );
-                }
+            if ($parent_storage) {
+                $parent_storages[] = $parent_storage;
             }
         }
+
+        foreach ($class_storage->pseudo_methods as $pseudo_method_name => $pseudo_method_storage) {
+            self::comparePseudoMethod(
+                $codebase,
+                $class_storage,
+                $parent_storages,
+                $pseudo_method_name,
+                $pseudo_method_storage,
+                false,
+            );
+        }
+
+        foreach ($class_storage->pseudo_static_methods as $pseudo_method_name => $pseudo_method_storage) {
+            self::comparePseudoMethod(
+                $codebase,
+                $class_storage,
+                $parent_storages,
+                $pseudo_method_name,
+                $pseudo_method_storage,
+                true,
+            );
+        }
+    }
+
+    /**
+     * @param list<ClassLikeStorage> $parent_storages
+     * @param lowercase-string $pseudo_method_name
+     */
+    private static function comparePseudoMethod(
+        Codebase $codebase,
+        ClassLikeStorage $class_storage,
+        array $parent_storages,
+        string $pseudo_method_name,
+        MethodStorage $pseudo_method_storage,
+        bool $is_static,
+    ): void {
+        $fq_class_name = $class_storage->name;
+
+        $overridden_method_ids = $codebase->methods->getOverriddenMethodIds(
+            new MethodIdentifier($fq_class_name, $pseudo_method_name),
+        );
+
+        $declaring_class = self::getDeclaringPseudoMethodClass($class_storage, $pseudo_method_name, $is_static);
+
+        foreach ($parent_storages as $parent_storage) {
+            if ($declaring_class !== null
+                && $declaring_class === self::getDeclaringPseudoMethodClass(
+                    $parent_storage,
+                    $pseudo_method_name,
+                    $is_static,
+                )
+            ) {
+                $parent_own_method_id = self::getOwnMethodId($parent_storage, $pseudo_method_name);
+
+                $overridden_method_ids = array_diff_key(
+                    $overridden_method_ids,
+                    $parent_storage->overridden_method_ids[$pseudo_method_name] ?? [],
+                    $parent_own_method_id ? [$parent_own_method_id->fq_class_name => true] : [],
+                );
+            }
+        }
+
+        $own_method_id = self::getOwnMethodId($class_storage, $pseudo_method_name);
+
+        if ($own_method_id) {
+            $overridden_method_ids[$own_method_id->fq_class_name] = $own_method_id;
+        }
+
+        if ($overridden_method_ids
+            && $pseudo_method_name !== '__construct'
+            && $pseudo_method_storage->location
+        ) {
+            foreach ($overridden_method_ids as $overridden_method_id) {
+                $parent_method_storage = $codebase->methods->getStorage($overridden_method_id);
+
+                $overridden_fq_class_name = $overridden_method_id->fq_class_name;
+
+                $parent_storage = $codebase->classlike_storage_provider->get($overridden_fq_class_name);
+
+                // a call from outside reaches `__call` or `__callStatic` instead of a method that isn't public
+                $visibility_storage = $overridden_method_id === $own_method_id ? $class_storage : $parent_storage;
+
+                if (($visibility_storage->trait_visibility_map[$overridden_method_id->method_name]
+                        ?? $parent_method_storage->visibility) !== ClassLikeAnalyzer::VISIBILITY_PUBLIC
+                ) {
+                    continue;
+                }
+
+                self::compare(
+                    $codebase,
+                    null,
+                    $class_storage,
+                    $parent_storage,
+                    $pseudo_method_storage,
+                    $parent_method_storage,
+                    $fq_class_name,
+                    $pseudo_method_storage->visibility ?: 0,
+                    $class_storage->location ?: $pseudo_method_storage->location,
+                    $class_storage->suppressed_issues,
+                    true,
+                    false,
+                );
+            }
+        }
+    }
+
+    /**
+     * The method the class itself has, be it declared in it or in a trait it uses
+     *
+     * @param lowercase-string $method_name
+     * @psalm-capabilities read-props
+     */
+    private static function getOwnMethodId(ClassLikeStorage $storage, string $method_name): ?MethodIdentifier
+    {
+        $appearing_method_id = $storage->appearing_method_ids[$method_name] ?? null;
+
+        return $appearing_method_id !== null
+            && strtolower($appearing_method_id->fq_class_name) === strtolower($storage->name)
+            ? $storage->declaring_method_ids[$method_name] ?? null
+            : null;
+    }
+
+    /**
+     * @param lowercase-string $method_name
+     * @psalm-capabilities read-props
+     */
+    private static function getDeclaringPseudoMethodClass(
+        ClassLikeStorage $storage,
+        string $method_name,
+        bool $is_static,
+    ): ?string {
+        return ($is_static
+            ? $storage->declaring_pseudo_static_method_ids
+            : $storage->declaring_pseudo_method_ids)[$method_name]->fq_class_name ?? null;
     }
 
     /**
@@ -507,6 +623,7 @@ final class MethodComparator
                         . ' additionally requires '
                         . Capabilities::toString($implementer_capabilities, $guide_capabilities),
                     $code_location,
+                    $guide_classlike_storage->name,
                 ),
                 $suppressed_issues + $implementer_classlike_storage->suppressed_issues,
             );
@@ -792,6 +909,49 @@ final class MethodComparator
                 $suppressed_issues + $implementer_classlike_storage->suppressed_issues,
             );
         }
+    }
+
+    /**
+     * A method with no docblock of its own is documented by the one it inherits it from (see Populator), and a
+     * method overriding it is compared with the param type of that docblock
+     */
+    private static function getDocumentedGuideParam(
+        Codebase $codebase,
+        ClassLikeStorage $guide_classlike_storage,
+        MethodStorage $guide_method_storage,
+        FunctionLikeParameter $guide_param,
+        int $i,
+    ): FunctionLikeParameter {
+        if ($guide_method_storage->has_docblock_param_types) {
+            return $guide_param;
+        }
+
+        $documenting_method_id = $guide_classlike_storage->documenting_method_ids[
+            strtolower($guide_method_storage->cased_name ?? '')
+        ] ?? null;
+
+        if ($documenting_method_id === null
+            || strtolower($documenting_method_id->fq_class_name) === strtolower($guide_classlike_storage->name)
+        ) {
+            return $guide_param;
+        }
+
+        $documenting_param = $codebase->methods->getStorage($documenting_method_id)->params[$i] ?? null;
+
+        // its templates are the ones of the class it is declared in; a type that is only the native one of the
+        // inherited method documents nothing, and a docblock type broader than the native type of the method
+        // itself does not widen what overriding methods may declare
+        if ($documenting_param === null
+            || $documenting_param->type === null
+            || !$documenting_param->has_docblock_type
+            || $documenting_param->type->hasTemplate()
+            || ($guide_param->type !== null
+                && !UnionTypeComparator::isContainedBy($codebase, $documenting_param->type, $guide_param->type))
+        ) {
+            return $guide_param;
+        }
+
+        return $guide_param->setType($documenting_param->type);
     }
 
     /**
@@ -1269,6 +1429,9 @@ final class MethodComparator
                 : $implementer_classlike_storage->name,
             $implementer_called_class_name,
             $implementer_classlike_storage->parent_class,
+            true,
+            false,
+            $implementer_classlike_storage->final,
         );
 
         $guide_method_storage_return_type = TypeExpander::expandUnion(
@@ -1284,7 +1447,7 @@ final class MethodComparator
             $guide_classlike_storage->parent_class,
             true,
             true,
-            $implementer_method_storage->final,
+            $implementer_classlike_storage->final,
         );
 
         $guide_class_name = $guide_classlike_storage->name;
