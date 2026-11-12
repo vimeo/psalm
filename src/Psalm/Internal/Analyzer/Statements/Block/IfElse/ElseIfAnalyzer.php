@@ -472,7 +472,13 @@ final class ElseIfAnalyzer
             $if_scope->negated_clauses = Algebra::simplifyCNF(
                 [
                     ...$if_scope->negated_clauses,
-                    ...self::getNegatedClauses($statements_analyzer, $codebase, $elseif, $else_context, $elseif_clauses),
+                    ...self::getNegatedClauses(
+                        $statements_analyzer,
+                        $codebase,
+                        $elseif,
+                        $else_context,
+                        $elseif_clauses,
+                    ),
                 ],
             );
         } catch (ComplicatedExpressionException) {
