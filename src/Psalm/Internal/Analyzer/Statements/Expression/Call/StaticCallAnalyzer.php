@@ -290,7 +290,7 @@ final class StaticCallAnalyzer extends CallAnalyzer
                         }
                     }
 
-                    return $does_class_exist !== false;
+                    return true;
                 }
             }
 
