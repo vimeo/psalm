@@ -1332,6 +1332,69 @@ final class IssetTest extends TestCase
                 'ignored_issues' => [],
                 'php_version' => '8.0',
             ],
+            'issetOnPropertyOfUnionWhereALaterMemberHasAMagicGetterStillSeesTheMissingOne' => [
+                'code' => '<?php
+                    final class A {
+                        public string $a = "";
+                    }
+
+                    final class B {}
+
+                    final class C {
+                        public function __get(string $name): string {
+                            return "";
+                        }
+                    }
+
+                    function f(A|C|B $x): string {
+                        return isset($x->a) ? $x->a : "";
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.2',
+            ],
+            'issetOnPropertyOfOnlyOneMemberOfUnion' => [
+                'code' => '<?php
+                    class A {
+                        public function __construct(public readonly string $a) {}
+                    }
+
+                    class B {
+                        public function __construct(public readonly string $b) {}
+                    }
+
+                    function f(A|B $obj): string {
+                        return $obj->a ?? "";
+                    }
+
+                    function g(B|A $obj): string {
+                        return $obj->a ?? "";
+                    }
+
+                    function h(A|B $obj): void {
+                        if (isset($obj->a)) {
+                            echo $obj->a;
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
+            'issetOnPropertyOfNoMemberOfUnionIsStillUnknown' => [
+                'code' => '<?php
+                    class A {}
+
+                    class B {}
+
+                    function f(A|B $obj): void {
+                        if (isset($obj->nope)) {
+                            echo 1;
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
             'comparisonOfAnItemWithAUnionKeyKeepsTheTypesOfItemsOfOtherTypes' => [
                 'code' => <<<'PHP'
                     <?php
@@ -1428,6 +1491,22 @@ final class IssetTest extends TestCase
     public static function providerInvalidCodeParse(): iterable
     {
         return [
+            'issetOnPropertyOfUnionWhoseMembersAllHaveItThroughAnIntersectionIsRedundant' => [
+                'code' => '<?php
+                    final class A {
+                        public string $a = "";
+                    }
+
+                    interface B {}
+
+                    /** @param A|(B&object{a: string}) $x */
+                    function f($x): string {
+                        return isset($x->a) ? $x->a : "";
+                    }',
+                'error_message' => 'RedundantConditionGivenDocblockType',
+                'error_levels' => [],
+                'php_version' => '8.2',
+            ],
             'variableNotSetByTheEmptyBranchOfAnIssetCheckIsPossiblyUndefinedAfterIt' => [
                 'code' => '<?php
 
@@ -1753,6 +1832,46 @@ final class IssetTest extends TestCase
                 'error_message' => 'PossiblyUndefinedVariable',
                 'error_levels' => [],
                 'php_version' => '8.0',
+            ],
+            'issetOnPropertyOfEveryMemberOfUnionStaysRedundant' => [
+                'code' => '<?php
+                    class A {
+                        public function __construct(public readonly string $a) {}
+                    }
+
+                    class B {
+                        public function __construct(public readonly string $a) {}
+                    }
+
+                    function f(A|B $obj): void {
+                        if (isset($obj->a)) {
+                            echo $obj->a;
+                        }
+                    }',
+                'error_message' => 'RedundantCondition',
+                'error_levels' => [],
+                'php_version' => '8.1',
+            ],
+            'issetOnPropertyOfMemberWithMagicGetterOfUnion' => [
+                'code' => '<?php
+                    class A {
+                        public string $a = "";
+                    }
+
+                    class B {
+                        public function __get(string $name): string {
+                            return $name;
+                        }
+                    }
+
+                    function f(A|B $obj): void {
+                        if (isset($obj->a)) {
+                            echo $obj->a;
+                        }
+                    }',
+                'error_message' => 'RedundantCondition',
+                'error_levels' => [],
+                'php_version' => '8.1',
             ],
         ];
     }
