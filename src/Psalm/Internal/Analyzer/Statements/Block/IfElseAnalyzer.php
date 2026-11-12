@@ -374,10 +374,14 @@ final class IfElseAnalyzer
                 $context->vars_in_scope[$var_id] = $type;
             }
 
+            // the negated clauses leave out what a right side of an `||` reassigns: the else derived its type instead
             self::removeMixedAssignmentsOfNarrowedVars(
                 $statements_analyzer,
                 $post_if_context,
-                $pre_assignment_else_redefined_vars,
+                [
+                    ...$pre_assignment_else_redefined_vars,
+                    ...array_intersect_key($else_context->vars_in_scope, $reassigned_var_ids),
+                ],
             );
         } elseif ($stmt->elseifs
             && !$stmt->else

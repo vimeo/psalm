@@ -4796,6 +4796,38 @@ final class ConditionalTest extends TestCase
                     '$value' => 'int<1, max>',
                 ],
             ],
+            'variableAssignedByAnOperandOfFiveOredOnesIsDefinedWhereTheyAreFalse' => [
+                'code' => '<?php
+                    /** @return int|false */
+                    function strPos2() {
+                        return rand(0, 1) ? 1 : false;
+                    }
+
+                    if (rand(0, 1)
+                        || false === ($ns = strPos2())
+                        || rand(0, 1)
+                        || rand(0, 1)
+                        || rand(0, 1)
+                    ) {
+                        throw new Exception();
+                    }',
+                'assertions' => [
+                    '$ns===' => 'int',
+                ],
+            ],
+            'mixedAssignmentInTheRightSideOfAnOrInALoopIsNotReportedWhenTheElseNarrowsIt' => [
+                'code' => '<?php
+                    /** @param list<array<mixed>> $calls */
+                    function f(array $calls): void {
+                        foreach ($calls as $arguments) {
+                            if (rand(0, 1) || !is_string($name = $arguments[0] ?? null)) {
+                                continue;
+                            }
+
+                            echo $name;
+                        }
+                    }',
+            ],
             'orWhoseBothSidesAssignTheSameVariableKeepsWhatTheLeftOneTested' => [
                 'code' => '<?php
                     class A {}
@@ -4825,6 +4857,20 @@ final class ConditionalTest extends TestCase
     public static function providerInvalidCodeParse(): iterable
     {
         return [
+            'mixedAssignmentInTheRightSideOfAnOrInALoopIsReportedWhenTheElseDoesNotNarrowIt' => [
+                'code' => '<?php
+                    /** @param list<array<mixed>> $calls */
+                    function f(array $calls): void {
+                        foreach ($calls as $arguments) {
+                            if (rand(0, 1) || null === ($name = $arguments[0] ?? null)) {
+                                continue;
+                            }
+
+                            echo 1;
+                        }
+                    }',
+                'error_message' => 'MixedAssignment - src' . DIRECTORY_SEPARATOR . 'somefile.php:5:57',
+            ],
             'negatedInstanceofOfAnEnumOfItself' => [
                 'code' => '<?php
                     enum Code: int {
