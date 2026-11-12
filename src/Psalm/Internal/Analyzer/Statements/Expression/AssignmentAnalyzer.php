@@ -1215,6 +1215,16 @@ final class AssignmentAnalyzer
 
             unset($context->references_possibly_from_confusing_scope[$lhs_var_id]);
 
+            if (isset($context->vars_in_scope[$lhs_var_id])) {
+                // A previous array shape and its cached offsets no longer describe the new reference.
+                $context->removeDescendents(
+                    $lhs_var_id,
+                    $context->vars_in_scope[$lhs_var_id],
+                    $return_type,
+                    $statements_analyzer,
+                );
+            }
+
             // Break a previous PHP-level alias in the type map before binding the new reference.
             unset($context->vars_in_scope[$lhs_var_id]);
             $context->vars_in_scope[$lhs_var_id] = $return_type;
@@ -1228,6 +1238,12 @@ final class AssignmentAnalyzer
             $context->vars_in_scope[$lhs_var_id] = $return_type->addParentNodes([
                 $lhs_node->id => $lhs_node,
             ]);
+
+            // The reference assignment can itself be used as an expression (e.g. echo ($x = &f())).
+            // Preserve its value type and data-flow origins for type checking and taint analysis.
+            if ($from_stmt === null) {
+                $statements_analyzer->node_data->setType($stmt, $return_type->setByRef(false));
+            }
 
             return true;
         }

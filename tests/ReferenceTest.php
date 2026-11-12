@@ -635,6 +635,27 @@ final class ReferenceTest extends TestCase
                     }
                 ',
             ],
+            'returnedReferenceAssignmentInvalidatesCachedOffsets' => [
+                'code' => <<<'PHP'
+                    <?php
+                    final class ReferenceArray {
+                        /** @var array{key: string} */
+                        public static array $values = ['key' => 'text'];
+                    }
+
+                    /** @return array{key: string} */
+                    function &arrayReference(): array {
+                        return ReferenceArray::$values;
+                    }
+
+                    function getReferenceValue(): string {
+                        $values = ['key' => 42];
+                        $previousValue = $values['key'];
+                        $values = &arrayReference();
+                        return $values['key'];
+                    }
+                    PHP,
+            ],
             'dontCrashOnReferenceToMixedVariableArrayOffset' => [
                 'code' => '<?php
                     function func(&$a): void

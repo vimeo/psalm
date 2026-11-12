@@ -84,6 +84,40 @@ final class TaintTest extends TestCase
     }
 
     /**
+     * A reference assignment used as an expression must retain the taint of the returned value.
+     */
+    public function testReturnedReferenceAssignmentExpressionPreservesTaint(): void
+    {
+        $code = <<<'PHP'
+            <?php
+            final class TaintedReference {
+                public static string $value = '';
+            }
+
+            /** @psalm-taint-source html */
+            function &referenceSource(): string {
+                return TaintedReference::$value;
+            }
+
+            echo ($value = &referenceSource());
+            PHP;
+
+        $this->expectException(CodeException::class);
+        $this->expectExceptionMessageMatches('/\bTaintedHtml\b/');
+
+        $file_path = self::$src_dir_path . 'somefile.php';
+        $this->project_analyzer->setPhpVersion('8.0', 'tests');
+        $this->addFile($file_path, $code);
+        $this->project_analyzer->trackTaintedInputs();
+
+        foreach (self::IGNORE as $issue_name) {
+            Config::getInstance()->setCustomErrorLevel($issue_name, Config::REPORT_SUPPRESS);
+        }
+
+        $this->analyzeFile($file_path, new Context(), false);
+    }
+
+    /**
      * A taint flow longer than the old hard-coded resolution depth of 40 hops is
      * now detected: resolution runs to a fixed point rather than stopping at an
      * arbitrary nesting level.

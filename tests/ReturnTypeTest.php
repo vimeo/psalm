@@ -1912,6 +1912,22 @@ final class ReturnTypeTest extends TestCase
                     }
                     PHP,
             ],
+            'returnedReferenceAssignmentExpressionHasType' => [
+                'code' => <<<'PHP'
+                    <?php
+                    final class ReferenceText {
+                        public static string $value = 'hello';
+                    }
+
+                    function &textReference(): string {
+                        return ReferenceText::$value;
+                    }
+
+                    function readAssignedReference(): string {
+                        return ($value = &textReference());
+                    }
+                    PHP,
+            ],
             'neverReturnType' => [
                 'code' => '<?php
                     function exitProgram(bool $die): never

@@ -2578,6 +2578,7 @@ final class UnusedVariableTest extends TestCase
                     <?php
                     /** @return array<string, string> */
                     function &storage(): array {
+                        /** @var array<string, string> $items */
                         static $items = [];
                         return $items;
                     }
@@ -2601,7 +2602,8 @@ final class UnusedVariableTest extends TestCase
                      * @param array<string, string> $fields
                      * @param array<string, string> $input
                      * @return array<string, mixed>
-                     * @psalm-suppress MixedAssignment, MixedArrayAssignment
+                     * @psalm-suppress MixedAssignment
+                     * @psalm-suppress MixedArrayAssignment
                      */
                     function apply(array $fields, array $input): array {
                         $data = [];
@@ -2613,6 +2615,9 @@ final class UnusedVariableTest extends TestCase
                         return $data;
                     }
                     PHP,
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
             ],
             'usedInAssignOpToByRef' => [
                 'code' => '<?php
