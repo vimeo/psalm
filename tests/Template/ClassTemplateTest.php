@@ -3934,6 +3934,78 @@ final class ClassTemplateTest extends TestCase
                     'ignored_issues' => [],
                     'php_version' => '8.0',
             ],
+            'inferClassTemplateFromEachAtomOfTemplateOrListUnionInConstructor' => [
+                'code' => '<?php
+                    /** @template T */
+                    final class Collection {
+                        /** @param T|list<T> $items */
+                        public function __construct(mixed $items) {}
+                    }
+
+                    /** @var string|list<int> $in */
+                    $in = "";
+                    $a = new Collection($in);',
+                'assertions' => [
+                    '$a===' => 'Collection<int|string>',
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'inferMethodTemplateFromClosureInTemplateOrClosureUnion' => [
+                'code' => '<?php
+                    final class Config {
+                        /**
+                         * @template TDefault
+                         * @param TDefault|(Closure(): TDefault) $default
+                         * @return TDefault
+                         */
+                        public function get(mixed $default): mixed {
+                            throw new Exception();
+                        }
+                    }
+
+                    /** @var Closure(): float $in */
+                    $in = fn(): float => 1.0;
+                    $a = (new Config())->get($in);',
+                'assertions' => [
+                    '$a===' => 'float',
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'acceptListForBoundClassTemplateOrListUnion' => [
+                'code' => '<?php
+                    /** @template T */
+                    final class Collection {
+                        /** @param T|list<T>|null $x */
+                        public function add(mixed $x): void {}
+
+                        /**
+                         * @template U
+                         * @param T|U|list<U>|null $x
+                         * @return list<T|U>
+                         */
+                        public function addOther(mixed $x): array {
+                            return [];
+                        }
+                    }
+
+                    /** @var Collection<string> $c */
+                    $c = new Collection();
+
+                    /** @var list<string>|null $strings */
+                    $strings = null;
+                    $c->add($strings);
+
+                    /** @var list<int>|null $ints */
+                    $ints = null;
+                    $a = $c->addOther($ints);',
+                'assertions' => [
+                    '$a===' => 'list<int|string>',
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
             'allowCompatibleGenerics' => [
                 'code' => '<?php
                     /** @template T of object */
