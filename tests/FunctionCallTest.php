@@ -3190,6 +3190,27 @@ final class FunctionCallTest extends TestCase
                 'ignored_issues' => [],
                 'php_version' => '8.2',
             ],
+            'arrayIsListOfAShapeWithAGapInItsListKeys' => [
+                'code' => <<<'PHP'
+                    <?php
+                    /** @param array{0?: string, 2?: int} $gap */
+                    function gap(array $gap): void {
+                        if (array_is_list($gap)) {
+                            /** @psalm-check-type-exact $gap = list{0?: string} */
+                        }
+                    }
+
+                    /** @param array{0?: string, 1: int} $requiredLast */
+                    function requiredLast(array $requiredLast): void {
+                        if (array_is_list($requiredLast)) {
+                            /** @psalm-check-type-exact $requiredLast = list{string, int} */
+                        }
+                    }
+                    PHP,
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
             'arrayIsListOfASealedShapeWithOptionalKeys' => [
                 'code' => <<<'PHP'
                     <?php
@@ -4403,15 +4424,15 @@ final class FunctionCallTest extends TestCase
                 'error_levels' => [],
                 'php_version' => '7.4',
             ],
-            'arrayIsListOfAShapeWithAGapInItsListKeys' => [
+            'arrayIsListOfAShapeWithARequiredKeyAfterAGapInItsListKeys' => [
                 'code' => <<<'PHP'
                     <?php
-                    /** @param array{0?: string, 2?: int} $a */
+                    /** @param array{0?: string, 2: int} $a */
                     function f(array $a): void {
                         if (array_is_list($a)) {}
                     }
                     PHP,
-                'error_message' => 'TypeDoesNotContainType',
+                'error_message' => 'TypeDoesNotContainType - src' . DIRECTORY_SEPARATOR . 'somefile.php:4:9 - Type array{0?: string, 2: int} for $a is never list',
                 'error_levels' => [],
                 'php_version' => '8.1',
             ],
