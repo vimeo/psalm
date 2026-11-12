@@ -15,6 +15,14 @@ final class LoopScope
     public int $iteration_count = 0;
 
     /**
+     * The variables the loop (and the loops around it) may assign, written to, or pass to a call, as the root of
+     * what is changed: `$a` for `$a['x']++` and `$a->p = 1`
+     *
+     * @var array<string, bool>
+     */
+    public array $assigned_root_var_ids = [];
+
+    /**
      * @var array<string, Union>
      */
     public array $redefined_loop_vars = [];
