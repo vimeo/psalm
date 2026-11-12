@@ -534,37 +534,14 @@ final class TemplateStandinTypeReplacer
         foreach ($input_type->getAtomicTypes() as $input_key => $atomic_input_type) {
             $input_key = substr($input_key, 0, strcspn($input_key, '<['));
 
-            if ($input_key === $key) {
-                $matching_atomic_types[$atomic_input_type->getId()] = $atomic_input_type;
-                continue;
-            }
-
-            if ($atomic_input_type instanceof TClosure && $base_type instanceof TClosure) {
-                $matching_atomic_types[$atomic_input_type->getId()] = $atomic_input_type;
-                continue;
-            }
-
-            if ($atomic_input_type instanceof TCallable
-                && $base_type instanceof TCallable
+            if ($input_key === $key
+                || ($atomic_input_type instanceof TClosure && $base_type instanceof TClosure)
+                || ($atomic_input_type instanceof TCallable && $base_type instanceof TCallable)
+                || ($atomic_input_type instanceof TClosure && $base_type instanceof TCallable)
+                || (($atomic_input_type instanceof TArray || $atomic_input_type instanceof TKeyedArray)
+                    && $key === 'iterable')
+                || str_starts_with($input_key, $key . '&')
             ) {
-                $matching_atomic_types[$atomic_input_type->getId()] = $atomic_input_type;
-                continue;
-            }
-
-            if ($atomic_input_type instanceof TClosure && $base_type instanceof TCallable) {
-                $matching_atomic_types[$atomic_input_type->getId()] = $atomic_input_type;
-                continue;
-            }
-
-            if (($atomic_input_type instanceof TArray
-                    || $atomic_input_type instanceof TKeyedArray)
-                && $key === 'iterable'
-            ) {
-                $matching_atomic_types[$atomic_input_type->getId()] = $atomic_input_type;
-                continue;
-            }
-
-            if (str_starts_with($input_key, $key . '&')) {
                 $matching_atomic_types[$atomic_input_type->getId()] = $atomic_input_type;
                 continue;
             }
