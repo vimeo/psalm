@@ -1198,6 +1198,40 @@ final class AssignmentAnalyzer
             }
         }
 
+        if ($lhs_var_id !== null
+            && $rhs_var_id === null
+            && $stmt->var instanceof PhpParser\Node\Expr\Variable
+            && ($return_type = $statements_analyzer->node_data->getType($stmt->expr))
+            && $return_type->by_ref
+        ) {
+            // The return value is a reference, but we cannot identify its target by a local variable ID.
+            // Writes through it may update an argument, a property, or a global outside this scope.
+            FunctionLikeAnalyzer::unbindByRefParam($statements_analyzer->getCodebase(), $context, $lhs_var_id);
+
+            if (isset($context->references_in_scope[$lhs_var_id])) {
+                $context->decrementReferenceCount($lhs_var_id);
+                unset($context->references_in_scope[$lhs_var_id]);
+            }
+
+            unset($context->references_possibly_from_confusing_scope[$lhs_var_id]);
+
+            // Break a previous PHP-level alias in the type map before binding the new reference.
+            unset($context->vars_in_scope[$lhs_var_id]);
+            $context->vars_in_scope[$lhs_var_id] = $return_type;
+            $context->references_to_external_scope[$lhs_var_id] = true;
+            $context->hasVariable($lhs_var_id);
+
+            $lhs_location = new CodeLocation($statements_analyzer->getSource(), $stmt->var);
+            $statements_analyzer->registerVariableAssignment($lhs_var_id, $lhs_location);
+
+            $lhs_node = DataFlowNode::getForAssignment($lhs_var_id, $lhs_location);
+            $context->vars_in_scope[$lhs_var_id] = $return_type->addParentNodes([
+                $lhs_node->id => $lhs_node,
+            ]);
+
+            return true;
+        }
+
         if ($lhs_var_id === null || $rhs_var_id === null) {
             return false;
         }
@@ -1232,6 +1266,11 @@ final class AssignmentAnalyzer
         // When assigning an existing reference as a reference it removes the
         // old reference, so it's no longer potentially from a confusing scope.
         unset($context->references_possibly_from_confusing_scope[$lhs_var_id]);
+        $rhs_is_external = isset($context->references_to_external_scope[$rhs_var_id]);
+        unset($context->references_to_external_scope[$lhs_var_id]);
+        if ($rhs_is_external) {
+            $context->references_to_external_scope[$lhs_var_id] = true;
+        }
 
         $context->vars_in_scope[$lhs_var_id] = &$context->vars_in_scope[$rhs_var_id];
         $context->hasVariable($lhs_var_id);
