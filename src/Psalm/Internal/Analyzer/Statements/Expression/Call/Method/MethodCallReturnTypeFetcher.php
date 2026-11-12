@@ -345,7 +345,12 @@ final class MethodCallReturnTypeFetcher
 
         // the event of taintMethodCallResult() is about the receiver; this one is about the call
         if ($taint_flow_graph) {
-            $event = new AddRemoveTaintsEvent($stmt, $context, $statements_analyzer, $statements_analyzer->getCodebase());
+            $event = new AddRemoveTaintsEvent(
+                $stmt,
+                $context,
+                $statements_analyzer,
+                $statements_analyzer->getCodebase(),
+            );
             $dispatcher = $statements_analyzer->getCodebase()->config->eventDispatcher;
 
             $result_added_taints = $dispatcher->dispatchAddTaints($event);
