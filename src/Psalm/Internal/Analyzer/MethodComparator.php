@@ -324,18 +324,15 @@ final class MethodComparator
     }
 
     /**
-     * A `@method` the class inherits was already compared where it was introduced, so it's only compared with the
-     * methods the parent it comes from didn't already have to deal with
+     * A `@method` the direct parent (each direct parent interface) also has was compared there, or isn't analyzed
+     * there, so here it's only compared with the methods that parent neither declares nor overrides
      */
     public static function comparePseudoMethods(Codebase $codebase, ClassLikeStorage $class_storage): void
     {
-        $pseudo_methods = $class_storage->pseudo_methods + $class_storage->pseudo_static_methods;
-
-        if (!$pseudo_methods) {
+        if (!$class_storage->pseudo_methods && !$class_storage->pseudo_static_methods) {
             return;
         }
 
-        $fq_class_name = $class_storage->name;
         $parent_storages = [];
 
         foreach ($class_storage->is_interface
@@ -349,91 +346,139 @@ final class MethodComparator
             }
         }
 
-        foreach ($pseudo_methods as $pseudo_method_name => $pseudo_method_storage) {
-            $pseudo_method_id = new MethodIdentifier(
-                $fq_class_name,
+        foreach ($class_storage->pseudo_methods as $pseudo_method_name => $pseudo_method_storage) {
+            self::comparePseudoMethod(
+                $codebase,
+                $class_storage,
+                $parent_storages,
                 $pseudo_method_name,
+                $pseudo_method_storage,
+                false,
             );
+        }
 
-            $overridden_method_ids = $codebase->methods->getOverriddenMethodIds($pseudo_method_id);
+        foreach ($class_storage->pseudo_static_methods as $pseudo_method_name => $pseudo_method_storage) {
+            self::comparePseudoMethod(
+                $codebase,
+                $class_storage,
+                $parent_storages,
+                $pseudo_method_name,
+                $pseudo_method_storage,
+                true,
+            );
+        }
+    }
 
-            $is_static = !isset($class_storage->pseudo_methods[$pseudo_method_name]);
-            $declaring_class = self::getDeclaringPseudoMethodClass($class_storage, $pseudo_method_name, $is_static);
+    /**
+     * @param list<ClassLikeStorage> $parent_storages
+     * @param lowercase-string $pseudo_method_name
+     */
+    private static function comparePseudoMethod(
+        Codebase $codebase,
+        ClassLikeStorage $class_storage,
+        array $parent_storages,
+        string $pseudo_method_name,
+        MethodStorage $pseudo_method_storage,
+        bool $is_static,
+    ): void {
+        $fq_class_name = $class_storage->name;
 
-            foreach ($parent_storages as $parent_storage) {
-                if ($declaring_class !== null
-                    && $declaring_class === self::getDeclaringPseudoMethodClass(
-                        $parent_storage,
-                        $pseudo_method_name,
-                        $is_static,
-                    )
-                ) {
-                    $parent_declaring_method_id = $parent_storage->declaring_method_ids[$pseudo_method_name] ?? null;
+        $overridden_method_ids = $codebase->methods->getOverriddenMethodIds(
+            new MethodIdentifier($fq_class_name, $pseudo_method_name),
+        );
 
-                    $overridden_method_ids = array_diff_key(
-                        $overridden_method_ids,
-                        $parent_storage->overridden_method_ids[$pseudo_method_name] ?? [],
-                        $parent_declaring_method_id ? [$parent_declaring_method_id->fq_class_name => true] : [],
-                    );
-                }
-            }
+        $declaring_class = self::getDeclaringPseudoMethodClass($class_storage, $pseudo_method_name, $is_static);
 
-            if (isset($class_storage->methods[$pseudo_method_id->method_name])) {
-                $overridden_method_ids[$class_storage->name] = $pseudo_method_id;
-            }
-
-            if ($overridden_method_ids
-                && $pseudo_method_name !== '__construct'
-                && $pseudo_method_storage->location
+        foreach ($parent_storages as $parent_storage) {
+            if ($declaring_class !== null
+                && $declaring_class === self::getDeclaringPseudoMethodClass(
+                    $parent_storage,
+                    $pseudo_method_name,
+                    $is_static,
+                )
             ) {
-                foreach ($overridden_method_ids as $overridden_method_id) {
-                    $parent_method_storage = $codebase->methods->getStorage($overridden_method_id);
+                $parent_own_method_id = self::getOwnMethodId($parent_storage, $pseudo_method_name);
 
-                    $overridden_fq_class_name = $overridden_method_id->fq_class_name;
+                $overridden_method_ids = array_diff_key(
+                    $overridden_method_ids,
+                    $parent_storage->overridden_method_ids[$pseudo_method_name] ?? [],
+                    $parent_own_method_id ? [$parent_own_method_id->fq_class_name => true] : [],
+                );
+            }
+        }
 
-                    $parent_storage = $codebase->classlike_storage_provider->get($overridden_fq_class_name);
+        $own_method_id = self::getOwnMethodId($class_storage, $pseudo_method_name);
 
-                    // a call from outside reaches `__call` or `__callStatic` instead of a method that isn't public
-                    if (($parent_storage->trait_visibility_map[$overridden_method_id->method_name]
-                            ?? $parent_method_storage->visibility) !== ClassLikeAnalyzer::VISIBILITY_PUBLIC
-                    ) {
-                        continue;
-                    }
+        if ($own_method_id) {
+            $overridden_method_ids[$own_method_id->fq_class_name] = $own_method_id;
+        }
 
-                    self::compare(
-                        $codebase,
-                        null,
-                        $class_storage,
-                        $parent_storage,
-                        $pseudo_method_storage,
-                        $parent_method_storage,
-                        $fq_class_name,
-                        $pseudo_method_storage->visibility ?: 0,
-                        $class_storage->location ?: $pseudo_method_storage->location,
-                        $class_storage->suppressed_issues,
-                        true,
-                        false,
-                    );
+        if ($overridden_method_ids
+            && $pseudo_method_name !== '__construct'
+            && $pseudo_method_storage->location
+        ) {
+            foreach ($overridden_method_ids as $overridden_method_id) {
+                $parent_method_storage = $codebase->methods->getStorage($overridden_method_id);
+
+                $overridden_fq_class_name = $overridden_method_id->fq_class_name;
+
+                $parent_storage = $codebase->classlike_storage_provider->get($overridden_fq_class_name);
+
+                // a call from outside reaches `__call` or `__callStatic` instead of a method that isn't public
+                $visibility_storage = $overridden_method_id === $own_method_id ? $class_storage : $parent_storage;
+
+                if (($visibility_storage->trait_visibility_map[$overridden_method_id->method_name]
+                        ?? $parent_method_storage->visibility) !== ClassLikeAnalyzer::VISIBILITY_PUBLIC
+                ) {
+                    continue;
                 }
+
+                self::compare(
+                    $codebase,
+                    null,
+                    $class_storage,
+                    $parent_storage,
+                    $pseudo_method_storage,
+                    $parent_method_storage,
+                    $fq_class_name,
+                    $pseudo_method_storage->visibility ?: 0,
+                    $class_storage->location ?: $pseudo_method_storage->location,
+                    $class_storage->suppressed_issues,
+                    true,
+                    false,
+                );
             }
         }
     }
 
     /**
+     * The method the class itself has, be it declared in it or in a trait it uses
+     *
      * @param lowercase-string $method_name
-     * @return ?lowercase-string
-     * @psalm-mutation-free
+     * @psalm-capabilities read-props
+     */
+    private static function getOwnMethodId(ClassLikeStorage $storage, string $method_name): ?MethodIdentifier
+    {
+        $appearing_method_id = $storage->appearing_method_ids[$method_name] ?? null;
+
+        return $appearing_method_id !== null
+            && strtolower($appearing_method_id->fq_class_name) === strtolower($storage->name)
+            ? $storage->declaring_method_ids[$method_name] ?? null
+            : null;
+    }
+
+    /**
+     * @param lowercase-string $method_name
+     * @psalm-capabilities read-props
      */
     private static function getDeclaringPseudoMethodClass(
         ClassLikeStorage $storage,
         string $method_name,
         bool $is_static,
     ): ?string {
-        $declaring_method_id = ($is_static
+        return ($is_static
             ? $storage->declaring_pseudo_static_method_ids
-            : $storage->declaring_pseudo_method_ids)[$method_name] ?? null;
-
-        return $declaring_method_id ? strtolower($declaring_method_id->fq_class_name) : null;
+            : $storage->declaring_pseudo_method_ids)[$method_name]->fq_class_name ?? null;
     }
 
     /**
