@@ -247,6 +247,28 @@ final class MethodCallTest extends TestCase
                 'ignored_issues' => [],
                 'php_version' => '8.0',
             ],
+            'nullsafePropertyFetchIdenticalToNullOfAPropertyThatIsNeverNull' => [
+                'code' => '<?php
+                    final class P {
+                        public int $v = 0;
+                    }
+
+                    function a(?P $p): int {
+                        if ($p?->v === null) {
+                            return 0;
+                        }
+
+                        return $p->v;
+                    }
+
+                    function b(?P $p): int {
+                        return $p?->v !== null ? $p->v : 0;
+                    }
+',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
             'nullsafeMethodCallNotIdenticalToNullNarrowsReceiver' => [
                 'code' => '<?php
                     final class B {

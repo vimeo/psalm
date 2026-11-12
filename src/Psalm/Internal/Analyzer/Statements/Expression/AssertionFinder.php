@@ -2227,7 +2227,9 @@ final class AssertionFinder
         // a nullsafe chain that is null only by short-circuiting isn't null exactly when the receiver of its
         // nullsafe link isn't, which holds for a single link: with several, a null intermediate value says nothing
         $nullsafe_receivers = [];
+        // a nullsafe property fetch compared to null is expanded by the FormulaGenerator
         $chain_link = NullsafeChainState::of($base_conditional) === NullsafeChainState::ShortCircuit
+            && !$base_conditional instanceof PhpParser\Node\Expr\NullsafePropertyFetch
             ? $base_conditional
             : null;
 

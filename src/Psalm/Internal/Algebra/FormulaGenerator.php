@@ -10,6 +10,7 @@ use Psalm\FileSource;
 use Psalm\Internal\Algebra;
 use Psalm\Internal\Analyzer\Statements\Expression\AssertionFinder;
 use Psalm\Internal\Analyzer\Statements\Expression\ExpressionIdentifier;
+use Psalm\Internal\Analyzer\Statements\Expression\NullsafeChainState;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\Internal\Clause;
 use Psalm\Node\Expr\BinaryOp\VirtualBooleanAnd;
@@ -624,9 +625,15 @@ final class FormulaGenerator
         }
 
         $attributes = $conditional->getAttributes();
-        $property_fetch = new VirtualPropertyFetch($receiver, $nullsafe_fetch->name, $nullsafe_fetch->getAttributes());
-
         $receiver_comparison = self::createComparison($conditional, $receiver, $null_operand, $nullsafe_is_left);
+
+        // the fetch is null only by short-circuiting: the property is never null itself, so comparing the
+        // fetch to null is comparing the receiver to null, and a comparison of the property would be redundant
+        if (NullsafeChainState::of($nullsafe_fetch) === NullsafeChainState::ShortCircuit) {
+            return $receiver_comparison;
+        }
+
+        $property_fetch = new VirtualPropertyFetch($receiver, $nullsafe_fetch->name, $nullsafe_fetch->getAttributes());
         $property_comparison = self::createComparison($conditional, $property_fetch, $null_operand, $nullsafe_is_left);
 
         return $conditional instanceof PhpParser\Node\Expr\BinaryOp\Identical
