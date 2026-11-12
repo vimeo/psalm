@@ -155,6 +155,69 @@ final class CallableTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'firstClassCallableOfAMethodKeepsTheInheritedReturnType' => [
+                'code' => <<<'PHP'
+                    <?php
+                    abstract class MyClassBase
+                    {
+                        /**
+                         * @return list<int>
+                         * @psalm-impure
+                         */
+                        abstract public function returnsIntArray(): array;
+                    }
+
+                    final class MyClass extends MyClassBase
+                    {
+                        #[\Override]
+                        public function returnsIntArray(): array
+                        {
+                            return [1, 2, 3];
+                        }
+                    }
+
+                    $callable = (new MyClass())->returnsIntArray(...);
+                    $array = $callable();
+                    PHP,
+                'assertions' => [
+                    '$array' => 'list<int>',
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.3',
+            ],
+            'firstClassCallableOfAnOverrideKeepsItsNarrowerNativeReturnType' => [
+                'code' => <<<'PHP'
+                    <?php
+                    class ParentWithADocblockType
+                    {
+                        /**
+                         * @return int|string
+                         * @psalm-impure
+                         */
+                        public function value()
+                        {
+                            return 1;
+                        }
+                    }
+
+                    final class ChildWithANativeType extends ParentWithADocblockType
+                    {
+                        #[\Override]
+                        public function value(): int
+                        {
+                            return 1;
+                        }
+                    }
+
+                    $callable = (new ChildWithANativeType())->value(...);
+                    $instance = $callable();
+                    PHP,
+                'assertions' => [
+                    '$instance' => 'int',
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.3',
+            ],
             'byReferenceCallableParamAcceptsByReferenceCallee' => [
                 'code' => '<?php
                     /** @param callable(int &$i): void $closure */
