@@ -639,7 +639,7 @@ final class ReferenceTest extends TestCase
                 'code' => <<<'PHP'
                     <?php
                     /** @param array<string, string> $form */
-                    function findReference(array &$form, string $identifier): ?string {
+                    function hasReference(array &$form, string $identifier): bool {
                         if (isset($form[$identifier])) {
                             $field = &$form[$identifier];
                         } elseif (isset($form[$identifier . '_wrapper'])) {
@@ -647,10 +647,10 @@ final class ReferenceTest extends TestCase
                         }
 
                         if (isset($field)) {
-                            return $field;
+                            return true;
                         }
 
-                        return null;
+                        return false;
                     }
                     PHP,
                 'assertions' => [],
