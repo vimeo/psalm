@@ -10,9 +10,11 @@ use Psalm\Context;
 use Psalm\Internal\Analyzer\ClassLikeAnalyzer;
 use Psalm\Internal\Analyzer\ClassLikeNameOptions;
 use Psalm\Internal\Analyzer\ScopeAnalyzer;
+use Psalm\Internal\Analyzer\Statements\Expression\ThrowAnalyzer;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\Internal\DataFlow\DataFlowNode;
 use Psalm\Internal\Scope\FinallyScope;
+use Psalm\Internal\Scope\TryScope;
 use Psalm\Issue\InvalidCatch;
 use Psalm\IssueBuffer;
 use Psalm\Type;
@@ -78,7 +80,28 @@ final class TryAnalyzer
         $context->assigned_var_ids = [];
 
         $was_inside_try = $context->inside_try;
+        $outer_try_scope = $context->try_scope;
+        $try_scope = new TryScope();
+        $try_scope->outer = $outer_try_scope;
+
+        /** @var int $catch_i */
+        foreach ($stmt->catches as $catch_i => $catch) {
+            foreach ($catch->types as $catch_type) {
+                $catch_class = strtolower($codebase->classlikes->getUnAliasedName(
+                    ClassLikeAnalyzer::getFQCLNFromNameObject($catch_type, $statements_analyzer->getAliases()),
+                ));
+
+                $try_scope->catch_classes[] = $catch_class;
+                $try_scope->catch_classes_by_catch[$catch_i][] = $catch_class;
+
+                if (in_array(ScopeAnalyzer::ACTION_NONE, $catch_actions[$catch_i], true)) {
+                    $try_scope->continuing_catch_classes[] = $catch_class;
+                }
+            }
+        }
+
         $context->inside_try = true;
+        $context->try_scope = $try_scope;
 
         // a try nested in the body leaves through the finally of this one too
         $outer_finally_scope = $context->finally_scope;
@@ -90,6 +113,7 @@ final class TryAnalyzer
 
         $context->finally_scope = $outer_finally_scope;
         $context->inside_try = $was_inside_try;
+        $context->try_scope = $outer_try_scope;
 
         $context->has_returned = false;
 
@@ -152,6 +176,20 @@ final class TryAnalyzer
         // the try was applied
         $original_context = clone $try_context;
 
+        // what the throwing branches assigned reaches the code after the try only through a catch that goes on, so the
+        // catches take it from their own throws (above), not from the types the try context is built from
+        foreach ($try_scope->post_try_parent_nodes as $try_var_id => $try_parent_nodes) {
+            if ($outer_try_scope !== null) {
+                $outer_try_scope->throws[] = ['type' => null, 'nodes' => [$try_var_id => $try_parent_nodes]];
+            }
+
+            if (isset($context->vars_in_scope[$try_var_id])) {
+                $context->vars_in_scope[$try_var_id] = $context->vars_in_scope[$try_var_id]->setParentNodes(
+                    $context->vars_in_scope[$try_var_id]->parent_nodes + $try_parent_nodes,
+                );
+            }
+        }
+
         $issues_to_suppress = [
             'RedundantCondition',
             'RedundantConditionGivenDocblockType',
@@ -161,10 +199,34 @@ final class TryAnalyzer
 
         $definitely_newly_assigned_var_ids = $newly_assigned_var_ids;
 
+        // the variables a catch of a try that always exits gave the context: the next catches add to them
+        $vars_set_by_catches = [];
+
         /** @var int $i */
         foreach ($stmt->catches as $i => $catch) {
             $catch_context = clone $original_context;
             $catch_context->has_returned = false;
+
+            // what a branch that throws assigned is there for the catches that can take its exception, also those that
+            // never go on
+            foreach ($try_scope->throws as $throw) {
+                foreach ($try_scope->catch_classes_by_catch[$i] as $catch_class) {
+                    if (!ThrowAnalyzer::mayBeCaughtBy($codebase, $throw['type'], $catch_class)) {
+                        continue;
+                    }
+
+                    foreach ($throw['nodes'] as $try_var_id => $try_parent_nodes) {
+                        if (isset($catch_context->vars_in_scope[$try_var_id])) {
+                            $catch_context->vars_in_scope[$try_var_id] = $catch_context->vars_in_scope[$try_var_id]
+                                ->setParentNodes(
+                                    $catch_context->vars_in_scope[$try_var_id]->parent_nodes + $try_parent_nodes,
+                                );
+                        }
+                    }
+
+                    break;
+                }
+            }
 
             foreach ($catch_context->vars_in_scope as $var_id => $type) {
                 if (!isset($old_context->vars_in_scope[$var_id])) {
@@ -383,7 +445,10 @@ final class TryAnalyzer
 
                 foreach ($catch_context->vars_in_scope as $var_id => $type) {
                     if ($try_block_control_actions === [ScopeAnalyzer::ACTION_END]) {
-                        $context->vars_in_scope[$var_id] = $type;
+                        $context->vars_in_scope[$var_id] = isset($vars_set_by_catches[$var_id])
+                            ? Type::combineUnionTypes($context->vars_in_scope[$var_id], $type)
+                            : $type;
+                        $vars_set_by_catches[$var_id] = true;
                     } elseif (isset($context->vars_in_scope[$var_id])) {
                         $context->vars_in_scope[$var_id] = Type::combineUnionTypes(
                             $context->vars_in_scope[$var_id],
