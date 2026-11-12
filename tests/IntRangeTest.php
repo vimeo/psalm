@@ -1136,6 +1136,18 @@ final class IntRangeTest extends TestCase
                     }',
                 'error_message' => 'never >= 101',
             ],
+            'comparisonAtMostBelowAnInferredRangeNamesLessThanOrEqualTo' => [
+                'code' => '<?php
+                    $p = rand(0, 100);
+                    if ($p <= -1) {}',
+                'error_message' => 'TypeDoesNotContainType - src' . DIRECTORY_SEPARATOR . 'somefile.php:3:25 - Type int<0, 100> for $p is never <= -1',
+            ],
+            'comparisonAtLeastAboveAnInferredRangeNamesGreaterThanOrEqualTo' => [
+                'code' => '<?php
+                    $p = rand(0, 100);
+                    if ($p >= 101) {}',
+                'error_message' => 'TypeDoesNotContainType - src' . DIRECTORY_SEPARATOR . 'somefile.php:3:25 - Type int<0, 100> for $p is never >= 101',
+            ],
             'greaterThanPhpIntMaxIsImpossibleForInt' => [
                 'code' => '<?php
                     function f(int $value): void {
@@ -1143,7 +1155,7 @@ final class IntRangeTest extends TestCase
                             echo $value;
                         }
                     }',
-                'error_message' => 'TypeDoesNotContainType - src' . DIRECTORY_SEPARATOR . 'somefile.php:3:29 - Type int for $value is never >9223372036854775807',
+                'error_message' => 'TypeDoesNotContainType - src' . DIRECTORY_SEPARATOR . 'somefile.php:3:29 - Type int for $value is never > 9223372036854775807',
             ],
             'greaterThanPhpIntMaxIsImpossibleForIntRangeAndLiteral' => [
                 'code' => '<?php
@@ -1162,7 +1174,7 @@ final class IntRangeTest extends TestCase
                             echo $value;
                         }
                     }',
-                'error_message' => 'TypeDoesNotContainType - src' . DIRECTORY_SEPARATOR . 'somefile.php:3:29 - Type int for $value is never <-9223372036854775808',
+                'error_message' => 'TypeDoesNotContainType - src' . DIRECTORY_SEPARATOR . 'somefile.php:3:29 - Type int for $value is never < -9223372036854775808',
             ],
             'lessThanPhpIntMinIsImpossibleForIntRangeAndLiteral' => [
                 'code' => '<?php
