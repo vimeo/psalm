@@ -48,6 +48,7 @@ use Psalm\Type\Atomic\TValueOf;
 use Psalm\Type\Union;
 use UnexpectedValueException;
 
+use function array_keys;
 use function array_pop;
 use function assert;
 use function count;
@@ -72,6 +73,13 @@ final class Methods
     public MethodExistenceProvider $existence_provider;
 
     public MethodVisibilityProvider $visibility_provider;
+
+    /**
+     * See getPotentialDeclaringMethodIds(), by lowercase class name and method name
+     *
+     * @var array<string, array<string, bool>>
+     */
+    private array $potential_declaring_method_ids = [];
 
     public function __construct(
         private readonly ClassLikeStorageProvider $classlike_storage_provider,
@@ -177,9 +185,10 @@ final class Methods
 
             if ((string) $method_id !== (string) $declaring_method_id
                 && $class_storage->user_defined
-                && isset($class_storage->potential_declaring_method_ids[$method_name])
+                && $this->file_reference_provider->code_use_graph->record_edges
+                && ($potential_ids = $this->getPotentialDeclaringMethodIds($class_storage, $method_name)) !== []
             ) {
-                foreach ($class_storage->potential_declaring_method_ids[$method_name] as $potential_id => $_) {
+                foreach ($potential_ids as $potential_id => $_) {
                     $codebase->addReferenceToFunctionLike(
                         strtolower($potential_id),
                         $code_location,
@@ -1359,5 +1368,81 @@ final class Methods
         }
 
         return true;
+    }
+
+    /**
+     * The methods a call of a method a class inherits could reach: that class's and the class's it inherits it from,
+     * down to where it appears, through the used traits first, then the parent class (or an interface's parents),
+     * as the populator inherits them. For an aliased trait method, the ids name the trait's method.
+     *
+     * @return array<string, bool> empty for a method the class declares or does not have
+     * @psalm-capabilities read-props|write-this-props|write-refs
+     */
+    private function getPotentialDeclaringMethodIds(ClassLikeStorage $class_storage, string $method_name): array
+    {
+        $fq_class_name_lc = strtolower($class_storage->name);
+        $key = $fq_class_name_lc . '::' . $method_name;
+
+        if (isset($this->potential_declaring_method_ids[$key])) {
+            return $this->potential_declaring_method_ids[$key];
+        }
+
+        // a reflected class registers where its methods appear itself, so the populator inherits no ids into it but
+        // the constructor's, which Reflection::registerClass() writes
+        if (isset($class_storage->potential_declaring_method_ids['__construct'])) {
+            return $this->potential_declaring_method_ids[$key]
+                = $class_storage->potential_declaring_method_ids[$method_name] ?? [];
+        }
+
+        // a method of the class itself: it appears there from the scan on, which nothing it inherits overrides
+        if (isset($class_storage->methods[$method_name])) {
+            return $this->potential_declaring_method_ids[$key] = [];
+        }
+
+        $providers = array_keys($class_storage->used_traits);
+
+        if ($class_storage->parent_classes) {
+            $providers[] = reset($class_storage->parent_classes);
+        }
+
+        $providers = [...$providers, ...array_keys($class_storage->direct_interface_parents)];
+
+        foreach ($providers as $provider_name) {
+            try {
+                $provider_storage = $this->classlike_storage_provider->get(
+                    $this->classlikes->getUnAliasedName($provider_name),
+                );
+            } catch (InvalidArgumentException) {
+                continue;
+            }
+
+            foreach ($provider_storage->appearing_method_ids as $provided_method_name => $_) {
+                if (!in_array(
+                    $method_name,
+                    Populator::getTraitMethodNames($class_storage, $provider_storage, $provided_method_name),
+                    true,
+                )) {
+                    continue;
+                }
+
+                $ids = $this->getPotentialDeclaringMethodIds($provider_storage, $method_name);
+                $ids[$fq_class_name_lc . '::' . $provided_method_name] = true;
+                $ids[strtolower($provider_storage->name) . '::' . $provided_method_name] = true;
+
+                return $this->potential_declaring_method_ids[$key] = $ids;
+            }
+        }
+
+        return $this->potential_declaring_method_ids[$key] = [];
+    }
+
+    /**
+     * The storages getPotentialDeclaringMethodIds() derives from change when the codebase is populated again
+     *
+     * @psalm-capabilities read-props|write-this-props|write-refs
+     */
+    public function forgetPotentialDeclaringMethodIds(): void
+    {
+        $this->potential_declaring_method_ids = [];
     }
 }

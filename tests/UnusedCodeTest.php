@@ -3372,6 +3372,30 @@ final class UnusedCodeTest extends TestCase
                     }
                     echo (new Foo())->name;',
             ],
+            'returnValueOfAnInheritedMethodIsUsedThroughTheChild' => [
+                'code' => '<?php
+                    class P {
+                        public function foo(): int {
+                            return 1;
+                        }
+                    }
+                    final class C extends P {}
+
+                    echo (new C())->foo();',
+            ],
+            'traitMethodOfAParentClassCalledThroughTheChild' => [
+                'code' => '<?php
+                    trait T {
+                        public function foo(): void {}
+                    }
+                    class P {
+                        use T;
+                    }
+                    class C extends P {}
+                    final class D extends C {}
+
+                    (new D())->foo();',
+            ],
         ];
     }
 

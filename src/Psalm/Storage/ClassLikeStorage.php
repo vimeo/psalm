@@ -385,6 +385,9 @@ final class ClassLikeStorage implements HasAttributesInterface
     public array $inheritable_method_ids = [];
 
     /**
+     * Only the constructor of a class registered through reflection; for the other classes Psalm derives these ids
+     * when it records a method call (see Methods::methodExists())
+     *
      * @var array<lowercase-string, array<string, bool>>
      */
     public array $potential_declaring_method_ids = [];
