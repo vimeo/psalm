@@ -85,6 +85,7 @@ final class MethodCallReturnTypeFetcher
                     $codebase,
                     $method_id,
                     $method_storage,
+                    $statements_analyzer,
                 );
 
                 return self::getFirstClassCallableType(
@@ -974,10 +975,13 @@ final class MethodCallReturnTypeFetcher
         Codebase $codebase,
         MethodIdentifier $method_id,
         MethodStorage $method_storage,
+        StatementsAnalyzer $statements_analyzer,
     ): array {
         $params = $codebase->methods->getMethodParams($method_id);
 
-        if ($method_storage->return_type !== null) {
+        // a signature return type without a docblock one inherits the docblock return type of the parent, as a
+        // call does
+        if ($method_storage->return_type !== null && $method_storage->has_docblock_return_type) {
             return [
                 new TClosure($params, $method_storage->return_type, $method_storage->capabilities),
                 $method_storage->template_types ?? [],
@@ -994,7 +998,7 @@ final class MethodCallReturnTypeFetcher
         return [
             new TClosure(
                 $params,
-                $codebase->methods->getMethodReturnType($codebase, $method_id, $self_class),
+                $codebase->methods->getMethodReturnType($codebase, $method_id, $self_class, $statements_analyzer),
                 $method_storage->capabilities,
             ),
             ($documenting_method_id !== null

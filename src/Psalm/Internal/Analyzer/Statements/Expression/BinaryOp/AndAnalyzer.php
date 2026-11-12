@@ -273,7 +273,7 @@ final class AndAnalyzer
      * @return array<string, bool>
      * @psalm-pure
      */
-    private static function removeAssignedVarIds(array $referenced_var_ids, array $assigned_var_ids): array
+    public static function removeAssignedVarIds(array $referenced_var_ids, array $assigned_var_ids): array
     {
         foreach ($referenced_var_ids as $referenced_var_id => $_) {
             foreach ($assigned_var_ids as $assigned_var_id => $__) {

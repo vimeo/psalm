@@ -876,6 +876,7 @@ final class Codebase
         $this->file_reference_provider->loadReferenceCache(false);
 
         FunctionLikeAnalyzer::clearCache();
+        $project_analyzer->clearStatementsForMutations();
 
         if ($force || !$this->statements_provider->parser_cache_provider) {
             $diff_files = $candidate_files;
