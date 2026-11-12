@@ -344,7 +344,7 @@ final class ForTest extends TestCase
 
                         return $result;
                     }',
-                'error_message' => 'InvalidArrayOffset',
+                'error_message' => 'PossiblyInvalidArrayOffset - src' . DIRECTORY_SEPARATOR . 'somefile.php:7:40 - Cannot access value on variable $attrs using a int<0, 3> offset',
             ],
             'variableAssignedAfterAnInnerLoopBreakingTheOuterOneIsPossiblyUndefined' => [
                 'code' => '<?php
