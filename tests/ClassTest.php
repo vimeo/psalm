@@ -976,6 +976,22 @@ final class ClassTest extends TestCase
                 'assertions' => [],
                 'ignored_issues' => [],
             ],
+            'interfaceDeclaredByAClassAliasInANegatedInterfaceExistsBlock' => [
+                'code' => '<?php
+                    interface Real {
+                        public static function run(): void;
+                    }
+
+                    if (!interface_exists("Polyfill")) {
+                        class_alias("Real", "Polyfill");
+                        /** @param Polyfill $p */
+                        function f($p): void {
+                            $p::run();
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+            ],
             'classNameOfAClassThatANegatedClassExistsFoundMissing' => [
                 'code' => '<?php
                     function install(): void {
@@ -1552,6 +1568,20 @@ final class ClassTest extends TestCase
     public static function providerInvalidCodeParse(): iterable
     {
         return [
+            'aliasOfAMissingClassIsUndefined' => [
+                'code' => '<?php
+                    class_alias("MissingSource", "Alias", false);
+                    Alias::run();',
+                'error_message' => 'UndefinedClass - src' . DIRECTORY_SEPARATOR . 'somefile.php:3:21 - Class, interface or enum named Alias does not exist',
+            ],
+            'aliasOfAMissingClassInANegatedClassExistsBlockIsUndefined' => [
+                'code' => '<?php
+                    if (!class_exists("Polyfill")) {
+                        class_alias(MissingSource::class, "Polyfill");
+                        Polyfill::run();
+                    }',
+                'error_message' => 'UndefinedClass - src' . DIRECTORY_SEPARATOR . 'somefile.php:3:37 - Class, interface or enum named MissingSource does not exist',
+            ],
             'staticCallOnTheClassOfANegatedClassExistsAfterOtherStatements' => [
                 'code' => '<?php
                     if (!class_exists("Polyfill")) {

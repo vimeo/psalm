@@ -119,10 +119,28 @@ final class NamedFunctionCallHandler
         }
 
         if ($function_id === 'class_alias') {
-            // the alias is declared from here on, whatever was checked about it before
+            // the alias is declared from here on, whatever was checked about it before, unless the class it aliases
+            // may not exist: then class_alias() fails
             $alias_arg = $stmt->getArgs()[1] ?? null;
+            $source_name = null;
 
-            if ($alias_arg && $alias_arg->value instanceof PhpParser\Node\Scalar\String_) {
+            if ($first_arg && $first_arg->value instanceof PhpParser\Node\Scalar\String_) {
+                $source_name = ltrim($first_arg->value->value, '\\');
+            } elseif ($first_arg
+                && $first_arg->value instanceof PhpParser\Node\Expr\ClassConstFetch
+                && $first_arg->value->class instanceof PhpParser\Node\Name
+                && $first_arg->value->name instanceof PhpParser\Node\Identifier
+                && strtolower($first_arg->value->name->name) === 'class'
+            ) {
+                $source_name = (string) $first_arg->value->class->getAttribute('resolvedName');
+            }
+
+            if ($source_name !== null
+                && ($codebase->classlikes->classOrInterfaceOrEnumExists($source_name, null, $context)
+                    || $codebase->classlikes->traitExists($source_name, null, $context))
+                && $alias_arg
+                && $alias_arg->value instanceof PhpParser\Node\Scalar\String_
+            ) {
                 $context->phantom_classes[strtolower(ltrim($alias_arg->value->value, '\\'))] = true;
             }
 
