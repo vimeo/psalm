@@ -592,24 +592,17 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
                     ? $this->captured_by_ref_types_at_return[$var_id] ?? []
                     : [];
 
-                $byref_type = self::combineByRefPathTypes($end_type, $types_at_return, $codebase);
-                $context->vars_in_scope[$var_id] = $byref_type;
+                $context->vars_in_scope[$var_id] = self::combineByRefPathTypes(
+                    $end_type,
+                    $types_at_return,
+                    $codebase,
+                );
 
-                if ($this instanceof ClosureAnalyzer && isset($this->captured_by_ref_unwidened_types[$var_id])) {
-                    // a path that left the variable as it was leaves the enclosing scope's value, not the widened one
-                    [$widened_type, $enclosing_type] = $this->captured_by_ref_unwidened_types[$var_id];
-
-                    $byref_type = self::combineByRefPathTypes(
-                        $end_type === $widened_type ? $enclosing_type : $end_type,
-                        array_map(
-                            static fn(Union $type): Union => $type === $widened_type ? $enclosing_type : $type,
-                            $types_at_return,
-                        ),
-                        $codebase,
-                    );
+                if ($end_type !== null && $this instanceof ClosureAnalyzer) {
+                    $end_type = $this->getEnclosingTypeOfUnwrittenByRefCapture($var_id, $end_type, null);
                 }
 
-                $byref_vars[$var_id] = $byref_type;
+                $byref_vars[$var_id] = self::combineByRefPathTypes($end_type, $types_at_return, $codebase);
             }
         }
 

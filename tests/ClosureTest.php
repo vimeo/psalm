@@ -269,6 +269,142 @@ final class ClosureTest extends TestCase
                     '$count===' => '0|5|7',
                 ],
             ],
+            'closureByRefWriteInABranchBeforeAReturnIsKept' => [
+                'code' => '<?php
+                    $i = 0;
+
+                    $f = function () use (&$i): int {
+                        if (rand(0, 1)) {
+                            $i++;
+                        }
+
+                        return 1;
+                    };',
+                'assertions' => [
+                    '$i===' => 'int',
+                ],
+            ],
+            'closureByRefWriteInALoopIsKept' => [
+                'code' => '<?php
+                    $i = 0;
+
+                    $f = function (array $xs) use (&$i): void {
+                        foreach ($xs as $_) {
+                            $i++;
+                        }
+                    };',
+                'assertions' => [
+                    '$i===' => 'int',
+                ],
+            ],
+            'closureByRefWriteInALoopBeforeAReturnIsKept' => [
+                'code' => '<?php
+                    $i = 0;
+
+                    $f = function (array $xs) use (&$i): int {
+                        foreach ($xs as $_) {
+                            $i++;
+                        }
+
+                        return 1;
+                    };',
+                'assertions' => [
+                    '$i===' => 'int',
+                ],
+            ],
+            'closureByRefWriteInABranchBeforeItsOwnReturnIsKept' => [
+                'code' => '<?php
+                    $i = 0;
+
+                    $f = function () use (&$i): int {
+                        if (rand(0, 1)) {
+                            if (rand(0, 1)) {
+                                $i++;
+                            }
+
+                            return 0;
+                        }
+
+                        return 1;
+                    };',
+                'assertions' => [
+                    '$i===' => 'int',
+                ],
+            ],
+            'closureByRefWriteInAFinallyIsKept' => [
+                'code' => '<?php
+                    $i = 0;
+
+                    $f = function () use (&$i): int {
+                        try {
+                            if (rand(0, 1)) {
+                                $i = 5;
+
+                                return 0;
+                            }
+                        } finally {
+                            echo "done";
+                        }
+
+                        return 1;
+                    };',
+                'assertions' => [
+                    '$i===' => 'int',
+                ],
+            ],
+            'closureByRefWriteThroughAVariableVariableIsKept' => [
+                'code' => '<?php
+                    $i = 0;
+
+                    $f = function (string $name) use (&$i): void {
+                        $$name = 5;
+                    };',
+                'assertions' => [
+                    '$i===' => 'int',
+                ],
+                'ignored_issues' => ['MixedAssignment'],
+            ],
+            'closureByRefWriteInANestedClosureIsKept' => [
+                'code' => '<?php
+                    $i = 0;
+
+                    $f = function () use (&$i): void {
+                        $g = function () use (&$i): void {
+                            $i++;
+                        };
+                    };',
+                'assertions' => [
+                    '$i===' => 'int',
+                ],
+            ],
+            'closureByRefWriteThroughAReferenceIsKept' => [
+                'code' => '<?php
+                    $i = 0;
+
+                    $f = function () use (&$i): void {
+                        $j = &$i;
+                        $j++;
+                    };',
+                'assertions' => [
+                    '$i===' => 'int',
+                ],
+            ],
+            'closureByRefWriteThroughAByRefArgumentInAConditionIsKept' => [
+                'code' => '<?php
+                    function inc(int &$x): bool {
+                        $x++;
+                        return true;
+                    }
+
+                    $i = 0;
+
+                    $f = function () use (&$i): void {
+                        if (inc($i)) {}
+                    };',
+                'assertions' => [
+                    '$i===' => 'int',
+                ],
+            ],
             'closureByRefWriteOfAnIntToACapturedLiteralIsKept' => [
                 'code' => '<?php
                     $count = 0;
