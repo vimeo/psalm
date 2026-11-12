@@ -452,7 +452,7 @@ final class StaticCallAnalyzer extends CallAnalyzer
             $removed_taints = $codebase->config->eventDispatcher->dispatchRemoveTaints($event);
         }
 
-        if ($conditionally_removed_taints) {
+        if ($conditionally_removed_taints || $added_taints !== 0 || $removed_taints !== 0) {
             // a node of this call's own: what it removes depends on its arguments, and $method_source may be
             // shared with the other calls, the last call deciding for all
             $assignment_node = DataFlowNode::getForAssignment($method_id . '-escaped', $node_location);
@@ -578,16 +578,5 @@ final class StaticCallAnalyzer extends CallAnalyzer
                 );
             }
         }
-
-        // without conditional escapes the result comes straight from $method_source, which the answers above don't
-        // reach
-        MethodCallReturnTypeFetcher::addPluginTaintsToResult(
-            $graph,
-            $cased_method_id,
-            $node_location,
-            $added_taints,
-            $removed_taints,
-            $return_type_candidate,
-        );
     }
 }

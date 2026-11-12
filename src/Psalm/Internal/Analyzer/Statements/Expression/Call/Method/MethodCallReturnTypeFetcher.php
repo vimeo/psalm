@@ -339,6 +339,19 @@ final class MethodCallReturnTypeFetcher
         TemplateResult $template_result,
         Union $return_type_candidate,
     ): Union {
+        $result_added_taints = 0;
+        $result_removed_taints = 0;
+        $taint_flow_graph = $statements_analyzer->getTaintFlowGraphWithSuppressed();
+
+        // the event of taintMethodCallResult() is about the receiver; this one is about the call
+        if ($taint_flow_graph) {
+            $event = new AddRemoveTaintsEvent($stmt, $context, $statements_analyzer, $statements_analyzer->getCodebase());
+            $dispatcher = $statements_analyzer->getCodebase()->config->eventDispatcher;
+
+            $result_added_taints = $dispatcher->dispatchAddTaints($event);
+            $result_removed_taints = $dispatcher->dispatchRemoveTaints($event);
+        }
+
         self::taintMethodCallResult(
             $statements_analyzer,
             $return_type_candidate,
@@ -350,14 +363,15 @@ final class MethodCallReturnTypeFetcher
             $cased_method_id,
             $context,
             $template_result,
-            $stmt,
+            $result_added_taints,
+            $result_removed_taints,
         );
 
         // what is sent to a generator becomes the value of its yield expressions (what it gives back, see
         // YieldAnalyzer::taintGenerator(), flows as dictionaries/InternalTaintObjectFlowMap.php says)
         if (strtolower((string) $declaring_method_id) === 'generator::send'
             && isset($args[0])
-            && ($taint_flow_graph = $statements_analyzer->getTaintFlowGraphWithSuppressed())
+            && $taint_flow_graph
             && ($var_type = $statements_analyzer->node_data->getType($stmt->var))
             && $var_type->parent_nodes
             && ($sent_type = $statements_analyzer->node_data->getType($args[0]->value))
@@ -435,7 +449,8 @@ final class MethodCallReturnTypeFetcher
         string $cased_method_id,
         Context $context,
         ?TemplateResult $template_result = null,
-        ?PhpParser\Node\Expr\MethodCall $call_expr = null,
+        int $result_added_taints = 0,
+        int $result_removed_taints = 0,
     ): void {
         if (!($graph = $statements_analyzer->getDataFlowGraphWithSuppressed())
             || !$declaring_method_id
@@ -799,52 +814,24 @@ final class MethodCallReturnTypeFetcher
             $return_type_candidate,
         );
 
-        // the event above is about the receiver: what the plugins answer for the call itself applies to its result
-        // too, wherever it flows, not only where the call is itself an argument
-        if ($call_expr !== null) {
-            $call_event = new AddRemoveTaintsEvent($call_expr, $context, $statements_analyzer, $codebase);
+        $added_taints |= $result_added_taints;
+        $removed_taints |= $result_removed_taints;
 
-            $added_taints |= $codebase->config->eventDispatcher->dispatchAddTaints($call_event);
-            $removed_taints |= $codebase->config->eventDispatcher->dispatchRemoveTaints($call_event);
+        // what the plugins add to and remove from the result of this call, on a node of its own: the nodes the
+        // result comes from may be shared with the other calls, the last call deciding for all
+        if ($added_taints !== 0 || $removed_taints !== 0) {
+            $call_result_node = DataFlowNode::getForAssignment($cased_method_id, $node_location);
+
+            $graph->addNode($call_result_node);
+
+            foreach ($return_type_candidate->parent_nodes as $parent_node) {
+                $graph->addPath($parent_node, $call_result_node, '=', $added_taints, $removed_taints);
+            }
+
+            $return_type_candidate = $return_type_candidate->setParentNodes([
+                $call_result_node->id => $call_result_node,
+            ]);
         }
-
-        self::addPluginTaintsToResult(
-            $graph,
-            $cased_method_id,
-            $node_location,
-            $added_taints,
-            $removed_taints,
-            $return_type_candidate,
-        );
-    }
-
-    /**
-     * What the plugins add to and remove from the result of a call, on a node of its own: the nodes the result comes
-     * from may be shared with the other calls, the last call deciding for all
-     */
-    public static function addPluginTaintsToResult(
-        TaintFlowGraph|CombinedFlowGraph|VariableUseGraph $graph,
-        string $cased_method_id,
-        CodeLocation $node_location,
-        int $added_taints,
-        int $removed_taints,
-        Union &$return_type_candidate,
-    ): void {
-        if ($added_taints === 0 && $removed_taints === 0) {
-            return;
-        }
-
-        $call_result_node = DataFlowNode::getForAssignment($cased_method_id, $node_location);
-
-        $graph->addNode($call_result_node);
-
-        foreach ($return_type_candidate->parent_nodes as $parent_node) {
-            $graph->addPath($parent_node, $call_result_node, '=', $added_taints, $removed_taints);
-        }
-
-        $return_type_candidate = $return_type_candidate->setParentNodes([
-            $call_result_node->id => $call_result_node,
-        ]);
     }
 
     /**
