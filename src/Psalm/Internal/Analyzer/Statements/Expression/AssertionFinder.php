@@ -1423,6 +1423,8 @@ final class AssertionFinder
                 $literal_class_strings = [];
 
                 foreach ($stmt_class_type->getAtomicTypes() as $atomic_type) {
+                    // a class-string only bounds the class: the object may be of any subclass of it, so the
+                    // check isn't redundant, and its negation tells nothing
                     if ($atomic_type instanceof TLiteralClassString) {
                         $literal_class_strings[] = new IsType(new TNamedObject($atomic_type->value));
                     } elseif ($atomic_type instanceof TTemplateParamClass) {
@@ -1434,7 +1436,7 @@ final class AssertionFinder
                             ),
                         );
                     } elseif ($atomic_type instanceof TClassString && $atomic_type->as !== 'object') {
-                        $literal_class_strings[] = new IsType(
+                        $literal_class_strings[] = new IsIdentical(
                             $atomic_type->as_type ?: new TNamedObject($atomic_type->as),
                         );
                     }
