@@ -204,7 +204,7 @@ final class ScopeAnalyzer
                     ], $case_actions)
                     ) {
                         // Other cases may exit an enclosing loop or return.
-                        $control_actions = [...$control_actions, ...$all_case_actions];
+                        $control_actions = [...$control_actions, ...array_diff($all_case_actions, [self::ACTION_NONE])];
 
                         continue 2;
                     }
@@ -225,7 +225,7 @@ final class ScopeAnalyzer
                     $all_case_actions = [...$all_case_actions, ...$case_actions];
 
                     if (!$case_does_end && !$has_ended) {
-                        $control_actions = [...$control_actions, ...$all_case_actions];
+                        $control_actions = [...$control_actions, ...array_diff($all_case_actions, [self::ACTION_NONE])];
                         continue 2;
                     }
 
