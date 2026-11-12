@@ -46,8 +46,8 @@ use Psalm\Type\Union;
 
 use function array_any;
 use function array_diff_key;
+use function array_filter;
 use function array_key_last;
-use function array_slice;
 use function in_array;
 use function str_starts_with;
 use function strtolower;
@@ -340,7 +340,7 @@ final class MethodComparator
 
         foreach ($class_storage->is_interface
             ? $class_storage->direct_interface_parents
-            : array_slice($class_storage->parent_classes, 0, 1) as $parent_name) {
+            : array_filter([$class_storage->parent_class]) as $parent_name) {
             // a parent that doesn't exist has no storage, and is reported as undefined elsewhere
             $parent_storage = $codebase->classlikes->getStorageFor($parent_name);
 
