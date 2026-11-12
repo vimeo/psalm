@@ -108,7 +108,9 @@ final class CliOutput
     }
 
     /**
-     * Marks the arguments of a call of a builtin function printing them, in code only running from the command line
+     * Marks the arguments of a call of a builtin function printing them, in code only running from the command line.
+     * The mark is written on every analysis of the call: the nodes of a trait method are analyzed once for each class
+     * using it, and only some of them may be command-line code.
      *
      * @param array<array-key, Arg> $args
      */
@@ -126,21 +128,18 @@ final class CliOutput
         }
 
         $return_offset = self::PRINTING_FUNCTIONS[$function_id];
+        $printed = true;
         if ($return_offset !== null && isset($args[$return_offset])) {
             // what it returns may go anywhere: only a literal false makes it print
             $return_type = $statements_analyzer->node_data->getType($args[$return_offset]->value);
-            if ($return_type === null || !$return_type->isFalse()) {
-                return;
-            }
+            $printed = $return_type !== null && $return_type->isFalse();
         }
 
-        if (!self::isInCliOnlyCode($statements_analyzer, $context)) {
-            return;
-        }
+        $printed = $printed && self::isInCliOnlyCode($statements_analyzer, $context);
 
         foreach ($args as $offset => $arg) {
             if ($offset !== $return_offset && $arg->name === null && !$arg->unpack) {
-                $arg->value->setAttribute(self::PRINTED_ATTRIBUTE, true);
+                $arg->value->setAttribute(self::PRINTED_ATTRIBUTE, $printed);
             }
         }
     }

@@ -8677,6 +8677,24 @@ final class TaintTest extends TestCase
                     }',
                 'error_message' => 'TaintedHtml',
             ],
+            'printfInATraitMethodOfAClassThatIsNotCliOnlyPrintsToAResponse' => [
+                'code' => '<?php
+                    trait Imports {
+                        public function run(): void {
+                            printf("%s", (string) $_GET["file"]);
+                        }
+                    }
+
+                    /** @psalm-cli-only */
+                    final class ImportCommand {
+                        use Imports;
+                    }
+
+                    final class ImportController {
+                        use Imports;
+                    }',
+                'error_message' => 'TaintedHtml',
+            ],
             'builtinWebServerOutputIsAResponse' => [
                 'code' => '<?php
                     if (PHP_SAPI === "cli-server") {
