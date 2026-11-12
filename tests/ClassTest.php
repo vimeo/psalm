@@ -13,6 +13,7 @@ use Psalm\Tests\Traits\ValidCodeAnalysisTestTrait;
 
 use function array_filter;
 use function array_values;
+use function implode;
 
 use const DIRECTORY_SEPARATOR;
 
