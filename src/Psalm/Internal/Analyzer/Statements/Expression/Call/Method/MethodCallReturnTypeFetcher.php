@@ -349,7 +349,7 @@ final class MethodCallReturnTypeFetcher
                 $stmt,
                 $context,
                 $statements_analyzer,
-                $statements_analyzer->getCodebase()
+                $statements_analyzer->getCodebase(),
             );
             $dispatcher = $statements_analyzer->getCodebase()->config->eventDispatcher;
 
