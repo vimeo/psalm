@@ -476,17 +476,22 @@ final class Scanner
 
     /**
      * @param array<string, string> $file_paths
-     * @return int<0, max>
+     * @param positive-int $max_pool_size
+     * @return int<0, max> the files without a cached storage, counted until they are enough for a pool of
+     *                     $max_pool_size: the pool size never shrinks as the count grows
      */
-    private function countUncachedFiles(array $file_paths): int
+    private function countUncachedFiles(array $file_paths, int $max_pool_size): int
     {
+        $file_count = count($file_paths);
         $uncached = 0;
 
         foreach ($file_paths as $file_path) {
-            $contents_hash = $this->file_provider->getContentsHash($file_path);
-
-            if (!$this->file_storage_provider->isCached($file_path, $contents_hash)) {
+            if (!$this->file_storage_provider->isCached($file_path, $this->file_provider)) {
                 ++$uncached;
+
+                if (self::getScanPoolSize($max_pool_size, $file_count, $uncached) === $max_pool_size) {
+                    break;
+                }
             }
         }
 
@@ -515,7 +520,7 @@ final class Scanner
 
         $file_count = count($files_to_scan);
         $pool_size = !$this->is_forked && $pool_size > 1 && $file_count > self::MAX_FILES_WITHOUT_FORKING
-            ? self::getScanPoolSize($pool_size, $file_count, $this->countUncachedFiles($files_to_scan))
+            ? self::getScanPoolSize($pool_size, $file_count, $this->countUncachedFiles($files_to_scan, $pool_size))
             : 1;
 
         $this->progress->expand($file_count);

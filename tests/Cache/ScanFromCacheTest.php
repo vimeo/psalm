@@ -13,6 +13,7 @@ use Psalm\Internal\IncludeCollector;
 use Psalm\Internal\Provider\ClassLikeStorageCacheProvider;
 use Psalm\Internal\Provider\ClassLikeStorageProvider;
 use Psalm\Internal\Provider\FakeFileProvider;
+use Psalm\Internal\Provider\FileProvider;
 use Psalm\Internal\Provider\FileReferenceCacheProvider;
 use Psalm\Internal\Provider\FileStorageCacheProvider;
 use Psalm\Internal\Provider\FileStorageProvider;
@@ -23,14 +24,18 @@ use Psalm\IssueBuffer;
 use Psalm\Progress\Phase;
 use Psalm\Progress\Progress;
 use Psalm\Storage\FileStorage;
+use Psalm\Tests\Internal\Provider\HashRecordingFileProvider;
 use Psalm\Tests\Internal\Provider\ProjectCacheProvider;
 use Psalm\Tests\TestCase;
 use Psalm\Tests\TestConfig;
 use RuntimeException;
 
+use function array_combine;
+use function array_fill_keys;
+use function array_slice;
 use function basename;
-use function hash;
 use function microtime;
+use function sprintf;
 use function str_contains;
 
 use const DIRECTORY_SEPARATOR;
@@ -99,6 +104,87 @@ final class ScanFromCacheTest extends TestCase
     }
 
     /**
+     * Counting the files without a cached storage stops once the pool is the largest, which more of them can't change
+     */
+    public function testScanPoolSizeNeverShrinks(): void
+    {
+        foreach ([1, 2, 3, 8] as $max_pool_size) {
+            foreach ([512, 513, 600, 1800, 3000] as $file_count) {
+                $previous = 1;
+
+                for ($uncached_count = 0; $uncached_count <= $file_count; ++$uncached_count) {
+                    $pool_size = Scanner::getScanPoolSize($max_pool_size, $file_count, $uncached_count);
+
+                    self::assertGreaterThanOrEqual($previous, $pool_size);
+                    self::assertLessThanOrEqual($max_pool_size, $pool_size);
+
+                    $previous = $pool_size;
+                }
+            }
+        }
+    }
+
+    /**
+     * Every file has a storage cached for other contents: the scan reads the files in path order until there are
+     * enough of them for the largest pool.
+     *
+     * @param positive-int $scan_threads
+     * @param positive-int $files
+     * @param positive-int $read
+     */
+    #[DataProvider('provideFilesReadForThePoolSize')]
+    public function testFilesAreReadUntilThePoolIsTheLargest(int $scan_threads, int $files, int $read): void
+    {
+        $config = $this->createConfig();
+        $paths = $this->paths($files);
+        $file_provider = new HashRecordingFileProvider(array_fill_keys($paths, '<?php // changed'));
+        $providers = $this->providersWithStaleStorages($config, $file_provider, $paths);
+
+        self::assertTrue($this->scanPaths($config, $providers, $scan_threads, $paths));
+        self::assertSame(array_slice($paths, 0, $read), $file_provider->hashed);
+    }
+
+    /**
+     * @return iterable<string, array{positive-int, positive-int, positive-int}>
+     * @psalm-pure
+     */
+    public static function provideFilesReadForThePoolSize(): iterable
+    {
+        yield 'pool of 2, more than 256 files' => [2, 600, 257];
+        yield 'pool of 2, more than one in nine files' => [2, 3000, 334];
+        yield 'pool of 8' => [8, 1800, 1793];
+    }
+
+    /**
+     * There is no cached storage to compare the contents of the files with, as in a run without a cache.
+     */
+    public function testNoFileIsReadWithoutACachedStorage(): void
+    {
+        $config = $this->createConfig();
+        $paths = $this->paths(600);
+        $file_provider = new HashRecordingFileProvider(array_fill_keys($paths, '<?php'));
+        $providers = $this->providersFor($config, $file_provider, new FileStorageCacheProvider($config, '', false));
+
+        self::assertTrue($this->scanPaths($config, $providers, 2, $paths));
+        self::assertSame([], $file_provider->hashed);
+    }
+
+    public function testNoFileWithAStorageInMemoryIsRead(): void
+    {
+        $config = $this->createConfig();
+        $paths = $this->paths(600);
+        $file_provider = new HashRecordingFileProvider(array_fill_keys($paths, '<?php // changed'));
+        $providers = $this->providersWithStaleStorages($config, $file_provider, $paths);
+
+        foreach (array_slice($paths, 0, 300) as $path) {
+            $providers->file_storage_provider->create($path);
+        }
+
+        self::assertTrue($this->scanPaths($config, $providers, 2, $paths));
+        self::assertSame(array_slice($paths, 300, 257), $file_provider->hashed);
+    }
+
+    /**
      * 600 files were scanned and cached, then $changed of them changed: the scan with two threads forks only when
      * more than 256 files have no cached storage for their contents.
      *
@@ -135,12 +221,24 @@ final class ScanFromCacheTest extends TestCase
 
     public function testFileStorageInMemoryIsCached(): void
     {
+        $file_provider = new HashRecordingFileProvider([]);
         $provider = new FileStorageProvider();
         $provider->create('/src/A.php');
 
-        self::assertTrue($provider->isCached('/src/A.php', ''));
-        self::assertTrue($provider->isCached('/SRC/a.php', ''));
-        self::assertFalse($provider->isCached('/src/B.php', ''));
+        self::assertTrue($provider->isCached('/src/A.php', $file_provider));
+        self::assertTrue($provider->isCached('/SRC/a.php', $file_provider));
+        self::assertFalse($provider->isCached('/src/B.php', $file_provider));
+        self::assertSame([], $file_provider->hashed);
+    }
+
+    public function testFileWithoutACachedStorageIsNotRead(): void
+    {
+        $cache = new FileStorageCacheProvider(new TestConfig(), '', false);
+        $cache->writeToCache(new FileStorage('/src/A.php'), 'old');
+        $file_provider = new HashRecordingFileProvider(['/src/B.php' => 'new']);
+
+        self::assertFalse((new FileStorageProvider($cache))->isCached('/src/B.php', $file_provider));
+        self::assertSame([], $file_provider->hashed);
     }
 
     public function testFileStorageCachedForTheContents(): void
@@ -148,9 +246,11 @@ final class ScanFromCacheTest extends TestCase
         $cache = new FileStorageCacheProvider(new TestConfig(), '', false);
         $cache->writeToCache(new FileStorage('/src/A.php'), 'old');
         $provider = new FileStorageProvider($cache);
+        $file_provider = new HashRecordingFileProvider(['/SRC/a.php' => 'old', '/src/A.php' => 'new']);
 
-        self::assertTrue($provider->isCached('/SRC/a.php', hash('xxh128', 'old')));
-        self::assertFalse($provider->isCached('/src/A.php', hash('xxh128', 'new')));
+        self::assertTrue($provider->isCached('/SRC/a.php', $file_provider));
+        self::assertFalse($provider->isCached('/src/A.php', $file_provider));
+        self::assertSame(['/SRC/a.php', '/src/A.php'], $file_provider->hashed);
     }
 
     /**
@@ -180,6 +280,63 @@ final class ScanFromCacheTest extends TestCase
 
         $file_provider->registerFile($this->srcPath('A.php'), '<?php class Foo {}');
         self::assertSame(['B.php:DuplicateClass'], $this->analyze($config, $providers));
+    }
+
+    /**
+     * @param positive-int $scan_threads
+     * @param list<string> $paths
+     * @return bool whether the scan forked
+     */
+    private function scanPaths(Config $config, Providers $providers, int $scan_threads, array $paths): bool
+    {
+        $codebase = (new ProjectAnalyzer($config, $providers, scanThreads: $scan_threads, progress: self::endAtFork()))
+            ->getCodebase();
+
+        $codebase->scanner->addFilesToDeepScan(array_combine($paths, $paths));
+
+        try {
+            $codebase->scanFiles($scan_threads);
+        } catch (RuntimeException $e) {
+            if (!str_contains($e->getMessage(), self::FORKING)) {
+                throw $e;
+            }
+
+            return true;
+        }
+
+        return false;
+    }
+
+    /**
+     * @param int<0, max> $count
+     * @return list<string>
+     * @psalm-capabilities read-props
+     */
+    private function paths(int $count): array
+    {
+        $paths = [];
+
+        for ($i = 0; $i < $count; ++$i) {
+            $paths[] = $this->srcPath(sprintf('File%04d.php', $i));
+        }
+
+        return $paths;
+    }
+
+    /**
+     * Providers with a storage of each of the files cached for other contents than theirs
+     *
+     * @param list<string> $paths
+     */
+    private function providersWithStaleStorages(Config $config, FileProvider $file_provider, array $paths): Providers
+    {
+        $cache = new FileStorageCacheProvider($config, '', false);
+
+        foreach ($paths as $path) {
+            $cache->writeToCache(new FileStorage($path), '<?php');
+        }
+
+        return $this->providersFor($config, $file_provider, $cache);
     }
 
     /**
@@ -310,15 +467,23 @@ final class ScanFromCacheTest extends TestCase
         return [
             $config,
             $file_provider,
-            new Providers(
-                $file_provider,
-                new ParserCacheProvider($config, '', false),
-                new FileStorageCacheProvider($config, '', false),
-                new ClassLikeStorageCacheProvider($config, '', false),
-                new FileReferenceCacheProvider($config, '', false),
-                new ProjectCacheProvider(),
-            ),
+            $this->providersFor($config, $file_provider, new FileStorageCacheProvider($config, '', false)),
         ];
+    }
+
+    private function providersFor(
+        Config $config,
+        FileProvider $file_provider,
+        FileStorageCacheProvider $file_storage_cache,
+    ): Providers {
+        return new Providers(
+            $file_provider,
+            new ParserCacheProvider($config, '', false),
+            $file_storage_cache,
+            new ClassLikeStorageCacheProvider($config, '', false),
+            new FileReferenceCacheProvider($config, '', false),
+            new ProjectCacheProvider(),
+        );
     }
 
     /**
