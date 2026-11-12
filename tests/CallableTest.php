@@ -184,6 +184,21 @@ final class CallableTest extends TestCase
 
                     takesRefCallable("bump");',
             ],
+            'byReferenceCalleeIsAcceptedByTheByReferenceAlternativeOfAUnion' => [
+                'code' => '<?php
+                    /** @param callable(int): void|callable(int &$i): void $byValueFirst */
+                    function byValueFirst(callable $byValueFirst): void {}
+
+                    /** @param callable(int &$i): void|callable(int): void $byReferenceFirst */
+                    function byReferenceFirst(callable $byReferenceFirst): void {}
+
+                    function bump(int &$i): void {}
+
+                    byValueFirst("bump");
+                    byReferenceFirst("bump");
+                    byValueFirst(function (int &$i): void {});
+                    byReferenceFirst(function (int &$i): void {});',
+            ],
             'firstClassCallableOfAMethodKeepsTheInheritedReturnType' => [
                 'code' => <<<'PHP'
                     <?php
@@ -3160,6 +3175,13 @@ final class CallableTest extends TestCase
                     function takesClosure(callable $closure): void {}
                     takesClosure(function (int &$i): void {});',
                 'error_message' => 'CallableByReferenceMismatch',
+            ],
+            'byReferenceClosureIsNotCallableWithValueByAnyAlternativeOfAUnion' => [
+                'code' => '<?php
+                    /** @param callable(int): void|callable(int, int=): void $closure */
+                    function takesClosure(callable $closure): void {}
+                    takesClosure(function (int &$i): void {});',
+                'error_message' => 'CallableByReferenceMismatch - src' . DIRECTORY_SEPARATOR . 'somefile.php:4:34',
             ],
             'byReferenceClosureGivenToUsortIsNotCallableWithValues' => [
                 'code' => '<?php

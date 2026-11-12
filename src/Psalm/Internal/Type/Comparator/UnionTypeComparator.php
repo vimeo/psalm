@@ -211,6 +211,7 @@ final class UnionTypeComparator
             // than all being imposed at once.
             $alternative_bounds = [];
             $unconditional_match = false;
+            $part_by_reference_mismatch = null;
 
             $container_parts_to_compare = $container_type_parts;
 
@@ -341,11 +342,11 @@ final class UnionTypeComparator
                         $scalar_type_match_found = $atomic_comparison_result->scalar_type_match_found;
                     }
 
-                    if ($union_comparison_result
-                        && $is_atomic_contained_by
-                        && $atomic_comparison_result->callable_by_reference_mismatch
-                    ) {
-                        $union_comparison_result->callable_by_reference_mismatch = true;
+                    if ($is_atomic_contained_by) {
+                        // the part only mismatches by reference when no alternative accepts it without a mismatch
+                        $part_by_reference_mismatch = $atomic_comparison_result->callable_by_reference_mismatch
+                            ? $part_by_reference_mismatch ?? true
+                            : false;
                     }
 
                     if ($union_comparison_result
@@ -443,6 +444,10 @@ final class UnionTypeComparator
                     $all_type_coerced_from_as_mixed = false;
                     $all_type_coerced = false;
                 }
+            }
+
+            if ($union_comparison_result && $part_by_reference_mismatch) {
+                $union_comparison_result->callable_by_reference_mismatch = true;
             }
 
             if (!$type_match_found && $type_variable_container_parts) {
