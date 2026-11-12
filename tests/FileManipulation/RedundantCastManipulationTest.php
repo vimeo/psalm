@@ -50,6 +50,60 @@ final class RedundantCastManipulationTest extends FileManipulationTestCase
                 'issues_to_fix' => ['RedundantCastGivenDocblockType'],
                 'safe_types' => true,
             ],
+            'KeepCastWhenALaterLoopPassWidensTheType' => [
+                'input' => '<?php
+                    /** @param list<string> $strings */
+                    function a(array $strings): void {
+                        $test = 1;
+                        foreach ($strings as $string) {
+                            (int)$test;
+                            $test = $string;
+                        }
+                    }
+                ',
+                'output' => '<?php
+                    /** @param list<string> $strings */
+                    function a(array $strings): void {
+                        $test = 1;
+                        foreach ($strings as $string) {
+                            (int)$test;
+                            $test = $string;
+                        }
+                    }
+                ',
+                'php_version' => '7.4',
+                'issues_to_fix' => ['RedundantCast'],
+                'safe_types' => true,
+            ],
+            'RemoveRedundantCastInLoopOnlyWhereTheLastPassStillFlagsIt' => [
+                'input' => '<?php
+                    /** @param list<string> $strings */
+                    function a(array $strings): void {
+                        $test = 1;
+                        $other = 1;
+                        foreach ($strings as $string) {
+                            (int)$test;
+                            (int)$other;
+                            $test = $string;
+                        }
+                    }
+                ',
+                'output' => '<?php
+                    /** @param list<string> $strings */
+                    function a(array $strings): void {
+                        $test = 1;
+                        $other = 1;
+                        foreach ($strings as $string) {
+                            (int)$test;
+                            $other;
+                            $test = $string;
+                        }
+                    }
+                ',
+                'php_version' => '7.4',
+                'issues_to_fix' => ['RedundantCast'],
+                'safe_types' => true,
+            ],
         ];
     }
 }

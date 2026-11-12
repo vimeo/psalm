@@ -14,7 +14,8 @@ use SimpleXMLElement;
 use function class_exists;
 
 /**
- * Reports LegacyCall on legacy_call() and, when Psalter is asked to fix it, renames the call to modern_call()
+ * Reports LegacyCall on legacy_call() and, when Psalter is asked to fix it, renames the call to modern_call().
+ * LegacyReceiverFixer does the same for a method call, on a receiver of the right type only.
  */
 final class FixableIssuePlugin implements PluginEntryPointInterface, PluginFixableIssuesInterface
 {
@@ -23,7 +24,9 @@ final class FixableIssuePlugin implements PluginEntryPointInterface, PluginFixab
     {
         // registerHooksFromClass() only accepts loaded classes
         class_exists(LegacyCallFixer::class);
+        class_exists(LegacyReceiverFixer::class);
         $registration->registerHooksFromClass(LegacyCallFixer::class);
+        $registration->registerHooksFromClass(LegacyReceiverFixer::class);
     }
 
     /**

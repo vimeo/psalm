@@ -2028,6 +2028,130 @@ final class PluginTest extends DeferredAnalyzerTestCase
     }
 
     /**
+     * What a loop body is rewritten to. A loop is analysed more than once, and the first pass runs with
+     * provisional types: only the edits of the last pass may be kept.
+     *
+     * @return iterable<string, array{string, string}>
+     * @psalm-pure
+     */
+    public static function provideLegacyReceiverLoops(): iterable
+    {
+        yield 'receiver of the first pass only' => [
+            '$x = new LegacyReceiver();
+                foreach ($list as $next) {
+                    $x->legacy();
+                    $x = $next;
+                }',
+            '$x = new LegacyReceiver();
+                foreach ($list as $next) {
+                    $x->legacy();
+                    $x = $next;
+                }',
+        ];
+
+        yield 'receiver of the last pass is the same' => [
+            '$x = new LegacyReceiver();
+                foreach ($list as $next) {
+                    $x->legacy();
+                }',
+            '$x = new LegacyReceiver();
+                foreach ($list as $next) {
+                    $x->modern();
+                }',
+        ];
+
+        yield 'one call widened by the loop and one not' => [
+            '$x = new LegacyReceiver();
+                $y = new LegacyReceiver();
+                foreach ($list as $next) {
+                    $x->legacy();
+                    $y->legacy();
+                    $x = $next;
+                }',
+            '$x = new LegacyReceiver();
+                $y = new LegacyReceiver();
+                foreach ($list as $next) {
+                    $x->legacy();
+                    $y->modern();
+                    $x = $next;
+                }',
+        ];
+
+        yield 'for loop' => [
+            '$x = new LegacyReceiver();
+                for ($i = 0; $i < 3; $i++) {
+                    $x->legacy();
+                    $x = $list[$i];
+                }',
+            '$x = new LegacyReceiver();
+                for ($i = 0; $i < 3; $i++) {
+                    $x->legacy();
+                    $x = $list[$i];
+                }',
+        ];
+
+        yield 'receiver widened by the outer loop, call in the inner one' => [
+            '$x = new LegacyReceiver();
+                foreach ($list as $next) {
+                    foreach ($list as $other) {
+                        $x->legacy();
+                    }
+                    $x = $next;
+                }',
+            '$x = new LegacyReceiver();
+                foreach ($list as $next) {
+                    foreach ($list as $other) {
+                        $x->legacy();
+                    }
+                    $x = $next;
+                }',
+        ];
+
+        yield 'call outside a loop' => [
+            '$x = new LegacyReceiver();
+                $x->legacy();',
+            '$x = new LegacyReceiver();
+                $x->modern();',
+        ];
+    }
+
+    #[DataProvider('provideLegacyReceiverLoops')]
+    public function testPluginEditsOfADiscardedLoopPassAreDropped(
+        string $body,
+        string $expected_body,
+    ): void {
+        $function = static fn(string $body): string => '<?php
+            final class LegacyReceiver
+            {
+                public function legacy(): int { return 1; }
+                public function modern(): int { return 2; }
+            }
+            final class OtherReceiver
+            {
+                public function legacy(): int { return 3; }
+            }
+            /** @param list<OtherReceiver> $list */
+            function f(array $list): void {
+                ' . $body . '
+            }';
+
+        $this->project_analyzer = $this->getProjectAnalyzerWithFixableIssuePlugin();
+        $this->project_analyzer->getConfig()->throw_exception = false;
+        $this->project_analyzer->setIssuesToFix(['LegacyCall' => true]);
+        $this->project_analyzer->alterCodeAfterCompletion();
+        $codebase = $this->project_analyzer->getCodebase();
+        $codebase->config->initializePlugins($this->project_analyzer);
+
+        $file_path = self::$src_dir_path . 'somefile.php';
+        $this->addFile($file_path, $function($body));
+        $this->analyzeFile($file_path, new Context());
+
+        $codebase->analyzer->updateFile($file_path, false);
+
+        $this->assertSame($function($expected_body), $codebase->getFileContents($file_path));
+    }
+
+    /**
      * @return iterable<string, array{string}>
      * @psalm-pure
      */

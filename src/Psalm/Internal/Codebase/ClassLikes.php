@@ -1957,7 +1957,7 @@ final class ClassLikes
     }
 
     /**
-     * @psalm-external-mutation-free
+     * @psalm-capabilities read-props|write-this-props|write-refs|read-globals|write-globals
      */
     public function airliftClassLikeReference(
         string $fq_class_name,
@@ -1998,7 +1998,7 @@ final class ClassLikes
     }
 
     /**
-     * @psalm-external-mutation-free
+     * @psalm-capabilities read-props|write-this-props|write-refs|read-globals|write-globals
      */
     public function airliftClassDefinedDocblockType(
         Union $type,

@@ -1695,12 +1695,6 @@
       <code><![CDATA[self::$code_migrations]]></code>
       <code><![CDATA[self::$code_migrations]]></code>
       <code><![CDATA[self::$code_migrations]]></code>
-      <code><![CDATA[self::$code_migrations]]></code>
-      <code><![CDATA[self::$file_manipulations]]></code>
-      <code><![CDATA[self::$file_manipulations]]></code>
-      <code><![CDATA[self::$file_manipulations]]></code>
-      <code><![CDATA[self::$file_manipulations]]></code>
-      <code><![CDATA[self::$file_manipulations]]></code>
       <code><![CDATA[self::$file_manipulations]]></code>
       <code><![CDATA[self::$file_manipulations]]></code>
       <code><![CDATA[self::$file_manipulations]]></code>
@@ -2674,14 +2668,6 @@
       <code><![CDATA[self::$recorded_issues]]></code>
       <code><![CDATA[self::$recorded_issues]]></code>
       <code><![CDATA[self::$recorded_issues]]></code>
-      <code><![CDATA[self::$recorded_issues]]></code>
-      <code><![CDATA[self::$recorded_issues]]></code>
-      <code><![CDATA[self::$recording_level]]></code>
-      <code><![CDATA[self::$recording_level]]></code>
-      <code><![CDATA[self::$recording_level]]></code>
-      <code><![CDATA[self::$recording_level]]></code>
-      <code><![CDATA[self::$recording_level]]></code>
-      <code><![CDATA[self::$recording_level]]></code>
       <code><![CDATA[self::$recording_level]]></code>
       <code><![CDATA[self::$recording_level]]></code>
       <code><![CDATA[self::$recording_level]]></code>

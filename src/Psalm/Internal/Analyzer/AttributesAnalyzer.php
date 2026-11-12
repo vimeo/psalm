@@ -16,6 +16,7 @@ use Psalm\CodeLocation;
 use Psalm\Context;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\Internal\Codebase\ConstantTypeResolver;
+use Psalm\Internal\FileManipulation\FileManipulationBuffer;
 use Psalm\Internal\PhpVisitor\PartialApplicationVisitor;
 use Psalm\Internal\Provider\NodeDataProvider;
 use Psalm\Internal\Scanner\UnresolvedConstantComponent;
@@ -300,7 +301,9 @@ final class AttributesAnalyzer
         $context->inside_attribute = $was_inside_attribute;
 
         $issues = IssueBuffer::clearRecordingLevel();
+        $recorded_manipulations = FileManipulationBuffer::clearRecordingLevel();
         IssueBuffer::stopRecording();
+        FileManipulationBuffer::bubbleUp($recorded_manipulations);
         foreach ($issues as $issue) {
             if ($issue instanceof UndefinedClass && $issue->fq_classlike_name === $fq_attribute_name) {
                 // Remove UndefinedClass for the attribute, since we already added UndefinedAttribute

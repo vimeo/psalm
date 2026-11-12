@@ -9,8 +9,13 @@ use Psalm\CodeLocation\DocblockTypeLocation;
 use Psalm\FileManipulation;
 use Psalm\Internal\Analyzer\ProjectAnalyzer;
 use Psalm\Internal\Provider\FileProvider;
+use Psalm\IssueBuffer;
 
+use function array_key_last;
 use function array_merge;
+use function array_pop;
+use function array_slice;
+use function array_values;
 use function preg_match;
 use function strlen;
 use function strpos;
@@ -20,28 +25,106 @@ use function substr_replace;
 
 /**
  * @internal
- * @psalm-capabilities read-props|write-this-props|write-props|write-refs
+ * @psalm-capabilities read-props|write-this-props|write-props|write-refs|read-globals|write-globals
  */
 final class FileManipulationBuffer
 {
     /** @var array<string, FileManipulation[]> */
     private static array $file_manipulations = [];
 
+    /**
+     * One entry per open IssueBuffer recording level, innermost last. A manipulation added while a level is open
+     * waits there until the level is committed (see bubbleUp()) or dropped (see stopRecording()),
+     * like the issues of that level.
+     *
+     * @var array<int, array<string, array<string, FileManipulation>>>
+     */
+    private static array $recorded_manipulations = [];
+
     /** @var CodeMigration[] */
     private static array $code_migrations = [];
 
     /**
      * @param FileManipulation[] $file_manipulations
-     * @psalm-external-mutation-free
+     * @psalm-capabilities read-props|write-this-props|write-refs|read-globals|write-globals
      */
     public static function add(string $file_path, array $file_manipulations): void
     {
+        // the levels are dropped by stopRecording(), but not by a cache clear that closes them
+        $level = IssueBuffer::isRecording() ? array_key_last(self::$recorded_manipulations) : null;
+
+        if ($level !== null) {
+            foreach ($file_manipulations as $file_manipulation) {
+                self::$recorded_manipulations[$level][$file_path][$file_manipulation->getKey()] = $file_manipulation;
+            }
+
+            return;
+        }
+
         if (!isset(self::$file_manipulations[$file_path])) {
             self::$file_manipulations[$file_path] = [];
         }
 
         foreach ($file_manipulations as $file_manipulation) {
             self::$file_manipulations[$file_path][$file_manipulation->getKey()] = $file_manipulation;
+        }
+    }
+
+    /**
+     * Opens a level that holds back the manipulations added until it is committed or dropped
+     *
+     * @internal Use IssueBuffer::startRecording()
+     * @param int $recording_level the IssueBuffer recording level being opened
+     * @psalm-capabilities read-props|write-this-props|write-refs|read-globals|write-globals
+     */
+    public static function startRecording(int $recording_level): void
+    {
+        // any level left from before is a stale one: IssueBuffer starts at 1
+        self::$recorded_manipulations = [...array_slice(self::$recorded_manipulations, 0, $recording_level - 1), []];
+    }
+
+    /**
+     * Closes the innermost level and drops the manipulations that are still in it
+     *
+     * @internal Use IssueBuffer::stopRecording()
+     * @psalm-capabilities read-props|write-this-props|write-refs|read-globals|write-globals
+     */
+    public static function stopRecording(): void
+    {
+        array_pop(self::$recorded_manipulations);
+    }
+
+    /**
+     * Takes the manipulations out of the innermost level, to commit them with bubbleUp() once the level is closed
+     *
+     * @return array<string, array<string, FileManipulation>>
+     * @psalm-capabilities read-props|write-this-props|write-refs|read-globals|write-globals
+     */
+    public static function clearRecordingLevel(): array
+    {
+        $level = array_key_last(self::$recorded_manipulations);
+
+        if ($level === null) {
+            return [];
+        }
+
+        $recorded_manipulations = self::$recorded_manipulations[$level];
+        self::$recorded_manipulations[$level] = [];
+
+        return $recorded_manipulations;
+    }
+
+    /**
+     * Commits manipulations taken out by clearRecordingLevel() to the innermost open level,
+     * or to the file when none is open
+     *
+     * @param array<string, array<string, FileManipulation>> $recorded_manipulations
+     * @psalm-capabilities read-props|write-this-props|write-refs|read-globals|write-globals
+     */
+    public static function bubbleUp(array $recorded_manipulations): void
+    {
+        foreach ($recorded_manipulations as $file_path => $file_manipulations) {
+            self::add($file_path, array_values($file_manipulations));
         }
     }
 
@@ -87,7 +170,7 @@ final class FileManipulationBuffer
     }
 
     /**
-     * @psalm-capabilities read-props|write-this-props|write-props|write-refs
+     * @psalm-capabilities read-props|write-this-props|write-props|write-refs|read-globals|write-globals
      */
     public static function addForCodeLocation(
         CodeLocation $code_location,
@@ -124,7 +207,7 @@ final class FileManipulationBuffer
     }
 
     /**
-     * @psalm-capabilities read-props|write-this-props|write-props|write-refs
+     * @psalm-capabilities read-props|write-this-props|write-props|write-refs|read-globals|write-globals
      */
     public static function addVarAnnotationToRemove(DocblockTypeLocation $code_location): void
     {
@@ -193,7 +276,7 @@ final class FileManipulationBuffer
 
     /**
      * @return array<string, FileManipulation[]>
-     * @psalm-capabilities read-props|write-this-props|write-props|write-refs
+     * @psalm-capabilities read-props|write-this-props|write-props|write-refs|read-globals|write-globals
      */
     public static function getMigrationManipulations(FileProvider $file_provider): array
     {

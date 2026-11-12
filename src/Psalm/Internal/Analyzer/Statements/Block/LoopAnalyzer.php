@@ -15,6 +15,7 @@ use Psalm\Internal\Analyzer\Statements\Expression\Fetch\VariableFetchAnalyzer;
 use Psalm\Internal\Analyzer\Statements\ExpressionAnalyzer;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\Internal\Clause;
+use Psalm\Internal\FileManipulation\FileManipulationBuffer;
 use Psalm\Internal\PhpVisitor\AssignmentMapVisitor;
 use Psalm\Internal\PhpVisitor\NodeCleanerVisitor;
 use Psalm\Internal\Scope\LoopScope;
@@ -215,6 +216,7 @@ final class LoopAnalyzer
             }
 
             $recorded_issues = IssueBuffer::clearRecordingLevel();
+            $recorded_manipulations = FileManipulationBuffer::clearRecordingLevel();
             IssueBuffer::stopRecording();
 
             // the types the variables the loop defines start an iteration with
@@ -440,6 +442,7 @@ final class LoopAnalyzer
                 }
 
                 $recorded_issues = IssueBuffer::clearRecordingLevel();
+                $recorded_manipulations = FileManipulationBuffer::clearRecordingLevel();
 
                 IssueBuffer::stopRecording();
 
@@ -460,6 +463,9 @@ final class LoopAnalyzer
                     IssueBuffer::bubbleUp($recorded_issue);
                 }
             }
+
+            // a discarded pass analysed the loop with provisional types, so only the last pass's edits are kept
+            FileManipulationBuffer::bubbleUp($recorded_manipulations);
         }
 
         $does_sometimes_break = in_array(ScopeAnalyzer::ACTION_BREAK, $loop_scope->final_actions, true);

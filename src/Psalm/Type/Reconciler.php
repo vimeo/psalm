@@ -15,6 +15,7 @@ use Psalm\Internal\Analyzer\Statements\Expression\Call\Method\MethodCallReturnTy
 use Psalm\Internal\Analyzer\Statements\Expression\Fetch\ConstFetchAnalyzer;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\Internal\DataFlow\DataFlowNode;
+use Psalm\Internal\FileManipulation\FileManipulationBuffer;
 use Psalm\Internal\MethodIdentifier;
 use Psalm\Internal\Type\AssertionReconciler;
 use Psalm\Internal\Type\TemplateResult;
@@ -273,6 +274,7 @@ class Reconciler
                 // of several alternatives, one that cannot be the value is only a problem when none can
                 $record_alternatives = $report_location !== null && count($new_type_part_parts) > 1;
                 $recorded_issues = [];
+                $recorded_manipulations = [];
                 $any_alternative_possible = false;
 
                 foreach ($new_type_part_parts as $new_type_part_part) {
@@ -325,6 +327,7 @@ class Reconciler
 
                     if ($record_alternatives) {
                         $alternative_issues = IssueBuffer::clearRecordingLevel();
+                        $recorded_manipulations[] = FileManipulationBuffer::clearRecordingLevel();
                         IssueBuffer::stopRecording();
 
                         $recorded_issues[] = $alternative_issues;
@@ -359,6 +362,11 @@ class Reconciler
                     $reported_alternatives = $any_alternative_possible
                         ? $recorded_issues
                         : array_slice($recorded_issues, 0, 1);
+
+                    // the edits of an alternative are kept along with its issues
+                    foreach (array_slice($recorded_manipulations, 0, count($reported_alternatives)) as $manipulations) {
+                        FileManipulationBuffer::bubbleUp($manipulations);
+                    }
 
                     foreach ($reported_alternatives as $alternative_issues) {
                         foreach ($alternative_issues as $alternative_issue) {

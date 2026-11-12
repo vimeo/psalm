@@ -11,6 +11,7 @@ use Psalm\Internal\Analyzer\IssueData;
 use Psalm\Internal\Analyzer\ProjectAnalyzer;
 use Psalm\Internal\ExecutionEnvironment\BuildInfoCollector;
 use Psalm\Internal\ExecutionEnvironment\GitInfoCollector;
+use Psalm\Internal\FileManipulation\FileManipulationBuffer;
 use Psalm\Internal\Provider\FileProvider;
 use Psalm\Issue\CodeIssue;
 use Psalm\Issue\ConfigIssue;
@@ -1170,19 +1171,20 @@ final class IssueBuffer
     /**
      * Increase the recording level in order to start recording issues instead of adding them while in a loop
      *
-     * @psalm-external-mutation-free
+     * @psalm-capabilities read-props|write-this-props|write-refs|read-globals|write-globals
      */
     public static function startRecording(): void
     {
         ++self::$recording_level;
         self::$recorded_issues[self::$recording_level] = [];
+        FileManipulationBuffer::startRecording(self::$recording_level);
     }
 
     /**
      * Decrease the recording level after leaving a loop
      *
      * @see startRecording
-     * @psalm-external-mutation-free
+     * @psalm-capabilities read-props|write-this-props|write-refs|read-globals|write-globals
      */
     public static function stopRecording(): void
     {
@@ -1191,6 +1193,8 @@ final class IssueBuffer
         }
 
         --self::$recording_level;
+        // the file manipulations still held by the level go with its issues; bubble them up to keep them
+        FileManipulationBuffer::stopRecording();
     }
 
     /**
