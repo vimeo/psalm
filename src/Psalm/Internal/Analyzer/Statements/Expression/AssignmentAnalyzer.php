@@ -1201,6 +1201,10 @@ final class AssignmentAnalyzer
         if ($lhs_var_id !== null
             && $rhs_var_id === null
             && $stmt->var instanceof PhpParser\Node\Expr\Variable
+            && ($stmt->expr instanceof PhpParser\Node\Expr\FuncCall
+                || $stmt->expr instanceof PhpParser\Node\Expr\MethodCall
+                || $stmt->expr instanceof PhpParser\Node\Expr\StaticCall
+            )
             && ($return_type = $statements_analyzer->node_data->getType($stmt->expr))
             && $return_type->by_ref
         ) {

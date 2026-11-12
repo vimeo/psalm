@@ -635,6 +635,27 @@ final class ReferenceTest extends TestCase
                     }
                 ',
             ],
+            'dynamicArrayOffsetReferenceCanBeConditionallySet' => [
+                'code' => <<<'PHP'
+                    <?php
+                    /** @param array<string, string> $form */
+                    function findReference(array &$form, string $identifier): ?string {
+                        if (isset($form[$identifier])) {
+                            $field = &$form[$identifier];
+                        } elseif (isset($form[$identifier . '_wrapper'])) {
+                            $field = &$form[$identifier . '_wrapper'];
+                        }
+
+                        if (isset($field)) {
+                            return $field;
+                        }
+
+                        return null;
+                    }
+                    PHP,
+                'assertions' => [],
+                'ignored_issues' => ['UnsupportedReferenceUsage'],
+            ],
             'returnedReferenceAssignmentInvalidatesCachedOffsets' => [
                 'code' => <<<'PHP'
                     <?php
