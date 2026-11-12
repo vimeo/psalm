@@ -2235,7 +2235,7 @@ final class AssertionFinder
      * The declared type of the property a nullsafe fetch reads, or null when it isn't known for every class the
      * receiver may be
      */
-    private static function getNullsafePropertyType(
+    public static function getNullsafePropertyType(
         PhpParser\Node\Expr\NullsafePropertyFetch $expr,
         FileSource $source,
     ): ?Union {

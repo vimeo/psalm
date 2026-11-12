@@ -4004,6 +4004,62 @@ final class PropertyTypeTest extends TestCase
                 'ignored_issues' => [],
                 'php_version' => '8.0',
             ],
+            'nullsafeChainIdenticalToNullNarrowsEveryReceiverOutsideTheCheck' => [
+                'code' => '<?php
+                    final class B {
+                        public ?string $value = null;
+                    }
+
+                    final class A {
+                        public ?B $b = null;
+                    }
+
+                    final class Root {
+                        public ?A $a = null;
+                    }
+
+                    function afterReturn(Root $r): void {
+                        if ($r->a?->b?->value === null) {
+                            return;
+                        }
+
+                        echo strlen($r->a->b->value);
+                    }
+
+                    function inElse(Root $r): void {
+                        if ($r->a?->b?->value === null) {
+                            echo 1;
+                        } else {
+                            echo strlen($r->a->b->value);
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'nullsafeFetchOfANonNullablePropertyIdenticalToNullChecksTheReceiver' => [
+                'code' => '<?php
+                    final class T {}
+
+                    final class U {
+                        public function __construct(public T $valueType) {}
+                    }
+
+                    final class N {
+                        public ?U $unsealed = null;
+                    }
+
+                    function identical(N $n): bool {
+                        if ($n->unsealed?->valueType === null) {
+                            return false;
+                        }
+
+                        return get_class($n->unsealed->valueType) === T::class;
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
             'nullsafePropertyNotNullNarrowsTheReceiver' => [
                 'code' => '<?php
                     final class B { public ?string $value = null; }
@@ -5932,28 +5988,6 @@ final class PropertyTypeTest extends TestCase
                         }
                     }',
                 'error_message' => 'PossiblyNullPropertyFetch',
-                'error_levels' => [],
-                'php_version' => '8.0',
-            ],
-            'nullsafePropertyIdenticalToNullLeavesTheReceiverNullableAfterAReturn' => [
-                'code' => '<?php
-                    final class B {
-                        public ?string $value = null;
-                        public function m(): int { return 1; }
-                    }
-
-                    final class A {
-                        public ?B $b = null;
-                    }
-
-                    function t(A $a): void {
-                        if ($a->b?->value === null) {
-                            return;
-                        }
-
-                        echo $a->b->m();
-                    }',
-                'error_message' => 'PossiblyNullReference',
                 'error_levels' => [],
                 'php_version' => '8.0',
             ],

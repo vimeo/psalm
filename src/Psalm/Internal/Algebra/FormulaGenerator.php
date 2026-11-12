@@ -131,7 +131,7 @@ final class FormulaGenerator
             || $conditional instanceof PhpParser\Node\Expr\BinaryOp\Equal
             || $conditional instanceof PhpParser\Node\Expr\BinaryOp\NotEqual
         ) {
-            $nullsafe_expansion = self::expandNullsafePropertyNullComparison($conditional);
+            $nullsafe_expansion = self::expandNullsafePropertyNullComparison($conditional, $source);
 
             if ($nullsafe_expansion !== null) {
                 return self::getFormula(
@@ -599,6 +599,7 @@ final class FormulaGenerator
      */
     private static function expandNullsafePropertyNullComparison(
         PhpParser\Node\Expr\BinaryOp $conditional,
+        FileSource $source,
     ): ?PhpParser\Node\Expr {
         if ($conditional->left instanceof PhpParser\Node\Expr\NullsafePropertyFetch
             && self::isNullLiteral($conditional->right)
@@ -624,9 +625,27 @@ final class FormulaGenerator
         }
 
         $attributes = $conditional->getAttributes();
-        $property_fetch = new VirtualPropertyFetch($receiver, $nullsafe_fetch->name, $nullsafe_fetch->getAttributes());
-
         $receiver_comparison = self::createComparison($conditional, $receiver, $null_operand, $nullsafe_is_left);
+
+        // a property that can't be null (or loosely equal to null) says nothing: it is the receiver that was checked
+        $property_type = AssertionFinder::getNullsafePropertyType($nullsafe_fetch, $source);
+
+        if ($property_type !== null
+            && ($conditional instanceof PhpParser\Node\Expr\BinaryOp\Identical
+                || $conditional instanceof PhpParser\Node\Expr\BinaryOp\NotIdentical
+                    ? !$property_type->isNullable()
+                    : $property_type->isAlwaysTruthy())
+        ) {
+            return $receiver_comparison;
+        }
+
+        // the property is only compared where the receiver isn't null, so `$a?->b?->c` is `$a->b->c` there
+        $property_fetch = new VirtualPropertyFetch(
+            self::withoutNullsafeFetches($receiver),
+            $nullsafe_fetch->name,
+            $nullsafe_fetch->getAttributes(),
+        );
+
         $property_comparison = self::createComparison($conditional, $property_fetch, $null_operand, $nullsafe_is_left);
 
         return $conditional instanceof PhpParser\Node\Expr\BinaryOp\Identical
@@ -652,6 +671,24 @@ final class FormulaGenerator
             $like instanceof PhpParser\Node\Expr\BinaryOp\Equal => new VirtualEqual($left, $right, $attributes),
             default => new VirtualNotEqual($left, $right, $attributes),
         };
+    }
+
+    /**
+     * A chain of properties with every `?->` replaced by `->`
+     */
+    private static function withoutNullsafeFetches(PhpParser\Node\Expr $expr): PhpParser\Node\Expr
+    {
+        if ($expr instanceof PhpParser\Node\Expr\NullsafePropertyFetch
+            || $expr instanceof PhpParser\Node\Expr\PropertyFetch
+        ) {
+            $var = self::withoutNullsafeFetches($expr->var);
+
+            if ($var !== $expr->var || $expr instanceof PhpParser\Node\Expr\NullsafePropertyFetch) {
+                return new VirtualPropertyFetch($var, $expr->name, $expr->getAttributes());
+            }
+        }
+
+        return $expr;
     }
 
     private static function isNullLiteral(PhpParser\Node\Expr $expr): bool
