@@ -16058,6 +16058,31 @@ final class TaintTest extends TestCase
                     echo (string) source();',
                 'error_message' => 'TaintedHtml',
             ],
+            'argumentTypeKeepsTaintThroughTemplateStandinReplacement' => [
+                // the standin replacement runs on the argument type of a generic class method call
+                'code' => '<?php
+                    /** @template TValue */
+                    final class Coll {
+                        /** @param array<(callable(TValue): mixed)|(callable(int): mixed)|string> $cb */
+                        public function sortBy(array $cb): void {
+                            foreach ($cb as $c) {
+                                if (is_string($c)) {
+                                    echo $c;
+                                }
+                            }
+                        }
+
+                        /** @param array<(callable(TValue): mixed)|(callable(int): mixed)|string> $cb */
+                        public function sortByDesc(array $cb): void {
+                            $this->sortBy($cb);
+                        }
+                    }
+
+                    /** @var Coll<string> $c */
+                    $c = new Coll();
+                    $c->sortByDesc([(string) $_GET["a"]]);',
+                'error_message' => 'TaintedHtml',
+            ],
         ];
     }
 
