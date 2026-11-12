@@ -276,6 +276,7 @@ final class AtomicMethodCallAnalyzer extends CallAnalyzer
                             $codebase,
                             $declaring_method_id,
                             $codebase->methods->getStorage($declaring_method_id),
+                            $statements_analyzer,
                         );
 
                         $return_type_candidate = MethodCallReturnTypeFetcher::getFirstClassCallableType(
