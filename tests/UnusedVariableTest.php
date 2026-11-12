@@ -29,6 +29,55 @@ final class UnusedVariableTest extends TestCase
     public static function providerValidCodeParse(): array
     {
         return [
+            'assignmentUsedAfterBreakTwoFromSwitchInInfiniteWhile' => [
+                'code' => '<?php
+                    final class Step {
+                        public function code(): string {
+                            return random_int(0, 1) === 1 ? "a" : "b";
+                        }
+
+                        public function previous(): Step {
+                            return new Step();
+                        }
+                    }
+
+                    function build(Step $step, bool $flag): string {
+                        $label = "";
+                        if ($flag) {
+                            $label = "changed";
+                            while (true) {
+                                switch ($step->code()) {
+                                    case "a":
+                                        break;
+                                    default:
+                                        break 2;
+                                }
+                                $step = $step->previous();
+                            }
+                        }
+
+                        return $label;
+                    }',
+            ],
+            'assignmentUsedAfterBreakTwoFromSwitchInInfiniteFor' => [
+                'code' => '<?php
+                    function buildWithFor(int $mode, bool $flag): string {
+                        $label = "";
+                        if ($flag) {
+                            $label = "changed";
+                            for (;;) {
+                                switch ($mode) {
+                                    case 0:
+                                        break;
+                                    default:
+                                        break 2;
+                                }
+                            }
+                        }
+
+                        return $label;
+                    }',
+            ],
             'phpstanVarSetsTheTypeOfTheAssignedVariable' => [
                 'code' => '<?php
                     /** @phpstan-var list<string> $a */
