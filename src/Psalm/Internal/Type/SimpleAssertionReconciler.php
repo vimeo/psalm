@@ -90,7 +90,6 @@ use function count;
 use function explode;
 use function in_array;
 use function is_int;
-use function max;
 use function min;
 use function strlen;
 use function strpos;
@@ -2470,28 +2469,24 @@ final class SimpleAssertionReconciler extends Reconciler
             return null;
         }
 
-        $int_properties = [];
+        $properties = [];
         $last_required_key = $non_empty ? 0 : -1;
 
+        // in the order of the shape: a key that is not the next one of a list has to be absent
         foreach ($shape->properties as $key => $property) {
-            if (is_int($key)) {
-                $int_properties[$key] = $property;
-
+            if ($key !== count($properties)) {
                 if (!$property->possibly_undefined) {
-                    $last_required_key = max($last_required_key, $key);
+                    return null;
                 }
-            } elseif (!$property->possibly_undefined) {
-                return null;
+
+                continue;
             }
-        }
 
-        $properties = [];
+            $properties[$key] = $property;
 
-        while (isset($int_properties[count($properties)])) {
-            $key = count($properties);
-            $properties[$key] = $key <= $last_required_key
-                ? $int_properties[$key]->setPossiblyUndefined(false)
-                : $int_properties[$key];
+            if (!$property->possibly_undefined) {
+                $last_required_key = $key;
+            }
         }
 
         if ($last_required_key >= count($properties)) {
@@ -2500,6 +2495,12 @@ final class SimpleAssertionReconciler extends Reconciler
 
         if ($properties === []) {
             return Type::getEmptyArrayAtomic();
+        }
+
+        foreach ($properties as $key => $property) {
+            if ($key < $last_required_key) {
+                $properties[$key] = $property->setPossiblyUndefined(false);
+            }
         }
 
         return TKeyedArray::make($properties, null, null, true);

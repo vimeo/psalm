@@ -3206,6 +3206,13 @@ final class FunctionCallTest extends TestCase
                             /** @psalm-check-type-exact $requiredLast = list{string, int} */
                         }
                     }
+
+                    /** @param array{1?: int, 0: string} $outOfOrder */
+                    function outOfOrder(array $outOfOrder): void {
+                        if (array_is_list($outOfOrder)) {
+                            /** @psalm-check-type-exact $outOfOrder = list{string} */
+                        }
+                    }
                     PHP,
                 'assertions' => [],
                 'ignored_issues' => [],
