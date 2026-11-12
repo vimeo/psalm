@@ -102,9 +102,10 @@ echo processVar($_GET['text'], true); // considered secure
 ## Output of command-line code
 
 What a script run from the command line prints goes to a terminal or a log, not to an HTML page. `@psalm-cli-only` on
-a function, a method or a class says that it only runs from the command line: what its code (and the closures in it)
-prints with `echo`, `print`, `printf()`, `vprintf()`, `var_dump()`, `debug_zval_dump()`, and `print_r()` and
-`var_export()` not returning it, isn't reported as `TaintedHtml`.
+a function, a method or a class says that it only runs from the command line, and so does a `PHP_SAPI` or
+`php_sapi_name()` check for the code it guards: what that code (and the closures in it) prints with `echo`, `print`,
+`printf()`, `vprintf()`, `var_dump()`, `debug_zval_dump()`, and `print_r()` and `var_export()` not returning it, isn't
+reported as `TaintedHtml`.
 
 ```php
 <?php
@@ -120,11 +121,18 @@ final class ImportCommand
         echo 'Importing ' . $file . "\n"; // not reported
     }
 }
+
+if (PHP_SAPI !== 'cli') {
+    exit(1);
+}
+
+(new ImportCommand())->run();
+echo $_SERVER['argv'][1] ?? ''; // not reported
 ```
 
-Printing a secret is still reported, and the values stay tainted for every other sink. The annotation only covers the
-code it is on: a method of another class, or a function, called from there is checked as usual, so annotate it too if
-it only runs from the command line.
+Code marked `@psalm-cli-only` can only be called from such code, or [CliOnlyCall](../running_psalm/issues/CliOnlyCall.md)
+is reported. Printing a secret is still reported, and the values stay tainted for every other sink. A function called
+from command-line code is checked as usual, so mark it too if it only runs from the command line.
 
 ## Sanitizing HTML user input
 

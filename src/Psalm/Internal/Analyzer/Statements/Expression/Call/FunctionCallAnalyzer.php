@@ -210,6 +210,16 @@ final class FunctionCallAnalyzer extends CallAnalyzer
             }
         }
 
+        if ($function_call_info->function_storage?->cli_only && $function_call_info->function_id !== null) {
+            CliOutput::checkCall(
+                $statements_analyzer,
+                $context,
+                'function ' . ($function_call_info->function_storage->cased_name ?? $function_call_info->function_id)
+                    . '()',
+                $code_location,
+            );
+        }
+
         $set_inside_conditional = false;
 
         if ($function_name instanceof PhpParser\Node\Name
@@ -270,7 +280,12 @@ final class FunctionCallAnalyzer extends CallAnalyzer
 
         // do this here to allow closure param checks
         if (!$is_first_class_callable && $function_call_info->function_params !== null) {
-            CliOutput::markPrintedArgs($statements_analyzer, $function_call_info->function_id, $stmt->getArgs());
+            CliOutput::markPrintedArgs(
+                $statements_analyzer,
+                $context,
+                $function_call_info->function_id,
+                $stmt->getArgs(),
+            );
 
             ArgumentsAnalyzer::checkArgumentsMatch(
                 $statements_analyzer,

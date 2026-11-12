@@ -59,6 +59,12 @@ final class Context
     public const PHP_VERSION_ID_VAR_ID = 'PHP_VERSION_ID';
 
     /**
+     * The pseudo-variable through which comparisons of the PHP_SAPI constant and of php_sapi_name() narrow them, so
+     * a branch knows the SAPI it runs in (e.g. `if (PHP_SAPI === 'cli')`); it can't clash with a variable name.
+     */
+    public const PHP_SAPI_VAR_ID = 'PHP_SAPI';
+
+    /**
      * @var array<string, Union>
      */
     public array $vars_in_scope = [];
