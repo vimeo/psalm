@@ -700,6 +700,21 @@ final class UnusedCodeTest extends TestCase
 
                     Counter::increment();',
             ],
+            'variableAssignedInTheWhileConditionIsUsedAfterTheLoop' => [
+                'code' => '<?php
+                    function next_int(): int {
+                        return 1;
+                    }
+
+                    /** @psalm-api */
+                    function f(): int {
+                        while ($value = next_int()) {
+                            echo 1;
+                        }
+
+                        return $value;
+                    }',
+            ],
             'pureMethodCallAsTheLeftOperandOfACoalesceThatThrows' => [
                 'code' => '<?php
                     final class A {
