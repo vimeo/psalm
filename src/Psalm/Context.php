@@ -15,6 +15,7 @@ use Psalm\Internal\ReferenceConstraint;
 use Psalm\Internal\Scope\CaseScope;
 use Psalm\Internal\Scope\FinallyScope;
 use Psalm\Internal\Scope\LoopScope;
+use Psalm\Internal\Scope\TryScope;
 use Psalm\Internal\Type\AssertionReconciler;
 use Psalm\Storage\Capabilities;
 use Psalm\Storage\FunctionLikeStorage;
@@ -403,6 +404,8 @@ final class Context
     public ?CaseScope $case_scope = null;
 
     public ?FinallyScope $finally_scope = null;
+
+    public ?TryScope $try_scope = null;
 
     public ?Context $if_body_context = null;
 

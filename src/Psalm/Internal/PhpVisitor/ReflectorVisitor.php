@@ -217,7 +217,7 @@ final class ReflectorVisitor extends PhpParser\NodeVisitorAbstract implements Fi
                 /** @var PhpParser\Node\FunctionLike */
                 $node = $node->value;
                 $this->closure_statements->offsetSet($node);
-            } elseif ($node instanceof PhpParser\Node\FunctionLike && $this->closure_statements->offsetExists($node)) {
+            } elseif ($this->closure_statements->offsetExists($node)) {
                 // This is a closure that was already processed at the statement level.
                 return null;
             }
