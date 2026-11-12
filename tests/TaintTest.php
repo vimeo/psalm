@@ -7,6 +7,9 @@ namespace Psalm\Tests;
 use Override;
 use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\Attributes\Test;
+use PhpParser\Node\Expr\MethodCall;
+use PhpParser\Node\Expr\StaticCall;
+use PhpParser\Node\Identifier;
 use Psalm\Config;
 use Psalm\Config\IssueHandler;
 use Psalm\Context;
@@ -14,10 +17,12 @@ use Psalm\Exception\CodeException;
 use Psalm\Internal\Analyzer\DataFlowNodeData;
 use Psalm\Internal\Analyzer\IssueData;
 use Psalm\IssueBuffer;
+use Psalm\Plugin\EventHandler\Event\AddRemoveTaintsEvent;
 use Psalm\Plugin\EventHandler\Event\FunctionReturnTypeProviderEvent;
 use Psalm\Plugin\EventHandler\Event\MethodReturnTypeProviderEvent;
 use Psalm\Plugin\EventHandler\FunctionReturnTypeProviderInterface;
 use Psalm\Plugin\EventHandler\MethodReturnTypeProviderInterface;
+use Psalm\Plugin\EventHandler\RemoveTaintsInterface;
 use Psalm\PluginRegistrationSocket;
 use Psalm\Type;
 use Psalm\Type\TaintKind;
@@ -555,6 +560,81 @@ final class TaintTest extends TestCase
                 [39, 'TaintedTextWithQuotes'],
                 [40, 'TaintedHtml'],
                 [40, 'TaintedTextWithQuotes'],
+            ],
+            array_map(static fn(IssueData $issue): array => [$issue->line_from, $issue->type], $issues),
+        );
+    }
+
+    /**
+     * What a plugin removes from the result of a call applies wherever the result flows, not only where the call is
+     * itself an argument.
+     */
+    public function testPluginRemovesTaintsFromTheResultOfANestedCall(): void
+    {
+        $this->testConfig->throw_exception = false;
+        $file_path = self::$src_dir_path . 'somefile.php';
+        $this->addFile($file_path, '<?php
+            class Request {
+                /** @psalm-taint-source input */
+                public function email(): string {
+                    return "";
+                }
+
+                /** @psalm-taint-source input */
+                public static function staticEmail(): string {
+                    return "";
+                }
+
+                /** @psalm-taint-source input */
+                public function name(): string {
+                    return "";
+                }
+            }
+
+            $request = new Request();
+            echo $request->email();
+            echo "Email: " . $request->email();
+            echo "Email: {$request->email()}";
+            echo Request::staticEmail();
+            echo "Email: " . Request::staticEmail();
+            echo "Name: " . $request->name();
+        ');
+        $this->project_analyzer->setPhpVersion('8.0', 'tests');
+        $this->project_analyzer->trackTaintedInputs();
+
+        $codebase = $this->project_analyzer->getCodebase();
+        $socket = new PluginRegistrationSocket($codebase->config, $codebase);
+        $socket->registerHooksFromClass((new class implements RemoveTaintsInterface {
+            #[Override]
+            public static function removeTaints(AddRemoveTaintsEvent $event): int
+            {
+                $expr = $event->getExpr();
+
+                return ($expr instanceof MethodCall || $expr instanceof StaticCall)
+                    && $expr->name instanceof Identifier
+                    && in_array($expr->name->toLowerString(), ['email', 'staticemail'], true)
+                    ? TaintKind::INPUT_HTML
+                    : 0;
+            }
+        })::class);
+        $codebase->config->initializePlugins($this->project_analyzer);
+
+        $this->analyzeFile($file_path, new Context(), false);
+
+        $issues = array_values(array_filter(
+            IssueBuffer::getIssuesDataForFile($file_path),
+            static fn(IssueData $issue): bool => !in_array($issue->type, self::IGNORE, true),
+        ));
+
+        self::assertEqualsCanonicalizing(
+            [
+                [20, 'TaintedTextWithQuotes'],
+                [21, 'TaintedTextWithQuotes'],
+                [22, 'TaintedTextWithQuotes'],
+                [23, 'TaintedTextWithQuotes'],
+                [24, 'TaintedTextWithQuotes'],
+                [25, 'TaintedHtml'],
+                [25, 'TaintedTextWithQuotes'],
             ],
             array_map(static fn(IssueData $issue): array => [$issue->line_from, $issue->type], $issues),
         );

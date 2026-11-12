@@ -578,5 +578,16 @@ final class StaticCallAnalyzer extends CallAnalyzer
                 );
             }
         }
+
+        // without conditional escapes the result comes straight from $method_source, which the answers above don't
+        // reach
+        MethodCallReturnTypeFetcher::addPluginTaintsToResult(
+            $graph,
+            $cased_method_id,
+            $node_location,
+            $added_taints,
+            $removed_taints,
+            $return_type_candidate,
+        );
     }
 }
