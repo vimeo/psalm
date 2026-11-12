@@ -2602,7 +2602,6 @@ final class UnusedVariableTest extends TestCase
                      * @param array<string, string> $fields
                      * @param array<string, string> $input
                      * @return array<string, mixed>
-                     * @psalm-suppress MixedAssignment
                      * @psalm-suppress MixedArrayAssignment
                      */
                     function apply(array $fields, array $input): array {
