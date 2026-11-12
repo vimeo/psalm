@@ -5,8 +5,12 @@ declare(strict_types=1);
 namespace Psalm\Internal\Type\Comparator;
 
 use Psalm\Codebase;
+use Psalm\Internal\Analyzer\Statements\Expression\Call\ClassTemplateParamCollector;
 use Psalm\Internal\MethodIdentifier;
+use Psalm\Internal\Type\TemplateInferredTypeReplacer;
+use Psalm\Internal\Type\TemplateResult;
 use Psalm\Storage\Capabilities;
+use Psalm\Type;
 use Psalm\Type\Atomic;
 use Psalm\Type\Atomic\Scalar;
 use Psalm\Type\Atomic\TArray;
@@ -24,6 +28,7 @@ use Psalm\Type\Atomic\TIntersection;
 use Psalm\Type\Atomic\TIterable;
 use Psalm\Type\Atomic\TKeyOf;
 use Psalm\Type\Atomic\TKeyedArray;
+use Psalm\Type\Atomic\TLiteralInt;
 use Psalm\Type\Atomic\TLiteralString;
 use Psalm\Type\Atomic\TMixed;
 use Psalm\Type\Atomic\TNamedObject;
@@ -44,10 +49,13 @@ use Psalm\Type\Union;
 
 use function array_all;
 use function array_any;
+use function array_diff_key;
 use function array_merge;
 use function array_values;
 use function assert;
 use function count;
+use function is_int;
+use function min;
 use function reset;
 use function strtolower;
 
@@ -723,6 +731,57 @@ final class AtomicTypeComparator
             if ($input_type_part instanceof TNamedObject) {
                 // check whether the object has a __toString method
                 if ($codebase->classOrInterfaceExists($input_type_part->value)) {
+                    $to_string_method_id = new MethodIdentifier(
+                        $input_type_part->value,
+                        '__tostring',
+                    );
+
+                    if ($container_type_part instanceof TString
+                        && $container_type_part::class !== TString::class
+                        && $codebase->methodExists($to_string_method_id)
+                    ) {
+                        $self_class = $input_type_part->value;
+                        $return_type = $codebase->getMethodReturnType($to_string_method_id, $self_class);
+
+                        if ($return_type !== null && $input_type_part instanceof TGenericObject) {
+                            $class_template_params = ClassTemplateParamCollector::collect(
+                                $codebase,
+                                $codebase->methods->getClassLikeStorageForMethod($to_string_method_id),
+                                $codebase->classlike_storage_provider->get($input_type_part->value),
+                                $to_string_method_id->method_name,
+                                $input_type_part,
+                            );
+
+                            if ($class_template_params !== null) {
+                                $return_type = TemplateInferredTypeReplacer::replace(
+                                    $return_type,
+                                    new TemplateResult([], $class_template_params),
+                                    $codebase,
+                                );
+                            }
+                        }
+
+                        $return_type_comparison = new TypeComparisonResult();
+                        if ($return_type === null
+                            || !UnionTypeComparator::isContainedBy(
+                                $codebase,
+                                $return_type,
+                                new Union([$container_type_part]),
+                                false,
+                                false,
+                                $return_type_comparison,
+                            )
+                        ) {
+                            if ($atomic_comparison_result) {
+                                $atomic_comparison_result->type_coerced = $return_type === null
+                                    || $return_type_comparison->type_coerced;
+                                $atomic_comparison_result->to_string_cast = true;
+                            }
+
+                            return false;
+                        }
+                    }
+
                     if ($codebase->analysis_php_version_id >= 8_00_00
                         && ($input_type_part->value === 'Stringable'
                             || ($codebase->classlikes->classExists($input_type_part->value)
@@ -736,12 +795,7 @@ final class AtomicTypeComparator
                         return true;
                     }
 
-                    if ($codebase->methodExists(
-                        new MethodIdentifier(
-                            $input_type_part->value,
-                            '__tostring',
-                        ),
-                    )) {
+                    if ($codebase->methodExists($to_string_method_id)) {
                         if ($atomic_comparison_result) {
                             $atomic_comparison_result->to_string_cast = true;
                         }
@@ -1023,6 +1077,35 @@ final class AtomicTypeComparator
             );
         }
 
+        // arrays of the same keys can be identical when every pair of their items can, as list{int|string} and
+        // list{string|bool}: neither contains the other
+        if ($type1_part instanceof TKeyedArray
+            && $type2_part instanceof TKeyedArray
+            && $type1_part->fallback_params === null
+            && $type2_part->fallback_params === null
+            && count($type1_part->properties) === count($type2_part->properties)
+            && array_diff_key($type1_part->properties, $type2_part->properties) === []
+        ) {
+            $only_defined_items = true;
+
+            foreach ($type1_part->properties as $key => $property_1) {
+                $property_2 = $type2_part->properties[$key];
+
+                if ($property_1->possibly_undefined || $property_2->possibly_undefined) {
+                    $only_defined_items = false;
+                    break;
+                }
+
+                if (!UnionTypeComparator::canExpressionTypesBeIdentical($codebase, $property_1, $property_2)) {
+                    return false;
+                }
+            }
+
+            if ($only_defined_items) {
+                return true;
+            }
+        }
+
         $first_comparison_result = new TypeComparisonResult();
         $second_comparison_result = new TypeComparisonResult();
 
@@ -1046,7 +1129,112 @@ final class AtomicTypeComparator
             && !$second_comparison_result->to_string_cast
         ) || ($first_comparison_result->type_coerced
             && $second_comparison_result->type_coerced
+        ) || ($type1_part instanceof TKeyedArray
+            && $type2_part instanceof TKeyedArray
+            && self::canKeyedArraysBeIdentical($codebase, $type1_part, $type2_part)
         );
+    }
+
+    /**
+     * Whether some array could have the shape of both: each key that one of them requires is allowed by the other
+     * (as a key it declares, or by its fallback), and the values of such a key can be identical.
+     */
+    private static function canKeyedArraysBeIdentical(Codebase $codebase, TKeyedArray $first, TKeyedArray $second): bool
+    {
+        return self::keyedArrayRequirementsFit($codebase, $first, $second)
+            && self::keyedArrayRequirementsFit($codebase, $second, $first)
+            && self::listCanHaveTheRequiredKeysOf($codebase, $first, $second)
+            && self::listCanHaveTheRequiredKeysOf($codebase, $second, $first);
+    }
+
+    /**
+     * A list has every key below the highest it has, so it can only be identical to a shape that allows all the
+     * keys below the highest int key the shape requires (`array{0: int, 2: int}` is not a list).
+     */
+    private static function listCanHaveTheRequiredKeysOf(
+        Codebase $codebase,
+        TKeyedArray $list,
+        TKeyedArray $other,
+    ): bool {
+        if (!$list->is_list) {
+            return true;
+        }
+
+        $highest_required_key = null;
+
+        foreach ($other->properties as $key => $property) {
+            if (!$property->possibly_undefined && is_int($key) && ($highest_required_key ?? $key) <= $key) {
+                $highest_required_key = $key;
+            }
+        }
+
+        // far-fetched keys are not worth checking one by one
+        for ($key = 0; $key < min($highest_required_key ?? 0, 256); $key++) {
+            // the list has the item, and so must the other one: of a type both can have
+            $list_item = $list->properties[$key] ?? $list->fallback_params[1] ?? null;
+
+            if (isset($other->properties[$key])) {
+                $other_item = $other->properties[$key];
+            } elseif ($other->fallback_params !== null
+                && UnionTypeComparator::canExpressionTypesBeIdentical(
+                    $codebase,
+                    new Union([new TLiteralInt($key)]),
+                    $other->fallback_params[0],
+                )
+            ) {
+                $other_item = $other->fallback_params[1];
+            } else {
+                return false;
+            }
+
+            if ($list_item !== null
+                && !UnionTypeComparator::canExpressionTypesBeIdentical($codebase, $list_item, $other_item)
+            ) {
+                return false;
+            }
+        }
+
+        return true;
+    }
+
+    private static function keyedArrayRequirementsFit(
+        Codebase $codebase,
+        TKeyedArray $required,
+        TKeyedArray $other,
+    ): bool {
+        foreach ($required->properties as $key => $property) {
+            if ($property->possibly_undefined) {
+                continue;
+            }
+
+            if (isset($other->properties[$key])) {
+                if (!UnionTypeComparator::canExpressionTypesBeIdentical(
+                    $codebase,
+                    $property,
+                    $other->properties[$key],
+                )) {
+                    return false;
+                }
+
+                continue;
+            }
+
+            if ($other->fallback_params === null) {
+                return false;
+            }
+
+            $key_type = new Union([is_int($key) ? new TLiteralInt($key) : Type::getAtomicStringFromLiteral($key)]);
+
+            [$fallback_key_type, $fallback_value_type] = $other->fallback_params;
+
+            if (!UnionTypeComparator::canExpressionTypesBeIdentical($codebase, $key_type, $fallback_key_type)
+                || !UnionTypeComparator::canExpressionTypesBeIdentical($codebase, $property, $fallback_value_type)
+            ) {
+                return false;
+            }
+        }
+
+        return true;
     }
 
     /**

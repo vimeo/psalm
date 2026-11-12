@@ -5,14 +5,49 @@ declare(strict_types=1);
 namespace Psalm\Tests\TypeReconciliation;
 
 use Override;
+use Psalm\Context;
+use Psalm\IssueBuffer;
 use Psalm\Tests\TestCase;
 use Psalm\Tests\Traits\InvalidCodeAnalysisTestTrait;
 use Psalm\Tests\Traits\ValidCodeAnalysisTestTrait;
+
+use function array_column;
 
 final class TypeAlgebraTest extends TestCase
 {
     use InvalidCodeAnalysisTestTrait;
     use ValidCodeAnalysisTestTrait;
+
+    public function testOffsetOfAPropertyAssignedInTheIfIsKnownAfterIt(): void
+    {
+        $this->testConfig->throw_exception = false;
+        $file_path = self::$src_dir_path . 'somefile.php';
+        $this->addFile(
+            $file_path,
+            '<?php
+                final class Channels {
+                    /** @var array<string, object> */
+                    protected array $channels = [];
+
+                    /** @param mixed $channel */
+                    public function get($channel): object {
+                        if (!isset($this->channels[$channel])) {
+                            $this->channels[$channel] = new stdClass();
+                        }
+
+                        return $this->channels[$channel];
+                    }
+                }',
+        );
+
+        $this->analyzeFile($file_path, new Context(), false);
+
+        // the offset is mixed where it is tested and assigned, not again where it is read after the if
+        self::assertSame(
+            ['MixedArrayOffset', 'MixedArrayOffset', 'MixedPropertyTypeCoercion'],
+            array_column(IssueBuffer::getIssuesDataForFile($file_path), 'type'),
+        );
+    }
 
     /**
      * @psalm-pure
@@ -21,6 +56,144 @@ final class TypeAlgebraTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'coalesceAssignmentInConditionNarrowsTheVariable' => [
+                'code' => <<<'PHP'
+                    <?php
+                    function make(): ?object { return null; }
+
+                    function negated(?object $s): object {
+                        if (!($s ??= make())) {
+                            exit;
+                        }
+
+                        return $s;
+                    }
+
+                    function branches(?object $s): void {
+                        if ($s ??= make()) {
+                            /** @psalm-check-type-exact $s = object */;
+                        } else {
+                            /** @psalm-check-type-exact $s = null */;
+                        }
+                    }
+
+                    /** @param array{k?: object|null} $arr */
+                    function arrayItem(array $arr): object {
+                        if (!($arr['k'] ??= make())) {
+                            exit;
+                        }
+
+                        return $arr['k'];
+                    }
+
+                    final class Holder {
+                        private ?object $item = null;
+                        public ?self $child = null;
+
+                        public function item(): object {
+                            if (!($this->item ??= make())) {
+                                throw new Exception();
+                            }
+
+                            return $this->item;
+                        }
+
+                        public function untracked(): void {
+                            if ($this->self()->child ??= null) {
+                                echo 1;
+                            }
+                        }
+
+                        public function self(): self {
+                            return $this;
+                        }
+                    }
+                    PHP,
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
+            'coalesceAssignmentOnTheRightOfAndKeepsTheAssignmentAfterTheIf' => [
+                'code' => <<<'PHP'
+                    <?php
+                    final class A {}
+
+                    function make(): ?A {
+                        return rand(0, 1) ? new A() : null;
+                    }
+
+                    /** @param list<string> $names */
+                    function export(array $names): void {
+                        $class = null;
+
+                        foreach ($names as $name) {
+                            if ($name === 'self' && $class ??= make()) {
+                                echo get_class($class);
+                            }
+                        }
+
+                        /** @psalm-check-type-exact $class = A|null */;
+                    }
+                    PHP,
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
+            'coalesceAssignmentAssignedToAVariableOnTheLeftOfOr' => [
+                'code' => <<<'PHP'
+                    <?php
+                    interface I {}
+                    final class Lazy implements I {}
+                    final class Real implements I {}
+
+                    function make(): ?I {
+                        return rand(0, 1) ? new Lazy() : null;
+                    }
+
+                    final class Builder {
+                        private ?I $instantiator = null;
+
+                        public function isReal(): bool {
+                            return !($proxy = $this->instantiator ??= make()) || $proxy instanceof Real;
+                        }
+                    }
+                    PHP,
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
+            'instanceofStoredInVariableNarrowsInIfBody' => [
+                'code' => '<?php
+                    interface Foo {}
+                    interface Bar {
+                        public function bar(): void;
+                    }
+
+                    function f(Foo $obj): void {
+                        $isBar = $obj instanceof Bar;
+
+                        if ($isBar) {
+                            $obj->bar();
+                        }
+                    }',
+            ],
+            'instanceofStoredInVariableNarrowsAfterEarlyReturn' => [
+                'code' => '<?php
+                    interface Foo {}
+                    interface Bar {
+                        public function bar(): void;
+                    }
+
+                    function f(Foo $obj): void {
+                        $isBar = $obj instanceof Bar;
+
+                        if (!$isBar) {
+                            return;
+                        }
+
+                        $obj->bar();
+                    }',
+            ],
             'nullsafeCallFalsyResultDoesNotNarrowReceiver' => [
                 'code' => <<<'PHP'
                     <?php
@@ -1567,6 +1740,98 @@ final class TypeAlgebraTest extends TestCase
                         return A::$x->y;
                     }',
             ],
+            'offsetKnownFromTheConditionIsForgottenWhenTheArrayIsReassignedAndThenAnOffsetIsWritten' => [
+                'code' => '<?php
+                    $a = ["test" => rand(0, 1) ? null : "x"];
+
+                    if ($a["test"] === null) {
+                        $a = ["test" => ""];
+                        $a["other"] = 1;
+                    }
+
+                    $var = $a["test"];',
+                'assertions' => [
+                    '$var===' => "''|'x'",
+                ],
+            ],
+            'offsetKnownFromTheConditionIsForgottenWhenTheArrayIsReassignedAndThenUnioned' => [
+                'code' => '<?php
+                    $a = ["test" => rand(0, 1) ? null : "x"];
+
+                    if ($a["test"] === null) {
+                        $a = ["test" => ""];
+                        $a += ["other" => 1];
+                    }
+
+                    $var = $a["test"];',
+                'assertions' => [
+                    '$var===' => "''|'x'",
+                ],
+            ],
+            'offsetKnownFromTheConditionIsKeptWhenTheArrayIsOnlyUnioned' => [
+                'code' => '<?php
+                    $a = ["test" => rand(0, 1) ? null : "x"];
+
+                    if ($a["test"] === null) {
+                        $a += ["other" => 1];
+                    }
+
+                    $var = $a["test"];',
+                'assertions' => [
+                    '$var===' => "'x'|null",
+                ],
+            ],
+            'offsetKnownBeforeAnArrayUnionAssignmentIsKeptAfterTheIf' => [
+                'code' => '<?php
+                    /** @param mixed $extra */
+                    function widget(bool $a, bool $b, $extra): string {
+                        $variables = ["style" => "s", "uri" => "public://x"];
+                        $key = $variables["uri"] . ".dims";
+
+                        if ($a) {
+                            $variables["width"] = 1;
+                        } elseif ($b) {
+                            $variables += $extra;
+                        } else {
+                            $variables["width"] = null;
+                        }
+
+                        $uri = $variables["uri"];
+                        /** @psalm-check-type-exact $uri = "public://x" */
+
+                        return $uri . $key;
+                    }',
+                'assertions' => [],
+                'ignored_issues' => ['MixedAssignment', 'MixedOperand'],
+                'php_version' => '8.0',
+            ],
+            'offsetKnownFromTheConditionIsForgottenWhenTheArrayIsReassigned' => [
+                'code' => '<?php
+                    $dummy = ["test" => ""];
+                    $a = ["test" => rand(0, 1) ? null : "x"];
+
+                    if ($a["test"] === null) {
+                        $a = $dummy;
+                    }
+
+                    $var = $a["test"];',
+                'assertions' => [
+                    '$var===' => "''|'x'",
+                ],
+            ],
+            'offsetKnownFromTheConditionIsKeptWhenTheArrayIsNotReassigned' => [
+                'code' => '<?php
+                    $a = ["test" => rand(0, 1) ? null : "x"];
+
+                    if ($a["test"] === null) {
+                        $a["other"] = 1;
+                    }
+
+                    $var = $a["test"];',
+                'assertions' => [
+                    '$var===' => "'x'|null",
+                ],
+            ],
         ];
     }
 
@@ -1577,6 +1842,42 @@ final class TypeAlgebraTest extends TestCase
     public static function providerInvalidCodeParse(): iterable
     {
         return [
+            'instanceofStoredInVariableIsForgottenWhenTheVariableIsReassigned' => [
+                'code' => '<?php
+                    interface Foo {}
+                    interface Bar {
+                        public function bar(): void;
+                    }
+                    class Baz implements Foo {}
+
+                    function f(Foo $obj): void {
+                        $isBar = $obj instanceof Bar;
+                        $obj = new Baz();
+
+                        if ($isBar) {
+                            $obj->bar();
+                        }
+                    }',
+                'error_message' => 'UndefinedMethod',
+            ],
+            'instanceofStoredInVariableDoesNotNarrowTheElseBranch' => [
+                'code' => '<?php
+                    interface Foo {}
+                    interface Bar {
+                        public function bar(): void;
+                    }
+
+                    function f(Foo $obj): void {
+                        $isBar = $obj instanceof Bar;
+
+                        if ($isBar) {
+                            echo "bar";
+                        } else {
+                            $obj->bar();
+                        }
+                    }',
+                'error_message' => 'UndefinedInterfaceMethod',
+            ],
             'booleanVariableNarrowingNotKeptInElseOfOr' => [
                 'code' => <<<'PHP'
                     <?php
