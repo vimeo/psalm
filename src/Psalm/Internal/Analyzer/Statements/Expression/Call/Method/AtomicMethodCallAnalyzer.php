@@ -113,7 +113,8 @@ final class AtomicMethodCallAnalyzer extends CallAnalyzer
                 $lhs_type_part->as->getAtomicTypes(),
             )[0];
 
-            // a template bounded by another template is bounded by that one's bound
+            // a template bounded by another template is bounded by that one's bound, and by what the outer one was
+            // narrowed to
             if ($lhs_type_part instanceof TTemplateParam) {
                 self::analyze(
                     $statements_analyzer,
@@ -121,7 +122,9 @@ final class AtomicMethodCallAnalyzer extends CallAnalyzer
                     $codebase,
                     $context,
                     $lhs_type,
-                    $lhs_type_part,
+                    $extra_types
+                        ? $lhs_type_part->setIntersectionTypes([...$lhs_type_part->extra_types, ...$extra_types])
+                        : $lhs_type_part,
                     $static_type,
                     $is_intersection,
                     $lhs_var_id,
