@@ -62,6 +62,7 @@ final class LoopAnalyzer
         ?Context &$continue_context = null,
         bool $is_do = false,
         bool $always_enters_loop = false,
+        bool $evaluates_every_pre_condition = false,
     ): ?bool {
         $traverser = new PhpParser\NodeTraverser;
 
@@ -543,19 +544,21 @@ final class LoopAnalyzer
         $condition_assigned_types = [];
 
         if ($pre_conditions && !$is_do) {
-            foreach (self::getAssignmentsOfEveryEvaluation($pre_conditions[0]) as $var_id => $assignment) {
-                $assigned_type = $statements_analyzer->node_data->getType($assignment);
+            // all the comma separated expressions of a for are evaluated, but only the first operand of the && of a
+            // while; a later assignment overrides an earlier one
+            $evaluated_conditions = $evaluates_every_pre_condition ? $pre_conditions : [$pre_conditions[0]];
 
-                if ($assigned_type === null) {
-                    continue;
-                }
+            foreach ($evaluated_conditions as $evaluated_condition) {
+                foreach (self::getAssignmentsOfEveryEvaluation($evaluated_condition) as $var_id => $assignment) {
+                    $assigned_type = $statements_analyzer->node_data->getType($assignment);
 
-                $condition_assigned_types[$var_id] = $assigned_type->addParentNodes(
-                    ($loop_context->vars_in_scope[$var_id] ?? $assigned_type)->parent_nodes,
-                );
+                    if ($assigned_type === null) {
+                        continue;
+                    }
 
-                if (!isset($loop_parent_context->vars_in_scope[$var_id])) {
-                    $loop_parent_context->vars_in_scope[$var_id] = $condition_assigned_types[$var_id];
+                    $condition_assigned_types[$var_id] = $assigned_type->addParentNodes(
+                        ($loop_context->vars_in_scope[$var_id] ?? $assigned_type)->parent_nodes,
+                    );
                 }
             }
         }
@@ -699,6 +702,9 @@ final class LoopAnalyzer
             $post_expressions,
             $loop_scope,
             $inner_loop_context,
+            false,
+            false,
+            $stmt instanceof PhpParser\Node\Stmt\For_,
         ) === false) {
             return false;
         }
