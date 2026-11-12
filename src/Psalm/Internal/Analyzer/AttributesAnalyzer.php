@@ -292,17 +292,21 @@ final class AttributesAnalyzer
         $context->inside_attribute = true;
 
         IssueBuffer::startRecording();
-        $statements_analyzer->analyze(
-            [new Expression(new New_($attribute->name, $attribute->args, $attribute->getAttributes()))],
-            // Use a new Context for the Attribute attribute so that it can't access `self`
-            strtolower($fq_attribute_name) === "attribute" ? new Context() : $context,
-        );
-        $context->has_returned = $had_returned;
-        $context->inside_attribute = $was_inside_attribute;
+        try {
+            $statements_analyzer->analyze(
+                [new Expression(new New_($attribute->name, $attribute->args, $attribute->getAttributes()))],
+                // Use a new Context for the Attribute attribute so that it can't access `self`
+                strtolower($fq_attribute_name) === "attribute" ? new Context() : $context,
+            );
+            $context->has_returned = $had_returned;
+            $context->inside_attribute = $was_inside_attribute;
 
-        $issues = IssueBuffer::clearRecordingLevel();
-        $recorded_manipulations = FileManipulationBuffer::clearRecordingLevel();
-        IssueBuffer::stopRecording();
+            $issues = IssueBuffer::clearRecordingLevel();
+            $recorded_manipulations = FileManipulationBuffer::clearRecordingLevel();
+        } finally {
+            IssueBuffer::stopRecording();
+        }
+
         FileManipulationBuffer::bubbleUp($recorded_manipulations);
         foreach ($issues as $issue) {
             if ($issue instanceof UndefinedClass && $issue->fq_classlike_name === $fq_attribute_name) {

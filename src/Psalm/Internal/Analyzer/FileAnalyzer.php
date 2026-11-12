@@ -525,7 +525,7 @@ class FileAnalyzer extends SourceAnalyzer
     }
 
     /**
-     * @psalm-external-mutation-free
+     * @psalm-capabilities read-props|write-this-props|write-refs|read-globals|write-globals
      */
     public static function clearCache(): void
     {

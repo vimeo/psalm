@@ -114,7 +114,7 @@ final class GlobalConstantsFromCacheTest extends TestCase
     }
 
     /**
-     * @psalm-external-mutation-free
+     * @psalm-capabilities read-props|write-this-props|write-refs|read-globals|write-globals
      */
     #[Override]
     public function tearDown(): void

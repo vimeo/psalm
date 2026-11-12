@@ -104,6 +104,110 @@ final class RedundantCastManipulationTest extends FileManipulationTestCase
                 'issues_to_fix' => ['RedundantCast'],
                 'safe_types' => true,
             ],
+            'KeepCastWhenALaterDoWhilePassWidensTheType' => [
+                'input' => '<?php
+                    /** @param list<string> $strings */
+                    function a(array $strings): void {
+                        $test = 1;
+                        $i = 0;
+                        do {
+                            (int)$test;
+                            $test = $strings[$i];
+                            $i++;
+                        } while ($i < 3);
+                    }
+                ',
+                'output' => '<?php
+                    /** @param list<string> $strings */
+                    function a(array $strings): void {
+                        $test = 1;
+                        $i = 0;
+                        do {
+                            (int)$test;
+                            $test = $strings[$i];
+                            $i++;
+                        } while ($i < 3);
+                    }
+                ',
+                'php_version' => '7.4',
+                'issues_to_fix' => ['RedundantCast'],
+                'safe_types' => true,
+            ],
+            'RemoveRedundantCastInDoWhileWhereEveryPassFlagsIt' => [
+                'input' => '<?php
+                    /** @param list<string> $strings */
+                    function a(array $strings): void {
+                        $test = 1;
+                        $other = 1;
+                        $i = 0;
+                        do {
+                            (int)$test;
+                            (int)$other;
+                            $test = $strings[$i];
+                            $i++;
+                        } while ($i < 3);
+                    }
+                ',
+                'output' => '<?php
+                    /** @param list<string> $strings */
+                    function a(array $strings): void {
+                        $test = 1;
+                        $other = 1;
+                        $i = 0;
+                        do {
+                            (int)$test;
+                            $other;
+                            $test = $strings[$i];
+                            $i++;
+                        } while ($i < 3);
+                    }
+                ',
+                'php_version' => '7.4',
+                'issues_to_fix' => ['RedundantCast'],
+                'safe_types' => true,
+            ],
+            'RemoveRedundantCastInAttributeArgument' => [
+                'input' => '<?php
+                    #[Attribute]
+                    final class A { public function __construct(public int $n) {} }
+
+                    #[A((int) 5)]
+                    final class B {}
+                ',
+                'output' => '<?php
+                    #[Attribute]
+                    final class A { public function __construct(public int $n) {} }
+
+                    #[A(5)]
+                    final class B {}
+                ',
+                'php_version' => '8.1',
+                'issues_to_fix' => ['RedundantCast'],
+                'safe_types' => true,
+            ],
+            'RemoveRedundantCastAfterALoopThatStopsTheAnalysis' => [
+                'input' => '<?php
+                    function a(?object $o): void {
+                        for ($i = 0; $i < 3; $i = $o?->foo) {
+                        }
+                    }
+                    function b(int $j): void {
+                        (int)$j;
+                    }
+                ',
+                'output' => '<?php
+                    function a(?object $o): void {
+                        for ($i = 0; $i < 3; $i = $o?->foo) {
+                        }
+                    }
+                    function b(int $j): void {
+                        $j;
+                    }
+                ',
+                'php_version' => '7.4',
+                'issues_to_fix' => ['RedundantCast'],
+                'safe_types' => true,
+            ],
         ];
     }
 }

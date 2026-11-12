@@ -20,7 +20,7 @@ use function array_values;
 final class FileManipulationBufferRecordingTest extends TestCase
 {
     /**
-     * @psalm-capabilities read-props|write-this-props|write-refs
+     * @psalm-capabilities read-props|write-this-props|write-refs|read-globals|write-globals
      */
     #[Override]
     protected function setUp(): void
@@ -30,7 +30,7 @@ final class FileManipulationBufferRecordingTest extends TestCase
     }
 
     /**
-     * @psalm-capabilities read-props|write-this-props|write-refs
+     * @psalm-capabilities read-props|write-this-props|write-refs|read-globals|write-globals
      */
     #[Override]
     protected function tearDown(): void
@@ -136,9 +136,19 @@ final class FileManipulationBufferRecordingTest extends TestCase
         IssueBuffer::stopRecording();
     }
 
+    public function testClearingTheCacheDropsTheRecordedManipulations(): void
+    {
+        IssueBuffer::startRecording();
+        FileManipulationBuffer::add('a.php', [new FileManipulation(1, 2, 'x')]);
+
+        FileManipulationBuffer::clearCache();
+
+        $this->assertSame([], FileManipulationBuffer::clearRecordingLevel());
+    }
+
     /**
      * @return list<string>
-     * @psalm-capabilities read-props|write-this-props|write-refs
+     * @psalm-external-mutation-free
      */
     private static function describe(string $file_path): array
     {

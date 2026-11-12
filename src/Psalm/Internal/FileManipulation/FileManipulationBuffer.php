@@ -338,11 +338,12 @@ final class FileManipulationBuffer
     }
 
     /**
-     * @psalm-external-mutation-free
+     * @psalm-capabilities read-props|write-this-props|write-refs|read-globals|write-globals
      */
     public static function clearCache(): void
     {
         self::$file_manipulations = [];
+        self::$recorded_manipulations = [];
         self::$code_migrations = [];
     }
 }

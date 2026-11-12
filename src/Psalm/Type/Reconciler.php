@@ -312,24 +312,33 @@ class Reconciler
                         IssueBuffer::startRecording();
                     }
 
-                    $result_type_candidate = AssertionReconciler::reconcile(
-                        $new_type_part_part,
-                        $result_type,
-                        $key,
-                        $statements_analyzer,
-                        $inside_loop,
-                        $template_type_map,
-                        $report_location,
-                        $suppressed_issues,
-                        $failed_reconciliation,
-                        $negated,
-                    );
+                    $alternative_issues = [];
+
+                    try {
+                        $result_type_candidate = AssertionReconciler::reconcile(
+                            $new_type_part_part,
+                            $result_type,
+                            $key,
+                            $statements_analyzer,
+                            $inside_loop,
+                            $template_type_map,
+                            $report_location,
+                            $suppressed_issues,
+                            $failed_reconciliation,
+                            $negated,
+                        );
+
+                        if ($record_alternatives) {
+                            $alternative_issues = IssueBuffer::clearRecordingLevel();
+                            $recorded_manipulations[] = FileManipulationBuffer::clearRecordingLevel();
+                        }
+                    } finally {
+                        if ($record_alternatives) {
+                            IssueBuffer::stopRecording();
+                        }
+                    }
 
                     if ($record_alternatives) {
-                        $alternative_issues = IssueBuffer::clearRecordingLevel();
-                        $recorded_manipulations[] = FileManipulationBuffer::clearRecordingLevel();
-                        IssueBuffer::stopRecording();
-
                         $recorded_issues[] = $alternative_issues;
 
                         $is_impossible = false;

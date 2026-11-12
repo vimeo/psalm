@@ -1694,8 +1694,6 @@
     <ImpureStaticProperty>
       <code><![CDATA[self::$code_migrations]]></code>
       <code><![CDATA[self::$code_migrations]]></code>
-      <code><![CDATA[self::$code_migrations]]></code>
-      <code><![CDATA[self::$file_manipulations]]></code>
       <code><![CDATA[self::$file_manipulations]]></code>
       <code><![CDATA[self::$file_manipulations]]></code>
       <code><![CDATA[self::$file_manipulations]]></code>

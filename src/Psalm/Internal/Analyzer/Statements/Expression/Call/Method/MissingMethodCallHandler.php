@@ -626,13 +626,14 @@ final class MissingMethodCallHandler
 
         $types = [];
 
-        foreach ($args as $arg) {
-            ExpressionAnalyzer::analyze($statements_analyzer, $arg->value, $trial_context);
-            $types[] = $statements_analyzer->node_data->getType($arg->value);
+        try {
+            foreach ($args as $arg) {
+                ExpressionAnalyzer::analyze($statements_analyzer, $arg->value, $trial_context);
+                $types[] = $statements_analyzer->node_data->getType($arg->value);
+            }
+        } finally {
+            IssueBuffer::stopRecording();
         }
-
-        IssueBuffer::clearRecordingLevel();
-        IssueBuffer::stopRecording();
 
         $statements_analyzer->node_data = $old_node_data;
 

@@ -13,6 +13,7 @@ use Psalm\Internal\Analyzer\ScopeAnalyzer;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\Internal\Clause;
 use Psalm\Internal\Scope\LoopScope;
+use Psalm\IssueBuffer;
 use Psalm\Type\Reconciler;
 use UnexpectedValueException;
 
@@ -192,7 +193,21 @@ final class DoAnalyzer
 
         $do_context->loop_scope = $loop_scope;
 
-        $statements_analyzer->analyze($stmt->stmts, $do_context);
+        // LoopAnalyzer analyses the body again, so the edits of this pass, made with the types the first iteration
+        // starts with, are dropped; its issues are kept
+        IssueBuffer::startRecording();
+
+        try {
+            $statements_analyzer->analyze($stmt->stmts, $do_context);
+
+            $recorded_issues = IssueBuffer::clearRecordingLevel();
+        } finally {
+            IssueBuffer::stopRecording();
+        }
+
+        foreach ($recorded_issues as $recorded_issue) {
+            IssueBuffer::bubbleUp($recorded_issue);
+        }
 
         if (!isset($suppressed_issues['RedundantCondition'])) {
             $statements_analyzer->removeSuppressedIssues(['RedundantCondition']);

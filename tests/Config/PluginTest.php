@@ -7,6 +7,8 @@ namespace Psalm\Tests\Config;
 use InvalidArgumentException;
 use Override;
 use PHPUnit\Framework\Attributes\DataProvider;
+use PhpParser\Node\Expr\PostInc;
+use PhpParser\Node\Expr\Variable;
 use Psalm\Config;
 use Psalm\Context;
 use Psalm\Exception\CodeException;
@@ -19,8 +21,10 @@ use Psalm\Internal\Provider\Providers;
 use Psalm\IssueBuffer;
 use Psalm\Plugin\EventHandler\AfterCodebasePopulatedInterface;
 use Psalm\Plugin\EventHandler\AfterEveryFunctionCallAnalysisInterface;
+use Psalm\Plugin\EventHandler\AfterExpressionAnalysisInterface;
 use Psalm\Plugin\EventHandler\Event\AfterCodebasePopulatedEvent;
 use Psalm\Plugin\EventHandler\Event\AfterEveryFunctionCallAnalysisEvent;
+use Psalm\Plugin\EventHandler\Event\AfterExpressionAnalysisEvent;
 use Psalm\PluginRegistrationSocket;
 use Psalm\Report;
 use Psalm\Report\ReportOptions;
@@ -28,6 +32,7 @@ use Psalm\Tests\Config\Plugin\FixableIssuePlugin;
 use Psalm\Tests\DeferredAnalyzerTestCase;
 use Psalm\Tests\Internal\Provider\FakeParserCacheProvider;
 use Psalm\Tests\TestConfig;
+use RuntimeException;
 
 use function array_fill_keys;
 use function array_keys;
@@ -2107,6 +2112,38 @@ final class PluginTest extends DeferredAnalyzerTestCase
                 }',
         ];
 
+        yield 'do while that widens the receiver' => [
+            '$x = new LegacyReceiver();
+                $i = 0;
+                do {
+                    $x->legacy();
+                    $x = $list[$i];
+                    $i++;
+                } while ($i < 3);',
+            '$x = new LegacyReceiver();
+                $i = 0;
+                do {
+                    $x->legacy();
+                    $x = $list[$i];
+                    $i++;
+                } while ($i < 3);',
+        ];
+
+        yield 'do while that keeps the receiver' => [
+            '$x = new LegacyReceiver();
+                $i = 0;
+                do {
+                    $x->legacy();
+                    $i++;
+                } while ($i < 3);',
+            '$x = new LegacyReceiver();
+                $i = 0;
+                do {
+                    $x->modern();
+                    $i++;
+                } while ($i < 3);',
+        ];
+
         yield 'call outside a loop' => [
             '$x = new LegacyReceiver();
                 $x->legacy();',
@@ -2149,6 +2186,62 @@ final class PluginTest extends DeferredAnalyzerTestCase
         $codebase->analyzer->updateFile($file_path, false);
 
         $this->assertSame($function($expected_body), $codebase->getFileContents($file_path));
+    }
+
+    public function testAHookThrowingInALoopLeavesNoRecordingLevelOpen(): void
+    {
+        $this->project_analyzer = $this->getProjectAnalyzerWithConfig(
+            TestConfig::loadFromXML(
+                dirname(__DIR__, 2) . DIRECTORY_SEPARATOR,
+                '<?xml version="1.0"?>
+                <psalm>
+                    <projectFiles>
+                        <directory name="src" />
+                    </projectFiles>
+                </psalm>',
+            ),
+        );
+
+        $hook = new class implements AfterExpressionAnalysisInterface {
+            /**
+             * @psalm-capabilities read-props
+             */
+            #[Override]
+            public static function afterExpressionAnalysis(AfterExpressionAnalysisEvent $event): ?bool
+            {
+                $expr = $event->getExpr();
+
+                if ($expr instanceof PostInc && $expr->var instanceof Variable && $expr->var->name === 'abort') {
+                    throw new RuntimeException('hook failure');
+                }
+
+                return null;
+            }
+        };
+
+        $codebase = $this->project_analyzer->getCodebase();
+        (new PluginRegistrationSocket($codebase->config, $codebase))->registerHooksFromClass(get_class($hook));
+
+        $file_path = self::$src_dir_path . 'somefile.php';
+        $this->addFile(
+            $file_path,
+            '<?php
+                function f(): void {
+                    $abort = 0;
+                    for ($i = 0; $i < 3; $abort++) {
+                        $i++;
+                    }
+                }',
+        );
+
+        try {
+            $this->analyzeFile($file_path, new Context());
+            $this->fail('Expected the hook to throw');
+        } catch (RuntimeException $e) {
+            $this->assertSame('hook failure', $e->getMessage());
+        }
+
+        $this->assertFalse(IssueBuffer::isRecording());
     }
 
     /**

@@ -166,58 +166,64 @@ final class LoopAnalyzer
             $pre_loop_context = clone $loop_context;
 
             IssueBuffer::startRecording();
-
-            if (!$is_do) {
-                foreach ($pre_conditions as $condition_offset => $pre_condition) {
-                    self::applyPreConditionToLoopContext(
-                        $statements_analyzer,
-                        $pre_condition,
-                        $pre_condition_clauses[$condition_offset],
-                        $loop_context,
-                        $loop_parent_context,
-                        $is_do,
-                    );
+            try {
+                if (!$is_do) {
+                    foreach ($pre_conditions as $condition_offset => $pre_condition) {
+                        self::applyPreConditionToLoopContext(
+                            $statements_analyzer,
+                            $pre_condition,
+                            $pre_condition_clauses[$condition_offset],
+                            $loop_context,
+                            $loop_parent_context,
+                            $is_do,
+                        );
+                    }
                 }
-            }
 
-            $continue_context = clone $loop_context;
+                $continue_context = clone $loop_context;
 
-            $continue_context->loop_scope = $loop_scope;
+                $continue_context->loop_scope = $loop_scope;
 
-            $continue_context->protected_var_ids = $loop_scope->protected_var_ids;
+                $continue_context->protected_var_ids = $loop_scope->protected_var_ids;
 
-            $statements_analyzer->analyze($stmts, $continue_context);
+                $statements_analyzer->analyze($stmts, $continue_context);
 
-            self::updateLoopScopeContexts($loop_scope, $loop_context, $continue_context, $original_parent_context);
+                self::updateLoopScopeContexts($loop_scope, $loop_context, $continue_context, $original_parent_context);
 
-            $continue_context->protected_var_ids = $original_protected_var_ids;
+                $continue_context->protected_var_ids = $original_protected_var_ids;
 
-            if ($is_do) {
-                $inner_do_context = clone $continue_context;
+                if ($is_do) {
+                    $inner_do_context = clone $continue_context;
 
-                foreach ($pre_conditions as $condition_offset => $pre_condition) {
-                    $always_assigned_before_loop_body_vars = [...self::applyPreConditionToLoopContext(
+                    foreach ($pre_conditions as $condition_offset => $pre_condition) {
+                        $always_assigned_before_loop_body_vars = [...self::applyPreConditionToLoopContext(
+                            $statements_analyzer,
+                            $pre_condition,
+                            $pre_condition_clauses[$condition_offset],
+                            $continue_context,
+                            $loop_parent_context,
+                            $is_do,
+                        ), ...$always_assigned_before_loop_body_vars];
+                    }
+                }
+
+                $always_assigned_before_loop_body_vars = array_unique($always_assigned_before_loop_body_vars);
+
+                foreach ($post_expressions as $post_expression) {
+                    if (ExpressionAnalyzer::analyze(
                         $statements_analyzer,
-                        $pre_condition,
-                        $pre_condition_clauses[$condition_offset],
+                        $post_expression,
                         $continue_context,
-                        $loop_parent_context,
-                        $is_do,
-                    ), ...$always_assigned_before_loop_body_vars];
+                    ) === false) {
+                        return false;
+                    }
                 }
+
+                $recorded_issues = IssueBuffer::clearRecordingLevel();
+                $recorded_manipulations = FileManipulationBuffer::clearRecordingLevel();
+            } finally {
+                IssueBuffer::stopRecording();
             }
-
-            $always_assigned_before_loop_body_vars = array_unique($always_assigned_before_loop_body_vars);
-
-            foreach ($post_expressions as $post_expression) {
-                if (ExpressionAnalyzer::analyze($statements_analyzer, $post_expression, $continue_context) === false) {
-                    return false;
-                }
-            }
-
-            $recorded_issues = IssueBuffer::clearRecordingLevel();
-            $recorded_manipulations = FileManipulationBuffer::clearRecordingLevel();
-            IssueBuffer::stopRecording();
 
             // the types the variables the loop defines start an iteration with
             $loop_var_types_at_start = [];
@@ -362,89 +368,95 @@ final class LoopAnalyzer
 
                 $analyzer->setMixedCountsForFile($statements_analyzer->getFilePath(), $original_mixed_counts);
                 IssueBuffer::startRecording();
-
-                if (!$is_do) {
-                    foreach ($pre_conditions as $condition_offset => $pre_condition) {
-                        self::applyPreConditionToLoopContext(
-                            $statements_analyzer,
-                            $pre_condition,
-                            $pre_condition_clauses[$condition_offset],
-                            $continue_context,
-                            $loop_parent_context,
-                            false,
-                        );
-                    }
-                }
-
-                foreach ($always_assigned_before_loop_body_vars as $var_id) {
-                    if ((!isset($continue_context->vars_in_scope[$var_id])
-                            || $continue_context->vars_in_scope[$var_id]->getId()
-                                !== $pre_loop_context->vars_in_scope[$var_id]->getId()
-                            || $continue_context->vars_in_scope[$var_id]->from_docblock
-                                !== $pre_loop_context->vars_in_scope[$var_id]->from_docblock
-                            // the value of an iteration is not the one the last one ended with
-                            || array_keys($continue_context->vars_in_scope[$var_id]->parent_nodes)
-                                !== array_keys($pre_loop_context->vars_in_scope[$var_id]->parent_nodes)
-                        )
-                    ) {
-                        if (isset($pre_loop_context->vars_in_scope[$var_id])) {
-                            $continue_context->vars_in_scope[$var_id] = $pre_loop_context->vars_in_scope[$var_id];
-                        } else {
-                            $continue_context->removePossibleReference($var_id);
+                try {
+                    if (!$is_do) {
+                        foreach ($pre_conditions as $condition_offset => $pre_condition) {
+                            self::applyPreConditionToLoopContext(
+                                $statements_analyzer,
+                                $pre_condition,
+                                $pre_condition_clauses[$condition_offset],
+                                $continue_context,
+                                $loop_parent_context,
+                                false,
+                            );
                         }
                     }
-                }
 
-                $continue_context->clauses = $pre_loop_context->clauses;
-
-                $continue_context->protected_var_ids = $loop_scope->protected_var_ids;
-
-                $traverser = new PhpParser\NodeTraverser;
-
-                $traverser->addVisitor(
-                    new NodeCleanerVisitor(
-                        $statements_analyzer->node_data,
-                    ),
-                );
-                $traverser->traverse($stmts);
-
-                $vars_at_pass_start = $continue_context->vars_in_scope;
-
-                $statements_analyzer->analyze($stmts, $continue_context);
-
-                self::updateLoopScopeContexts($loop_scope, $loop_context, $continue_context, $original_parent_context);
-
-                $continue_context->protected_var_ids = $original_protected_var_ids;
-
-                if ($is_do) {
-                    $inner_do_context = clone $continue_context;
-
-                    foreach ($pre_conditions as $condition_offset => $pre_condition) {
-                        self::applyPreConditionToLoopContext(
-                            $statements_analyzer,
-                            $pre_condition,
-                            $pre_condition_clauses[$condition_offset],
-                            $continue_context,
-                            $loop_parent_context,
-                            $is_do,
-                        );
+                    foreach ($always_assigned_before_loop_body_vars as $var_id) {
+                        if ((!isset($continue_context->vars_in_scope[$var_id])
+                                || $continue_context->vars_in_scope[$var_id]->getId()
+                                    !== $pre_loop_context->vars_in_scope[$var_id]->getId()
+                                || $continue_context->vars_in_scope[$var_id]->from_docblock
+                                    !== $pre_loop_context->vars_in_scope[$var_id]->from_docblock
+                                // the value of an iteration is not the one the last one ended with
+                                || array_keys($continue_context->vars_in_scope[$var_id]->parent_nodes)
+                                    !== array_keys($pre_loop_context->vars_in_scope[$var_id]->parent_nodes)
+                            )
+                        ) {
+                            if (isset($pre_loop_context->vars_in_scope[$var_id])) {
+                                $continue_context->vars_in_scope[$var_id] = $pre_loop_context->vars_in_scope[$var_id];
+                            } else {
+                                $continue_context->removePossibleReference($var_id);
+                            }
+                        }
                     }
-                }
 
-                foreach ($post_expressions as $post_expression) {
-                    if (ExpressionAnalyzer::analyze(
-                        $statements_analyzer,
-                        $post_expression,
+                    $continue_context->clauses = $pre_loop_context->clauses;
+
+                    $continue_context->protected_var_ids = $loop_scope->protected_var_ids;
+
+                    $traverser = new PhpParser\NodeTraverser;
+
+                    $traverser->addVisitor(
+                        new NodeCleanerVisitor(
+                            $statements_analyzer->node_data,
+                        ),
+                    );
+                    $traverser->traverse($stmts);
+
+                    $vars_at_pass_start = $continue_context->vars_in_scope;
+
+                    $statements_analyzer->analyze($stmts, $continue_context);
+
+                    self::updateLoopScopeContexts(
+                        $loop_scope,
+                        $loop_context,
                         $continue_context,
-                    ) === false) {
-                        return false;
+                        $original_parent_context,
+                    );
+
+                    $continue_context->protected_var_ids = $original_protected_var_ids;
+
+                    if ($is_do) {
+                        $inner_do_context = clone $continue_context;
+
+                        foreach ($pre_conditions as $condition_offset => $pre_condition) {
+                            self::applyPreConditionToLoopContext(
+                                $statements_analyzer,
+                                $pre_condition,
+                                $pre_condition_clauses[$condition_offset],
+                                $continue_context,
+                                $loop_parent_context,
+                                $is_do,
+                            );
+                        }
                     }
+
+                    foreach ($post_expressions as $post_expression) {
+                        if (ExpressionAnalyzer::analyze(
+                            $statements_analyzer,
+                            $post_expression,
+                            $continue_context,
+                        ) === false) {
+                            return false;
+                        }
+                    }
+
+                    $recorded_issues = IssueBuffer::clearRecordingLevel();
+                    $recorded_manipulations = FileManipulationBuffer::clearRecordingLevel();
+                } finally {
+                    IssueBuffer::stopRecording();
                 }
-
-                $recorded_issues = IssueBuffer::clearRecordingLevel();
-                $recorded_manipulations = FileManipulationBuffer::clearRecordingLevel();
-
-                IssueBuffer::stopRecording();
 
                 if ($i + 1 === $max_passes
                     && !$data_flow_pass_added

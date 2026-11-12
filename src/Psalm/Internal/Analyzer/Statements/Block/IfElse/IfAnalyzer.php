@@ -350,41 +350,42 @@ final class IfAnalyzer
 
         IssueBuffer::startRecording();
 
-        foreach ($exprs as $expr) {
-            if ($expr instanceof PhpParser\Node\Expr\BinaryOp\BooleanAnd) {
-                $fake_not = new VirtualBooleanOr(
-                    self::negateExpr($expr->left),
-                    self::negateExpr($expr->right),
+        try {
+            foreach ($exprs as $expr) {
+                if ($expr instanceof PhpParser\Node\Expr\BinaryOp\BooleanAnd) {
+                    $fake_not = new VirtualBooleanOr(
+                        self::negateExpr($expr->left),
+                        self::negateExpr($expr->right),
+                        $expr->getAttributes(),
+                    );
+                } else {
+                    $fake_not = self::negateExpr($expr);
+                }
+
+                $fake_negated_expr = new VirtualFuncCall(
+                    new VirtualFullyQualified('assert'),
+                    [new VirtualArg(
+                        $fake_not,
+                        false,
+                        false,
+                        $expr->getAttributes(),
+                    )],
                     $expr->getAttributes(),
                 );
-            } else {
-                $fake_not = self::negateExpr($expr);
+
+                $post_leaving_if_context->inside_negation = !$post_leaving_if_context->inside_negation;
+
+                ExpressionAnalyzer::analyze(
+                    $statements_analyzer,
+                    $fake_negated_expr,
+                    $post_leaving_if_context,
+                );
+
+                $post_leaving_if_context->inside_negation = !$post_leaving_if_context->inside_negation;
             }
-
-            $fake_negated_expr = new VirtualFuncCall(
-                new VirtualFullyQualified('assert'),
-                [new VirtualArg(
-                    $fake_not,
-                    false,
-                    false,
-                    $expr->getAttributes(),
-                )],
-                $expr->getAttributes(),
-            );
-
-            $post_leaving_if_context->inside_negation = !$post_leaving_if_context->inside_negation;
-
-            ExpressionAnalyzer::analyze(
-                $statements_analyzer,
-                $fake_negated_expr,
-                $post_leaving_if_context,
-            );
-
-            $post_leaving_if_context->inside_negation = !$post_leaving_if_context->inside_negation;
+        } finally {
+            IssueBuffer::stopRecording();
         }
-
-        IssueBuffer::clearRecordingLevel();
-        IssueBuffer::stopRecording();
 
         $statements_analyzer->node_data = $old_node_data;
 

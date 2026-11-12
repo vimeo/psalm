@@ -22,12 +22,12 @@ use Psalm\IssueBuffer;
 
 /**
  * @internal
- * @psalm-external-mutation-free
+ * @psalm-capabilities read-props|write-this-props|write-refs|read-globals|write-globals
  */
 abstract class RuntimeCaches
 {
     /**
-     * @psalm-external-mutation-free
+     * @psalm-capabilities read-props|write-this-props|write-refs|read-globals|write-globals
      */
     public static function clearAll(): void
     {

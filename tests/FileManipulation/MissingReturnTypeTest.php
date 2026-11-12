@@ -1207,6 +1207,29 @@ final class MissingReturnTypeTest extends FileManipulationTestCase
                 'safe_types' => true,
                 'allow_backwards_incompatible_changes' => true,
             ],
+            'AddReturnTypeAfterALoopThatStopsTheAnalysis' => [
+                'input' => '<?php
+                    function a(?object $o): void {
+                        for ($i = 0; $i < 3; $i = $o?->foo) {
+                        }
+                    }
+                    function c() {
+                        return 5;
+                    }
+                ',
+                'output' => '<?php
+                    function a(?object $o): void {
+                        for ($i = 0; $i < 3; $i = $o?->foo) {
+                        }
+                    }
+                    function c(): int {
+                        return 5;
+                    }
+                ',
+                'php_version' => '7.4',
+                'issues_to_fix' => ['MissingReturnType'],
+                'safe_types' => true,
+            ],
         ];
     }
 }
