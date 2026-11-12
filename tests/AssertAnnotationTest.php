@@ -4266,18 +4266,18 @@ final class AssertAnnotationTest extends TestCase
                 'code' => '<?php
                     interface Comparable {
                         /** @psalm-assert-if-true static $object */
-                        public function equals(Comparable $object): bool;
+                        public function equals(object $object): bool;
                     }
 
                     final class Money implements Comparable {
                         public int $amount = 0;
 
-                        public function equals(Comparable $object): bool {
+                        public function equals(object $object): bool {
                             return true;
                         }
                     }
 
-                    function total(Comparable $left, Comparable $right): int {
+                    function total(Comparable $left, object $right): int {
                         if ($left->equals($right)) {
                             return $right->amount;
                         }

@@ -5746,6 +5746,34 @@ final class TaintTest extends TestCase
     public static function providerInvalidCodeParse(): array
     {
         return [
+            'nullsafeCallOnAStaticPropertyStoresTheTaint' => [
+                'code' => '<?php // --taint-analysis
+                    final class H {
+                        /** @var ArrayObject<int, string>|null */
+                        public static ?ArrayObject $acc = null;
+                    }
+
+                    function f(): void {
+                        H::$acc?->append((string) $_GET["x"]);
+                        echo (string) H::$acc?->offsetGet(0);
+                    }',
+                'error_message' => 'TaintedHtml',
+            ],
+            'nullsafeCallOnAPropertyStoresTheTaint' => [
+                'code' => '<?php // --taint-analysis
+                    final class H {
+                        /** @var ArrayObject<int, string>|null */
+                        public ?ArrayObject $acc = null;
+
+                        public function f(): void {
+                            $this->acc?->append((string) $_GET["x"]);
+                            echo (string) $this->acc?->offsetGet(0);
+                        }
+                    }
+
+                    (new H())->f();',
+                'error_message' => 'TaintedHtml',
+            ],
             'conditionallyEscapedTaintPassedFalseInstanceMethod' => [
                 'code' => '<?php
                     class U {
@@ -16028,6 +16056,31 @@ final class TaintTest extends TestCase
 
                     /** @psalm-suppress InvalidCast */
                     echo (string) source();',
+                'error_message' => 'TaintedHtml',
+            ],
+            'argumentTypeKeepsTaintThroughTemplateStandinReplacement' => [
+                // the standin replacement runs on the argument type of a generic class method call
+                'code' => '<?php
+                    /** @template TValue */
+                    final class Coll {
+                        /** @param array<(callable(TValue): mixed)|(callable(int): mixed)|string> $cb */
+                        public function sortBy(array $cb): void {
+                            foreach ($cb as $c) {
+                                if (is_string($c)) {
+                                    echo $c;
+                                }
+                            }
+                        }
+
+                        /** @param array<(callable(TValue): mixed)|(callable(int): mixed)|string> $cb */
+                        public function sortByDesc(array $cb): void {
+                            $this->sortBy($cb);
+                        }
+                    }
+
+                    /** @var Coll<string> $c */
+                    $c = new Coll();
+                    $c->sortByDesc([(string) $_GET["a"]]);',
                 'error_message' => 'TaintedHtml',
             ],
         ];

@@ -248,7 +248,9 @@ final class FormulaGenerator
                 return Algebra::negateFormula($clauses);
             }
 
-            if ($conditional->expr instanceof PhpParser\Node\Expr\BinaryOp\BooleanAnd) {
+            if ($conditional->expr instanceof PhpParser\Node\Expr\BinaryOp\BooleanAnd
+                || $conditional->expr instanceof PhpParser\Node\Expr\BinaryOp\LogicalAnd
+            ) {
                 $and_expr = new VirtualBooleanOr(
                     new VirtualBooleanNot(
                         $conditional->expr->left,
@@ -582,6 +584,23 @@ final class FormulaGenerator
         }
 
         return false;
+    }
+
+    /**
+     * Whether the formula of the condition leaves out what the left side of an `&&` tested of a variable that the right
+     * side assigns: it holds where the whole condition does, so its negation has to be made from the negated condition
+     * (`!A || !B`), where the right side is only evaluated if the left one holds
+     */
+    public static function leavesOutClausesOfAssignedVars(
+        PhpParser\Node\Expr $conditional,
+        ?string $this_class_name,
+    ): bool {
+        return (new PhpParser\NodeFinder())->findFirst(
+            $conditional,
+            static fn(PhpParser\Node $node): bool => ($node instanceof PhpParser\Node\Expr\BinaryOp\BooleanAnd
+                    || $node instanceof PhpParser\Node\Expr\BinaryOp\LogicalAnd)
+                && self::getAssignedVarIds($node->right, $this_class_name) !== [],
+        ) !== null;
     }
 
     /**
