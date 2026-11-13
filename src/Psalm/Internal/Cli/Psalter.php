@@ -44,6 +44,7 @@ use function fwrite;
 use function gc_collect_cycles;
 use function gc_disable;
 use function getcwd;
+use function getenv;
 use function getopt;
 use function implode;
 use function in_array;
@@ -68,6 +69,7 @@ use const FILTER_VALIDATE_BOOLEAN;
 use const PATHINFO_EXTENSION;
 use const PHP_EOL;
 use const STDERR;
+use const STDOUT;
 
 // phpcs:disable PSR1.Files.SideEffects
 
@@ -86,7 +88,7 @@ final class Psalter
 
     public const LONG_OPTIONS = [
         'help', 'debug', 'debug-by-line', 'debug-emitted-issues', 'config:', 'file:', 'root:',
-        'plugin:', 'issues:', 'list-supported-issues', 'php-version:', 'dry-run', 'safe-types',
+        'plugin:', 'issues:', 'list-supported-issues', 'php-version:', 'dry-run', 'no-diff', 'safe-types',
         'find-unused-code', 'threads:', 'scan-threads:', 'codeowner:',
         'allow-backwards-incompatible-changes:',
         'add-newline-between-docblock-annotations:',
@@ -157,7 +159,10 @@ final class Psalter
                     Executes a plugin, an alternative to using the Psalm config
 
                 --dry-run
-                    Shows a diff of all the changes, without making them
+                    Does not write the changes
+
+                --no-diff
+                    Does not print the diff, only the list of changed files
 
                 --safe-types
                     Only update PHP types when the new type information comes from other PHP types,
@@ -314,7 +319,10 @@ final class Psalter
         $stdout_report_options = new ReportOptions();
         $stdout_report_options->use_color = !array_key_exists('m', $options)
             && !CliUtils::noColorRequested()
-            && !CliUtils::runningUnderAiAgent();
+            && !CliUtils::runningUnderAiAgent()
+            && CliUtils::streamIsInteractive(STDOUT)
+            && getenv('TERM') !== 'dumb';
+        $stdout_report_options->in_ci = $in_ci;
 
         $project_analyzer = new ProjectAnalyzer(
             $config,
@@ -442,6 +450,7 @@ final class Psalter
         $project_analyzer->alterCodeAfterCompletion(
             array_key_exists('dry-run', $options),
             array_key_exists('safe-types', $options),
+            !array_key_exists('no-diff', $options),
         );
 
         if ($keyed_issues === ['all' => true]) {

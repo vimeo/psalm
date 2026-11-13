@@ -817,6 +817,9 @@ abstract class CallAnalyzer
             } elseif (str_contains($var_possibilities->var_id, '::$')) {
                 // allow assertions to bring external static props into scope
                 $assertion_var_id = $var_possibilities->var_id;
+            } elseif ($var_possibilities->var_id === Context::PHP_SAPI_VAR_ID) {
+                // a guard asserting the SAPI narrows it like an inline check, so e.g. the code after it is CLI code
+                $assertion_var_id = Context::PHP_SAPI_VAR_ID;
             } elseif (AssertionFinder::isArrayOffsetAssertionId($var_possibilities->var_id)) {
                 $assertion_var_id = AssertionFinder::getArrayOffsetVarId(
                     $var_possibilities->var_id,

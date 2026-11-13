@@ -220,6 +220,10 @@ final class AssignmentAnalyzer
             unset($context->cond_referenced_var_ids[$extended_var_id]);
             $context->assigned_var_ids[$extended_var_id] = (int) $assign_var->getAttribute('startFilePos');
             $context->possibly_assigned_var_ids[$extended_var_id] = true;
+
+            if (!$assign_var instanceof PhpParser\Node\Expr\ArrayDimFetch) {
+                $context->fully_assigned_var_ids[$extended_var_id] = true;
+            }
         }
 
         $root_expr = $assign_var;
@@ -1080,8 +1084,46 @@ final class AssignmentAnalyzer
 
         $statements_analyzer->node_data = clone $statements_analyzer->node_data;
 
+        // `$a += $b` with an array `$a` keeps the offsets it had, whatever `$b` is
+        $union_var_id = $stmt instanceof PhpParser\Node\Expr\AssignOp\Plus
+            ? ExpressionIdentifier::getExtendedVarId(
+                $stmt->var,
+                $statements_analyzer->getFQCLN(),
+                $statements_analyzer,
+            )
+            : null;
+        // only where it was not assigned as a whole before in the branch, whichever union follows
+        $array_union_var_id = $union_var_id !== null
+            && isset($context->vars_in_scope[$union_var_id])
+            && $context->vars_in_scope[$union_var_id]->isArray()
+            && !isset($context->fully_assigned_var_ids[$union_var_id])
+                ? $union_var_id
+                : null;
+
+        // what is known of the offsets of the array before the union holds after it
+        $kept_offsets = [];
+
+        if ($stmt instanceof PhpParser\Node\Expr\AssignOp\Plus && $array_union_var_id !== null) {
+            foreach ($context->vars_in_scope as $offset_var_id => $offset_type) {
+                if (str_starts_with($offset_var_id, $array_union_var_id . '[')
+                    || str_starts_with($offset_var_id, $array_union_var_id . '->')
+                ) {
+                    $kept_offsets[$offset_var_id] = $offset_type;
+                }
+            }
+        }
+
         if (ExpressionAnalyzer::analyze($statements_analyzer, $fake_assignment, $context) === false) {
             return false;
+        }
+
+        if ($array_union_var_id !== null) {
+            // the union is not an assignment of the array as a whole
+            unset($context->fully_assigned_var_ids[$array_union_var_id]);
+
+            foreach ($kept_offsets as $offset_var_id => $offset_type) {
+                $context->vars_in_scope[$offset_var_id] ??= $offset_type;
+            }
         }
 
         $old_node_data->setType(
@@ -1156,6 +1198,75 @@ final class AssignmentAnalyzer
             }
         }
 
+        if ($lhs_var_id !== null
+            && $rhs_var_id === null
+            && $stmt->var instanceof PhpParser\Node\Expr\Variable
+            && ($stmt->expr instanceof PhpParser\Node\Expr\FuncCall
+                || $stmt->expr instanceof PhpParser\Node\Expr\MethodCall
+                || $stmt->expr instanceof PhpParser\Node\Expr\StaticCall
+            )
+            && ($return_type = $statements_analyzer->node_data->getType($stmt->expr))
+            && $return_type->by_ref
+        ) {
+            // The call returns a reference whose target is outside the local variable map.
+            // A normal assignment still handles its type, annotations, diagnostics and data flow.
+            // Rebinding can release the old value before the normal assignment gets to inspect it.
+            DestructorAnalyzer::chargeOverwrite(
+                $statements_analyzer,
+                $context,
+                $stmt->var,
+                $lhs_var_id,
+                $return_type,
+            );
+            FunctionLikeAnalyzer::unbindByRefParam($statements_analyzer->getCodebase(), $context, $lhs_var_id);
+
+            if (isset($context->references_in_scope[$lhs_var_id])) {
+                $context->decrementReferenceCount($lhs_var_id);
+                unset($context->references_in_scope[$lhs_var_id]);
+            }
+
+            unset(
+                $context->references_possibly_from_confusing_scope[$lhs_var_id],
+                $context->references_to_external_scope[$lhs_var_id],
+            );
+
+            if (isset($context->vars_in_scope[$lhs_var_id])) {
+                $context->removeDescendents(
+                    $lhs_var_id,
+                    $context->vars_in_scope[$lhs_var_id],
+                    $return_type,
+                    $statements_analyzer,
+                );
+            }
+
+            // Detach any previous PHP-level alias before assigning the new value.
+            unset($context->vars_in_scope[$lhs_var_id]);
+            // Reuse the already analyzed return type without evaluating the call a second time.
+            $assignment_type = self::analyze(
+                $statements_analyzer,
+                $stmt->var,
+                null,
+                $return_type,
+                $context,
+                $doc_comment,
+                [],
+                $from_stmt === null ? $stmt : null,
+            );
+
+            // Binding the returned reference does not write through the previous alias.
+            if (isset($context->vars_in_scope[$lhs_var_id])) {
+                $context->vars_in_scope[$lhs_var_id] = $context->vars_in_scope[$lhs_var_id]->setByRef(true);
+            }
+            $context->references_to_external_scope[$lhs_var_id] = true;
+
+            // The assignment expression itself evaluates to the referenced value.
+            if ($from_stmt === null && $assignment_type !== null) {
+                $statements_analyzer->node_data->setType($stmt, $assignment_type->setByRef(false));
+            }
+
+            return true;
+        }
+
         if ($lhs_var_id === null || $rhs_var_id === null) {
             return false;
         }
@@ -1190,6 +1301,11 @@ final class AssignmentAnalyzer
         // When assigning an existing reference as a reference it removes the
         // old reference, so it's no longer potentially from a confusing scope.
         unset($context->references_possibly_from_confusing_scope[$lhs_var_id]);
+        $rhs_is_external = isset($context->references_to_external_scope[$rhs_var_id]);
+        unset($context->references_to_external_scope[$lhs_var_id]);
+        if ($rhs_is_external) {
+            $context->references_to_external_scope[$lhs_var_id] = true;
+        }
 
         $context->vars_in_scope[$lhs_var_id] = &$context->vars_in_scope[$rhs_var_id];
         $context->hasVariable($lhs_var_id);
