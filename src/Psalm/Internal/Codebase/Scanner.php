@@ -352,6 +352,34 @@ final class Scanner
         }
     }
 
+    /**
+     * Takes the files and classes queued for scanning out of the queue, to put them back with restoreQueue()
+     *
+     * @return array{array<string, string>, array<string, string>, array<string, bool>}
+     */
+    public function takeQueue(): array
+    {
+        $queue = [$this->files_to_scan, $this->classes_to_scan, $this->classes_to_deep_scan];
+
+        $this->files_to_scan = [];
+        $this->classes_to_scan = [];
+        $this->classes_to_deep_scan = [];
+
+        return $queue;
+    }
+
+    /**
+     * @param array{array<string, string>, array<string, string>, array<string, bool>} $queue
+     */
+    public function restoreQueue(array $queue): void
+    {
+        [$files_to_scan, $classes_to_scan, $classes_to_deep_scan] = $queue;
+
+        $this->files_to_scan += $files_to_scan;
+        $this->classes_to_scan += $classes_to_scan;
+        $this->classes_to_deep_scan += $classes_to_deep_scan;
+    }
+
     public function scanFiles(ClassLikes $classlikes, int $pool_size = 1): bool
     {
         $has_changes = false;
