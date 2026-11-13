@@ -152,6 +152,151 @@ final class CliOnlyCallTest extends TestCase
 
                     (new ImportCommand())->run();',
             ],
+            'guardedByAFunctionAssertingTheSapi' => [
+                'code' => '<?php
+                    /** @psalm-cli-only */
+                    function import(): void {}
+
+                    /** @psalm-assert "cli" PHP_SAPI */
+                    function requireCli(): void {
+                        if (PHP_SAPI !== "cli") {
+                            throw new LogicException("Run it from the command line");
+                        }
+                    }
+
+                    /** @psalm-assert "cli"|"phpdbg" php_sapi_name() */
+                    function requireCommandLine(): void {
+                        if (!in_array(php_sapi_name(), ["cli", "phpdbg"], true)) {
+                            throw new LogicException("Run it from the command line");
+                        }
+                    }
+
+                    /** @psalm-assert-if-true "cli" PHP_SAPI */
+                    function isCli(): bool {
+                        return PHP_SAPI === "cli";
+                    }
+
+                    /** @phpstan-assert-if-false "cli" \PHP_SAPI */
+                    function isWeb(): bool {
+                        return PHP_SAPI !== "cli";
+                    }
+
+                    function a(): void {
+                        requireCli();
+                        import();
+                        array_map(function (int $i): void {
+                            import();
+                        }, [1]);
+                        array_map(fn(int $i) => import(), [1]);
+                    }
+
+                    function b(): void {
+                        requireCommandLine();
+                        import();
+                    }
+
+                    function c(): void {
+                        if (isCli()) {
+                            import();
+                        }
+                    }
+
+                    function d(): void {
+                        if (!isWeb()) {
+                            import();
+                        }
+                    }
+
+                    function e(): void {
+                        if (isWeb()) {
+                            return;
+                        }
+
+                        import();
+                    }
+
+                    requireCli();
+                    import();',
+            ],
+            'guardedByAMethodAssertingTheSapi' => [
+                'code' => '<?php
+                    /** @psalm-cli-only */
+                    function import(): void {}
+
+                    final class Sapi {
+                        /** @psalm-assert "cli" PHP_SAPI */
+                        public static function requireCli(): void {
+                            if (PHP_SAPI !== "cli") {
+                                throw new LogicException("Run it from the command line");
+                            }
+                        }
+
+                        /** @psalm-assert-if-true "cli" PHP_SAPI */
+                        public static function isCli(): bool {
+                            return PHP_SAPI === "cli";
+                        }
+
+                        /** @psalm-assert "cli" PHP_SAPI */
+                        public function check(): void {
+                            self::requireCli();
+                        }
+
+                        /** @psalm-assert-if-true "cli" PHP_SAPI */
+                        public function runsFromTheCommandLine(): bool {
+                            return self::isCli();
+                        }
+
+                        /** @psalm-assert-if-false "cli" PHP_SAPI */
+                        public function runsOnTheWeb(): bool {
+                            return !self::isCli();
+                        }
+                    }
+
+                    function a(): void {
+                        Sapi::requireCli();
+                        import();
+                    }
+
+                    function b(): void {
+                        if (Sapi::isCli()) {
+                            import();
+                        }
+                    }
+
+                    function c(Sapi $sapi): void {
+                        $sapi->check();
+                        import();
+                    }
+
+                    function d(Sapi $sapi): void {
+                        if ($sapi->runsFromTheCommandLine()) {
+                            import();
+                        }
+                    }
+
+                    function e(Sapi $sapi): void {
+                        if ($sapi->runsOnTheWeb()) {
+                            return;
+                        }
+
+                        import();
+                    }',
+            ],
+            'parameterNamedPhpSapiStaysTheTargetOfItsAssertion' => [
+                'code' => '<?php
+                    /** @psalm-assert "cli" $PHP_SAPI */
+                    function requireCli(string $PHP_SAPI): void {
+                        if ($PHP_SAPI !== "cli") {
+                            throw new LogicException("Run it from the command line");
+                        }
+                    }
+
+                    $sapi = PHP_SAPI;
+                    requireCli($sapi);',
+                'assertions' => [
+                    '$sapi===' => "'cli'",
+                ],
+            ],
             'sapiChecksKeepTheirTypes' => [
                 'code' => '<?php
                     function a(): string {
@@ -418,6 +563,163 @@ final class CliOnlyCallTest extends TestCase
 
                     if (PHP_SAPI === "cli") {
                         $import();
+                    }',
+                'error_message' => 'CliOnlyCall',
+            ],
+            'calledOutsideTheBranchOfAFunctionAssertingTheSapiIfTrue' => [
+                'code' => '<?php
+                    /** @psalm-cli-only */
+                    function import(): void {}
+
+                    /** @psalm-assert-if-true "cli" PHP_SAPI */
+                    function isCli(): bool {
+                        return PHP_SAPI === "cli";
+                    }
+
+                    function run(): void {
+                        if (isCli()) {
+                            import();
+                        }
+
+                        import();
+                    }',
+                'error_message' => 'CliOnlyCall - src' . DIRECTORY_SEPARATOR . 'somefile.php:15:25',
+            ],
+            'calledInTheElseBranchOfAFunctionAssertingTheSapiIfTrue' => [
+                'code' => '<?php
+                    /** @psalm-cli-only */
+                    function import(): void {}
+
+                    /** @psalm-assert-if-true "cli" PHP_SAPI */
+                    function isCli(): bool {
+                        return PHP_SAPI === "cli";
+                    }
+
+                    if (!isCli()) {
+                        import();
+                    }',
+                'error_message' => 'CliOnlyCall',
+            ],
+            'calledWhenAFunctionAssertingTheSapiIfFalseReturnsTrue' => [
+                'code' => '<?php
+                    /** @psalm-cli-only */
+                    function import(): void {}
+
+                    /** @psalm-assert-if-false "cli" PHP_SAPI */
+                    function isWeb(): bool {
+                        return PHP_SAPI !== "cli";
+                    }
+
+                    if (isWeb()) {
+                        import();
+                    }',
+                'error_message' => 'CliOnlyCall',
+            ],
+            'calledAfterAFunctionAssertingAnotherSapi' => [
+                'code' => '<?php
+                    /** @psalm-cli-only */
+                    function import(): void {}
+
+                    /** @psalm-assert "cli-server" PHP_SAPI */
+                    function requireBuiltinWebServer(): void {
+                        if (PHP_SAPI !== "cli-server") {
+                            throw new LogicException("Run it in the builtin web server");
+                        }
+                    }
+
+                    requireBuiltinWebServer();
+                    import();',
+                'error_message' => 'CliOnlyCall',
+            ],
+            'calledAfterAFunctionAssertingTheSapiIsNotTheCommandLine' => [
+                'code' => '<?php
+                    /** @psalm-cli-only */
+                    function import(): void {}
+
+                    /** @psalm-assert !"cli" PHP_SAPI */
+                    function requireWeb(): void {
+                        if (PHP_SAPI === "cli") {
+                            throw new LogicException("Run it on the web");
+                        }
+                    }
+
+                    requireWeb();
+                    import();',
+                'error_message' => 'CliOnlyCall',
+            ],
+            'calledBeforeAFunctionAssertingTheSapi' => [
+                'code' => '<?php
+                    /** @psalm-cli-only */
+                    function import(): void {}
+
+                    /** @psalm-assert "cli" PHP_SAPI */
+                    function requireCli(): void {
+                        if (PHP_SAPI !== "cli") {
+                            throw new LogicException("Run it from the command line");
+                        }
+                    }
+
+                    $import = function (): void {
+                        import();
+                    };
+
+                    requireCli();
+                    $import();',
+                'error_message' => 'CliOnlyCall',
+            ],
+            'calledOutsideTheBranchOfAStaticMethodAssertingTheSapiIfTrue' => [
+                'code' => '<?php
+                    /** @psalm-cli-only */
+                    function import(): void {}
+
+                    final class Sapi {
+                        /** @psalm-assert-if-true "cli" PHP_SAPI */
+                        public static function isCli(): bool {
+                            return PHP_SAPI === "cli";
+                        }
+                    }
+
+                    if (!Sapi::isCli()) {
+                        import();
+                    }',
+                'error_message' => 'CliOnlyCall',
+            ],
+            'calledAfterAnInstanceMethodAssertingAnotherSapi' => [
+                'code' => '<?php
+                    /** @psalm-cli-only */
+                    function import(): void {}
+
+                    final class Sapi {
+                        /** @psalm-assert "fpm-fcgi" PHP_SAPI */
+                        public function requireFpm(): void {
+                            if (PHP_SAPI !== "fpm-fcgi") {
+                                throw new LogicException("Run it in FPM");
+                            }
+                        }
+                    }
+
+                    function run(Sapi $sapi): void {
+                        $sapi->requireFpm();
+                        import();
+                    }',
+                'error_message' => 'CliOnlyCall',
+            ],
+            'calledWhenAnInstanceMethodAssertingTheSapiIfFalseReturnsTrue' => [
+                'code' => '<?php
+                    /** @psalm-cli-only */
+                    function import(): void {}
+
+                    final class Sapi {
+                        /** @psalm-assert-if-false "cli" PHP_SAPI */
+                        public function runsOnTheWeb(): bool {
+                            return PHP_SAPI !== "cli";
+                        }
+                    }
+
+                    function run(Sapi $sapi): void {
+                        if ($sapi->runsOnTheWeb()) {
+                            import();
+                        }
                     }',
                 'error_message' => 'CliOnlyCall',
             ],

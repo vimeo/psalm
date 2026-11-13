@@ -5585,6 +5585,66 @@ final class TaintTest extends TestCase
 
                     echo (string) $_GET["file"];',
             ],
+            'codeGuardedByAnAssertionOfTheSapiPrintsToATerminal' => [
+                'code' => '<?php
+                    /** @psalm-assert "cli" PHP_SAPI */
+                    function requireCli(): void {
+                        if (PHP_SAPI !== "cli") {
+                            throw new LogicException("Run it from the command line");
+                        }
+                    }
+
+                    /** @psalm-assert-if-true "cli" php_sapi_name() */
+                    function isCli(): bool {
+                        return php_sapi_name() === "cli";
+                    }
+
+                    /** @psalm-assert-if-false "cli" PHP_SAPI */
+                    function isWeb(): bool {
+                        return PHP_SAPI !== "cli";
+                    }
+
+                    final class Sapi {
+                        /** @psalm-assert "cli" PHP_SAPI */
+                        public static function requireCli(): void {
+                            requireCli();
+                        }
+
+                        /** @psalm-assert-if-true "cli" PHP_SAPI */
+                        public function isCli(): bool {
+                            return isCli();
+                        }
+                    }
+
+                    function a(): void {
+                        requireCli();
+                        echo (string) $_GET["file"];
+                        array_map(function (string $line): void {
+                            echo $line;
+                        }, [(string) $_GET["file"]]);
+                    }
+
+                    function b(): void {
+                        if (isCli()) {
+                            echo (string) $_GET["file"];
+                        }
+                    }
+
+                    function c(): void {
+                        if (!isWeb()) {
+                            echo (string) $_GET["file"];
+                        }
+                    }
+
+                    function d(Sapi $sapi): void {
+                        if ($sapi->isCli()) {
+                            echo (string) $_GET["file"];
+                        }
+                    }
+
+                    Sapi::requireCli();
+                    echo (string) $_GET["file"];',
+            ],
             'specializedCallsStayApartThroughADespecializedHelper' => [
                 'code' => '<?php // --taint-analysis
                     /** @psalm-taint-specialize */
@@ -8657,6 +8717,51 @@ final class TaintTest extends TestCase
                     }
 
                     echo (string) $_GET["file"];',
+                'error_message' => 'TaintedHtml',
+            ],
+            'codeOutsideTheBranchOfAnAssertionOfTheSapiPrintsToAResponse' => [
+                'code' => '<?php
+                    /** @psalm-assert-if-true "cli" PHP_SAPI */
+                    function isCli(): bool {
+                        return PHP_SAPI === "cli";
+                    }
+
+                    if (isCli()) {
+                        echo "Importing";
+                    }
+
+                    echo (string) $_GET["file"];',
+                'error_message' => 'TaintedHtml',
+            ],
+            'codeAfterAnAssertionOfAnotherSapiPrintsToAResponse' => [
+                'code' => '<?php
+                    final class Sapi {
+                        /** @psalm-assert "cli-server" PHP_SAPI */
+                        public static function requireBuiltinWebServer(): void {
+                            if (PHP_SAPI !== "cli-server") {
+                                throw new LogicException("Run it in the builtin web server");
+                            }
+                        }
+                    }
+
+                    Sapi::requireBuiltinWebServer();
+                    echo (string) $_GET["file"];',
+                'error_message' => 'TaintedHtml',
+            ],
+            'codeWhereAnAssertionOfTheSapiIfFalseFailsPrintsToAResponse' => [
+                'code' => '<?php
+                    final class Sapi {
+                        /** @psalm-assert-if-false "cli" PHP_SAPI */
+                        public function isWeb(): bool {
+                            return PHP_SAPI !== "cli";
+                        }
+                    }
+
+                    function show(Sapi $sapi): void {
+                        if ($sapi->isWeb()) {
+                            echo (string) $_GET["file"];
+                        }
+                    }',
                 'error_message' => 'TaintedHtml',
             ],
             'traitMethodOfAClassThatIsNotCliOnlyPrintsToAResponse' => [
