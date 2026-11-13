@@ -546,13 +546,44 @@ final class PsalmEndToEndTest extends TestCase
 
     public function testPsalmReadsThePathsToCheckFromStdinForADash(): void
     {
+        // only the clean file is named on STDIN: FileWithErrors.php is in the project, but isn't analysed
+        $process = $this->runPsalmWithPathsOnStdin(self::$tmpDir . '/src/Clean.php' . PHP_EOL);
+
+        $this->assertStringNotContainsString('Uninitialized string offset', $process->getErrorOutput());
+        $this->assertStringContainsString('No errors found!', $process->getOutput());
+        $this->assertSame(0, $process->getExitCode());
+    }
+
+    public function testPsalmReadsThePathsOfEveryLineOfStdinForADash(): void
+    {
+        $process = $this->runPsalmWithPathsOnStdin(
+            self::$tmpDir . '/src/Clean.php' . PHP_EOL . self::$tmpDir . '/src/FileWithErrors.php' . PHP_EOL,
+        );
+
+        $this->assertStringContainsString('2 errors', $process->getOutput());
+        $this->assertSame(2, $process->getExitCode());
+    }
+
+    public function testPsalmIgnoresTheEnvironmentWhenItReadsThePathsFromStdin(): void
+    {
+        $process = $this->runPsalmWithPathsOnStdin(
+            self::$tmpDir . '/src/Clean.php' . PHP_EOL,
+            ['PSALM_STDIN_PATHS' => self::$tmpDir . '/src/FileWithErrors.php'],
+        );
+
+        $this->assertStringContainsString('No errors found!', $process->getOutput());
+        $this->assertSame(0, $process->getExitCode());
+    }
+
+    /** @param array<string, string> $env */
+    private function runPsalmWithPathsOnStdin(string $stdin, array $env = []): Process
+    {
         $this->runPsalmInit(1);
         $psalmXml = file_get_contents(self::$tmpDir . '/psalm.xml');
         $psalmXml = str_replace('<psalm', '<psalm runTaintAnalysis="false"', (string)$psalmXml);
         file_put_contents(self::$tmpDir . '/psalm.xml', $psalmXml);
         file_put_contents(self::$tmpDir . '/src/Clean.php', "<?php\nfunction clean(): void {}\n");
 
-        // only the clean file is named on STDIN: FileWithErrors.php is in the project, but isn't analysed
         $process = new Process(
             [
                 PHP_BINARY,
@@ -563,14 +594,12 @@ final class PsalmEndToEndTest extends TestCase
                 '-',
             ],
             self::$tmpDir,
-            self::agentEnvVarsToUnset(),
-            self::$tmpDir . '/src/Clean.php' . PHP_EOL,
+            $env + self::agentEnvVarsToUnset(),
+            $stdin,
         );
         $process->run();
 
-        $this->assertStringNotContainsString('Uninitialized string offset', $process->getErrorOutput());
-        $this->assertStringContainsString('No errors found!', $process->getOutput());
-        $this->assertSame(0, $process->getExitCode());
+        return $process;
     }
 
     public function testPsalmRejectsAnEmptyPathWithoutCrashing(): void

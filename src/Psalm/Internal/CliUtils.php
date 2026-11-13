@@ -43,7 +43,6 @@ use function json_decode;
 use function preg_last_error_msg;
 use function preg_replace;
 use function preg_split;
-use function putenv;
 use function realpath;
 use function str_ends_with;
 use function str_starts_with;
@@ -72,6 +71,8 @@ use const STDOUT;
  */
 final class CliUtils
 {
+    private static ?string $stdin_contents = null;
+
     /** @return list<ClassLoader> */
     public static function requireAutoloaders(
         string $current_dir,
@@ -291,9 +292,10 @@ final class CliUtils
     }
 
     /**
+     * @param bool $read_stdin whether `-` reads the paths from STDIN, which consumes it
      * @return list<string>|null
      */
-    public static function getPathsToCheck(string|array|false|null $f_paths): ?array
+    public static function getPathsToCheck(string|array|false|null $f_paths, bool $read_stdin = true): ?array
     {
         $paths_to_check = [];
 
@@ -345,7 +347,8 @@ final class CliUtils
         }
 
         if ($filtered_input_paths === ['-']) {
-            $stdin_paths = self::getPathsToCheckFromStdin();
+            // the Config must not consume STDIN: it loads before Psalm decides to restart, and again after it
+            $stdin_paths = $read_stdin ? self::getPathsToCheckFromStdin() : [];
 
             if ($stdin_paths !== null) {
                 $filtered_input_paths = $stdin_paths;
@@ -383,9 +386,9 @@ final class CliUtils
     /**
      * Reads a whitespace-separated list of paths to analyse from STDIN (used with `psalm -`).
      *
-     * `-` is an explicit request to read STDIN, so this waits for it to end. STDIN can be read only once, but
-     * the paths are needed by the Config, by the CLI, and by the process that Psalm restarts into after the first
-     * two have read them: the first read leaves them in the environment, which the restarted process inherits.
+     * `-` is an explicit request to read STDIN, so this waits for it to end. STDIN can be read only once, so the
+     * result is kept for the later calls of this process. Only the process that analyses reads it: the one that
+     * Psalm restarts into inherits STDIN, so the one that restarts must leave it unread.
      *
      * The paths are supplied by the (trusted) user invoking the CLI, so the input taint that
      * the STDIN stream carries is escaped here.
@@ -395,27 +398,22 @@ final class CliUtils
      */
     private static function getPathsToCheckFromStdin(): ?array
     {
-        $stdin = getenv('PSALM_STDIN_PATHS');
-
-        if ($stdin === false) {
+        if (self::$stdin_contents === null) {
             $meta = stream_get_meta_data(STDIN);
             stream_set_blocking(STDIN, true);
 
             try {
-                $stdin = stream_get_contents(STDIN);
+                self::$stdin_contents = trim((string) stream_get_contents(STDIN));
             } finally {
                 stream_set_blocking(STDIN, $meta['blocked']);
             }
-
-            $stdin = trim((string) $stdin);
-            putenv('PSALM_STDIN_PATHS=' . $stdin);
         }
 
-        if ($stdin === '') {
+        if (self::$stdin_contents === '') {
             return null;
         }
 
-        $paths = preg_split('/\s+/', $stdin);
+        $paths = preg_split('/\s+/', self::$stdin_contents);
 
         if ($paths === false) {
             throw new RuntimeException('Invalid paths: ' . preg_last_error_msg());
