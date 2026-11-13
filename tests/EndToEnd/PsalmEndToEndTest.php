@@ -295,6 +295,33 @@ final class PsalmEndToEndTest extends TestCase
         $this->assertStringContainsString("2) src/B.php:3\n", $output);
     }
 
+    public function testPsalterAppliesAFixOnceWhenPathsOverlap(): void
+    {
+        $this->runPsalmInit();
+        $psalmXml = file_get_contents(self::$tmpDir . '/psalm.xml');
+        $psalmXml = str_replace('<psalm', '<psalm runTaintAnalysis="false"', (string)$psalmXml);
+        file_put_contents(self::$tmpDir . '/psalm.xml', $psalmXml);
+        file_put_contents(self::$tmpDir . '/src/A.php', "<?php\n\nfunction a() {\n    return 1;\n}\n");
+        file_put_contents(self::$tmpDir . '/src/B.php', "<?php\n\nfunction b() {\n    return 2;\n}\n");
+
+        $process = new Process(
+            [PHP_BINARY, $this->psalter, '--no-cache', '--issues=MissingReturnType', 'src', 'src/A.php'],
+            self::$tmpDir,
+            self::agentEnvVarsToUnset(),
+        );
+        $process->mustRun();
+
+        $this->assertSame(
+            "<?php\n\nfunction a(): int {\n    return 1;\n}\n",
+            file_get_contents(self::$tmpDir . '/src/A.php'),
+        );
+        $this->assertSame(
+            "<?php\n\nfunction b(): int {\n    return 2;\n}\n",
+            file_get_contents(self::$tmpDir . '/src/B.php'),
+        );
+        $this->assertStringContainsString("\n2 files changed\n", $process->getOutput());
+    }
+
     public function testPsalterFixesTheIssuesAPluginDeclares(): void
     {
         $this->runPsalmInit(1);
