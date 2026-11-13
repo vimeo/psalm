@@ -292,12 +292,11 @@ final class Analyzer
 
             $files_to_update = $this->files_to_update ?? $this->files_to_analyze;
 
-            $diff_renderer = $project_analyzer->show_diff
-                ? new UnifiedDiffRenderer(
-                    $project_analyzer->stdout_report_options->use_color ?? false,
-                    $project_analyzer->stdout_report_options->in_ci ?? false,
-                )
-                : null;
+            $diff_renderer = new UnifiedDiffRenderer(
+                $project_analyzer->stdout_report_options->use_color ?? false,
+                $project_analyzer->stdout_report_options->in_ci ?? false,
+                $project_analyzer->show_diff,
+            );
 
             foreach ($files_to_update as $file_path) {
                 $this->updateFile($file_path, $project_analyzer->dry_run, $diff_renderer);
@@ -1247,7 +1246,10 @@ final class Analyzer
             return;
         }
 
-        $this->progress->alterFileDone($relative_path);
+        // the title of a shown diff already tells which file is altered
+        if (!$diff_renderer?->show_diff) {
+            $this->progress->alterFileDone($relative_path);
+        }
 
         $this->file_provider->setContents($file_path, $existing_contents);
     }

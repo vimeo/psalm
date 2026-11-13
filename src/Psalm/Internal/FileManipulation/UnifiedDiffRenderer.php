@@ -39,6 +39,7 @@ final class UnifiedDiffRenderer
     public function __construct(
         private readonly bool $use_color = false,
         private readonly bool $in_ci = false,
+        public readonly bool $show_diff = true,
     ) {
     }
 
@@ -52,6 +53,24 @@ final class UnifiedDiffRenderer
         string $old_contents,
         string $new_contents,
     ): string {
+        $first_changed_line = self::getFirstChangedLine($old_contents, $new_contents);
+        $title = $index . ') ' . $relative_path . ':' . $first_changed_line;
+
+        if ($this->use_color) {
+            $title = $this->formatTitle($title, $absolute_path, $first_changed_line);
+        }
+
+        if (!$this->show_diff) {
+            return $title . "\n";
+        }
+
+        $separator = $index > 1 ? "\n" : '';
+
+        return $separator . $title . "\n" . $this->renderDiff($relative_path, $old_contents, $new_contents);
+    }
+
+    private function renderDiff(string $relative_path, string $old_contents, string $new_contents): string
+    {
         // like `git diff`, a trailing tab ends the file name so that `patch` accepts names containing spaces
         $header_suffix = str_contains($relative_path, ' ') ? "\t" : '';
         $diff = (new Differ(
@@ -61,24 +80,16 @@ final class UnifiedDiffRenderer
             ]),
         ))->diff($old_contents, $new_contents);
 
-        $first_changed_line = self::getFirstChangedLine($old_contents, $new_contents);
-        $title = $index . ') ' . $relative_path . ':' . $first_changed_line;
-        $separator = $index > 1 ? "\n" : '';
-
         if (!$this->use_color) {
-            return $separator . $title . "\n" . $diff;
+            return $diff;
         }
 
         $lines = explode("\n", $diff);
         // every diff line, including the last one, ends with a newline
         array_pop($lines);
-        // drop the `---` and `+++` headers
-        $lines = array_slice($lines, 2);
 
-        return $separator
-            . $this->formatTitle($title, $absolute_path, $first_changed_line)
-            . "\n"
-            . self::colorize($lines);
+        // drop the `---` and `+++` headers
+        return self::colorize(array_slice($lines, 2));
     }
 
     /**

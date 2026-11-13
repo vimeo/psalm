@@ -324,26 +324,33 @@ final class PsalmEndToEndTest extends TestCase
 
     public function testPsalterPrintsTheDiffOfARealRun(): void
     {
-        $output = $this->runPsalterOnAFileWithAMissingReturnType([]);
+        $process = $this->runPsalterOnAFileWithAMissingReturnType([]);
+        $output = $process->getOutput();
 
+        $this->assertStringNotContainsString('Altered', $process->getErrorOutput());
         $this->assertStringContainsString("1) src/A.php:3\n", $output);
         $this->assertStringContainsString("\n+function a(): int {\n", $output);
         $this->assertStringContainsString("\n1 file changed\n", $output);
     }
 
-    public function testPsalterNoDiffHidesTheDiffButStillWritesTheFiles(): void
+    public function testPsalterNoDiffListsTheChangedFilesWithoutTheDiffAndStillWritesThem(): void
     {
-        $output = $this->runPsalterOnAFileWithAMissingReturnType(['--no-diff']);
+        $process = $this->runPsalterOnAFileWithAMissingReturnType(['--no-diff']);
+        $output = $process->getOutput();
 
-        $this->assertStringNotContainsString('1) src/A.php', $output);
+        $this->assertStringContainsString('Altered src/A.php', $process->getErrorOutput());
+
+        $this->assertStringStartsWith("1) src/A.php:3\n------------------------------\n", $output);
+        $this->assertStringNotContainsString('@@', $output);
         $this->assertStringNotContainsString('+function a()', $output);
+        $this->assertStringNotContainsString('-function a()', $output);
         $this->assertStringContainsString("\n1 file changed\n", $output);
     }
 
     /**
      * @param list<string> $extra_args
      */
-    private function runPsalterOnAFileWithAMissingReturnType(array $extra_args): string
+    private function runPsalterOnAFileWithAMissingReturnType(array $extra_args): Process
     {
         $this->runPsalmInit();
         $psalmXml = file_get_contents(self::$tmpDir . '/psalm.xml');
@@ -363,7 +370,7 @@ final class PsalmEndToEndTest extends TestCase
             file_get_contents(self::$tmpDir . '/src/A.php'),
         );
 
-        return $process->getOutput();
+        return $process;
     }
 
     public function testPsalterFixesTheIssuesAPluginDeclares(): void
