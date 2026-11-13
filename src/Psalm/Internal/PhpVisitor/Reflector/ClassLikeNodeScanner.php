@@ -1017,6 +1017,17 @@ final class ClassLikeNodeScanner
             // the `@psalm-pure` and `@psalm-mutation-free` they spell
             $storage->taint_specialize = $docblock_info->taint_specialize;
             $storage->cli_only = $docblock_info->cli_only;
+
+            if ($docblock_info->cli_only_instances) {
+                if ($node instanceof PhpParser\Node\Stmt\Class_) {
+                    $storage->cli_only_instances = true;
+                } else {
+                    $storage->docblock_issues[] = new InvalidDocblock(
+                        '@psalm-cli-only-instances is only allowed on a class, not on ' . $fq_classlike_name,
+                        $name_location ?? $class_location,
+                    );
+                }
+            }
             $storage->taint_property_bag = $docblock_info->taint_property_bag;
             $storage->specialize_instance = $docblock_info->taint_specialize
                 || ($docblock_info->has_mutations_annotation
