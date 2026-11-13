@@ -5,6 +5,9 @@ declare(strict_types=1);
 namespace Psalm\Tests;
 
 use Override;
+use Psalm\Context;
+use Psalm\Internal\Analyzer\IssueData;
+use Psalm\IssueBuffer;
 use Psalm\Tests\Traits\InvalidCodeAnalysisTestTrait;
 use Psalm\Tests\Traits\ValidCodeAnalysisTestTrait;
 
@@ -334,8 +337,7 @@ final class MatchTest extends TestCase
                         };
                     }
                     PHP,
-                'assertions' => [
-                ],
+                'assertions' => [],
                 'ignored_issues' => [],
                 'php_version' => '8.0',
             ],
@@ -352,10 +354,14 @@ final class MatchTest extends TestCase
                     $b = match (true) {
                         $level instanceof \Stringable, \is_int($level), \is_string($level) => $level,
                     };
+                    $c = match (true) {
+                        \is_string($level), \is_int($level) => $level,
+                    };
                     PHP,
                 'assertions' => [
                     '$a' => 'Stringable|null|string',
                     '$b' => 'Stringable|int|string',
+                    '$c' => 'int|string',
                 ],
                 'ignored_issues' => [],
                 'php_version' => '8.0',
@@ -619,5 +625,34 @@ final class MatchTest extends TestCase
                 'php_version' => '8.0',
             ],
         ];
+    }
+
+    public function testMatchTrueArmConditionIssueIsReportedOnceAtTheCondition(): void
+    {
+        $this->testConfig->throw_exception = false;
+        $this->project_analyzer->setPhpVersion('8.0', 'tests');
+        $file_path = self::$src_dir_path . 'somefile.php';
+
+        $this->addFile(
+            $file_path,
+            '<?php
+                function f(int $i): int {
+                    return match (true) {
+                        $i > 0,
+                        is_string($i) => 1,
+                        default => 2,
+                    };
+                }',
+        );
+
+        $this->analyzeFile($file_path, new Context());
+
+        self::assertSame(
+            [[5, 25, 'TypeDoesNotContainType']],
+            array_map(
+                static fn(IssueData $issue): array => [$issue->line_from, $issue->column_from, $issue->type],
+                IssueBuffer::getIssuesDataForFile($file_path),
+            ),
+        );
     }
 }

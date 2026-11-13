@@ -40,7 +40,6 @@ use function array_map;
 use function array_merge;
 use function array_reverse;
 use function array_shift;
-use function array_slice;
 use function array_values;
 use function count;
 use function in_array;
@@ -81,6 +80,9 @@ final class MatchAnalyzer
         );
 
         $match_condition = $stmt->cond;
+
+        $is_match_true = $stmt->cond instanceof PhpParser\Node\Expr\ConstFetch
+            && $stmt->cond->name->toString() === 'true';
 
         if (!$switch_var_id) {
             if ($stmt->cond instanceof PhpParser\Node\Expr\FuncCall
@@ -123,9 +125,7 @@ final class MatchAnalyzer
                 && $stmt->cond->name->toString() === 'class'
             ) {
                 // do nothing
-            } elseif ($stmt->cond instanceof PhpParser\Node\Expr\ConstFetch
-                && $stmt->cond->name->toString() === 'true'
-            ) {
+            } elseif ($is_match_true) {
                 // do nothing
             } else {
                 $switch_var_id = '$__tmp_switch__' . (int) $stmt->cond->getAttribute('startFilePos');
@@ -141,9 +141,6 @@ final class MatchAnalyzer
             }
         }
 
-        $is_match_true = $stmt->cond instanceof PhpParser\Node\Expr\ConstFetch
-            && $stmt->cond->name->toString() === 'true';
-
         $arms = $stmt->arms;
         $flattened_arms = [];
         $last_arm = null;
@@ -154,7 +151,7 @@ final class MatchAnalyzer
                 continue;
             }
 
-            // the body of a `match (true)` arm sees the union of what its conditions assert
+            // analysed once per condition, the body would see only that condition's narrowing
             if ($is_match_true) {
                 $flattened_arms[] = $arm;
                 continue;
@@ -195,7 +192,12 @@ final class MatchAnalyzer
             $ternary = $last_arm->body;
         } else {
             $ternary = new VirtualTernary(
-                self::convertCondsToConditional($last_arm->conds, $match_condition, $last_arm->getAttributes()),
+                self::convertCondsToConditional(
+                    $last_arm->conds,
+                    $match_condition,
+                    $last_arm->getAttributes(),
+                    $is_match_true,
+                ),
                 $last_arm->body,
                 new VirtualThrow(
                     new VirtualNew(
@@ -217,7 +219,7 @@ final class MatchAnalyzer
             }
 
             $ternary = new VirtualTernary(
-                self::convertCondsToConditional($arm->conds, $match_condition, $arm->getAttributes()),
+                self::convertCondsToConditional($arm->conds, $match_condition, $arm->getAttributes(), $is_match_true),
                 $arm->body,
                 $ternary,
                 $arm->getAttributes(),
@@ -291,6 +293,7 @@ final class MatchAnalyzer
                     $all_conds,
                     $match_condition,
                     $match_condition->getAttributes(),
+                    false,
                 );
             }
 
@@ -425,30 +428,30 @@ final class MatchAnalyzer
         array $conds,
         PhpParser\Node\Expr $match_condition,
         array $attributes,
+        bool $is_match_true,
     ): PhpParser\Node\Expr {
+        // in_array() narrows only its needle, and the needle of `match (true)` is a constant: its conditions narrow
+        // only in an `||` chain, where each keeps its own location and clause key
+        if ($is_match_true) {
+            $conditional = null;
+
+            foreach ($conds as $cond) {
+                $cond_identical = new VirtualIdentical($match_condition, $cond, $cond->getAttributes());
+
+                $conditional = $conditional
+                    ? new VirtualBooleanOr($conditional, $cond_identical, $attributes)
+                    : $cond_identical;
+            }
+
+            return $conditional;
+        }
+
         if (count($conds) === 1) {
             return new VirtualIdentical(
                 $match_condition,
                 $conds[0],
                 $attributes,
             );
-        }
-
-        // `match (true)` arms are plain conditions, which the assertion finder only understands in an `||` chain
-        if ($match_condition instanceof PhpParser\Node\Expr\ConstFetch
-            && $match_condition->name->toString() === 'true'
-        ) {
-            $or = new VirtualIdentical($match_condition, $conds[0], $attributes);
-
-            foreach (array_slice($conds, 1) as $cond) {
-                $or = new VirtualBooleanOr(
-                    $or,
-                    new VirtualIdentical($match_condition, $cond, $attributes),
-                    $attributes,
-                );
-            }
-
-            return $or;
         }
 
         $array_items = array_map(
