@@ -6,7 +6,12 @@ namespace Psalm\Internal\TypeVisitor;
 
 use Override;
 use Psalm\Internal\Codebase\Methods;
+use Psalm\Type\Atomic;
+use Psalm\Type\Atomic\TCallableObject;
+use Psalm\Type\Atomic\TIterable;
 use Psalm\Type\Atomic\TNamedObject;
+use Psalm\Type\Atomic\TObject;
+use Psalm\Type\Atomic\TObjectWithProperties;
 use Psalm\Type\Atomic\TTemplateParam;
 use Psalm\Type\Atomic\TTemplateParamClass;
 use Psalm\Type\MutableTypeVisitor;
@@ -14,6 +19,8 @@ use Psalm\Type\MutableUnion;
 use Psalm\Type\TypeNode;
 use Psalm\Type\Union;
 
+use function array_merge;
+use function array_shift;
 use function array_values;
 use function count;
 
@@ -79,7 +86,11 @@ final class TypeLocalizer extends MutableTypeVisitor
                     $union->removeType($key);
 
                     foreach ($types_to_add as $extra_added_type) {
-                        $union->addType($extra_added_type);
+                        $union->addType(
+                            $extra_added_type === $atomic_type
+                                ? $extra_added_type
+                                : self::withIntersectionTypes($extra_added_type, $atomic_type->extra_types),
+                        );
                     }
                 }
             }
@@ -92,5 +103,45 @@ final class TypeLocalizer extends MutableTypeVisitor
         }
 
         return null;
+    }
+
+    /**
+     * Re-applies the intersection constraints of a replaced template param (`T&Countable`) to its replacement.
+     *
+     * @param array<string, TNamedObject|TTemplateParam|TIterable|TObjectWithProperties|TCallableObject> $extra_types
+     * @psalm-pure
+     */
+    private static function withIntersectionTypes(Atomic $replacement, array $extra_types): Atomic
+    {
+        if (!$extra_types) {
+            return $replacement;
+        }
+
+        if ($replacement instanceof TNamedObject
+            || $replacement instanceof TTemplateParam
+            || $replacement instanceof TIterable
+            || $replacement instanceof TObjectWithProperties
+        ) {
+            return $replacement->setIntersectionTypes(array_merge($extra_types, $replacement->extra_types));
+        }
+
+        if ($replacement instanceof TObject) {
+            $first_extra_type = array_shift($extra_types);
+
+            if ($replacement instanceof TCallableObject) {
+                // the comparators only honour a `callable-object` that is a member of another type's intersection
+                $extra_types = array_merge(
+                    $extra_types,
+                    $replacement->extra_types,
+                    [$replacement->getKey() => $replacement],
+                );
+            }
+
+            return $extra_types
+                ? $first_extra_type->setIntersectionTypes(array_merge($first_extra_type->extra_types, $extra_types))
+                : $first_extra_type;
+        }
+
+        return $replacement;
     }
 }

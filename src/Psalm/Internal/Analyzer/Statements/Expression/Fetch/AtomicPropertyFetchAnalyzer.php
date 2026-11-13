@@ -187,6 +187,10 @@ final class AtomicPropertyFetchAnalyzer
 
         $class_exists = false;
 
+        // the part of the receiver a magic getter is called on: the property may be read from a member of an
+        // intersection, but the getter of any of the other members could serve it
+        $magic_get_receiver = $lhs_type_part;
+
         $codebase = $statements_analyzer->getCodebase();
 
         if (!$codebase->classExists($lhs_type_part->value, null, $context)
@@ -328,7 +332,11 @@ final class AtomicPropertyFetchAnalyzer
             $has_named_mixins = (bool) $class_storage->namedMixins;
             $matched_mixin = false;
             $templated_mixins = $class_storage->templatedMixins
-                ? self::resolveTemplatedMixins($codebase, $class_storage, $lhs_type_part)
+                ? self::resolveTemplatedMixins(
+                    $codebase,
+                    $class_storage,
+                    self::getIntersectionMemberOfClass($lhs_type_part, $fq_class_name) ?? $lhs_type_part,
+                )
                 : [];
 
             if ($has_named_mixins || $templated_mixins) {
@@ -359,6 +367,7 @@ final class AtomicPropertyFetchAnalyzer
                         $matched_mixin = true;
                         $fq_class_name = $mixin->value;
                         $lhs_type_part = $mixin;
+                        $magic_get_receiver = $mixin;
                         $class_storage = $new_class_storage;
 
                         if (!isset($new_class_storage->pseudo_property_get_types['$' . $prop_name])) {
@@ -409,6 +418,7 @@ final class AtomicPropertyFetchAnalyzer
             $fq_class_name,
             $prop_name,
             $lhs_type_part,
+            $magic_get_receiver,
             $property_id,
             $has_magic_getter,
             $stmt_var_id,
@@ -715,6 +725,7 @@ final class AtomicPropertyFetchAnalyzer
         string $fq_class_name,
         string $prop_name,
         TNamedObject $lhs_type_part,
+        TNamedObject $magic_get_receiver,
         string &$property_id,
         bool &$has_magic_getter,
         ?string $stmt_var_id,
@@ -763,14 +774,18 @@ final class AtomicPropertyFetchAnalyzer
                 );
 
                 if (count($template_types = $class_storage->getClassTemplateTypes()) !== 0) {
-                    if (!$lhs_type_part instanceof TGenericObject) {
-                        $lhs_type_part = new TGenericObject($lhs_type_part->value, $template_types);
+                    // only the intersection member owning the property may supply its class type params, while the
+                    // synthetic __get call below keeps the full receiver
+                    $owner_part = self::getIntersectionMemberOfClass($lhs_type_part, $fq_class_name) ?? $lhs_type_part;
+
+                    if (!$owner_part instanceof TGenericObject) {
+                        $owner_part = new TGenericObject($owner_part->value, $template_types);
                     }
 
                     $stmt_type = self::localizePropertyType(
                         $codebase,
                         $stmt_type,
-                        $lhs_type_part,
+                        $owner_part,
                         $class_storage,
                         $declaring_property_class
                             ? $codebase->classlike_storage_provider->get(
@@ -806,7 +821,7 @@ final class AtomicPropertyFetchAnalyzer
 
             $statements_analyzer->node_data = clone $statements_analyzer->node_data;
 
-            $statements_analyzer->node_data->setType($stmt->var, new Union([$lhs_type_part]));
+            $statements_analyzer->node_data->setType($stmt->var, new Union([$magic_get_receiver]));
 
             $fake_method_call = new VirtualMethodCall(
                 $stmt->var,
@@ -882,6 +897,32 @@ final class AtomicPropertyFetchAnalyzer
         }
 
         return true;
+    }
+
+    /**
+     * The part of an intersection (or the type itself) naming the given class, as it carries that class's type params
+     *
+     * @psalm-pure
+     */
+    public static function getIntersectionMemberOfClass(
+        TNamedObject $lhs_type_part,
+        string $fq_class_name,
+    ): ?TNamedObject {
+        $fq_class_name = strtolower($fq_class_name);
+
+        if (strtolower($lhs_type_part->value) === $fq_class_name) {
+            return $lhs_type_part;
+        }
+
+        foreach ($lhs_type_part->getIntersectionTypes() as $intersection_type) {
+            if ($intersection_type instanceof TNamedObject
+                && strtolower($intersection_type->value) === $fq_class_name
+            ) {
+                return $intersection_type;
+            }
+        }
+
+        return null;
     }
 
     public static function localizePropertyType(
@@ -1611,14 +1652,17 @@ final class AtomicPropertyFetchAnalyzer
             );
 
             if (count($template_types = $class_storage->getClassTemplateTypes()) !== 0) {
-                if (!$lhs_type_part instanceof TGenericObject) {
-                    $lhs_type_part = new TGenericObject($lhs_type_part->value, $template_types);
+                $owner_part = self::getIntersectionMemberOfClass($lhs_type_part, $class_storage->name)
+                    ?? $lhs_type_part;
+
+                if (!$owner_part instanceof TGenericObject) {
+                    $owner_part = new TGenericObject($owner_part->value, $template_types);
                 }
 
                 $stmt_type = self::localizePropertyType(
                     $codebase,
                     $stmt_type,
-                    $lhs_type_part,
+                    $owner_part,
                     $class_storage,
                     $declaring_property_class
                         ? $codebase->classlike_storage_provider->get(
@@ -1703,6 +1747,8 @@ final class AtomicPropertyFetchAnalyzer
 
             $class_property_type = Type::getMixed();
         } else {
+            $lhs_type_part = self::getIntersectionMemberOfClass($lhs_type_part, $fq_class_name) ?? $lhs_type_part;
+
             $class_property_type = TypeExpander::expandUnion(
                 $codebase,
                 $class_property_type,
