@@ -21,13 +21,20 @@ use Psalm\Plugin\EventHandler\AfterCodebasePopulatedInterface;
 use Psalm\Plugin\EventHandler\AfterEveryFunctionCallAnalysisInterface;
 use Psalm\Plugin\EventHandler\Event\AfterCodebasePopulatedEvent;
 use Psalm\Plugin\EventHandler\Event\AfterEveryFunctionCallAnalysisEvent;
+use Psalm\Plugin\EventHandler\Event\MethodParamsProviderEvent;
+use Psalm\Plugin\EventHandler\Event\MethodReturnTypeProviderEvent;
+use Psalm\Plugin\EventHandler\MethodParamsProviderInterface;
+use Psalm\Plugin\EventHandler\MethodReturnTypeProviderInterface;
 use Psalm\PluginRegistrationSocket;
 use Psalm\Report;
 use Psalm\Report\ReportOptions;
+use Psalm\Storage\FunctionLikeParameter;
 use Psalm\Tests\Config\Plugin\FixableIssuePlugin;
 use Psalm\Tests\DeferredAnalyzerTestCase;
 use Psalm\Tests\Internal\Provider\FakeParserCacheProvider;
 use Psalm\Tests\TestConfig;
+use Psalm\Type;
+use Psalm\Type\Union;
 
 use function array_fill_keys;
 use function array_keys;
@@ -921,6 +928,109 @@ final class PluginTest extends DeferredAnalyzerTestCase
         );
 
         $this->analyzeFile($file_path, new Context());
+    }
+
+    public function testMethodProvidersOnMagicCall(): void
+    {
+        $this->project_analyzer = $this->getProjectAnalyzerWithConfig(
+            TestConfig::loadFromXML(
+                dirname(__DIR__, 2) . DIRECTORY_SEPARATOR,
+                '<?xml version="1.0"?>
+                <psalm
+                    errorLevel="1"
+                    findUnusedPsalmSuppress="true"
+                ></psalm>',
+            ),
+        );
+
+        $codebase = $this->project_analyzer->getCodebase();
+
+        // answers every call on classes that have no such method and rely on __call and __callStatic
+        $hook = new class implements MethodReturnTypeProviderInterface, MethodParamsProviderInterface {
+            public static int $params_lookups = 0;
+
+            /**
+             * @return array<string>
+             * @psalm-pure
+             */
+            #[Override]
+            public static function getClassLikeNames(): array
+            {
+                return ['Ns\Optional', 'Ns\Plain'];
+            }
+
+            #[Override]
+            public static function getMethodReturnType(MethodReturnTypeProviderEvent $event): ?Union
+            {
+                return $event->getTemplateTypeParameters()[0] ?? Type::getString();
+            }
+
+            /**
+             * @return ?array<int, FunctionLikeParameter>
+             */
+            #[Override]
+            public static function getMethodParams(MethodParamsProviderEvent $event): ?array
+            {
+                if ($event->getMethodNameLowercase() === '__construct') {
+                    return null;
+                }
+
+                self::$params_lookups++;
+
+                return $event->getFqClasslikeName() === 'Ns\Optional'
+                    ? [new FunctionLikeParameter('first', false, Type::getString(), Type::getString())]
+                    : null;
+            }
+        };
+
+        (new PluginRegistrationSocket($codebase->config, $codebase))->registerHooksFromClass(get_class($hook));
+
+        $file_path = (string) getcwd() . '/src/somefile.php';
+
+        $this->addFile(
+            $file_path,
+            '<?php
+                namespace Ns;
+
+                class Foo {}
+
+                /** @template T */
+                class Optional {
+                    /** @param T $value */
+                    public function __construct(private mixed $value) {}
+
+                    /** @param list<mixed> $args */
+                    public function __call(string $name, array $args): mixed { return null; }
+                }
+
+                class Plain {
+                    /** @param list<mixed> $args */
+                    public function __call(string $name, array $args): mixed { return null; }
+
+                    /** @param list<mixed> $args */
+                    public static function __callStatic(string $name, array $args): mixed { return null; }
+                }
+
+                function run(string $s): void {
+                    $optional = new Optional(new Foo());
+                    $result = $optional->anything($s);
+                    /** @psalm-check-type-exact $result = Foo */;
+
+                    /** @psalm-suppress InvalidScalarArgument the provided param is a string */
+                    $optional->anything(1);
+
+                    $plain = new Plain();
+                    $instance = $plain->zzz($s, 1);
+                    /** @psalm-check-type-exact $instance = string */;
+
+                    $static = Plain::zzz($s, 1);
+                    /** @psalm-check-type-exact $static = string */;
+                }',
+        );
+
+        $this->analyzeFile($file_path, new Context());
+
+        $this->assertSame(4, $hook::$params_lookups);
     }
 
     public function testFunctionProviderHooks(): void

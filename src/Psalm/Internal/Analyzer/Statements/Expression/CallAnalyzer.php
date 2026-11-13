@@ -322,7 +322,16 @@ abstract class CallAnalyzer
     ): bool {
         $codebase = $statements_analyzer->getCodebase();
 
-        if (!$method_id) {
+        // reached through `__call` or `__callStatic`, a method has params only if a provider supplies them
+        $method_params = $method_id ? $codebase->methods->findMethodParams(
+            $method_id,
+            $statements_analyzer,
+            $args,
+            $context,
+            $code_location,
+        ) : null;
+
+        if (!$method_id || $method_params === null) {
             return ArgumentsAnalyzer::analyze(
                 $statements_analyzer,
                 $args,
@@ -333,14 +342,6 @@ abstract class CallAnalyzer
                 $template_result,
             ) !== false;
         }
-
-        $method_params = $codebase->methods->getMethodParams(
-            $method_id,
-            $statements_analyzer,
-            $args,
-            $context,
-            $code_location,
-        );
 
         $fq_class_name = $method_id->fq_class_name;
         $method_name = $method_id->method_name;
