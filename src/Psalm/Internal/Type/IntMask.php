@@ -192,27 +192,6 @@ final class IntMask
     }
 
     /**
-     * The bits every int a type holds has, or null when they are unknown: those all its literals share. An int-mask
-     * expanded to literals has those its sets all have, an int none known.
-     *
-     * @psalm-pure
-     */
-    public static function getCertainBits(Union $type): ?int
-    {
-        $bits = -1;
-
-        foreach ($type->getAtomicTypes() as $atomic) {
-            if (!$atomic instanceof TLiteralInt) {
-                return null;
-            }
-
-            $bits &= $atomic->value;
-        }
-
-        return $bits;
-    }
-
-    /**
      * The bits the ints a type holds may have, or null when they are unknown: those of an int-mask, or of literals.
      * A type that may be anything else than an int is unknown, even when it carries the bits of a mask: a string or
      * a float of `int-mask<1, 2>|string` may be any int once coerced.

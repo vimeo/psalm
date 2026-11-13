@@ -263,7 +263,7 @@ final class TaintTest extends TestCase
     }
 
     /**
-     * json_encode() removes the html taint only when every literal its flags may be escapes <, > and &, and never the
+     * json_encode() removes the html taint only when its flags, a constant expression, escape <, > and &, and never the
      * has_quotes one: the " delimiting a JSON string ends a double-quoted attribute, whatever the flags.
      */
     public function testJsonEncodeRemovesTheHtmlTaintOnlyWithItsHexFlags(): void
@@ -313,7 +313,6 @@ final class TaintTest extends TestCase
                 [10, 'TaintedTextWithQuotes'],
                 [11, 'TaintedHtml'],
                 [11, 'TaintedTextWithQuotes'],
-                [12, 'TaintedHtml'],
                 [12, 'TaintedTextWithQuotes'],
                 [13, 'TaintedTextWithQuotes'],
             ],
@@ -428,8 +427,8 @@ final class TaintTest extends TestCase
     }
 
     /**
-     * The flags only remove a taint when every value they may have escapes it: the bits an int computed from an
-     * unknown int has are unknown, and a value that may be other than an int may be any int once coerced.
+     * The flags only remove a taint when they are a constant expression escaping it: `|` with an unknown operand has
+     * the bits of the other one, but a variable has none for sure whatever its type, nor `&` or a ternary with one.
      */
     public function testFlagsRemoveTaintsOnlyWhenEveryValueTheyMayHaveEscapesThem(): void
     {
@@ -485,7 +484,6 @@ final class TaintTest extends TestCase
 
         self::assertEqualsCanonicalizing(
             [
-                [16, 'TaintedHtml'],
                 [16, 'TaintedTextWithQuotes'],
                 [17, 'TaintedHtml'],
                 [17, 'TaintedTextWithQuotes'],
@@ -508,7 +506,6 @@ final class TaintTest extends TestCase
                 [27, 'TaintedHeader'],
                 [28, 'TaintedHeader'],
                 [29, 'TaintedHeader'],
-                [30, 'TaintedTextWithQuotes'],
                 [31, 'TaintedTextWithQuotes'],
                 [32, 'TaintedTextWithQuotes'],
                 [33, 'TaintedTextWithQuotes'],
@@ -563,6 +560,156 @@ final class TaintTest extends TestCase
                 [12, 'TaintedTextWithQuotes'],
             ],
             array_map(static fn(IssueData $issue): array => [$issue->line_from, $issue->type], $issues),
+        );
+    }
+
+    /**
+     * Only a constant expression tells the bits the flags have for sure: a variable, a parameter or a call may hold
+     * any whatever its type, which an assert() compiled out in production, a `@var` or a `@param` with a wrong
+     * caller may make a literal. So may an unqualified constant of a namespace, and the constant of a class Psalm may
+     * not know is the one that runs: declared in a condition, twice, or under a name class_alias() gives it.
+     */
+    public function testFlagsOnlyRemoveTaintsWhenTheyAreConstant(): void
+    {
+        $this->testConfig->throw_exception = false;
+        $file_path = self::$src_dir_path . 'somefile.php';
+        $this->addFile(self::$src_dir_path . 'zzz.php', '<?php
+            namespace Foo;
+
+            final class Duplicate {
+                public const FLAGS = 0;
+                public const QUOTES = 0;
+            }
+        ');
+        $this->addFile($file_path, '<?php
+            namespace Foo;
+
+            use const JSON_HEX_AMP;
+            use const JSON_HEX_TAG;
+
+            /** @param 12 $flags */
+            function f(int $flags, bool $c, array $a): void {
+                $variable = JSON_HEX_TAG | JSON_HEX_AMP;
+                echo \json_encode($_GET["a"], $variable);
+                echo \json_encode($_GET["b"], $flags);
+                assert($a["x"] === 12);
+                echo \json_encode($_GET["c"], $a["x"]);
+                /** @var 12 */
+                $var = $a["y"];
+                echo \json_encode($_GET["d"], $var);
+                echo \json_encode($_GET["e"], $c ? $variable : JSON_HEX_TAG | JSON_HEX_AMP);
+                echo \json_encode($_GET["f"], Conditional::FLAGS);
+                echo \json_encode($_GET["g"], Duplicate::FLAGS);
+                echo \json_encode($_GET["h"], Aliased::FLAGS);
+                echo \json_encode($_GET["i"], flags());
+                $quotes = \ENT_QUOTES;
+                echo \htmlspecialchars((string) $_GET["j"], $quotes);
+                assert($a["z"] === 3);
+                echo \htmlspecialchars((string) $_GET["k"], $a["z"]);
+                echo \htmlspecialchars((string) $_GET["l"], ENT_QUOTES);
+                echo \htmlspecialchars((string) $_GET["m"], Conditional::QUOTES);
+                echo \htmlspecialchars((string) $_GET["n"], Duplicate::QUOTES);
+                echo \htmlspecialchars((string) $_GET["o"], Aliased::QUOTES);
+            }
+
+            final class ChildOfConditional extends Conditional {
+                public function f(): void {
+                    echo \json_encode($_GET["t"], parent::FLAGS);
+                    echo \json_encode($_GET["u"], self::FLAGS);
+                }
+            }
+
+            /** @return 12 */
+            function flags(): int {
+                return 12;
+            }
+
+            if (\getenv("LEGACY") === false) {
+                class Conditional {
+                    public const FLAGS = \JSON_HEX_TAG | \JSON_HEX_AMP;
+                    public const QUOTES = \ENT_QUOTES;
+                }
+            }
+
+            final class Duplicate {
+                public const FLAGS = \JSON_HEX_TAG | \JSON_HEX_AMP;
+                public const QUOTES = \ENT_QUOTES;
+            }
+
+            final class Real {
+                public const FLAGS = \JSON_HEX_TAG | \JSON_HEX_AMP;
+                public const QUOTES = \ENT_QUOTES;
+            }
+
+            class_alias(Real::class, Aliased::class);
+        ');
+        // the methods of a class declared in a condition in a namespace aren't analyzed
+        $global_file_path = self::$src_dir_path . 'global.php';
+        $this->addFile($global_file_path, '<?php
+            if (\getenv("LEGACY") === false) {
+                final class ConditionalChild extends Foo\Real {
+                    public function f(): void {
+                        echo json_encode($_GET["p"], parent::FLAGS);
+                        echo json_encode($_GET["q"], self::FLAGS);
+                        echo json_encode($_GET["r"], static::FLAGS);
+                        echo htmlspecialchars((string) $_GET["s"], parent::QUOTES);
+                    }
+                }
+            }
+        ');
+        $this->project_analyzer->trackTaintedInputs();
+        $this->project_analyzer->getCodebase()->config->initializePlugins($this->project_analyzer);
+
+        $this->analyzeFile($file_path, new Context(), false);
+        $this->analyzeFile($global_file_path, new Context(), false);
+
+        $issues = array_values(array_filter(
+            [...IssueBuffer::getIssuesDataForFile($file_path), ...IssueBuffer::getIssuesDataForFile($global_file_path)],
+            static fn(IssueData $issue): bool => str_starts_with($issue->type, 'Tainted'),
+        ));
+
+        self::assertEqualsCanonicalizing(
+            [
+                ['src/somefile.php', 10, 'TaintedHtml'],
+                ['src/somefile.php', 10, 'TaintedTextWithQuotes'],
+                ['src/somefile.php', 11, 'TaintedHtml'],
+                ['src/somefile.php', 11, 'TaintedTextWithQuotes'],
+                ['src/somefile.php', 13, 'TaintedHtml'],
+                ['src/somefile.php', 13, 'TaintedTextWithQuotes'],
+                ['src/somefile.php', 16, 'TaintedHtml'],
+                ['src/somefile.php', 16, 'TaintedTextWithQuotes'],
+                ['src/somefile.php', 17, 'TaintedHtml'],
+                ['src/somefile.php', 17, 'TaintedTextWithQuotes'],
+                ['src/somefile.php', 18, 'TaintedHtml'],
+                ['src/somefile.php', 18, 'TaintedTextWithQuotes'],
+                ['src/somefile.php', 19, 'TaintedHtml'],
+                ['src/somefile.php', 19, 'TaintedTextWithQuotes'],
+                ['src/somefile.php', 20, 'TaintedHtml'],
+                ['src/somefile.php', 20, 'TaintedTextWithQuotes'],
+                ['src/somefile.php', 21, 'TaintedHtml'],
+                ['src/somefile.php', 21, 'TaintedTextWithQuotes'],
+                ['src/somefile.php', 23, 'TaintedTextWithQuotes'],
+                ['src/somefile.php', 25, 'TaintedTextWithQuotes'],
+                ['src/somefile.php', 26, 'TaintedTextWithQuotes'],
+                ['src/somefile.php', 27, 'TaintedTextWithQuotes'],
+                ['src/somefile.php', 28, 'TaintedTextWithQuotes'],
+                ['src/somefile.php', 29, 'TaintedTextWithQuotes'],
+                ['src/global.php', 5, 'TaintedHtml'],
+                ['src/global.php', 5, 'TaintedTextWithQuotes'],
+                ['src/global.php', 6, 'TaintedHtml'],
+                ['src/global.php', 6, 'TaintedTextWithQuotes'],
+                ['src/global.php', 7, 'TaintedHtml'],
+                ['src/global.php', 7, 'TaintedTextWithQuotes'],
+                ['src/global.php', 8, 'TaintedTextWithQuotes'],
+                ['src/somefile.php', 34, 'TaintedHtml'],
+                ['src/somefile.php', 34, 'TaintedTextWithQuotes'],
+                ['src/somefile.php', 35, 'TaintedHtml'],
+                ['src/somefile.php', 35, 'TaintedTextWithQuotes'],
+            ],
+            array_map(
+                static fn(IssueData $issue): array => [$issue->file_name, $issue->line_from, $issue->type],
+                $issues,
+            ),
         );
     }
 
@@ -3973,6 +4120,51 @@ final class TaintTest extends TestCase
                         ));
                         html(json_encode(flags: $small | JSON_HEX_TAG | JSON_HEX_AMP, value: $_GET["d"]));
                     }',
+            ],
+            'flagsOfConstantExpressionsEscape' => [
+                'code' => '<?php
+                    namespace Bar;
+
+                    use const JSON_HEX_AMP;
+                    use const JSON_HEX_TAG;
+
+                    /** @psalm-taint-sink html $html */
+                    function html(string $html): void {}
+
+                    /** @psalm-taint-sink has_quotes $s */
+                    function quoted(string $s): void {}
+
+                    interface HasFlags {
+                        public const IFLAGS = \JSON_HEX_TAG | \JSON_HEX_AMP;
+                    }
+
+                    class Base implements HasFlags {
+                        public const FLAGS = self::IFLAGS;
+                        final public const FINAL_FLAGS = JSON_HEX_TAG | JSON_HEX_AMP | \JSON_THROW_ON_ERROR;
+                        public const QUOTES = \ENT_QUOTES | \ENT_SUBSTITUTE;
+                    }
+
+                    final class Child extends Base {
+                        public const OWN = parent::FLAGS & (JSON_HEX_TAG | JSON_HEX_AMP | \JSON_HEX_QUOT);
+
+                        public function f(bool $c): void {
+                            html(json_encode($_GET["a"], self::FLAGS));
+                            html(json_encode($_GET["b"], parent::FLAGS | \JSON_THROW_ON_ERROR));
+                            html(json_encode($_GET["c"], static::FINAL_FLAGS));
+                            html(json_encode($_GET["d"], self::OWN));
+                            quoted(htmlspecialchars((string) $_GET["e"], static::QUOTES));
+                            html(json_encode($_GET["f"], $c ? Base::FLAGS : HasFlags::IFLAGS));
+                        }
+                    }
+
+                    function g(): void {
+                        html(json_encode($_GET["g"], Child::FLAGS));
+                        quoted(htmlentities((string) $_GET["h"], \ENT_QUOTES));
+                        /** @psalm-suppress RedundantCondition */
+                        quoted(htmlspecialchars((string) $_GET["i"], Base::QUOTES ?: \ENT_QUOTES));
+                        html(json_encode($_GET["j"], 3));
+                    }',
+                'php_version' => '8.1',
             ],
             'htmlFunctionsWithEntQuotesInEveryLiteralEscapeQuotes' => [
                 'code' => '<?php

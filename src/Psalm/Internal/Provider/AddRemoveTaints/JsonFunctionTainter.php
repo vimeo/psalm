@@ -7,7 +7,6 @@ namespace Psalm\Internal\Provider\AddRemoveTaints;
 use Override;
 use PhpParser;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
-use Psalm\Internal\Type\IntMask;
 use Psalm\Plugin\EventHandler\AddTaintsInterface;
 use Psalm\Plugin\EventHandler\Event\AddRemoveTaintsEvent;
 use Psalm\Plugin\EventHandler\RemoveTaintsInterface;
@@ -75,8 +74,8 @@ final class JsonFunctionTainter implements AddTaintsInterface, RemoveTaintsInter
             return 0;
         }
 
-        $flags = null;
-        $has_flags = false;
+        // without flags, it has none
+        [$certain_bits, $possible_bits] = [0, 0];
 
         foreach ($item->getArgs() as $offset => $arg) {
             if ($arg->unpack) {
@@ -84,24 +83,19 @@ final class JsonFunctionTainter implements AddTaintsInterface, RemoveTaintsInter
             }
 
             if ($arg->name === null ? $offset === 1 : $arg->name->name === 'flags') {
-                $has_flags = true;
-                $flags = $statements_analyzer->node_data->getType($arg->value);
+                [$certain_bits, $possible_bits] = ConstantFlags::getBits($statements_analyzer, $arg->value);
             }
         }
 
-        // only literals, or an int-mask, tell the bits the flags have: `$flags | JSON_HEX_TAG` with an unknown $flags
-        // is an int
-        $possible_bits = $flags !== null ? IntMask::getPossibleBits($flags) : null;
-        $certain_bits = $flags !== null ? IntMask::getCertainBits($flags) : null;
         $removed_taints = 0;
 
         // every control character is escaped, so the output holds no CR, LF or NUL (the layout of
         // JSON_PRETTY_PRINT has LF)
-        if (!$has_flags || ($possible_bits !== null && ($possible_bits & JSON_PRETTY_PRINT) === 0)) {
+        if (($possible_bits & JSON_PRETTY_PRINT) === 0) {
             $removed_taints |= TaintKind::INPUT_HEADER;
         }
 
-        if ($certain_bits !== null && ($certain_bits & self::HTML_FLAGS) === self::HTML_FLAGS) {
+        if (($certain_bits & self::HTML_FLAGS) === self::HTML_FLAGS) {
             $removed_taints |= TaintKind::INPUT_HTML;
         }
 

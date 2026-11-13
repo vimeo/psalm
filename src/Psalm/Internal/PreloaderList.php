@@ -896,6 +896,7 @@ final class PreloaderList {
         \Psalm\Internal\PluginManager\PluginListFactory::class,
         \Psalm\Internal\Preloader::class,
         \Psalm\Internal\PreloaderList::class,
+        \Psalm\Internal\Provider\AddRemoveTaints\ConstantFlags::class,
         \Psalm\Internal\Provider\AddRemoveTaints\HtmlFunctionTainter::class,
         \Psalm\Internal\Provider\AddRemoveTaints\JsonFunctionTainter::class,
         \Psalm\Internal\Provider\ClassLikeStorageCacheProvider::class,

@@ -68,8 +68,8 @@ final class HtmlFunctionTainter implements AddTaintsInterface, RemoveTaintsInter
     }
 
     /**
-     * htmlspecialchars() and htmlentities() escape <, > and & whatever the flags, and both quotes when every value
-     * the flags may have has ENT_QUOTES, or without flags from PHP 8.1 on.
+     * htmlspecialchars() and htmlentities() escape <, > and & whatever the flags, and both quotes when the flags are
+     * a constant expression with ENT_QUOTES (see ConstantFlags), or without flags from PHP 8.1 on.
      */
     #[Override]
     public static function removeTaints(AddRemoveTaintsEvent $event): int
@@ -106,12 +106,9 @@ final class HtmlFunctionTainter implements AddTaintsInterface, RemoveTaintsInter
                 : TaintKind::INPUT_HTML;
         }
 
-        // only literals, or an int-mask, tell the bits the flags have: `$flags | ENT_QUOTES` with an unknown $flags
-        // is an int
-        $flags = $statements_analyzer->node_data->getType($flags_arg);
-        $certain_bits = $flags !== null ? IntMask::getCertainBits($flags) : null;
+        [$certain_bits] = ConstantFlags::getBits($statements_analyzer, $flags_arg);
 
-        if ($certain_bits !== null && ($certain_bits & ENT_QUOTES) === ENT_QUOTES) {
+        if (($certain_bits & ENT_QUOTES) === ENT_QUOTES) {
             return TaintKind::INPUT_HTML | TaintKind::INPUT_HAS_QUOTES;
         }
 
