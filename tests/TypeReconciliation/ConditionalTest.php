@@ -1823,6 +1823,29 @@ final class ConditionalTest extends TestCase
                     '$iterable_i===' => 'I&Traversable|null',
                 ],
             ],
+            'issetOnArrayAccessEnumKeepsEnum' => [
+                'code' => '<?php
+                    /** @implements ArrayAccess<string, int> */
+                    enum E implements ArrayAccess {
+                        case A;
+                        public function offsetExists(mixed $offset): bool { return true; }
+                        public function offsetGet(mixed $offset): int { return 1; }
+                        public function offsetSet(mixed $offset, mixed $value): void {}
+                        public function offsetUnset(mixed $offset): void {}
+                    }
+
+                    function getE(): E {
+                        return E::A;
+                    }
+
+                    $e = getE();
+                    $x = isset($e["x"]) ? $e : null;',
+                'assertions' => [
+                    '$x===' => 'E|null',
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
             'removeCallableString' => [
                 'code' => '<?php
                     $s = rand(0,1) ? "strlen" : [1];
@@ -5296,6 +5319,64 @@ final class ConditionalTest extends TestCase
                         if (is_countable($f)) {}
                     }',
                 'error_message' => 'TypeDoesNotContainType',
+            ],
+            'isIterableOnFinalIntersectionMember' => [
+                'code' => '<?php
+                    interface I {}
+                    final class F implements I {}
+
+                    /** @param I&F $x */
+                    function f($x): void {
+                        if (is_iterable($x)) {}
+                    }',
+                'error_message' => 'DocblockTypeContradiction',
+            ],
+            'isIterableOnExactClass' => [
+                'code' => '<?php
+                    $x = new stdClass();
+                    if (is_iterable($x)) {}',
+                'error_message' => 'TypeDoesNotContainType',
+            ],
+            'instanceofTraversableOnExactClass' => [
+                'code' => '<?php
+                    $x = new stdClass();
+                    if ($x instanceof Traversable) {}',
+                'error_message' => 'TypeDoesNotContainType',
+            ],
+            'isCountableOnExactClass' => [
+                'code' => '<?php
+                    $x = new stdClass();
+                    if (is_countable($x)) {}',
+                'error_message' => 'TypeDoesNotContainType',
+            ],
+            'isCountableOnCountableEnum' => [
+                'code' => '<?php
+                    enum E implements Countable {
+                        case A;
+                        public function count(): int { return 1; }
+                    }
+
+                    function f(E $e): void {
+                        if (is_countable($e)) {}
+                    }',
+                'error_message' => 'RedundantCondition',
+                'error_levels' => [],
+                'php_version' => '8.1',
+            ],
+            'isIterableOnIteratorAggregateEnum' => [
+                'code' => '<?php
+                    /** @implements IteratorAggregate<int, int> */
+                    enum E implements IteratorAggregate {
+                        case A;
+                        public function getIterator(): Iterator { return new ArrayIterator([1]); }
+                    }
+
+                    function f(E $e): void {
+                        if (is_iterable($e)) {}
+                    }',
+                'error_message' => 'RedundantCondition',
+                'error_levels' => [],
+                'php_version' => '8.1',
             ],
         ];
     }

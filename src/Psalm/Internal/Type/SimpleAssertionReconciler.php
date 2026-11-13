@@ -41,6 +41,7 @@ use Psalm\Type\Atomic\TCallableObject;
 use Psalm\Type\Atomic\TCallableString;
 use Psalm\Type\Atomic\TClassConstant;
 use Psalm\Type\Atomic\TClassString;
+use Psalm\Type\Atomic\TClosure;
 use Psalm\Type\Atomic\TFalse;
 use Psalm\Type\Atomic\TFloat;
 use Psalm\Type\Atomic\TGenericObject;
@@ -1874,7 +1875,7 @@ final class SimpleAssertionReconciler extends Reconciler
                 $iterable_types[] = new TNamedObject('Countable');
                 $redundant = false;
             } elseif ($type instanceof TIterable
-                || ($type instanceof TNamedObject && !self::isFinalClass($codebase, $type->value))
+                || ($type instanceof TNamedObject && !self::isFinalObject($codebase, $type))
             ) {
                 $countable = new TNamedObject('Countable');
                 $type = $type->addIntersectionType($countable);
@@ -1941,7 +1942,7 @@ final class SimpleAssertionReconciler extends Reconciler
             } elseif ($type instanceof TObject) {
                 $iterable_types[] = new TNamedObject('Traversable');
                 $redundant = false;
-            } elseif ($type instanceof TNamedObject && !self::isFinalClass($codebase, $type->value)) {
+            } elseif ($type instanceof TNamedObject && !self::isFinalObject($codebase, $type)) {
                 $iterable_types[] = $type->addIntersectionType(new TNamedObject('Traversable'));
                 $redundant = false;
             } else {
@@ -2311,7 +2312,7 @@ final class SimpleAssertionReconciler extends Reconciler
                 $traversable_types[] = new TNamedObject('Traversable');
                 $redundant = false;
             } elseif ($type instanceof TNamedObject) {
-                if (!self::isFinalClass($codebase, $type->value)) {
+                if (!self::isFinalObject($codebase, $type)) {
                     $traversable = new TNamedObject('Traversable');
                     $traversable_types[] = $type->addIntersectionType($traversable);
                 }
@@ -3165,14 +3166,27 @@ final class SimpleAssertionReconciler extends Reconciler
     }
 
     /**
+     * Whether no subclass of the object can exist to add an interface it lacks.
      * Unknown classes count as non-final: they are already reported as undefined.
      *
      * @psalm-mutation-free
      */
-    private static function isFinalClass(Codebase $codebase, string $fq_class_name): bool
+    private static function isFinalObject(Codebase $codebase, TNamedObject $type): bool
     {
-        return $codebase->classlike_storage_provider->has($fq_class_name)
-            && $codebase->classlike_storage_provider->get($fq_class_name)->final;
+        if ($type instanceof TClosure || $type->definite_class) {
+            return true;
+        }
+
+        foreach ([$type, ...$type->extra_types] as $atomic) {
+            if ($atomic instanceof TNamedObject
+                && $codebase->classlike_storage_provider->has($atomic->value)
+                && $codebase->classlike_storage_provider->get($atomic->value)->final
+            ) {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     /**

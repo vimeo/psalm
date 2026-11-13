@@ -3083,9 +3083,9 @@
       <code><![CDATA[$node]]></code>
     </ImpureByReferenceAssignment>
     <ImpureMethodCall>
-      <code><![CDATA[$codebase->classOrInterfaceExists($this->value)]]></code>
-      <code><![CDATA[$codebase->classOrInterfaceExists($this->value)]]></code>
-      <code><![CDATA[$codebase->classOrInterfaceExists($this->value)]]></code>
+      <code><![CDATA[$codebase->classOrInterfaceOrEnumExists($this->value)]]></code>
+      <code><![CDATA[$codebase->classOrInterfaceOrEnumExists($this->value)]]></code>
+      <code><![CDATA[$codebase->classOrInterfaceOrEnumExists($this->value)]]></code>
       <code><![CDATA[$visitor->traverse($type)]]></code>
       <code><![CDATA[$visitor->traverse($type)]]></code>
       <code><![CDATA[$visitor->traverse($value)]]></code>
