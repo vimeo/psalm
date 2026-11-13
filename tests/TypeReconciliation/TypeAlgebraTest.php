@@ -113,6 +113,131 @@ final class TypeAlgebraTest extends TestCase
                 'ignored_issues' => [],
                 'php_version' => '8.1',
             ],
+            'coalesceAssignmentStrictlyComparedWithNullNarrowsTheVariable' => [
+                'code' => <<<'PHP'
+                    <?php
+                    function make(): ?object { return null; }
+
+                    function identical(?object $s): object {
+                        if (($s ??= make()) === null) {
+                            exit;
+                        }
+
+                        return $s;
+                    }
+
+                    function notIdentical(?object $s): ?object {
+                        if (($s ??= make()) !== null) {
+                            /** @psalm-check-type-exact $s = object */;
+                        } else {
+                            /** @psalm-check-type-exact $s = null */;
+                        }
+
+                        return $s;
+                    }
+                    PHP,
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
+            'coalesceAssignmentLooselyComparedWithNullNarrowsTheVariable' => [
+                'code' => <<<'PHP'
+                    <?php
+                    function make(): ?object { return null; }
+
+                    function loose(?object $s): object {
+                        if (($s ??= make()) == null) {
+                            exit;
+                        }
+
+                        return $s;
+                    }
+
+                    function looseNotEqual(?object $s): object {
+                        if (($s ??= make()) != null) {
+                            return $s;
+                        }
+
+                        exit;
+                    }
+                    PHP,
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
+            'coalesceAssignmentComparedWithNullInsideALargerCondition' => [
+                'code' => <<<'PHP'
+                    <?php
+                    function make(): ?object { return null; }
+
+                    function negated(?object $s): object {
+                        if (!(($s ??= make()) === null)) {
+                            return $s;
+                        }
+
+                        exit;
+                    }
+
+                    function both(?object $s, ?object $t): object {
+                        if (($s ??= make()) === null || null === ($t ??= make())) {
+                            exit;
+                        }
+
+                        return rand(0, 1) ? $s : $t;
+                    }
+                    PHP,
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
+            'coalesceAssignmentComparedWithNullInALoopCondition' => [
+                'code' => <<<'PHP'
+                    <?php
+                    function make(): ?object { return null; }
+
+                    function whileNotNull(?object $s): void {
+                        while (($s ??= make()) !== null) {
+                            /** @psalm-check-type-exact $s = object */;
+                            $s = null;
+                        }
+
+                        /** @psalm-check-type-exact $s = null */;
+                    }
+                    PHP,
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
+            'coalesceAssignmentToAnArrayItemOrPropertyComparedWithNull' => [
+                'code' => <<<'PHP'
+                    <?php
+                    function make(): ?object { return null; }
+
+                    /** @param array{k?: object|null} $arr */
+                    function arrayItem(array $arr): object {
+                        if (($arr['k'] ??= make()) === null) {
+                            exit;
+                        }
+
+                        return $arr['k'];
+                    }
+
+                    final class Holder {
+                        private ?object $item = null;
+
+                        public function item(): object {
+                            if (($this->item ??= make()) === null) {
+                                throw new Exception();
+                            }
+
+                            return $this->item;
+                        }
+                    }
+                    PHP,
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
             'coalesceAssignmentOnTheRightOfAndKeepsTheAssignmentAfterTheIf' => [
                 'code' => <<<'PHP'
                     <?php
