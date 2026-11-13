@@ -10,5 +10,5 @@ namespace Psalm\Issue;
 final class CliOnlyCall extends CodeIssue
 {
     public const ERROR_LEVEL = -1;
-    public const SHORTCODE = 374;
+    public const SHORTCODE = 375;
 }
