@@ -662,10 +662,7 @@ final class ReferenceTest extends TestCase
                     final class InstanceReferenceStore {
                         public string $value = '';
 
-                        /**
-                         * @psalm-suppress MissingReturnType
-                         * @psalm-suppress UnsupportedPropertyReferenceUsage
-                         */
+                        /** @psalm-suppress MissingReturnType */
                         public function &getReference() {
                             return $this->value;
                         }
@@ -676,7 +673,7 @@ final class ReferenceTest extends TestCase
                         $reference = $value;
                     }
                     PHP,
-                'ignored_issues' => ['MixedAssignment'],
+                'ignored_issues' => ['MixedAssignment', 'UnsupportedPropertyReferenceUsage'],
             ],
             'returnedReferenceAssignmentFromStaticMethod' => [
                 'code' => <<<'PHP'
@@ -700,8 +697,8 @@ final class ReferenceTest extends TestCase
             'returnedReferenceAssignmentRespectsNamedVarAnnotation' => [
                 'code' => <<<'PHP'
                     <?php
-                    /** @return int|string */
                     function &getUnionReference(): int|string {
+                        /** @var string $value */
                         static $value = 'text';
                         return $value;
                     }
