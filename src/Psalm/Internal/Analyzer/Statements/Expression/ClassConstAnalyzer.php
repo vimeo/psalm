@@ -43,7 +43,9 @@ use Psalm\Storage\ClassConstantStorage;
 use Psalm\Storage\ClassLikeStorage;
 use Psalm\Type;
 use Psalm\Type\Atomic\TClassString;
+use Psalm\Type\Atomic\TDependentGetClass;
 use Psalm\Type\Atomic\TLiteralClassString;
+use Psalm\Type\Atomic\TLiteralString;
 use Psalm\Type\Atomic\TMixed;
 use Psalm\Type\Atomic\TNamedObject;
 use Psalm\Type\Atomic\TObject;
@@ -56,6 +58,7 @@ use ReflectionProperty;
 use function assert;
 use function explode;
 use function in_array;
+use function ltrim;
 use function strtolower;
 
 /**
@@ -513,6 +516,25 @@ final class ClassConstAnalyzer
             return true;
         }
 
+        // Check all alternatives, not only the single-type variable path below.
+        if (!$codebase->config->allow_string_standin_for_class) {
+            foreach ($lhs_type->getAtomicTypes() as $lhs_atomic_type) {
+                if ($lhs_atomic_type instanceof TString
+                    && !$lhs_atomic_type instanceof TClassString
+                    && !$lhs_atomic_type instanceof TDependentGetClass
+                ) {
+                    IssueBuffer::maybeAdd(
+                        new InvalidStringClass(
+                            'String cannot be used as a class',
+                            new CodeLocation($statements_analyzer->getSource(), $stmt->class),
+                        ),
+                        $statements_analyzer->getSuppressedIssues(),
+                    );
+                    break;
+                }
+            }
+        }
+
         if ($stmt->name instanceof PhpParser\Node\Identifier && $stmt->name->name === 'class') {
             $class_string_types = [];
 
@@ -570,17 +592,14 @@ final class ClassConstAnalyzer
                 } elseif ($atomic_type instanceof TLiteralClassString) {
                     $fq_class_name = $atomic_type->value;
                     $lhs_type_definite_class = $atomic_type->definite_class;
-                } elseif ($atomic_type instanceof TString
-                    && !$atomic_type instanceof TClassString
-                    && !$codebase->config->allow_string_standin_for_class
+                } elseif ($atomic_type::class === TLiteralString::class
+                    && $codebase->config->allow_string_standin_for_class
                 ) {
-                    IssueBuffer::maybeAdd(
-                        new InvalidStringClass(
-                            'String cannot be used as a class',
-                            new CodeLocation($statements_analyzer->getSource(), $stmt->class),
-                        ),
-                        $statements_analyzer->getSuppressedIssues(),
-                    );
+                    $class_name = ltrim($atomic_type->value, '\\');
+                    if ($codebase->classlike_storage_provider->has($class_name)) {
+                        $fq_class_name = $class_name;
+                        $lhs_type_definite_class = true;
+                    }
                 }
             }
 
