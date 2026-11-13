@@ -49,6 +49,47 @@ final class ReturnTypeTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'switchBreakTwoExitsEnclosingInfiniteFor' => [
+                'code' => '<?php
+                    function leaveSwitchAndLoop(int $value): int {
+                        for (;;) {
+                            switch ($value) {
+                                case 0:
+                                    return 10;
+                                default:
+                                    break 2;
+                            }
+                        }
+                        return 20;
+                    }',
+            ],
+            'switchDefaultFallsThroughToReturn' => [
+                'code' => '<?php
+                    function defaultFallsThrough(int $value): int {
+                        switch ($value) {
+                            default:
+                            case 0:
+                                return 1;
+                        }
+                    }',
+            ],
+            'switchExhaustiveWithPriorConditionalLoopBreak' => [
+                'code' => '<?php
+                    function switchAfterConditionalBreak(int $value, bool $stop): int {
+                        while (true) {
+                            if ($stop) {
+                                break;
+                            }
+                            switch ($value) {
+                                case 0:
+                                    return 10;
+                                default:
+                                    return 20;
+                            }
+                        }
+                        return 30;
+                    }',
+            ],
             'docblockStringLiteralWithEscapedBackslashes' => [
                 'code' => '<?php
                     /** @return "\\\\t" */
@@ -2343,6 +2384,18 @@ final class ReturnTypeTest extends TestCase
     public static function providerInvalidCodeParse(): iterable
     {
         return [
+            'switchDefaultWithoutReturnDoesNotTerminateFunction' => [
+                'code' => '<?php
+                    function classify(int $value): int {
+                        switch ($value) {
+                            case 0:
+                                return 1;
+                            default:
+                                echo "Other value";
+                        }
+                    }',
+                'error_message' => 'InvalidReturnType',
+            ],
             'finalMethodOfASubclassableClassKeepsItsStaticReturnType' => [
                 'code' => <<<'PHP'
                     <?php

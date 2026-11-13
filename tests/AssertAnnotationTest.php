@@ -251,6 +251,25 @@ final class AssertAnnotationTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'inferAssertionFromSwitchDefaultFallingThroughToThrow' => [
+                'code' => '<?php
+                    final class AssertionHelper {
+                        public static function assertString(?string $value, int $mode): void {
+                            if ($value === null) {
+                                switch ($mode) {
+                                    default:
+                                    case 0:
+                                        throw new \LogicException();
+                                }
+                            }
+                        }
+                    }
+
+                    function consumeString(?string $value, int $mode): string {
+                        AssertionHelper::assertString($value, $mode);
+                        return $value;
+                    }',
+            ],
             'assertObjectShapeOnObject' => [
                 'code' => '<?php
                     /** @psalm-assert object{a: int} $obj */

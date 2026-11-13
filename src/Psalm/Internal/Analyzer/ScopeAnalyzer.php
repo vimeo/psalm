@@ -11,7 +11,6 @@ use Psalm\NodeTypeProvider;
 use function array_any;
 use function array_diff;
 use function array_filter;
-use function array_intersect;
 use function array_unique;
 use function array_values;
 use function count;
@@ -180,15 +179,15 @@ final class ScopeAnalyzer
             }
 
             if ($stmt instanceof PhpParser\Node\Stmt\Switch_) {
-                $has_ended = false;
-                $has_non_breaking_default = false;
-                $has_default_terminator = false;
+                $has_default = false;
+                $next_case_actions = [self::ACTION_NONE];
+                $switch_actions = [];
 
-                $all_case_actions = [];
-
-                // iterate backwards in a case statement
+                // A case can be entered directly or reached by falling through from an earlier case.
+                // Walk backwards to resolve each fallthrough against the following case's actions.
                 for ($d = count($stmt->cases) - 1; $d >= 0; --$d) {
                     $case = $stmt->cases[$d];
+                    $has_default = $has_default || !$case->cond;
 
                     $case_actions = self::getControlActions(
                         $case->stmts,
@@ -197,49 +196,41 @@ final class ScopeAnalyzer
                         $return_is_exit,
                     );
 
-                    if (array_intersect([
-                        self::ACTION_LEAVE_SWITCH,
-                        self::ACTION_BREAK,
-                        self::ACTION_CONTINUE,
-                    ], $case_actions)
-                    ) {
-                        continue 2;
+                    $effective_case_actions = [];
+                    foreach ($case_actions as $action) {
+                        if ($action === self::ACTION_NONE) {
+                            // Reaching the end of a case executes the next case, if any.
+                            $effective_case_actions = [...$effective_case_actions, ...$next_case_actions];
+                        } elseif ($action === self::ACTION_LEAVE_SWITCH) {
+                            // Breaking this switch resumes after it; it does not exit an enclosing loop.
+                            $effective_case_actions[] = self::ACTION_NONE;
+                        } else {
+                            // Preserve returns, throws and exits from enclosing loops or switches.
+                            $effective_case_actions[] = $action;
+                        }
                     }
 
-                    if (!$case->cond) {
-                        $has_non_breaking_default = true;
-                    }
-
-                    $case_does_end = !array_diff(
-                        $case_actions,
-                        [self::ACTION_END, self::ACTION_RETURN],
-                    );
-
-                    if ($case_does_end) {
-                        $has_ended = true;
-                    }
-
-                    $all_case_actions = [...$all_case_actions, ...$case_actions];
-
-                    if (!$case_does_end && !$has_ended) {
-                        continue 2;
-                    }
-
-                    if ($has_non_breaking_default && $case_does_end) {
-                        $has_default_terminator = true;
-                    }
+                    $next_case_actions = array_values(array_unique($effective_case_actions));
+                    $switch_actions = [...$switch_actions, ...$next_case_actions];
                 }
 
-                $all_case_actions = array_filter(
-                    $all_case_actions,
-                    static fn(string $action): bool => $action !== self::ACTION_NONE,
-                );
-
-                if ($has_default_terminator || $stmt->getAttribute('allMatched', false)) {
-                    return array_values(array_unique([...$control_actions, ...$all_case_actions]));
+                // An unmatched value can skip the entire switch unless it is exhaustive.
+                if (!$has_default && !$stmt->getAttribute('allMatched', false)) {
+                    $switch_actions[] = self::ACTION_NONE;
                 }
 
-                $control_actions = [...$control_actions, ...$all_case_actions];
+                $switch_actions = array_values(array_unique($switch_actions));
+                $control_actions = [
+                    ...$control_actions,
+                    ...array_filter(
+                        $switch_actions,
+                        static fn(string $action): bool => $action !== self::ACTION_NONE,
+                    ),
+                ];
+
+                if (!in_array(self::ACTION_NONE, $switch_actions, true)) {
+                    return array_values(array_unique($control_actions));
+                }
             }
 
             if ($stmt instanceof PhpParser\Node\Stmt\Do_
