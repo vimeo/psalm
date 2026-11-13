@@ -317,6 +317,72 @@ final class TaintTest extends TestCase
     }
 
     /**
+     * The decoders give back the taints the escapes before them removed: json_decode() those of the text escaped in
+     * the JSON string, html_entity_decode() the has_quotes one unless no flags it may have decode a quote.
+     */
+    public function testDecodersGiveBackTheTaintsEscapedBefore(): void
+    {
+        $this->testConfig->throw_exception = false;
+        $file_path = self::$src_dir_path . 'somefile.php';
+        $this->addFile($file_path, '<?php
+            /**
+             * @template T
+             * @param int-mask<ENT_SUBSTITUTE, ENT_HTML5>|string $mask_or_string
+             * @param int|string $int_or_string
+             * @param mixed $mixed
+             * @param T $template
+             */
+            function f(int $flags, $mask_or_string, $mixed, $int_or_string, float $float, $template): void {
+                echo (string) json_decode(json_encode((string) $_GET["a"], JSON_HEX_TAG | JSON_HEX_AMP));
+                echo html_entity_decode(htmlspecialchars((string) $_GET["b"], ENT_QUOTES), $flags);
+                echo html_entity_decode(htmlspecialchars((string) $_GET["c"], ENT_QUOTES), ENT_COMPAT);
+                echo html_entity_decode(htmlspecialchars((string) $_GET["d"], ENT_QUOTES), ENT_NOQUOTES);
+                echo htmlspecialchars_decode(htmlspecialchars((string) $_GET["e"], ENT_QUOTES));
+                echo htmlspecialchars((string) $_GET["f"], ENT_QUOTES);
+                echo html_entity_decode(htmlspecialchars((string) $_GET["g"], ENT_QUOTES), $mask_or_string);
+                echo html_entity_decode(htmlspecialchars((string) $_GET["h"], ENT_QUOTES), $mixed);
+                echo html_entity_decode(htmlspecialchars((string) $_GET["i"], ENT_QUOTES), $int_or_string);
+                echo html_entity_decode(htmlspecialchars((string) $_GET["j"], ENT_QUOTES), $float);
+                echo html_entity_decode(htmlspecialchars((string) $_GET["k"], ENT_QUOTES), $template);
+            }
+        ');
+        $this->project_analyzer->trackTaintedInputs();
+        $this->project_analyzer->getCodebase()->config->initializePlugins($this->project_analyzer);
+
+        $this->analyzeFile($file_path, new Context(), false);
+
+        $issues = array_values(array_filter(
+            IssueBuffer::getIssuesDataForFile($file_path),
+            static fn(IssueData $issue): bool => !in_array($issue->type, self::IGNORE, true),
+        ));
+
+        self::assertEqualsCanonicalizing(
+            [
+                [10, 'TaintedHtml'],
+                [10, 'TaintedTextWithQuotes'],
+                [11, 'TaintedHtml'],
+                [11, 'TaintedTextWithQuotes'],
+                [12, 'TaintedHtml'],
+                [12, 'TaintedTextWithQuotes'],
+                [13, 'TaintedHtml'],
+                [14, 'TaintedHtml'],
+                [14, 'TaintedTextWithQuotes'],
+                [16, 'TaintedHtml'],
+                [16, 'TaintedTextWithQuotes'],
+                [17, 'TaintedHtml'],
+                [17, 'TaintedTextWithQuotes'],
+                [18, 'TaintedHtml'],
+                [18, 'TaintedTextWithQuotes'],
+                [19, 'TaintedHtml'],
+                [19, 'TaintedTextWithQuotes'],
+                [20, 'TaintedHtml'],
+                [20, 'TaintedTextWithQuotes'],
+            ],
+            array_map(static fn(IssueData $issue): array => [$issue->line_from, $issue->type], $issues),
+        );
+    }
+
+    /**
      * The flags of htmlspecialchars() and the like are the argument named `flags`, wherever it is written: the second
      * written argument is another parameter with named arguments.
      */

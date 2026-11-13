@@ -7,6 +7,7 @@ namespace Psalm\Internal\Provider\AddRemoveTaints;
 use Override;
 use PhpParser;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
+use Psalm\Plugin\EventHandler\AddTaintsInterface;
 use Psalm\Plugin\EventHandler\Event\AddRemoveTaintsEvent;
 use Psalm\Plugin\EventHandler\RemoveTaintsInterface;
 use Psalm\Type\TaintKind;
@@ -19,11 +20,11 @@ use const JSON_PRETTY_PRINT;
 
 /**
  * The taints json_encode() removes with the flags it is called with: the html one for the HEX flags, the header one
- * unless it pretty prints
+ * unless it pretty prints. And those json_decode() gives back.
  *
  * @internal
  */
-final class JsonEncodeTainter implements RemoveTaintsInterface
+final class JsonFunctionTainter implements AddTaintsInterface, RemoveTaintsInterface
 {
     /**
      * JSON_HEX_TAG and JSON_HEX_AMP escape every <, > and & as <, > and &: the JSON syntax has none
@@ -35,6 +36,29 @@ final class JsonEncodeTainter implements RemoveTaintsInterface
      */
     private const HTML_FLAGS = JSON_HEX_TAG | JSON_HEX_AMP;
 
+    /**
+     * A JSON string can hold any character as an escape sequence, which the escapes of the text before do not see:
+     * what json_decode() gives has the taints they removed back, as `json_decode(json_encode($_GET['a'],
+     * JSON_HEX_TAG | JSON_HEX_AMP))` has its <, > and &.
+     */
+    #[Override]
+    public static function addTaints(AddRemoveTaintsEvent $event): int
+    {
+        $item = $event->getExpr();
+        $statements_analyzer = $event->getStatementsSource();
+
+        if (!$statements_analyzer instanceof StatementsAnalyzer
+            || !$item instanceof PhpParser\Node\Expr\FuncCall
+            || $item->isFirstClassCallable()
+            || !$item->name instanceof PhpParser\Node\Name
+            || !self::isBuiltin($statements_analyzer, $item->name, 'json_decode')
+        ) {
+            return 0;
+        }
+
+        return TaintKind::INPUT_HTML | TaintKind::INPUT_HAS_QUOTES | TaintKind::INPUT_HEADER;
+    }
+
     #[Override]
     public static function removeTaints(AddRemoveTaintsEvent $event): int
     {
@@ -45,7 +69,7 @@ final class JsonEncodeTainter implements RemoveTaintsInterface
             || !$item instanceof PhpParser\Node\Expr\FuncCall
             || $item->isFirstClassCallable()
             || !$item->name instanceof PhpParser\Node\Name
-            || !self::isJsonEncode($statements_analyzer, $item->name)
+            || !self::isBuiltin($statements_analyzer, $item->name, 'json_encode')
         ) {
             return 0;
         }
@@ -81,23 +105,28 @@ final class JsonEncodeTainter implements RemoveTaintsInterface
     }
 
     /**
-     * Whether the name calls the builtin json_encode(), not a function of the namespace named the same
+     * Whether the name calls the builtin function, not a function of the namespace named the same
+     *
+     * @param lowercase-string $function_id
      */
-    private static function isJsonEncode(StatementsAnalyzer $statements_analyzer, PhpParser\Node\Name $name): bool
-    {
+    private static function isBuiltin(
+        StatementsAnalyzer $statements_analyzer,
+        PhpParser\Node\Name $name,
+        string $function_id,
+    ): bool {
         $functions = $statements_analyzer->getCodebase()->functions;
 
-        $function_id = strtolower($name instanceof PhpParser\Node\Name\FullyQualified
+        $called_id = strtolower($name instanceof PhpParser\Node\Name\FullyQualified
             ? $name->toString()
             : $functions->getFullyQualifiedFunctionNameFromString($name->toString(), $statements_analyzer));
 
-        if ($function_id === 'json_encode') {
+        if ($called_id === $function_id) {
             return true;
         }
 
         // an unqualified name falls back to the global function when the namespace has none
         return !$name instanceof PhpParser\Node\Name\FullyQualified
-            && strtolower($name->toString()) === 'json_encode'
-            && !$functions->functionExists($statements_analyzer, $function_id);
+            && strtolower($name->toString()) === $function_id
+            && !$functions->functionExists($statements_analyzer, $called_id);
     }
 }

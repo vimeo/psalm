@@ -7,6 +7,7 @@ namespace Psalm\Internal\Provider\AddRemoveTaints;
 use Override;
 use PhpParser;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
+use Psalm\Internal\Type\IntMask;
 use Psalm\Plugin\EventHandler\AddTaintsInterface;
 use Psalm\Plugin\EventHandler\Event\AddRemoveTaintsEvent;
 use Psalm\Plugin\EventHandler\RemoveTaintsInterface;
@@ -23,7 +24,8 @@ use const ENT_QUOTES;
 final class HtmlFunctionTainter implements AddTaintsInterface, RemoveTaintsInterface
 {
     /**
-     * Called to see what taints should be added
+     * html_entity_decode() and htmlspecialchars_decode() give back the html taint, and the has_quotes one unless no
+     * flags they may have decode a quote: ENT_COMPAT decodes &quot;, ENT_QUOTES &#039; too.
      */
     #[Override]
     public static function addTaints(AddRemoveTaintsEvent $event): int
@@ -43,34 +45,25 @@ final class HtmlFunctionTainter implements AddTaintsInterface, RemoveTaintsInter
 
         $function_id = strtolower($item->name->getFirst());
 
-        if ($function_id === 'html_entity_decode'
-            || $function_id === 'htmlspecialchars_decode'
-        ) {
-            $second_arg = self::getFlagsArg($item);
+        if ($function_id !== 'html_entity_decode' && $function_id !== 'htmlspecialchars_decode') {
+            return 0;
+        }
 
-            if ($second_arg === null) {
-                if ($statements_analyzer->getCodebase()->analysis_php_version_id >= 8_01_00) {
-                    return TaintKind::INPUT_HTML|TaintKind::INPUT_HAS_QUOTES;
-                }
-                return TaintKind::INPUT_HTML;
-            }
+        $flags_arg = self::getFlagsArg($item);
 
-            $second_arg_value = $statements_analyzer->node_data->getType($second_arg);
+        // without flags, both quotes are decoded from PHP 8.1 on, and " before
+        if ($flags_arg === null) {
+            return TaintKind::INPUT_HTML | TaintKind::INPUT_HAS_QUOTES;
+        }
 
-            if (!$second_arg_value || !$second_arg_value->isSingleIntLiteral()) {
-                return TaintKind::INPUT_HTML;
-            }
+        $flags = $statements_analyzer->node_data->getType($flags_arg);
+        $possible_bits = $flags !== null ? IntMask::getPossibleBits($flags) : null;
 
-            $second_arg_value = $second_arg_value->getSingleIntLiteral()->value;
-
-            if (($second_arg_value & ENT_QUOTES) === ENT_QUOTES) {
-                return TaintKind::INPUT_HTML|TaintKind::INPUT_HAS_QUOTES;
-            }
-
+        if ($possible_bits !== null && ($possible_bits & ENT_QUOTES) === 0) {
             return TaintKind::INPUT_HTML;
         }
 
-        return 0;
+        return TaintKind::INPUT_HTML | TaintKind::INPUT_HAS_QUOTES;
     }
 
     /**

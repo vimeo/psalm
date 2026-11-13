@@ -12,6 +12,8 @@ Some operations remove taints from data – for example, wrapping `$_GET['name']
 
 `json_encode()` removes the `html` taint when its flags are a known value including `JSON_HEX_TAG` and `JSON_HEX_AMP`: what it returns then has no `<`, `>` or `&`. It keeps the `has_quotes` taint whatever the flags, as the `"` delimiting a JSON string ends a double-quoted attribute; a function that only puts JSON in a `<script>`, or with `JSON_HEX_APOS` in an attribute in single quotes, can declare `@psalm-taint-escape has_quotes`.
 
+The decoders give back what the escapes before them removed. `json_decode()` gives back the `html`, `has_quotes` and `header` taints, since a JSON string can hold any character as an escape sequence: `json_decode(json_encode($_GET['a'], JSON_HEX_TAG | JSON_HEX_AMP))` is tainted HTML again. `html_entity_decode()` and `htmlspecialchars_decode()` give back the `html` taint, and the `has_quotes` one unless none of the flags they may have decode a quote (`ENT_NOQUOTES`): `ENT_COMPAT` alone decodes `&quot;`.
+
 Psalm allows you to remove taints via a `@psalm-taint-escape <taint-type>` annotation:
 
 ```php

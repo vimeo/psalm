@@ -897,7 +897,7 @@ final class PreloaderList {
         \Psalm\Internal\Preloader::class,
         \Psalm\Internal\PreloaderList::class,
         \Psalm\Internal\Provider\AddRemoveTaints\HtmlFunctionTainter::class,
-        \Psalm\Internal\Provider\AddRemoveTaints\JsonEncodeTainter::class,
+        \Psalm\Internal\Provider\AddRemoveTaints\JsonFunctionTainter::class,
         \Psalm\Internal\Provider\ClassLikeStorageCacheProvider::class,
         \Psalm\Internal\Provider\ClassLikeStorageProvider::class,
         \Psalm\Internal\Provider\DynamicFunctionStorageProvider::class,
