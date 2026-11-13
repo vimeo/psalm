@@ -1866,6 +1866,30 @@ final class ArrayAccessTest extends TestCase
                     }',
                 'error_message' => 'PossiblyNullArrayAccess',
             ],
+            'nullableArrayReadInUnsetCallArgument' => [
+                'code' => '<?php
+                    /** @return array<string, int> */
+                    function fetch(?string $key): array {
+                        return ["entry" => 1];
+                    }
+                    /** @param array{key: string}|null $keys */
+                    function remove(?array $keys): void {
+                        unset(fetch($keys["key"])["entry"]);
+                    }',
+                'error_message' => 'PossiblyNullArrayAccess',
+            ],
+            'nullArrayReadInUnsetCallArgument' => [
+                'code' => '<?php
+                    /** @return array<string, int> */
+                    function fetch(?string $key): array {
+                        return ["entry" => 1];
+                    }
+                    function remove(): void {
+                        $keys = null;
+                        unset(fetch($keys["key"])["entry"]);
+                    }',
+                'error_message' => 'NullArrayAccess',
+            ],
             'cannotUnsetOffsetOfInt' => [
                 'code' => '<?php
                     function invalidUnset(int $data): void {
