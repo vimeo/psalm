@@ -17,9 +17,11 @@ use Psalm\Type\Atomic\TCallable;
 use Psalm\Type\Atomic\TCallableObject;
 use Psalm\Type\Atomic\TCallableString;
 use Psalm\Type\Atomic\TCapabilities;
+use Psalm\Type\Atomic\TClassString;
 use Psalm\Type\Atomic\TClassStringMap;
 use Psalm\Type\Atomic\TClosure;
 use Psalm\Type\Atomic\TConditional;
+use Psalm\Type\Atomic\TDependentGetClass;
 use Psalm\Type\Atomic\TEmptyMixed;
 use Psalm\Type\Atomic\TEnumCase;
 use Psalm\Type\Atomic\TGenericObject;
@@ -27,6 +29,7 @@ use Psalm\Type\Atomic\TIntersection;
 use Psalm\Type\Atomic\TIterable;
 use Psalm\Type\Atomic\TKeyOf;
 use Psalm\Type\Atomic\TKeyedArray;
+use Psalm\Type\Atomic\TLiteralClassString;
 use Psalm\Type\Atomic\TLiteralString;
 use Psalm\Type\Atomic\TMixed;
 use Psalm\Type\Atomic\TNamedObject;
@@ -40,8 +43,10 @@ use Psalm\Type\Atomic\TScalar;
 use Psalm\Type\Atomic\TString;
 use Psalm\Type\Atomic\TTemplateKeyOf;
 use Psalm\Type\Atomic\TTemplateParam;
+use Psalm\Type\Atomic\TTemplateParamClass;
 use Psalm\Type\Atomic\TTemplateValueOf;
 use Psalm\Type\Atomic\TTypeVariable;
+use Psalm\Type\Atomic\TUnknownClassString;
 use Psalm\Type\Atomic\TValueOf;
 use Psalm\Type\Union;
 
@@ -52,6 +57,7 @@ use function array_merge;
 use function array_values;
 use function assert;
 use function count;
+use function ltrim;
 use function reset;
 use function strtolower;
 
@@ -1022,6 +1028,79 @@ final class AtomicTypeComparator
     }
 
     /**
+     * A class-string is the name of an existing class that it allows, as get_class() of an object it bounds gives:
+     * `class-string<callable-object>` can be `'Closure'` but not `'stdClass'`
+     */
+    private static function canClassStringBeIdenticalToName(
+        Codebase $codebase,
+        TString $class_string,
+        TLiteralString $name,
+        bool $allow_interface_equality,
+    ): bool {
+        $class_name = ltrim($name->value, '\\');
+
+        if (!$codebase->classlike_storage_provider->has($class_name)
+            || $codebase->classlike_storage_provider->get($class_name)->name !== $class_name
+        ) {
+            return false;
+        }
+
+        if ($class_string instanceof TDependentGetClass) {
+            return array_any(
+                $class_string->as_type->getAtomicTypes(),
+                fn(Atomic $bound): bool => self::isClassNameAllowedByBound(
+                    $codebase,
+                    $class_name,
+                    $bound,
+                    $allow_interface_equality,
+                ),
+            );
+        }
+
+        if (!$class_string instanceof TClassString) {
+            return true;
+        }
+
+        if ($class_string instanceof TUnknownClassString && $class_string->as_unknown_type !== null) {
+            return self::isClassNameAllowedByBound(
+                $codebase,
+                $class_name,
+                $class_string->as_unknown_type,
+                $allow_interface_equality,
+            );
+        }
+
+        return ClassLikeStringComparator::isContainedBy(
+            $codebase,
+            new TLiteralClassString($class_name),
+            $class_string,
+            $allow_interface_equality,
+        );
+    }
+
+    /**
+     * Whether an object of the class is one the bound allows. A bound that is not a class, an interface or
+     * `callable-object` (a template, an object with properties) allows any.
+     */
+    private static function isClassNameAllowedByBound(
+        Codebase $codebase,
+        string $class_name,
+        Atomic $bound,
+        bool $allow_interface_equality,
+    ): bool {
+        // a named object is not contained in `callable-object`, which is the objects that have __invoke()
+        if ($bound instanceof TCallableObject) {
+            return $codebase->methodExists(new MethodIdentifier($class_name, '__invoke'));
+        }
+
+        if ($bound instanceof TNamedObject && !$bound->extra_types) {
+            return self::isContainedBy($codebase, new TNamedObject($class_name), $bound, $allow_interface_equality);
+        }
+
+        return true;
+    }
+
+    /**
      * Does the input param atomic type match the given param atomic type
      */
     public static function canBeIdentical(
@@ -1100,6 +1179,30 @@ final class AtomicTypeComparator
             if ($only_defined_items) {
                 return true;
             }
+        }
+
+        if (($type1_part instanceof TClassString && !$type1_part instanceof TTemplateParamClass
+                || $type1_part instanceof TDependentGetClass)
+            && $type2_part::class === TLiteralString::class
+        ) {
+            return self::canClassStringBeIdenticalToName(
+                $codebase,
+                $type1_part,
+                $type2_part,
+                $allow_interface_equality,
+            );
+        }
+
+        if (($type2_part instanceof TClassString && !$type2_part instanceof TTemplateParamClass
+                || $type2_part instanceof TDependentGetClass)
+            && $type1_part::class === TLiteralString::class
+        ) {
+            return self::canClassStringBeIdenticalToName(
+                $codebase,
+                $type2_part,
+                $type1_part,
+                $allow_interface_equality,
+            );
         }
 
         $first_comparison_result = new TypeComparisonResult();

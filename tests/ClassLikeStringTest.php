@@ -347,6 +347,10 @@ final class ClassLikeStringTest extends TestCase
 
                     function isWhatever(callable $callable): bool {
                         return is_object($callable) && get_class($callable) === "Closure";
+                    }
+
+                    function isArrayObject(Countable $countable): bool {
+                        return get_class($countable) === "ArrayObject";
                     }',
             ],
             'isSubclassOfKeepsTheTemplateOfAClassString' => [
@@ -1640,6 +1644,21 @@ final class ClassLikeStringTest extends TestCase
                         return $class === "Other";
                     }',
                 'error_message' => 'DocblockTypeContradiction',
+            ],
+            'classStringOfACallableObjectComparedToAClassThatIsNotCallable' => [
+                'code' => '<?php
+                    /** @param class-string<callable-object> $callable */
+                    function f(string $callable): bool {
+                        return $callable === "stdClass";
+                    }',
+                'error_message' => 'DocblockTypeContradiction',
+            ],
+            'getClassOfAnObjectComparedToAClassThatDoesNotImplementItsInterface' => [
+                'code' => '<?php
+                    function f(Countable $countable): bool {
+                        return get_class($countable) === "stdClass";
+                    }',
+                'error_message' => 'TypeDoesNotContainType',
             ],
             'classStringComparedToUnknownLiteralClassName' => [
                 'code' => '<?php
