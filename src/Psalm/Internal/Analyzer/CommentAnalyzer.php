@@ -621,7 +621,7 @@ final class CommentAnalyzer
             }
 
             try {
-                TypeChecker::checkDeferredIntersections(
+                TypeChecker::checkDeferredTypes(
                     $var_comment->type,
                     $statements_analyzer,
                     new CodeLocation($statements_analyzer->getSource(), $var),

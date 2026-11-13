@@ -881,7 +881,7 @@ final class AssignmentAnalyzer
         $codebase = $statements_analyzer->getCodebase();
 
         try {
-            TypeChecker::checkDeferredIntersections(
+            TypeChecker::checkDeferredTypes(
                 $var_comment->type,
                 $statements_analyzer,
                 new CodeLocation($statements_analyzer->getSource(), $stmt),

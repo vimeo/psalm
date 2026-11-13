@@ -34,6 +34,7 @@ use Psalm\Internal\Type\TemplateInferredTypeReplacer;
 use Psalm\Internal\Type\TemplateResult;
 use Psalm\Internal\Type\TemplateStandinTypeReplacer;
 use Psalm\Internal\Type\TypeExpander;
+use Psalm\Internal\TypeVisitor\TypeChecker;
 use Psalm\Issue\DeprecatedClass;
 use Psalm\Issue\DeprecatedInterface;
 use Psalm\Issue\DeprecatedTrait;
@@ -111,6 +112,7 @@ use function preg_match;
 use function preg_replace;
 use function reset;
 use function str_replace;
+use function str_starts_with;
 use function strtolower;
 use function substr;
 
@@ -1037,11 +1039,25 @@ final class ClassAnalyzer extends ClassLikeAnalyzer
                     }
                 }
 
+                $property_suppressed_issues = $storage->suppressed_issues
+                    + $statements_source->getSuppressedIssues()
+                    + $suppressed;
+
+                // an inherited property is checked in the class it appears in, where `self` is that class
+                if (str_starts_with(strtolower($appearing_property_id), strtolower($fq_class_name) . '::$')) {
+                    TypeChecker::checkDeferredTypes(
+                        $property_type,
+                        $statements_source,
+                        $property_type_location,
+                        $property_suppressed_issues,
+                    );
+                }
+
                 /** @psalm-suppress UnusedMethodCall This call actually has the side effect of creating issues */
                 $fleshed_out_type->check(
                     $statements_source,
                     $property_type_location,
-                    $storage->suppressed_issues + $statements_source->getSuppressedIssues() + $suppressed,
+                    $property_suppressed_issues,
                     [],
                     false,
                 );
@@ -1091,7 +1107,7 @@ final class ClassAnalyzer extends ClassLikeAnalyzer
                             (new Union($signature_classes))->check(
                                 $statements_source,
                                 $property_storage->signature_type_location,
-                                $storage->suppressed_issues + $statements_source->getSuppressedIssues() + $suppressed,
+                                $property_suppressed_issues,
                                 [],
                                 false,
                             );

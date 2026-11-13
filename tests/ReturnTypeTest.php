@@ -2171,6 +2171,34 @@ final class ReturnTypeTest extends TestCase
                 ],
                 'ignored_issues' => ['InvalidDocblock', 'MixedAssignment'],
             ],
+            'selfClassConstantIntersectionOnInheritedProperty' => [
+                'code' => '<?php
+                    namespace App;
+
+                    final class Child extends Base {}
+
+                    abstract class Base {
+                        private const FLAG = 1;
+
+                        /** @var self::FLAG&int */
+                        public int $flag = 1;
+                    }',
+            ],
+            'selfClassConstantIntersectionInNamespacedVar' => [
+                'code' => '<?php
+                    namespace App;
+
+                    final class Flags {
+                        const A = 1;
+
+                        public function f(): int {
+                            /** @var self::A&int $y */
+                            $y = self::A;
+
+                            return $y;
+                        }
+                    }',
+            ],
             'truthyAndFalsyNumericString' => [
                 'code' => '<?php
                     /** @var numeric-string $s */
@@ -2563,6 +2591,19 @@ final class ReturnTypeTest extends TestCase
 
                     final class Flags {
                         const A = 1;
+                    }',
+                'error_message' => 'No value has all the types of the intersection',
+            ],
+            'emptyClassConstantIntersectionProperty' => [
+                'code' => '<?php
+                    namespace App;
+
+                    final class Flags {
+                        const A = 1;
+                        const B = 2;
+
+                        /** @var self::A&self::B */
+                        public int $flag = 1;
                     }',
                 'error_message' => 'No value has all the types of the intersection',
             ],

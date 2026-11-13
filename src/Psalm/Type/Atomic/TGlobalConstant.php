@@ -9,7 +9,8 @@ use Psalm\Storage\UnserializeMemoryUsageSuppressionTrait;
 use Psalm\Type\Atomic;
 
 /**
- * Denotes the global constants matching a wildcard (`PHP_URL_*`), whose values might not yet be known.
+ * Denotes global constants whose values might not yet be known: those matching a wildcard (`PHP_URL_*`), or the one
+ * constant named in an `int-mask` (`int-mask<JSON_PRETTY_PRINT>`).
  *
  * @psalm-immutable
  * @api
@@ -19,9 +20,9 @@ final class TGlobalConstant extends Atomic
     use UnserializeMemoryUsageSuppressionTrait;
 
     /**
-     * @param string $const_name the fully qualified name of the constants, with wildcards
-     * @param ?string $fallback_const_name the name of the global constants matched when the constants
-     *        aren't qualified and none of the constants of the namespace match, as for `const_name` in PHP
+     * @param string $const_name the fully qualified name of the constant, or a pattern with wildcards
+     * @param ?string $fallback_const_name the name of the global constants matched when the name isn't qualified
+     *        and no constant of the namespace matches, as for `const_name` in PHP
      */
     public function __construct(
         public string $const_name,

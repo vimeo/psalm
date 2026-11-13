@@ -748,6 +748,39 @@ final class TypeParser
     }
 
     /**
+     * The value of a global constant named in an `int-mask`: that of the constants of PHP known when parsing, or
+     * else a reference resolved once the constants of the codebase are known. An unqualified name in a namespace
+     * falls back to the global constant when the namespace has none, as in PHP
+     *
+     * @psalm-pure
+     */
+    private static function getIntMaskConstant(TNamedObject $type, bool $from_docblock): TLiteralInt|TGlobalConstant
+    {
+        $fq_const_name = $type->value;
+
+        if (defined($fq_const_name)) {
+            /** @var mixed */
+            $constant_value = constant($fq_const_name);
+
+            if (!is_int($constant_value)) {
+                throw new TypeParseTreeException('int-mask types must all be integer values');
+            }
+
+            return new TLiteralInt($constant_value, $from_docblock);
+        }
+
+        if ($type instanceof TGenericObject || $type->extra_types !== []) {
+            throw new TypeParseTreeException('int-mask types must all be integer values');
+        }
+
+        return new TGlobalConstant(
+            $fq_const_name,
+            $type->text !== null && !str_contains($type->text, '\\') ? $type->text : null,
+            $from_docblock,
+        );
+    }
+
+    /**
      * @param  array<string, array<string, Union>> $template_type_map
      * @param  array<string, TypeAlias> $type_aliases
      * @throws TypeParseTreeException
@@ -1226,25 +1259,12 @@ final class TypeParser
                 $atomic_type = reset($generic_param_atomics);
 
                 if ($atomic_type instanceof TNamedObject) {
-                    if (defined($atomic_type->value)) {
-                        /** @var mixed */
-                        $constant_value = constant($atomic_type->value);
-
-                        if (!is_int($constant_value)) {
-                            throw new TypeParseTreeException(
-                                'int-mask types must all be integer values',
-                            );
-                        }
-
-                        $atomic_type = new TLiteralInt($constant_value, $from_docblock);
-                    } else {
-                        throw new TypeParseTreeException(
-                            'int-mask types must all be integer values',
-                        );
-                    }
+                    $atomic_type = self::getIntMaskConstant($atomic_type, $from_docblock);
                 }
 
                 if (!$atomic_type instanceof TLiteralInt
+                    && !($atomic_type instanceof TGlobalConstant
+                        && !str_contains($atomic_type->const_name, '*'))
                     && !($atomic_type instanceof TClassConstant
                         && !str_contains($atomic_type->const_name, '*'))
                 ) {
