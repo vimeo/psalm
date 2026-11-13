@@ -35,6 +35,7 @@ use Psalm\Type\Union;
 
 use function array_pop;
 use function array_values;
+use function preg_match;
 use function strtolower;
 
 /**
@@ -472,7 +473,7 @@ final class MethodCallPurityAnalyzer
             ImpureMethodCall::class,
             'method ' . $cased_method_id,
         );
-        
+
         if (!$context->inside_unset
             && $method_storage->isMutationFree()
             && $call_is_mutation_free
@@ -584,7 +585,12 @@ final class MethodCallPurityAnalyzer
             }
 
             if ($method_capabilities !== Capabilities::NONE) {
-                $context->removeMutableObjectVars(true);
+                $context->removeMutableObjectVars(
+                    true,
+                    preserved_methods: $method_storage->only_direct_this_property_writes
+                        ? self::getUnrelatedDirectGetters($context, $codebase, $lhs_var_id, $class_storage)
+                        : [],
+                );
             }
 
             foreach ($method_storage->this_property_mutations as $name => $_) {
@@ -624,6 +630,71 @@ final class MethodCallPurityAnalyzer
                 $context->removeMutableObjectVars(true);
             }
         }
+    }
+
+    /**
+     * For a callee proven to write only simple properties of its receiver, a getter
+     * consisting solely of `return $this->property` observes the property itself,
+     * like a direct property fetch. With the default property-refinement policy, a mutation
+     * on a receiver that cannot be the getter's receiver need not forget that getter's result.
+     *
+     * Only handle bare variables of different final classes: different variables of the same
+     * class may alias, inherited/overridden getters may do something else, and chained calls
+     * may depend on the state of a nested object. Everything else keeps the conservative path.
+     *
+     * @return array<string, true>
+     */
+    private static function getUnrelatedDirectGetters(
+        Context $context,
+        Codebase $codebase,
+        ?string $receiver_id,
+        ClassLikeStorage $receiver_class,
+    ): array {
+        if (!$receiver_class->final
+            || $receiver_id === null
+            || preg_match('/^\$[a-zA-Z_][a-zA-Z_0-9]*$/D', $receiver_id) !== 1
+        ) {
+            return [];
+        }
+
+        $preserved = [];
+
+        foreach ($context->vars_in_scope as $var_id => $type) {
+            if (!$type->has_mutations
+                || preg_match('/^(\$[a-zA-Z_][a-zA-Z_0-9]*)->([a-zA-Z_][a-zA-Z_0-9]*)\(\)$/D', $var_id, $parts) !== 1
+                || $parts[1] === $receiver_id
+            ) {
+                continue;
+            }
+
+            $owner_type = $context->vars_in_scope[$parts[1]] ?? null;
+            if ($owner_type === null || !$owner_type->isSingle()) {
+                continue;
+            }
+
+            $owner = $owner_type->getSingleAtomic();
+            if (!$owner instanceof TNamedObject
+                || $owner->getIntersectionTypes() !== []
+                || !$codebase->classlike_storage_provider->has($owner->value)
+            ) {
+                continue;
+            }
+
+            $owner_class = $codebase->classlike_storage_provider->get($owner->value);
+            if (!$owner_class->final || strtolower($owner_class->name) === strtolower($receiver_class->name)) {
+                continue;
+            }
+
+            $getter = $owner_class->methods[strtolower($parts[2])] ?? null;
+            if ($getter !== null
+                && $getter->direct_property_getter_name !== null
+                && !$getter->returns_by_ref
+            ) {
+                $preserved[$var_id] = true;
+            }
+        }
+
+        return $preserved;
     }
 
     /**

@@ -51,7 +51,7 @@ final class MethodStorage extends FunctionLikeStorage
      * by looking at its statements, NOT by looking at its docblock/annotations.
      */
     public bool $mutation_free_assumed = false;
-    
+
     /** @var CapabilitySet */
     public int $containing_class_capabilities = Capabilities::ALL;
 
@@ -59,6 +59,15 @@ final class MethodStorage extends FunctionLikeStorage
      * @var ?array<string, bool>
      */
     public ?array $this_property_mutations = null;
+
+    /**
+     * The scanner proved that the body only changes declared, non-hooked properties
+     * of `$this` using scalar arguments or integer increments/decrements.
+     */
+    public bool $only_direct_this_property_writes = false;
+
+    /** Exact property returned by a scanner-recognized trivial getter, if any. */
+    public ?string $direct_property_getter_name = null;
 
     /**
      * The static properties the body assigns directly: `self::$name`, `static::$name` and `parent::$name` as written,

@@ -717,6 +717,52 @@ final class CapabilitiesTest extends TestCase
                         }
                     }',
             ],
+            'mutatingDifferentFinalObjectKeepsDirectPropertyGetter' => [
+                'code' => <<<'PHP'
+                    <?php
+                    final class Other {
+                        private int $n = 0;
+                        public function touch(): int { return ++$this->n; }
+                    }
+                    final class Owner {
+                        public ?Other $child = null;
+                        /** @psalm-mutation-free */
+                        public function getChild(): ?Other { return $this->child; }
+                    }
+                    function check(Owner $o, Other $x): void {
+                        if ($o->getChild() !== null) {
+                            $x->touch();
+                            $o->getChild()->touch();
+                        }
+                    }
+
+                    final class Tx {
+                        /** @psalm-mutation-free */
+                        public function getNumber(): int { return 1; }
+                        /** @psalm-mutation-free */
+                        public function getUuid(): string { return 'x'; }
+                    }
+                    final class Result {
+                        private ?Tx $tx = null;
+                        /** @psalm-mutation-free */
+                        public function getTx(): ?Tx { return $this->tx; }
+                    }
+                    final class Response {
+                        private int $number = 0;
+                        private string $uuid = '';
+                        public function setNumber(int $n): void { $this->number = $n; }
+                        public function setUuid(string $u): void { $this->uuid = $u; }
+                    }
+                    function nested(Result $result, Response $response): void {
+                        if ($result->getTx() !== null) {
+                            $response->setNumber($result->getTx()->getNumber());
+                            $response->setUuid($result->getTx()->getUuid());
+                        }
+                    }
+                    PHP,
+                'assertions' => [],
+                'ignored_issues' => [],
+            ],
             'mutatingAnotherObjectKeepsWhatPureClassMethodsReturned' => [
                 'code' => '<?php
                     /** @psalm-pure */
@@ -3028,6 +3074,77 @@ final class CapabilitiesTest extends TestCase
                         preg_match("/x/", "x", $object["m"]);
                     }',
                 'error_message' => 'ImpureMethodCall - src' . DIRECTORY_SEPARATOR . 'somefile.php:7:48 - The context is read-props but method ArrayObject::offsetSet requires write-props',
+            ],
+            'memoizedGetterMustStillForgetPossibleAlias' => [
+                'code' => '<?php
+                    final class Owner {
+                        private ?int $number = 1;
+                        /** @psalm-mutation-free */
+                        public function getNumber(): ?int { return $this->number; }
+                        public function clear(): void { $this->number = null; }
+                    }
+
+                    function result(Owner $a, Owner $b): int {
+                        if ($a->getNumber() === null) {
+                            return 0;
+                        }
+
+                        // $a and $b may be the same object.
+                        $b->clear();
+                        return $a->getNumber();
+                    }',
+                'error_message' => 'NullableReturnStatement',
+            ],
+            'memoizedComputedGetterMustStillForgetExternalChanges' => [
+                'code' => '<?php
+                    final class Other {
+                        public int $number = 0;
+                        public function touch(): void { ++$this->number; }
+                    }
+
+                    final class Owner {
+                        public Other $other;
+                        public function __construct(Other $other) { $this->other = $other; }
+                        /** @psalm-mutation-free */
+                        public function getNumber(): ?int {
+                            return $this->other->number > 0 ? 1 : null;
+                        }
+                    }
+
+                    function result(Owner $owner, Other $other): int {
+                        if ($owner->getNumber() === null) {
+                            return 0;
+                        }
+
+                        // $other may be the same object as $owner->other.
+                        $other->touch();
+                        return $owner->getNumber();
+                    }',
+                'error_message' => 'NullableReturnStatement',
+            ],
+            'methodAlsoMutatingUnrelatedObjectStillForgetsItsGetter' => [
+                'code' => '<?php
+                    final class Child {}
+                    final class Owner {
+                        public ?Child $child = null;
+                        /** @psalm-mutation-free */
+                        public function getChild(): ?Child { return $this->child; }
+                    }
+                    final class Other {
+                        private int $n = 0;
+                        public function touch(Owner $owner): void {
+                            ++$this->n;
+                            $owner->child = null;
+                        }
+                    }
+                    function check(Owner $owner, Other $other): Child {
+                        if ($owner->getChild() === null) {
+                            return new Child();
+                        }
+                        $other->touch($owner);
+                        return $owner->getChild();
+                    }',
+                'error_message' => 'NullableReturnStatement',
             ],
             'itemOfAnArrayObjectPassedByReferenceForgetsMemoizedResultsOfItsMethods' => [
                 'code' => '<?php
