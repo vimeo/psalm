@@ -560,7 +560,9 @@ final class ReturnTypeAnalyzer
                 }
             }
 
+            // never is a subtype of void: a void function that never ends (an infinite loop, an exit) is correct
             if (!$declared_return_type->isNever()
+                && !$declared_return_type->isVoid()
                 && $function_always_exits
                 // a generator function returns its Generator even if its body never ends
                 && !$function_like_storage?->has_yield
@@ -910,6 +912,7 @@ final class ReturnTypeAnalyzer
                 $parent_class,
             );
 
+            /** @psalm-suppress UnusedMethodCall Actually generates issues */
             self::checkTypeAsReturned(
                 $fleshed_out_return_type,
                 $function_like_analyzer,
@@ -1115,6 +1118,7 @@ final class ReturnTypeAnalyzer
      * TypeChecker)
      *
      * @param array<string> $suppressed_issues
+     * @psalm-pure
      */
     private static function checkTypeAsReturned(
         Union $type,
@@ -1140,12 +1144,7 @@ final class ReturnTypeAnalyzer
             $function_like_analyzer instanceof MethodAnalyzer,
         );
 
-        $checker->traverseArray($type->getAtomicTypes());
-
-        /** @psalm-suppress InaccessibleProperty Does not affect anything else */
-        $type->checked = true;
-
-        return !$checker->hasErrors();
+        return $checker->check($type);
     }
 
     /**

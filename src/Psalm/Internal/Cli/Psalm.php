@@ -966,9 +966,7 @@ final class Psalm
         bool $in_ci,
     ): ReportOptions {
         $stdout_report_options = new ReportOptions();
-        $stdout_report_options->use_color = !array_key_exists('m', $options)
-            && !CliUtils::noColorRequested()
-            && !CliUtils::runningUnderAiAgent();
+        $stdout_report_options->use_color = CliUtils::useColor($options, false);
         $stdout_report_options->show_info = $show_info;
         $stdout_report_options->show_suggestions = !array_key_exists('no-suggestions', $options);
         /**
@@ -1569,8 +1567,9 @@ final class Psalm
         Output:
             -m, --monochrome
                 Enable monochrome output.
-                Auto-enabled when NO_COLOR is set to a non-empty value or when
-                an AI coding agent is driving the shell.
+                Auto-enabled when NO_COLOR is set to a non-empty value, when
+                TERM=dumb, or when an AI coding agent is driving the shell.
+                FORCE_COLOR set to a non-empty value forces colors on instead.
 
             --output-format=console
                 Changes the output format.
