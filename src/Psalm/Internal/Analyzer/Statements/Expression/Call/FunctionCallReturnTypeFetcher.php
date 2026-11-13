@@ -689,20 +689,13 @@ final class FunctionCallReturnTypeFetcher
                 $graph->addNode($closure_return_node);
                 $stmt_type = $stmt_type->addParentNodes([$closure_return_node->id => $closure_return_node]);
 
-                self::taintCallableParams(
+                self::taintCallableArgs(
                     $statements_analyzer,
                     $graph,
                     $callable_id,
                     $closure_storage,
                     $stmt->getArgs(),
                     null,
-                );
-                ConditionalTaintSinks::taintCall(
-                    $statements_analyzer,
-                    $graph,
-                    $closure_storage,
-                    $stmt->getArgs(),
-                    $callable_id,
                     new CodeLocation($statements_analyzer->getSource(), $stmt),
                 );
                 self::taintCallableByRefParams(
@@ -775,16 +768,15 @@ final class FunctionCallReturnTypeFetcher
 
         $stmt_type = $stmt_type->addParentNodes([$return_node->id => $return_node]);
 
-        self::taintCallableParams(
+        self::taintCallableArgs(
             $statements_analyzer,
             $graph,
             $callable_id,
             $storage,
             $args,
             $specialization_location,
+            $node_location,
         );
-
-        ConditionalTaintSinks::taintCall($statements_analyzer, $graph, $storage, $args, $callable_id, $node_location);
 
         self::taintCallableByRefParams(
             $statements_analyzer,
@@ -797,6 +789,93 @@ final class FunctionCallReturnTypeFetcher
         );
 
         $statements_analyzer->node_data->setType($real_stmt, $stmt_type);
+    }
+
+    /**
+     * The arguments a partial application of a callable value binds go to its parameters, as those of a call of it
+     * do (see taintCallableReturnType()): what it returns or leaves in references only comes from calling the closure
+     *
+     * @param non-empty-lowercase-string $callable_id
+     * @param array<int, PhpParser\Node\Arg> $args
+     * @param array<int, true> $open_params the offsets of the parameters the closure's caller gives
+     */
+    public static function taintArgsBoundToCallable(
+        StatementsAnalyzer $statements_analyzer,
+        string $callable_id,
+        array $args,
+        array $open_params,
+        CodeLocation $code_location,
+    ): void {
+        if (!$graph = $statements_analyzer->getTaintFlowGraphWithSuppressed()) {
+            return;
+        }
+
+        $storage = self::getCallableStorage($statements_analyzer, $callable_id);
+
+        if ($storage !== null) {
+            $specialization_location = TaintFlowGraph::isCallSpecialized(
+                $graph,
+                $statements_analyzer->getCodebase(),
+                $storage,
+                $code_location,
+            ) ? $code_location : null;
+        } else {
+            $storage = self::getClosureStorage($statements_analyzer, $callable_id);
+            $specialization_location = null;
+        }
+
+        if ($storage === null) {
+            return;
+        }
+
+        self::taintCallableArgs(
+            $statements_analyzer,
+            $graph,
+            $callable_id,
+            $storage,
+            $args,
+            $specialization_location,
+            $code_location,
+            $open_params,
+        );
+
+        // the call specialized for the application never returns here (see PartialApplicationAnalyzer)
+        if ($specialization_location !== null) {
+            $graph->addNode(DataFlowNode::getForMethodReturn($callable_id, $storage, $specialization_location));
+        }
+    }
+
+    /**
+     * @param array<int, PhpParser\Node\Arg> $args
+     * @param array<int, true>|null $open_params see ConditionalTaintSinks::taintCall()
+     */
+    private static function taintCallableArgs(
+        StatementsAnalyzer $statements_analyzer,
+        TaintFlowGraph $graph,
+        string $callable_id,
+        FunctionLikeStorage $storage,
+        array $args,
+        ?CodeLocation $specialization_location,
+        CodeLocation $node_location,
+        ?array $open_params = null,
+    ): void {
+        self::taintCallableParams(
+            $statements_analyzer,
+            $graph,
+            $callable_id,
+            $storage,
+            $args,
+            $specialization_location,
+        );
+        ConditionalTaintSinks::taintCall(
+            $statements_analyzer,
+            $graph,
+            $storage,
+            $args,
+            $callable_id,
+            $node_location,
+            $open_params,
+        );
     }
 
     /**
@@ -995,7 +1074,7 @@ final class FunctionCallReturnTypeFetcher
      * path completes the implicit return flow) and into any @psalm-taint-sink params,
      * which are registered as sinks here.
      *
-     * @param list<PhpParser\Node\Arg> $args
+     * @param array<int, PhpParser\Node\Arg> $args
      */
     private static function taintCallableParams(
         StatementsAnalyzer $statements_analyzer,
