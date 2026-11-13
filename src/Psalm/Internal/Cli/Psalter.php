@@ -44,7 +44,6 @@ use function fwrite;
 use function gc_collect_cycles;
 use function gc_disable;
 use function getcwd;
-use function getenv;
 use function getopt;
 use function implode;
 use function in_array;
@@ -144,8 +143,10 @@ final class Psalter
 
                 -m, --monochrome
                     Enable monochrome output.
-                    Auto-enabled when NO_COLOR is set to a non-empty value or
-                    when an AI coding agent is driving the shell.
+                    Auto-enabled when NO_COLOR is set to a non-empty value, when
+                    TERM=dumb, when stdout is not a terminal, or when an AI coding
+                    agent is driving the shell.
+                    FORCE_COLOR set to a non-empty value forces colors on instead.
 
                 --no-progress
                     Disable the progress indicator.
@@ -317,11 +318,7 @@ final class Psalter
         }
 
         $stdout_report_options = new ReportOptions();
-        $stdout_report_options->use_color = !array_key_exists('m', $options)
-            && !CliUtils::noColorRequested()
-            && !CliUtils::runningUnderAiAgent()
-            && CliUtils::streamIsInteractive(STDOUT)
-            && getenv('TERM') !== 'dumb';
+        $stdout_report_options->use_color = CliUtils::useColor($options, true);
         $stdout_report_options->in_ci = $in_ci;
 
         $project_analyzer = new ProjectAnalyzer(

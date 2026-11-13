@@ -681,12 +681,39 @@ final class CliUtils
     }
 
     /**
-     * Respects the https://no-color.org/ convention: ANSI colors are disabled
-     * when NO_COLOR is set to a non-empty value (any non-empty string counts).
+     * Decides whether CLI output should be colored.
+     *
+     * Precedence: an explicit `-m` wins, then FORCE_COLOR (https://force-color.org/),
+     * then NO_COLOR (https://no-color.org/), an AI agent or TERM=dumb, and finally,
+     * when $require_interactive_stdout is set, a non-TTY stdout.
+     *
+     * Plain `psalm` does not require a TTY so that CI logs keep their colors.
+     *
+     * @param array<array-key, mixed> $options parsed command line options
      */
-    public static function noColorRequested(): bool
+    public static function useColor(array $options, bool $require_interactive_stdout): bool
     {
-        $value = getenv('NO_COLOR');
+        if (array_key_exists('m', $options)) {
+            return false;
+        }
+
+        if (self::envVarIsNonEmpty('FORCE_COLOR')) {
+            return true;
+        }
+
+        if (self::envVarIsNonEmpty('NO_COLOR')
+            || self::runningUnderAiAgent()
+            || getenv('TERM') === 'dumb'
+        ) {
+            return false;
+        }
+
+        return !$require_interactive_stdout || self::streamIsInteractive(STDOUT);
+    }
+
+    private static function envVarIsNonEmpty(string $name): bool
+    {
+        $value = getenv($name);
         return is_string($value) && $value !== '';
     }
 
