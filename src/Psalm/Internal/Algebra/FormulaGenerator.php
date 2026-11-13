@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Psalm\Internal\Algebra;
 
+use Override;
 use PhpParser;
 use Psalm\Codebase;
 use Psalm\FileSource;
@@ -25,12 +26,14 @@ use Psalm\Storage\Assertion\IsNotType;
 use Psalm\Storage\Assertion\Truthy;
 use Psalm\Type\Atomic\TNull;
 
+use function array_diff_key;
 use function array_filter;
 use function array_map;
 use function array_values;
 use function count;
 use function spl_object_id;
 use function str_starts_with;
+use function strcspn;
 use function strtolower;
 use function substr;
 
@@ -571,6 +574,72 @@ final class FormulaGenerator
     }
 
     /**
+     * The variables that the right side of an `||` of the expression assigns, and its left side doesn't: where the
+     * whole expression is false the right side has run, so what the negated left side says of them is about the
+     * value they had before
+     *
+     * @return array<string, true>
+     */
+    public static function getVarsAssignedByOredRightSides(PhpParser\Node\Expr $expr, ?string $this_class_name): array
+    {
+        if (!$expr instanceof PhpParser\Node\Expr\BinaryOp\BooleanOr
+            && !$expr instanceof PhpParser\Node\Expr\BinaryOp\LogicalOr
+        ) {
+            return [];
+        }
+
+        return [
+            ...self::getVarsAssignedByOredRightSides($expr->left, $this_class_name),
+            ...array_diff_key(
+                self::getAssignedVarIds($expr->right, $this_class_name),
+                self::getAssignedVarIds($expr->left, $this_class_name),
+            ),
+        ];
+    }
+
+    /**
+     * The negation of a condition without what it says of a variable that the right side of one of its `||` assigns.
+     * Where the condition is false that right side has run, so what the negated left side says of the variable is
+     * about the value it had before; leaving out conjuncts of a negation keeps it true.
+     *
+     * @param list<Clause> $negated_clauses
+     * @return list<Clause>
+     */
+    public static function withoutClausesOfReassignedVars(
+        array $negated_clauses,
+        PhpParser\Node\Expr $condition,
+        ?string $this_class_name,
+    ): array {
+        $reassigned_var_ids = self::getVarsAssignedByOredRightSides($condition, $this_class_name);
+
+        if (!$reassigned_var_ids) {
+            return $negated_clauses;
+        }
+
+        return array_values(array_filter(
+            $negated_clauses,
+            static fn(Clause $clause): bool => !self::testsAnyVar($clause, $reassigned_var_ids),
+        ));
+    }
+
+    /**
+     * Whether the clause tests one of the variables, or an item or property of one
+     *
+     * @param array<string, mixed> $var_ids
+     * @psalm-pure
+     */
+    private static function testsAnyVar(Clause $clause, array $var_ids): bool
+    {
+        foreach ($clause->possibilities as $var => $_) {
+            if (isset($var_ids[$var]) || isset($var_ids[substr($var, 0, strcspn($var, '[-'))])) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    /**
      * Whether the formula of the condition leaves out what the left side of an `&&` tested of a variable that the right
      * side assigns: it holds where the whole condition does, so its negation has to be made from the negated condition
      * (`!A || !B`), where the right side is only evaluated if the left one holds
@@ -594,11 +663,31 @@ final class FormulaGenerator
      */
     private static function getAssignedVarIds(PhpParser\Node\Expr $expr, ?string $this_class_name): array
     {
-        $targets = [];
+        $visitor = new class extends PhpParser\NodeVisitorAbstract {
+            /** @var list<PhpParser\Node\Expr> */
+            public array $targets = [];
 
-        (new PhpParser\NodeFinder())->find(
-            $expr,
-            static function (PhpParser\Node $node) use (&$targets): bool {
+            /** @psalm-capabilities read-props|write-this-props|write-refs */
+            #[Override]
+            public function enterNode(PhpParser\Node $node): ?int
+            {
+                // the body of a closure assigns its own variables; only what it takes by reference is the outer's
+                if ($node instanceof PhpParser\Node\Expr\Closure) {
+                    foreach ($node->uses as $use) {
+                        if ($use->byRef) {
+                            $this->targets[] = $use->var;
+                        }
+                    }
+
+                    return PhpParser\NodeVisitor::DONT_TRAVERSE_CHILDREN;
+                }
+
+                if ($node instanceof PhpParser\Node\Expr\ArrowFunction
+                    || $node instanceof PhpParser\Node\Stmt\ClassLike
+                ) {
+                    return PhpParser\NodeVisitor::DONT_TRAVERSE_CHILDREN;
+                }
+
                 if ($node instanceof PhpParser\Node\Expr\Assign
                     || $node instanceof PhpParser\Node\Expr\AssignRef
                     || $node instanceof PhpParser\Node\Expr\AssignOp
@@ -612,17 +701,23 @@ final class FormulaGenerator
                     ) {
                         foreach ($node->var->items as $item) {
                             if ($item !== null) {
-                                $targets[] = $item->value;
+                                $this->targets[] = $item->value;
                             }
                         }
                     } else {
-                        $targets[] = $node->var;
+                        $this->targets[] = $node->var;
                     }
                 }
 
-                return false;
-            },
-        );
+                return null;
+            }
+        };
+
+        $traverser = new PhpParser\NodeTraverser();
+        $traverser->addVisitor($visitor);
+        $traverser->traverse([$expr]);
+
+        $targets = $visitor->targets;
 
         $var_ids = [];
 

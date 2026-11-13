@@ -133,6 +133,8 @@ final class ProjectAnalyzer
 
     public bool $dry_run = false;
 
+    public bool $show_diff = false;
+
     public bool $full_run = false;
 
     public bool $only_replace_php_types_with_non_docblock_types = false;
@@ -820,10 +822,15 @@ final class ProjectAnalyzer
                     },
                 );
 
-                $existing_contents = $this->codebase->file_provider->getContents($file_path);
+                $original_contents = $this->codebase->file_provider->getContents($file_path);
+                $existing_contents = $original_contents;
 
                 foreach ($file_manipulations as $manipulation) {
                     $existing_contents = $manipulation->transform($existing_contents);
+                }
+
+                if ($existing_contents !== $original_contents) {
+                    $this->codebase->analyzer->markFileChanged($file_path);
                 }
 
                 $this->codebase->file_provider->setContents($file_path, $existing_contents);
@@ -1184,11 +1191,13 @@ final class ProjectAnalyzer
     public function alterCodeAfterCompletion(
         bool $dry_run = false,
         bool $safe_types = false,
+        bool $show_diff = false,
     ): void {
         $this->codebase->alter_code = true;
         $this->codebase->infer_types_from_usage = true;
         $this->show_issues = false;
         $this->dry_run = $dry_run;
+        $this->show_diff = $show_diff;
         $this->only_replace_php_types_with_non_docblock_types = $safe_types;
     }
 
