@@ -25,6 +25,7 @@ use Psalm\Type;
 use Psalm\Type\Atomic\TBool;
 use Psalm\Type\Atomic\TFalse;
 use Psalm\Type\Atomic\TFloat;
+use Psalm\Type\Atomic\TGenericObject;
 use Psalm\Type\Atomic\TInt;
 use Psalm\Type\Atomic\TLiteralFloat;
 use Psalm\Type\Atomic\TLiteralInt;
@@ -416,7 +417,16 @@ final class ClosureAnalyzer extends FunctionLikeAnalyzer
                 /** @psalm-suppress PossiblyUndefinedStringArrayOffset */
                 $use_context->vars_in_scope['$this'] = $context->vars_in_scope['$this'];
             } elseif ($context->self) {
-                $this_atomic = new TNamedObject($context->self, true);
+                $outer_this_atomic = isset($context->vars_in_scope['$this'])
+                    && $context->vars_in_scope['$this']->isSingle()
+                    ? $context->vars_in_scope['$this']->getSingleAtomic()
+                    : null;
+
+                // keep the template params of the class, so that its methods take the closure's TNode for theirs
+                $this_atomic = $outer_this_atomic instanceof TGenericObject
+                    && strtolower($outer_this_atomic->value) === strtolower($context->self)
+                    ? $outer_this_atomic
+                    : new TNamedObject($context->self, true);
 
                 $use_context->vars_in_scope['$this'] = new Union([$this_atomic]);
             }
@@ -560,6 +570,13 @@ final class ClosureAnalyzer extends FunctionLikeAnalyzer
                 }
 
                 $use_context->vars_possibly_in_scope[$use_var_id] = true;
+            }
+        }
+
+        // a closure runs on the PHP version and in the SAPI of the code creating it
+        foreach ([Context::PHP_VERSION_ID_VAR_ID, Context::PHP_SAPI_VAR_ID] as $var_id) {
+            if (isset($context->vars_in_scope[$var_id])) {
+                $use_context->vars_in_scope[$var_id] = $context->vars_in_scope[$var_id];
             }
         }
 
