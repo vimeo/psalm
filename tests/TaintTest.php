@@ -5567,6 +5567,39 @@ final class TaintTest extends TestCase
                         use Imports;
                     }',
             ],
+            'cliOnlyCodeDiesWithAMessageToATerminal' => [
+                'code' => '<?php
+                    /** @psalm-cli-only */
+                    function import(): void {
+                        if (rand(0, 1)) {
+                            die((string) $_GET["file"]);
+                        }
+
+                        array_map(function (string $line): void {
+                            exit($line);
+                        }, [(string) $_GET["file"]]);
+
+                        exit((string) $_GET["file"]);
+                    }
+
+                    function run(): void {
+                        if (PHP_SAPI === "cli") {
+                            die((string) $_GET["file"]);
+                        }
+                    }',
+            ],
+            'cliOnlyCodePrintsUnpackedArgumentsToATerminal' => [
+                'code' => '<?php
+                    /** @psalm-cli-only */
+                    function import(): void {
+                        $file = (string) $_GET["file"];
+                        printf("%s", ...[$file]);
+                        printf(...["%s", $file]);
+                        vprintf(...["%s", [$file]]);
+                        var_dump(...[$file]);
+                        debug_zval_dump("", ...[$file]);
+                    }',
+            ],
             'codeRequiringACliOnlyInstancePrintsToATerminal' => [
                 'code' => '<?php
                     /** @psalm-cli-only-instances */
@@ -8729,6 +8762,44 @@ final class TaintTest extends TestCase
                         }
                     }',
                 'error_message' => 'names $name, which is not a parameter',
+            ],
+            'codeOutsideOfTheCommandLineDiesWithAMessageToAResponse' => [
+                'code' => '<?php
+                    function run(): void {
+                        if (PHP_SAPI === "cli") {
+                            echo "Importing";
+                        }
+
+                        die((string) $_GET["file"]);
+                    }',
+                'error_message' => 'TaintedHtml',
+            ],
+            'cliOnlyCodeDyingWithASecretLeaksIt' => [
+                'code' => '<?php
+                    /** @psalm-taint-source system_secret */
+                    function systemSecret(): string { return ""; }
+
+                    /** @psalm-cli-only */
+                    function show(): void {
+                        die(systemSecret());
+                    }',
+                'error_message' => 'TaintedSystemSecret',
+            ],
+            'cliOnlyCodeMayReturnWhatPrintRWouldPrintWithUnpackedArguments' => [
+                'code' => '<?php
+                    /** @psalm-cli-only */
+                    function dump(array $args): void {
+                        print_r((string) $_GET["x"], ...$args);
+                    }',
+                'error_message' => 'TaintedHtml',
+            ],
+            'cliOnlyCodeMayReturnWhatVarExportWouldPrintWithAllItsArgumentsUnpacked' => [
+                'code' => '<?php
+                    /** @psalm-cli-only */
+                    function dump(bool $return): void {
+                        var_export(...[(string) $_GET["x"], $return]);
+                    }',
+                'error_message' => 'TaintedHtml',
             ],
             'cliOnlyCodeReturnsWhatPrintRWouldPrint' => [
                 'code' => '<?php
