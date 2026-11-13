@@ -693,7 +693,9 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
             );
         }
 
-        if (!$check_stmts) {
+        // a signature that fails the check skips the body, but what the body initialises or mutates still counts:
+        // its regular analysis reports the signature
+        if (!$check_stmts && !$context->collect_initializations && !$context->collect_mutations) {
             return false;
         }
 

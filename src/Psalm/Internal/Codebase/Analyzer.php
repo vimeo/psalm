@@ -111,8 +111,6 @@ final class Analyzer
      */
     private array $mixed_member_names = [];
 
-    private bool $count_mixed = true;
-
     /**
      * Used to store debug performance data
      *
@@ -928,10 +926,6 @@ final class Analyzer
      */
     public function incrementMixedCount(string $file_path): void
     {
-        if (!$this->count_mixed) {
-            return;
-        }
-
         if (!isset($this->mixed_counts[$file_path])) {
             $this->mixed_counts[$file_path] = [0, 0];
         }
@@ -944,10 +938,6 @@ final class Analyzer
      */
     public function decrementMixedCount(string $file_path): void
     {
-        if (!$this->count_mixed) {
-            return;
-        }
-
         if (!isset($this->mixed_counts[$file_path])) {
             return;
         }
@@ -964,10 +954,6 @@ final class Analyzer
      */
     public function incrementNonMixedCount(string $file_path): void
     {
-        if (!$this->count_mixed) {
-            return;
-        }
-
         if (!isset($this->mixed_counts[$file_path])) {
             $this->mixed_counts[$file_path] = [0, 0];
         }
@@ -1168,22 +1154,6 @@ final class Analyzer
         }
 
         return $stats;
-    }
-
-    /**
-     * @psalm-external-mutation-free
-     */
-    public function disableMixedCounts(): void
-    {
-        $this->count_mixed = false;
-    }
-
-    /**
-     * @psalm-external-mutation-free
-     */
-    public function enableMixedCounts(): void
-    {
-        $this->count_mixed = true;
     }
 
     /**
