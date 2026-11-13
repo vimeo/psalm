@@ -1118,6 +1118,7 @@ final class PreloaderList {
         \Psalm\Issue\ArgumentIssue::class,
         \Psalm\Issue\ArgumentTypeCoercion::class,
         \Psalm\Issue\AssignmentToVoid::class,
+        \Psalm\Issue\CallableByReferenceMismatch::class,
         \Psalm\Issue\CheckType::class,
         \Psalm\Issue\CircularReference::class,
         \Psalm\Issue\ClassConstantIssue::class,
