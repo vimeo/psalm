@@ -5567,6 +5567,40 @@ final class TaintTest extends TestCase
                         use Imports;
                     }',
             ],
+            'codeRequiringACliOnlyInstancePrintsToATerminal' => [
+                'code' => '<?php
+                    /** @psalm-cli-only-instances */
+                    final class Request {
+                        public function __construct() {
+                            if (PHP_SAPI !== "cli") {
+                                throw new LogicException("Run it from the command line");
+                            }
+                        }
+
+                        public function __wakeup(): void {
+                            if (PHP_SAPI !== "cli") {
+                                throw new LogicException("Run it from the command line");
+                            }
+                        }
+
+                        public function run(): void {
+                            echo (string) $_GET["file"];
+                        }
+                    }
+
+                    function import(Request $request): void {
+                        $file = (string) $_GET["file"];
+                        echo $file;
+                        printf("%s", $file);
+                        array_map(function (string $line): void {
+                            echo $line;
+                        }, [$file]);
+                    }
+
+                    $print = function (Request $request): void {
+                        echo (string) $_GET["file"];
+                    };',
+            ],
             'sapiCheckedCodePrintsToATerminal' => [
                 'code' => '<?php
                     function import(): void {
@@ -8797,6 +8831,50 @@ final class TaintTest extends TestCase
 
                     final class ImportController {
                         use Imports;
+                    }',
+                'error_message' => 'TaintedHtml',
+            ],
+            'codeTakingANullableCliOnlyInstancePrintsToAResponse' => [
+                'code' => '<?php
+                    /** @psalm-cli-only-instances */
+                    final class Request {
+                        public function __construct() {
+                            if (PHP_SAPI !== "cli") {
+                                throw new LogicException("Run it from the command line");
+                            }
+                        }
+
+                        public function __wakeup(): void {
+                            if (PHP_SAPI !== "cli") {
+                                throw new LogicException("Run it from the command line");
+                            }
+                        }
+                    }
+
+                    function import(?Request $request): void {
+                        echo (string) $_GET["file"];
+                    }',
+                'error_message' => 'TaintedHtml',
+            ],
+            'staticMethodOfAClassWithCliOnlyInstancesPrintsToAResponse' => [
+                'code' => '<?php
+                    /** @psalm-cli-only-instances */
+                    final class Request {
+                        public function __construct() {
+                            if (PHP_SAPI !== "cli") {
+                                throw new LogicException("Run it from the command line");
+                            }
+                        }
+
+                        public function __wakeup(): void {
+                            if (PHP_SAPI !== "cli") {
+                                throw new LogicException("Run it from the command line");
+                            }
+                        }
+
+                        public static function show(): void {
+                            echo (string) $_GET["file"];
+                        }
                     }',
                 'error_message' => 'TaintedHtml',
             ],
