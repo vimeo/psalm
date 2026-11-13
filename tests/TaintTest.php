@@ -521,6 +521,52 @@ final class TaintTest extends TestCase
     }
 
     /**
+     * An unpacked argument may hold any flags, or none: the flags of the items after the first are not given, as the
+     * array may not have them.
+     */
+    public function testUnpackedArgumentsMayHoldAnyFlags(): void
+    {
+        $this->testConfig->throw_exception = false;
+        $file_path = self::$src_dir_path . 'somefile.php';
+        $this->project_analyzer->setPhpVersion('8.1', 'tests');
+        $this->addFile($file_path, '<?php
+            function f(bool $c): void {
+                $json = [$_GET["a"]];
+                if ($c) { $json[] = JSON_HEX_TAG | JSON_HEX_AMP; }
+                echo json_encode(...$json);
+                $html = [(string) $_GET["b"]];
+                if ($c) { $html[] = ENT_NOQUOTES; }
+                echo htmlspecialchars(...$html);
+                echo htmlentities(...$html);
+                $decoded = [htmlspecialchars((string) $_GET["c"], ENT_QUOTES)];
+                if ($c) { $decoded[] = ENT_NOQUOTES; }
+                echo html_entity_decode(...$decoded);
+            }
+        ');
+        $this->project_analyzer->trackTaintedInputs();
+        $this->project_analyzer->getCodebase()->config->initializePlugins($this->project_analyzer);
+
+        $this->analyzeFile($file_path, new Context(), false);
+
+        $issues = array_values(array_filter(
+            IssueBuffer::getIssuesDataForFile($file_path),
+            static fn(IssueData $issue): bool => !in_array($issue->type, self::IGNORE, true),
+        ));
+
+        self::assertEqualsCanonicalizing(
+            [
+                [5, 'TaintedHtml'],
+                [5, 'TaintedTextWithQuotes'],
+                [8, 'TaintedTextWithQuotes'],
+                [9, 'TaintedTextWithQuotes'],
+                [12, 'TaintedHtml'],
+                [12, 'TaintedTextWithQuotes'],
+            ],
+            array_map(static fn(IssueData $issue): array => [$issue->line_from, $issue->type], $issues),
+        );
+    }
+
+    /**
      * json_encode() escapes every control character, so its output can't split a header, unless it may pretty print.
      */
     public function testJsonEncodeRemovesTheHeaderTaintUnlessItPrettyPrints(): void
@@ -6142,6 +6188,64 @@ final class TaintTest extends TestCase
                     }
 
                     (new H())->f();',
+                'error_message' => 'TaintedHtml',
+            ],
+            'conditionallyEscapedTaintIgnoresUnpackedArguments' => [
+                'code' => '<?php
+                    /**
+                     * @psalm-taint-escape ($escape is true ? "html" : null)
+                     */
+                    function escape(string $string, bool $escape = false): string {
+                        return $string;
+                    }
+
+                    function f(bool $c): void {
+                        $args = [(string) $_GET["a"]];
+                        if ($c) {
+                            $args[] = true;
+                        }
+                        echo escape(...$args);
+                    }',
+                'error_message' => 'TaintedHtml',
+            ],
+            'conditionallyEscapedTaintIgnoresUnpackedArgumentsOfAStaticMethod' => [
+                'code' => '<?php
+                    final class U {
+                        /**
+                         * @psalm-taint-escape ($escape is true ? "html" : null)
+                         */
+                        public static function escape(string $string, bool $escape = false): string {
+                            return $string;
+                        }
+                    }
+
+                    function f(bool $c): void {
+                        $args = [(string) $_GET["a"]];
+                        if ($c) {
+                            $args[] = true;
+                        }
+                        echo U::escape(...$args);
+                    }',
+                'error_message' => 'TaintedHtml',
+            ],
+            'conditionallyEscapedTaintIgnoresUnpackedArgumentsOfAnInstanceMethod' => [
+                'code' => '<?php
+                    final class U {
+                        /**
+                         * @psalm-taint-escape ($escape is true ? "html" : null)
+                         */
+                        public function escape(string $string, bool $escape = false): string {
+                            return $string;
+                        }
+                    }
+
+                    function f(bool $c): void {
+                        $args = [(string) $_GET["a"]];
+                        if ($c) {
+                            $args[] = true;
+                        }
+                        echo (new U())->escape(...$args);
+                    }',
                 'error_message' => 'TaintedHtml',
             ],
             'conditionallyEscapedTaintPassedFalseInstanceMethod' => [

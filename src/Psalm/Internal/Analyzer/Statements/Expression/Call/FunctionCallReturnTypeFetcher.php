@@ -54,6 +54,7 @@ use Psalm\Type\TaintKind;
 use Psalm\Type\Union;
 use UnexpectedValueException;
 
+use function array_any;
 use function array_values;
 use function count;
 use function explode;
@@ -1503,12 +1504,21 @@ final class FunctionCallReturnTypeFetcher
     /**
      * The taints a call removes because of the arguments it is given (`@psalm-taint-escape ($escape is true ? "html" :
      * null)`): a condition the arguments can't decide removes nothing
+     *
+     * @param array<PhpParser\Node\Arg> $args
      */
     public static function getConditionallyRemovedTaints(
         Codebase $codebase,
         FunctionLikeStorage $storage,
         TemplateResult $template_result,
+        array $args,
     ): int {
+        // the parameters an unpacked argument gives are inferred from all of its items, of which it may lack those
+        // after the first: `json_encode(...$args)` may be without the flags of the second item
+        if (array_any($args, static fn(PhpParser\Node\Arg $arg): bool => $arg->unpack)) {
+            return 0;
+        }
+
         $conditionally_removed_taints = 0;
 
         foreach ($storage->conditionally_removed_taints as $conditionally_removed_taint) {
@@ -1584,6 +1594,7 @@ final class FunctionCallReturnTypeFetcher
             $codebase,
             $function_storage,
             $template_result,
+            $stmt->isFirstClassCallable() ? [] : $stmt->getArgs(),
         );
 
         if ($conditionally_removed_taints) {

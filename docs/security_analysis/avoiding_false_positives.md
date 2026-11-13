@@ -36,6 +36,8 @@ What `json_encode()`, `htmlspecialchars()` and `htmlentities()` escape depends o
 
 Flags computed from an `int` Psalm knows nothing more of are an `int` too, so `$flags | JSON_HEX_TAG | JSON_HEX_AMP` removes nothing, although it always has both bits: give `$flags` a literal or `int-mask` type, or pass the constants directly. Flags of any other type (`mixed`, `int|string`, `int-mask<…>|string`, a `float`, a template) remove nothing either: what may be other than an int may be any int once coerced.
 
+A call with an unpacked argument (`json_encode(...$args)`, `htmlspecialchars(...$args)`) removes nothing that depends on the flags, as the array may not have them; the same holds for conditional escapes (`@psalm-taint-escape ($escape is true ? 'html' : null)`) of any function or method.
+
 ## Types
 
 A value can only carry the taints its type can hold: a number or a boolean can't hold HTML, SQL or a path, a string can't be a NoSQL query document (but what `json_decode()`, `unserialize()`, `parse_str()` and the other decoders build out of it can), and a literal string (a value the code wrote, or one Psalm knows is among such values) can't hold anything the client sent. An array holds what its keys and values can: `list<int>` holds no HTML, while the string keys of `array<string, int>` can hold anything. A union holds what any of its types can hold, and `null` holds nothing.

@@ -13,6 +13,7 @@ use Psalm\Plugin\EventHandler\Event\AddRemoveTaintsEvent;
 use Psalm\Plugin\EventHandler\RemoveTaintsInterface;
 use Psalm\Type\TaintKind;
 
+use function array_any;
 use function count;
 use function strtolower;
 
@@ -90,6 +91,11 @@ final class HtmlFunctionTainter implements AddTaintsInterface, RemoveTaintsInter
 
         if ($function_id !== 'htmlentities' && $function_id !== 'htmlspecialchars') {
             return 0;
+        }
+
+        // an unpacked argument may hold any flags
+        if (array_any($item->getArgs(), static fn(PhpParser\Node\Arg $arg): bool => $arg->unpack)) {
+            return TaintKind::INPUT_HTML;
         }
 
         $flags_arg = self::getFlagsArg($item);
