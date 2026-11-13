@@ -918,12 +918,14 @@ final class ClassLikes
 
                         // a class that is only alive because of its own methods
                         // still has its members unchecked
-                        if ($code_use_graph->isUsed($class_node)
-                            && ($classlike_storage->public_api || $code_use_graph->isReferenced($class_node))
+                        if (($code_use_graph->isUsed($class_node)
+                            && ($classlike_storage->public_api || $code_use_graph->isReferenced($class_node)))
+                            || isset($possibly_used_nodes[$class_node])
                         ) {
+                            // Speculatively reachable classes still need their members checked.
                             $this->checkMethodReferences($classlike_storage, $methods, $possibly_used_nodes);
                             $this->checkPropertyReferences($classlike_storage, $possibly_used_nodes);
-                        } elseif (!isset($possibly_used_nodes[$class_node])) {
+                        } else {
                             IssueBuffer::maybeAdd(
                                 new UnusedClass(
                                     'Class ' . $classlike_storage->name . ' is never used',
@@ -2178,17 +2180,26 @@ final class ClassLikes
             }
 
             foreach ($class_storage->appearing_method_ids as $method_name => $appearing_method_id) {
+                if ($inherited_references === [] && !isset($mixed_member_names[$method_name])) {
+                    continue;
+                }
+
                 if (isset($class_storage->methods[$method_name])) {
                     $method_id = $appearing_method_id;
                     $method_storage = $class_storage->methods[$method_name];
                 } else {
-                    $method_id = $class_storage->declaring_method_ids[$method_name];
+                    // An appearing method may have no declaring ID. Fall back to
+                    // its appearing owner, and ignore it if no storage exists.
+                    $method_id = $class_storage->declaring_method_ids[$method_name] ?? $appearing_method_id;
                     try {
                         $declaring_storage = $this->classlike_storage_provider->get($method_id->fq_class_name);
                     } catch (InvalidArgumentException) {
                         continue;
                     }
-                    $method_storage = $declaring_storage->methods[$method_id->method_name];
+                    $method_storage = $declaring_storage->methods[$method_id->method_name] ?? null;
+                    if ($method_storage === null) {
+                        continue;
+                    }
                 }
 
                 $references = $mixed_member_names[$method_name] ?? [];
@@ -2244,8 +2255,7 @@ final class ClassLikes
         ClassLikeStorage $classlike_storage,
         Methods $methods,
         array $possibly_used_nodes,
-    ): void
-    {
+    ): void {
         $project_analyzer = ProjectAnalyzer::getInstance();
         $codebase = $project_analyzer->getCodebase();
 

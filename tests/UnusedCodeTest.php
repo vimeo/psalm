@@ -374,6 +374,68 @@ final class UnusedCodeTest extends TestCase
         self::assertSame(['PossiblyUnusedMethod', 'UnusedMethod'], $issues);
     }
 
+    public function testSpeculativelyReachableClassStillReportsUnusedMembers(): void
+    {
+        $this->project_analyzer->getConfig()->throw_exception = false;
+        $this->project_analyzer->getConfig()->setCustomErrorLevel('PossiblyUnusedMethod', Config::REPORT_INFO);
+        $file_path = self::$src_dir_path . 'somefile.php';
+
+        $this->addFile($file_path, '<?php
+            final class Worker {
+                public function used(): string { return "ok"; }
+                public function unused(): void {}
+            }
+            final class DynamicDispatcher {
+                public function action(): void {
+                    echo (new Worker())->used();
+                }
+            }
+            $dispatcher = new DynamicDispatcher();
+            $method = (string) getenv("ACTION");
+            if (method_exists($dispatcher, $method)) {
+                $dispatcher->$method();
+            }');
+
+        $this->analyzeFile($file_path, new Context(), false);
+        $this->project_analyzer->consolidateAnalyzedData();
+
+        $issues = IssueBuffer::getIssuesDataForFile($file_path);
+        self::assertNotContains('UnusedClass', array_column($issues, 'type'));
+        self::assertContains('Cannot find any calls to method Worker::unused', array_column($issues, 'message'));
+    }
+
+    public function testDynamicCallSkipsAppearingMethodWithoutDeclaringStorage(): void
+    {
+        $this->project_analyzer->getConfig()->throw_exception = false;
+        $this->project_analyzer->getConfig()->setCustomErrorLevel('PossiblyUnusedMethod', Config::REPORT_INFO);
+        $file_path = self::$src_dir_path . 'somefile.php';
+
+        $this->addFile($file_path, '<?php
+            final class DynamicController {
+                private string $value = "ok";
+                public function run(): string { return $this->value; }
+            }
+            $controller = new DynamicController();
+            $method = (string) getenv("ACTION");
+            if (method_exists($controller, $method)) {
+                echo (string) $controller->$method();
+            }');
+
+        $this->analyzeFile($file_path, new Context(), false);
+
+        // Some appearing methods have no corresponding declaring method ID.
+        // This must not crash the potential-reachability collector.
+        $storage = $this->project_analyzer->getCodebase()->classlike_storage_provider->get('DynamicController');
+        $storage->appearing_method_ids['synthetic'] = new \Psalm\Internal\MethodIdentifier('ExternalClass', 'synthetic');
+
+        $this->project_analyzer->consolidateAnalyzedData();
+
+        self::assertSame(
+            ['PossiblyUnusedMethod'],
+            array_column(IssueBuffer::getIssuesDataForFile($file_path), 'type'),
+        );
+    }
+
     public function testClassReferencedFromExternalInterfaceOverrideIsUsed(): void
     {
         $this->project_analyzer->getConfig()->throw_exception = false;
