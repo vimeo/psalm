@@ -159,10 +159,10 @@ final class Psalter
                     Executes a plugin, an alternative to using the Psalm config
 
                 --dry-run
-                    Shows a diff of all the changes, without making them
+                    Does not write the changes
 
                 --no-diff
-                    Does not print the diff of the changes
+                    Does not print the diff, only the list of changed files
 
                 --safe-types
                     Only update PHP types when the new type information comes from other PHP types,
