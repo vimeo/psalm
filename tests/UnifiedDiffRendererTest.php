@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Psalm\Tests;
 
+use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\TestCase;
 use Psalm\Internal\FileManipulation\UnifiedDiffRenderer;
 
@@ -76,5 +77,26 @@ final class UnifiedDiffRendererTest extends TestCase
         $output = (new UnifiedDiffRenderer(true, true))->render(1, 'a.txt', '/p/a.txt', "a\n", 'b');
 
         $this->assertStringContainsString("\e[2m\\ No newline at end of file\e[0m\n", $output);
+    }
+
+    #[DataProvider('firstChangedLineProvider')]
+    public function testTitleLinePointsAtTheFirstChangedLine(string $old, string $new, int $expected_line): void
+    {
+        $output = (new UnifiedDiffRenderer())->render(1, 'a.txt', '/p/a.txt', $old, $new);
+
+        $this->assertStringStartsWith('1) a.txt:' . $expected_line . "\n", $output);
+    }
+
+    /**
+     * @return iterable<string, array{string, string, int}>
+     * @psalm-pure
+     */
+    public static function firstChangedLineProvider(): iterable
+    {
+        yield 'append at end of file' => ["a\nb\n", "a\nb\nc\n", 3];
+        yield 'delete last line' => ["a\nb\n", "a\n", 1];
+        yield 'change on first line' => ["a\nb\n", "x\nb\n", 1];
+        yield 'change on first line without trailing newline' => ['a', 'b', 1];
+        yield 'change in the middle' => ["a\nb\nc\n", "a\nB\nc\n", 2];
     }
 }

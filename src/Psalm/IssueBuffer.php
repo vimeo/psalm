@@ -830,10 +830,14 @@ final class IssueBuffer
             );
         }
 
-        if (in_array(
+        $prints_to_console = in_array(
             $project_analyzer->stdout_report_options->format,
             [Report::TYPE_CONSOLE, Report::TYPE_PHP_STORM, Report::TYPE_GITHUB_ACTIONS],
-        )) {
+        );
+
+        if ($prints_to_console && $codebase->alter_code && !$error_count) {
+            self::printAlterSummary($project_analyzer, $codebase->analyzer->getChangedFilesCount(), $start_time);
+        } elseif ($prints_to_console) {
             echo str_repeat('-', 30) . "\n";
 
             if ($error_count) {
@@ -841,8 +845,6 @@ final class IssueBuffer
                     ? "\e[0;31m" . $error_count . " errors\e[0m"
                     : $error_count . ' errors'
                 ) . ' found' . "\n";
-            } elseif ($codebase->alter_code) {
-                self::printAlterSummary($project_analyzer, $codebase->analyzer->getChangedFilesCount());
             } else {
                 self::printSuccessMessage($project_analyzer);
             }
@@ -885,9 +887,8 @@ final class IssueBuffer
                 echo 'Checks took ' . number_format(microtime(true) - $start_time, 2) . ' seconds';
                 echo ' and used ' . number_format(memory_get_peak_usage() / (1_024 * 1_024), 3) . 'MB of memory' . "\n";
 
-                if (!$codebase->alter_code) {
-                    echo $codebase->analyzer->getTypeInferenceSummary($codebase) . "\n";
-                }
+                $analysis_summary = $codebase->analyzer->getTypeInferenceSummary($codebase);
+                echo $analysis_summary . "\n";
 
                 if ($add_stats) {
                     echo '-----------------' . "\n";
@@ -918,10 +919,7 @@ final class IssueBuffer
                 }
             }
 
-            if (!$codebase->alter_code
-                && $codebase->config->find_unused_issue_handler_suppression
-                && (!$is_full || $codebase->diff_run)
-            ) {
+            if ($codebase->config->find_unused_issue_handler_suppression && (!$is_full || $codebase->diff_run)) {
                 fwrite(
                     STDERR,
                     PHP_EOL . 'To whom it may concern: Psalm cannot detect unused issue handler suppressions when'
@@ -965,8 +963,11 @@ final class IssueBuffer
         return false;
     }
 
-    private static function printAlterSummary(ProjectAnalyzer $project_analyzer, int $changed_files_count): void
-    {
+    private static function printAlterSummary(
+        ProjectAnalyzer $project_analyzer,
+        int $changed_files_count,
+        float $start_time,
+    ): void {
         if ($changed_files_count === 0) {
             $message = 'No changes';
         } else {
@@ -974,8 +975,14 @@ final class IssueBuffer
                 . ($project_analyzer->dry_run ? 'would be changed (dry run)' : 'changed');
         }
 
-        echo ($project_analyzer->stdout_report_options?->use_color ? "\e[0;32m" . $message . "\e[0m" : $message)
-            . "\n";
+        echo str_repeat('-', 30) . "\n"
+            . ($project_analyzer->stdout_report_options?->use_color ? "\e[0;32m" . $message . "\e[0m" : $message) . "\n"
+            . str_repeat('-', 30) . "\n\n";
+
+        if ($start_time) {
+            echo 'Checks took ' . number_format(microtime(true) - $start_time, 2) . ' seconds';
+            echo ' and used ' . number_format(memory_get_peak_usage() / (1_024 * 1_024), 3) . 'MB of memory' . "\n";
+        }
     }
 
     public static function printSuccessMessage(ProjectAnalyzer $project_analyzer): void

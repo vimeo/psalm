@@ -16,10 +16,13 @@ use function is_string;
 use function max;
 use function min;
 use function ord;
-use function preg_match;
+use function str_ends_with;
 use function strlen;
+use function strrev;
+use function strspn;
 use function strtr;
 use function substr;
+use function substr_count;
 
 /**
  * Renders the changes Psalter would make to a file: a numbered title line followed by a git-style unified diff.
@@ -54,17 +57,17 @@ final class UnifiedDiffRenderer
             ]),
         ))->diff($old_contents, $new_contents);
 
-        $lines = explode("\n", $diff);
-        // every diff line, including the last one, ends with a newline
-        array_pop($lines);
-
-        $first_changed_line = self::getFirstChangedLine($lines);
+        $first_changed_line = self::getFirstChangedLine($old_contents, $new_contents);
         $title = $index . ') ' . $relative_path . ':' . $first_changed_line;
         $separator = $index > 1 ? "\n" : '';
 
         if (!$this->use_color) {
             return $separator . $title . "\n" . $diff;
         }
+
+        $lines = explode("\n", $diff);
+        // every diff line, including the last one, ends with a newline
+        array_pop($lines);
 
         return $separator
             . $this->formatTitle($title, $absolute_path, $first_changed_line)
@@ -73,28 +76,14 @@ final class UnifiedDiffRenderer
     }
 
     /**
-     * @param list<string> $lines
      * @psalm-pure
      */
-    private static function getFirstChangedLine(array $lines): int
+    private static function getFirstChangedLine(string $old_contents, string $new_contents): int
     {
-        $line = 1;
+        $line = substr_count($new_contents, "\n", 0, strspn($old_contents ^ $new_contents, "\0")) + 1;
+        $last_line = substr_count($new_contents, "\n") + (str_ends_with($new_contents, "\n") ? 0 : 1);
 
-        // the first two lines are the `---` and `+++` headers
-        for ($i = 2, $count = count($lines); $i < $count; $i++) {
-            $first_char = $lines[$i][0];
-
-            if ($first_char === '@') {
-                preg_match('/^@@ -\d+(?:,\d+)? \+(\d+)/', $lines[$i], $matches);
-                $line = max(1, (int) ($matches[1] ?? 1));
-            } elseif ($first_char === ' ') {
-                ++$line;
-            } elseif ($first_char !== '\\') {
-                break;
-            }
-        }
-
-        return $line;
+        return min($line, max(1, $last_line));
     }
 
     private function formatTitle(string $title, string $absolute_path, int $line): string
@@ -193,22 +182,12 @@ final class UnifiedDiffRenderer
         $old_length = strlen($old);
         $new_length = strlen($new);
 
-        $prefix = 0;
-        $max = min($old_length, $new_length);
-        while ($prefix < $max && $old[$prefix] === $new[$prefix]) {
-            ++$prefix;
-        }
-
+        $prefix = strspn($old ^ $new, "\0");
         while ($prefix > 0 && (self::isContinuationByte($old, $prefix) || self::isContinuationByte($new, $prefix))) {
             --$prefix;
         }
 
-        $suffix = 0;
-        $max -= $prefix;
-        while ($suffix < $max && $old[$old_length - 1 - $suffix] === $new[$new_length - 1 - $suffix]) {
-            ++$suffix;
-        }
-
+        $suffix = min(strspn(strrev($old) ^ strrev($new), "\0"), min($old_length, $new_length) - $prefix);
         while ($suffix > 0
             && (self::isContinuationByte($old, $old_length - $suffix)
                 || self::isContinuationByte($new, $new_length - $suffix))
