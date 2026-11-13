@@ -4,10 +4,10 @@ declare(strict_types=1);
 
 namespace Psalm\Tests;
 
+use PHPUnit\Framework\Attributes\Test;
 use PhpParser\Node\Stmt\Switch_;
 use PhpParser\Node\Stmt\While_;
 use PhpParser\ParserFactory;
-use PHPUnit\Framework\Attributes\Test;
 use Psalm\Internal\Analyzer\ScopeAnalyzer;
 
 final class ScopeAnalyzerTest extends TestCase
