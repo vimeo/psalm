@@ -272,6 +272,12 @@ final class ClassLikeStorage implements HasAttributesInterface
     public bool $cli_only = false;
 
     /**
+     * Whether the instances of the class only exist in command-line processes (`@psalm-cli-only-instances`): its
+     * instance methods, and the function-likes requiring an instance of it, only run from the command line
+     */
+    public bool $cli_only_instances = false;
+
+    /**
      * @var array<lowercase-string, MethodStorage>
      */
     public array $methods = [];
