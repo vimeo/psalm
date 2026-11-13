@@ -1862,6 +1862,59 @@ final class ConditionalTest extends TestCase
                     '$r===' => 'Base&Countable|null',
                 ],
             ],
+            'exactObjectMergedWithParamStaysOpen' => [
+                'code' => '<?php
+                    class Foo {}
+                    class Sub extends Foo {}
+
+                    function getFoo(): Foo {
+                        return new Foo();
+                    }
+
+                    function getSub(): Sub {
+                        return new Sub();
+                    }
+
+                    /** @return list<Foo> */
+                    function getFoos(): array {
+                        return [];
+                    }
+
+                    $p = getFoo();
+
+                    $if_merged = new Foo();
+                    if (rand(0, 1)) {
+                        $if_merged = $p;
+                    }
+                    $a = is_countable($if_merged) ? $if_merged : null;
+
+                    $exact_first = rand(0, 1) ? new Foo() : $p;
+                    $b = is_countable($exact_first) ? $exact_first : null;
+
+                    $exact_last = rand(0, 1) ? $p : new Foo();
+                    $c = is_countable($exact_last) ? $exact_last : null;
+
+                    $looped = new Foo();
+                    foreach (getFoos() as $looped) {}
+                    $d = $looped instanceof Traversable ? $looped : null;
+
+                    $make = function () {
+                        if (rand(0, 1)) {
+                            return new Foo();
+                        }
+                        return getSub();
+                    };
+                    $absorbed = $make();
+                    $e = is_countable($absorbed) ? $absorbed : null;',
+                'assertions' => [
+                    '$a===' => 'Foo&Countable|null',
+                    '$b===' => 'Foo&Countable|null',
+                    '$c===' => 'Foo&Countable|null',
+                    '$d===' => 'Foo&Traversable|null',
+                    '$e===' => 'Foo&Countable|null',
+                ],
+                'ignored_issues' => ['MissingClosureReturnType'],
+            ],
             'removeCallableString' => [
                 'code' => '<?php
                     $s = rand(0,1) ? "strlen" : [1];

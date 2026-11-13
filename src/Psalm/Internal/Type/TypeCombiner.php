@@ -960,6 +960,11 @@ final class TypeCombiner
             }
 
             if (isset($combination->named_object_types[$type_key])) {
+                if (!$type->definite_class) {
+                    $combination->named_object_types[$type_key] = $combination->named_object_types[$type_key]
+                        ->setDefiniteClass(false);
+                }
+
                 return null;
             }
 
@@ -982,11 +987,15 @@ final class TypeCombiner
                 if ($codebase->classExists($key)) {
                     if ($codebase->classExtendsOrImplements($key, $type_key)) {
                         unset($combination->named_object_types[$key]);
+                        $type = $type->setDefiniteClass(false);
                         continue;
                     }
 
                     if ($is_class) {
                         if ($codebase->classExtends($type_key, $key)) {
+                            $combination->named_object_types[$key] = $combination->named_object_types[$key]
+                                ->setDefiniteClass(false);
+
                             return null;
                         }
                     }
