@@ -45,7 +45,7 @@ use function strtolower;
 /**
  * What the code that only runs from the command line prints goes to a terminal, not to an HTML response: in the
  * function-likes with `@psalm-cli-only`, the methods of the classes with it, the top-level code of the files a plugin
- * marked (BeforeFileAnalysisEvent::markAsCliOnly()), the code a PHP_SAPI check guards, and the closures in their
+ * marked (BeforeFileAnalysisEvent::markFileAsCliOnly()), the code a PHP_SAPI check guards, and the closures in their
  * bodies, what echo, print, printf(), vprintf(), var_dump(), debug_zval_dump(), and print_r() and var_export() not
  * returning it print isn't an HTML sink. They stay sinks of the other taints (secrets), and the values stay tainted
  * elsewhere. Such code is only called from code only running from the command line too.

@@ -163,7 +163,7 @@ class FileAnalyzer extends SourceAnalyzer
 
         $event = new BeforeFileAnalysisEvent($this, $this->context, $file_storage, $codebase, $stmts, $this->cli_only);
         $codebase->config->eventDispatcher->dispatchBeforeFileAnalysis($event);
-        $this->cli_only = $event->isCliOnly();
+        $this->cli_only = $event->isFileCliOnly();
 
         if ($codebase->alter_code) {
             foreach ($stmts as $stmt) {

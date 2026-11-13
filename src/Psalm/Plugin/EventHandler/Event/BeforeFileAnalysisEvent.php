@@ -80,7 +80,7 @@ final class BeforeFileAnalysisEvent
      *
      * @psalm-mutation-free
      */
-    public function isCliOnly(): bool
+    public function isFileCliOnly(): bool
     {
         return $this->cli_only;
     }
@@ -91,7 +91,7 @@ final class BeforeFileAnalysisEvent
      *
      * @psalm-external-mutation-free
      */
-    public function markAsCliOnly(): void
+    public function markFileAsCliOnly(): void
     {
         $this->cli_only = true;
     }

@@ -514,7 +514,7 @@ final class PluginTest extends DeferredAnalyzerTestCase
             public static function beforeAnalyzeFile(BeforeFileAnalysisEvent $event): void
             {
                 if (str_starts_with(basename($event->getStatementsSource()->getFilePath()), 'console')) {
-                    $event->markAsCliOnly();
+                    $event->markFileAsCliOnly();
                 }
             }
         };

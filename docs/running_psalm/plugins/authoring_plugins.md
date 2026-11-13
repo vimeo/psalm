@@ -133,7 +133,7 @@ You can also specify an absolute path to your plugin:
 A plugin can say that code only runs from the command line, like [`@psalm-cli-only`](../../security_analysis/annotations.md#psalm-cli-only)
 does: what it prints isn't reported as `TaintedHtml`, and calling it from other code reports
 [CliOnlyCall](../issues/CliOnlyCall.md). Set `cli_only` on the storage of a class, method or function, and mark a
-file whose top-level code only runs from the command line with `markAsCliOnly()`:
+file whose top-level code only runs from the command line with `markFileAsCliOnly()`:
 
 ```php
 <?php
@@ -157,7 +157,7 @@ final class ConsolePlugin implements AfterClassLikeVisitInterface, BeforeFileAna
     {
         $path = $event->getStatementsSource()->getFilePath();
         if (str_contains($path, '/database/migrations/') || str_ends_with($path, '/routes/console.php')) {
-            $event->markAsCliOnly();
+            $event->markFileAsCliOnly();
         }
     }
 }
