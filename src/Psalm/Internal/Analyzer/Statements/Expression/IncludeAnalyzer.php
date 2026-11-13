@@ -277,7 +277,8 @@ final class IncludeAnalyzer
                 return true;
             }
 
-            $var_id = ExpressionIdentifier::getExtendedVarId($stmt->expr, null);
+            $var_id = ExpressionIdentifier::getExtendedVarId($stmt->expr, null)
+                ?? self::getConstantPhantomFileId($stmt->expr);
             if ($var_id && isset($context->phantom_files[$var_id])) {
                 return true;
             }
@@ -292,7 +293,8 @@ final class IncludeAnalyzer
                 $source->getSuppressedIssues(),
             );
         } else {
-            $var_id = ExpressionIdentifier::getExtendedVarId($stmt->expr, null);
+            $var_id = ExpressionIdentifier::getExtendedVarId($stmt->expr, null)
+                ?? self::getConstantPhantomFileId($stmt->expr);
 
             if (!$var_id || !isset($context->phantom_files[$var_id])) {
                 $source = $statements_analyzer->getSource();
@@ -509,5 +511,17 @@ final class IncludeAnalyzer
         }
 
         return $path_to_file;
+    }
+
+    /**
+     * The id under which a file named by a constant that file_exists() or is_file() checked is remembered
+     *
+     * @psalm-capabilities read-props
+     */
+    public static function getConstantPhantomFileId(PhpParser\Node\Expr $expr): ?string
+    {
+        return $expr instanceof PhpParser\Node\Expr\ConstFetch
+            ? 'const ' . $expr->name->toString()
+            : null;
     }
 }
