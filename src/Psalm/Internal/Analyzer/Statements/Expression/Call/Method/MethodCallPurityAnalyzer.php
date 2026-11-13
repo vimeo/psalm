@@ -35,6 +35,7 @@ use Psalm\Type\Union;
 
 use function array_pop;
 use function array_values;
+use function preg_match;
 use function strtolower;
 
 /**
@@ -472,7 +473,7 @@ final class MethodCallPurityAnalyzer
             ImpureMethodCall::class,
             'method ' . $cased_method_id,
         );
-        
+
         if (!$context->inside_unset
             && $method_storage->isMutationFree()
             && $call_is_mutation_free
@@ -584,7 +585,14 @@ final class MethodCallPurityAnalyzer
             }
 
             if ($method_capabilities !== Capabilities::NONE) {
-                $context->removeMutableObjectVars(true);
+                $context->removeMutableObjectVars(
+                    true,
+                    preserved_methods: $config->remember_property_assignments_after_call
+                        && $method_storage->only_direct_scalar_property_writes
+                        && $provided_capabilities === null
+                        ? self::getUnrelatedObjectGetters($context, $codebase, $lhs_var_id, $class_storage)
+                        : [],
+                );
             }
 
             foreach ($method_storage->this_property_mutations as $name => $_) {
@@ -624,6 +632,95 @@ final class MethodCallPurityAnalyzer
                 $context->removeMutableObjectVars(true);
             }
         }
+    }
+
+    /**
+     * Preserve memoized direct-property getters only if the callee is proven to write
+     * *native scalar* properties of another final class, while the getter reads a
+     * *native object-or-null* property. These disjoint property types also prevent
+     * cross-object aliases through PHP references (`=&`).
+     *
+     * Unknown method effects, nontrivial getters, non-final classes, nested receivers,
+     * and any overlapping property types retain the usual conservative invalidation.
+     *
+     * @return array<string, true>
+     */
+    private static function getUnrelatedObjectGetters(
+        Context $context,
+        Codebase $codebase,
+        ?string $receiver_id,
+        ClassLikeStorage $receiver_class,
+    ): array {
+        if (!$receiver_class->final
+            || $receiver_id === null
+            || preg_match('/^\$[a-zA-Z_][a-zA-Z_0-9]*$/D', $receiver_id) !== 1
+        ) {
+            return [];
+        }
+
+        $preserved = [];
+
+        foreach ($context->vars_in_scope as $var_id => $type) {
+            if (!$type->has_mutations
+                || preg_match('/^(\$[a-zA-Z_][a-zA-Z_0-9]*)->([a-zA-Z_][a-zA-Z_0-9]*)\(\)$/D', $var_id, $parts) !== 1
+                || $parts[1] === $receiver_id
+            ) {
+                continue;
+            }
+
+            $owner_type = $context->vars_in_scope[$parts[1]] ?? null;
+            if ($owner_type === null || !$owner_type->isSingle()) {
+                continue;
+            }
+
+            $owner = $owner_type->getSingleAtomic();
+            if (!$owner instanceof TNamedObject
+                || $owner->getIntersectionTypes() !== []
+                || !$codebase->classlike_storage_provider->has($owner->value)
+            ) {
+                continue;
+            }
+
+            $owner_class = $codebase->classlike_storage_provider->get($owner->value);
+            if (!$owner_class->final || strtolower($owner_class->name) === strtolower($receiver_class->name)) {
+                continue;
+            }
+
+            // The existing getter_method metadata is set only for a method whose
+            // entire body is `return $this->property;` (see FunctionLikeNodeScanner).
+            $getter = $owner_class->methods[strtolower($parts[2])] ?? null;
+            if ($getter === null || $getter->returns_by_ref) {
+                continue;
+            }
+
+            foreach ($owner_class->properties as $property) {
+                if ($property->getter_method !== strtolower($parts[2])
+                    || $property->hook_get !== null
+                    || $property->hook_set !== null
+                    || $property->signature_type === null
+                ) {
+                    continue;
+                }
+
+                // Native object types and native scalars cannot refer to the same
+                // PHP reference slot. Merely different final classes are NOT enough:
+                // two scalar properties of distinct classes can be bound with `=&`.
+                $object_only = true;
+                foreach ($property->signature_type->getAtomicTypes() as $atomic) {
+                    if (!$atomic instanceof TNamedObject && !$atomic instanceof Atomic\TNull) {
+                        $object_only = false;
+                        break;
+                    }
+                }
+
+                if ($object_only) {
+                    $preserved[$var_id] = true;
+                    break;
+                }
+            }
+        }
+
+        return $preserved;
     }
 
     /**

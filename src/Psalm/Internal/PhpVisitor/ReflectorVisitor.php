@@ -434,20 +434,7 @@ final class ReflectorVisitor extends PhpParser\NodeVisitorAbstract implements Fi
             || $node instanceof PhpParser\Node\Expr\AssignOp
             || $node instanceof PhpParser\Node\Expr\AssignRef
         ) {
-            if ($node->var instanceof PhpParser\Node\Expr\PropertyFetch
-                && $node->var->var instanceof PhpParser\Node\Expr\Variable
-                && $node->var->var->name === 'this'
-                && $node->var->name instanceof PhpParser\Node\Identifier
-            ) {
-                if ($this->functionlike_node_scanners) {
-                    $functionlike_node_scanner = end($this->functionlike_node_scanners);
-                    $functionlike_storage = $functionlike_node_scanner->storage;
-
-                    if ($functionlike_storage instanceof MethodStorage) {
-                        $functionlike_storage->this_property_mutations[$node->var->name->name] = true;
-                    }
-                }
-            } else {
+            if (!$this->recordThisPropertyMutation($node->var)) {
                 $this->recordStaticPropertyMutation($node->var);
             }
         }
@@ -457,6 +444,7 @@ final class ReflectorVisitor extends PhpParser\NodeVisitorAbstract implements Fi
             || $node instanceof PhpParser\Node\Expr\PostInc
             || $node instanceof PhpParser\Node\Expr\PostDec
         ) {
+            $this->recordThisPropertyMutation($node->var);
             $this->recordStaticPropertyMutation($node->var);
         }
 
@@ -469,6 +457,27 @@ final class ReflectorVisitor extends PhpParser\NodeVisitorAbstract implements Fi
         }
 
         return null;
+    }
+
+    /** Record direct writes to `$this->property`, including ++ and --. */
+    private function recordThisPropertyMutation(PhpParser\Node\Expr $target): bool
+    {
+        if (!$target instanceof PhpParser\Node\Expr\PropertyFetch
+            || !$target->var instanceof PhpParser\Node\Expr\Variable
+            || $target->var->name !== 'this'
+            || !$target->name instanceof PhpParser\Node\Identifier
+        ) {
+            return false;
+        }
+
+        if ($this->functionlike_node_scanners) {
+            $scanner = end($this->functionlike_node_scanners);
+            if ($scanner->storage instanceof MethodStorage) {
+                $scanner->storage->this_property_mutations[$target->name->name] = true;
+            }
+        }
+
+        return true;
     }
 
     /**
