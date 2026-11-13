@@ -3609,7 +3609,6 @@
   <file src="src/Psalm/Type/Reconciler.php">
     <ImplicitToStringCast>
       <code><![CDATA[$assertion]]></code>
-      <code><![CDATA[$assertion]]></code>
     </ImplicitToStringCast>
     <ImpureStaticProperty>
       <code><![CDATA[self::$broken_paths]]></code>
