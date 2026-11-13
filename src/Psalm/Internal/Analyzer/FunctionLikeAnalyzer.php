@@ -1623,7 +1623,7 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
     /**
      * Checks the classes of the `@global` types, like those of the `@param` types
      *
-     * @psalm-capabilities read-props|write-this-props|write-refs
+     * @psalm-capabilities read-props
      */
     private function checkGlobalTypes(FunctionLikeStorage $storage, Context $context): bool
     {
