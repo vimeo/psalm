@@ -397,7 +397,6 @@ final class CliOutput
      * @param array<string> $suppressed_issues
      */
     public static function checkCliOnlyInstancesClass(
-        Codebase $codebase,
         ClassLikeStorage $storage,
         array $suppressed_issues,
     ): void {

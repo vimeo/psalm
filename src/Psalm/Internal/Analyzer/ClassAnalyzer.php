@@ -610,7 +610,6 @@ final class ClassAnalyzer extends ClassLikeAnalyzer
         $statements_analyzer->analyze($member_stmts, $class_context, $global_context);
 
         CliOutput::checkCliOnlyInstancesClass(
-            $codebase,
             $storage,
             $storage->suppressed_issues + $this->getSuppressedIssues(),
         );
