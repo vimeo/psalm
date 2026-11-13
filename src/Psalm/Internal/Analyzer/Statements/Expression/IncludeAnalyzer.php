@@ -440,7 +440,8 @@ final class IncludeAnalyzer
             $const_name = implode('', $stmt->name->getParts());
 
             if (defined($const_name)) {
-                $constant_value = constant($const_name);
+                // silenced, as reading a deprecated constant (ASSERT_ACTIVE) emits E_DEPRECATED
+                $constant_value = @constant($const_name);
 
                 if (is_string($constant_value)) {
                     return $constant_value;

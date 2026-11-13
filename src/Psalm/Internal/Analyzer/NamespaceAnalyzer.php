@@ -9,6 +9,7 @@ use Override;
 use PhpParser;
 use PhpParser\Node\Stmt\Namespace_;
 use Psalm\CodeLocation;
+use Psalm\Context;
 use Psalm\Internal\Provider\NodeDataProvider;
 use Psalm\Type;
 use Psalm\Type\Union;
@@ -51,7 +52,7 @@ final class NamespaceAnalyzer extends SourceAnalyzer
         $this->namespace_name = $this->namespace->name ? $this->namespace->name->toString() : '';
     }
 
-    public function collectAnalyzableInformation(): void
+    public function collectAnalyzableInformation(bool $analyze_statements): void
     {
         $leftover_stmts = [];
 
@@ -60,7 +61,6 @@ final class NamespaceAnalyzer extends SourceAnalyzer
         }
 
         $codebase = $this->getCodebase();
-        $file_context = $this->source->context;
 
         foreach ($this->namespace->stmts as $stmt) {
             if ($stmt instanceof PhpParser\Node\Stmt\Trait_) {
@@ -80,8 +80,9 @@ final class NamespaceAnalyzer extends SourceAnalyzer
                     $leftover_stmts[] = new PhpParser\Node\Stmt\Nop($stmt->getAttributes());
                 }
             } elseif ($stmt instanceof PhpParser\Node\Stmt\Const_) {
-                // the analysis of the top-level code gives them their types, below
-                if ($file_context !== null) {
+                // a placeholder until the statement is analysed below; set without that analysis, it would replace the
+                // type the file's own analysis found
+                if ($analyze_statements) {
                     foreach ($stmt->consts as $const) {
                         self::$public_namespace_constants[$this->namespace_name][$const->name->name] = Type::getMixed();
                     }
@@ -93,11 +94,19 @@ final class NamespaceAnalyzer extends SourceAnalyzer
             }
         }
 
-        // a file analyzer only collecting the class-likes and functions of the file (e.g. for the mutations of a
-        // method) doesn't analyze its top-level code, as for a file without a namespace
-        if ($leftover_stmts && $file_context !== null) {
+        if ($leftover_stmts && $analyze_statements) {
             $statements_analyzer = new StatementsAnalyzer($this, new NodeDataProvider(), true);
-            $statements_analyzer->analyze($leftover_stmts, $file_context);
+            $file_context = $this->source->context;
+
+            if ($file_context !== null) {
+                $context = $file_context;
+            } else {
+                $context = new Context();
+                $context->is_global = true;
+                $context->defineGlobals();
+                $context->collect_exceptions = $codebase->config->check_for_throws_in_global_scope;
+            }
+            $statements_analyzer->analyze($leftover_stmts, $context);
 
             if ($statements_analyzer->owns_type_variable_tracker) {
                 $statements_analyzer->type_variable_tracker->reconcile(
