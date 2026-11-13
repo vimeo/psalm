@@ -44,7 +44,6 @@ use function fwrite;
 use function gc_collect_cycles;
 use function gc_disable;
 use function getcwd;
-use function getopt;
 use function implode;
 use function in_array;
 use function is_array;
@@ -53,11 +52,9 @@ use function is_string;
 use function microtime;
 use function pathinfo;
 use function preg_last_error_msg;
-use function preg_replace;
 use function preg_split;
 use function realpath;
 use function str_contains;
-use function str_starts_with;
 use function strtolower;
 use function substr;
 use function trim;
@@ -108,13 +105,10 @@ final class Psalter
         $args = array_slice($argv, 1);
 
         // get options from command line
-        $options = CliUtils::chosenByOperator(getopt(implode('', self::SHORT_OPTIONS), self::LONG_OPTIONS));
-        if ($options === false) {
-            fwrite(STDERR, 'Failed to parse cli options' . PHP_EOL);
-            exit(1);
-        }
+        $options = CliUtils::getOptions($args, self::SHORT_OPTIONS, self::LONG_OPTIONS);
 
-        self::validateCliArguments($args);
+        // --alter is an option of psalm, which forwards the call to psalter
+        CliUtils::rejectUnrecognisedOptions($args, self::SHORT_OPTIONS, self::LONG_OPTIONS, ['--alter']);
 
         CliUtils::setMemoryLimit($options);
 
@@ -498,36 +492,6 @@ final class Psalter
         }
 
         IssueBuffer::finish($project_analyzer, false, $start_time);
-    }
-
-    /** @param array<int,string> $args */
-    private static function validateCliArguments(array $args): void
-    {
-        array_map(
-            static function (string $arg): void {
-                if (str_starts_with($arg, '--') && $arg !== '--') {
-                    $arg_name = (string) preg_replace('/=.*$/', '', substr($arg, 2), 1);
-
-                    if ($arg_name === 'alter') {
-                        // valid option for psalm, ignored by psalter
-                        return;
-                    }
-
-                    if (!in_array($arg_name, self::LONG_OPTIONS)
-                        && !in_array($arg_name . ':', self::LONG_OPTIONS)
-                        && !in_array($arg_name . '::', self::LONG_OPTIONS)
-                    ) {
-                        fwrite(
-                            STDERR,
-                            'Unrecognised argument "--' . $arg_name . '"' . PHP_EOL
-                            . 'Type --help to see a list of supported arguments'. PHP_EOL,
-                        );
-                        exit(1);
-                    }
-                }
-            },
-            $args,
-        );
     }
 
     /**

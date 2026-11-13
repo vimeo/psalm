@@ -48,6 +48,7 @@ use function preg_split;
 use function realpath;
 use function str_ends_with;
 use function str_starts_with;
+use function strcspn;
 use function stream_get_meta_data;
 use function stream_isatty;
 use function stream_set_blocking;
@@ -231,6 +232,168 @@ final class CliUtils
     }
 
     /**
+     * Like getopt(), but an option may come after a path, as in GNU getopt: getopt() stops at the
+     * first path and silently drops every option after it. Everything after "--" is a path.
+     *
+     * @param list<string> $args the arguments, without the script name
+     * @param list<string> $short_options in the format of getopt(), one option per item, e.g. "c:"
+     * @param list<string> $long_options in the format of getopt()
+     * @return array<string, false|list<false|string>|string> options that aren't in $short_options and
+     *      $long_options are left out: see rejectUnrecognisedOptions()
+     * @psalm-capabilities read-props|write-this-props|write-refs
+     */
+    public static function getOptions(array $args, array $short_options, array $long_options): array
+    {
+        return self::chosenByOperator(self::parseOptions($args, $short_options, $long_options)[0]);
+    }
+
+    /**
+     * Exits with code 1 when $args hold an option that isn't in $short_options or $long_options
+     *
+     * @param list<string> $args the arguments, without the script name
+     * @param list<string> $short_options
+     * @param list<string> $long_options
+     * @param list<string> $ignored_options options of the psalm command that forwarded the call, like "--alter"
+     */
+    public static function rejectUnrecognisedOptions(
+        array $args,
+        array $short_options,
+        array $long_options,
+        array $ignored_options = [],
+    ): void {
+        foreach (self::parseOptions($args, $short_options, $long_options)[1] as $option) {
+            if (in_array($option, $ignored_options, true)) {
+                continue;
+            }
+
+            fwrite(
+                STDERR,
+                'Unrecognised argument "' . $option . '"' . PHP_EOL
+                . 'Type --help to see a list of supported arguments' . PHP_EOL,
+            );
+            exit(1);
+        }
+    }
+
+    /**
+     * @param list<string> $args
+     * @param list<string> $short_options
+     * @param list<string> $long_options
+     * @return array{array<string, false|list<false|string>|string>, list<string>} the options like getopt()
+     *      returns them, and the options that aren't in $short_options and $long_options, like "-z"
+     * @psalm-capabilities read-props|write-this-props|write-refs
+     */
+    private static function parseOptions(array $args, array $short_options, array $long_options): array
+    {
+        $options = [];
+        $unrecognised = [];
+
+        for ($i = 0, $count = count($args); $i < $count; ++$i) {
+            $arg = $args[$i];
+
+            if ($arg === '--') {
+                break;
+            }
+
+            if ($arg === '' || $arg === '-' || $arg[0] !== '-') {
+                continue;
+            }
+
+            if ($arg[1] === '-') {
+                $name = substr($arg, 2);
+                $value = null;
+                $equals_position = strpos($name, '=');
+
+                if ($equals_position !== false) {
+                    $value = substr($name, $equals_position + 1);
+                    $name = substr($name, 0, $equals_position);
+                }
+
+                $arity = self::getOptionArity($name, $long_options);
+
+                if ($arity === null) {
+                    $unrecognised[] = '--' . $name;
+                } elseif ($value === '') {
+                    // getopt() drops an option given as --name=
+                    continue;
+                } elseif ($arity === '') {
+                    self::addOption($options, $name, false);
+                } elseif ($arity === '::') {
+                    self::addOption($options, $name, $value ?? false);
+                } elseif ($value !== null) {
+                    self::addOption($options, $name, $value);
+                } elseif (isset($args[$i + 1])) {
+                    self::addOption($options, $name, $args[++$i]);
+                }
+
+                continue;
+            }
+
+            // a group of short options, like -mh, where only the last one may take a value
+            for ($j = 1, $length = strlen($arg); $j < $length; ++$j) {
+                $name = $arg[$j];
+                $arity = self::getOptionArity($name, $short_options);
+
+                if ($arity === null) {
+                    $unrecognised[] = '-' . $name;
+                    continue;
+                }
+
+                if ($arity === '') {
+                    self::addOption($options, $name, false);
+                    continue;
+                }
+
+                $value = substr($arg, $j + 1);
+
+                if ($value !== '') {
+                    self::addOption($options, $name, $value[0] === '=' ? substr($value, 1) : $value);
+                } elseif ($arity === ':' && isset($args[$i + 1])) {
+                    self::addOption($options, $name, $args[++$i]);
+                }
+
+                break;
+            }
+        }
+
+        return [$options, $unrecognised];
+    }
+
+    /**
+     * @param list<string> $definitions options in the format of getopt()
+     * @return ''|':'|'::'|null whether the option takes no value, one, or an optional one; null if it isn't known
+     * @psalm-pure
+     */
+    private static function getOptionArity(string $name, array $definitions): ?string
+    {
+        if (in_array($name, $definitions, true)) {
+            return '';
+        }
+
+        if (in_array($name . ':', $definitions, true)) {
+            return ':';
+        }
+
+        return in_array($name . '::', $definitions, true) ? '::' : null;
+    }
+
+    /**
+     * @param array<string, false|list<false|string>|string> $options
+     * @param-out array<string, false|list<false|string>|string> $options
+     * @psalm-capabilities read-props|write-this-props|write-refs
+     */
+    private static function addOption(array &$options, string $name, string|false $value): void
+    {
+        if (!array_key_exists($name, $options)) {
+            $options[$name] = $value;
+            return;
+        }
+
+        $previous = $options[$name];
+        $options[$name] = is_array($previous) ? [...$previous, $value] : [$previous, $value];
+    }
+
+    /**
      * Marks the command-line arguments or options Psalm was run with as chosen by the person running it.
      *
      * They name the files and directories Psalm reads and writes, the code it scans and reflects on,
@@ -297,20 +460,41 @@ final class CliUtils
     {
         $paths_to_check = [];
 
-        if ($f_paths) {
+        // '0' and '' are paths too: ignoring them would widen the selection to the whole project
+        if ($f_paths !== null && $f_paths !== false && $f_paths !== []) {
             $input_paths = is_array($f_paths) ? $f_paths : [$f_paths];
+            $input_is_f_paths = true;
         } else {
             $input_paths = self::getRawCliArguments();
             if (!$input_paths) {
                 return null;
             }
+            $input_is_f_paths = false;
         }
 
         $filtered_input_paths = [];
+        $terminated_paths = [];
 
         for ($i = 0, $iMax = count($input_paths); $i < $iMax; ++$i) {
             /** @var string */
             $input_path = $input_paths[$i];
+
+            if ($input_is_f_paths) {
+                // the value of -f is a path, whatever it looks like: dropping it would widen the selection
+                $filtered_input_paths[] = $input_path;
+                continue;
+            }
+
+            if ($input_path === '--') {
+                // everything after the terminator is a path, even when it starts with "-"
+                for ($j = $i + 1; $j < $iMax; ++$j) {
+                    /** @var string */
+                    $terminated_path = $input_paths[$j];
+                    $terminated_paths[] = $terminated_path;
+                }
+
+                break;
+            }
 
             if ($input_path[0] === '-' && strlen($input_path) === 2) {
                 if ($input_path[1] === 'c' || $input_path[1] === 'f' || $input_path[1] === 'r') {
@@ -320,6 +504,15 @@ final class CliUtils
             }
 
             if ($input_path[0] === '-' && $input_path[2] === '=') {
+                continue;
+            }
+
+            if ($input_path[0] === '-' && $input_path[1] !== '-' && strlen($input_path) > 2) {
+                // a group of short options like -mh, or -cpsalm.xml with the value attached;
+                // the value of the option that ends a group follows it, as in `-mc psalm.xml`
+                if (strcspn($input_path, 'cfr', 1) + 1 === strlen($input_path) - 1) {
+                    ++$i;
+                }
                 continue;
             }
 
@@ -353,8 +546,10 @@ final class CliUtils
             }
         }
 
+        $filtered_input_paths = [...$filtered_input_paths, ...$terminated_paths];
+
         foreach ($filtered_input_paths as $path_to_check) {
-            if ($path_to_check[0] === '-') {
+            if (str_starts_with($path_to_check, '-') && !in_array($path_to_check, $terminated_paths, true)) {
                 fwrite(STDERR, 'Invalid usage, expecting psalm [options] [file...]' . PHP_EOL);
                 exit(1);
             }
