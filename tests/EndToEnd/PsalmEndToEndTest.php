@@ -265,6 +265,36 @@ final class PsalmEndToEndTest extends TestCase
         $this->assertStringNotContainsString("\e", $output);
     }
 
+    public function testPsalterDryRunNumbersFilesInSortedOrderRegardlessOfArgumentOrder(): void
+    {
+        $this->runPsalmInit();
+        $psalmXml = file_get_contents(self::$tmpDir . '/psalm.xml');
+        $psalmXml = str_replace('<psalm', '<psalm runTaintAnalysis="false"', (string)$psalmXml);
+        file_put_contents(self::$tmpDir . '/psalm.xml', $psalmXml);
+        file_put_contents(self::$tmpDir . '/src/A.php', "<?php\n\nfunction a() {\n    return 1;\n}\n");
+        file_put_contents(self::$tmpDir . '/src/B.php', "<?php\n\nfunction b() {\n    return 2;\n}\n");
+
+        $process = new Process(
+            [
+                PHP_BINARY,
+                $this->psalter,
+                '--dry-run',
+                '--no-cache',
+                '--issues=MissingReturnType',
+                'src/B.php',
+                'src',
+                'src/A.php',
+            ],
+            self::$tmpDir,
+            self::agentEnvVarsToUnset(),
+        );
+        $process->mustRun();
+        $output = $process->getOutput();
+
+        $this->assertStringContainsString("1) src/A.php:3\n", $output);
+        $this->assertStringContainsString("2) src/B.php:3\n", $output);
+    }
+
     public function testPsalterFixesTheIssuesAPluginDeclares(): void
     {
         $this->runPsalmInit(1);

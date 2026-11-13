@@ -45,6 +45,7 @@ use function ksort;
 use function number_format;
 use function pathinfo;
 use function preg_replace;
+use function sort;
 use function str_ends_with;
 use function str_replace;
 use function str_starts_with;
@@ -217,7 +218,9 @@ final class Analyzer
      */
     public function setFilesToUpdate(array $files_to_update): void
     {
-        $this->files_to_update = array_values(array_unique($files_to_update));
+        $files_to_update = array_unique($files_to_update);
+        sort($files_to_update);
+        $this->files_to_update = $files_to_update;
     }
 
     /**
