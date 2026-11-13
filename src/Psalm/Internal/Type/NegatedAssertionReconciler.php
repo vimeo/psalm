@@ -119,6 +119,42 @@ final class NegatedAssertionReconciler extends Reconciler
 
         $assertion_type = $assertion->getAtomicType();
 
+        // the negated check always passes where the check itself never can (`!is_countable($final_object)`)
+        if ($key !== null
+            && $code_location
+            && !$is_equality
+            && ($assertion instanceof IsNotCountable
+                || ($assertion instanceof IsNotType
+                    && (($assertion_type instanceof TIterable && $assertion_type->type_params[1]->isMixed())
+                        || ($assertion_type instanceof TNamedObject && $assertion_type->value === 'Traversable'))))
+        ) {
+            $positive_failed_reconciliation = Reconciler::RECONCILIATION_OK;
+
+            SimpleAssertionReconciler::reconcile(
+                $assertion->getNegation(),
+                $statements_analyzer->getCodebase(),
+                $existing_var_type->freeze(),
+                null,
+                false,
+                null,
+                [],
+                $positive_failed_reconciliation,
+            );
+
+            if ($positive_failed_reconciliation === Reconciler::RECONCILIATION_EMPTY) {
+                self::triggerIssueForImpossible(
+                    $existing_var_type,
+                    $old_var_type_string,
+                    $key,
+                    $assertion,
+                    true,
+                    $negated,
+                    $code_location,
+                    $suppressed_issues,
+                );
+            }
+        }
+
         if (($assertion instanceof IsNotType
                 && $assertion_type instanceof TIterable
                 && $assertion_type->type_params[1]->isMixed())

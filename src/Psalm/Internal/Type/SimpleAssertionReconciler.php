@@ -33,6 +33,7 @@ use Psalm\Storage\Assertion\Truthy;
 use Psalm\Type;
 use Psalm\Type\Atomic;
 use Psalm\Type\Atomic\Scalar;
+use Psalm\Type\Atomic\TAnonymousClassInstance;
 use Psalm\Type\Atomic\TArray;
 use Psalm\Type\Atomic\TArrayKey;
 use Psalm\Type\Atomic\TBool;
@@ -41,6 +42,7 @@ use Psalm\Type\Atomic\TCallableObject;
 use Psalm\Type\Atomic\TCallableString;
 use Psalm\Type\Atomic\TClassConstant;
 use Psalm\Type\Atomic\TClassString;
+use Psalm\Type\Atomic\TClosure;
 use Psalm\Type\Atomic\TFalse;
 use Psalm\Type\Atomic\TFloat;
 use Psalm\Type\Atomic\TGenericObject;
@@ -1873,7 +1875,9 @@ final class SimpleAssertionReconciler extends Reconciler
             } elseif ($type instanceof TObject) {
                 $iterable_types[] = new TNamedObject('Countable');
                 $redundant = false;
-            } elseif ($type instanceof TNamedObject || $type instanceof TIterable) {
+            } elseif ($type instanceof TIterable
+                || ($type instanceof TNamedObject && !self::isFinalObject($codebase, $type))
+            ) {
                 $countable = new TNamedObject('Countable');
                 $type = $type->addIntersectionType($countable);
                 $iterable_types[] = $type;
@@ -1938,6 +1942,9 @@ final class SimpleAssertionReconciler extends Reconciler
                 $iterable_types[] = $type;
             } elseif ($type instanceof TObject) {
                 $iterable_types[] = new TNamedObject('Traversable');
+                $redundant = false;
+            } elseif ($type instanceof TNamedObject && !self::isFinalObject($codebase, $type)) {
+                $iterable_types[] = $type->addIntersectionType(new TNamedObject('Traversable'));
                 $redundant = false;
             } else {
                 $redundant = false;
@@ -2306,9 +2313,9 @@ final class SimpleAssertionReconciler extends Reconciler
                 $traversable_types[] = new TNamedObject('Traversable');
                 $redundant = false;
             } elseif ($type instanceof TNamedObject) {
-                $traversable = new TNamedObject('Traversable');
-                $type = $type->addIntersectionType($traversable);
-                $traversable_types[] = $type;
+                if (!self::isFinalObject($codebase, $type)) {
+                    $traversable_types[] = $type->addIntersectionType(new TNamedObject('Traversable'));
+                }
                 $redundant = false;
             } else {
                 $redundant = false;
@@ -3156,6 +3163,36 @@ final class SimpleAssertionReconciler extends Reconciler
         $class_storage = $codebase->classlike_storage_provider->get($type->value);
 
         return !$class_storage->final;
+    }
+
+    /**
+     * Whether no subclass of the object can exist to add an interface it lacks.
+     * Unknown classes count as non-final unless the object is exact: they are already reported as undefined.
+     *
+     * @psalm-mutation-free
+     */
+    public static function isFinalObject(Codebase $codebase, TNamedObject $type): bool
+    {
+        if ($type instanceof TClosure
+            || $type instanceof TAnonymousClassInstance
+            || ($type->definite_class && !$type->is_static)
+        ) {
+            return true;
+        }
+
+        foreach ([$type, ...$type->extra_types] as $atomic) {
+            if (!$atomic instanceof TNamedObject || !$codebase->classlike_storage_provider->has($atomic->value)) {
+                continue;
+            }
+
+            $storage = $codebase->classlike_storage_provider->get($atomic->value);
+
+            if ($storage->final && !$storage->final_from_docblock) {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     /**

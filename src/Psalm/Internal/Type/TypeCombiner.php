@@ -481,6 +481,30 @@ final class TypeCombiner
     }
 
     /**
+     * Whether an object exact before (`new Foo()`) may not be after, which neither getId() nor equals() shows
+     *
+     * @psalm-pure
+     */
+    public static function losesExactness(Union $before, Union $after): bool
+    {
+        $after_types = $after->getAtomicTypes();
+
+        foreach ($before->getAtomicTypes() as $key => $atomic) {
+            $after_atomic = $after_types[$key] ?? null;
+
+            if ($atomic instanceof TNamedObject
+                && $atomic->definite_class
+                && $after_atomic instanceof TNamedObject
+                && !$after_atomic->definite_class
+            ) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    /**
      * @psalm-suppress ComplexMethod Unavoidably complex method
      */
     private static function scrapeTypeProperties(
@@ -960,6 +984,11 @@ final class TypeCombiner
             }
 
             if (isset($combination->named_object_types[$type_key])) {
+                if (!$type->definite_class) {
+                    $combination->named_object_types[$type_key] = $combination->named_object_types[$type_key]
+                        ->setDefiniteClass(false);
+                }
+
                 return null;
             }
 
@@ -982,11 +1011,15 @@ final class TypeCombiner
                 if ($codebase->classExists($key)) {
                     if ($codebase->classExtendsOrImplements($key, $type_key)) {
                         unset($combination->named_object_types[$key]);
+                        $type = $type->setDefiniteClass(false);
                         continue;
                     }
 
                     if ($is_class) {
                         if ($codebase->classExtends($type_key, $key)) {
+                            $combination->named_object_types[$key] = $combination->named_object_types[$key]
+                                ->setDefiniteClass(false);
+
                             return null;
                         }
                     }

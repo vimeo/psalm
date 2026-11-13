@@ -791,6 +791,7 @@ final class NewAnalyzer extends CallAnalyzer
                     $generic_param_types,
                     false,
                     $from_static,
+                    definite_class: $stmt->class instanceof PhpParser\Node\Name,
                 );
 
                 $statements_analyzer->node_data->setType(
@@ -808,7 +809,13 @@ final class NewAnalyzer extends CallAnalyzer
                 $statements_analyzer->getSuppressedIssues(),
             );
         } elseif (($type_params = array_values(TemplateDefaults::bindOmitted($storage, [], true, false))) !== []) {
-            $result_atomic_type = new TGenericObject($fq_class_name, $type_params, false, $from_static);
+            $result_atomic_type = new TGenericObject(
+                $fq_class_name,
+                $type_params,
+                false,
+                $from_static,
+                definite_class: $stmt->class instanceof PhpParser\Node\Name,
+            );
 
             $statements_analyzer->node_data->setType(
                 $stmt,
