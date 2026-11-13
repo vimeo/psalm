@@ -1796,6 +1796,33 @@ final class ConditionalTest extends TestCase
                     }
                     strlen($a);',
             ],
+            'isIterableOnNonFinalClassIntersectsTraversable' => [
+                'code' => '<?php
+                    interface I {}
+
+                    function getThrowable(): Throwable {
+                        return new Exception();
+                    }
+
+                    /** @return I|string */
+                    function getIOrString() {
+                        return "";
+                    }
+
+                    $e = getThrowable();
+                    $iterable = is_iterable($e) ? $e : null;
+
+                    $f = getThrowable();
+                    $not_iterable = !is_iterable($f) ? $f : null;
+
+                    $i = getIOrString();
+                    $iterable_i = is_iterable($i) ? $i : null;',
+                'assertions' => [
+                    '$iterable===' => 'Throwable&Traversable|null',
+                    '$not_iterable===' => 'Throwable|null',
+                    '$iterable_i===' => 'I&Traversable|null',
+                ],
+            ],
             'removeCallableString' => [
                 'code' => '<?php
                     $s = rand(0,1) ? "strlen" : [1];
@@ -5235,6 +5262,40 @@ final class ConditionalTest extends TestCase
                     function check(): bool { return true; }
                     $r = (check() && ($data = getData()) !== null) ? 1 : $data;',
                 'error_message' => 'UndefinedGlobalVariable',
+            ],
+            'isIterableOnFinalClass' => [
+                'code' => '<?php
+                    final class F {}
+
+                    function f(F $f): void {
+                        if (is_iterable($f)) {}
+                    }',
+                'error_message' => 'TypeDoesNotContainType',
+            ],
+            'isIterableOnClosure' => [
+                'code' => '<?php
+                    function f(Closure $f): void {
+                        if (is_iterable($f)) {}
+                    }',
+                'error_message' => 'TypeDoesNotContainType',
+            ],
+            'instanceofTraversableOnFinalClass' => [
+                'code' => '<?php
+                    final class F {}
+
+                    function f(F $f): void {
+                        if ($f instanceof Traversable) {}
+                    }',
+                'error_message' => 'TypeDoesNotContainType',
+            ],
+            'isCountableOnFinalClass' => [
+                'code' => '<?php
+                    final class F {}
+
+                    function f(F $f): void {
+                        if (is_countable($f)) {}
+                    }',
+                'error_message' => 'TypeDoesNotContainType',
             ],
         ];
     }

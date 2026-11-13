@@ -1873,7 +1873,9 @@ final class SimpleAssertionReconciler extends Reconciler
             } elseif ($type instanceof TObject) {
                 $iterable_types[] = new TNamedObject('Countable');
                 $redundant = false;
-            } elseif ($type instanceof TNamedObject || $type instanceof TIterable) {
+            } elseif ($type instanceof TIterable
+                || ($type instanceof TNamedObject && !self::isFinalClass($codebase, $type->value))
+            ) {
                 $countable = new TNamedObject('Countable');
                 $type = $type->addIntersectionType($countable);
                 $iterable_types[] = $type;
@@ -1938,6 +1940,9 @@ final class SimpleAssertionReconciler extends Reconciler
                 $iterable_types[] = $type;
             } elseif ($type instanceof TObject) {
                 $iterable_types[] = new TNamedObject('Traversable');
+                $redundant = false;
+            } elseif ($type instanceof TNamedObject && !self::isFinalClass($codebase, $type->value)) {
+                $iterable_types[] = $type->addIntersectionType(new TNamedObject('Traversable'));
                 $redundant = false;
             } else {
                 $redundant = false;
@@ -2306,9 +2311,10 @@ final class SimpleAssertionReconciler extends Reconciler
                 $traversable_types[] = new TNamedObject('Traversable');
                 $redundant = false;
             } elseif ($type instanceof TNamedObject) {
-                $traversable = new TNamedObject('Traversable');
-                $type = $type->addIntersectionType($traversable);
-                $traversable_types[] = $type;
+                if (!self::isFinalClass($codebase, $type->value)) {
+                    $traversable = new TNamedObject('Traversable');
+                    $traversable_types[] = $type->addIntersectionType($traversable);
+                }
                 $redundant = false;
             } else {
                 $redundant = false;
@@ -3156,6 +3162,17 @@ final class SimpleAssertionReconciler extends Reconciler
         $class_storage = $codebase->classlike_storage_provider->get($type->value);
 
         return !$class_storage->final;
+    }
+
+    /**
+     * Unknown classes count as non-final: they are already reported as undefined.
+     *
+     * @psalm-mutation-free
+     */
+    private static function isFinalClass(Codebase $codebase, string $fq_class_name): bool
+    {
+        return $codebase->classlike_storage_provider->has($fq_class_name)
+            && $codebase->classlike_storage_provider->get($fq_class_name)->final;
     }
 
     /**
