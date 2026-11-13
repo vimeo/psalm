@@ -20,8 +20,10 @@ use Psalm\Type\Atomic\TIterable;
 use Psalm\Type\Atomic\TLiteralInt;
 use Psalm\Type\Atomic\TLiteralString;
 use Psalm\Type\Atomic\TMixed;
+use Psalm\Type\Atomic\TNamedObject;
 use Psalm\Type\Atomic\TNull;
 use Psalm\Type\Atomic\TNumeric;
+use Psalm\Type\Atomic\TObjectWithProperties;
 use Psalm\Type\Atomic\TTemplateParam;
 use Psalm\Type\Atomic\TTypeAlias;
 use Psalm\Type\Atomic\TTypeVariable;
@@ -133,6 +135,7 @@ final class UnionTypeComparator
             $type_match_found = false;
             $scalar_type_match_found = false;
             $all_to_string_cast = true;
+            $some_to_string_cast = false;
 
             $all_type_coerced = null;
             $all_type_coerced_from_mixed = null;
@@ -208,6 +211,7 @@ final class UnionTypeComparator
             // than all being imposed at once.
             $alternative_bounds = [];
             $unconditional_match = false;
+            $part_by_reference_mismatch = null;
 
             $container_parts_to_compare = $container_type_parts;
 
@@ -327,8 +331,22 @@ final class UnionTypeComparator
                 }
 
                 if ($atomic_comparison_result) {
+                    if ($atomic_comparison_result->to_string_cast === true
+                        && ($input_type_part instanceof TNamedObject
+                            || $input_type_part instanceof TObjectWithProperties)
+                    ) {
+                        $some_to_string_cast = true;
+                    }
+
                     if ($atomic_comparison_result->scalar_type_match_found !== null) {
                         $scalar_type_match_found = $atomic_comparison_result->scalar_type_match_found;
+                    }
+
+                    if ($is_atomic_contained_by) {
+                        // the part only mismatches by reference when no alternative accepts it without a mismatch
+                        $part_by_reference_mismatch = $atomic_comparison_result->callable_by_reference_mismatch
+                            ? $part_by_reference_mismatch ?? true
+                            : false;
                     }
 
                     if ($union_comparison_result
@@ -428,6 +446,10 @@ final class UnionTypeComparator
                 }
             }
 
+            if ($union_comparison_result && $part_by_reference_mismatch) {
+                $union_comparison_result->callable_by_reference_mismatch = true;
+            }
+
             if (!$type_match_found && $type_variable_container_parts) {
                 // A type variable in container position is constrained from
                 // below by an input part no concrete container part accepted:
@@ -471,7 +493,9 @@ final class UnionTypeComparator
                 // only set this flag if we're definite that the only
                 // reason the type match has been found is because there
                 // was a __toString cast
-                if ($all_to_string_cast && $type_match_found) {
+                if (($all_to_string_cast && $type_match_found)
+                    || ($some_to_string_cast && !$type_match_found)
+                ) {
                     $union_comparison_result->to_string_cast = true;
                 }
 
@@ -492,8 +516,35 @@ final class UnionTypeComparator
 
             if (!$type_match_found) {
                 if ($union_comparison_result) {
-                    if ($some_type_coerced) {
+                    $remaining_types_coerced = true;
+
+                    if ($some_type_coerced && $some_to_string_cast && $input_atomic_types) {
+                        foreach ($input_atomic_types as $remaining_input_type) {
+                            $remaining_comparison_result = new TypeComparisonResult();
+                            $remaining_type_contained = self::isContainedBy(
+                                $codebase,
+                                new Union([$remaining_input_type]),
+                                $container_type,
+                                $ignore_null,
+                                $ignore_false,
+                                $remaining_comparison_result,
+                                $allow_interface_equality,
+                                $allow_float_int_equality,
+                            );
+
+                            if (!$remaining_type_contained
+                                && $remaining_comparison_result->type_coerced !== true
+                            ) {
+                                $remaining_types_coerced = false;
+                                break;
+                            }
+                        }
+                    }
+
+                    if ($some_type_coerced && (!$some_to_string_cast || $remaining_types_coerced)) {
                         $union_comparison_result->type_coerced = true;
+                    } elseif ($some_to_string_cast) {
+                        $union_comparison_result->type_coerced = false;
                     }
 
                     if ($some_type_coerced_from_mixed) {

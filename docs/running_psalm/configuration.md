@@ -384,6 +384,22 @@ When `true`, Psalm will complain when referencing an explicit string offset on a
 ```
 When `true`, Psalm will complain when referencing an explicit integer offset on an array e.g. `$arr[7]` without a user first asserting that it exists (either via an `isset` check or via an object-like array). Defaults to `false`.
 
+#### strictOptionalCallableParams
+```xml
+<psalm
+  strictOptionalCallableParams="[bool]"
+>
+```
+When `true`, a callable whose parameter is required is not accepted where a `callable` type declares that parameter optional (`callable(string=): string`), because the receiver may call it without the argument. Defaults to `false`.
+
+```php
+/** @param callable(string=): string $c */
+function map(callable $c): string { return $c(); }
+
+map(fn(string $a): string => $a); // InvalidArgument
+map(fn(string $a = "d"): string => $a); // no issue
+```
+
 #### ensureOverrideAttribute
 ```xml
 <psalm
@@ -399,6 +415,34 @@ When `true`, Psalm will report class and interface methods that override a metho
 >
 ```
 When `true`, Psalm will report code that could carry a purity annotation: [MissingPureAnnotation](issues/MissingPureAnnotation.md), [MissingImmutableAnnotation](issues/MissingImmutableAnnotation.md), [MissingAbstractPureAnnotation](issues/MissingAbstractPureAnnotation.md) and [MissingInterfaceImmutableAnnotation](issues/MissingInterfaceImmutableAnnotation.md). Defaults to `false`. Running `psalm --alter --issues=MissingPureAnnotation` or `--issues=MissingImmutableAnnotation` turns it on for that run. Capability checks (`ImpureFunctionCall` and the like) compare a call with what the callee declares, whatever this is set to.
+
+#### assumeGettersMutationFree
+```xml
+<psalm
+  assumeGettersMutationFree="[bool]"
+>
+```
+When `true`, a method with no purity annotation whose body is `return $this->property;` (of a property with a type) is taken as mutation-free, so it can be called from a `@psalm-pure` function or a mutation-free method. Set it to `false` to take such a method as any other method without an annotation (it needs `@psalm-pure`, `@psalm-mutation-free` or `@psalm-capabilities` to be called from there), for example when the classes you call may change their getters. Defaults to `true`.
+
+```php
+<?php
+
+final class Lib
+{
+    private string $name = '';
+
+    public function getName(): string
+    {
+        return $this->name;
+    }
+}
+
+/** @psalm-pure */
+function name(Lib $lib): string
+{
+    return $lib->getName(); // no issue; ImpureMethodCall with assumeGettersMutationFree="false"
+}
+```
 
 #### loadLibraryStubs
 ```xml

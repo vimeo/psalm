@@ -2963,6 +2963,30 @@ final class CapabilitiesTest extends TestCase
     public static function providerInvalidCodeParse(): iterable
     {
         return [
+            'impureToStringCalledImplicitlyByAnArgument' => [
+                'code' => '<?php
+                    final class Imp {
+                        private int $n = 0;
+
+                        public function __toString(): string {
+                            $this->n++;
+
+                            return (string) $this->n;
+                        }
+                    }
+
+                    /** @psalm-pure */
+                    function takesString(string $s): string {
+                        return $s;
+                    }
+
+                    /** @psalm-pure */
+                    function f(Imp $o): string {
+                        return takesString($o);
+                    }',
+                'error_message' => 'ImpureMethodCall',
+                'error_levels' => ['ImplicitToStringCast'],
+            ],
             'staticCallOfMethodNotReturningThisIsNotThis' => [
                 'code' => <<<'PHP'
                     <?php
@@ -5085,6 +5109,23 @@ final class CapabilitiesTest extends TestCase
                         return $a;
                     }',
                 'error_message' => 'ImpureMethodCall - src' . DIRECTORY_SEPARATOR . 'somefile.php:8:25 - The context is pure but destroying the old value of $a (Guard::__destruct) requires',
+            ],
+            'rebindingAReferenceRunsTheOldValuesDestructor' => [
+                'code' => '<?php
+                    final class Guard {
+                        public function __destruct() { echo "released"; }
+                    }
+
+                    /** @psalm-pure */
+                    function &borrowText(string &$value): string {
+                        return $value;
+                    }
+
+                    /** @psalm-pure */
+                    function rebind(Guard $guard, string $value): void {
+                        $guard = &borrowText($value);
+                    }',
+                'error_message' => 'destroying the old value of $guard (Guard::__destruct) requires',
             ],
             'aVariableReassignedInALoopRunsTheDestructorOfThePreviousValue' => [
                 'code' => '<?php
