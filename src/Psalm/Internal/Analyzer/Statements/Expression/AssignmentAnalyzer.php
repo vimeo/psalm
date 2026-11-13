@@ -87,9 +87,11 @@ use Psalm\Node\Expr\VirtualAssign;
 use Psalm\Plugin\EventHandler\Event\AddRemoveTaintsEvent;
 use Psalm\Storage\Assertion\Falsy;
 use Psalm\Storage\Capabilities;
+use Psalm\Storage\FunctionLikeParameter;
 use Psalm\Type;
 use Psalm\Type\Atomic;
 use Psalm\Type\Atomic\TArray;
+use Psalm\Type\Atomic\TClosure;
 use Psalm\Type\Atomic\TFalse;
 use Psalm\Type\Atomic\TKeyedArray;
 use Psalm\Type\Atomic\TMixed;
@@ -100,6 +102,7 @@ use Psalm\Type\TaintKind;
 use Psalm\Type\Union;
 use UnexpectedValueException;
 
+use function array_map;
 use function assert;
 use function count;
 use function is_int;
@@ -118,6 +121,47 @@ use function substr;
  */
 final class AssignmentAnalyzer
 {
+    /**
+     * The type of a variable a closure calls itself through (`$f = function () use (&$f) { $f(); }`): its own signature
+     */
+    private static function getRecursiveClosureType(
+        StatementsAnalyzer $statements_analyzer,
+        PhpParser\Node\Expr\Closure $closure,
+        Context $context,
+    ): Union {
+        $closure_id = strtolower($statements_analyzer->getFilePath())
+            . ':' . $closure->getLine()
+            . ':' . (int) $closure->getAttribute('startFilePos')
+            . ':-:closure';
+
+        try {
+            $storage = $statements_analyzer->getCodebase()->getClosureStorage(
+                $statements_analyzer->getFilePath(),
+                $closure_id,
+            );
+        } catch (UnexpectedValueException) {
+            return Type::getClosure();
+        }
+
+        $codebase = $statements_analyzer->getCodebase();
+
+        // the self of the parameters, which a trait leaves open, is the class of the code that calls the closure
+        $params = array_map(
+            static fn(FunctionLikeParameter $param): FunctionLikeParameter => $param->type
+                ? $param->setType(TypeExpander::expandUnion(
+                    $codebase,
+                    $param->type,
+                    $context->self,
+                    $context->self,
+                    null,
+                ))
+                : $param,
+            $storage->params,
+        );
+
+        return new Union([new TClosure($params, $storage->return_type, $storage->capabilities)]);
+    }
+
     /**
      * The capabilities writing a variable needs on top of a local write, for what the variable
      * may be shared with: a superglobal or a `global` variable, a variable captured by reference
@@ -325,7 +369,11 @@ final class AssignmentAnalyzer
                         && is_string($closure_use->var->name)
                         && $var_id === '$' . $closure_use->var->name
                     ) {
-                        $context->vars_in_scope[$var_id] = Type::getClosure();
+                        $context->vars_in_scope[$var_id] = self::getRecursiveClosureType(
+                            $statements_analyzer,
+                            $assign_value,
+                            $context,
+                        );
                         $context->vars_possibly_in_scope[$var_id] = true;
                         $assign_value->setAttribute('recursive_var_id', $var_id);
                     }

@@ -58,6 +58,7 @@ trait PsalmRunnerTrait
             'AI_AGENT' => false,
             'AGENT' => false,
             'NO_COLOR' => false,
+            'FORCE_COLOR' => false,
         ];
     }
 

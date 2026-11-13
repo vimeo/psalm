@@ -4,15 +4,22 @@ declare(strict_types=1);
 
 namespace Psalm\Tests;
 
+use Override;
 use PHPUnit\Framework\Attributes\DataProvider;
+use PhpParser\Node\Expr\FuncCall;
+use PhpParser\Node\Name;
 use Psalm\Config;
 use Psalm\Exception\CodeException;
 use Psalm\Internal\Analyzer\FileAnalyzer;
 use Psalm\Internal\Provider\ClassLikeStorageProvider;
 use Psalm\IssueBuffer;
+use Psalm\Plugin\EventHandler\AfterExpressionAnalysisInterface;
+use Psalm\Plugin\EventHandler\Event\AfterExpressionAnalysisEvent;
 use Psalm\Storage\ClassLikeStorage;
 use ReflectionProperty;
 
+use function array_combine;
+use function array_keys;
 use function getcwd;
 use function preg_quote;
 use function set_time_limit;
@@ -777,6 +784,39 @@ final class IncludeTest extends TestCase
                     (string) getcwd() . DIRECTORY_SEPARATOR . 'test_1.php',
                 ],
             ],
+            'namespaceConstantKeepsItsTypeAfterASubclassCallsTheParentConstructor' => [
+                'files' => [
+                    (string) getcwd() . DIRECTORY_SEPARATOR . 'Base.php' => '<?php
+                        namespace App;
+
+                        const LIMIT = 5;
+
+                        class Base {
+                            public int $limit;
+
+                            public function __construct() {
+                                $this->limit = 1;
+                            }
+                        }',
+                    (string) getcwd() . DIRECTORY_SEPARATOR . 'Child.php' => '<?php
+                        namespace App;
+
+                        final class Child extends Base {
+                            public function __construct() {
+                                parent::__construct();
+                            }
+                        }',
+                    (string) getcwd() . DIRECTORY_SEPARATOR . 'limit.php' => '<?php
+                        function limit(): int {
+                            return \App\LIMIT;
+                        }',
+                ],
+                'files_to_check' => [
+                    (string) getcwd() . DIRECTORY_SEPARATOR . 'Base.php',
+                    (string) getcwd() . DIRECTORY_SEPARATOR . 'Child.php',
+                    (string) getcwd() . DIRECTORY_SEPARATOR . 'limit.php',
+                ],
+            ],
         ];
     }
 
@@ -1144,6 +1184,219 @@ final class IncludeTest extends TestCase
         // This must not crash — previously threw UnexpectedValueException
         // from MethodAnalyzer when the method was missing from storage.
         $file_analyzer->analyze();
+    }
+
+    /**
+     * Analysing a subclass follows the constructor it calls into the parent's file, and taint analysis analyses the
+     * parent's body again for the subclass. The statements outside the parent's class are analysed with the parent's
+     * file, which knows the functions its includes declare, not again for the subclass, whose file doesn't include
+     * them.
+     */
+    #[DataProvider('providerTaintAnalysis')]
+    public function testStatementsOutsideTheClassOfAFollowedFileAreNotAnalysedForTheSubclass(bool $taint): void
+    {
+        if ($taint) {
+            $this->project_analyzer->trackTaintedInputs();
+        }
+
+        $codebase = $this->project_analyzer->getCodebase();
+        $config = $codebase->config;
+        $config->throw_exception = false;
+
+        $dir = self::$src_dir_path;
+        $files = [
+            $dir . 'bootstrap.php' => '<?php
+                function first(): void {
+                    second();
+                }
+
+                function second(): void {}',
+            $dir . 'Base.php' => '<?php
+                namespace App;
+
+                require_once __DIR__ . "/bootstrap.php";
+
+                class Base {
+                    public string $name;
+
+                    public function __construct() {
+                        $this->name = "base";
+                    }
+                }',
+            $dir . 'Child.php' => '<?php
+                namespace App;
+
+                final class Child extends Base {
+                    public function __construct() {
+                        parent::__construct();
+                    }
+
+                    public function report(): void {
+                        missing();
+                    }
+                }',
+        ];
+
+        foreach ($files as $file_path => $contents) {
+            $this->addFile($file_path, $contents);
+        }
+
+        $codebase->addFilesToAnalyze(array_combine(array_keys($files), array_keys($files)));
+        $codebase->scanFiles();
+
+        foreach (array_keys($files) as $file_path) {
+            (new FileAnalyzer($this->project_analyzer, $file_path, $config->shortenFileName($file_path)))->analyze();
+        }
+
+        $issues = [];
+
+        foreach (array_keys($files) as $file_path) {
+            foreach (IssueBuffer::getIssuesDataForFile($file_path) as $issue) {
+                $issues[] = $issue->type . ' ' . $issue->file_name . ':' . $issue->line_from;
+            }
+        }
+
+        // the issues of the files themselves are still reported
+        $this->assertSame(['UndefinedFunction src' . DIRECTORY_SEPARATOR . 'Child.php:10'], $issues);
+    }
+
+    /**
+     * @return iterable<string, array{bool}>
+     * @psalm-pure
+     */
+    public static function providerTaintAnalysis(): iterable
+    {
+        yield 'without taint analysis' => [false];
+        yield 'with taint analysis' => [true];
+    }
+
+    /**
+     * The statements outside the class of a file are analysed once, with the file, however many subclasses follow
+     * a method of the class.
+     */
+    #[DataProvider('providerTaintAnalysis')]
+    public function testStatementsOutsideTheClassOfAFollowedFileAreAnalysedOnce(bool $taint): void
+    {
+        $hook = new class implements AfterExpressionAnalysisInterface {
+            public static int $count = 0;
+
+            #[Override]
+            public static function afterExpressionAnalysis(AfterExpressionAnalysisEvent $event): ?bool
+            {
+                $expr = $event->getExpr();
+
+                if ($expr instanceof FuncCall && $expr->name instanceof Name && $expr->name->toString() === 'strlen') {
+                    self::$count++;
+                }
+
+                return null;
+            }
+        };
+
+        $hook::$count = 0;
+
+        if ($taint) {
+            $this->project_analyzer->trackTaintedInputs();
+        }
+
+        $codebase = $this->project_analyzer->getCodebase();
+        $config = $codebase->config;
+        $config->throw_exception = false;
+        $config->eventDispatcher->after_expression_checks[] = $hook::class;
+
+        $dir = self::$src_dir_path;
+        $files = [
+            $dir . 'Base.php' => '<?php
+                namespace App;
+
+                \strlen("namespace level");
+
+                class Base {
+                    public string $name;
+
+                    public function __construct() {
+                        $this->name = "base";
+                    }
+                }',
+            $dir . 'Children.php' => '<?php
+                namespace App;
+
+                final class FirstChild extends Base {
+                    public function __construct() {
+                        parent::__construct();
+                    }
+                }
+
+                final class SecondChild extends Base {
+                    public function __construct() {
+                        parent::__construct();
+                    }
+                }',
+        ];
+
+        foreach ($files as $file_path => $contents) {
+            $this->addFile($file_path, $contents);
+        }
+
+        $codebase->addFilesToAnalyze(array_combine(array_keys($files), array_keys($files)));
+        $codebase->scanFiles();
+
+        foreach (array_keys($files) as $file_path) {
+            (new FileAnalyzer($this->project_analyzer, $file_path, $config->shortenFileName($file_path)))->analyze();
+        }
+
+        $this->assertSame(1, $hook::$count);
+    }
+
+    /**
+     * The constructor of the parent reads the constants its file declares: they are known when a subclass follows
+     * it, whichever file is analysed first. Each order uses its own namespace, as the constants a namespace's
+     * statements declare stay known to the process.
+     *
+     * @param list<string> $file_names
+     */
+    #[DataProvider('providerParentAndChildOrders')]
+    public function testConstantsOfAFollowedFileAreKnownWhicheverFileIsAnalysedFirst(
+        array $file_names,
+        string $namespace,
+    ): void {
+        $this->addFile((string) getcwd() . DIRECTORY_SEPARATOR . 'Base.php', '<?php
+            namespace ' . $namespace . ';
+
+            const MAX_ITEMS = 5;
+            define("DEFAULT_CURRENCY", "EUR");
+
+            class Base {
+                public int $max_items;
+                public string $currency;
+
+                public function __construct() {
+                    $this->max_items = MAX_ITEMS;
+                    $this->currency = DEFAULT_CURRENCY;
+                }
+            }
+        ');
+        $this->addFile((string) getcwd() . DIRECTORY_SEPARATOR . 'Child.php', '<?php
+            namespace ' . $namespace . ';
+
+            final class Child extends Base {
+                public function __construct() {
+                    parent::__construct();
+                }
+            }
+        ');
+
+        $this->assertSame([], $this->analyzeFilesInOrder($file_names));
+    }
+
+    /**
+     * @return iterable<string, array{list<string>, string}>
+     * @psalm-pure
+     */
+    public static function providerParentAndChildOrders(): iterable
+    {
+        yield 'parent first' => [['Base.php', 'Child.php'], 'ParentFirst'];
+        yield 'child first' => [['Child.php', 'Base.php'], 'ChildFirst'];
     }
 
     /**
