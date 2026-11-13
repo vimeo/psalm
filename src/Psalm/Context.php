@@ -60,7 +60,8 @@ final class Context
 
     /**
      * The pseudo-variable through which comparisons of the PHP_SAPI constant and of php_sapi_name() narrow them, so
-     * a branch knows the SAPI it runs in (e.g. `if (PHP_SAPI === 'cli')`); it can't clash with a variable name.
+     * a branch knows the SAPI it runs in (e.g. `if (PHP_SAPI === 'cli')`); it can't clash with a variable name. A
+     * plugin narrows it to 'cli' in the context of a file only run from the command line (see BeforeFileAnalysisEvent).
      */
     public const PHP_SAPI_VAR_ID = 'PHP_SAPI';
 

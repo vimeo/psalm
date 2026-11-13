@@ -19,8 +19,10 @@ use Psalm\Internal\Provider\Providers;
 use Psalm\IssueBuffer;
 use Psalm\Plugin\EventHandler\AfterCodebasePopulatedInterface;
 use Psalm\Plugin\EventHandler\AfterEveryFunctionCallAnalysisInterface;
+use Psalm\Plugin\EventHandler\BeforeFileAnalysisInterface;
 use Psalm\Plugin\EventHandler\Event\AfterCodebasePopulatedEvent;
 use Psalm\Plugin\EventHandler\Event\AfterEveryFunctionCallAnalysisEvent;
+use Psalm\Plugin\EventHandler\Event\BeforeFileAnalysisEvent;
 use Psalm\PluginRegistrationSocket;
 use Psalm\Report;
 use Psalm\Report\ReportOptions;
@@ -28,6 +30,7 @@ use Psalm\Tests\Config\Plugin\FixableIssuePlugin;
 use Psalm\Tests\DeferredAnalyzerTestCase;
 use Psalm\Tests\Internal\Provider\FakeParserCacheProvider;
 use Psalm\Tests\TestConfig;
+use Psalm\Type;
 
 use function array_fill_keys;
 use function array_keys;
@@ -487,6 +490,69 @@ final class PluginTest extends DeferredAnalyzerTestCase
             ],
             $file_storage->custom_metadata,
         );
+    }
+
+    public function testBeforeFileAnalysisHookMakesTheTopLevelCodeOfAFileCliOnly(): void
+    {
+        $this->project_analyzer = $this->getProjectAnalyzerWithConfig(
+            TestConfig::loadFromXML(
+                dirname(__DIR__, 2) . DIRECTORY_SEPARATOR,
+                '<?xml version="1.0"?>
+                <psalm
+                    errorLevel="1"
+                >
+                    <projectFiles>
+                        <directory name="src" />
+                    </projectFiles>
+                </psalm>',
+            ),
+        );
+
+        $hook = new class implements BeforeFileAnalysisInterface {
+            #[Override]
+            public static function beforeAnalyzeFile(BeforeFileAnalysisEvent $event): void
+            {
+                $event->getFileContext()->vars_in_scope[Context::PHP_SAPI_VAR_ID] = Type::getString('cli');
+            }
+        };
+
+        $codebase = $this->project_analyzer->getCodebase();
+        (new PluginRegistrationSocket($codebase->config, $codebase))->registerHooksFromClass(get_class($hook));
+        $codebase->config->throw_exception = false;
+
+        $file_path = (string) getcwd() . '/src/somefile.php';
+
+        $this->addFile(
+            $file_path,
+            '<?php
+            /** @psalm-cli-only */
+            function import(): void {}
+
+            import();
+            array_map(function (int $i): void {
+                import();
+            }, [1]);
+            array_map(fn(int $i) => import(), [1]);
+            echo (string) $_GET["name"];
+
+            function handle(): void {
+                import();
+                echo (string) $_GET["name"];
+            }
+
+            return new /** @psalm-cli-only */ class {};',
+        );
+
+        $this->analyzeFile($file_path, new Context(), false, true);
+
+        $issues = [];
+        foreach (IssueBuffer::getIssuesDataForFile($file_path) as $issue) {
+            if ($issue->type === 'CliOnlyCall' || $issue->type === 'TaintedHtml') {
+                $issues[] = $issue->type . ' (line ' . $issue->line_from . ')';
+            }
+        }
+
+        self::assertSame(['CliOnlyCall (line 13)', 'TaintedHtml (line 14)'], $issues);
     }
 
     public function testFloatCheckerPlugin(): void
