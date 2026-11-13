@@ -461,11 +461,13 @@ final class CliUtils
 
         if ($f_paths) {
             $input_paths = is_array($f_paths) ? $f_paths : [$f_paths];
+            $input_is_f_paths = true;
         } else {
             $input_paths = self::getRawCliArguments();
             if (!$input_paths) {
                 return null;
             }
+            $input_is_f_paths = false;
         }
 
         $filtered_input_paths = [];
@@ -474,6 +476,12 @@ final class CliUtils
         for ($i = 0, $iMax = count($input_paths); $i < $iMax; ++$i) {
             /** @var string */
             $input_path = $input_paths[$i];
+
+            if ($input_is_f_paths) {
+                // the value of -f is a path, whatever it looks like: dropping it would widen the selection
+                $filtered_input_paths[] = $input_path;
+                continue;
+            }
 
             if ($input_path === '--') {
                 // everything after the terminator is a path, even when it starts with "-"

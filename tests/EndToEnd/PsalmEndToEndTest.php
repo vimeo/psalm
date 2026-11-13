@@ -370,6 +370,37 @@ final class PsalmEndToEndTest extends TestCase
         ];
     }
 
+    /**
+     * @param list<string> $file_args
+     */
+    #[DataProvider('provideFileOptionsWithAValueThatLooksLikeAnOption')]
+    public function testPsalterNeverWidensAnExplicitFileSelectionToTheWholeProject(array $file_args): void
+    {
+        $source = $this->writeAFileWithAMissingReturnType();
+
+        $process = new Process(
+            [PHP_BINARY, $this->psalter, '--no-cache', '--issues=MissingReturnType', ...$file_args],
+            self::$tmpDir,
+            self::agentEnvVarsToUnset(),
+        );
+        $process->run();
+
+        $this->assertSame(1, $process->getExitCode(), $process->getOutput() . $process->getErrorOutput());
+        $this->assertStringContainsString('Invalid usage', $process->getErrorOutput());
+        $this->assertSame($source, file_get_contents(self::$tmpDir . '/src/A.php'));
+    }
+
+    /**
+     * @return iterable<string, array{list<string>}>
+     * @psalm-pure
+     */
+    public static function provideFileOptionsWithAValueThatLooksLikeAnOption(): iterable
+    {
+        yield 'a value after an equals sign' => [['-f=-target.php']];
+        yield 'a value in a separate argument' => [['-f', '-target.php']];
+        yield 'a value that is a short option' => [['-f', '-m']];
+    }
+
     public function testPsalmForwardsToPsalterWhenAlterFollowsAPath(): void
     {
         $source = $this->writeAFileWithAMissingReturnType();
