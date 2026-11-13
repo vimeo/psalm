@@ -32,6 +32,7 @@ use Psalm\Plugin\EventHandler\Event\AddRemoveTaintsEvent;
 use Psalm\Type;
 use Psalm\Type\Atomic\TLiteralInt;
 use Psalm\Type\Atomic\TLiteralString;
+use Psalm\Type\Atomic\TTemplateParam;
 use Psalm\Type\TaintKind;
 use Psalm\Type\Union;
 use UnexpectedValueException;
@@ -180,15 +181,16 @@ final class BinaryOpAnalyzer
             $left_type = $statements_analyzer->node_data->getType($stmt->left);
             $right_type = $statements_analyzer->node_data->getType($stmt->right);
             if ($left_type && $right_type) {
-                self::checkForImplicitToStringComparison(
+                self::signalImplicitToStringComparison(
                     $context,
                     $statements_analyzer,
-                    $stmt,
+                    $stmt->left,
+                    $stmt->right,
                     $left_type,
                     $right_type,
+                    $stmt,
                 );
             }
-
 
             self::addDataFlow(
                 $statements_analyzer,
@@ -329,12 +331,14 @@ final class BinaryOpAnalyzer
                 && $stmt_left_type
                 && $stmt_right_type
             ) {
-                self::checkForImplicitToStringComparison(
+                self::signalImplicitToStringComparison(
                     $context,
                     $statements_analyzer,
-                    $stmt,
+                    $stmt->left,
+                    $stmt->right,
                     $stmt_left_type,
                     $stmt_right_type,
+                    $stmt,
                 );
             }
 
@@ -477,36 +481,56 @@ final class BinaryOpAnalyzer
         }
     }
 
-    private static function checkForImplicitToStringComparison(
+    public static function signalImplicitToStringComparison(
         Context $context,
         StatementsAnalyzer $statements_analyzer,
-        PhpParser\Node\Expr\BinaryOp $stmt,
-        Union $stmt_left_type,
-        Union $stmt_right_type,
+        PhpParser\Node\Expr $left,
+        PhpParser\Node\Expr $right,
+        Union $left_type,
+        Union $right_type,
+        PhpParser\Node $location,
     ): void {
-        if ($stmt_left_type->hasString() && $stmt_right_type->hasObjectType()) {
-            foreach ($stmt_right_type->getAtomicTypes() as $atomic_type) {
+        if (self::canBeString($left_type) && $right_type->hasObjectType()) {
+            foreach ($right_type->getAtomicTypes() as $atomic_type) {
                 MethodCallPurityAnalyzer::signalImplicitToStringCall(
                     $statements_analyzer,
                     $context,
-                    $stmt->right,
+                    $right,
                     $atomic_type,
-                    $stmt,
+                    $location,
                 );
             }
         }
 
-        if ($stmt_right_type->hasString() && $stmt_left_type->hasObjectType()) {
-            foreach ($stmt_left_type->getAtomicTypes() as $atomic_type) {
+        if (self::canBeString($right_type) && $left_type->hasObjectType()) {
+            foreach ($left_type->getAtomicTypes() as $atomic_type) {
                 MethodCallPurityAnalyzer::signalImplicitToStringCall(
                     $statements_analyzer,
                     $context,
-                    $stmt->left,
+                    $left,
                     $atomic_type,
-                    $stmt,
+                    $location,
                 );
             }
         }
+    }
+
+    /**
+     * @psalm-pure
+     */
+    private static function canBeString(Union $type): bool
+    {
+        if ($type->hasString()) {
+            return true;
+        }
+
+        foreach ($type->getAtomicTypes() as $atomic) {
+            if ($atomic instanceof TTemplateParam && self::canBeString($atomic->as)) {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     /**

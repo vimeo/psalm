@@ -13,6 +13,7 @@ use Psalm\Internal\Algebra;
 use Psalm\Internal\Algebra\FormulaGenerator;
 use Psalm\Internal\Analyzer\AlgebraAnalyzer;
 use Psalm\Internal\Analyzer\ScopeAnalyzer;
+use Psalm\Internal\Analyzer\Statements\Expression\BinaryOpAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\IntMaskComparisonAnalyzer;
 use Psalm\Internal\Analyzer\Statements\ExpressionAnalyzer;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
@@ -221,7 +222,12 @@ final class SwitchCaseAnalyzer
             ) {
                 $case_equality_expr = $case->cond;
             } else {
-                $case_equality_expr = self::getCaseEqualityExpr($statements_analyzer, $switch_condition, $case->cond);
+                $case_equality_expr = self::getCaseEqualityExpr(
+                    $statements_analyzer,
+                    $case_context,
+                    $switch_condition,
+                    $case->cond,
+                );
             }
         }
 
@@ -553,6 +559,7 @@ final class SwitchCaseAnalyzer
      */
     private static function getCaseEqualityExpr(
         StatementsAnalyzer $statements_analyzer,
+        Context $context,
         PhpParser\Node\Expr $switch_condition,
         PhpParser\Node\Expr $case_cond,
     ): VirtualIdentical|VirtualEqual {
@@ -565,6 +572,18 @@ final class SwitchCaseAnalyzer
                 || ($switch_condition_type->isInt() && $case_cond_type->isInt())
                 || ($switch_condition_type->isFloat() && $case_cond_type->isFloat())
             );
+
+        if (!$is_identical && $switch_condition_type && $case_cond_type) {
+            BinaryOpAnalyzer::signalImplicitToStringComparison(
+                $context,
+                $statements_analyzer,
+                $switch_condition,
+                $case_cond,
+                $switch_condition_type,
+                $case_cond_type,
+                $case_cond,
+            );
+        }
 
         $case_equality_expr = $is_identical
             ? new VirtualIdentical($switch_condition, $case_cond, $case_cond->getAttributes())

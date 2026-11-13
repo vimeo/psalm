@@ -866,7 +866,20 @@ final class CastAnalyzer
             }
 
             if ($atomic_type instanceof TTemplateParam) {
-                $atomic_types = array_merge($atomic_types, $atomic_type->as->getAtomicTypes());
+                if ($atomic_type->extra_types === []) {
+                    $atomic_types = array_merge($atomic_types, $atomic_type->as->getAtomicTypes());
+                } else {
+                    foreach ($atomic_type->as->getAtomicTypes() as $bound) {
+                        if ($bound instanceof TNamedObject
+                            || $bound instanceof TObjectWithProperties
+                            || $bound instanceof TTemplateParam
+                        ) {
+                            $bound = $bound->setIntersectionTypes($bound->extra_types + $atomic_type->extra_types);
+                        }
+
+                        $atomic_types[] = $bound;
+                    }
+                }
 
                 continue;
             }

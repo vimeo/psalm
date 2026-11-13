@@ -592,6 +592,14 @@ final class ConcatAnalyzer
             }
 
             if ($operand_type_part instanceof TTemplateParam && !$operand_type_part->as->isString()) {
+                MethodCallPurityAnalyzer::signalImplicitToStringCall(
+                    $statements_analyzer,
+                    $context,
+                    $operand,
+                    $operand_type_part,
+                    $operand,
+                );
+
                 IssueBuffer::maybeAdd(
                     new MixedOperand(
                         "$side operand cannot be a non-string template param",

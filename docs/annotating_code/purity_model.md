@@ -600,17 +600,19 @@ function update(int &$ref): void {
 ### Implicit calls
 
 Everything a function-like does is checked, including what happens implicitly: `clone` calls
-`__clone`; casts, interpolation, concatenation and comparison with a string call `__toString`;
-`$object()` calls `__invoke`; array access on objects calls the `ArrayAccess` methods; `throw new`
-and `new $className` call the constructor (an unknown class may do anything); and `foreach` over
-an object calls its iteration methods (see [Iterators and generators](#iterators-and-generators)).
+`__clone`; casts, interpolation and concatenation call `__toString`, as do loose comparisons
+(`==`, `!=`, `<`, `<=`, `>`, `>=`, `<=>`, `switch`) with a string; `$object()` calls `__invoke`;
+array access on objects calls the `ArrayAccess` methods; `throw new` and `new $className` call
+the constructor (an unknown class may do anything); and `foreach` over an object calls its
+iteration methods (see [Iterators and generators](#iterators-and-generators)).
 A callable string or array whose target is not known may do anything, so a pure function may not
 call one.
 
-An implicit `__toString` call passes nothing by reference, so its `write-refs` costs nothing and
-the object is charged as the receiver of a [method call](#method-calls). On a parameter, an
-unannotated `__toString` costs `write-props|read-globals|write-globals|io|time`, which the
-capability set on `Psr\Log\LoggerInterface::log()` allows:
+An implicit `__toString` call passes no arguments, so its by-reference-parameter cost is adjusted
+as for an explicit call and the object is charged as the receiver of a
+[method call](#method-calls). On a parameter, an unannotated `__toString` costs
+`write-props|read-globals|write-globals|io|time`, which the capability set on
+`Psr\Log\LoggerInterface::log()` allows:
 
 ```php
 <?php

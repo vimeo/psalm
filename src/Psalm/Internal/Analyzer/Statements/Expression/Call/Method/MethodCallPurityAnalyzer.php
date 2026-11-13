@@ -32,6 +32,7 @@ use Psalm\Storage\MethodStorage;
 use Psalm\Type;
 use Psalm\Type\Atomic;
 use Psalm\Type\Atomic\TNamedObject;
+use Psalm\Type\Atomic\TObjectWithProperties;
 use Psalm\Type\Atomic\TTemplateParam;
 use Psalm\Type\Union;
 
@@ -95,8 +96,8 @@ final class MethodCallPurityAnalyzer
     }
 
     /**
-     * __toString takes no parameters, so its write-refs costs nothing. A reference the object holds
-     * is charged where it is handed to the object.
+     * __toString receives no by-reference arguments. A reference held by the receiver is charged
+     * where it is handed to the object, not as an argument to the conversion.
      */
     public static function signalImplicitToStringCall(
         StatementsAnalyzer $statements_analyzer,
@@ -109,19 +110,22 @@ final class MethodCallPurityAnalyzer
             foreach ($type->as->getAtomicTypes() as $bound) {
                 self::signalImplicitToStringCall($statements_analyzer, $context, $receiver, $bound, $location);
             }
-
-            return;
+        } elseif ($type instanceof TNamedObject) {
+            self::signalNamedToStringCall($statements_analyzer, $context, $receiver, $type, $location);
         }
 
-        if (!$type instanceof TNamedObject) {
-            return;
-        }
-
-        self::signalNamedToStringCall($statements_analyzer, $context, $receiver, $type, $location);
-
-        foreach ($type->extra_types as $intersection_type) {
-            if ($intersection_type instanceof TNamedObject) {
-                self::signalNamedToStringCall($statements_analyzer, $context, $receiver, $intersection_type, $location);
+        if ($type instanceof TTemplateParam
+            || $type instanceof TNamedObject
+            || $type instanceof TObjectWithProperties
+        ) {
+            foreach ($type->extra_types as $intersection_type) {
+                self::signalImplicitToStringCall(
+                    $statements_analyzer,
+                    $context,
+                    $receiver,
+                    $intersection_type,
+                    $location,
+                );
             }
         }
     }
@@ -190,7 +194,24 @@ final class MethodCallPurityAnalyzer
         }
 
         $capabilities = self::getMethodCapabilities($statements_analyzer, $receiver, $storage)
-            & ~Capabilities::WRITE_REFS;
+            | $template_capabilities;
+        $capabilities = ByRefArgumentAnalyzer::adjustCapabilities(
+            $statements_analyzer,
+            $context,
+            $capabilities,
+            $storage->params,
+            [],
+        );
+        $inferred_capabilities = Capabilities::equals($inferred_template_capabilities, $template_capabilities)
+            ? $capabilities
+            : ByRefArgumentAnalyzer::adjustCapabilities(
+                $statements_analyzer,
+                $context,
+                self::getMethodCapabilities($statements_analyzer, $receiver, $storage)
+                    | $inferred_template_capabilities,
+                $storage->params,
+                [],
+            );
 
         $var_id = ExpressionIdentifier::getExtendedVarId(
             $receiver,
@@ -199,17 +220,16 @@ final class MethodCallPurityAnalyzer
         );
 
         $statements_analyzer->signalMutation(
-            $capabilities | $template_capabilities,
+            $capabilities,
             $context,
             'possibly-mutating method ' . $type->value . '::__toString',
             ImpureMethodCall::class,
             $location,
-            $capabilities | $inferred_template_capabilities,
+            $inferred_capabilities,
             false,
             ($var_id === '$this'
                 || $storage->final
-                || $class_storage->final
-                || $storage->visibility === ClassLikeAnalyzer::VISIBILITY_PRIVATE)
+                || $class_storage->final)
                 ? $storage
                 : null,
             self::receiverAllowsInternalMutations($statements_analyzer, $receiver),
@@ -219,7 +239,6 @@ final class MethodCallPurityAnalyzer
             $statements_analyzer->signalMutationOnlyInferred($inferred_template_capabilities);
         }
     }
-
 
     /**
      * The capabilities a call of a method of the class of $class_storage whose name isn't known
