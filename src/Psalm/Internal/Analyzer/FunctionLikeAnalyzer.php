@@ -1761,13 +1761,29 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
                         null,
                     );
 
+                    $removed_taints = $function_param->signature_type?->getTaintsToRemove($codebase->getInputTaints())
+                        ?? 0;
+
                     $statements_analyzer->data_flow_graph->addPath(
                         $type_source,
                         $param_assignment,
                         'param',
                         0,
-                        $function_param->signature_type?->getTaintsToRemove($codebase->getInputTaints()) ?? 0,
+                        $removed_taints,
                     );
+
+                    // the arguments after the first, see ArgumentAnalyzer::addVariadicArgumentPath()
+                    if ($function_param->is_variadic) {
+                        $variadic_source = DataFlowNode::getForVariadicArguments($type_source);
+
+                        $statements_analyzer->data_flow_graph->addPath(
+                            $variadic_source,
+                            $param_assignment,
+                            'param',
+                            0,
+                            $removed_taints,
+                        );
+                    }
                 }
 
                 if ($storage->variadic) {
