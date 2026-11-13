@@ -30,6 +30,7 @@ These issues have very low false-positive rates and indicate definite problems. 
  - [AbstractMethodCall](issues/AbstractMethodCall.md)
  - [CheckType](issues/CheckType.md)
  - [CliOnlyCall](issues/CliOnlyCall.md)
+ - [CliOnlyInstancesUnguarded](issues/CliOnlyInstancesUnguarded.md)
  - [ComplexFunction](issues/ComplexFunction.md)
  - [ComplexMethod](issues/ComplexMethod.md)
  - [ConfigIssue](issues/ConfigIssue.md)
