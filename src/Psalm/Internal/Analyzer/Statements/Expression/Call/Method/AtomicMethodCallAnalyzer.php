@@ -856,15 +856,13 @@ final class AtomicMethodCallAnalyzer extends CallAnalyzer
         StatementsAnalyzer $statements_analyzer,
         string $fq_class_name,
     ): array {
-        $naive_method_exists = false;
-
         if ($class_storage->templatedMixins
             && $lhs_type_part instanceof TGenericObject
             && $class_storage->template_types
         ) {
             $template_type_keys = array_keys($class_storage->template_types);
 
-            foreach ($class_storage->templatedMixins as $mixin) {
+            foreach (array_reverse($class_storage->templatedMixins) as $mixin) {
                 $param_position = array_search(
                     $mixin->param_name,
                     $template_type_keys,
@@ -904,15 +902,23 @@ final class AtomicMethodCallAnalyzer extends CallAnalyzer
                                 true,
                                 $context->insideUse(),
                             )) {
-                                $lhs_type_part = $lhs_type_part_new;
-                                $class_storage = $mixin_class_storage;
+                                return [
+                                    $lhs_type_part_new,
+                                    $mixin_class_storage,
+                                    true,
+                                    $new_method_id,
+                                    $fq_class_name,
+                                ];
+                            }
 
-                                $naive_method_exists = true;
-                                $method_id = $new_method_id;
-                            } elseif (isset($mixin_class_storage->pseudo_methods[$method_name_lc])) {
-                                $lhs_type_part = $lhs_type_part_new;
-                                $class_storage = $mixin_class_storage;
-                                $method_id = $new_method_id;
+                            if (isset($mixin_class_storage->pseudo_methods[$method_name_lc])) {
+                                return [
+                                    $lhs_type_part_new,
+                                    $mixin_class_storage,
+                                    false,
+                                    $new_method_id,
+                                    $fq_class_name,
+                                ];
                             }
                         }
                     }
@@ -923,7 +929,7 @@ final class AtomicMethodCallAnalyzer extends CallAnalyzer
         return [
             $lhs_type_part,
             $class_storage,
-            $naive_method_exists,
+            false,
             $method_id,
             $fq_class_name,
         ];
@@ -949,7 +955,6 @@ final class AtomicMethodCallAnalyzer extends CallAnalyzer
         $mixin_declaring_fqcln = $class_storage->mixin_declaring_fqcln;
 
         if ($mixin_declaring_fqcln !== null) {
-            // the last mixin with the method wins, as in the lookup order of getNamedMixinsForLookup()
             foreach (array_reverse($class_storage->getNamedMixinsForLookup()) as $mixin) {
                 $new_method_id = new MethodIdentifier(
                     $mixin->value,
@@ -978,7 +983,7 @@ final class AtomicMethodCallAnalyzer extends CallAnalyzer
                 $mixin_class_template_params = ClassTemplateParamCollector::collect(
                     $codebase,
                     $mixin_declaring_class_storage,
-                    $codebase->classlike_storage_provider->get($fq_class_name),
+                    $class_storage,
                     null,
                     $lhs_type_part,
                     $lhs_var_id === '$this',
