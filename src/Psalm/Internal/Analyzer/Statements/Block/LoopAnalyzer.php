@@ -18,6 +18,7 @@ use Psalm\Internal\Clause;
 use Psalm\Internal\PhpVisitor\AssignmentMapVisitor;
 use Psalm\Internal\PhpVisitor\NodeCleanerVisitor;
 use Psalm\Internal\Scope\LoopScope;
+use Psalm\Internal\Type\TypeCombiner;
 use Psalm\IssueBuffer;
 use Psalm\Storage\Assertion;
 use Psalm\Type;
@@ -490,8 +491,7 @@ final class LoopAnalyzer
                 );
 
                 $loop_parent_context->removeVarFromConflictingClauses($var_id);
-            } elseif (!$loop_context->vars_in_scope[$var_id]->equals($type, false, false, false)) {
-                // the same id can hide differing flags, like an exact class
+            } elseif (TypeCombiner::losesExactness($type, $loop_context->vars_in_scope[$var_id])) {
                 $loop_parent_context->vars_in_scope[$var_id] = Type::combineUnionTypes(
                     $loop_parent_context->vars_in_scope[$var_id],
                     $loop_context->vars_in_scope[$var_id],
@@ -533,7 +533,7 @@ final class LoopAnalyzer
                     );
 
                     $loop_parent_context->removeVarFromConflictingClauses($var_id);
-                } elseif (!$continue_context->vars_in_scope[$var_id]->equals($type, false, false, false)) {
+                } elseif (TypeCombiner::losesExactness($type, $continue_context->vars_in_scope[$var_id])) {
                     $loop_parent_context->vars_in_scope[$var_id] = Type::combineUnionTypes(
                         $loop_parent_context->vars_in_scope[$var_id],
                         $continue_context->vars_in_scope[$var_id],

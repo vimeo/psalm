@@ -1915,6 +1915,42 @@ final class ConditionalTest extends TestCase
                 ],
                 'ignored_issues' => ['MissingClosureReturnType'],
             ],
+            'exactObjectMergedInElseOrCaseStaysOpen' => [
+                'code' => '<?php
+                    class A {}
+                    class B extends A {}
+
+                    function getA(): A {
+                        return new A();
+                    }
+
+                    $else_merged = new A();
+                    if (rand(0, 1)) {
+                        echo 1;
+                    } else {
+                        $else_merged = getA();
+                    }
+                    $a = is_countable($else_merged) ? $else_merged : null;
+
+                    $case_merged = new A();
+                    switch (rand(0, 2)) {
+                        case 1:
+                            $case_merged = getA();
+                            break;
+                    }
+                    $b = is_countable($case_merged) ? $case_merged : null;
+
+                    $narrowed = getA();
+                    if ($narrowed instanceof B) {
+                        $narrowed = new B();
+                    }
+                    $c = is_countable($narrowed) ? $narrowed : null;',
+                'assertions' => [
+                    '$a===' => 'A&Countable|null',
+                    '$b===' => 'A&Countable|null',
+                    '$c===' => 'A&Countable|null',
+                ],
+            ],
             'docblockFinalClassCanBeExtended' => [
                 'code' => '<?php
                     /** @final */

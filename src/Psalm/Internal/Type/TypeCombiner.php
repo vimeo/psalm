@@ -481,6 +481,30 @@ final class TypeCombiner
     }
 
     /**
+     * Whether an object exact before (`new Foo()`) may not be after, which neither getId() nor equals() shows
+     *
+     * @psalm-pure
+     */
+    public static function losesExactness(Union $before, Union $after): bool
+    {
+        $after_types = $after->getAtomicTypes();
+
+        foreach ($before->getAtomicTypes() as $key => $atomic) {
+            $after_atomic = $after_types[$key] ?? null;
+
+            if ($atomic instanceof TNamedObject
+                && $atomic->definite_class
+                && $after_atomic instanceof TNamedObject
+                && !$after_atomic->definite_class
+            ) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    /**
      * @psalm-suppress ComplexMethod Unavoidably complex method
      */
     private static function scrapeTypeProperties(

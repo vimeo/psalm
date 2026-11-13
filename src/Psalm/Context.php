@@ -17,6 +17,7 @@ use Psalm\Internal\Scope\FinallyScope;
 use Psalm\Internal\Scope\LoopScope;
 use Psalm\Internal\Scope\TryScope;
 use Psalm\Internal\Type\AssertionReconciler;
+use Psalm\Internal\Type\TypeCombiner;
 use Psalm\Storage\Capabilities;
 use Psalm\Storage\FunctionLikeStorage;
 use Psalm\Type\Atomic\DependentType;
@@ -606,6 +607,7 @@ final class Context
                 true,
                 !($this_type->propagate_parent_nodes || $new_type->propagate_parent_nodes),
             )
+                || TypeCombiner::losesExactness($new_type, $this_type)
             ) {
                 $redefined_vars[$var_id] = $this_type;
             }

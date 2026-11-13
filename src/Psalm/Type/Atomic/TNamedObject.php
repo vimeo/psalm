@@ -123,8 +123,7 @@ class TNamedObject extends Atomic
     public function equals(Atomic $other_type, bool $ensure_source_equality): bool
     {
         return $other_type::class === static::class
-            && $this->is_static === $other_type->is_static
-            && $this->definite_class === $other_type->definite_class;
+            && $this->is_static === $other_type->is_static;
     }
 
     #[Override]
