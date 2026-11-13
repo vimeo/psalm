@@ -584,16 +584,22 @@ final class MethodCallPurityAnalyzer
                 $context->removeMutableObjectVars(false, $method_capabilities);
             }
 
-            if ($method_capabilities !== Capabilities::NONE) {
-                $context->removeMutableObjectVars(
-                    true,
-                    preserved_methods: $config->remember_property_assignments_after_call
-                        && $method_storage->only_direct_scalar_property_writes
-                        && $provided_capabilities === null
-                        ? self::getUnrelatedObjectGetters($context, $codebase, $lhs_var_id, $class_storage)
-                        : [],
-                );
-            }
+            // Even a fresh receiver can change: the capabilities charged to the caller
+            // may be NONE while the callee still writes its own properties.
+            $context->removeMutableObjectVars(
+                true,
+                preserved_methods: $config->remember_property_assignments_after_call
+                    && $method_storage->only_direct_scalar_property_writes
+                    && $provided_capabilities === null
+                    // Inherited setters can dispatch to property hooks on a subclass.
+                    && strtolower($codebase->methods->getDeclaringMethodId($method_id)?->fq_class_name ?? '')
+                        === strtolower($class_storage->name)
+                    // An unset typed property may invoke __set/__get, even from inside the class.
+                    && !isset($class_storage->declaring_method_ids['__set'])
+                    && !isset($class_storage->declaring_method_ids['__get'])
+                    ? self::getUnrelatedObjectGetters($context, $codebase, $lhs_var_id, $class_storage)
+                    : [],
+            );
 
             foreach ($method_storage->this_property_mutations as $name => $_) {
                 $mutation_var_id = $lhs_var_id . '->' . $name;
@@ -644,6 +650,7 @@ final class MethodCallPurityAnalyzer
      * and any overlapping property types retain the usual conservative invalidation.
      *
      * @return array<string, true>
+     * @psalm-capabilities read-props
      */
     private static function getUnrelatedObjectGetters(
         Context $context,
@@ -663,6 +670,7 @@ final class MethodCallPurityAnalyzer
         foreach ($context->vars_in_scope as $var_id => $type) {
             if (!$type->has_mutations
                 || preg_match('/^(\$[a-zA-Z_][a-zA-Z_0-9]*)->([a-zA-Z_][a-zA-Z_0-9]*)\(\)$/D', $var_id, $parts) !== 1
+                || !isset($parts[1], $parts[2])
                 || $parts[1] === $receiver_id
             ) {
                 continue;
@@ -682,7 +690,10 @@ final class MethodCallPurityAnalyzer
             }
 
             $owner_class = $codebase->classlike_storage_provider->get($owner->value);
-            if (!$owner_class->final || strtolower($owner_class->name) === strtolower($receiver_class->name)) {
+            if (!$owner_class->final
+                || isset($owner_class->declaring_method_ids['__get'])
+                || strtolower($owner_class->name) === strtolower($receiver_class->name)
+            ) {
                 continue;
             }
 

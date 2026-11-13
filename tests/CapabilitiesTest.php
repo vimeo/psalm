@@ -3075,6 +3075,117 @@ final class CapabilitiesTest extends TestCase
                     }',
                 'error_message' => 'ImpureMethodCall - src' . DIRECTORY_SEPARATOR . 'somefile.php:7:48 - The context is read-props but method ArrayObject::offsetSet requires write-props',
             ],
+            'freshReceiverMustForgetMemoizedGetterAfterIncrement' => [
+                'code' => <<<'PHP'
+                    <?php
+                    final class Counter {
+                        private int $n = 0;
+                        /** @psalm-mutation-free */
+                        public function get(): int { return $this->n; }
+                        /** @psalm-capabilities read-props|write-this-props */
+                        public function inc(): void { ++$this->n; }
+                    }
+                    /** @return 0 */
+                    function afterIncrement(): int {
+                        $c = new Counter();
+                        if ($c->get() !== 0) {
+                            return 0;
+                        }
+                        $c->inc();
+                        return $c->get();
+                    }
+                    PHP,
+                'error_message' => 'LessSpecificReturnStatement',
+            ],
+            'unsetScalarPropertyCanDispatchToMagicSetter' => [
+                'code' => <<<'PHP'
+                    <?php
+                    final class Child {}
+                    final class Owner {
+                        public ?Child $child = null;
+                        /** @psalm-mutation-free */
+                        public function getChild(): ?Child { return $this->child; }
+                    }
+                    final class Mutator {
+                        private int $n = 0;
+                        public function __construct(private Owner $owner) {}
+                        public function forgetN(): void { unset($this->n); }
+                        public function __set(string $name, mixed $value): void {
+                            $this->owner->child = null;
+                        }
+                        public function setN(int $n): void { $this->n = $n; }
+                    }
+                    function afterMagicSet(Owner $owner, Mutator $m): Child {
+                        $m->forgetN();
+                        if ($owner->getChild() === null) {
+                            return new Child();
+                        }
+                        $m->setN(1);
+                        return $owner->getChild();
+                    }
+                    PHP,
+                'error_message' => 'NullableReturnStatement',
+            ],
+            'magicOwnerGetterMayReadMutatedState' => [
+                'code' => <<<'PHP'
+                    <?php
+                    final class Child {}
+                    final class Counter {
+                        public int $n = 0;
+                        public function inc(): int { return ++$this->n; }
+                    }
+                    final class Owner {
+                        public ?Child $child = null;
+                        public function __construct(private Counter $counter) {
+                            unset($this->child);
+                        }
+                        /** @psalm-mutation-free */
+                        public function getChild(): ?Child { return $this->child; }
+                        /** @psalm-mutation-free */
+                        public function __get(string $name): ?Child {
+                            return $this->counter->n === 0 ? new Child() : null;
+                        }
+                    }
+                    function afterIncrement(Owner $owner, Counter $counter): Child {
+                        if ($owner->getChild() === null) {
+                            return new Child();
+                        }
+                        $counter->inc();
+                        return $owner->getChild();
+                    }
+                    PHP,
+                'error_message' => 'NullableReturnStatement',
+            ],
+            'inheritedSetterCanDispatchToSubclassPropertyHook' => [
+                'code' => <<<'PHP'
+                    <?php
+                    final class Child {}
+                    final class Owner {
+                        public ?Child $child = null;
+                        /** @psalm-mutation-free */
+                        public function getChild(): ?Child { return $this->child; }
+                    }
+                    class BaseMutator {
+                        public int $n = 0;
+                        public function setN(int $n): void { $this->n = $n; }
+                    }
+                    final class Mutator extends BaseMutator {
+                        public function __construct(public Owner $owner) {}
+                        public int $n {
+                            set(int $value) { $this->owner->child = null; }
+                        }
+                    }
+                    function afterInheritedSet(Owner $owner, Mutator $m): Child {
+                        if ($owner->getChild() === null) {
+                            return new Child();
+                        }
+                        $m->setN(1);
+                        return $owner->getChild();
+                    }
+                    PHP,
+                'error_message' => 'NullableReturnStatement',
+                'php_version' => '8.4',
+            ],
             'differentFinalClassesCanShareScalarPropertyByReference' => [
                 'code' => '<?php
                     final class A {
