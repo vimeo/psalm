@@ -198,7 +198,7 @@ final class ScopeAnalyzer
                         $return_is_exit,
                     );
                     $case_action_map[$case_index] = $case_actions;
-                    $escaping_case_actions = [
+                    $escaping_case_actions = array_values(array_unique([
                         ...$escaping_case_actions,
                         ...array_intersect($case_actions, [
                             self::ACTION_LEAVE_LOOP,
@@ -207,7 +207,7 @@ final class ScopeAnalyzer
                             self::ACTION_END,
                             self::ACTION_RETURN,
                         ]),
-                    ];
+                    ]));
                 }
 
                 // iterate backwards in a case statement
@@ -223,10 +223,10 @@ final class ScopeAnalyzer
                     ], $case_actions)
                     ) {
                         // Other cases may exit an enclosing loop or return.
-                        $control_actions = [
+                        $control_actions = array_values(array_unique([
                             ...$control_actions,
                             ...array_diff([...$all_case_actions, ...$escaping_case_actions], [self::ACTION_NONE]),
-                        ];
+                        ]));
 
                         continue 2;
                     }
@@ -244,13 +244,16 @@ final class ScopeAnalyzer
                         $has_ended = true;
                     }
 
-                    $all_case_actions = [...$all_case_actions, ...$case_actions];
+                    $all_case_actions = array_values(array_unique([
+                        ...$all_case_actions,
+                        ...$case_actions,
+                    ]));
 
                     if (!$case_does_end && !$has_ended) {
-                        $control_actions = [
+                        $control_actions = array_values(array_unique([
                             ...$control_actions,
                             ...array_diff([...$all_case_actions, ...$escaping_case_actions], [self::ACTION_NONE]),
-                        ];
+                        ]));
                         continue 2;
                     }
 
@@ -259,16 +262,16 @@ final class ScopeAnalyzer
                     }
                 }
 
-                $all_case_actions = array_filter(
+                $all_case_actions = array_values(array_unique(array_filter(
                     [...$all_case_actions, ...$escaping_case_actions],
                     static fn(string $action): bool => $action !== self::ACTION_NONE,
-                );
+                )));
 
                 if ($has_default_terminator || $stmt->getAttribute('allMatched', false)) {
                     return array_values(array_unique([...$control_actions, ...$all_case_actions]));
                 }
 
-                $control_actions = [...$control_actions, ...$all_case_actions];
+                $control_actions = array_values(array_unique([...$control_actions, ...$all_case_actions]));
             }
 
             if ($stmt instanceof PhpParser\Node\Stmt\Do_

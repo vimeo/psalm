@@ -69,4 +69,30 @@ final class ScopeAnalyzerTest extends TestCase
             ScopeAnalyzer::getControlActions($stmts, null, [], false),
         );
     }
+
+    #[Test]
+    public function testDeeplyNestedSwitchesDoNotDuplicateExitActions(): void
+    {
+        // A switch can return, break or continue an enclosing loop. Without deduplication,
+        // collecting both aggregated and escaping actions doubles the list at each level.
+        $body = '++$mode;';
+        for ($depth = 20; $depth >= 1; --$depth) {
+            $body = 'switch ($mode) {'
+                . 'case 0: break;'
+                . 'case 1: ' . $body . ' continue ' . ($depth + 1) . ';'
+                . 'default: return 1;'
+                . '}';
+        }
+
+        $parser = (new ParserFactory())->createForNewestSupportedVersion();
+        $stmts = $parser->parse('<?php while (true) {' . $body . '}');
+        self::assertNotNull($stmts);
+        self::assertCount(1, $stmts);
+        self::assertInstanceOf(While_::class, $stmts[0]);
+
+        self::assertSame(
+            [ScopeAnalyzer::ACTION_RETURN, ScopeAnalyzer::ACTION_NONE],
+            ScopeAnalyzer::getControlActions($stmts[0]->stmts, null, ['loop'], false),
+        );
+    }
 }
