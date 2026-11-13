@@ -2314,8 +2314,7 @@ final class SimpleAssertionReconciler extends Reconciler
                 $redundant = false;
             } elseif ($type instanceof TNamedObject) {
                 if (!self::isFinalObject($codebase, $type)) {
-                    $traversable = new TNamedObject('Traversable');
-                    $traversable_types[] = $type->addIntersectionType($traversable);
+                    $traversable_types[] = $type->addIntersectionType(new TNamedObject('Traversable'));
                 }
                 $redundant = false;
             } else {
@@ -3168,11 +3167,11 @@ final class SimpleAssertionReconciler extends Reconciler
 
     /**
      * Whether no subclass of the object can exist to add an interface it lacks.
-     * Unknown classes count as non-final: they are already reported as undefined.
+     * Unknown classes count as non-final unless the object is exact: they are already reported as undefined.
      *
      * @psalm-mutation-free
      */
-    private static function isFinalObject(Codebase $codebase, TNamedObject $type): bool
+    public static function isFinalObject(Codebase $codebase, TNamedObject $type): bool
     {
         if ($type instanceof TClosure
             || $type instanceof TAnonymousClassInstance
@@ -3182,10 +3181,13 @@ final class SimpleAssertionReconciler extends Reconciler
         }
 
         foreach ([$type, ...$type->extra_types] as $atomic) {
-            if ($atomic instanceof TNamedObject
-                && $codebase->classlike_storage_provider->has($atomic->value)
-                && $codebase->classlike_storage_provider->get($atomic->value)->final
-            ) {
+            if (!$atomic instanceof TNamedObject || !$codebase->classlike_storage_provider->has($atomic->value)) {
+                continue;
+            }
+
+            $storage = $codebase->classlike_storage_provider->get($atomic->value);
+
+            if ($storage->final && !$storage->final_from_docblock) {
                 return true;
             }
         }

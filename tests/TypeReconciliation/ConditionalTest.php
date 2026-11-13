@@ -1915,6 +1915,21 @@ final class ConditionalTest extends TestCase
                 ],
                 'ignored_issues' => ['MissingClosureReturnType'],
             ],
+            'docblockFinalClassCanBeExtended' => [
+                'code' => '<?php
+                    /** @final */
+                    class X {}
+
+                    function getX(): X {
+                        return new X();
+                    }
+
+                    $x = getX();
+                    $t = $x instanceof Traversable ? $x : null;',
+                'assertions' => [
+                    '$t===' => 'X&Traversable|null',
+                ],
+            ],
             'removeCallableString' => [
                 'code' => '<?php
                     $s = rand(0,1) ? "strlen" : [1];
@@ -5464,6 +5479,76 @@ final class ConditionalTest extends TestCase
                 'error_message' => 'RedundantCondition',
                 'error_levels' => [],
                 'php_version' => '8.1',
+            ],
+            'instanceofCountableOnEnum' => [
+                'code' => '<?php
+                    enum E {
+                        case A;
+                    }
+
+                    function f(E $e): void {
+                        if ($e instanceof Countable) {}
+                    }',
+                'error_message' => 'TypeDoesNotContainType - src' . DIRECTORY_SEPARATOR
+                    . 'somefile.php:7:29 - Type E for $e is never Countable',
+                'error_levels' => [],
+                'php_version' => '8.1',
+            ],
+            'instanceofTraversableOnEnum' => [
+                'code' => '<?php
+                    enum E {
+                        case A;
+                    }
+
+                    function f(E $e): void {
+                        if ($e instanceof Traversable) {}
+                    }',
+                'error_message' => 'TypeDoesNotContainType - src' . DIRECTORY_SEPARATOR
+                    . 'somefile.php:7:29 - Type E for $e is never Traversable',
+                'error_levels' => [],
+                'php_version' => '8.1',
+            ],
+            'isCountableOnEnum' => [
+                'code' => '<?php
+                    enum E {
+                        case A;
+                    }
+
+                    function f(E $e): void {
+                        if (is_countable($e)) {}
+                    }',
+                'error_message' => 'TypeDoesNotContainType - src' . DIRECTORY_SEPARATOR
+                    . 'somefile.php:7:29 - Type E for $e is never countable',
+                'error_levels' => [],
+                'php_version' => '8.1',
+            ],
+            'instanceofCountableOnExactClass' => [
+                'code' => '<?php
+                    $x = new stdClass();
+                    if ($x instanceof Countable) {}',
+                'error_message' => 'TypeDoesNotContainType - src' . DIRECTORY_SEPARATOR
+                    . 'somefile.php:3:25 - Type stdClass for $x is never Countable',
+            ],
+            'isIterableOnExactGenericClassWithoutArgs' => [
+                'code' => '<?php
+                    /** @template T */
+                    class Box {}
+
+                    $x = new Box();
+                    if (is_iterable($x)) {}',
+                'error_message' => 'TypeDoesNotContainType - src' . DIRECTORY_SEPARATOR
+                    . 'somefile.php:6:25 - Type Box<mixed> for $x is never iterable',
+            ],
+            'isIterableOnNewSelf' => [
+                'code' => '<?php
+                    class Me {
+                        public function f(): void {
+                            $x = new self();
+                            if (is_iterable($x)) {}
+                        }
+                    }',
+                'error_message' => 'TypeDoesNotContainType - src' . DIRECTORY_SEPARATOR
+                    . 'somefile.php:5:33 - Type Me for $x is never iterable',
             ],
         ];
     }

@@ -70,6 +70,7 @@ use Psalm\Type\Atomic\TTypeVariable;
 use Psalm\Type\Reconciler;
 use Psalm\Type\Union;
 
+use function array_all;
 use function array_diff_key;
 use function array_intersect_key;
 use function array_keys;
@@ -474,6 +475,29 @@ final class AssertionReconciler extends Reconciler
 
             if ($acceptable_atomic_types) {
                 return new Union($acceptable_atomic_types);
+            }
+
+            if ($code_location
+                && $key !== null
+                && !$assertion->hasEquality()
+                && array_all(
+                    $existing_var_type->getAtomicTypes(),
+                    static fn(Atomic $atomic): bool => $atomic instanceof TNamedObject
+                        && $codebase->classOrInterfaceOrEnumExists($atomic->value),
+                )
+            ) {
+                self::triggerIssueForImpossible(
+                    $existing_var_type,
+                    $old_var_type_string,
+                    $key,
+                    $assertion,
+                    false,
+                    $negated,
+                    $code_location,
+                    $suppressed_issues,
+                );
+
+                $failed_reconciliation = Reconciler::RECONCILIATION_EMPTY;
             }
         } elseif (!$new_type_part instanceof TMixed) {
             $any_scalar_type_match_found = false;
@@ -2032,8 +2056,8 @@ final class AssertionReconciler extends Reconciler
         }
 
         foreach ($existing_names as $existing_name) {
-            if (!$codebase->classOrInterfaceExists($existing_name)
-                || !$codebase->classOrInterfaceExists($new_type_part->value)
+            if (!$codebase->classOrInterfaceOrEnumExists($existing_name)
+                || !$codebase->classOrInterfaceOrEnumExists($new_type_part->value)
             ) {
                 continue;
             }
@@ -2051,11 +2075,11 @@ final class AssertionReconciler extends Reconciler
                 ) {
                     return false;
                 }
-            } elseif ($existing_is_class && $existing_storage->final) {
+            } elseif ($existing_is_class && SimpleAssertionReconciler::isFinalObject($codebase, $existing_type_part)) {
                 if (!$codebase->classImplements($existing_name, $new_type_part->value)) {
                     return false;
                 }
-            } elseif ($new_is_class && $new_storage->final) {
+            } elseif ($new_is_class && SimpleAssertionReconciler::isFinalObject($codebase, $new_type_part)) {
                 if (!$codebase->classImplements($new_type_part->value, $existing_name)) {
                     return false;
                 }
