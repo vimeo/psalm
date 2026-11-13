@@ -5480,6 +5480,42 @@ final class ConditionalTest extends TestCase
                 'error_levels' => [],
                 'php_version' => '8.1',
             ],
+            'negatedInstanceofTraversableOnFinalClass' => [
+                'code' => '<?php
+                    final class H {}
+
+                    function f(H $h): void {
+                        if (!$h instanceof Traversable) {
+                            return;
+                        }
+                    }',
+                'error_message' => 'RedundantCondition - src' . DIRECTORY_SEPARATOR
+                    . 'somefile.php:5:30 - Type H for $h is never Traversable',
+            ],
+            'negatedIsCountableOnFinalClass' => [
+                'code' => '<?php
+                    final class H {}
+
+                    function f(H $h): void {
+                        if (!is_countable($h)) {
+                            return;
+                        }
+                    }',
+                'error_message' => 'RedundantCondition - src' . DIRECTORY_SEPARATOR
+                    . 'somefile.php:5:30 - Type H for $h is never countable',
+            ],
+            'negatedIsIterableOnFinalClass' => [
+                'code' => '<?php
+                    final class H {}
+
+                    function f(H $h): void {
+                        if (!is_iterable($h)) {
+                            return;
+                        }
+                    }',
+                'error_message' => 'RedundantCondition - src' . DIRECTORY_SEPARATOR
+                    . 'somefile.php:5:30 - Type H for $h is never iterable',
+            ],
             'instanceofCountableOnEnum' => [
                 'code' => '<?php
                     enum E {
