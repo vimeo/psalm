@@ -27,7 +27,6 @@ use function count;
 use function define;
 use function dirname;
 use function extension_loaded;
-use function fgets;
 use function file_exists;
 use function file_get_contents;
 use function file_put_contents;
@@ -44,9 +43,11 @@ use function json_decode;
 use function preg_last_error_msg;
 use function preg_replace;
 use function preg_split;
+use function putenv;
 use function realpath;
 use function str_ends_with;
 use function str_starts_with;
+use function stream_get_contents;
 use function stream_get_meta_data;
 use function stream_isatty;
 use function stream_set_blocking;
@@ -279,7 +280,7 @@ final class CliUtils
                 continue;
             }
 
-            if ($input_path[0] === '-' && $input_path[2] === '=') {
+            if (strlen($input_path) > 2 && $input_path[0] === '-' && $input_path[2] === '=') {
                 continue;
             }
 
@@ -311,14 +312,14 @@ final class CliUtils
             /** @var string */
             $input_path = $input_paths[$i];
 
-            if ($input_path[0] === '-' && strlen($input_path) === 2) {
+            if (str_starts_with($input_path, '-') && strlen($input_path) === 2) {
                 if ($input_path[1] === 'c' || $input_path[1] === 'f' || $input_path[1] === 'r') {
                     ++$i;
                 }
                 continue;
             }
 
-            if ($input_path[0] === '-' && $input_path[2] === '=') {
+            if (strlen($input_path) > 2 && $input_path[0] === '-' && $input_path[2] === '=') {
                 continue;
             }
 
@@ -352,7 +353,7 @@ final class CliUtils
         }
 
         foreach ($filtered_input_paths as $path_to_check) {
-            if ($path_to_check[0] === '-') {
+            if (str_starts_with($path_to_check, '-')) {
                 fwrite(STDERR, 'Invalid usage, expecting psalm [options] [file...]' . PHP_EOL);
                 exit(1);
             }
@@ -382,6 +383,10 @@ final class CliUtils
     /**
      * Reads a whitespace-separated list of paths to analyse from STDIN (used with `psalm -`).
      *
+     * `-` is an explicit request to read STDIN, so this waits for it to end. STDIN can be read only once, but
+     * the paths are needed by the Config, by the CLI, and by the process that Psalm restarts into after the first
+     * two have read them: the first read leaves them in the environment, which the restarted process inherits.
+     *
      * The paths are supplied by the (trusted) user invoking the CLI, so the input taint that
      * the STDIN stream carries is escaped here.
      *
@@ -390,32 +395,33 @@ final class CliUtils
      */
     private static function getPathsToCheckFromStdin(): ?array
     {
-        $meta = stream_get_meta_data(STDIN);
-        stream_set_blocking(STDIN, false);
+        $stdin = getenv('PSALM_STDIN_PATHS');
 
-        try {
-            $stdin = fgets(STDIN);
+        if ($stdin === false) {
+            $meta = stream_get_meta_data(STDIN);
+            stream_set_blocking(STDIN, true);
 
-            if ($stdin === false) {
-                return null;
+            try {
+                $stdin = stream_get_contents(STDIN);
+            } finally {
+                stream_set_blocking(STDIN, $meta['blocked']);
             }
 
-            $stdin = trim($stdin);
-
-            if ($stdin === '') {
-                return null;
-            }
-
-            $paths = preg_split('/\s+/', $stdin);
-
-            if ($paths === false) {
-                throw new RuntimeException('Invalid paths: ' . preg_last_error_msg());
-            }
-
-            return $paths;
-        } finally {
-            stream_set_blocking(STDIN, $meta['blocked']);
+            $stdin = trim((string) $stdin);
+            putenv('PSALM_STDIN_PATHS=' . $stdin);
         }
+
+        if ($stdin === '') {
+            return null;
+        }
+
+        $paths = preg_split('/\s+/', $stdin);
+
+        if ($paths === false) {
+            throw new RuntimeException('Invalid paths: ' . preg_last_error_msg());
+        }
+
+        return $paths;
     }
 
 

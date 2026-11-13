@@ -544,6 +544,58 @@ final class PsalmEndToEndTest extends TestCase
         $this->assertSame(2, $result['CODE']);
     }
 
+    public function testPsalmReadsThePathsToCheckFromStdinForADash(): void
+    {
+        $this->runPsalmInit(1);
+        $psalmXml = file_get_contents(self::$tmpDir . '/psalm.xml');
+        $psalmXml = str_replace('<psalm', '<psalm runTaintAnalysis="false"', (string)$psalmXml);
+        file_put_contents(self::$tmpDir . '/psalm.xml', $psalmXml);
+        file_put_contents(self::$tmpDir . '/src/Clean.php', "<?php\nfunction clean(): void {}\n");
+
+        // only the clean file is named on STDIN: FileWithErrors.php is in the project, but isn't analysed
+        $process = new Process(
+            [
+                PHP_BINARY,
+                $this->psalm,
+                '--output-format=console',
+                '--no-progress',
+                '-c=' . self::$tmpDir . '/psalm.xml',
+                '-',
+            ],
+            self::$tmpDir,
+            self::agentEnvVarsToUnset(),
+            self::$tmpDir . '/src/Clean.php' . PHP_EOL,
+        );
+        $process->run();
+
+        $this->assertStringNotContainsString('Uninitialized string offset', $process->getErrorOutput());
+        $this->assertStringContainsString('No errors found!', $process->getOutput());
+        $this->assertSame(0, $process->getExitCode());
+    }
+
+    public function testPsalmRejectsAnEmptyPathWithoutCrashing(): void
+    {
+        $this->runPsalmInit(1);
+
+        $process = new Process(
+            [
+                PHP_BINARY,
+                $this->psalm,
+                '--output-format=console',
+                '--no-progress',
+                '-c=' . self::$tmpDir . '/psalm.xml',
+                '',
+            ],
+            self::$tmpDir,
+            self::agentEnvVarsToUnset(),
+        );
+        $process->run();
+
+        $this->assertStringNotContainsString('Uninitialized string offset', $process->getErrorOutput());
+        $this->assertStringContainsString('Cannot locate', $process->getErrorOutput());
+        $this->assertSame(1, $process->getExitCode());
+    }
+
     public function testParseErrorIsReportedOnEveryRunWithAWarmCache(): void
     {
         $this->runPsalmInit(1);
