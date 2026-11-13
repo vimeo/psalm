@@ -18,6 +18,7 @@ use Psalm\Type\Atomic\TConditional;
 use Psalm\Type\Atomic\TLiteralString;
 use Psalm\Type\Union;
 
+use function array_key_exists;
 use function str_starts_with;
 use function strlen;
 use function substr;
@@ -53,17 +54,74 @@ final class ConditionalTaintSinks
             return;
         }
 
-        $codebase = $statements_analyzer->getCodebase();
-
         // an unpacked or unknown named argument may be given to any parameter: the conditions are not known, and any
         // argument may be given to the sink
         $args_by_param = TaintStore::getArgsByParam($storage, $args);
 
-        $template_result = new TemplateResult(
-            [],
-            $args_by_param === null ? [] : self::getParamBounds($statements_analyzer, $storage, $args_by_param),
-        );
+        $nodes_by_param = [];
+        $types_by_param = [];
+        foreach ($args_by_param ?? [] as $offset => $param_args) {
+            $nodes = [];
+            $type = null;
+            $is_type_known = true;
+            foreach ($param_args as $arg) {
+                $arg_type = $statements_analyzer->node_data->getType($arg->value);
+                if ($arg_type === null) {
+                    $is_type_known = false;
+                    continue;
+                }
 
+                foreach ($arg_type->parent_nodes as $parent_node) {
+                    $nodes[] = $parent_node;
+                }
+
+                $type = $type === null ? $arg_type : Type::combineUnionTypes($type, $arg_type);
+            }
+
+            $nodes_by_param[$offset] = $nodes;
+            // a parameter given an argument whose type isn't known has none
+            $types_by_param[$offset] = $is_type_known ? $type : null;
+        }
+
+        $all_nodes = [];
+        if ($args_by_param === null) {
+            foreach ($args as $arg) {
+                foreach ($statements_analyzer->node_data->getType($arg->value)?->parent_nodes ?? [] as $parent_node) {
+                    $all_nodes[] = $parent_node;
+                }
+            }
+        }
+
+        self::addSinks(
+            $statements_analyzer->getCodebase(),
+            $graph,
+            $storage,
+            self::getTemplateResult($storage, $args_by_param === null ? null : $types_by_param),
+            $cased_function_id,
+            $call_location,
+            $args_by_param === null ? null : $nodes_by_param,
+            $all_nodes,
+        );
+    }
+
+    /**
+     * Makes what a call gives the parameters with conditional sinks sinks of the taints their conditional types resolve
+     * to, given $template_result (see getTemplateResult())
+     *
+     * @param array<int, list<DataFlowNode>>|null $nodes_by_param the nodes of the arguments, by the offset of the
+     *                                                            parameter taking them; null if it isn't known
+     * @param list<DataFlowNode> $all_nodes the nodes of all the arguments, when $nodes_by_param is null
+     */
+    public static function addSinks(
+        Codebase $codebase,
+        TaintFlowGraph $graph,
+        FunctionLikeStorage $storage,
+        TemplateResult $template_result,
+        string $cased_function_id,
+        CodeLocation $call_location,
+        ?array $nodes_by_param,
+        array $all_nodes = [],
+    ): void {
         foreach ($storage->conditional_taint_sinks as $sink) {
             $type = TypeExpander::expandUnion(
                 $codebase,
@@ -76,8 +134,8 @@ final class ConditionalTaintSinks
             );
 
             $taints = self::getTaints($codebase, $type, $storage->location);
-            $sink_args = $args_by_param === null ? $args : ($args_by_param[$sink['param']] ?? []);
-            if ($taints === 0 || $sink_args === []) {
+            $sink_nodes = $nodes_by_param === null ? $all_nodes : ($nodes_by_param[$sink['param']] ?? []);
+            if ($taints === 0 || $sink_nodes === []) {
                 continue;
             }
 
@@ -88,28 +146,27 @@ final class ConditionalTaintSinks
 
             $graph->addSink($sink_node);
 
-            foreach ($sink_args as $arg) {
-                foreach ($statements_analyzer->node_data->getType($arg->value)?->parent_nodes ?? [] as $parent_node) {
-                    $graph->addPath($parent_node, $sink_node, 'arg');
-                }
+            foreach ($sink_nodes as $node) {
+                $graph->addPath($node, $sink_node, 'arg');
             }
         }
     }
 
     /**
      * The types of the arguments given to the parameters, as the lower bounds of the templates the conditional types
-     * name them by; the default value of a parameter not given one. A parameter whose type isn't known has none,
-     * which leaves both branches of a condition on it.
+     * (of sinks and escapes) name them by; the default value of a parameter not given one. A parameter whose type
+     * isn't known (null) has none, which leaves both branches of a condition on it.
      *
-     * @param array<int, list<Arg>> $args_by_param
-     * @return array<string, array<string, Union>>
-     * @psalm-external-mutation-free
+     * @param array<int, Union|null>|null $types_by_param by the offset of the parameter; null if which parameters
+     *                                                    the arguments are given to isn't known
+     * @psalm-mutation-free
      */
-    private static function getParamBounds(
-        StatementsAnalyzer $statements_analyzer,
-        FunctionLikeStorage $storage,
-        array $args_by_param,
-    ): array {
+    public static function getTemplateResult(FunctionLikeStorage $storage, ?array $types_by_param): TemplateResult
+    {
+        if ($types_by_param === null) {
+            return new TemplateResult([], []);
+        }
+
         $bounds = [];
 
         foreach ($storage->template_types ?? [] as $template_name => $template_bounds) {
@@ -123,18 +180,10 @@ final class ConditionalTaintSinks
                 continue;
             }
 
-            $type = null;
-            if (isset($args_by_param[$offset])) {
-                foreach ($args_by_param[$offset] as $arg) {
-                    $arg_type = $statements_analyzer->node_data->getType($arg->value);
-                    if ($arg_type === null) {
-                        continue 2;
-                    }
-
-                    $type = $type === null ? $arg_type : Type::combineUnionTypes($type, $arg_type);
-                }
-            } elseif ($param->default_type instanceof Union) {
-                $type = $param->default_type;
+            if (array_key_exists($offset, $types_by_param)) {
+                $type = $types_by_param[$offset];
+            } else {
+                $type = $param->default_type instanceof Union ? $param->default_type : null;
             }
 
             if ($type === null) {
@@ -146,7 +195,7 @@ final class ConditionalTaintSinks
             }
         }
 
-        return $bounds;
+        return new TemplateResult([], $bounds);
     }
 
     /**

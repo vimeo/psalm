@@ -31,6 +31,7 @@ use Psalm\Internal\Type\TemplateInferredTypeReplacer;
 use Psalm\Internal\Type\TemplateResult;
 use Psalm\Internal\Type\TypeExpander;
 use Psalm\Internal\Type\TypeVariableTracker;
+use Psalm\Plugin\EventHandler\Event\AddRemoveCallTaintsEvent;
 use Psalm\Plugin\EventHandler\Event\AddRemoveTaintsEvent;
 use Psalm\Storage\MethodStorage;
 use Psalm\Type;
@@ -355,6 +356,18 @@ final class MethodCallReturnTypeFetcher
 
             $result_added_taints = $dispatcher->dispatchAddTaints($event);
             $result_removed_taints = $dispatcher->dispatchRemoveTaints($event);
+
+            [$call_added_taints, $call_removed_taints] = $dispatcher->dispatchAddRemoveCallTaints(
+                new AddRemoveCallTaintsEvent(
+                    $statements_analyzer->getCodebase(),
+                    $cased_method_id,
+                    null,
+                    null,
+                    new CodeLocation($statements_analyzer->getSource(), $stmt),
+                ),
+            );
+            $result_added_taints |= $call_added_taints;
+            $result_removed_taints |= $call_removed_taints;
         }
 
         self::taintMethodCallResult(

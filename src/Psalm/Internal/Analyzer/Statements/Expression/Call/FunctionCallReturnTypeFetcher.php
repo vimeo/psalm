@@ -31,6 +31,7 @@ use Psalm\Internal\Type\TemplateBound;
 use Psalm\Internal\Type\TemplateInferredTypeReplacer;
 use Psalm\Internal\Type\TemplateResult;
 use Psalm\Internal\Type\TypeExpander;
+use Psalm\Plugin\EventHandler\Event\AddRemoveCallTaintsEvent;
 use Psalm\Plugin\EventHandler\Event\AddRemoveTaintsEvent;
 use Psalm\Plugin\EventHandler\Event\AfterFunctionCallAnalysisEvent;
 use Psalm\Storage\FunctionLikeParameter;
@@ -57,6 +58,7 @@ use UnexpectedValueException;
 use function array_values;
 use function count;
 use function explode;
+use function in_array;
 use function is_string;
 use function preg_match;
 use function preg_match_all;
@@ -1564,6 +1566,12 @@ final class FunctionCallReturnTypeFetcher
 
         $node_location = new CodeLocation($statements_analyzer->getSource(), $stmt);
 
+        [$call_added_taints, $call_removed_taints] = $codebase->config->eventDispatcher->dispatchAddRemoveCallTaints(
+            new AddRemoveCallTaintsEvent($codebase, $cased_function_id, null, null, $node_location),
+        );
+        $added_taints |= $call_added_taints;
+        $removed_taints |= $call_removed_taints;
+
         $specialization_location = TaintFlowGraph::isCallSpecialized(
             $taint_flow_graph,
             $codebase,
@@ -1837,33 +1845,104 @@ final class FunctionCallReturnTypeFetcher
                 $arg_indices = $arg_indices === [] ? [] : [$i];
             }
 
-            $param_name = $function_storage->params[$i]->name;
-            $path_removed_taints = isset(self::UNESCAPED_RETURN_FLOWS[$function_id][$param_name])
-                ? $removed_taints & ~$function_storage->removed_taints
-                : $removed_taints;
-
             foreach ($arg_indices as $arg_index) {
-                $function_param_sink = DataFlowNode::getForMethodArgument(
-                    $function_id,
-                    $arg_index,
+                self::addReturnFlow(
                     $function_storage,
-                    $specialization_location,
-                );
-
-                $graph->addNode($function_param_sink);
-
-                $graph->addPath(
-                    $function_param_sink,
-                    $function_call_node,
+                    $graph,
+                    $function_id,
+                    $i,
+                    $arg_index,
                     $path_type,
-                    $added_taints | $function_storage->added_taints,
-                    // what the native return type cannot hold, since PHP enforces it
-                    $path_removed_taints
-                        | ($function_storage->signature_return_type?->getTaintsToRemove($input_taints) ?? 0)
-                        | ($arg_removed_taints[$arg_index] ?? 0),
+                    $specialization_location,
+                    $function_call_node,
+                    $input_taints,
+                    $removed_taints,
+                    $added_taints,
+                    $arg_removed_taints[$arg_index] ?? 0,
                 );
             }
         }
+    }
+
+    /**
+     * Like taintUsingFlows(), for a call whose arguments go into the nodes of the parameters taking them, those
+     * of $given_params (see TaintedCall): each `@psalm-flow` from one of them is a path from its node.
+     *
+     * @param list<int> $given_params the offsets of the parameters given an argument
+     * @param int $input_taints the taints of user input (see Codebase::getInputTaints())
+     * @psalm-capabilities read-props|write-this-props|write-props|write-refs
+     */
+    public static function taintUsingParamFlows(
+        FunctionLikeStorage $function_storage,
+        TaintFlowGraph $graph,
+        string $function_id,
+        array $given_params,
+        ?CodeLocation $specialization_location,
+        DataFlowNode $function_call_node,
+        int $input_taints,
+        int $removed_taints,
+    ): void {
+        foreach ($function_storage->return_source_params as $i => $path_type) {
+            if (in_array($i, $given_params, true)) {
+                self::addReturnFlow(
+                    $function_storage,
+                    $graph,
+                    $function_id,
+                    $i,
+                    $i,
+                    $path_type,
+                    $specialization_location,
+                    $function_call_node,
+                    $input_taints,
+                    $removed_taints,
+                );
+            }
+        }
+    }
+
+    /**
+     * The path of a `@psalm-flow` of the parameter at $param_offset from the node of the argument at $arg_index
+     *
+     * @psalm-capabilities read-props|write-this-props|write-props|write-refs
+     */
+    private static function addReturnFlow(
+        FunctionLikeStorage $function_storage,
+        TaintFlowGraph $graph,
+        string $function_id,
+        int $param_offset,
+        int $arg_index,
+        string $path_type,
+        ?CodeLocation $specialization_location,
+        DataFlowNode $function_call_node,
+        int $input_taints,
+        int $removed_taints,
+        int $added_taints = 0,
+        int $arg_removed_taints = 0,
+    ): void {
+        $param_name = $function_storage->params[$param_offset]->name;
+        $path_removed_taints = isset(self::UNESCAPED_RETURN_FLOWS[$function_id][$param_name])
+            ? $removed_taints & ~$function_storage->removed_taints
+            : $removed_taints;
+
+        $function_param_sink = DataFlowNode::getForMethodArgument(
+            $function_id,
+            $arg_index,
+            $function_storage,
+            $specialization_location,
+        );
+
+        $graph->addNode($function_param_sink);
+
+        $graph->addPath(
+            $function_param_sink,
+            $function_call_node,
+            $path_type,
+            $added_taints | $function_storage->added_taints,
+            // what the native return type cannot hold, since PHP enforces it
+            $path_removed_taints
+                | ($function_storage->signature_return_type?->getTaintsToRemove($input_taints) ?? 0)
+                | $arg_removed_taints,
+        );
     }
 
     /**

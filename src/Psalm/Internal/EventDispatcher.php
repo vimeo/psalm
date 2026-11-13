@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Psalm\Internal;
 
+use Psalm\Plugin\EventHandler\AddCallTaintsInterface;
 use Psalm\Plugin\EventHandler\AddTaintsInterface;
 use Psalm\Plugin\EventHandler\AfterAnalysisInterface;
 use Psalm\Plugin\EventHandler\AfterClassLikeAnalysisInterface;
@@ -22,6 +23,7 @@ use Psalm\Plugin\EventHandler\BeforeExpressionAnalysisInterface;
 use Psalm\Plugin\EventHandler\BeforeFileAnalysisInterface;
 use Psalm\Plugin\EventHandler\BeforeStatementAnalysisInterface;
 use Psalm\Plugin\EventHandler\ClassFilePathProviderInterface;
+use Psalm\Plugin\EventHandler\Event\AddRemoveCallTaintsEvent;
 use Psalm\Plugin\EventHandler\Event\AddRemoveTaintsEvent;
 use Psalm\Plugin\EventHandler\Event\AfterAnalysisEvent;
 use Psalm\Plugin\EventHandler\Event\AfterClassLikeAnalysisEvent;
@@ -40,6 +42,7 @@ use Psalm\Plugin\EventHandler\Event\BeforeExpressionAnalysisEvent;
 use Psalm\Plugin\EventHandler\Event\BeforeFileAnalysisEvent;
 use Psalm\Plugin\EventHandler\Event\BeforeStatementAnalysisEvent;
 use Psalm\Plugin\EventHandler\Event\StringInterpreterEvent;
+use Psalm\Plugin\EventHandler\RemoveCallTaintsInterface;
 use Psalm\Plugin\EventHandler\RemoveTaintsInterface;
 use Psalm\Plugin\EventHandler\StringInterpreterInterface;
 use Psalm\Type\Atomic\TLiteralString;
@@ -202,6 +205,20 @@ final class EventDispatcher
     public array $remove_taints_checks = [];
 
     /**
+     * Static methods to be called to see what taints the values going into and coming out of a call take
+     *
+     * @var list<class-string<AddCallTaintsInterface>>
+     */
+    public array $add_call_taints_checks = [];
+
+    /**
+     * Static methods to be called to see what taints the values going into and coming out of a call lose
+     *
+     * @var list<class-string<RemoveCallTaintsInterface>>
+     */
+    public array $remove_call_taints_checks = [];
+
+    /**
      * @param class-string $class
      * @psalm-external-mutation-free
      */
@@ -281,6 +298,14 @@ final class EventDispatcher
 
         if (is_subclass_of($class, RemoveTaintsInterface::class)) {
             $this->remove_taints_checks[] = $class;
+        }
+
+        if (is_subclass_of($class, AddCallTaintsInterface::class)) {
+            $this->add_call_taints_checks[] = $class;
+        }
+
+        if (is_subclass_of($class, RemoveCallTaintsInterface::class)) {
+            $this->remove_call_taints_checks[] = $class;
         }
 
         if (is_subclass_of($class, ClassFilePathProviderInterface::class)) {
@@ -474,5 +499,25 @@ final class EventDispatcher
         }
 
         return $removed_taints;
+    }
+
+    /**
+     * The taints the handlers add to and remove from a value going into or coming out of a call
+     *
+     * @return array{int, int} added, removed
+     */
+    public function dispatchAddRemoveCallTaints(AddRemoveCallTaintsEvent $event): array
+    {
+        $added_taints = 0;
+        foreach ($this->add_call_taints_checks as $handler) {
+            $added_taints |= $handler::addCallTaints($event);
+        }
+
+        $removed_taints = 0;
+        foreach ($this->remove_call_taints_checks as $handler) {
+            $removed_taints |= $handler::removeCallTaints($event);
+        }
+
+        return [$added_taints, $removed_taints];
     }
 }

@@ -401,6 +401,10 @@ Plugins can add flows that annotations can't express with these `Codebase` metho
   parameter at `$offset` and of the object it runs on, for a call the code doesn't show (e.g. a framework's). Given
   the location of the call, these are the nodes of that call if Psalm tells its calls apart (see
   `@psalm-taint-specialize`); the receiver node only exists then (null otherwise).
++ `addTaintedCall($function, $argument_nodes, $argument_types, $call_location, $source = null)`: wires a call of a
+  function or a method from the nodes and the types of its arguments, as Psalm wires a PHP call of it (sinks,
+  conditional sinks and escapes, flows, specialization), and returns the node of what it returns. See
+  [Wiring calls into the taint graph](../running_psalm/plugins/authoring_plugins.md#wiring-calls-into-the-taint-graph).
 + `tracksTaintFlow($source)`: false when taints aren't tracked there, e.g. when `TaintedInput` is suppressed. The
   methods above then add nothing.
 

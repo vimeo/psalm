@@ -44,6 +44,7 @@ use Psalm\Internal\Codebase\Reflection;
 use Psalm\Internal\Codebase\Scanner;
 use Psalm\Internal\Codebase\TaintFlowGraph;
 use Psalm\Internal\Codebase\TaintStore;
+use Psalm\Internal\Codebase\TaintedCall;
 use Psalm\Internal\DataFlow\DataFlowNode;
 use Psalm\Internal\LanguageServer\PHPMarkdownContent;
 use Psalm\Internal\LanguageServer\Reference;
@@ -2985,6 +2986,99 @@ final class Codebase
         }
 
         return $node;
+    }
+
+    /**
+     * Wires a call of the function or method $function_id (`function_name`, `Class::method`) into the taint graph as
+     * Psalm wires a PHP call of it, for a plugin analyzing calls PHP code doesn't make (a template calling a PHP
+     * function, a configuration naming a method), and returns the node of what the call returns. To make an
+     * expression's value come from it, use `$type->addParentNodes([$node->id => $node])`.
+     *
+     * Each argument goes into the parameter taking it (the variadic parameter takes those after it): into its body,
+     * into the sinks of its `@psalm-taint-sink`, and into those of a conditional `@psalm-taint-sink (<conditional>)`
+     * that $argument_types resolve. The call returns what the body returns, what its `@psalm-flow` and its
+     * `@psalm-taint-source` give, without what it escapes, including what a conditional
+     * `@psalm-taint-escape (<conditional>)` that $argument_types resolve escapes. A call of a function-like whose calls
+     * Psalm specializes (`@psalm-taint-specialize`) takes and returns only its own. AddCallTaintsInterface and
+     * RemoveCallTaintsInterface handlers decide what each argument, and what the call returns, take and lose.
+     * A method call goes to the method only, not to the methods overriding it: wire a call of each to go to them too.
+     *
+     * Null without taint analysis, while the taints of $source are not tracked (see tracksTaintFlow()), or if
+     * $function_id has no storage. A function is looked up from the file of $call_location, then among all functions.
+     *
+     * @param list<list<DataFlowNode>> $argument_nodes the nodes each argument comes from, by position
+     * @param array<int, Union> $argument_types the types of the arguments, by position: a literal type decides the
+     *                                          conditions on the parameter taking it, an argument without a type none
+     */
+    public function addTaintedCall(
+        string $function_id,
+        array $argument_nodes,
+        array $argument_types,
+        CodeLocation $call_location,
+        ?StatementsSource $source = null,
+    ): ?DataFlowNode {
+        $graph = $source === null ? $this->taint_flow_graph : $this->getTaintFlowGraphOf($source);
+        if ($graph === null) {
+            return null;
+        }
+
+        if (MethodIdentifier::isValidMethodIdReference($function_id)) {
+            $method_id = MethodIdentifier::wrap($function_id);
+            $declaring_method_id = $this->methods->getDeclaringMethodId($method_id);
+            if ($declaring_method_id === null) {
+                return null;
+            }
+
+            $storage = $this->methods->getStorage($declaring_method_id);
+            // the nodes of the parameters the body of the method takes
+            $cased_function_id = FunctionLikeAnalyzer::getCasedBodyMethodId($this, $method_id);
+        } else {
+            $cased_function_id = ltrim($function_id, '\\');
+            $function_id_lc = strtolower($cased_function_id);
+            $storage = $function_id_lc === ''
+                ? null
+                : $this->getFunctionStorageOfTaintedCall($function_id_lc, $call_location);
+            if ($storage === null) {
+                return null;
+            }
+        }
+
+        return TaintedCall::wire(
+            $this,
+            $graph,
+            $cased_function_id,
+            $storage,
+            $argument_nodes,
+            $argument_types,
+            $call_location,
+        );
+    }
+
+    /**
+     * @param non-empty-lowercase-string $function_id
+     */
+    private function getFunctionStorageOfTaintedCall(
+        string $function_id,
+        CodeLocation $call_location,
+    ): ?FunctionLikeStorage {
+        try {
+            return $this->functions->getStorage(
+                null,
+                $function_id,
+                $call_location->file_path,
+                $call_location->file_path,
+            );
+        } catch (InvalidArgumentException | UnexpectedValueException) {
+            // not a function of the file of the call
+        }
+
+        foreach (FileStorageProvider::getAll() as $file_storage) {
+            if (isset($file_storage->functions[$function_id])) {
+                return $file_storage->functions[$function_id];
+            }
+        }
+
+        return null;
     }
 
     /**

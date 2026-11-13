@@ -49,6 +49,7 @@ use Psalm\Issue\PossiblyInvalidArgument;
 use Psalm\Issue\PossiblyNullArgument;
 use Psalm\IssueBuffer;
 use Psalm\Node\VirtualArg;
+use Psalm\Plugin\EventHandler\Event\AddRemoveCallTaintsEvent;
 use Psalm\Plugin\EventHandler\Event\AddRemoveTaintsEvent;
 use Psalm\Storage\FunctionLikeParameter;
 use Psalm\Storage\FunctionLikeStorage;
@@ -2062,6 +2063,12 @@ final class ArgumentAnalyzer
 
         $added_taints = $codebase->config->eventDispatcher->dispatchAddTaints($event);
         $removed_taints |= $codebase->config->eventDispatcher->dispatchRemoveTaints($event);
+
+        [$call_added_taints, $call_removed_taints] = $codebase->config->eventDispatcher->dispatchAddRemoveCallTaints(
+            new AddRemoveCallTaintsEvent($codebase, $cased_method_id, $argument_offset, $input_type, $arg_location),
+        );
+        $added_taints |= $call_added_taints;
+        $removed_taints |= $call_removed_taints;
 
         // printed by code only running from the command line: to a terminal
         if ($expr->getAttribute(CliOutput::PRINTED_ATTRIBUTE) === true) {
