@@ -1,12 +1,12 @@
 # ImplicitFloatToIntCast
 
-Emitted when a float is an operand of a bitwise operation (`|`, `&`, `^`, `<<`, `>>`, `~`), which converts it to an int
+Emitted when a float whose value is known to lose something is an operand of a bitwise operation (`|`, `&`, `^`, `<<`, `>>`, `~`), which converts it to an int
 
 ```php
 <?php
 
-function setFlag(float $flags): int {
-    return $flags | 1;
+function setFlag(): int {
+    return 1.5 | 1;
 }
 ```
 
@@ -21,9 +21,9 @@ Convert the value explicitly, so the loss is intended:
 ```php
 <?php
 
-function setFlag(float $flags): int {
-    return (int) $flags | 1;
+function setFlag(): int {
+    return (int) 1.5 | 1;
 }
 ```
 
-A float literal without a fraction (`2.0 | 1`) is not reported.
+A float of unknown value (`float $flags`, `round($x)`) and a float literal without a fraction (`2.0 | 1`) are not reported.

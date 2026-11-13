@@ -1497,24 +1497,18 @@ final class BinaryOperationTest extends TestCase
                 ],
                 'ignored_issues' => ['ImplicitFloatToIntCast'],
             ],
-            'bitwiseOperationsOfWholeNumberFunctionsOfKnownArgumentsAreNotReported' => [
+            'bitwiseOperationsOfFloatsOfUnknownValueAreNotReported' => [
                 'code' => <<<'PHP'
                     <?php
-                    /**
-                     * @param int<0, 255> $r
-                     * @param int<0, 255> $g
-                     * @param int<0, 255> $b
-                     */
-                    function colors(int $r, int $g, int $b): int {
-                        $a = round($b) << 2 | (round($g) << 1) | round($r);
-                        $f = floor($r) & 1;
-                        $c = ceil($g) ^ 1;
-                        $o = octdec('377') | 2;
+                    function colors(int $r, int $g, int $b, string $octal, float $x): int {
+                        $a = round($b / 255) << 2 | (round($g / 255) << 1) | round($r / 255);
+                        $f = floor($r / 2) & 1;
+                        $o = octdec($octal) | 2;
                         $h = hexdec('ff') & 255;
-                        $d = bindec('1010') >> 1;
-                        $l = floor(7.5) | ceil(-1.2) | round(2.5, 0) | \floor(3);
+                        $l = $x | 1;
+                        $m = ~$x;
 
-                        return $a + $f + $c + $o + $h + $d + $l;
+                        return $a + $f + $o + $h + $l + $m;
                     }
                     PHP,
                 'assertions' => [],
@@ -2440,66 +2434,6 @@ final class BinaryOperationTest extends TestCase
     public static function providerInvalidCodeParse(): iterable
     {
         return [
-            'bitwiseOperationsOfFunctionsThatMayLoseSomethingAreReported' => [
-                'code' => '<?php
-                    function f(string $digits, float $x): int {
-                        return round($x, 2) | 1;
-                    }',
-                'error_message' => 'ImplicitFloatToIntCast',
-                'error_levels' => [],
-                'php_version' => '8.3',
-            ],
-            'bitwiseOperationOfAFloorOfAnUnknownFloatIsReported' => [
-                'code' => '<?php
-                    function f(float $x): int {
-                        return floor($x / 2) | 1;
-                    }',
-                'error_message' => 'ImplicitFloatToIntCast',
-                'error_levels' => [],
-                'php_version' => '8.3',
-            ],
-            'bitwiseOperationOfAFloorOfTheLargestIntIsReported' => [
-                'code' => '<?php
-                    function f(): int {
-                        return floor(PHP_INT_MAX) | 1;
-                    }',
-                'error_message' => 'ImplicitFloatToIntCast',
-                'error_levels' => [],
-                'php_version' => '8.3',
-            ],
-            'bitwiseOperationOfAFloorOfANamespacedFunctionIsReported' => [
-                'code' => '<?php
-                    namespace App;
-
-                    function floor(int $n): float {
-                        return $n + 0.5;
-                    }
-
-                    function f(): int {
-                        return floor(3) | 1;
-                    }',
-                'error_message' => 'ImplicitFloatToIntCast',
-                'error_levels' => [],
-                'php_version' => '8.3',
-            ],
-            'bitwiseOperationOfAFloorOutOfTheRangeOfAnIntIsReported' => [
-                'code' => '<?php
-                    function f(): int {
-                        return floor(1e30) | 1;
-                    }',
-                'error_message' => 'ImplicitFloatToIntCast',
-                'error_levels' => [],
-                'php_version' => '8.3',
-            ],
-            'bitwiseOperationOfAnOctalNumberOutOfTheRangeOfAnIntIsReported' => [
-                'code' => '<?php
-                    function f(): int {
-                        return octdec("7777777777777777777777") | 1;
-                    }',
-                'error_message' => 'ImplicitFloatToIntCast',
-                'error_levels' => [],
-                'php_version' => '8.3',
-            ],
             'interpolatedStringEndingInZeroIsNotNonFalsy' => [
                 'code' => '<?php
                     /** @return non-falsy-string */
@@ -2681,72 +2615,56 @@ final class BinaryOperationTest extends TestCase
             ],
             'bitwiseOrWithAFloatOnTheLeft' => [
                 'code' => '<?php
-                    /** @var float $f */
                     $f = 1.5;
-                    /** @var int $i */
                     $i = 1;
                     echo $f | $i;',
                 'error_message' => 'ImplicitFloatToIntCast',
             ],
             'bitwiseAndWithAFloatOnTheRight' => [
                 'code' => '<?php
-                    /** @var float $f */
                     $f = 1.5;
-                    /** @var int $i */
                     $i = 1;
                     echo $i & $f;',
                 'error_message' => 'ImplicitFloatToIntCast',
             ],
             'bitwiseXorWithAFloat' => [
                 'code' => '<?php
-                    /** @var float $f */
                     $f = 1.5;
-                    /** @var int $i */
                     $i = 1;
                     echo $f ^ $i;',
                 'error_message' => 'ImplicitFloatToIntCast',
             ],
             'shiftLeftOfAFloat' => [
                 'code' => '<?php
-                    /** @var float $f */
                     $f = 1.5;
-                    /** @var int $i */
                     $i = 1;
                     echo $f << 1;',
                 'error_message' => 'ImplicitFloatToIntCast',
             ],
             'shiftRightByAFloat' => [
                 'code' => '<?php
-                    /** @var float $f */
                     $f = 1.5;
-                    /** @var int $i */
                     $i = 1;
                     echo 1 >> $f;',
                 'error_message' => 'ImplicitFloatToIntCast',
             ],
             'bitwiseNotOfAFloat' => [
                 'code' => '<?php
-                    /** @var float $f */
                     $f = 1.5;
-                    /** @var int $i */
                     $i = 1;
                     echo ~$f;',
                 'error_message' => 'ImplicitFloatToIntCast',
             ],
             'bitwiseOrWithAFractionalLiteral' => [
                 'code' => '<?php
-                    /** @var float $f */
                     $f = 1.5;
-                    /** @var int $i */
                     $i = 1;
                     echo 1.5 | 1;',
                 'error_message' => 'ImplicitFloatToIntCast',
             ],
             'bitwiseAssignmentWithAFloat' => [
                 'code' => '<?php
-                    /** @var float $f */
                     $f = 1.5;
-                    /** @var int $i */
                     $i = 1;
                     $x = 1;
                     $x |= $f;',
@@ -2754,9 +2672,7 @@ final class BinaryOperationTest extends TestCase
             ],
             'shiftAssignmentWithAFloat' => [
                 'code' => '<?php
-                    /** @var float $f */
                     $f = 1.5;
-                    /** @var int $i */
                     $i = 1;
                     $x = 1;
                     $x <<= $f;',
@@ -2764,20 +2680,16 @@ final class BinaryOperationTest extends TestCase
             ],
             'bitwiseNotOfAFractionalLiteral' => [
                 'code' => '<?php
-                    /** @var float $f */
                     $f = 1.5;
-                    /** @var int $i */
                     $i = 1;
                     echo ~1.5;',
                 'error_message' => 'ImplicitFloatToIntCast',
             ],
-            'bitwiseAndWithAnIntOrFloat' => [
+            'bitwiseAndWithAFractionalLiteralOrAnInt' => [
                 'code' => '<?php
-                    /** @var float $f */
                     $f = 1.5;
-                    /** @var int $i */
                     $i = 1;
-                    /** @var int|float $n */
+                    /** @var 1.5|1 $n */
                     $n = 1;
                     echo $n & 1;',
                 'error_message' => 'ImplicitFloatToIntCast',

@@ -63,13 +63,16 @@ final class BitwiseNotAnalyzer
                     if ($type_part instanceof TLiteralFloat && ArithmeticOpAnalyzer::isExactInt($type_part->value)) {
                         $type_part = new TLiteralInt(~(int) $type_part->value);
                     } else {
-                        IssueBuffer::maybeAdd(
-                            new ImplicitFloatToIntCast(
-                                'The operand of a bitwise operation is converted to an int, got ' . $type_part->getId(),
-                                new CodeLocation($statements_analyzer, $stmt->expr),
-                            ),
-                            $statements_analyzer->getSuppressedIssues(),
-                        );
+                        if ($type_part instanceof TLiteralFloat) {
+                            IssueBuffer::maybeAdd(
+                                new ImplicitFloatToIntCast(
+                                    'The operand of a bitwise operation is converted to an int, got '
+                                        . $type_part->getId(),
+                                    new CodeLocation($statements_analyzer, $stmt->expr),
+                                ),
+                                $statements_analyzer->getSuppressedIssues(),
+                            );
+                        }
 
                         $type_part = new TInt;
                     }

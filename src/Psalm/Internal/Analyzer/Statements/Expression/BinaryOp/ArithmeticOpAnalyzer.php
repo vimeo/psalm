@@ -52,10 +52,8 @@ use Psalm\Type\Atomic\TTemplateParam;
 use Psalm\Type\Atomic\TTypeVariable;
 use Psalm\Type\Union;
 
-use function abs;
 use function array_diff_key;
 use function array_values;
-use function ceil;
 use function count;
 use function floor;
 use function is_int;
@@ -63,7 +61,6 @@ use function is_numeric;
 use function max;
 use function min;
 use function preg_match;
-use function strlen;
 use function strrpos;
 use function strtolower;
 use function substr;
@@ -1167,118 +1164,8 @@ final class ArithmeticOpAnalyzer
     }
 
     /**
-     * A call of PHP's floor(), ceil(), round() without decimals, hexdec(), octdec() or bindec() whose argument Psalm
-     * knows to put the result in the range of an int, so the conversion loses nothing.
-     */
-    private static function isCallOfAFunctionReturningAnExactInt(
-        StatementsSource $statements_source,
-        PhpParser\Node\Expr $expr,
-    ): bool {
-        if (!$expr instanceof PhpParser\Node\Expr\FuncCall
-            || !$expr->name instanceof PhpParser\Node\Name
-            || !self::isGlobalFunctionName($statements_source, $expr->name)
-        ) {
-            return false;
-        }
-
-        $function_name = strtolower($expr->name->name);
-        $args = $expr->getArgs();
-
-        if (!isset($args[0])) {
-            return false;
-        }
-
-        $node_type_provider = $statements_source->getNodeTypeProvider();
-        $argument_type = $node_type_provider->getType($args[0]->value);
-
-        if ($argument_type === null) {
-            return false;
-        }
-
-        if ($function_name === 'floor' || $function_name === 'ceil' || $function_name === 'round') {
-            // round()'s second argument is the number of decimals
-            if ($function_name === 'round' && isset($args[1])) {
-                $decimals_type = $node_type_provider->getType($args[1]->value);
-
-                if ($decimals_type === null
-                    || !$decimals_type->isSingleIntLiteral()
-                    || $decimals_type->getSingleIntLiteral()->value !== 0
-                ) {
-                    return false;
-                }
-            }
-
-            foreach ($argument_type->getAtomicTypes() as $atomic_type) {
-                if (!self::isNumberWithAnExactWholePart($atomic_type)) {
-                    return false;
-                }
-            }
-
-            return true;
-        }
-
-        // the digits that fit in an int: 15 hexadecimal, 20 octal (3 bits each), 62 binary
-        $max_digits = match ($function_name) {
-            'hexdec' => 15,
-            'octdec' => 20,
-            'bindec' => 62,
-            default => null,
-        };
-
-        return $max_digits !== null
-            && $argument_type->isSingleStringLiteral()
-            && strlen($argument_type->getSingleStringLiteral()->value) <= $max_digits;
-    }
-
-    /**
-     * A number whose floor, ceiling and rounding are whole numbers that an int holds
-     *
-     * @psalm-pure
-     */
-    private static function isNumberWithAnExactWholePart(Atomic $atomic_type): bool
-    {
-        // ints up to 2 ** 53 are exact as floats
-        $limit = 2 ** 53;
-
-        if ($atomic_type instanceof TLiteralInt) {
-            return abs($atomic_type->value) <= $limit;
-        }
-
-        if ($atomic_type instanceof TLiteralFloat) {
-            return self::isExactInt(floor($atomic_type->value)) && self::isExactInt(ceil($atomic_type->value));
-        }
-
-        return $atomic_type instanceof TIntRange
-            && $atomic_type->min_bound !== null
-            && $atomic_type->max_bound !== null
-            && abs($atomic_type->min_bound) <= $limit
-            && abs($atomic_type->max_bound) <= $limit;
-    }
-
-    /**
-     * Whether the name calls the function of the global namespace: a function of the current namespace or an imported
-     * one with the same name takes precedence
-     */
-    private static function isGlobalFunctionName(StatementsSource $statements_source, PhpParser\Node\Name $name): bool
-    {
-        if ($name instanceof PhpParser\Node\Name\FullyQualified) {
-            return true;
-        }
-
-        if (!$statements_source instanceof StatementsAnalyzer) {
-            return false;
-        }
-
-        $functions = $statements_source->getCodebase()->functions;
-        $function_name = $name->toString();
-        $resolved_name = $functions->getFullyQualifiedFunctionNameFromString($function_name, $statements_source);
-
-        return strtolower($resolved_name) === strtolower($function_name)
-            || !$functions->functionExists($statements_source, strtolower($resolved_name));
-    }
-
-    /**
-     * A bitwise operation converts its operands to ints, dropping the fraction of a float
+     * A bitwise operation converts its operands to ints, dropping the fraction of a float: reported when the value is
+     * known to lose something, not when a float of unknown value might
      */
     private static function reportFloatOperand(
         StatementsSource $statements_source,
@@ -1286,14 +1173,8 @@ final class ArithmeticOpAnalyzer
         Union $operand_type,
         string $side,
     ): void {
-        if (self::isCallOfAFunctionReturningAnExactInt($statements_source, $operand)) {
-            return;
-        }
-
         foreach ($operand_type->getAtomicTypes() as $atomic_type) {
-            if ($atomic_type instanceof TFloat
-                && !($atomic_type instanceof TLiteralFloat && self::isExactInt($atomic_type->value))
-            ) {
+            if ($atomic_type instanceof TLiteralFloat && !self::isExactInt($atomic_type->value)) {
                 IssueBuffer::maybeAdd(
                     new ImplicitFloatToIntCast(
                         $side . ' operand of a bitwise operation is converted to an int, got ' . $operand_type->getId(),
