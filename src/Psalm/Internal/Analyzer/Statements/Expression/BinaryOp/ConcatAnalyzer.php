@@ -10,6 +10,7 @@ use Psalm\CodeLocation;
 use Psalm\Config;
 use Psalm\Context;
 use Psalm\Internal\Analyzer\FunctionLikeAnalyzer;
+use Psalm\Internal\Analyzer\Statements\Expression\Call\Method\MethodCallPurityAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\ExpressionIdentifier;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\Internal\Analyzer\TraitAnalyzer;
@@ -29,6 +30,7 @@ use Psalm\Issue\PossiblyFalseOperand;
 use Psalm\Issue\PossiblyInvalidOperand;
 use Psalm\Issue\PossiblyNullOperand;
 use Psalm\IssueBuffer;
+use Psalm\Storage\Capabilities;
 use Psalm\Type;
 use Psalm\Type\Atomic;
 use Psalm\Type\Atomic\TArrayKey;
@@ -671,8 +673,13 @@ final class ConcatAnalyzer
                             $statements_analyzer->getFQCLN(),
                             $statements_analyzer,
                         );
+                        // a concatenation passes no argument, so the __toString's write-refs costs nothing
                         $statements_analyzer->signalMutation(
-                            $storage->capabilities,
+                            MethodCallPurityAnalyzer::getMethodCapabilities(
+                                $statements_analyzer,
+                                $operand,
+                                $storage,
+                            ) & ~Capabilities::WRITE_REFS,
                             $context,
                             'possibly-mutating method '
                                         . $atomic_type->value . '::__toString',

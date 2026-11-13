@@ -606,6 +606,33 @@ constructor (an unknown class may do anything), and `foreach` over an object cal
 methods (see [Iterators and generators](#iterators-and-generators)). A callable string or array
 whose target is not known may do anything, so a pure function may not call one.
 
+A cast, interpolation, concatenation or comparison with an object calls its `__toString`. The
+call passes nothing by reference, so the method's `write-refs` costs nothing, and the object is
+charged as the receiver of a [method call](#method-calls). On a parameter, an unannotated
+`__toString` costs `write-props|read-globals|write-globals|io|time`, which a logger contract
+taking a `Stringable` message allows:
+
+```php
+<?php
+final class Message {
+    public function __toString(): string {
+        return "x";
+    }
+}
+
+/** @psalm-capabilities read-props|write-this-props|write-props|read-globals|write-globals|io|time */
+function logMessage(Message $message): void {
+    echo (string) $message;      // fine
+    echo "message: $message";    // fine
+    echo $message->__toString(); // fine
+}
+
+/** @psalm-capabilities read-props */
+function render(Message $message): string {
+    return "message: $message"; // ImpureMethodCall: The context is read-props but possibly-mutating method Message::__toString requires write-props|read-globals|write-globals|io|time
+}
+```
+
 ### Destructors
 
 Destroying an object calls its destructor, where the object dies. So a pure function may not

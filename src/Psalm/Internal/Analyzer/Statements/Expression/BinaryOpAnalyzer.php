@@ -13,6 +13,7 @@ use Psalm\Internal\Analyzer\Statements\Expression\BinaryOp\ConcatAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\BinaryOp\NonComparisonOpAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\BinaryOp\OrAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\BinaryOp\PipeAnalyzer;
+use Psalm\Internal\Analyzer\Statements\Expression\Call\Method\MethodCallPurityAnalyzer;
 use Psalm\Internal\Analyzer\Statements\ExpressionAnalyzer;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\Internal\Codebase\CombinedFlowGraph;
@@ -499,8 +500,13 @@ final class BinaryOpAnalyzer
                         $statements_analyzer,
                     );
 
+                    // a comparison passes no argument, so the __toString's write-refs costs nothing
                     $statements_analyzer->signalMutation(
-                        $storage->capabilities,
+                        MethodCallPurityAnalyzer::getMethodCapabilities(
+                            $statements_analyzer,
+                            $stmt->right,
+                            $storage,
+                        ) & ~Capabilities::WRITE_REFS,
                         $context,
                         'possibly-mutating method '
                                     . $atomic_type->value . '::__toString',
@@ -532,8 +538,13 @@ final class BinaryOpAnalyzer
                         $statements_analyzer,
                     );
 
+                    // a comparison passes no argument, so the __toString's write-refs costs nothing
                     $statements_analyzer->signalMutation(
-                        $storage->capabilities,
+                        MethodCallPurityAnalyzer::getMethodCapabilities(
+                            $statements_analyzer,
+                            $stmt->left,
+                            $storage,
+                        ) & ~Capabilities::WRITE_REFS,
                         $context,
                         'possibly-mutating method '
                                     . $atomic_type->value . '::__toString',

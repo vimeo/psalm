@@ -9,6 +9,7 @@ use Psalm\CodeLocation;
 use Psalm\Codebase;
 use Psalm\Context;
 use Psalm\FileManipulation;
+use Psalm\Internal\Analyzer\Statements\Expression\Call\Method\MethodCallPurityAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\Call\Method\MethodCallReturnTypeFetcher;
 use Psalm\Internal\Analyzer\Statements\Expression\ExpressionIdentifier;
 use Psalm\Internal\Analyzer\Statements\ExpressionAnalyzer;
@@ -849,13 +850,18 @@ final class CastAnalyzer
                                     $statements_analyzer,
                                 );
 
+                                // a cast passes no argument, so the __toString's write-refs costs nothing
                                 $statements_analyzer->signalMutation(
-                                    $to_string_storage->capabilities & ~Capabilities::READ_PROPS,
+                                    MethodCallPurityAnalyzer::getMethodCapabilities(
+                                        $statements_analyzer,
+                                        $stmt,
+                                        $to_string_storage,
+                                    ) & ~Capabilities::WRITE_REFS,
                                     $context,
                                     'possibly-mutating method ' . $intersection_type->value . '::__toString',
                                     ImpureMethodCall::class,
                                     $stmt,
-                                    $to_string_storage->capabilities,
+                                    null,
                                     false,
                                     $var_id === '$this' ? $to_string_storage : null,
                                 );

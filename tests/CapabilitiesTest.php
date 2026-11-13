@@ -1280,6 +1280,62 @@ final class CapabilitiesTest extends TestCase
                         return "hello $n" . (string) $n;
                     }',
             ],
+            'implicitToStringOfUnannotatedMethodCostsNoWriteRefs' => [
+                'code' => '<?php
+                    final class Name {
+                        public function __toString(): string {
+                            echo "x";
+                            return "x";
+                        }
+                    }
+
+                    /** @psalm-capabilities read-props|write-this-props|write-props|read-globals|write-globals|io|time */
+                    function greet(Name $n, string $s): string {
+                        $left = $n == $s;
+                        $right = $s == $n;
+
+                        return "hello $n" . (string) $n . $n . $n->__toString() . ($left && $right ? "!" : "");
+                    }',
+                'assertions' => [],
+                'ignored_issues' => ['ImplicitToStringCast'],
+            ],
+            'castCostsAClosureWhatTheExplicitToStringCallCosts' => [
+                'code' => '<?php
+                    final class Name {
+                        public function __toString(): string {
+                            return "x";
+                        }
+                    }
+
+                    $cast = fn(Name $n): string => (string) $n;
+                    $call = fn(Name $n): string => $n->__toString();',
+                'assertions' => [
+                    '$cast===' => 'Closure[write-props|read-globals|write-globals|io|time](Name):string',
+                    '$call===' => 'Closure[write-props|read-globals|write-globals|io|time](Name):string',
+                ],
+            ],
+            'implicitToStringOfThisOrAFreshObjectCostsNoWriteProps' => [
+                'code' => '<?php
+                    final class Counter {
+                        private int $n = 0;
+
+                        /** @psalm-capabilities read-props|write-this-props */
+                        public function __toString(): string {
+                            $this->n++;
+                            return "x";
+                        }
+
+                        /** @psalm-capabilities read-props|write-this-props */
+                        public function twice(): string {
+                            return (string) $this . "$this";
+                        }
+                    }
+
+                    /** @psalm-pure */
+                    function fresh(): string {
+                        return (string) new Counter();
+                    }',
+            ],
             'pureInvoke' => [
                 'code' => '<?php
                     final class Inc {
@@ -4464,6 +4520,76 @@ final class CapabilitiesTest extends TestCase
                         return (string) $n;
                     }',
                 'error_message' => 'ImpureMethodCall',
+            ],
+            'implicitToStringOfUnannotatedMethodStillCostsItsWrites' => [
+                'code' => '<?php
+                    final class Sorted {
+                        /** @var list<int> */
+                        public array $items = [];
+
+                        public function __toString(): string {
+                            sort($this->items);
+                            return implode(",", $this->items);
+                        }
+                    }
+
+                    /** @psalm-capabilities read-props|read-globals|write-globals|io|time */
+                    function show(Sorted $s): string {
+                        return "sorted: $s";
+                    }',
+                'error_message' => 'ImpureMethodCall - src' . DIRECTORY_SEPARATOR . 'somefile.php:14:41 - The context is read-props|read-globals|write-globals|io|time but possibly-mutating method Sorted::__toString requires write-props|read-globals|write-globals|io|time',
+            ],
+            'implicitToStringWritingGlobalsIsCharged' => [
+                'code' => '<?php
+                    final class Counted {
+                        public static int $casts = 0;
+
+                        /** @psalm-capabilities read-globals|write-globals */
+                        public function __toString(): string {
+                            self::$casts++;
+                            return "x";
+                        }
+                    }
+
+                    /** @psalm-capabilities read-props|write-this-props|write-props|write-refs|io|time */
+                    function show(Counted $c): bool {
+                        return $c == "x";
+                    }',
+                'error_message' => 'ImpureMethodCall - src' . DIRECTORY_SEPARATOR . 'somefile.php:14:32 - The context is read-props|write-this-props|write-props|write-refs|io|time but possibly-mutating method Counted::__toString requires read-globals|write-globals',
+            ],
+            'implicitToStringOfAnotherObjectCostsWriteProps' => [
+                'code' => '<?php
+                    final class Counter {
+                        private int $n = 0;
+
+                        /** @psalm-capabilities read-props|write-this-props */
+                        public function __toString(): string {
+                            $this->n++;
+                            return "x";
+                        }
+
+                        /** @psalm-capabilities read-props|write-this-props */
+                        public function describe(Counter $other): string {
+                            return "other: $other";
+                        }
+                    }',
+                'error_message' => 'ImpureMethodCall - src' . DIRECTORY_SEPARATOR . 'somefile.php:13:44 - The context is read-props|write-this-props but possibly-mutating method Counter::__toString requires write-props',
+            ],
+            'objectHoldingAReferenceIsChargedWhereTheReferenceIsHandedOut' => [
+                'code' => '<?php
+                    final class Leaky implements Stringable {
+                        private mixed $ref = null;
+                        public function __construct(int &$ref) { $this->ref = &$ref; }
+                        public function __toString(): string { $this->ref = 2; return ""; }
+                    }
+
+                    /** @psalm-capabilities read-props|write-this-props|write-props|read-globals|write-globals|io|time */
+                    function leaks(int &$out): string {
+                        return (string) new Leaky($out);
+                    }',
+                'error_message' => 'ImpureMethodCall - src' . DIRECTORY_SEPARATOR . 'somefile.php:10:41 - The context is read-props|write-this-props|write-props|read-globals|write-globals|io|time but constructor Leaky::__construct requires write-props|read-globals|write-globals|write-refs|io|time',
+                'error_levels' => [],
+                'php_version' => '8.0',
             ],
             'impureInvoke' => [
                 'code' => '<?php

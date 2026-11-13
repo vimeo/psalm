@@ -328,7 +328,7 @@ final class AlgebraTest extends TestCase
 
     /**
      * @param array<string, non-empty-list<Assertion>> $assertions_by_var
-     * @psalm-capabilities read-props
+     * @psalm-pure
      */
     private static function clause(array $assertions_by_var, int $object_id = 1): Clause
     {
@@ -367,7 +367,7 @@ final class AlgebraTest extends TestCase
     /**
      * @param list<Clause> $clauses
      * @return list<string>
-     * @psalm-capabilities read-props
+     * @psalm-pure
      */
     private static function clauseStrings(array $clauses): array
     {
