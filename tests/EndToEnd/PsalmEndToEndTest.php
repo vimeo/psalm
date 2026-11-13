@@ -30,6 +30,7 @@ use function readdir;
 use function rmdir;
 use function str_contains;
 use function str_replace;
+use function strpos;
 use function substr_count;
 use function sys_get_temp_dir;
 use function tempnam;
@@ -230,6 +231,63 @@ final class PsalmEndToEndTest extends TestCase
         (new Process([PHP_BINARY, $this->psalter, '--alter', '--issues=MissingPureAnnotation'], self::$tmpDir))->mustRun();
 
         $this->assertStringContainsString('@psalm-pure', (string) file_get_contents(self::$tmpDir . '/src/Slug.php'));
+    }
+
+    /**
+     * @param list<string> $args
+     */
+    #[DataProvider('provideRefactorMoveInvocations')]
+    public function testRefactorMovesAMethodIntoAnotherClass(bool $viaPsalm, array $args): void
+    {
+        $this->runPsalmInit();
+        $psalmXml = file_get_contents(self::$tmpDir . '/psalm.xml');
+        $psalmXml = str_replace('<psalm', '<psalm runTaintAnalysis="false"', (string)$psalmXml);
+        file_put_contents(self::$tmpDir . '/psalm.xml', $psalmXml);
+        file_put_contents(
+            self::$tmpDir . '/src/Moves.php',
+            "<?php\n\nnamespace Ns;\n\nclass A\n{\n    public static function foo(): void\n    {\n    }\n}\n\n"
+            . "class B\n{\n}\n",
+        );
+
+        $process = new Process(
+            [PHP_BINARY, $viaPsalm ? $this->psalm : $this->psalmRefactor, ...$args],
+            self::$tmpDir,
+            self::agentEnvVarsToUnset(),
+        );
+        $process->run();
+
+        $this->assertStringNotContainsString('Cannot locate', $process->getErrorOutput());
+        $this->assertStringNotContainsString('No --move or --rename arguments supplied', $process->getErrorOutput());
+
+        $contents = (string) file_get_contents(self::$tmpDir . '/src/Moves.php');
+        $this->assertSame(1, substr_count($contents, 'function foo'), $contents);
+        $this->assertGreaterThan(
+            (int) strpos($contents, 'class B'),
+            (int) strpos($contents, 'function foo'),
+            'foo should now be declared in B: ' . $contents . $process->getErrorOutput(),
+        );
+    }
+
+    /**
+     * @return iterable<string, array{bool, list<string>}>
+     * @psalm-pure
+     */
+    public static function provideRefactorMoveInvocations(): iterable
+    {
+        yield 'psalm-refactor with separate values' => [
+            false,
+            ['--no-cache', '--move', 'Ns\A::foo', '--into', 'Ns\B'],
+        ];
+
+        yield 'psalm-refactor with values after an equals sign' => [
+            false,
+            ['--monochrome', '--move=Ns\A::foo', '--into=Ns\B'],
+        ];
+
+        yield 'psalm --refactor' => [
+            true,
+            ['--refactor', '--move', 'Ns\A::foo', '--into', 'Ns\B'],
+        ];
     }
 
     public function testPsalterDryRunPrintsEachChangedFileOnceForOverlappingPaths(): void

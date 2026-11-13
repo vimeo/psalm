@@ -130,6 +130,16 @@ final class CliUtilsTest extends TestCase
             [$psalm, '--output-format', 'compact', '--threads', '4'],
         ];
 
+        yield 'withTheValuesOfRefactorOptionsAfterASpace' => [
+            null,
+            [$psalm, '--move', 'Ns\A::foo', '--into', 'Ns\B', '--rename', 'Ns\A::bar', '--to', 'Ns\A::baz'],
+        ];
+
+        yield 'withTheValuesOfRefactorOptionsAfterAnEqualsSign' => [
+            null,
+            [$psalm, '--move=Ns\A::foo', '--into=Ns\B'],
+        ];
+
         yield 'withTheValueOfAnOptionAfterASpaceAndPaths' => [
             [$dummyProjectDir . DIRECTORY_SEPARATOR . 'Bar.php'],
             [$psalm, '--memory-limit', '2G', $dummyProjectDir . DIRECTORY_SEPARATOR . 'Bar.php', '--report', 'x.json'],
