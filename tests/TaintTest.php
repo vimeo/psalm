@@ -5554,6 +5554,37 @@ final class TaintTest extends TestCase
                         }
                     }',
             ],
+            'traitMethodOfACliOnlyClassPrintsToATerminal' => [
+                'code' => '<?php
+                    trait Imports {
+                        public function run(): void {
+                            echo (string) $_GET["file"];
+                        }
+                    }
+
+                    /** @psalm-cli-only */
+                    final class ImportCommand {
+                        use Imports;
+                    }',
+            ],
+            'sapiCheckedCodePrintsToATerminal' => [
+                'code' => '<?php
+                    function import(): void {
+                        if (PHP_SAPI === "cli") {
+                            echo (string) $_GET["file"];
+                            printf("%s", (string) $_GET["file"]);
+                            array_map(function (string $line): void {
+                                echo $line;
+                            }, [(string) $_GET["file"]]);
+                        }
+                    }
+
+                    if (php_sapi_name() !== "cli") {
+                        exit(1);
+                    }
+
+                    echo (string) $_GET["file"];',
+            ],
             'specializedCallsStayApartThroughADespecializedHelper' => [
                 'code' => '<?php // --taint-analysis
                     /** @psalm-taint-specialize */
@@ -8607,12 +8638,68 @@ final class TaintTest extends TestCase
             ],
             'cliOnlyCodeReturnsWhatPrintRWouldPrint' => [
                 'code' => '<?php
-                    /** @psalm-cli-only */
-                    function dump(): string {
-                        return print_r((string) $_GET["x"], true);
+                    final class Log {
+                        public static string $last = "";
                     }
 
-                    echo dump();',
+                    /** @psalm-cli-only */
+                    function dump(): void {
+                        Log::$last = print_r((string) $_GET["x"], true);
+                    }
+
+                    echo Log::$last;',
+                'error_message' => 'TaintedHtml',
+            ],
+            'codeAfterASapiCheckedBranchPrintsToAResponse' => [
+                'code' => '<?php
+                    if (PHP_SAPI === "cli") {
+                        echo "Importing";
+                    }
+
+                    echo (string) $_GET["file"];',
+                'error_message' => 'TaintedHtml',
+            ],
+            'traitMethodOfAClassThatIsNotCliOnlyPrintsToAResponse' => [
+                'code' => '<?php
+                    trait Imports {
+                        public function run(): void {
+                            echo (string) $_GET["file"];
+                        }
+                    }
+
+                    /** @psalm-cli-only */
+                    final class ImportCommand {
+                        use Imports;
+                    }
+
+                    final class ImportController {
+                        use Imports;
+                    }',
+                'error_message' => 'TaintedHtml',
+            ],
+            'printfInATraitMethodOfAClassThatIsNotCliOnlyPrintsToAResponse' => [
+                'code' => '<?php
+                    trait Imports {
+                        public function run(): void {
+                            printf("%s", (string) $_GET["file"]);
+                        }
+                    }
+
+                    /** @psalm-cli-only */
+                    final class ImportCommand {
+                        use Imports;
+                    }
+
+                    final class ImportController {
+                        use Imports;
+                    }',
+                'error_message' => 'TaintedHtml',
+            ],
+            'builtinWebServerOutputIsAResponse' => [
+                'code' => '<?php
+                    if (PHP_SAPI === "cli-server") {
+                        echo (string) $_GET["file"];
+                    }',
                 'error_message' => 'TaintedHtml',
             ],
             'cliOnlyCodeStillPrintsSecretsToTheTerminal' => [

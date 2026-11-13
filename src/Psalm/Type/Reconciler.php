@@ -855,6 +855,10 @@ class Reconciler
                 return $existing_keys[$key] ?? Type::getIntRange(1, null);
             }
 
+            if ($key === Context::PHP_SAPI_VAR_ID) {
+                return $existing_keys[$key] ?? Type::getString();
+            }
+
             if (!isset($existing_keys[$key_parts[0]]) && str_contains($key, '::') && !str_contains($key, '$')) {
                 return self::getClassConstantTypeOfKey($codebase, $key, $statements_analyzer);
             }
