@@ -8,7 +8,6 @@ use Override;
 use PhpParser;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\Internal\Type\IntMask;
-use Psalm\Plugin\EventHandler\AddTaintsInterface;
 use Psalm\Plugin\EventHandler\Event\AddRemoveTaintsEvent;
 use Psalm\Plugin\EventHandler\RemoveTaintsInterface;
 use Psalm\Type\TaintKind;
@@ -22,21 +21,17 @@ use const ENT_QUOTES;
 /**
  * @internal
  */
-final class HtmlFunctionTainter implements AddTaintsInterface, RemoveTaintsInterface
+final class HtmlFunctionTainter implements RemoveTaintsInterface
 {
     /**
      * html_entity_decode() and htmlspecialchars_decode() give back the html taint, and the has_quotes one unless no
      * flags they may have decode a quote: ENT_COMPAT decodes &quot;, ENT_QUOTES &#039; too.
      */
-    #[Override]
-    public static function addTaints(AddRemoveTaintsEvent $event): int
-    {
-        $item = $event->getExpr();
-        $statements_analyzer = $event->getStatementsSource();
-
-        if (!$statements_analyzer instanceof StatementsAnalyzer
-            || !$item instanceof PhpParser\Node\Expr\FuncCall
-            || $item->isFirstClassCallable()
+    public static function getGivenBackTaints(
+        StatementsAnalyzer $statements_analyzer,
+        PhpParser\Node\Expr\FuncCall $item,
+    ): int {
+        if ($item->isFirstClassCallable()
             || !$item->name instanceof PhpParser\Node\Name
             || count($item->name->getParts()) !== 1
             || count($item->getArgs()) === 0

@@ -22,6 +22,7 @@ use Psalm\Codebase;
 use Psalm\Internal\Analyzer\MethodAnalyzer;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\Internal\Analyzer\TraitAnalyzer;
+use Psalm\Internal\Provider\FileStorageProvider;
 use Psalm\Storage\ClassLikeStorage;
 use ReflectionClass;
 
@@ -174,7 +175,11 @@ final class ConstantFlags
         bool $static_is_self,
         array $visited,
     ): array {
-        if (!$fetch->class instanceof Name || !$fetch->name instanceof Identifier) {
+        if (!$fetch->class instanceof Name
+            || !$fetch->name instanceof Identifier
+            // class_alias() may give any class any name
+            || self::hasDynamicClassAlias()
+        ) {
             return self::UNKNOWN;
         }
 
@@ -201,9 +206,9 @@ final class ConstantFlags
         if ($constant === null
             || $location === null
             || isset($visited[$id])
-            // static:: is the class of the call only where no class extending it can redeclare the constant (a
-            // @final class can have one)
-            || ($scope === 'static' && !$class->final && !$constant->final)
+            // static:: is the class of the call only where no class extending it can redeclare the constant: a
+            // natively final class or constant (a class with a docblock @final can have one)
+            || ($scope === 'static' && !($class->final && !$class->final_from_docblock) && !$constant->final)
         ) {
             return self::UNKNOWN;
         }
@@ -251,13 +256,48 @@ final class ConstantFlags
     }
 
     /**
+     * Whether a class_alias() call of the code psalm scanned may give a class a name it doesn't know
+     *
+     * @psalm-capabilities read-props|write-this-props|write-refs
+     */
+    private static function hasDynamicClassAlias(): bool
+    {
+        foreach (FileStorageProvider::getAll() as $file_storage) {
+            if ($file_storage->has_dynamic_class_alias) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    /**
+     * Whether a class_alias() call of the code psalm scanned gives a class the name, whatever the class: one it
+     * skips, or that aliases a class it doesn't know, isn't one of its aliases
+     *
+     * @psalm-capabilities read-props|write-this-props|write-refs
+     */
+    private static function isPossibleClassAlias(string $name): bool
+    {
+        $name_lc = strtolower($name);
+
+        foreach (FileStorageProvider::getAll() as $file_storage) {
+            if (isset($file_storage->possible_class_aliases[$name_lc])) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    /**
      * The class of the name, unless it is a name class_alias() gives a class, which may be another one at runtime
      */
     private static function getNamedClass(Codebase $codebase, Name $class_name): ?ClassLikeStorage
     {
         $name = $class_name->getAttribute('resolvedName');
 
-        if (!is_string($name) || $codebase->classlikes->isClassAlias($name)) {
+        if (!is_string($name) || $codebase->classlikes->isClassAlias($name) || self::isPossibleClassAlias($name)) {
             return null;
         }
 

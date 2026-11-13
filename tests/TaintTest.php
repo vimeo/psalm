@@ -714,6 +714,155 @@ final class TaintTest extends TestCase
     }
 
     /**
+     * static:: is the class of the call only for a natively final class or constant: a class with a docblock @final
+     * can be extended. And with a class_alias() psalm can't tell the name of, any name may be another class: no class
+     * constant is trusted then, nor a name a class_alias() of a class it doesn't know gives.
+     *
+     * @return iterable<string, array{string, list<array{int, string}>}>
+     */
+    public static function providerUntrustedClassConstantFlags(): iterable
+    {
+        yield 'docblock @final class' => [
+            '<?php
+                /** @final */
+                class Flags {
+                    public const FLAGS = JSON_HEX_TAG | JSON_HEX_AMP;
+                    public const QUOTES = ENT_QUOTES;
+
+                    public function f(): void {
+                        echo json_encode($_GET["a"], static::FLAGS);
+                        echo htmlspecialchars((string) $_GET["b"], static::QUOTES);
+                        echo json_encode($_GET["c"], self::FLAGS);
+                    }
+                }',
+            [[8, 'TaintedHtml'], [8, 'TaintedTextWithQuotes'], [9, 'TaintedTextWithQuotes'], [10, 'TaintedTextWithQuotes']],
+        ];
+
+        yield 'class_alias() of a name psalm does not know' => [
+            '<?php
+                final class Flags {
+                    public const FLAGS = JSON_HEX_TAG | JSON_HEX_AMP;
+                    public const QUOTES = ENT_QUOTES;
+
+                    public function f(): void {
+                        echo json_encode($_GET["a"], self::FLAGS);
+                    }
+                }
+
+                function g(string $name): void {
+                    echo json_encode($_GET["b"], Flags::FLAGS);
+                    echo htmlspecialchars((string) $_GET["c"], Flags::QUOTES);
+                    class_alias(Flags::class, $name);
+                }',
+            [
+                [7, 'TaintedHtml'],
+                [7, 'TaintedTextWithQuotes'],
+                [12, 'TaintedHtml'],
+                [12, 'TaintedTextWithQuotes'],
+                [13, 'TaintedTextWithQuotes'],
+            ],
+        ];
+
+        yield 'class_alias as a callable' => [
+            '<?php
+                final class Flags {
+                    public const FLAGS = JSON_HEX_TAG | JSON_HEX_AMP;
+                }
+
+                function g(array $aliases): void {
+                    echo json_encode($_GET["a"], Flags::FLAGS);
+                    array_map("class_alias", array_keys($aliases), $aliases);
+                }',
+            [[7, 'TaintedHtml'], [7, 'TaintedTextWithQuotes']],
+        ];
+
+        yield 'class_alias() of a class psalm does not know to a known name' => [
+            '<?php
+                final class Flags {
+                    public const FLAGS = JSON_HEX_TAG | JSON_HEX_AMP;
+                }
+
+                final class Other {
+                    public const FLAGS = JSON_HEX_TAG | JSON_HEX_AMP;
+                }
+
+                function g(string $class): void {
+                    echo json_encode($_GET["a"], Flags::FLAGS);
+                    echo json_encode($_GET["b"], Other::FLAGS);
+                    if (!class_exists("Flags", false)) {
+                        class_alias($class, "Flags");
+                    }
+                }',
+            [[11, 'TaintedHtml'], [11, 'TaintedTextWithQuotes'], [12, 'TaintedTextWithQuotes']],
+        ];
+    }
+
+    /**
+     * @param list<array{int, string}> $expected_issues
+     */
+    #[DataProvider('providerUntrustedClassConstantFlags')]
+    public function testUntrustedClassConstantFlagsRemoveNothing(string $code, array $expected_issues): void
+    {
+        $this->testConfig->throw_exception = false;
+        $file_path = self::$src_dir_path . 'somefile.php';
+        $this->addFile($file_path, $code);
+        $this->project_analyzer->trackTaintedInputs();
+        $this->project_analyzer->getCodebase()->config->initializePlugins($this->project_analyzer);
+
+        $this->analyzeFile($file_path, new Context(), false);
+
+        $issues = array_values(array_filter(
+            IssueBuffer::getIssuesDataForFile($file_path),
+            static fn(IssueData $issue): bool => str_starts_with($issue->type, 'Tainted'),
+        ));
+
+        self::assertEqualsCanonicalizing(
+            $expected_issues,
+            array_map(static fn(IssueData $issue): array => [$issue->line_from, $issue->type], $issues),
+        );
+    }
+
+    /**
+     * The decoders give back the input taints to the flows of input only: what a secret holds isn't user input once
+     * decoded, while decoded input is tainted again, wherever the call is.
+     */
+    public function testDecodersGiveBackTheInputTaintsToInputOnly(): void
+    {
+        $this->testConfig->throw_exception = false;
+        $file_path = self::$src_dir_path . 'somefile.php';
+        $this->addFile($file_path, '<?php
+            /** @psalm-taint-sink html $html */
+            function html(mixed $html): void {}
+
+            /** @psalm-taint-source system_secret */
+            function secret(): string { return ""; }
+
+            function f(): void {
+                html(json_decode(secret()));
+                html(html_entity_decode(htmlspecialchars(secret(), ENT_QUOTES)));
+                html(json_decode(json_encode((string) $_GET["a"], JSON_HEX_TAG | JSON_HEX_AMP)));
+                html(html_entity_decode(htmlspecialchars((string) $_GET["b"], ENT_QUOTES)));
+                $decoded = [json_decode(json_encode((string) $_GET["c"], JSON_HEX_TAG | JSON_HEX_AMP))];
+                html($decoded[0]);
+            }
+        ');
+        $this->project_analyzer->trackTaintedInputs();
+        $this->project_analyzer->getCodebase()->config->initializePlugins($this->project_analyzer);
+
+        $this->analyzeFile($file_path, new Context(), false);
+
+        $issues = array_values(array_filter(
+            IssueBuffer::getIssuesDataForFile($file_path),
+            static fn(IssueData $issue): bool => str_starts_with($issue->type, 'Tainted'),
+        ));
+
+        self::assertEqualsCanonicalizing(
+            [[3, 'TaintedHtml'], [3, 'TaintedHtml'], [3, 'TaintedHtml']],
+            array_map(static fn(IssueData $issue): array => [$issue->line_from, $issue->type], $issues),
+        );
+    }
+
+    /**
      * json_encode() escapes every control character, so its output can't split a header, unless it may pretty print.
      */
     public function testJsonEncodeRemovesTheHeaderTaintUnlessItPrettyPrints(): void

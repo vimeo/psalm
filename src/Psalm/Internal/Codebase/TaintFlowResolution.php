@@ -2186,15 +2186,25 @@ final class TaintFlowResolution
         $kept = $this->state_kept[$state];
         $added = $this->state_added[$state];
 
+        $input_taints = $this->codebase->getInputTaints();
+
         foreach ($this->forward_edges[$from_id] as $to_id => $path) {
             $removed_taints = $path->removed_taints;
-            $next_added = ($added | $path->added_taints) & ~$removed_taints;
+            $path_added = $path->added_taints;
+
+            // A path adds the input taints (a decoder giving back what escapes removed) to a flow of input only: a
+            // flow of secrets doesn't become user input. A source of input a plugin adds is a source of its own.
+            if ((($kept | $added) & $input_taints) === 0) {
+                $path_added &= ~$input_taints;
+            }
+
+            $next_added = ($added | $path_added) & ~$removed_taints;
 
             // What a builtin decodes from a string (json_decode(), unserialize(), parse_str(), ...) can be an array
             // or an object again, whatever the string's type took away: decoded user input can be a NoSQL query.
             // In the walk of an entry, the taints the calls keep aren't known: any of them may be user input.
             if ($path->type === DataFlowGraph::UNSERIALIZATION_PATH_TYPE
-                && (($kept | $next_added) & ~$removed_taints & $this->codebase->getInputTaints()) !== 0
+                && (($kept | $next_added) & ~$removed_taints & $input_taints) !== 0
             ) {
                 $next_added |= TaintKind::ARRAY_ONLY;
             }

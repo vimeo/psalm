@@ -7,7 +7,6 @@ namespace Psalm\Internal\Provider\AddRemoveTaints;
 use Override;
 use PhpParser;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
-use Psalm\Plugin\EventHandler\AddTaintsInterface;
 use Psalm\Plugin\EventHandler\Event\AddRemoveTaintsEvent;
 use Psalm\Plugin\EventHandler\RemoveTaintsInterface;
 use Psalm\Type\TaintKind;
@@ -24,7 +23,7 @@ use const JSON_PRETTY_PRINT;
  *
  * @internal
  */
-final class JsonFunctionTainter implements AddTaintsInterface, RemoveTaintsInterface
+final class JsonFunctionTainter implements RemoveTaintsInterface
 {
     /**
      * JSON_HEX_TAG and JSON_HEX_AMP escape every <, > and & as <, > and &: the JSON syntax has none
@@ -41,15 +40,11 @@ final class JsonFunctionTainter implements AddTaintsInterface, RemoveTaintsInter
      * what json_decode() gives has the taints they removed back, as `json_decode(json_encode($_GET['a'],
      * JSON_HEX_TAG | JSON_HEX_AMP))` has its <, > and &.
      */
-    #[Override]
-    public static function addTaints(AddRemoveTaintsEvent $event): int
-    {
-        $item = $event->getExpr();
-        $statements_analyzer = $event->getStatementsSource();
-
-        if (!$statements_analyzer instanceof StatementsAnalyzer
-            || !$item instanceof PhpParser\Node\Expr\FuncCall
-            || $item->isFirstClassCallable()
+    public static function getGivenBackTaints(
+        StatementsAnalyzer $statements_analyzer,
+        PhpParser\Node\Expr\FuncCall $item,
+    ): int {
+        if ($item->isFirstClassCallable()
             || !$item->name instanceof PhpParser\Node\Name
             || !self::isBuiltin($statements_analyzer, $item->name, 'json_decode')
         ) {

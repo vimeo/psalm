@@ -26,6 +26,8 @@ use Psalm\Internal\Codebase\TaintStore;
 use Psalm\Internal\DataFlow\DataFlowNode;
 use Psalm\Internal\FileManipulation\FileManipulationBuffer;
 use Psalm\Internal\MethodIdentifier;
+use Psalm\Internal\Provider\AddRemoveTaints\HtmlFunctionTainter;
+use Psalm\Internal\Provider\AddRemoveTaints\JsonFunctionTainter;
 use Psalm\Internal\Type\Comparator\CallableTypeComparator;
 use Psalm\Internal\Type\TemplateBound;
 use Psalm\Internal\Type\TemplateInferredTypeReplacer;
@@ -1683,7 +1685,11 @@ final class FunctionCallReturnTypeFetcher
 
             $event = new AddRemoveTaintsEvent($stmt, $context, $statements_analyzer, $codebase);
 
-            $added_taints = $codebase->config->eventDispatcher->dispatchAddTaints($event);
+            $added_taints = $codebase->config->eventDispatcher->dispatchAddTaints($event)
+                // what the decoders give back of the taints escapes removed: their flows only, not a source of input
+                // anywhere the call is (an argument, an array item...), as a handler of the event would be
+                | JsonFunctionTainter::getGivenBackTaints($statements_analyzer, $stmt)
+                | HtmlFunctionTainter::getGivenBackTaints($statements_analyzer, $stmt);
             $removed_taints |= $codebase->config->eventDispatcher->dispatchRemoveTaints($event);
 
             self::taintUsingFlows(
