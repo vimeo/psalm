@@ -47,7 +47,7 @@ vendor/bin/psalter --issues=MissingReturnType --dry-run
 ------------------------------
 ```
 
-When the output is not a terminal, it is a plain unified diff: save it to a file and apply it with `git apply` or `patch -p1`.
+When the output is not a terminal, it is a plain unified diff: save it to a file and apply it with `git apply` or `patch -p1` from the project root. Paths are relative to the project root, so a file outside it shows up as `a/../other/foo.php`: `patch -p1` applies it, `git apply` refuses paths outside the repository.
 
 
 ## Plugins
