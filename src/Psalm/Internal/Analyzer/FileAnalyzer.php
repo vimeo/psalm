@@ -52,7 +52,7 @@ class FileAnalyzer extends SourceAnalyzer
     private ?string $root_file_name = null;
 
     /**
-     * @var array<string, bool>
+     * @var array<string, bool> the files required so far => whether only code only running from the command line did
      */
     private array $required_file_paths = [];
 
@@ -585,9 +585,10 @@ class FileAnalyzer extends SourceAnalyzer
     /**
      * @psalm-external-mutation-free
      */
-    public function addRequiredFilePath(string $file_path): void
+    public function addRequiredFilePath(string $file_path, bool $from_cli_only_code = false): void
     {
-        $this->required_file_paths[$file_path] = true;
+        $this->required_file_paths[$file_path] = $from_cli_only_code
+            && ($this->required_file_paths[$file_path] ?? true);
     }
 
     /**
@@ -609,8 +610,8 @@ class FileAnalyzer extends SourceAnalyzer
             $other->parent_file_paths[$parent_file_path] = true;
         }
 
-        foreach ($this->required_file_paths as $required_file_path => $_) {
-            $other->required_file_paths[$required_file_path] = true;
+        foreach ($this->required_file_paths as $required_file_path => $from_cli_only_code) {
+            $other->addRequiredFilePath($required_file_path, $from_cli_only_code);
         }
     }
 
@@ -629,12 +630,22 @@ class FileAnalyzer extends SourceAnalyzer
     }
 
     /**
+     * Whether the file was only required from code only running from the command line, so its code was analyzed as such
+     *
      * @psalm-mutation-free
-     * @return list<string>
+     */
+    public function isRequiredOnlyFromCliOnlyCode(string $file_path): bool
+    {
+        return $this->required_file_paths[$file_path] ?? false;
+    }
+
+    /**
+     * @psalm-mutation-free
+     * @return array<string, bool> the files required so far => whether only code only running from the command line did
      */
     public function getRequiredFilePaths(): array
     {
-        return array_keys($this->required_file_paths);
+        return $this->required_file_paths;
     }
 
     /**

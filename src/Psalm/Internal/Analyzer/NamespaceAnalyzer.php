@@ -9,7 +9,6 @@ use Override;
 use PhpParser;
 use PhpParser\Node\Stmt\Namespace_;
 use Psalm\CodeLocation;
-use Psalm\Context;
 use Psalm\Internal\Provider\NodeDataProvider;
 use Psalm\Type;
 use Psalm\Type\Union;
@@ -90,19 +89,13 @@ final class NamespaceAnalyzer extends SourceAnalyzer
             }
         }
 
-        if ($leftover_stmts) {
-            $statements_analyzer = new StatementsAnalyzer($this, new NodeDataProvider(), true);
-            $file_context = $this->source->context;
+        $file_context = $this->source->context;
 
-            if ($file_context !== null) {
-                $context = $file_context;
-            } else {
-                $context = new Context();
-                $context->is_global = true;
-                $context->defineGlobals();
-                $context->collect_exceptions = $codebase->config->check_for_throws_in_global_scope;
-            }
-            $statements_analyzer->analyze($leftover_stmts, $context);
+        // a file analyzer only collecting the class-likes and functions of the file (e.g. for the mutations of a
+        // method) doesn't analyze its top-level code, as for a file without a namespace
+        if ($leftover_stmts && $file_context !== null) {
+            $statements_analyzer = new StatementsAnalyzer($this, new NodeDataProvider(), true);
+            $statements_analyzer->analyze($leftover_stmts, $file_context);
 
             if ($statements_analyzer->owns_type_variable_tracker) {
                 $statements_analyzer->type_variable_tracker->reconcile(

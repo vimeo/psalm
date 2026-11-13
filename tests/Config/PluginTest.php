@@ -44,6 +44,7 @@ use function restore_error_handler;
 use function set_error_handler;
 use function sort;
 use function sprintf;
+use function str_starts_with;
 
 use const DIRECTORY_SEPARATOR;
 
@@ -512,7 +513,7 @@ final class PluginTest extends DeferredAnalyzerTestCase
             #[Override]
             public static function beforeAnalyzeFile(BeforeFileAnalysisEvent $event): void
             {
-                if (basename($event->getStatementsSource()->getFilePath()) === 'console.php') {
+                if (str_starts_with(basename($event->getStatementsSource()->getFilePath()), 'console')) {
                     $event->markAsCliOnly();
                 }
             }
@@ -521,6 +522,7 @@ final class PluginTest extends DeferredAnalyzerTestCase
         $codebase = $this->project_analyzer->getCodebase();
         (new PluginRegistrationSocket($codebase->config, $codebase))->registerHooksFromClass(get_class($hook));
         $codebase->config->throw_exception = false;
+        $codebase->config->respect_include_once = true;
 
         $dir = (string) getcwd() . DIRECTORY_SEPARATOR . 'src' . DIRECTORY_SEPARATOR;
         $files = [
@@ -553,9 +555,48 @@ final class PluginTest extends DeferredAnalyzerTestCase
                 /** @psalm-cli-only */
                 function boot(): void {
                     require __DIR__ . "/boot.php";
-                }',
+                }
+
+                /** @psalm-cli-only */
+                function prepare(): void {
+                    require_once __DIR__ . "/once.php";
+                }
+
+                require_once __DIR__ . "/once.php";
+                require __DIR__ . "/console_ns.php";
+                require __DIR__ . "/command_child.php";',
             'boot.php' => '<?php
                 import();',
+            'once.php' => '<?php
+                import();',
+            'console_ns.php' => '<?php
+                namespace App;
+
+                \import();
+                echo (string) $_GET["name"];
+
+                class Command
+                {
+                    public int $x;
+
+                    public function __construct()
+                    {
+                        $this->x = 1;
+                    }
+                }',
+            'command_child.php' => '<?php
+                namespace App;
+
+                final class ChildCommand extends Command
+                {
+                    public int $y;
+
+                    public function __construct()
+                    {
+                        parent::__construct();
+                        $this->y = 2;
+                    }
+                }',
         ];
         foreach ($files as $name => $code) {
             $this->addFile($dir . $name, $code);
@@ -578,6 +619,7 @@ final class PluginTest extends DeferredAnalyzerTestCase
             [
                 'console.php:14 CliOnlyCall',
                 'console.php:15 TaintedHtml',
+                'once.php:2 CliOnlyCall',
                 'web.php:3 CliOnlyCall',
                 'web.php:4 TaintedHtml',
             ],

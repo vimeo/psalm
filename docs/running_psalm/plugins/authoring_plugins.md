@@ -163,8 +163,9 @@ final class ConsolePlugin implements AfterClassLikeVisitInterface, BeforeFileAna
 }
 ```
 
-The top-level code of a marked file, the closures in it and the files it includes run from the command line. The
-functions and classes it declares are checked as usual.
+The top-level code of a marked file and the closures in it run from the command line, and so does the top-level code
+of the files it includes, when Psalm analyzes them through the include. The functions and classes it declares are
+checked as usual. Mark a project file the marked one includes too: Psalm also analyzes it on its own.
 
 ```php
 <?php // database/migrations/2025_01_01_000000_create_users_table.php
@@ -178,9 +179,17 @@ return new class extends Migration { // no CliOnlyCall
 ```
 
 ```php
-<?php // app/Http/Controllers/UserController.php
+<?php
 
-(new CreateUsersTable())->up(); // CliOnlyCall
+final class CreateUsersTable extends Migration
+{
+    public function up(): void {}
+}
+
+function store(): void
+{
+    new CreateUsersTable(); // CliOnlyCall
+}
 ```
 
 ### Using Xdebug
