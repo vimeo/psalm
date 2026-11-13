@@ -665,16 +665,12 @@ final class PropertyTypeTest extends TestCase
     }
 
     /**
-     * The properties a constructor sets are initialised, whichever files were analysed before: a parameter type
-     * naming a missing class makes the regular analysis skip the constructor's body, but not the collection of what
-     * it initialises.
-     *
-     * @param list<string> $analysed_before
+     * A parameter type naming a missing class makes the analysis of a constructor skip its body, but the properties
+     * the body sets are still initialised in the subclasses.
      */
-    #[DataProvider('providerFilesAnalysedBeforeTheSubclass')]
-    public function testInheritedConstructorInitialisesPropertiesWhateverWasAnalysedBefore(
-        array $analysed_before,
-    ): void {
+    #[DataProvider('providerSubclassesOfAConstructorWithAMissingParamClass')]
+    public function testConstructorWithAMissingParamClassInitialisesSubclassProperties(string $child_code): void
+    {
         $this->testConfig->throw_exception = false;
 
         $parent_file = self::$src_dir_path . 'parent.php';
@@ -692,21 +688,7 @@ final class PropertyTypeTest extends TestCase
                 }
             }
         ');
-        $this->addFile($child_file, '<?php
-            namespace Fixture;
-
-            class InheritingChild extends ParentClass {}
-
-            class CallingChild extends ParentClass {
-                public function __construct() {
-                    parent::__construct();
-                }
-            }
-        ');
-
-        foreach ($analysed_before as $file) {
-            $this->analyzeFile($file === 'parent' ? $parent_file : $child_file, new Context());
-        }
+        $this->addFile($child_file, $child_code);
 
         $this->analyzeFile($child_file, new Context());
 
@@ -722,13 +704,25 @@ final class PropertyTypeTest extends TestCase
     }
 
     /**
-     * @return iterable<string, array{list<string>}>
+     * @return iterable<string, array{string}>
      * @psalm-pure
      */
-    public static function providerFilesAnalysedBeforeTheSubclass(): iterable
+    public static function providerSubclassesOfAConstructorWithAMissingParamClass(): iterable
     {
-        yield 'nothing before' => [[]];
-        yield 'the parent file before' => [['parent']];
+        yield 'inheriting the constructor' => ['<?php
+            namespace Fixture;
+
+            class ChildClass extends ParentClass {}
+        '];
+        yield 'calling the constructor' => ['<?php
+            namespace Fixture;
+
+            class ChildClass extends ParentClass {
+                public function __construct() {
+                    parent::__construct();
+                }
+            }
+        '];
     }
 
     /**

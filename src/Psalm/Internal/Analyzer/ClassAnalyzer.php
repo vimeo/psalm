@@ -1414,25 +1414,8 @@ final class ClassAnalyzer extends ClassLikeAnalyzer
                     $fake_constructor_attributes,
                 );
 
-                $codebase->analyzer->disableMixedCounts();
-
-                $was_collecting_initializations = $class_context->collect_initializations;
-
-                $class_context->collect_initializations = true;
-                $class_context->collect_nonprivate_initializations = !$uninitialized_private_properties;
-
-                $constructor_analyzer = $this->analyzeClassMethod(
-                    $fake_stmt,
-                    $storage,
-                    $this,
-                    $class_context,
-                    $global_context,
-                    true,
-                );
-
-                $class_context->collect_initializations = $was_collecting_initializations;
-
-                $codebase->analyzer->enableMixedCounts();
+                // analysed below, where the properties it initialises are collected
+                $constructor_analyzer = new MethodAnalyzer($fake_stmt, $this);
             }
         }
 
@@ -1944,7 +1927,6 @@ final class ClassAnalyzer extends ClassLikeAnalyzer
         SourceAnalyzer $source,
         Context $class_context,
         ?Context $global_context = null,
-        bool $is_fake = false,
     ): ?MethodAnalyzer {
         $config = Config::getInstance();
 
@@ -2046,7 +2028,6 @@ final class ClassAnalyzer extends ClassLikeAnalyzer
             && $method_already_analyzed
             && !$class_context->collect_initializations
             && !$class_context->collect_mutations
-            && !$is_fake
         ) {
             $project_analyzer->progress->debug(
                 'Skipping analysis of pre-analyzed method ' . $analyzed_method_id . "\n",
@@ -2109,7 +2090,6 @@ final class ClassAnalyzer extends ClassLikeAnalyzer
         if (!$method_already_analyzed
             && !$class_context->collect_initializations
             && !$class_context->collect_mutations
-            && !$is_fake
         ) {
             $codebase->analyzer->setAnalyzedMethod($included_file_path, $trait_safe_method_id);
         }
