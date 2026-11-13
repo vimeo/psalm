@@ -292,10 +292,12 @@ final class Analyzer
 
             $files_to_update = $this->files_to_update ?? $this->files_to_analyze;
 
-            $diff_renderer = new UnifiedDiffRenderer(
-                $project_analyzer->stdout_report_options->use_color ?? false,
-                $project_analyzer->stdout_report_options->in_ci ?? false,
-            );
+            $diff_renderer = $project_analyzer->show_diff
+                ? new UnifiedDiffRenderer(
+                    $project_analyzer->stdout_report_options->use_color ?? false,
+                    $project_analyzer->stdout_report_options->in_ci ?? false,
+                )
+                : null;
 
             foreach ($files_to_update as $file_path) {
                 $this->updateFile($file_path, $project_analyzer->dry_run, $diff_renderer);
@@ -1175,7 +1177,7 @@ final class Analyzer
     public function updateFile(
         string $file_path,
         bool $dry_run,
-        UnifiedDiffRenderer $diff_renderer = new UnifiedDiffRenderer(),
+        ?UnifiedDiffRenderer $diff_renderer = null,
     ): void {
         FileManipulationBuffer::add(
             $file_path,
@@ -1231,7 +1233,7 @@ final class Analyzer
         $this->markFileChanged($file_path);
         $relative_path = str_replace('\\', '/', $this->config->shortenFileName($file_path));
 
-        if ($dry_run) {
+        if ($diff_renderer) {
             echo $diff_renderer->render(
                 $this->getChangedFilesCount(),
                 $relative_path,
@@ -1239,7 +1241,9 @@ final class Analyzer
                 $original_contents,
                 $existing_contents,
             );
+        }
 
+        if ($dry_run) {
             return;
         }
 

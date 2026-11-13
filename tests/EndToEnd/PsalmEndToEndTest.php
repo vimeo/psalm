@@ -322,6 +322,50 @@ final class PsalmEndToEndTest extends TestCase
         $this->assertStringContainsString("\n2 files changed\n", $process->getOutput());
     }
 
+    public function testPsalterPrintsTheDiffOfARealRun(): void
+    {
+        $output = $this->runPsalterOnAFileWithAMissingReturnType([]);
+
+        $this->assertStringContainsString("1) src/A.php:3\n", $output);
+        $this->assertStringContainsString("\n+function a(): int {\n", $output);
+        $this->assertStringContainsString("\n1 file changed\n", $output);
+    }
+
+    public function testPsalterNoDiffHidesTheDiffButStillWritesTheFiles(): void
+    {
+        $output = $this->runPsalterOnAFileWithAMissingReturnType(['--no-diff']);
+
+        $this->assertStringNotContainsString('1) src/A.php', $output);
+        $this->assertStringNotContainsString('+function a()', $output);
+        $this->assertStringContainsString("\n1 file changed\n", $output);
+    }
+
+    /**
+     * @param list<string> $extra_args
+     */
+    private function runPsalterOnAFileWithAMissingReturnType(array $extra_args): string
+    {
+        $this->runPsalmInit();
+        $psalmXml = file_get_contents(self::$tmpDir . '/psalm.xml');
+        $psalmXml = str_replace('<psalm', '<psalm runTaintAnalysis="false"', (string)$psalmXml);
+        file_put_contents(self::$tmpDir . '/psalm.xml', $psalmXml);
+        file_put_contents(self::$tmpDir . '/src/A.php', "<?php\n\nfunction a() {\n    return 1;\n}\n");
+
+        $process = new Process(
+            [PHP_BINARY, $this->psalter, '--no-cache', '--issues=MissingReturnType', ...$extra_args, 'src'],
+            self::$tmpDir,
+            self::agentEnvVarsToUnset(),
+        );
+        $process->mustRun();
+
+        $this->assertSame(
+            "<?php\n\nfunction a(): int {\n    return 1;\n}\n",
+            file_get_contents(self::$tmpDir . '/src/A.php'),
+        );
+
+        return $process->getOutput();
+    }
+
     public function testPsalterFixesTheIssuesAPluginDeclares(): void
     {
         $this->runPsalmInit(1);

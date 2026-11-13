@@ -88,7 +88,7 @@ final class Psalter
 
     public const LONG_OPTIONS = [
         'help', 'debug', 'debug-by-line', 'debug-emitted-issues', 'config:', 'file:', 'root:',
-        'plugin:', 'issues:', 'list-supported-issues', 'php-version:', 'dry-run', 'safe-types',
+        'plugin:', 'issues:', 'list-supported-issues', 'php-version:', 'dry-run', 'no-diff', 'safe-types',
         'find-unused-code', 'threads:', 'scan-threads:', 'codeowner:',
         'allow-backwards-incompatible-changes:',
         'add-newline-between-docblock-annotations:',
@@ -160,6 +160,9 @@ final class Psalter
 
                 --dry-run
                     Shows a diff of all the changes, without making them
+
+                --no-diff
+                    Does not print the diff of the changes
 
                 --safe-types
                     Only update PHP types when the new type information comes from other PHP types,
@@ -447,6 +450,7 @@ final class Psalter
         $project_analyzer->alterCodeAfterCompletion(
             array_key_exists('dry-run', $options),
             array_key_exists('safe-types', $options),
+            !array_key_exists('no-diff', $options),
         );
 
         if ($keyed_issues === ['all' => true]) {
