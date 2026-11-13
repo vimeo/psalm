@@ -2474,17 +2474,27 @@ final class SimpleAssertionReconciler extends Reconciler
         $last_required_key = $non_empty ? 0 : -1;
 
         $int_properties = [];
+        $previous_required_key = -1;
 
         foreach ($shape->properties as $key => $property) {
             if (is_int($key)) {
+                if (!$property->possibly_undefined) {
+                    // keys that are always set keep their order: `[1 => 0, 0 => 1]` is not a list
+                    if ($key < $previous_required_key) {
+                        return null;
+                    }
+
+                    $previous_required_key = $key;
+                }
+
                 $int_properties[$key] = $property;
             } elseif (!$property->possibly_undefined) {
                 return null;
             }
         }
 
-        // `array{1?: int, 0: string}` is a list too: the keys count in numeric order, not in the order of the shape.
-        // A key that is not the next one of a list has to be absent
+        // `array{1?: int, 0: string}` is a list too: an optional key may be set after the others, so the keys count
+        // in numeric order. A key that is not the next one of a list has to be absent
         ksort($int_properties);
 
         foreach ($int_properties as $key => $property) {
