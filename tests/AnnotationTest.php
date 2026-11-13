@@ -1986,6 +1986,23 @@ final class AnnotationTest extends TestCase
 
                     echo strlen($title);',
             ],
+            'intMaskOfAConstantOfTheNamespaceTakesPrecedenceOverTheGlobalOne' => [
+                'code' => '<?php
+                    namespace Foo;
+
+                    const E_ERROR = 4;
+
+                    /**
+                     * @param int-mask<E_ERROR> $y
+                     */
+                    function takesMask(int $y): void {
+                        /** @psalm-check-type-exact $y = 0|4 */
+                        echo $y;
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
             'intMaskOfAnImportedGlobalConstant' => [
                 'code' => '<?php
                     namespace Foo;
@@ -2923,7 +2940,7 @@ final class AnnotationTest extends TestCase
                     function takesMask(int $y): void {
                         echo $y;
                     }',
-                'error_message' => 'InvalidDocblock',
+                'error_message' => 'UndefinedConstant',
             ],
             'intMaskOfAQualifiedConstantDoesNotFallBackToTheGlobalOne' => [
                 'code' => '<?php
@@ -2935,7 +2952,7 @@ final class AnnotationTest extends TestCase
                     function takesMask(int $y): void {
                         echo $y;
                     }',
-                'error_message' => 'InvalidDocblock',
+                'error_message' => 'UndefinedConstant',
             ],
             'intMaskOfAnUndefinedConstantFromANamespace' => [
                 'code' => '<?php
@@ -2947,7 +2964,7 @@ final class AnnotationTest extends TestCase
                     function takesMask(int $y): void {
                         echo $y;
                     }',
-                'error_message' => 'InvalidDocblock',
+                'error_message' => 'UndefinedConstant',
             ],
             'keyOfImportedTypeAliasOfANonArrayIsInvalid' => [
                 'code' => '<?php

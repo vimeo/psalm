@@ -474,7 +474,8 @@ final class TypeExpander
                 $new_value_type = reset($new_value_type);
 
                 if (!$new_value_type instanceof TLiteralInt) {
-                    return [new TInt()];
+                    // a global constant that is not defined stays in the type, for the checker to report it
+                    return $new_value_type instanceof TGlobalConstant ? [$return_type] : [new TInt()];
                 }
 
                 $potential_ints[] = $new_value_type->value;

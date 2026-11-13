@@ -125,7 +125,6 @@ use function str_starts_with;
 use function stripslashes;
 use function strlen;
 use function strpos;
-use function strrpos;
 use function strtolower;
 use function strtr;
 use function substr;
@@ -1227,22 +1226,10 @@ final class TypeParser
                 $atomic_type = reset($generic_param_atomics);
 
                 if ($atomic_type instanceof TNamedObject) {
-                    $constant_name = $atomic_type->value;
-
-                    $constant_tree = $parse_tree->children[$generic_param_offset] ?? null;
-
-                    // only an unqualified constant of a namespace falls back to the global one: not `\A\B`, nor `A\B`
-                    if (!defined($constant_name)
-                        && $constant_tree instanceof Value
-                        && !str_contains($constant_tree->text ?? '\\', '\\')
-                        && ($separator_position = strrpos($constant_name, '\\')) !== false
-                    ) {
-                        $constant_name = substr($constant_name, $separator_position + 1);
-                    }
-
-                    if (defined($constant_name)) {
+                    if (defined($atomic_type->value)) {
+                        // silenced, as reading a deprecated constant (ASSERT_ACTIVE) emits E_DEPRECATED
                         /** @var mixed */
-                        $constant_value = constant($constant_name);
+                        $constant_value = @constant($atomic_type->value);
 
                         if (!is_int($constant_value)) {
                             throw new TypeParseTreeException(
@@ -1252,13 +1239,21 @@ final class TypeParser
 
                         $atomic_type = new TLiteralInt($constant_value, $from_docblock);
                     } else {
-                        throw new TypeParseTreeException(
-                            'int-mask types must all be integer values',
+                        // the constants of the analysed code are not known yet: an unqualified name in a namespace
+                        // falls back to the global constant as in PHP, when it is resolved with the codebase
+                        $constant_tree = $parse_tree->children[$generic_param_offset] ?? null;
+                        $written_name = $constant_tree instanceof Value ? $constant_tree->text : null;
+
+                        $atomic_type = new TGlobalConstant(
+                            ltrim($atomic_type->value, '\\'),
+                            $written_name !== null && !str_contains($written_name, '\\') ? $written_name : null,
+                            $from_docblock,
                         );
                     }
                 }
 
                 if (!$atomic_type instanceof TLiteralInt
+                    && !$atomic_type instanceof TGlobalConstant
                     && !($atomic_type instanceof TClassConstant
                         && !str_contains($atomic_type->const_name, '*'))
                 ) {
