@@ -25,6 +25,30 @@ Updating code is inherently risky, doing so automatically is even more so. I've 
 - it has a `--safe-types` mode that will only update PHP 7 return typehints with information Psalm has gathered from non-docblock sources of type information (e.g. typehinted params, `instanceof` checks, other return typehints etc.)
 - using `--allow-backwards-incompatible-changes=false` you can make sure to not create backwards incompatible changes
 
+### Dry run output
+
+```bash
+vendor/bin/psalter --issues=MissingReturnType --dry-run
+```
+
+```
+1) src/foo.php:3
+--- a/src/foo.php
++++ b/src/foo.php
+@@ -1,5 +1,5 @@
+ <?php
+ 
+-function foo() {
++function foo(): string {
+     return "hello";
+ }
+------------------------------
+1 file would be changed (dry run)
+------------------------------
+```
+
+When the output is not a terminal, it is a plain unified diff: save it to a file and apply it with `git apply` or `patch -p1`.
+
 
 ## Plugins
 
