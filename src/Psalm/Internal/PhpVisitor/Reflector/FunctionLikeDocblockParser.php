@@ -52,6 +52,12 @@ use const PATHINFO_EXTENSION;
 final class FunctionLikeDocblockParser
 {
     /**
+     * The assertion target of `PHP_SAPI` and `php_sapi_name()`. The `$` of a parameter target is dropped, so
+     * `PHP_SAPI` itself would clash with a parameter named `$PHP_SAPI`; this can't.
+     */
+    public const PHP_SAPI_ASSERTION_TARGET = '\\PHP_SAPI';
+
+    /**
      * @throws DocblockParseException if there was a problem parsing the docblock
      */
     public static function parse(
@@ -450,9 +456,15 @@ final class FunctionLikeDocblockParser
             foreach ($parsed_docblock->tags[$tag] as $assertion) {
                 $line_parts = self::sanitizeAssertionLineParts(CommentAnalyzer::splitDocLine($assertion));
 
+                if (self::isPhpSapiAssertionTarget($line_parts[1])) {
+                    $param_name = self::PHP_SAPI_ASSERTION_TARGET;
+                } else {
+                    $param_name = $line_parts[1][0] === '$' ? substr($line_parts[1], 1) : $line_parts[1];
+                }
+
                 $assertions[] = [
                     'type'       => $line_parts[0],
-                    'param_name' => $line_parts[1][0] === '$' ? substr($line_parts[1], 1) : $line_parts[1],
+                    'param_name' => $param_name,
                 ];
             }
 
@@ -729,7 +741,9 @@ final class FunctionLikeDocblockParser
      */
     private static function sanitizeAssertionLineParts(array $line_parts): array
     {
-        if (count($line_parts) < 2 || !str_contains($line_parts[1], '$')) {
+        if (count($line_parts) < 2
+            || (!str_contains($line_parts[1], '$') && !self::isPhpSapiAssertionTarget($line_parts[1]))
+        ) {
             throw new IncorrectDocblockException('Misplaced variable');
         }
 
@@ -748,6 +762,19 @@ final class FunctionLikeDocblockParser
         }
 
         return $line_parts;
+    }
+
+    /**
+     * Whether an assertion targets the SAPI PHP runs in, `PHP_SAPI` or `php_sapi_name()`, as comparing them inline
+     * narrows it (e.g. `@psalm-assert 'cli' PHP_SAPI` on a function that throws outside the command line)
+     *
+     * @psalm-pure
+     */
+    private static function isPhpSapiAssertionTarget(string $target): bool
+    {
+        $target = str_starts_with($target, '\\') ? substr($target, 1) : $target;
+
+        return $target === 'PHP_SAPI' || strtolower($target) === 'php_sapi_name()';
     }
 
     /**
