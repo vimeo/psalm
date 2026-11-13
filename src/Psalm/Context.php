@@ -15,6 +15,7 @@ use Psalm\Internal\ReferenceConstraint;
 use Psalm\Internal\Scope\CaseScope;
 use Psalm\Internal\Scope\FinallyScope;
 use Psalm\Internal\Scope\LoopScope;
+use Psalm\Internal\Scope\TryScope;
 use Psalm\Internal\Type\AssertionReconciler;
 use Psalm\Storage\Capabilities;
 use Psalm\Storage\FunctionLikeStorage;
@@ -56,6 +57,12 @@ final class Context
      * native symbols newer than the analysed version use it; it can't clash with a variable name.
      */
     public const PHP_VERSION_ID_VAR_ID = 'PHP_VERSION_ID';
+
+    /**
+     * The pseudo-variable through which comparisons of the PHP_SAPI constant and of php_sapi_name() narrow them, so
+     * a branch knows the SAPI it runs in (e.g. `if (PHP_SAPI === 'cli')`); it can't clash with a variable name.
+     */
+    public const PHP_SAPI_VAR_ID = 'PHP_SAPI';
 
     /**
      * @var array<string, Union>
@@ -352,6 +359,14 @@ final class Context
     public array $possibly_assigned_var_ids = [];
 
     /**
+     * The variables (and properties) that were assigned as a whole in this context, not only an offset of them and
+     * not by the union of an array into them (`$a += [...]`, which keeps every offset the array had)
+     *
+     * @var array<string, bool>
+     */
+    public array $fully_assigned_var_ids = [];
+
+    /**
      * A list of classes or interfaces that may have been thrown
      *
      * @var array<string, array<array-key, CodeLocation>>
@@ -387,6 +402,8 @@ final class Context
     public ?CaseScope $case_scope = null;
 
     public ?FinallyScope $finally_scope = null;
+
+    public ?TryScope $try_scope = null;
 
     public ?Context $if_body_context = null;
 

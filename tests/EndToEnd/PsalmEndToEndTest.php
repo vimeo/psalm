@@ -6,6 +6,7 @@ namespace Psalm\Tests\EndToEnd;
 
 use Exception;
 use Override;
+use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\TestCase;
 use Psalm\Internal\Analyzer\ProjectAnalyzer;
 use Symfony\Component\Process\Process;
@@ -23,9 +24,11 @@ use function is_dir;
 use function is_string;
 use function mkdir;
 use function opendir;
+use function preg_match_all;
 use function preg_replace;
 use function readdir;
 use function rmdir;
+use function str_contains;
 use function str_replace;
 use function substr_count;
 use function sys_get_temp_dir;
@@ -195,7 +198,7 @@ final class PsalmEndToEndTest extends TestCase
         file_put_contents(self::$tmpDir . '/psalm.xml', $psalmXml);
 
         $this->assertStringContainsString(
-            'No errors found!',
+            "\n        1 file changed        \n",
             $this->runPsalm(['--alter', '--issues=all'], self::$tmpDir, false, true)['STDOUT'],
         );
 
@@ -227,6 +230,171 @@ final class PsalmEndToEndTest extends TestCase
         (new Process([PHP_BINARY, $this->psalter, '--alter', '--issues=MissingPureAnnotation'], self::$tmpDir))->mustRun();
 
         $this->assertStringContainsString('@psalm-pure', (string) file_get_contents(self::$tmpDir . '/src/Slug.php'));
+    }
+
+    public function testPsalterDryRunPrintsEachChangedFileOnceForOverlappingPaths(): void
+    {
+        $this->runPsalmInit();
+        $psalmXml = file_get_contents(self::$tmpDir . '/psalm.xml');
+        $psalmXml = str_replace('<psalm', '<psalm runTaintAnalysis="false"', (string)$psalmXml);
+        file_put_contents(self::$tmpDir . '/psalm.xml', $psalmXml);
+        file_put_contents(self::$tmpDir . '/src/A.php', "<?php\n\nfunction a() {\n    return 1;\n}\n");
+        file_put_contents(self::$tmpDir . '/src/B.php', "<?php\n\nfunction b() {\n    return 2;\n}\n");
+
+        $process = new Process(
+            [
+                PHP_BINARY,
+                $this->psalter,
+                '--dry-run',
+                '--no-cache',
+                '--issues=MissingReturnType',
+                './src',
+                'src/A.php',
+                'src/B.php',
+                'src/../src/A.php',
+            ],
+            self::$tmpDir,
+            self::agentEnvVarsToUnset(),
+        );
+        $process->mustRun();
+        $output = $process->getOutput();
+
+        $this->assertSame(1, preg_match_all('/^\d\) src\/A\.php:3$/m', $output), $output);
+        $this->assertSame(1, preg_match_all('/^\d\) src\/B\.php:3$/m', $output), $output);
+        $this->assertSame(1, substr_count($output, '--- a/src/A.php'), $output);
+        $this->assertSame(1, substr_count($output, '--- a/src/B.php'), $output);
+        $this->assertStringContainsString("\n       2 files would be changed (dry run)       \n", $output);
+        $this->assertStringNotContainsString("\e", $output);
+    }
+
+    public function testPsalterDryRunNumbersFilesInSortedOrderRegardlessOfArgumentOrder(): void
+    {
+        $this->runPsalmInit();
+        $psalmXml = file_get_contents(self::$tmpDir . '/psalm.xml');
+        $psalmXml = str_replace('<psalm', '<psalm runTaintAnalysis="false"', (string)$psalmXml);
+        file_put_contents(self::$tmpDir . '/psalm.xml', $psalmXml);
+        file_put_contents(self::$tmpDir . '/src/A.php', "<?php\n\nfunction a() {\n    return 1;\n}\n");
+        file_put_contents(self::$tmpDir . '/src/B.php', "<?php\n\nfunction b() {\n    return 2;\n}\n");
+
+        $process = new Process(
+            [
+                PHP_BINARY,
+                $this->psalter,
+                '--dry-run',
+                '--no-cache',
+                '--issues=MissingReturnType',
+                'src/B.php',
+                'src',
+                'src/A.php',
+            ],
+            self::$tmpDir,
+            self::agentEnvVarsToUnset(),
+        );
+        $process->mustRun();
+        $output = $process->getOutput();
+
+        $this->assertStringContainsString("1) src/A.php:3\n", $output);
+        $this->assertStringContainsString("2) src/B.php:3\n", $output);
+    }
+
+    public function testPsalterAppliesAFixOnceWhenPathsOverlap(): void
+    {
+        $this->runPsalmInit();
+        $psalmXml = file_get_contents(self::$tmpDir . '/psalm.xml');
+        $psalmXml = str_replace('<psalm', '<psalm runTaintAnalysis="false"', (string)$psalmXml);
+        file_put_contents(self::$tmpDir . '/psalm.xml', $psalmXml);
+        file_put_contents(self::$tmpDir . '/src/A.php', "<?php\n\nfunction a() {\n    return 1;\n}\n");
+        file_put_contents(self::$tmpDir . '/src/B.php', "<?php\n\nfunction b() {\n    return 2;\n}\n");
+
+        $process = new Process(
+            [PHP_BINARY, $this->psalter, '--no-cache', '--issues=MissingReturnType', 'src', 'src/A.php'],
+            self::$tmpDir,
+            self::agentEnvVarsToUnset(),
+        );
+        $process->mustRun();
+
+        $this->assertSame(
+            "<?php\n\nfunction a(): int {\n    return 1;\n}\n",
+            file_get_contents(self::$tmpDir . '/src/A.php'),
+        );
+        $this->assertSame(
+            "<?php\n\nfunction b(): int {\n    return 2;\n}\n",
+            file_get_contents(self::$tmpDir . '/src/B.php'),
+        );
+        $this->assertStringContainsString("\n       2 files changed        \n", $process->getOutput());
+    }
+
+    public function testPsalterPrintsTheDiffOfARealRun(): void
+    {
+        $process = $this->runPsalterOnAFileWithAMissingReturnType([]);
+        $output = $process->getOutput();
+
+        $this->assertStringNotContainsString('Altered', $process->getErrorOutput());
+        $this->assertStringContainsString("1) src/A.php:3\n", $output);
+        $this->assertStringContainsString("\n+function a(): int {\n", $output);
+        $this->assertStringContainsString("\n        1 file changed        \n", $output);
+    }
+
+    /**
+     * @param array<string, string> $env
+     */
+    #[DataProvider('provideColorEnvironments')]
+    public function testPsalterColorsPipedOutputOnlyWhenForced(array $env, bool $expect_color): void
+    {
+        $output = $this->runPsalterOnAFileWithAMissingReturnType([], $env)->getOutput();
+
+        $this->assertSame($expect_color, str_contains($output, "\e["));
+    }
+
+    /**
+     * @return iterable<string, array{array<string, string>, bool}>
+     * @psalm-pure
+     */
+    public static function provideColorEnvironments(): iterable
+    {
+        yield 'piped' => [[], false];
+        yield 'FORCE_COLOR' => [['FORCE_COLOR' => '1'], true];
+    }
+
+    public function testPsalterNoDiffListsTheChangedFilesWithoutTheDiffAndStillWritesThem(): void
+    {
+        $process = $this->runPsalterOnAFileWithAMissingReturnType(['--no-diff']);
+        $output = $process->getOutput();
+
+        $this->assertStringContainsString('Altered src/A.php', $process->getErrorOutput());
+
+        $this->assertStringStartsWith("1) src/A.php:3\n------------------------------\n", $output);
+        $this->assertStringNotContainsString('@@', $output);
+        $this->assertStringNotContainsString('+function a()', $output);
+        $this->assertStringNotContainsString('-function a()', $output);
+        $this->assertStringContainsString("\n        1 file changed        \n", $output);
+    }
+
+    /**
+     * @param list<string> $extra_args
+     * @param array<string, string> $env
+     */
+    private function runPsalterOnAFileWithAMissingReturnType(array $extra_args, array $env = []): Process
+    {
+        $this->runPsalmInit();
+        $psalmXml = file_get_contents(self::$tmpDir . '/psalm.xml');
+        $psalmXml = str_replace('<psalm', '<psalm runTaintAnalysis="false"', (string)$psalmXml);
+        file_put_contents(self::$tmpDir . '/psalm.xml', $psalmXml);
+        file_put_contents(self::$tmpDir . '/src/A.php', "<?php\n\nfunction a() {\n    return 1;\n}\n");
+
+        $process = new Process(
+            [PHP_BINARY, $this->psalter, '--no-cache', '--issues=MissingReturnType', ...$extra_args, 'src'],
+            self::$tmpDir,
+            $env + self::agentEnvVarsToUnset(),
+        );
+        $process->mustRun();
+
+        $this->assertSame(
+            "<?php\n\nfunction a(): int {\n    return 1;\n}\n",
+            file_get_contents(self::$tmpDir . '/src/A.php'),
+        );
+
+        return $process;
     }
 
     public function testPsalterFixesTheIssuesAPluginDeclares(): void

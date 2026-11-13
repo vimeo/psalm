@@ -25,6 +25,7 @@ use Psalm\Internal\Type\TemplateStandinTypeReplacer;
 use Psalm\Internal\Type\TypeCombiner;
 use Psalm\Internal\Type\TypeExpander;
 use Psalm\Issue\ArgumentTypeCoercion;
+use Psalm\Issue\CallableByReferenceMismatch;
 use Psalm\Issue\InvalidArgument;
 use Psalm\Issue\InvalidScalarArgument;
 use Psalm\Issue\MixedArgumentTypeCoercion;
@@ -969,6 +970,20 @@ final class ArrayFunctionArgumentsAnalyzer
         foreach ($closure_params as $i => $param) {
             if (!$param->is_optional && !$param->is_variadic) {
                 $required_param_count = $i + 1;
+            }
+
+            // array_map() has no callable type to compare the callback with, as the other functions do: it calls the
+            // callback with values
+            if ($param->by_ref && $i < $max_closure_param_count && $method_id === 'array_map') {
+                IssueBuffer::maybeAdd(
+                    new CallableByReferenceMismatch(
+                        'The callback of ' . $method_id . ' takes parameter ' . ($i + 1) . ' by reference, but it is'
+                            . ' called with a value',
+                        new CodeLocation($statements_analyzer->getSource(), $closure_arg->value),
+                        $method_id,
+                    ),
+                    $statements_analyzer->getSuppressedIssues(),
+                );
             }
         }
 
