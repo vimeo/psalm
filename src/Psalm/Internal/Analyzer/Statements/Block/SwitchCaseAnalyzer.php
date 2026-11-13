@@ -217,18 +217,12 @@ final class SwitchCaseAnalyzer
                 }
             }
 
-            if ($switch_condition instanceof PhpParser\Node\Expr\ConstFetch
-                && $switch_condition->name->getParts() === ['true']
-            ) {
-                $case_equality_expr = $case->cond;
-            } else {
-                $case_equality_expr = self::getCaseEqualityExpr(
-                    $statements_analyzer,
-                    $case_context,
-                    $switch_condition,
-                    $case->cond,
-                );
-            }
+            $case_equality_expr = self::getCaseEqualityExpr(
+                $statements_analyzer,
+                $case_context,
+                $switch_condition,
+                $case->cond,
+            );
         }
 
         $continue_case_equality_expr = false;
@@ -562,7 +556,13 @@ final class SwitchCaseAnalyzer
         Context $context,
         PhpParser\Node\Expr $switch_condition,
         PhpParser\Node\Expr $case_cond,
-    ): VirtualIdentical|VirtualEqual {
+    ): PhpParser\Node\Expr {
+        if ($switch_condition instanceof PhpParser\Node\Expr\ConstFetch
+            && $switch_condition->name->getParts() === ['true']
+        ) {
+            return $case_cond;
+        }
+
         $switch_condition_type = $statements_analyzer->node_data->getType($switch_condition);
         $case_cond_type = $statements_analyzer->node_data->getType($case_cond);
 
