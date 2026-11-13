@@ -39,7 +39,6 @@ use Psalm\Progress\VoidProgress;
 use Psalm\Report;
 use Psalm\Report\ReportOptions;
 use ReflectionClass;
-use RuntimeException;
 use Symfony\Component\Filesystem\Path;
 use Throwable;
 
@@ -65,7 +64,6 @@ use function gc_collect_cycles;
 use function gc_disable;
 use function getcwd;
 use function getenv;
-use function getopt;
 use function implode;
 use function in_array;
 use function ini_get;
@@ -203,10 +201,7 @@ final class Psalm
         $args = array_slice($argv, 1);
 
         // get options from command line
-        $options = CliUtils::chosenByOperator(getopt(implode('', self::SHORT_OPTIONS), self::LONG_OPTIONS));
-        if (false === $options) {
-            throw new RuntimeException('Failed to parse CLI options');
-        }
+        $options = CliUtils::getOptions($args, self::SHORT_OPTIONS, self::LONG_OPTIONS);
 
         // debug CI environment
         if (!array_key_exists('debug', $options)
@@ -218,7 +213,7 @@ final class Psalm
 
         self::forwardCliCall($options, $argv);
 
-        self::validateCliArguments($args);
+        CliUtils::rejectUnrecognisedOptions($args, self::SHORT_OPTIONS, self::LONG_OPTIONS);
 
         CliUtils::setMemoryLimit($options);
 
@@ -536,46 +531,6 @@ final class Psalm
             && !isset($options['set-baseline'])
             && !isset($options['update-baseline']);
     }*/
-
-    /**
-     * @param array<int,string> $args
-     */
-    private static function validateCliArguments(array $args): void
-    {
-        array_map(
-            static function (string $arg): void {
-                if (str_starts_with($arg, '--') && $arg !== '--') {
-                    $arg_name = (string) preg_replace('/=.*$/', '', substr($arg, 2), 1);
-
-                    if (!in_array($arg_name, self::LONG_OPTIONS)
-                        && !in_array($arg_name . ':', self::LONG_OPTIONS)
-                        && !in_array($arg_name . '::', self::LONG_OPTIONS)
-                    ) {
-                        fwrite(
-                            STDERR,
-                            'Unrecognised argument "--' . $arg_name . '"' . PHP_EOL
-                            . 'Type --help to see a list of supported arguments'. PHP_EOL,
-                        );
-                        exit(1);
-                    }
-                } elseif (str_starts_with($arg, '-') && $arg !== '-' && $arg !== '--') {
-                    $arg_name = (string) preg_replace('/=.*$/', '', substr($arg, 1));
-
-                    if (!in_array($arg_name, self::SHORT_OPTIONS)
-                        && !in_array($arg_name . ':', self::SHORT_OPTIONS)
-                    ) {
-                        fwrite(
-                            STDERR,
-                            'Unrecognised argument "-' . $arg_name . '"' . PHP_EOL
-                            . 'Type --help to see a list of supported arguments'. PHP_EOL,
-                        );
-                        exit(1);
-                    }
-                }
-            },
-            $args,
-        );
-    }
 
     /**
      * @param array<int, string> $args

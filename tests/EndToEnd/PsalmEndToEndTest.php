@@ -337,6 +337,83 @@ final class PsalmEndToEndTest extends TestCase
         );
     }
 
+    /**
+     * @param list<string> $args
+     */
+    #[DataProvider('provideOptionsThatFollowAPath')]
+    public function testPsalterReadsTheOptionsThatFollowAPath(array $args): void
+    {
+        $source = $this->writeAFileWithAMissingReturnType();
+
+        $process = new Process(
+            [PHP_BINARY, $this->psalter, ...$args],
+            self::$tmpDir,
+            self::agentEnvVarsToUnset(),
+        );
+        $process->run();
+
+        $this->assertSame(2, $process->getExitCode(), $process->getOutput() . $process->getErrorOutput());
+        $this->assertStringContainsString('would be changed (dry run)', $process->getOutput());
+        $this->assertSame($source, file_get_contents(self::$tmpDir . '/src/A.php'));
+    }
+
+    /**
+     * @return iterable<string, array{list<string>}>
+     * @psalm-pure
+     */
+    public static function provideOptionsThatFollowAPath(): iterable
+    {
+        yield 'a flag' => [['--no-cache', '--issues=MissingReturnType', 'src/A.php', '--dry-run']];
+        yield 'a value' => [['--no-cache', 'src/A.php', '--issues=MissingReturnType', '--dry-run']];
+        yield 'a value in a separate argument' => [
+            ['--no-cache', 'src/A.php', '--issues', 'MissingReturnType', '--dry-run'],
+        ];
+    }
+
+    public function testPsalmForwardsToPsalterWhenAlterFollowsAPath(): void
+    {
+        $source = $this->writeAFileWithAMissingReturnType();
+
+        // runPsalm() asserts the exit code is 2 when $shouldFail is true
+        $result = $this->runPsalm(
+            ['src/A.php', '--alter', '--issues=MissingReturnType', '--dry-run', '--no-cache'],
+            self::$tmpDir,
+            true,
+            false,
+        );
+
+        $this->assertStringContainsString('+function a(): int {', $result['STDOUT']);
+        $this->assertSame($source, file_get_contents(self::$tmpDir . '/src/A.php'));
+    }
+
+    /**
+     * @param list<string> $args
+     */
+    #[DataProvider('provideCommandsWithAnUnrecognisedShortOption')]
+    public function testAnUnrecognisedShortOptionIsRejected(string $script, array $args): void
+    {
+        $this->runPsalmInit();
+
+        $process = new Process([PHP_BINARY, $script, ...$args], self::$tmpDir, self::agentEnvVarsToUnset());
+        $process->run();
+
+        $this->assertSame(1, $process->getExitCode(), $process->getOutput() . $process->getErrorOutput());
+        $this->assertStringContainsString('Unrecognised argument "-z"', $process->getErrorOutput());
+    }
+
+    /**
+     * @return iterable<string, array{string, list<string>}>
+     * @psalm-pure
+     */
+    public static function provideCommandsWithAnUnrecognisedShortOption(): iterable
+    {
+        $issues = ['--issues=MissingReturnType', '--dry-run', '-z'];
+
+        yield 'psalter' => [__DIR__ . '/../../psalter', $issues];
+        yield 'psalm --alter' => [__DIR__ . '/../../psalm', ['--alter', ...$issues]];
+        yield 'psalm-refactor' => [__DIR__ . '/../../psalm-refactor', ['--move', 'A::b', '--into', 'C', '-z']];
+    }
+
     public function testPsalterDryRunExitsWithCode0WhenNothingWouldChange(): void
     {
         $this->runPsalmInit();
@@ -455,6 +532,22 @@ final class PsalmEndToEndTest extends TestCase
         $this->assertStringNotContainsString('+function a()', $output);
         $this->assertStringNotContainsString('-function a()', $output);
         $this->assertStringContainsString("\n        1 file changed        \n", $output);
+    }
+
+    /**
+     * @return string the contents of src/A.php, which psalter would change
+     */
+    private function writeAFileWithAMissingReturnType(): string
+    {
+        $this->runPsalmInit();
+        $psalmXml = file_get_contents(self::$tmpDir . '/psalm.xml');
+        $psalmXml = str_replace('<psalm', '<psalm runTaintAnalysis="false"', (string)$psalmXml);
+        file_put_contents(self::$tmpDir . '/psalm.xml', $psalmXml);
+
+        $source = "<?php\n\nfunction a() {\n    return 1;\n}\n";
+        file_put_contents(self::$tmpDir . '/src/A.php', $source);
+
+        return $source;
     }
 
     /**
