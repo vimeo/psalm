@@ -205,6 +205,116 @@ final class MethodCallTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'methodCallOnATemplateBoundedByAnotherTemplate' => [
+                'code' => '<?php
+                    interface Document {
+                        public function total(): int;
+                    }
+
+                    /**
+                     * @template TDocument of Document
+                     * @template TDraft of TDocument
+                     * @param TDraft $draft
+                     */
+                    function draftTotal($draft): int {
+                        return $draft->total();
+                    }',
+            ],
+            'methodOfAnInterfaceATemplateBoundedByAnotherTemplateWasNarrowedTo' => [
+                'code' => '<?php
+                    interface Document {
+                        public function total(): int;
+                    }
+
+                    interface Sheet {
+                        public function total(): int;
+                    }
+
+                    /**
+                     * @template TDocument of Document
+                     * @template TDraft of TDocument
+                     * @param TDraft $draft
+                     */
+                    function draftCount($draft): int {
+                        if ($draft instanceof Countable) {
+                            return $draft->count() + $draft->total();
+                        }
+
+                        return 0;
+                    }
+
+                    /**
+                     * @template TDocument of Document|Sheet
+                     * @template TDraft of TDocument
+                     * @param TDraft $draft
+                     */
+                    function unionDraftCount($draft): int {
+                        if ($draft instanceof Countable) {
+                            return $draft->count() + $draft->total();
+                        }
+
+                        return 0;
+                    }',
+            ],
+            'nullsafeCallOnAnAssignmentIsEvaluatedOnceAndNarrowed' => [
+                'code' => <<<'PHP'
+                    <?php
+                    final class Session {
+                        public function has(string $key): bool {
+                            return true;
+                        }
+                    }
+
+                    final class Request {
+                        public function getSession(): ?Session {
+                            return null;
+                        }
+                    }
+
+                    function check(Request $request): bool {
+                        return ($session = $request->getSession())?->has('x') ?? false;
+                    }
+                    PHP,
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.2',
+            ],
+            'nullsafeCallOnAnItemOfAnArrayAccessObjectIsNarrowed' => [
+                'code' => <<<'PHP'
+                    <?php
+                    final class Pkg {
+                        public function isPublic(): bool {
+                            return true;
+                        }
+                    }
+
+                    /** @implements ArrayAccess<string, Pkg> */
+                    final class PkgList implements ArrayAccess {
+                        #[\Override]
+                        public function offsetExists(mixed $offset): bool {
+                            return true;
+                        }
+
+                        #[\Override]
+                        public function offsetGet(mixed $offset): ?Pkg {
+                            return null;
+                        }
+
+                        #[\Override]
+                        public function offsetSet(mixed $offset, mixed $value): void {}
+
+                        #[\Override]
+                        public function offsetUnset(mixed $offset): void {}
+                    }
+
+                    function check(PkgList $list): bool {
+                        return $list['x']?->isPublic() ?? false;
+                    }
+                    PHP,
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.2',
+            ],
             'definedStaticPropertyGivenToAMethodOfAnUnknownClass' => [
                 'code' => '<?php
                     class Holder {
@@ -2042,9 +2152,26 @@ final class MethodCallTest extends TestCase
                         }
                         takesString($a->b?->value);
                     }',
-                'error_message' => 'PossiblyNullArgument - src' . DIRECTORY_SEPARATOR . 'somefile.php:13:37',
+                'error_message' => 'NullArgument - src' . DIRECTORY_SEPARATOR . 'somefile.php:13:37',
                 'error_levels' => [],
                 'php_version' => '8.0',
+            ],
+            'undefinedMethodOnATemplateBoundedByAnotherTemplate' => [
+                'code' => '<?php
+                    interface Document {
+                        public function total(): int;
+                    }
+
+                    /**
+                     * @template TDocument of Document
+                     * @template TDraft of TDocument
+                     * @param TDraft $draft
+                     * @return mixed
+                     */
+                    function draftNope($draft) {
+                        return $draft->nope();
+                    }',
+                'error_message' => 'PossiblyUndefinedMethod - src' . DIRECTORY_SEPARATOR . 'somefile.php:13:40 - Method Document::nope does not exist',
             ],
             'undefinedStaticPropertyGivenToAMethodOfAnUnknownClass' => [
                 'code' => '<?php
