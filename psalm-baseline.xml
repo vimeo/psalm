@@ -2014,12 +2014,16 @@
   </file>
   <file src="src/Psalm/Internal/PreloaderList.php">
     <DeprecatedClass>
+      <code><![CDATA[\PhpParser\Node\Expr\ArrayItem::class]]></code>
+      <code><![CDATA[\PhpParser\Node\Expr\ClosureUse::class]]></code>
       <code><![CDATA[\PhpParser\Node\Scalar\DNumber::class]]></code>
       <code><![CDATA[\PhpParser\Node\Scalar\Encapsed::class]]></code>
       <code><![CDATA[\PhpParser\Node\Scalar\EncapsedStringPart::class]]></code>
       <code><![CDATA[\PhpParser\Node\Scalar\LNumber::class]]></code>
       <code><![CDATA[\PhpParser\Node\Stmt\DeclareDeclare::class]]></code>
+      <code><![CDATA[\PhpParser\Node\Stmt\PropertyProperty::class]]></code>
       <code><![CDATA[\PhpParser\Node\Stmt\StaticVar::class]]></code>
+      <code><![CDATA[\PhpParser\Node\Stmt\UseUse::class]]></code>
     </DeprecatedClass>
   </file>
   <file src="src/Psalm/Internal/Provider/ClassLikeStorageProvider.php">
