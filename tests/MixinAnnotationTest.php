@@ -940,6 +940,42 @@ final class MixinAnnotationTest extends TestCase
                 'ignored_issues' => [],
                 'php_version' => '8.0',
             ],
+            'lastOfSeveralTemplatedMixinsDeclaringTheMethodAsPseudoMethodWins' => [
+                'code' => '<?php
+                    /** @method int foo() */
+                    final class PA {}
+
+                    /** @method string foo() */
+                    final class PB {}
+
+                    final class RA {
+                        public function foo(): int { return 1; }
+                    }
+
+                    /**
+                     * @template TA of object
+                     * @template TB of object
+                     * @mixin TA
+                     * @mixin TB
+                     */
+                    final class H {
+                        public function __call(string $name, array $args): mixed { return null; }
+                    }
+
+                    /** @var H<PA, PB> $h */
+                    $h = new H;
+                    $r = $h->foo();
+
+                    /** @var H<RA, PB> $h2 */
+                    $h2 = new H;
+                    $r2 = $h2->foo();',
+                'assertions' => [
+                    '$r===' => 'string',
+                    '$r2===' => 'string',
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
             'templatedMixinBindStatic' => [
                 'code' => '<?php
                     /**

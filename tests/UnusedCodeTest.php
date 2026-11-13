@@ -2827,6 +2827,7 @@ final class UnusedCodeTest extends TestCase
                      * @mixin Repository<static>
                      */
                     final class Post {
+                        /** @psalm-api */
                         public function __call(string $name, array $args) { return null; }
                     }
 
