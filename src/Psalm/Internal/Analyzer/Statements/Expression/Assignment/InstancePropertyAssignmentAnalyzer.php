@@ -1393,7 +1393,9 @@ final class InstancePropertyAssignmentAnalyzer
                 );
 
                 if ($hook_interface !== null) {
+                    $interface_setter = true;
                     $fq_class_name = $hook_interface->value;
+                    $lhs_type_part = $hook_interface;
                     $class_exists = false;
                 }
             }

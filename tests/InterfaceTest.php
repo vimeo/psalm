@@ -1512,6 +1512,28 @@ function run(I $i): Box { $i->value = new Box(new Dog()); return $i->value; }',
                 'error_levels' => [],
                 'php_version' => '8.4',
             ],
+            'hookedClassRootInvalid' => [
+                'code' => '<?php
+class Animal {} final class Dog extends Animal {} final class Cat extends Animal {}
+/** @template T */ class Marker {}
+/** @template T of Animal */ interface Sink { /** @var T */ public Animal $value { set; } }
+/** @param Marker<int>&Sink<Dog> $i */
+function run($i): void { $i->value = new Cat(); }',
+                'error_message' => 'InvalidPropertyAssignmentValue',
+                'error_levels' => [],
+                'php_version' => '8.4',
+            ],
+            'hookedClassReverseInvalid' => [
+                'code' => '<?php
+class Animal {} final class Dog extends Animal {} final class Cat extends Animal {}
+/** @template T */ class Marker {}
+/** @template T of Animal */ interface Sink { /** @var T */ public Animal $value { set; } }
+/** @param Sink<Dog>&Marker<int> $i */
+function run($i): void { $i->value = new Cat(); }',
+                'error_message' => 'InvalidPropertyAssignmentValue',
+                'error_levels' => [],
+                'php_version' => '8.4',
+            ],
             'hookedGenericRootInvalid' => [
                 'code' => '<?php
 class Animal {} final class Dog extends Animal {} final class Cat extends Animal {}
