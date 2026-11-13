@@ -662,7 +662,10 @@ final class ReferenceTest extends TestCase
                     final class InstanceReferenceStore {
                         public string $value = '';
 
-                        /** @psalm-suppress MissingReturnType */
+                        /**
+                         * @psalm-suppress MissingReturnType
+                         * @psalm-suppress UnsupportedPropertyReferenceUsage
+                         */
                         public function &getReference() {
                             return $this->value;
                         }
@@ -710,6 +713,7 @@ final class ReferenceTest extends TestCase
                         echo strlen($reference);
                     }
                     PHP,
+                'php_version' => '8.0',
             ],
             'returnedReferenceAssignmentInvalidatesCachedOffsets' => [
                 'code' => <<<'PHP'

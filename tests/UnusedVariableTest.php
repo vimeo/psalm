@@ -2577,6 +2577,7 @@ final class UnusedVariableTest extends TestCase
                 'code' => <<<'PHP'
                     <?php
                     function &sharedText(): string {
+                        /** @var string $text */
                         static $text = '';
                         return $text;
                     }
