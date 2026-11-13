@@ -76,6 +76,14 @@ final class FileStorage
     public bool $has_visitor_issues = false;
 
     /**
+     * The classes and enums declared in this file whose name was already taken by another declaration,
+     * each scanned into its own storage, keyed by the offset of the declaration
+     *
+     * @var array<int, ClassLikeStorage>
+     */
+    public array $duplicate_classlikes = [];
+
+    /**
      * @var list<CodeIssue>
      */
     public array $docblock_issues = [];

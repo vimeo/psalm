@@ -663,7 +663,8 @@ final class ReflectorVisitor extends PhpParser\NodeVisitorAbstract implements Fi
 
             $this->eventDispatcher->dispatchAfterClassLikeVisit($event);
 
-            if (!$this->file_storage->has_visitor_issues) {
+            // the cache holds the storage of the declaration that owns the name
+            if (!$this->file_storage->has_visitor_issues && !$classlike_node_scanner->is_duplicate) {
                 $this->codebase->cacheClassLikeStorage($classlike_storage, $this->file_path);
             }
         } elseif ($node instanceof PhpParser\Node\FunctionLike) {

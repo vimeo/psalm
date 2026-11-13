@@ -31,6 +31,7 @@ use Psalm\Internal\Analyzer\NamespaceAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\SimpleTypeInferer;
 use Psalm\Internal\Codebase\PropertyMap;
 use Psalm\Internal\MethodIdentifier;
+use Psalm\Internal\Provider\ClassLikeStorageProvider;
 use Psalm\Internal\Provider\NodeDataProvider;
 use Psalm\Internal\Scanner\ClassLikeDocblockComment;
 use Psalm\Internal\Scanner\FileScanner;
@@ -130,6 +131,11 @@ final class ClassLikeNodeScanner
     public ?ClassLikeStorage $storage = null;
 
     /**
+     * Whether the class-like's name was already taken, so its storage is kept in the file's storage only
+     */
+    public bool $is_duplicate = false;
+
+    /**
      * @var array<string, TypeAlias>
      */
     public array $type_aliases = [];
@@ -220,11 +226,18 @@ final class ClassLikeNodeScanner
                             ),
                         );
 
-                        $this->file_storage->has_visitor_issues = true;
+                        if (!ClassLikeStorageProvider::isAnalyzedAsDuplicate($node, $duplicate_storage)) {
+                            $this->file_storage->has_visitor_issues = true;
 
-                        $duplicate_storage->has_visitor_issues = true;
+                            $duplicate_storage->has_visitor_issues = true;
 
-                        return false;
+                            return false;
+                        }
+
+                        // analysed against its own statements, with this storage standing in for the other one
+                        $this->is_duplicate = true;
+                        $storage = $this->storage = new ClassLikeStorage($fq_classlike_name);
+                        $this->file_storage->duplicate_classlikes[$class_location->raw_file_start] = $storage;
                     }
                 } elseif (!$duplicate_storage->location
                     || $duplicate_storage->location->file_path !== $this->file_path
@@ -256,7 +269,9 @@ final class ClassLikeNodeScanner
 
         $fq_classlike_name_lc = strtolower($fq_classlike_name);
 
-        $this->file_storage->classlikes_in_file[$fq_classlike_name_lc] = $fq_classlike_name;
+        if (!$this->is_duplicate) {
+            $this->file_storage->classlikes_in_file[$fq_classlike_name_lc] = $fq_classlike_name;
+        }
 
         if (!$storage) {
             $this->storage = $storage = $this->codebase->classlike_storage_provider->create($fq_classlike_name);
@@ -297,7 +312,9 @@ final class ClassLikeNodeScanner
             $storage->final = $node->isFinal();
             $storage->readonly = $node->isReadonly();
 
-            $this->codebase->classlikes->addFullyQualifiedClassName($fq_classlike_name, $this->file_path);
+            if (!$this->is_duplicate) {
+                $this->codebase->classlikes->addFullyQualifiedClassName($fq_classlike_name, $this->file_path);
+            }
 
             if ($node->extends) {
                 $parent_fqcln = ClassLikeAnalyzer::getFQCLNFromNameObject($node->extends, $this->aliases);
@@ -370,7 +387,9 @@ final class ClassLikeNodeScanner
             );
             $storage->appearing_method_ids['cases'] = $storage->declaring_method_ids['cases'];
 
-            $this->codebase->classlikes->addFullyQualifiedEnumName($fq_classlike_name, $this->file_path);
+            if (!$this->is_duplicate) {
+                $this->codebase->classlikes->addFullyQualifiedEnumName($fq_classlike_name, $this->file_path);
+            }
         } else {
             throw new UnexpectedValueException('Unknown classlike type');
         }

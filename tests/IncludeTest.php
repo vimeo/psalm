@@ -729,7 +729,7 @@ final class IncludeTest extends TestCase
                     (string) getcwd() . DIRECTORY_SEPARATOR . 'classes.php' => '<?php
                         // one.php
 
-                        if (true) {
+                        if (rand(0, 1)) {
                             class One {}
                         }
                         else {

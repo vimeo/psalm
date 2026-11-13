@@ -10,10 +10,13 @@ use Psalm\Internal\Provider\ClassLikeStorageProvider;
 use Psalm\Internal\Provider\FileStorageProvider;
 use Psalm\IssueBuffer;
 use Psalm\Storage\ClassLikeStorage;
+use Psalm\Storage\FileStorage;
 use Psalm\Tests\TestCase;
 
 use function array_keys;
+use function array_values;
 use function getcwd;
+use function strtolower;
 
 use const DIRECTORY_SEPARATOR;
 
@@ -70,8 +73,9 @@ if (!class_exists(Lazy::class, false)) {
         ];
 
         foreach ($arrival as $process) {
-            [$file_path, $classlike_storages] = $processes[$process];
+            [$file_path, $classlike_storages, $file_storages] = $processes[$process];
             $codebase = $this->project_analyzer->getCodebase();
+            $codebase->file_storage_provider->addMore($file_storages);
             $codebase->classlike_storage_provider->addMore($classlike_storages);
             $codebase->scanner->addThreadData([[], [], [], [], [], ['lib\lazy' => $file_path], [], [], []]);
         }
@@ -83,6 +87,13 @@ if (!class_exists(Lazy::class, false)) {
         self::assertSame(
             $winner_file,
             $this->project_analyzer->getCodebase()->scanner->getClassLikeFilePath('lib\lazy'),
+        );
+
+        // the losing declaration is analysed with its own storage
+        self::assertFalse($processes['w1'][1]['lib\lazy']->has_visitor_issues);
+        self::assertSame(
+            [$processes['w2'][1]['lib\lazy']],
+            array_values(FileStorageProvider::getAll()[strtolower($loser_file)]->duplicate_classlikes),
         );
 
         $issues = IssueBuffer::getIssuesData();
@@ -140,7 +151,7 @@ if (!class_exists(Lazy::class, false)) {
     /**
      * Scans a file as a process that has seen nothing else would: its storages, then forgotten.
      *
-     * @return array{string, array<string, ClassLikeStorage>}
+     * @return array{string, array<string, ClassLikeStorage>, array<lowercase-string, FileStorage>}
      */
     private function scanAlone(string $key): array
     {
@@ -152,6 +163,7 @@ if (!class_exists(Lazy::class, false)) {
         $codebase->scanner->scanFiles($codebase->classlikes);
 
         $classlike_storages = ClassLikeStorageProvider::getAll();
+        $file_storages = FileStorageProvider::getAll();
 
         foreach (array_keys($classlike_storages) as $name_lc) {
             $codebase->scanner->removeClassLike($name_lc);
@@ -161,6 +173,6 @@ if (!class_exists(Lazy::class, false)) {
         FileStorageProvider::deleteAll();
         IssueBuffer::clear();
 
-        return [$file_path, $classlike_storages];
+        return [$file_path, $classlike_storages, $file_storages];
     }
 }
