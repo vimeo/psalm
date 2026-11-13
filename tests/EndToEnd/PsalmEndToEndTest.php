@@ -23,6 +23,7 @@ use function is_dir;
 use function is_string;
 use function mkdir;
 use function opendir;
+use function preg_match_all;
 use function preg_replace;
 use function readdir;
 use function rmdir;
@@ -195,7 +196,7 @@ final class PsalmEndToEndTest extends TestCase
         file_put_contents(self::$tmpDir . '/psalm.xml', $psalmXml);
 
         $this->assertStringContainsString(
-            'No errors found!',
+            "\n1 file changed\n",
             $this->runPsalm(['--alter', '--issues=all'], self::$tmpDir, false, true)['STDOUT'],
         );
 
@@ -227,6 +228,41 @@ final class PsalmEndToEndTest extends TestCase
         (new Process([PHP_BINARY, $this->psalter, '--alter', '--issues=MissingPureAnnotation'], self::$tmpDir))->mustRun();
 
         $this->assertStringContainsString('@psalm-pure', (string) file_get_contents(self::$tmpDir . '/src/Slug.php'));
+    }
+
+    public function testPsalterDryRunPrintsEachChangedFileOnceForOverlappingPaths(): void
+    {
+        $this->runPsalmInit();
+        $psalmXml = file_get_contents(self::$tmpDir . '/psalm.xml');
+        $psalmXml = str_replace('<psalm', '<psalm runTaintAnalysis="false"', (string)$psalmXml);
+        file_put_contents(self::$tmpDir . '/psalm.xml', $psalmXml);
+        file_put_contents(self::$tmpDir . '/src/A.php', "<?php\n\nfunction a() {\n    return 1;\n}\n");
+        file_put_contents(self::$tmpDir . '/src/B.php', "<?php\n\nfunction b() {\n    return 2;\n}\n");
+
+        $process = new Process(
+            [
+                PHP_BINARY,
+                $this->psalter,
+                '--dry-run',
+                '--no-cache',
+                '--issues=MissingReturnType',
+                'src',
+                'src/A.php',
+                'src/B.php',
+                'src/A.php',
+            ],
+            self::$tmpDir,
+            self::agentEnvVarsToUnset(),
+        );
+        $process->mustRun();
+        $output = $process->getOutput();
+
+        $this->assertSame(1, preg_match_all('/^\d\) src\/A\.php:3$/m', $output), $output);
+        $this->assertSame(1, preg_match_all('/^\d\) src\/B\.php:3$/m', $output), $output);
+        $this->assertSame(1, substr_count($output, '--- a/src/A.php'), $output);
+        $this->assertSame(1, substr_count($output, '--- a/src/B.php'), $output);
+        $this->assertStringContainsString("\n2 files would be changed (dry run)\n", $output);
+        $this->assertStringNotContainsString("\e", $output);
     }
 
     public function testPsalterFixesTheIssuesAPluginDeclares(): void

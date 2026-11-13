@@ -820,10 +820,15 @@ final class ProjectAnalyzer
                     },
                 );
 
-                $existing_contents = $this->codebase->file_provider->getContents($file_path);
+                $original_contents = $this->codebase->file_provider->getContents($file_path);
+                $existing_contents = $original_contents;
 
                 foreach ($file_manipulations as $manipulation) {
                     $existing_contents = $manipulation->transform($existing_contents);
+                }
+
+                if ($existing_contents !== $original_contents) {
+                    $this->codebase->analyzer->markFileChanged($file_path);
                 }
 
                 $this->codebase->file_provider->setContents($file_path, $existing_contents);

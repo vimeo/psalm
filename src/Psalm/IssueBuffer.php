@@ -841,6 +841,8 @@ final class IssueBuffer
                     ? "\e[0;31m" . $error_count . " errors\e[0m"
                     : $error_count . ' errors'
                 ) . ' found' . "\n";
+            } elseif ($codebase->alter_code) {
+                self::printAlterSummary($project_analyzer, $codebase->analyzer->getChangedFilesCount());
             } else {
                 self::printSuccessMessage($project_analyzer);
             }
@@ -883,8 +885,9 @@ final class IssueBuffer
                 echo 'Checks took ' . number_format(microtime(true) - $start_time, 2) . ' seconds';
                 echo ' and used ' . number_format(memory_get_peak_usage() / (1_024 * 1_024), 3) . 'MB of memory' . "\n";
 
-                $analysis_summary = $codebase->analyzer->getTypeInferenceSummary($codebase);
-                echo $analysis_summary . "\n";
+                if (!$codebase->alter_code) {
+                    echo $codebase->analyzer->getTypeInferenceSummary($codebase) . "\n";
+                }
 
                 if ($add_stats) {
                     echo '-----------------' . "\n";
@@ -915,7 +918,10 @@ final class IssueBuffer
                 }
             }
 
-            if ($codebase->config->find_unused_issue_handler_suppression && (!$is_full || $codebase->diff_run)) {
+            if (!$codebase->alter_code
+                && $codebase->config->find_unused_issue_handler_suppression
+                && (!$is_full || $codebase->diff_run)
+            ) {
                 fwrite(
                     STDERR,
                     PHP_EOL . 'To whom it may concern: Psalm cannot detect unused issue handler suppressions when'
@@ -957,6 +963,19 @@ final class IssueBuffer
         }
 
         return false;
+    }
+
+    private static function printAlterSummary(ProjectAnalyzer $project_analyzer, int $changed_files_count): void
+    {
+        if ($changed_files_count === 0) {
+            $message = 'No changes';
+        } else {
+            $message = $changed_files_count . ($changed_files_count === 1 ? ' file ' : ' files ')
+                . ($project_analyzer->dry_run ? 'would be changed (dry run)' : 'changed');
+        }
+
+        echo ($project_analyzer->stdout_report_options?->use_color ? "\e[0;32m" . $message . "\e[0m" : $message)
+            . "\n";
     }
 
     public static function printSuccessMessage(ProjectAnalyzer $project_analyzer): void

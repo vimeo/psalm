@@ -44,6 +44,7 @@ use function fwrite;
 use function gc_collect_cycles;
 use function gc_disable;
 use function getcwd;
+use function getenv;
 use function getopt;
 use function implode;
 use function in_array;
@@ -68,6 +69,7 @@ use const FILTER_VALIDATE_BOOLEAN;
 use const PATHINFO_EXTENSION;
 use const PHP_EOL;
 use const STDERR;
+use const STDOUT;
 
 // phpcs:disable PSR1.Files.SideEffects
 
@@ -314,7 +316,10 @@ final class Psalter
         $stdout_report_options = new ReportOptions();
         $stdout_report_options->use_color = !array_key_exists('m', $options)
             && !CliUtils::noColorRequested()
-            && !CliUtils::runningUnderAiAgent();
+            && !CliUtils::runningUnderAiAgent()
+            && CliUtils::streamIsInteractive(STDOUT)
+            && getenv('TERM') !== 'dumb';
+        $stdout_report_options->in_ci = $in_ci;
 
         $project_analyzer = new ProjectAnalyzer(
             $config,

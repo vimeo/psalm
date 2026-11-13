@@ -1,0 +1,80 @@
+<?php
+
+declare(strict_types=1);
+
+namespace Psalm\Tests;
+
+use PHPUnit\Framework\TestCase;
+use Psalm\Internal\FileManipulation\UnifiedDiffRenderer;
+
+final class UnifiedDiffRendererTest extends TestCase
+{
+    public function testPlainOutputIsGitStylePatchWithTitle(): void
+    {
+        $output = (new UnifiedDiffRenderer())->render(
+            2,
+            'src/A.php',
+            '/project/src/A.php',
+            "<?php\n\nfunction a() {}\n",
+            "<?php\n\nfunction a(): void {}\n",
+        );
+
+        $this->assertSame(
+            "\n2) src/A.php:3\n"
+            . "--- a/src/A.php\n"
+            . "+++ b/src/A.php\n"
+            . "@@ -1,3 +1,3 @@\n"
+            . " <?php\n"
+            . " \n"
+            . "-function a() {}\n"
+            . "+function a(): void {}\n",
+            $output,
+        );
+    }
+
+    public function testColoredOutputHighlightsChangedPartsWithoutSplittingMultibyteCharacters(): void
+    {
+        $output = (new UnifiedDiffRenderer(true, true))->render(
+            1,
+            'src/A.php',
+            '/project/src/A.php',
+            "<?php\n\$a = 'é1';\n\$b = 1;\n",
+            "<?php\n\$a = 'ê1';\n\$b = 2;\n",
+        );
+
+        $this->assertSame(
+            "\e[1m1) src/A.php:2\e[0m\n"
+            . "\e[36m@@ -1,3 +1,3 @@\e[0m\n"
+            . " <?php\n"
+            . "\e[31m-\$a = '\e[7mé\e[27m1';\e[0m\n"
+            . "\e[31m-\$b = \e[7m1\e[27m;\e[0m\n"
+            . "\e[32m+\$a = '\e[7mê\e[27m1';\e[0m\n"
+            . "\e[32m+\$b = \e[7m2\e[27m;\e[0m\n",
+            $output,
+        );
+    }
+
+    public function testColoredOutputDoesNotHighlightUnequalRunsAndLinksTitle(): void
+    {
+        $output = (new UnifiedDiffRenderer(true, false))->render(
+            1,
+            'a.txt',
+            '/project/a.txt',
+            "one\ntwo\n",
+            "uno\n",
+        );
+
+        $this->assertStringContainsString("\e]8;;", $output);
+        $this->assertStringContainsString("\e[1m1) a.txt:1\e[0m", $output);
+        $this->assertStringContainsString("\e[31m-one\e[0m\n\e[31m-two\e[0m\n\e[32m+uno\e[0m\n", $output);
+        $this->assertStringNotContainsString("\e[7m", $output);
+        $this->assertStringNotContainsString('--- a/', $output);
+    }
+
+    public function testColoredOutputDimsMissingNewlineMarker(): void
+    {
+        $output = (new UnifiedDiffRenderer(true, true))->render(1, 'a.txt', '/p/a.txt', "a\n", 'b');
+
+        $this->assertStringContainsString("\e[2m\\ No newline at end of file\e[0m\n", $output);
+    }
+}
