@@ -1251,6 +1251,7 @@ final class Analyzer
             }
         }
 
+        $relative_path = str_replace('\\', '/', $this->config->shortenFileName($file_path));
         $is_changed = $existing_contents !== $original_contents;
 
         if ($is_changed) {
@@ -1261,7 +1262,7 @@ final class Analyzer
             if ($is_changed) {
                 echo $diff_renderer->render(
                     $this->getChangedFilesCount(),
-                    str_replace('\\', '/', $this->config->shortenFileName($file_path)),
+                    $relative_path,
                     $file_path,
                     $original_contents,
                     $existing_contents,
@@ -1271,7 +1272,7 @@ final class Analyzer
             return;
         }
 
-        $this->progress->alterFileDone($file_path);
+        $this->progress->alterFileDone($relative_path);
 
         $this->file_provider->setContents($file_path, $existing_contents);
     }
