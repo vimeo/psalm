@@ -54,6 +54,81 @@ final class CodeUseGraphTest extends TestCase
         self::assertFalse($graph->isUsed($unused_b));
     }
 
+    public function testPotentialCallReachabilityKeepsDefiniteUsageSeparate(): void
+    {
+        $graph = new CodeUseGraph();
+        $file = CodeUseGraph::fileNode('/entry.php');
+        $class = CodeUseGraph::classNode('a');
+        $entry = CodeUseGraph::functionLikeNode('a::entry');
+        $helper = CodeUseGraph::functionLikeNode('a::helper');
+        $read = CodeUseGraph::propertyNode('a', 'read');
+        $written = CodeUseGraph::propertyNode('a', 'written');
+        $dead = CodeUseGraph::propertyNode('a', 'dead');
+        $graph->addEdge($file, $class);
+        $graph->addEdge($entry, $helper);
+        $graph->addEdge($helper, $read);
+        $graph->addEdge($helper, $written, CodeUseGraph::EDGE_WRITE);
+        $graph->resolve(self::notExternal());
+
+        $potential = $graph->getPotentiallyUsedNodes([
+            $file => [$class => [$entry => true]],
+        ]);
+
+        self::assertSame(
+            [$entry => true, $helper => true, $read => true],
+            $potential,
+        );
+        self::assertFalse($graph->isUsed($entry));
+        self::assertFalse($graph->isUsed($read));
+        self::assertArrayNotHasKey($written, $potential);
+        self::assertArrayNotHasKey($dead, $potential);
+    }
+
+    public function testPotentialReachabilityCanActivateDeferredOverrides(): void
+    {
+        $graph = new CodeUseGraph();
+        $file = CodeUseGraph::fileNode('/entry.php');
+        $class_a = CodeUseGraph::classNode('a');
+        $class_b = CodeUseGraph::classNode('b');
+        $entry = CodeUseGraph::functionLikeNode('a::entry');
+        $parent = CodeUseGraph::functionLikeNode('parent::api');
+        $override = CodeUseGraph::functionLikeNode('b::api');
+        $graph->addEdge($file, $class_a);
+        $graph->addEdge($entry, $class_b);
+        $graph->addEdge($parent, $override, CodeUseGraph::EDGE_OVERRIDE);
+        $graph->markAsPublicApi($parent);
+        $graph->resolve(self::notExternal());
+
+        self::assertFalse($graph->isUsed($override));
+
+        $potential = $graph->getPotentiallyUsedNodes([
+            $file => [$class_a => [$entry => true]],
+        ]);
+        self::assertArrayHasKey($class_b, $potential);
+        self::assertArrayHasKey($override, $potential);
+        self::assertFalse($graph->isUsed($override));
+    }
+
+    public function testDynamicCallFromDeadMethodDoesNotPreserveDependencies(): void
+    {
+        $graph = new CodeUseGraph();
+        $file = CodeUseGraph::fileNode('/entry.php');
+        $class = CodeUseGraph::classNode('a');
+        $dead_dispatch = CodeUseGraph::functionLikeNode('a::dead');
+        $entry = CodeUseGraph::functionLikeNode('a::entry');
+        $property = CodeUseGraph::propertyNode('a', 'value');
+        $graph->addEdge($file, $class);
+        $graph->addEdge($entry, $property);
+        $graph->addEdge($dead_dispatch, $class);
+        $graph->resolve(self::notExternal());
+
+        $potential = $graph->getPotentiallyUsedNodes([
+            $dead_dispatch => [$class => [$entry => true]],
+        ]);
+
+        self::assertSame([], $potential);
+    }
+
     public function testUsedReturnUsesFunction(): void
     {
         $graph = new CodeUseGraph();

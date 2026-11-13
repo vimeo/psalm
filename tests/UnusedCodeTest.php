@@ -221,6 +221,159 @@ final class UnusedCodeTest extends TestCase
         );
     }
 
+    public function testDynamicMethodCallDoesNotMakeItsDependenciesDefinitelyUnused(): void
+    {
+        $this->project_analyzer->getConfig()->throw_exception = false;
+        $this->project_analyzer->getConfig()->setCustomErrorLevel('PossiblyUnusedMethod', Config::REPORT_INFO);
+        $file_path = self::$src_dir_path . 'somefile.php';
+
+        $this->addFile($file_path, '<?php
+            final class Controller {
+                private string $greeting = "hello";
+
+                public function actionIndex(): string {
+                    return $this->formatGreeting();
+                }
+
+                private function formatGreeting(): string {
+                    return $this->greeting;
+                }
+            }
+            $controller = new Controller();
+            $action = "action" . ucfirst((string) getenv("ACTION"));
+            if (method_exists($controller, $action)) {
+                echo (string) $controller->$action();
+            }');
+
+        $this->analyzeFile($file_path, new Context(), false);
+        $this->project_analyzer->consolidateAnalyzedData();
+
+        self::assertSame(
+            ['PossiblyUnusedMethod'],
+            array_column(IssueBuffer::getIssuesDataForFile($file_path), 'type'),
+        );
+    }
+
+    public function testDynamicCallableKeepsReferencedPropertyAlive(): void
+    {
+        $this->project_analyzer->getConfig()->throw_exception = false;
+        $this->project_analyzer->getConfig()->setCustomErrorLevel('PossiblyUnusedMethod', Config::REPORT_INFO);
+        $file_path = self::$src_dir_path . 'somefile.php';
+
+        $this->addFile($file_path, '<?php
+            final class Endpoint {
+                private string $token = "ok";
+
+                public function handle(): string {
+                    return $this->token;
+                }
+            }
+            $endpoint = new Endpoint();
+            $action = (string) getenv("ACTION");
+            if (method_exists($endpoint, $action)) {
+                echo (string) call_user_func([$endpoint, $action]);
+            }');
+
+        $this->analyzeFile($file_path, new Context(), false);
+        $this->project_analyzer->consolidateAnalyzedData();
+
+        self::assertSame(
+            ['PossiblyUnusedMethod'],
+            array_column(IssueBuffer::getIssuesDataForFile($file_path), 'type'),
+        );
+    }
+
+    public function testDynamicCallThroughBaseClassKeepsSubclassPropertyAlive(): void
+    {
+        $this->project_analyzer->getConfig()->throw_exception = false;
+        $this->project_analyzer->getConfig()->setCustomErrorLevel('PossiblyUnusedMethod', Config::REPORT_INFO);
+        $file_path = self::$src_dir_path . 'somefile.php';
+
+        $this->addFile($file_path, '<?php
+            class Base {
+                public function dispatch(string $method): void {
+                    if (method_exists($this, $method)) {
+                        $this->$method();
+                    }
+                }
+            }
+            final class Derived extends Base {
+                private string $secret = "ok";
+
+                public function action(): void {
+                    echo $this->secret;
+                }
+            }
+            (new Derived())->dispatch((string) getenv("ACTION"));');
+
+        $this->analyzeFile($file_path, new Context(), false);
+        $this->project_analyzer->consolidateAnalyzedData();
+
+        self::assertSame(
+            ['PossiblyUnusedMethod'],
+            array_column(IssueBuffer::getIssuesDataForFile($file_path), 'type'),
+        );
+    }
+
+    public function testUnreachableDynamicCallDoesNotPreserveDeadProperty(): void
+    {
+        $this->project_analyzer->getConfig()->throw_exception = false;
+        $this->project_analyzer->getConfig()->setCustomErrorLevel('PossiblyUnusedMethod', Config::REPORT_SUPPRESS);
+        $file_path = self::$src_dir_path . 'somefile.php';
+
+        $this->addFile($file_path, '<?php
+            final class Controller {
+                private string $greeting = "hello";
+
+                public function actionIndex(): string {
+                    return $this->greeting;
+                }
+
+                public function unusedDispatcher(string $method): void {
+                    $this->$method();
+                }
+            }
+            new Controller();');
+
+        $this->analyzeFile($file_path, new Context(), false);
+        $this->project_analyzer->consolidateAnalyzedData();
+
+        self::assertSame(
+            ['UnusedProperty'],
+            array_column(IssueBuffer::getIssuesDataForFile($file_path), 'type'),
+        );
+    }
+
+    public function testDynamicCallDoesNotReachPrivateMethodsFromOutsideTheClass(): void
+    {
+        $this->project_analyzer->getConfig()->throw_exception = false;
+        $this->project_analyzer->getConfig()->setCustomErrorLevel('PossiblyUnusedMethod', Config::REPORT_INFO);
+        $file_path = self::$src_dir_path . 'somefile.php';
+
+        $this->addFile($file_path, '<?php
+            final class Controller {
+                private string $greeting = "hello";
+
+                public function actionIndex(): string {
+                    return $this->greeting;
+                }
+
+                private function notCallable(): void {}
+            }
+            $controller = new Controller();
+            $action = "action" . ucfirst((string) getenv("ACTION"));
+            if (method_exists($controller, $action)) {
+                $controller->$action();
+            }');
+
+        $this->analyzeFile($file_path, new Context(), false);
+        $this->project_analyzer->consolidateAnalyzedData();
+
+        $issues = array_column(IssueBuffer::getIssuesDataForFile($file_path), 'type');
+        sort($issues);
+        self::assertSame(['PossiblyUnusedMethod', 'UnusedMethod'], $issues);
+    }
+
     public function testClassReferencedFromExternalInterfaceOverrideIsUsed(): void
     {
         $this->project_analyzer->getConfig()->throw_exception = false;

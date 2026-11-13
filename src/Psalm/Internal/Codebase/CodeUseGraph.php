@@ -13,6 +13,7 @@ use Psalm\Storage\FunctionLikeStorage;
 use Psalm\Storage\MethodStorage;
 
 use function array_intersect_key;
+use function array_keys;
 use function array_pop;
 use function md5;
 use function str_contains;
@@ -716,6 +717,103 @@ final class CodeUseGraph
         }
 
         $this->used = $used;
+    }
+
+    /**
+     * Resolve potential dynamic calls separately from definite usage. The
+     * caller and the receiver class must both be reachable before their
+     * possible callees are traversed. This preserves PossiblyUnusedMethod for
+     * the dynamic entry points while protecting their transitive dependencies
+     * from definite unused-code reports.
+     *
+     * @param array<string, array<string, array<string, true>>> $potential_calls
+     *        source node => receiver class node => possible callee nodes
+     * @return array<string, true>
+     * @psalm-mutation-free
+     */
+    public function getPotentiallyUsedNodes(array $potential_calls): array
+    {
+        if ($this->used === null) {
+            throw new LogicException('The graph must be resolved before checking usage');
+        }
+
+        if ($potential_calls === []) {
+            return [];
+        }
+
+        $reachable = $this->used;
+        $possibly_used = [];
+        $queue = array_keys($reachable);
+        $deferred_calls = [];
+        $deferred_overrides = [];
+
+        while ($queue) {
+            $node_id = array_pop($queue);
+
+            foreach ($potential_calls[$node_id] ?? [] as $class_node => $callees) {
+                if (!isset($reachable[$class_node])) {
+                    foreach ($callees as $callee => $_) {
+                        $deferred_calls[$class_node][$callee] = true;
+                    }
+                    continue;
+                }
+
+                foreach ($callees as $callee => $_) {
+                    if (!isset($possibly_used[$callee])) {
+                        $reachable[$callee] = true;
+                        $possibly_used[$callee] = true;
+                        $queue[] = $callee;
+                    }
+                }
+            }
+
+            foreach ($this->forward_edges[$node_id] ?? [] as $target_node => $type) {
+                if ($type === self::EDGE_WRITE) {
+                    continue;
+                }
+
+                if ($type === self::EDGE_OVERRIDE) {
+                    $owner_class = self::getOwnerClass($target_node);
+                    if ($owner_class !== null) {
+                        $owner_node = self::classNode($owner_class);
+                        if (!isset($reachable[$owner_node])) {
+                            $deferred_overrides[$owner_node][$target_node] = true;
+                            continue;
+                        }
+                    }
+                }
+
+                if (!isset($reachable[$target_node])
+                    || (isset($possibly_used[$node_id]) && !isset($possibly_used[$target_node]))
+                ) {
+                    $reachable[$target_node] = true;
+                    $possibly_used[$target_node] = true;
+                    $queue[] = $target_node;
+                }
+            }
+
+            // A class can become reachable through a speculative call. Enable
+            // the edges previously deferred until that receiver class was live.
+            foreach ($deferred_calls[$node_id] ?? [] as $callee => $_) {
+                if (!isset($possibly_used[$callee])) {
+                    $reachable[$callee] = true;
+                    $possibly_used[$callee] = true;
+                    $queue[] = $callee;
+                }
+            }
+            unset($deferred_calls[$node_id]);
+
+            foreach ($deferred_overrides[$node_id] ?? [] as $target_node => $_) {
+                if (!isset($possibly_used[$target_node])) {
+                    $reachable[$target_node] = true;
+                    $possibly_used[$target_node] = true;
+                    $queue[] = $target_node;
+                }
+            }
+            unset($deferred_overrides[$node_id]);
+        }
+
+        return $possibly_used;
     }
 
     /**

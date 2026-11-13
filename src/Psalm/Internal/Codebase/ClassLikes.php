@@ -69,6 +69,7 @@ use function ltrim;
 use function preg_match;
 use function preg_quote;
 use function preg_replace;
+use function str_contains;
 use function str_starts_with;
 use function strlen;
 use function strrpos;
@@ -888,6 +889,14 @@ final class ClassLikes
                 || !$this->config->isInProjectDirs($owner_storage->location->file_path);
         });
 
+        // A dynamically invoked method remains only *possibly* called, but code it
+        // reads or invokes must not be reported as definitely unused.
+        $possibly_used_nodes = $find_unused_code
+            ? $code_use_graph->getPotentiallyUsedNodes(
+                $this->getPotentialDynamicMethodCalls($codebase->analyzer->getMixedMemberNames()),
+            )
+            : [];
+
         $suggest_purity_annotations = $project_analyzer->suggestsPurityAnnotations();
         $benefit = $project_analyzer->getPuritySuggestionReason();
         $subclass_capabilities = $suggest_purity_annotations
@@ -912,9 +921,9 @@ final class ClassLikes
                         if ($code_use_graph->isUsed($class_node)
                             && ($classlike_storage->public_api || $code_use_graph->isReferenced($class_node))
                         ) {
-                            $this->checkMethodReferences($classlike_storage, $methods);
-                            $this->checkPropertyReferences($classlike_storage);
-                        } else {
+                            $this->checkMethodReferences($classlike_storage, $methods, $possibly_used_nodes);
+                            $this->checkPropertyReferences($classlike_storage, $possibly_used_nodes);
+                        } elseif (!isset($possibly_used_nodes[$class_node])) {
                             IssueBuffer::maybeAdd(
                                 new UnusedClass(
                                     'Class ' . $classlike_storage->name . ' is never used',
@@ -2128,7 +2137,114 @@ final class ClassLikes
         return new Union($types);
     }
 
-    private function checkMethodReferences(ClassLikeStorage $classlike_storage, Methods $methods): void
+    /**
+     * Collect dynamic call sites and their possible method targets without
+     * adding them as definite uses to the code-use graph. A target can only
+     * be reached if both the call site and receiver class are reachable.
+     *
+     * @param array<string, array<string, bool>> $mixed_member_names
+     * @return array<string, array<string, array<string, true>>>
+     */
+    private function getPotentialDynamicMethodCalls(array $mixed_member_names): array
+    {
+        if ($mixed_member_names === []) {
+            return [];
+        }
+
+        $potential_calls = [];
+
+        foreach ($this->existing_classlikes_lc as $fq_class_name_lc => $_) {
+            try {
+                $class_storage = $this->classlike_storage_provider->get($fq_class_name_lc);
+            } catch (InvalidArgumentException) {
+                continue;
+            }
+
+            if ($class_storage->is_trait || !$class_storage->location
+                || !$this->config->isInProjectDirs($class_storage->location->file_path)
+            ) {
+                continue;
+            }
+
+            $class_node = CodeUseGraph::classNode($fq_class_name_lc);
+            $class_references = $mixed_member_names[$fq_class_name_lc . '::'] ?? [];
+            $inherited_references = $class_references;
+
+            foreach ($class_storage->parent_classes as $parent_class) {
+                $inherited_references += $mixed_member_names[strtolower($parent_class) . '::'] ?? [];
+            }
+            foreach ($class_storage->class_implements as $interface_name_lc => $_) {
+                $inherited_references += $mixed_member_names[$interface_name_lc . '::'] ?? [];
+            }
+
+            foreach ($class_storage->appearing_method_ids as $method_name => $appearing_method_id) {
+                if (isset($class_storage->methods[$method_name])) {
+                    $method_id = $appearing_method_id;
+                    $method_storage = $class_storage->methods[$method_name];
+                } else {
+                    $method_id = $class_storage->declaring_method_ids[$method_name];
+                    try {
+                        $declaring_storage = $this->classlike_storage_provider->get($method_id->fq_class_name);
+                    } catch (InvalidArgumentException) {
+                        continue;
+                    }
+                    $method_storage = $declaring_storage->methods[$method_id->method_name];
+                }
+
+                $references = $mixed_member_names[$method_name] ?? [];
+                $references += $method_storage->visibility === ClassLikeAnalyzer::VISIBILITY_PRIVATE
+                    ? $class_references
+                    : $inherited_references;
+                if ($references === []) {
+                    continue;
+                }
+
+                $method_node = CodeUseGraph::functionLikeNode(strtolower((string) $method_id));
+
+                foreach ($references as $reference => $_) {
+                    $is_method_caller = str_contains($reference, '::');
+
+                    // A call from outside the class cannot invoke its private methods.
+                    if ($method_storage->visibility === ClassLikeAnalyzer::VISIBILITY_PRIVATE
+                        && (!$is_method_caller
+                            || (!str_starts_with(strtolower($reference), $fq_class_name_lc . '::')
+                                && !str_starts_with(
+                                    strtolower($reference),
+                                    strtolower($method_id->fq_class_name) . '::',
+                                )))
+                    ) {
+                        continue;
+                    }
+
+                    // Protected methods cannot be called from top-level code.
+                    if ($method_storage->visibility === ClassLikeAnalyzer::VISIBILITY_PROTECTED
+                        && !$is_method_caller
+                    ) {
+                        continue;
+                    }
+
+                    // Non-method references are file-level calls (or free functions,
+                    // which are roots for unused-code analysis).
+                    $source_node = $is_method_caller
+                        ? CodeUseGraph::functionLikeNode(strtolower($reference))
+                        : CodeUseGraph::PUBLIC_API;
+
+                    $potential_calls[$source_node][$class_node][$method_node] = true;
+                }
+            }
+        }
+
+        return $potential_calls;
+    }
+
+    /**
+     * @param array<string, true> $possibly_used_nodes
+     */
+    private function checkMethodReferences(
+        ClassLikeStorage $classlike_storage,
+        Methods $methods,
+        array $possibly_used_nodes,
+    ): void
     {
         $project_analyzer = ProjectAnalyzer::getInstance();
         $codebase = $project_analyzer->getCodebase();
@@ -2183,9 +2299,24 @@ final class ClassLikes
                 continue;
             }
 
-            $method_referenced = $codebase->code_use_graph->isUsed(
-                CodeUseGraph::functionLikeNode(strtolower((string) $method_id)),
-            );
+            $method_node = CodeUseGraph::functionLikeNode(strtolower((string) $method_id));
+            $method_referenced = $codebase->code_use_graph->isUsed($method_node);
+
+            if (!$method_referenced && isset($possibly_used_nodes[$method_node])) {
+                // A private method can be reached through a dynamic call, or
+                // through another method which is only potentially called.
+                if ($method_storage->visibility === ClassLikeAnalyzer::VISIBILITY_PRIVATE) {
+                    continue;
+                }
+
+                // Keep PossiblyUnusedMethod for dynamic entry points, but not for
+                // methods called by one of those entry points.
+                foreach ($codebase->code_use_graph->getReferencingNodes($method_node) as $source_node => $_) {
+                    if (isset($possibly_used_nodes[$source_node])) {
+                        continue 2;
+                    }
+                }
+            }
 
             if (!$method_referenced
                 && $method_storage->location
@@ -2604,7 +2735,10 @@ final class ClassLikes
         return true;
     }
 
-    private function checkPropertyReferences(ClassLikeStorage $classlike_storage): void
+    /**
+     * @param array<string, true> $possibly_used_nodes
+     */
+    private function checkPropertyReferences(ClassLikeStorage $classlike_storage, array $possibly_used_nodes): void
     {
         $project_analyzer = ProjectAnalyzer::getInstance();
         $codebase = $project_analyzer->getCodebase();
@@ -2622,6 +2756,12 @@ final class ClassLikes
 
             $property_node = CodeUseGraph::propertyNode(strtolower($classlike_storage->name), $property_name);
             $property_referenced = $codebase->code_use_graph->isUsed($property_node);
+
+            // A speculative read also defeats the constructor-only heuristic.
+            // Writes do not propagate through the code-use graph.
+            if (isset($possibly_used_nodes[$property_node])) {
+                continue;
+            }
 
             $property_constructor_referenced = false;
             if ($property_referenced && $property_storage->visibility === ClassLikeAnalyzer::VISIBILITY_PRIVATE) {
