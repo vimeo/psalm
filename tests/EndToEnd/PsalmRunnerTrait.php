@@ -24,6 +24,8 @@ trait PsalmRunnerTrait
 
     private string $psalter = __DIR__ . '/../../psalter';
 
+    private string $psalmRefactor = __DIR__ . '/../../psalm-refactor';
+
     /**
      * Agent-harness environment variables that, when present in the developer
      * shell, would otherwise auto-switch Psalm to VoidProgress / monochrome.

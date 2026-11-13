@@ -968,7 +968,6 @@
       <code><![CDATA[$lhs_type_part]]></code>
     </ImplicitToStringCast>
     <RiskyTruthyFalsyComparison>
-      <code><![CDATA[!$class_storage->mixin_declaring_fqcln]]></code>
       <code><![CDATA[$class_storage->mixin_declaring_fqcln]]></code>
       <code><![CDATA[$class_storage->template_types]]></code>
       <code><![CDATA[$class_storage->template_types]]></code>
@@ -1430,7 +1429,6 @@
       <code><![CDATA[!$end_psalm_open_tag]]></code>
       <code><![CDATA[!$path_to_check]]></code>
       <code><![CDATA[$config->error_baseline]]></code>
-      <code><![CDATA[$f_paths]]></code>
       <code><![CDATA[$path_to_config]]></code>
       <code><![CDATA[$version = $config->getPHPVersionFromComposerJson()]]></code>
       <code><![CDATA[$version = $config->getPhpVersionFromConfig()]]></code>
