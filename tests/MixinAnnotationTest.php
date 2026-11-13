@@ -712,6 +712,270 @@ final class MixinAnnotationTest extends TestCase
 
                     $bar->foo();',
             ],
+            'severalMixinsDeclaringTheSameMethodBindStaticToTheHost' => [
+                'code' => '<?php
+                    /** @template T */
+                    final class Repository {
+                        /** @return T|null */
+                        public function first(): mixed { return null; }
+                    }
+
+                    final class Labels {
+                        public function first(): string { return ""; }
+                    }
+
+                    /**
+                     * @mixin Labels
+                     * @mixin Repository<static>
+                     */
+                    final class Post {
+                        public function __call(string $name, array $args): mixed { return null; }
+                    }
+
+                    /**
+                     * @mixin Repository<static>
+                     * @mixin Labels
+                     */
+                    final class Tag {
+                        public function __call(string $name, array $args): mixed { return null; }
+                    }
+
+                    /** @mixin Repository<static> */
+                    final class Comment {
+                        public function __call(string $name, array $args): mixed { return null; }
+                    }
+
+                    $p = (new Post)->first();
+                    $t = (new Tag)->first();
+                    $c = (new Comment)->first();',
+                'assertions' => [
+                    '$p===' => 'Post|null',
+                    '$t===' => 'string',
+                    '$c===' => 'Comment|null',
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'severalMixinsDeclaringTheSameMethodBindStaticToTheHostForAStaticCall' => [
+                'code' => '<?php
+                    /** @template T */
+                    final class Repository {
+                        /** @return T|null */
+                        public function first(): mixed { return null; }
+                    }
+
+                    final class Labels {
+                        public function first(): string { return ""; }
+                    }
+
+                    /**
+                     * @mixin Labels
+                     * @mixin Repository<static>
+                     */
+                    final class Post {
+                        public function __call(string $name, array $args): mixed { return null; }
+                        public static function __callStatic(string $name, array $args): mixed { return null; }
+                    }
+
+                    $post = Post::first();',
+                'assertions' => [
+                    '$post===' => 'Post|null',
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'mixinCallDoesNotRebindTheTemplatedMixinOfTheMixinTarget' => [
+                'code' => '<?php
+                    /** @template T */
+                    final class Repository {
+                        /** @return T|null */
+                        public function first(): mixed { return null; }
+                    }
+
+                    final class Labels {
+                        public function first(): string { return ""; }
+                    }
+
+                    /** @mixin Target */
+                    final class Host {
+                        public function __call(string $name, array $args): mixed { return null; }
+                    }
+
+                    /**
+                     * @template T
+                     * @mixin Repository<T>
+                     */
+                    final class Target {
+                        public function foo(): void {}
+                        public function __call(string $name, array $args): mixed { return null; }
+                    }
+
+                    (new Host)->foo();
+
+                    /** @var Target<string> $target */
+                    $target = new Target;
+                    $r = $target->first();',
+                'assertions' => [
+                    '$r===' => 'null|string',
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'inheritedShadowedMixinBindsStaticToTheChildHost' => [
+                'code' => '<?php
+                    /** @template T */
+                    final class Repository {
+                        /** @return T|null */
+                        public function first(): mixed { return null; }
+                    }
+
+                    final class Labels {
+                        public function first(): string { return ""; }
+                    }
+
+                    /**
+                     * @mixin Labels
+                     * @mixin Repository<static>
+                     */
+                    abstract class Model {
+                        public function __call(string $name, array $args): mixed { return null; }
+                        public static function __callStatic(string $name, array $args): mixed { return null; }
+                    }
+
+                    final class Child extends Model {}
+
+                    $instance = (new Child)->first();
+                    $static = Child::first();',
+                'assertions' => [
+                    '$instance===' => 'Child|null',
+                    '$static===' => 'Child|null',
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'shadowedMixinCalledThroughThisBindsStaticToTheHost' => [
+                'code' => '<?php
+                    /** @template T */
+                    final class Repository {
+                        /** @return T|null */
+                        public function first(): mixed { return null; }
+                    }
+
+                    final class Labels {
+                        public function first(): string { return ""; }
+                    }
+
+                    /**
+                     * @mixin Labels
+                     * @mixin Repository<static>
+                     */
+                    final class Post {
+                        public function __call(string $name, array $args): mixed { return null; }
+
+                        public function run(): void {
+                            $r = $this->first();
+                            /** @psalm-check-type-exact $r = Post|null */
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'shadowedMixinOfATemplatedHostBindsTheTemplate' => [
+                'code' => '<?php
+                    /** @template T */
+                    final class Repository {
+                        /** @return T|null */
+                        public function first(): mixed { return null; }
+                    }
+
+                    final class Labels {
+                        public function first(): string { return ""; }
+                    }
+
+                    /**
+                     * @template T
+                     * @mixin Labels
+                     * @mixin Repository<T>
+                     */
+                    final class Box {
+                        public function __call(string $name, array $args): mixed { return null; }
+                    }
+
+                    /** @var Box<int> $box */
+                    $box = new Box;
+                    $r = $box->first();',
+                'assertions' => [
+                    '$r===' => 'int|null',
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'lastOfSeveralTemplatedMixinsDeclaringTheMethodWins' => [
+                'code' => '<?php
+                    final class A {
+                        public function foo(): int { return 1; }
+                    }
+
+                    final class B {
+                        public function foo(): string { return ""; }
+                    }
+
+                    /**
+                     * @template TA of object
+                     * @template TB of object
+                     * @mixin TA
+                     * @mixin TB
+                     */
+                    final class Host {
+                        public function __call(string $name, array $args): mixed { return null; }
+                    }
+
+                    /** @var Host<A, B> $host */
+                    $host = new Host;
+                    $r = $host->foo();',
+                'assertions' => [
+                    '$r===' => 'string',
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'lastOfSeveralTemplatedMixinsDeclaringTheMethodAsPseudoMethodWins' => [
+                'code' => '<?php
+                    /** @method int foo() */
+                    final class PA {}
+
+                    /** @method string foo() */
+                    final class PB {}
+
+                    final class RA {
+                        public function foo(): int { return 1; }
+                    }
+
+                    /**
+                     * @template TA of object
+                     * @template TB of object
+                     * @mixin TA
+                     * @mixin TB
+                     */
+                    final class H {
+                        public function __call(string $name, array $args): mixed { return null; }
+                    }
+
+                    /** @var H<PA, PB> $h */
+                    $h = new H;
+                    $r = $h->foo();
+
+                    /** @var H<RA, PB> $h2 */
+                    $h2 = new H;
+                    $r2 = $h2->foo();',
+                'assertions' => [
+                    '$r===' => 'string',
+                    '$r2===' => 'string',
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
             'templatedMixinBindStatic' => [
                 'code' => '<?php
                     /**
@@ -1242,6 +1506,25 @@ final class MixinAnnotationTest extends TestCase
     public static function providerInvalidCodeParse(): iterable
     {
         return [
+            'mixinCallDoesNotSuppressTheMixinCheckOfTheMixinTarget' => [
+                'code' => '<?php
+                    /** @mixin Target */
+                    final class Host {
+                        public function __call(string $name, array $args): mixed { return null; }
+                    }
+
+                    function call(Host $host): void {
+                        $host->foo();
+                    }
+
+                    /** @mixin Missing */
+                    class Target {
+                        public function foo(): void {}
+                    }',
+                'error_message' => 'UndefinedDocblockClass',
+                'error_levels' => [],
+                'php_version' => '8.0',
+            ],
             'staticMethodOfNoneOfSeveralMixins' => [
                 'code' => '<?php
                     interface Mixin
