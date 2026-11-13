@@ -49,6 +49,19 @@ final class ReturnTypeTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'switchBreakWithFallthroughDefaultStillReturns' => [
+                'code' => '<?php
+                    function afterSwitch(int $value): int {
+                        switch ($value) {
+                            case 0:
+                                break;
+                            default:
+                                ++$value;
+                        }
+
+                        return $value;
+                    }',
+            ],
             'docblockStringLiteralWithEscapedBackslashes' => [
                 'code' => '<?php
                     /** @return "\\\\t" */

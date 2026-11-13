@@ -78,6 +78,63 @@ final class UnusedVariableTest extends TestCase
                         return $label;
                     }',
             ],
+            'assignmentUsedAfterBreakTwoInFirstCaseOfInfiniteWhile' => [
+                'code' => '<?php
+                    function buildWithEarlierBreak(int $mode, bool $flag): string {
+                        $label = "";
+                        if ($flag) {
+                            $label = "changed";
+                            while (true) {
+                                switch ($mode) {
+                                    case 0:
+                                        break 2;
+                                    default:
+                                        break;
+                                }
+                            }
+                        }
+
+                        return $label;
+                    }',
+            ],
+            'assignmentUsedAfterBreakTwoInFirstCaseOfInfiniteFor' => [
+                'code' => '<?php
+                    function buildWithEarlierForBreak(int $mode, bool $flag): string {
+                        $label = "";
+                        if ($flag) {
+                            $label = "changed";
+                            for (;;) {
+                                switch ($mode) {
+                                    case 0:
+                                        break 2;
+                                    default:
+                                        break;
+                                }
+                            }
+                        }
+
+                        return $label;
+                    }',
+            ],
+            'continueTwoDoesNotDiscardBreakTwoInAnotherCase' => [
+                'code' => '<?php
+                    function eventuallyBreaks(int $mode, bool $flag): string {
+                        $label = "";
+                        if ($flag) {
+                            $label = "changed";
+                            while (true) {
+                                switch ($mode) {
+                                    case 0:
+                                        break 2;
+                                    default:
+                                        continue 2;
+                                }
+                            }
+                        }
+
+                        return $label;
+                    }',
+            ],
             'phpstanVarSetsTheTypeOfTheAssignedVariable' => [
                 'code' => '<?php
                     /** @phpstan-var list<string> $a */
