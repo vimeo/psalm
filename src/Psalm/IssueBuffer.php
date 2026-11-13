@@ -60,10 +60,12 @@ use function file_put_contents;
 use function fwrite;
 use function implode;
 use function in_array;
+use function intdiv;
 use function is_dir;
 use function is_int;
 use function is_string;
 use function ksort;
+use function max;
 use function memory_get_peak_usage;
 use function microtime;
 use function mkdir;
@@ -980,9 +982,9 @@ final class IssueBuffer
                 . ($dry_run ? 'would be changed (dry run)' : 'changed');
         }
 
-        echo str_repeat('-', 30) . "\n"
-            . ($use_color ? "\e[0;32m" . $message . "\e[0m" : $message) . "\n"
-            . str_repeat('-', 30) . "\n\n";
+        echo str_repeat('-', 30) . "\n";
+        self::printResultBlock($message, $use_color);
+        echo str_repeat('-', 30) . "\n\n";
 
         if ($start_time) {
             self::printTiming($start_time);
@@ -1001,20 +1003,21 @@ final class IssueBuffer
             throw new UnexpectedValueException('Cannot print success message without stdout report options');
         }
 
-        // this message will be printed
-        $message = "No errors found!";
+        self::printResultBlock('No errors found!', $project_analyzer->stdout_report_options->use_color);
+    }
 
-        // color block will contain this amount of characters
-        $blockSize = 30;
+    private static function printResultBlock(string $message, bool $use_color): void
+    {
+        // color block will contain at least this amount of characters
+        $blockSize = max(30, strlen($message) + 14);
 
         // message with prepended and appended whitespace to be same as $blockSize
-        $messageWithPadding = str_repeat(' ', 7) . $message . str_repeat(' ', 7);
+        $leftPadding = intdiv($blockSize - strlen($message), 2);
+        $messageWithPadding = str_repeat(' ', $leftPadding) . $message
+            . str_repeat(' ', $blockSize - strlen($message) - $leftPadding);
 
-        // top side of the color block
-        $paddingTop = str_repeat(' ', $blockSize);
-
-        // bottom side of the color block
-        $paddingBottom = str_repeat(' ', $blockSize);
+        // top and bottom sides of the color block
+        $paddingTop = $paddingBottom = str_repeat(' ', $blockSize);
 
         // background color, 42 = green
         $background = "42";
@@ -1025,7 +1028,7 @@ final class IssueBuffer
         // text style, 1 = bold
         $style = "2";
 
-        if ($project_analyzer->stdout_report_options->use_color) {
+        if ($use_color) {
             echo "\e[{$background};{$style}m{$paddingTop}\e[0m" . "\n";
             echo "\e[{$background};{$foreground};{$style}m{$messageWithPadding}\e[0m" . "\n";
             echo "\e[{$background};{$style}m{$paddingBottom}\e[0m" . "\n";

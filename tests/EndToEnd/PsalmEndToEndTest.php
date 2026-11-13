@@ -196,7 +196,7 @@ final class PsalmEndToEndTest extends TestCase
         file_put_contents(self::$tmpDir . '/psalm.xml', $psalmXml);
 
         $this->assertStringContainsString(
-            "\n1 file changed\n",
+            "\n        1 file changed        \n",
             $this->runPsalm(['--alter', '--issues=all'], self::$tmpDir, false, true)['STDOUT'],
         );
 
@@ -261,7 +261,7 @@ final class PsalmEndToEndTest extends TestCase
         $this->assertSame(1, preg_match_all('/^\d\) src\/B\.php:3$/m', $output), $output);
         $this->assertSame(1, substr_count($output, '--- a/src/A.php'), $output);
         $this->assertSame(1, substr_count($output, '--- a/src/B.php'), $output);
-        $this->assertStringContainsString("\n2 files would be changed (dry run)\n", $output);
+        $this->assertStringContainsString("\n       2 files would be changed (dry run)       \n", $output);
         $this->assertStringNotContainsString("\e", $output);
     }
 
@@ -319,7 +319,7 @@ final class PsalmEndToEndTest extends TestCase
             "<?php\n\nfunction b(): int {\n    return 2;\n}\n",
             file_get_contents(self::$tmpDir . '/src/B.php'),
         );
-        $this->assertStringContainsString("\n2 files changed\n", $process->getOutput());
+        $this->assertStringContainsString("\n       2 files changed        \n", $process->getOutput());
     }
 
     public function testPsalterPrintsTheDiffOfARealRun(): void
@@ -330,7 +330,7 @@ final class PsalmEndToEndTest extends TestCase
         $this->assertStringNotContainsString('Altered', $process->getErrorOutput());
         $this->assertStringContainsString("1) src/A.php:3\n", $output);
         $this->assertStringContainsString("\n+function a(): int {\n", $output);
-        $this->assertStringContainsString("\n1 file changed\n", $output);
+        $this->assertStringContainsString("\n        1 file changed        \n", $output);
     }
 
     public function testPsalterNoDiffListsTheChangedFilesWithoutTheDiffAndStillWritesThem(): void
@@ -344,7 +344,7 @@ final class PsalmEndToEndTest extends TestCase
         $this->assertStringNotContainsString('@@', $output);
         $this->assertStringNotContainsString('+function a()', $output);
         $this->assertStringNotContainsString('-function a()', $output);
-        $this->assertStringContainsString("\n1 file changed\n", $output);
+        $this->assertStringContainsString("\n        1 file changed        \n", $output);
     }
 
     /**
