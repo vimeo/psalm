@@ -2810,6 +2810,31 @@ final class UnusedCodeTest extends TestCase
                     }',
                 'error_message' => 'PossiblyUndefinedVariable',
             ],
+            'methodOfAShadowedMixinIsReportedAsUnused' => [
+                'code' => '<?php
+                    /** @template T */
+                    final class Repository {
+                        /** @return T|null */
+                        public function first() { return null; }
+                    }
+
+                    final class Labels {
+                        public function first(): string { return ""; }
+                    }
+
+                    /**
+                     * @mixin Labels
+                     * @mixin Repository<static>
+                     */
+                    final class Post {
+                        public function __call(string $name, array $args) { return null; }
+                    }
+
+                    echo (new Labels)::class;
+                    echo (new Post)->first() ? "a" : "b";',
+                'error_message' => 'PossiblyUnusedMethod - src' . DIRECTORY_SEPARATOR
+                    . 'somefile.php:9:41 - Cannot find any calls to method Labels::first',
+            ],
             'callStaticOfAClassWithoutStaticMagicCallsIsReportedAsUnused' => [
                 'code' => '<?php
                     final class Forwarder {
