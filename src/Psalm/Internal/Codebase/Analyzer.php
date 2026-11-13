@@ -1254,23 +1254,21 @@ final class Analyzer
             }
         }
 
-        $relative_path = str_replace('\\', '/', $this->config->shortenFileName($file_path));
-        $is_changed = $existing_contents !== $original_contents;
-
-        if ($is_changed) {
-            $this->markFileChanged($file_path);
+        if ($existing_contents === $original_contents) {
+            return;
         }
 
+        $this->markFileChanged($file_path);
+        $relative_path = str_replace('\\', '/', $this->config->shortenFileName($file_path));
+
         if ($dry_run) {
-            if ($is_changed) {
-                echo $diff_renderer->render(
-                    $this->getChangedFilesCount(),
-                    $relative_path,
-                    $file_path,
-                    $original_contents,
-                    $existing_contents,
-                );
-            }
+            echo $diff_renderer->render(
+                $this->getChangedFilesCount(),
+                $relative_path,
+                $file_path,
+                $original_contents,
+                $existing_contents,
+            );
 
             return;
         }
