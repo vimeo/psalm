@@ -6,6 +6,7 @@ namespace Psalm\Tests\EndToEnd;
 
 use Exception;
 use Override;
+use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\TestCase;
 use Psalm\Internal\Analyzer\ProjectAnalyzer;
 use Symfony\Component\Process\Process;
@@ -27,6 +28,7 @@ use function preg_match_all;
 use function preg_replace;
 use function readdir;
 use function rmdir;
+use function str_contains;
 use function str_replace;
 use function substr_count;
 use function sys_get_temp_dir;
@@ -333,6 +335,27 @@ final class PsalmEndToEndTest extends TestCase
         $this->assertStringContainsString("\n        1 file changed        \n", $output);
     }
 
+    /**
+     * @param array<string, string> $env
+     */
+    #[DataProvider('provideColorEnvironments')]
+    public function testPsalterColorsPipedOutputOnlyWhenForced(array $env, bool $expect_color): void
+    {
+        $output = $this->runPsalterOnAFileWithAMissingReturnType([], $env)->getOutput();
+
+        $this->assertSame($expect_color, str_contains($output, "\e["));
+    }
+
+    /**
+     * @return iterable<string, array{array<string, string>, bool}>
+     * @psalm-pure
+     */
+    public static function provideColorEnvironments(): iterable
+    {
+        yield 'piped' => [[], false];
+        yield 'FORCE_COLOR' => [['FORCE_COLOR' => '1'], true];
+    }
+
     public function testPsalterNoDiffListsTheChangedFilesWithoutTheDiffAndStillWritesThem(): void
     {
         $process = $this->runPsalterOnAFileWithAMissingReturnType(['--no-diff']);
@@ -349,8 +372,9 @@ final class PsalmEndToEndTest extends TestCase
 
     /**
      * @param list<string> $extra_args
+     * @param array<string, string> $env
      */
-    private function runPsalterOnAFileWithAMissingReturnType(array $extra_args): Process
+    private function runPsalterOnAFileWithAMissingReturnType(array $extra_args, array $env = []): Process
     {
         $this->runPsalmInit();
         $psalmXml = file_get_contents(self::$tmpDir . '/psalm.xml');
@@ -361,7 +385,7 @@ final class PsalmEndToEndTest extends TestCase
         $process = new Process(
             [PHP_BINARY, $this->psalter, '--no-cache', '--issues=MissingReturnType', ...$extra_args, 'src'],
             self::$tmpDir,
-            self::agentEnvVarsToUnset(),
+            $env + self::agentEnvVarsToUnset(),
         );
         $process->mustRun();
 
