@@ -410,12 +410,15 @@ final class MethodCallPurityAnalyzer
 
         $args = $stmt->isFirstClassCallable() ? [] : $stmt->getArgs();
 
+        $impure_callee = $callee_capabilities === Capabilities::ALL;
+
         $method_capabilities = ByRefArgumentAnalyzer::adjustCapabilities(
             $statements_analyzer,
             $context,
             $method_capabilities,
             $method_storage->params,
             $args,
+            $impure_callee,
         );
 
         // the same for the inferred purity, which some template capabilities may be left out of
@@ -427,6 +430,7 @@ final class MethodCallPurityAnalyzer
                 $receiver_capabilities | $inferred_template_capabilities,
                 $method_storage->params,
                 $args,
+                $impure_callee,
             );
 
         $statements_analyzer->signalMutation(
