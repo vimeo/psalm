@@ -303,6 +303,9 @@ class FileAnalyzer extends SourceAnalyzer
 
     /**
      * @param  array<int, PhpParser\Node\Stmt>  $stmts
+     * @param  bool $analyze_namespace_statements false when the file is loaded for another file's analysis: the
+     *              statements outside the classes of its namespaces are then left to the file's own analysis, as
+     *              the statements outside a namespace, which are returned, are
      * @return list<PhpParser\Node\Stmt>
      */
     public function populateCheckers(array $stmts, bool $analyze_namespace_statements = true): array

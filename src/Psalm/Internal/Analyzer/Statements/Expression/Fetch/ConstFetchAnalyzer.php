@@ -359,10 +359,17 @@ final class ConstFetchAnalyzer
         $file_storage_provider = $codebase->file_storage_provider;
 
         $file_storage = $file_storage_provider->get($file_path);
+        // the file of the code declares its constants before the code runs, also when the root file doesn't include
+        // it (a method followed into its class's file)
+        $code_file_storage = $file_storage_provider->get($statements_analyzer->getFilePath());
 
         foreach ([$const_name, $fq_const_name] as $name) {
-            if (isset($file_storage->declaring_constants[$name])) {
-                $constant_storage = $file_storage_provider->get($file_storage->declaring_constants[$name]);
+            $declaring_file_path = $file_storage->declaring_constants[$name]
+                ?? $code_file_storage->declaring_constants[$name]
+                ?? null;
+
+            if ($declaring_file_path !== null) {
+                $constant_storage = $file_storage_provider->get($declaring_file_path);
 
                 if (isset($constant_storage->unresolved_constants[$name])) {
                     return self::resolveConstType($statements_analyzer, $constant_storage->unresolved_constants[$name]);

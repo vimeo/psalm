@@ -1472,7 +1472,6 @@ final class ProjectAnalyzer
 
         $stmts = $this->getStatementsForMutations($file_analyzer->getFilePath());
 
-        // the statements outside the file's classes are analysed with the file, as for a file without a namespace
         $file_analyzer->populateCheckers($stmts, false);
 
         if (!$this_context->self) {

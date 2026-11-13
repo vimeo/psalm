@@ -1187,10 +1187,10 @@ final class IncludeTest extends TestCase
     }
 
     /**
-     * Analysing a subclass follows the constructor it calls into the parent's file. The statements outside the
-     * parent's class are analysed with the parent's file, which knows the functions its includes declare, not again
-     * for the subclass, whose file doesn't include them. Taint analysis also analyses the parent's body for the
-     * subclass: there those statements add their taints, but their issues are the parent file's.
+     * Analysing a subclass follows the constructor it calls into the parent's file, and taint analysis analyses the
+     * parent's body again for the subclass. The statements outside the parent's class are analysed with the parent's
+     * file, which knows the functions its includes declare, not again for the subclass, whose file doesn't include
+     * them.
      */
     #[DataProvider('providerTaintAnalysis')]
     public function testStatementsOutsideTheClassOfAFollowedFileAreNotAnalysedForTheSubclass(bool $taint): void
@@ -1239,7 +1239,6 @@ final class IncludeTest extends TestCase
 
         foreach ($files as $file_path => $contents) {
             $this->addFile($file_path, $contents);
-            $codebase->scanner->addFilesToShallowScan([$file_path => $file_path]);
         }
 
         $codebase->addFilesToAnalyze(array_combine(array_keys($files), array_keys($files)));
@@ -1273,9 +1272,10 @@ final class IncludeTest extends TestCase
 
     /**
      * The statements outside the class of a file are analysed once, with the file, however many subclasses follow
-     * a method of the class
+     * a method of the class.
      */
-    public function testStatementsOutsideTheClassOfAFollowedFileAreAnalysedOnce(): void
+    #[DataProvider('providerTaintAnalysis')]
+    public function testStatementsOutsideTheClassOfAFollowedFileAreAnalysedOnce(bool $taint): void
     {
         $hook = new class implements AfterExpressionAnalysisInterface {
             public static int $count = 0;
@@ -1294,6 +1294,10 @@ final class IncludeTest extends TestCase
         };
 
         $hook::$count = 0;
+
+        if ($taint) {
+            $this->project_analyzer->trackTaintedInputs();
+        }
 
         $codebase = $this->project_analyzer->getCodebase();
         $config = $codebase->config;
@@ -1332,7 +1336,6 @@ final class IncludeTest extends TestCase
 
         foreach ($files as $file_path => $contents) {
             $this->addFile($file_path, $contents);
-            $codebase->scanner->addFilesToShallowScan([$file_path => $file_path]);
         }
 
         $codebase->addFilesToAnalyze(array_combine(array_keys($files), array_keys($files)));
@@ -1343,6 +1346,54 @@ final class IncludeTest extends TestCase
         }
 
         $this->assertSame(1, $hook::$count);
+    }
+
+    /**
+     * The constructor of the parent reads the constants its file declares: they are known when a subclass follows
+     * it, whichever file is analysed first.
+     *
+     * @param list<string> $file_names
+     */
+    #[DataProvider('providerParentAndChildOrders')]
+    public function testConstantsOfAFollowedFileAreKnownWhicheverFileIsAnalysedFirst(array $file_names): void
+    {
+        $this->addFile((string) getcwd() . DIRECTORY_SEPARATOR . 'Base.php', '<?php
+            namespace Shop;
+
+            const MAX_ITEMS = 5;
+            define("DEFAULT_CURRENCY", "EUR");
+
+            class Base {
+                public int $max_items;
+                public string $currency;
+
+                public function __construct() {
+                    $this->max_items = MAX_ITEMS;
+                    $this->currency = DEFAULT_CURRENCY;
+                }
+            }
+        ');
+        $this->addFile((string) getcwd() . DIRECTORY_SEPARATOR . 'Child.php', '<?php
+            namespace Shop;
+
+            final class Child extends Base {
+                public function __construct() {
+                    parent::__construct();
+                }
+            }
+        ');
+
+        $this->assertSame([], $this->analyzeFilesInOrder($file_names));
+    }
+
+    /**
+     * @return iterable<string, array{list<string>}>
+     * @psalm-pure
+     */
+    public static function providerParentAndChildOrders(): iterable
+    {
+        yield 'parent first' => [['Base.php', 'Child.php']];
+        yield 'child first' => [['Child.php', 'Base.php']];
     }
 
     /**

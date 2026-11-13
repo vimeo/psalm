@@ -80,7 +80,8 @@ final class NamespaceAnalyzer extends SourceAnalyzer
                     $leftover_stmts[] = new PhpParser\Node\Stmt\Nop($stmt->getAttributes());
                 }
             } elseif ($stmt instanceof PhpParser\Node\Stmt\Const_) {
-                // a placeholder until the statement is analysed below; without that it would hide the type found before
+                // a placeholder until the statement is analysed below; set without that analysis, it would replace the
+                // type the file's own analysis found
                 if ($analyze_statements) {
                     foreach ($stmt->consts as $const) {
                         self::$public_namespace_constants[$this->namespace_name][$const->name->name] = Type::getMixed();
