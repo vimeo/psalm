@@ -33,6 +33,7 @@ use Psalm\Internal\Type\TemplateStandinTypeReplacer;
 use Psalm\Internal\Type\TypeExpander;
 use Psalm\Internal\TypeVisitor\TypeVariableResolver;
 use Psalm\Issue\ArgumentTypeCoercion;
+use Psalm\Issue\CallableByReferenceMismatch;
 use Psalm\Issue\DeprecatedConstant;
 use Psalm\Issue\ImplicitToStringCast;
 use Psalm\Issue\InvalidArgument;
@@ -1430,6 +1431,19 @@ final class ArgumentAnalyzer
                     $statements_analyzer->getSuppressedIssues(),
                 );
             }
+        }
+
+        if ($union_comparison_results->callable_by_reference_mismatch) {
+            IssueBuffer::maybeAdd(
+                new CallableByReferenceMismatch(
+                    'Argument ' . ($argument_offset + 1) . $method_identifier . ' expects ' . $param_type->getId()
+                        . ', but ' . $input_type->getId() . ' takes a parameter by reference where it is called with'
+                        . ' a value',
+                    $arg_location,
+                    $cased_method_id,
+                ),
+                $statements_analyzer->getSuppressedIssues(),
+            );
         }
 
         if ($union_comparison_results->to_string_cast && $cased_method_id !== 'echo' && $cased_method_id !== 'print') {

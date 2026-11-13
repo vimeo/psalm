@@ -693,7 +693,9 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
             );
         }
 
-        if (!$check_stmts) {
+        // a signature that fails the check skips the body, but what the body initialises or mutates still counts:
+        // its regular analysis reports the signature
+        if (!$check_stmts && !$context->collect_initializations && !$context->collect_mutations) {
             return false;
         }
 
@@ -1621,7 +1623,7 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
     /**
      * Checks the classes of the `@global` types, like those of the `@param` types
      *
-     * @psalm-capabilities read-props|write-this-props|write-refs
+     * @psalm-capabilities read-props
      */
     private function checkGlobalTypes(FunctionLikeStorage $storage, Context $context): bool
     {

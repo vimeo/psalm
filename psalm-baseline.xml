@@ -2604,6 +2604,10 @@
     <ImmutableDependency>
       <code><![CDATA[#[Override]]]></code>
     </ImmutableDependency>
+    <ImpureMethodCall>
+      <code><![CDATA[IssueBuffer::getAcceptedIssueCount()]]></code>
+      <code><![CDATA[IssueBuffer::getAcceptedIssueCount()]]></code>
+    </ImpureMethodCall>
     <RiskyTruthyFalsyComparison>
       <code><![CDATA[!$fq_classlike_name]]></code>
       <code><![CDATA[$class_storage->template_types]]></code>
@@ -2636,6 +2640,9 @@
     </MissingInterfaceImmutableAnnotation>
   </file>
   <file src="src/Psalm/IssueBuffer.php">
+    <ImpureMethodCall>
+      <code><![CDATA[self::addIssueData($file_path, $issue)]]></code>
+    </ImpureMethodCall>
     <ImpureStaticProperty>
       <code><![CDATA[self::$emitted]]></code>
       <code><![CDATA[self::$emitted]]></code>
@@ -2655,8 +2662,10 @@
       <code><![CDATA[self::$fixable_issue_counts]]></code>
       <code><![CDATA[self::$fixable_issue_counts]]></code>
       <code><![CDATA[self::$fixable_issue_counts]]></code>
-      <code><![CDATA[self::$issues_data]]></code>
-      <code><![CDATA[self::$issues_data]]></code>
+      <code><![CDATA[self::$grouped_issues]]></code>
+      <code><![CDATA[self::$grouped_issues]]></code>
+      <code><![CDATA[self::$held_back_issues]]></code>
+      <code><![CDATA[self::$held_back_issues]]></code>
       <code><![CDATA[self::$issues_data]]></code>
       <code><![CDATA[self::$issues_data]]></code>
       <code><![CDATA[self::$issues_data]]></code>
@@ -3599,7 +3608,6 @@
   </file>
   <file src="src/Psalm/Type/Reconciler.php">
     <ImplicitToStringCast>
-      <code><![CDATA[$assertion]]></code>
       <code><![CDATA[$assertion]]></code>
     </ImplicitToStringCast>
     <ImpureStaticProperty>
