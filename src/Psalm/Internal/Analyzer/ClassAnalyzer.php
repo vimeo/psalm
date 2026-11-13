@@ -22,6 +22,7 @@ use Psalm\Internal\Analyzer\FunctionLike\ReturnTypeAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\Call\ClassTemplateParamCollector;
 use Psalm\Internal\Analyzer\Statements\Expression\ClassConstAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\Fetch\AtomicPropertyFetchAnalyzer;
+use Psalm\Internal\Codebase\CliOutput;
 use Psalm\Internal\FileManipulation\FileManipulationBuffer;
 use Psalm\Internal\FileManipulation\PropertyDocblockManipulator;
 use Psalm\Internal\MethodIdentifier;
@@ -607,6 +608,11 @@ final class ClassAnalyzer extends ClassLikeAnalyzer
 
         $statements_analyzer = new StatementsAnalyzer($this, new NodeDataProvider(), true);
         $statements_analyzer->analyze($member_stmts, $class_context, $global_context);
+
+        CliOutput::checkCliOnlyInstancesClass(
+            $storage,
+            $storage->suppressed_issues + $this->getSuppressedIssues(),
+        );
 
         ClassConstAnalyzer::analyze($storage, $this->getCodebase());
 

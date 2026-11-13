@@ -1123,6 +1123,7 @@ final class PreloaderList {
         \Psalm\Issue\ClassIssue::class,
         \Psalm\Issue\ClassMustBeFinal::class,
         \Psalm\Issue\CliOnlyCall::class,
+        \Psalm\Issue\CliOnlyInstancesUnguarded::class,
         \Psalm\Issue\CodeIssue::class,
         \Psalm\Issue\ComplexFunction::class,
         \Psalm\Issue\ComplexMethod::class,

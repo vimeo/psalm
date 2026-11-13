@@ -96,3 +96,44 @@ if (isCli()) {
 requireCli();
 import(); // no issue
 ```
+
+Code that holds an instance of a class with
+[`@psalm-cli-only-instances`](../../security_analysis/avoiding_false_positives.md#classes-only-instantiated-from-the-command-line)
+already runs from the command line: calling a method that isn't static of such a class, or a function-like whose
+parameter requires an instance of it, reports no `CliOnlyCall`:
+
+```php
+<?php
+
+/**
+ * @psalm-cli-only-instances
+ */
+final class ConsoleRequest
+{
+    public function __construct()
+    {
+        if (PHP_SAPI !== 'cli') {
+            throw new LogicException('Run it from the command line');
+        }
+    }
+
+    public function __wakeup(): void
+    {
+        if (PHP_SAPI !== 'cli') {
+            throw new LogicException('Run it from the command line');
+        }
+    }
+}
+
+/**
+ * @psalm-cli-only
+ */
+function import(ConsoleRequest $request): void {}
+
+function handle(?ConsoleRequest $request): void
+{
+    if ($request !== null) {
+        import($request); // no issue
+    }
+}
+```

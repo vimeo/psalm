@@ -238,6 +238,10 @@ final class ClassLikeDocblockParser
             $info->cli_only = true;
         }
 
+        if (isset($parsed_docblock->tags['psalm-cli-only-instances'])) {
+            $info->cli_only_instances = true;
+        }
+
         if (isset($parsed_docblock->tags['psalm-taint-property-bag'])) {
             $property_bag = trim((string) reset($parsed_docblock->tags['psalm-taint-property-bag']));
             if (preg_match('/^\$([A-Za-z_]\w*)$/', $property_bag, $matches) !== 1 || !isset($matches[1])) {

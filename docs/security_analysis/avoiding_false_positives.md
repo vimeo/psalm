@@ -138,6 +138,71 @@ Code marked `@psalm-cli-only` can only be called from such code, or [CliOnlyCall
 is reported. Printing a secret is still reported, and the values stay tainted for every other sink. A function called
 from command-line code is checked as usual, so mark it too if it only runs from the command line.
 
+### Classes only instantiated from the command line
+
+`@psalm-cli-only-instances` on a class says that its instances only exist in command-line processes, because its
+constructor and the method `unserialize()` calls instead (`__unserialize()`, or `__wakeup()`) refuse to run anywhere
+else. Code that can only run with such an instance then counts as command-line code, like code marked
+`@psalm-cli-only`:
+
+- a function, method or closure with a parameter whose native type requires an instance of the class (alone or in an
+  intersection, not in a union), when the parameter isn't nullable, has no default and isn't variadic: PHP throws a
+  `TypeError` before its body runs without one. A docblock type proves nothing, as PHP doesn't check it;
+- the methods of the class that aren't static, as `$this` is an instance, except the constructor, `__unserialize()` and
+  `__wakeup()`, which run on an object not checked yet.
+
+Calling such code needs no `PHP_SAPI` check or `@psalm-cli-only` on the caller: it already holds an instance, so it
+runs from the command line too. This holds for code marked `@psalm-cli-only` that requires an instance as well.
+
+```php
+<?php
+
+/**
+ * @psalm-cli-only-instances
+ */
+final class ConsoleRequest
+{
+    public function __construct(public string $path)
+    {
+        if (PHP_SAPI !== 'cli') {
+            throw new LogicException('Run it from the command line');
+        }
+    }
+
+    public function __wakeup(): void
+    {
+        if (PHP_SAPI !== 'cli') {
+            throw new LogicException('Run it from the command line');
+        }
+    }
+}
+
+function import(ConsoleRequest $request): void
+{
+    echo 'Importing ' . (string) ($_GET['file'] ?? '') . "\n"; // not reported
+}
+```
+
+So that the annotation can't silently lie, [CliOnlyInstancesUnguarded](../running_psalm/issues/CliOnlyInstancesUnguarded.md)
+is reported unless the class:
+
+- is final, so that no subclass adds a constructor or an `__unserialize()` of its own, and doesn't implement
+  `Serializable`, whose `unserialize()` runs on an object created without the constructor;
+- declares its constructor, and `__unserialize()` if it or a class it extends has one, or `__wakeup()` otherwise (in the
+  class itself or a trait it uses);
+- starts each of them with the guard: their first statement throws, or leaves `PHP_SAPI` narrowed to `'cli'`, like
+  `if (PHP_SAPI !== 'cli') { throw ...; }` or a call of a function [asserting](../annotating_code/adding_assertions.md#asserting-the-sapi)
+  `'cli' PHP_SAPI`, and doesn't use `$this` (directly, through `self::`, `static::` or `parent::`, or in a closure
+  binding it). A promoted constructor property can't have hooks, which run before the body. A `__wakeup()` that always
+  throws forbids unserializing the class instead.
+
+This is checked where the class is analyzed: a class in a stub or in a dependency Psalm doesn't analyze is trusted.
+What Psalm can't see is trusted too: an object made without its constructor through Reflection
+(`newInstanceWithoutConstructor()`, lazy objects), an extension calling `__set()` before the constructor (PDO's
+`FETCH_CLASS` without `FETCH_PROPS_LATE`), or another object unserialized with an instance calling it from its own
+`__wakeup()` or `__unserialize()` before the guard of the instance ran (unserializing data a client can change is
+reported as [TaintedUnserialize](../running_psalm/issues/TaintedUnserialize.md) already).
+
 ## Sanitizing HTML user input
 
 Whenever possible, applications should be designed to accept & store user input as discrete text fields, rather than blocks of HTML.  This allows user input to be fully escaped via `htmlspecialchars` or `htmlentities`.  In cases where HTML user input is required (e.g. rich text editors like [TinyMCE](https://www.tiny.cloud/)), a library designed specifically to filter out risky HTML is highly recommended.  For example, [HTML Purifier](http://htmlpurifier.org/docs) could be used as follows:
