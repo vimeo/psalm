@@ -21,7 +21,6 @@ use Psalm\Internal\Analyzer\ClassLikeAnalyzer;
 use Psalm\Internal\Analyzer\ClosureAnalyzer;
 use Psalm\Internal\Analyzer\CommentAnalyzer;
 use Psalm\Internal\Analyzer\FunctionLikeAnalyzer;
-use Psalm\Internal\Analyzer\Statements\Block\ForeachAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\Assignment\ArrayAssignmentAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\Assignment\InstancePropertyAssignmentAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\Assignment\StaticPropertyAssignmentAnalyzer;
@@ -1581,25 +1580,25 @@ final class AssignmentAnalyzer
     }
 
     /**
-     * Adds to $new_assign_type the type of an item destructured from an ArrayAccess object: the values of
-     * its ArrayAccess parameters (PHP calls offsetGet), else what it gives when traversed.
-     *
-     * @psalm-capabilities read-props|write-this-props|write-refs
+     * Adds to $new_assign_type the type of an item destructured from an ArrayAccess object: what its offsetGet
+     * returns.
      */
     private static function addArrayAccessItemType(
         Atomic $atomic_type,
-        Codebase $codebase,
+        StatementsAnalyzer $statements_analyzer,
         ?Union $new_assign_type,
     ): Union {
-        $value_type = ForeachAnalyzer::getArrayAccessValueType($atomic_type, $codebase);
-
-        if (!$value_type) {
-            $key_type = null;
-
-            ForeachAnalyzer::getKeyValueParamsForTraversableObject($atomic_type, $codebase, $key_type, $value_type);
+        if ($atomic_type instanceof TNamedObject) {
+            foreach ([$atomic_type, ...$atomic_type->extra_types] as $part) {
+                if ($part instanceof TNamedObject
+                    && ($item_type = ArrayFetchAnalyzer::getOffsetGetReturnType($statements_analyzer, $part)) !== null
+                ) {
+                    return Type::combineUnionTypes($item_type, $new_assign_type);
+                }
+            }
         }
 
-        return Type::combineUnionTypes($value_type ?? Type::getMixed(), $new_assign_type);
+        return Type::combineUnionTypes(Type::getMixed(), $new_assign_type);
     }
 
     /**
@@ -1940,7 +1939,7 @@ final class AssignmentAnalyzer
                     } elseif ($assign_value_atomic_type->hasArrayAccessInterface($codebase)) {
                         $new_assign_type = self::addArrayAccessItemType(
                             $assign_value_atomic_type,
-                            $codebase,
+                            $statements_analyzer,
                             $new_assign_type,
                         );
                     }

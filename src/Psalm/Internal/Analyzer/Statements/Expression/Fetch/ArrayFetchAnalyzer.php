@@ -2453,34 +2453,8 @@ final class ArrayFetchAnalyzer
                     $call_array_access_type = Type::getVoid();
                 } elseif ($context->inside_isset && $context->isset_root_id === spl_object_id($stmt)) {
                     // a plain isset() never calls offsetGet: only its declared type is of interest
-                    $call_array_access_type = Type::getMixed();
-                    $get_method_id = new MethodIdentifier($type->value, 'offsetget');
-
-                    if ($codebase->methods->methodExists($codebase, $get_method_id)) {
-                        $self_class = $type->value;
-                        $call_array_access_type = $codebase->methods->getMethodReturnType(
-                            $codebase,
-                            $get_method_id,
-                            $self_class,
-                        ) ?? Type::getMixed();
-
-                        // with the type arguments of the object, as a call would have
-                        $class_template_params = ClassTemplateParamCollector::collect(
-                            $codebase,
-                            $codebase->methods->getClassLikeStorageForMethod($get_method_id),
-                            $codebase->classlike_storage_provider->get($type->value),
-                            'offsetget',
-                            $type,
-                        );
-
-                        if ($class_template_params !== null) {
-                            $call_array_access_type = TemplateInferredTypeReplacer::replace(
-                                $call_array_access_type,
-                                new TemplateResult([], $class_template_params),
-                                $codebase,
-                            );
-                        }
-                    }
+                    $call_array_access_type = self::getOffsetGetReturnType($statements_analyzer, $type)
+                        ?? Type::getMixed();
                 } else {
                     $statements_analyzer->node_data = clone $statements_analyzer->node_data;
 
@@ -2529,6 +2503,46 @@ final class ArrayFetchAnalyzer
         $array_access_type = Type::combineUnionTypes(
             $array_access_type,
             $call_array_access_type,
+        );
+    }
+
+    /**
+     * The declared return type of the object's offsetGet, with the type arguments of the object as a call would
+     * have them, or null without offsetGet
+     */
+    public static function getOffsetGetReturnType(StatementsAnalyzer $statements_analyzer, TNamedObject $type): ?Union
+    {
+        $codebase = $statements_analyzer->getCodebase();
+        $get_method_id = new MethodIdentifier($type->value, 'offsetget');
+
+        if (!$codebase->methods->methodExists($codebase, $get_method_id)) {
+            return null;
+        }
+
+        $self_class = $type->value;
+        $return_type = $codebase->methods->getMethodReturnType(
+            $codebase,
+            $get_method_id,
+            $self_class,
+            $statements_analyzer,
+        ) ?? Type::getMixed();
+
+        $class_template_params = ClassTemplateParamCollector::collect(
+            $codebase,
+            $codebase->methods->getClassLikeStorageForMethod($get_method_id),
+            $codebase->classlike_storage_provider->get($type->value),
+            'offsetget',
+            $type,
+        );
+
+        if ($class_template_params === null) {
+            return $return_type;
+        }
+
+        return TemplateInferredTypeReplacer::replace(
+            $return_type,
+            new TemplateResult([], $class_template_params),
+            $codebase,
         );
     }
 

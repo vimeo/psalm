@@ -838,6 +838,45 @@ final class ArrayAccessTest extends TestCase
                 'ignored_issues' => [],
                 'php_version' => '8.1',
             ],
+            'destructureArrayAccessObjectUsesDeclaredOffsetGetType' => [
+                'code' => '<?php
+                    /** @implements IteratorAggregate<int, string> */
+                    final class Bag implements ArrayAccess, IteratorAggregate {
+                        /** @param int $offset */
+                        public function offsetExists($offset): bool { return true; }
+                        /** @param int $offset */
+                        public function offsetGet($offset): int { return 1; }
+                        /**
+                         * @param ?int $offset
+                         * @param int $value
+                         */
+                        public function offsetSet($offset, $value): void {}
+                        /** @param int $offset */
+                        public function offsetUnset($offset): void {}
+                        /** @return ArrayIterator<int, string> */
+                        public function getIterator(): ArrayIterator { return new ArrayIterator(["a"]); }
+                    }
+
+                    [$x] = new Bag();',
+                'assertions' => [
+                    '$x===' => 'int',
+                ],
+                'ignored_issues' => ['MissingOverrideAttribute', 'MissingTemplateParam'],
+            ],
+            'destructureArrayAccessIntersectionUsesOffsetGet' => [
+                'code' => '<?php
+                    /** @return IteratorAggregate<int, string>&ArrayAccess<int, int> */
+                    function getBag(): IteratorAggregate&ArrayAccess {
+                        throw new RuntimeException();
+                    }
+
+                    [$x] = getBag();',
+                'assertions' => [
+                    '$x===' => 'int|null',
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
             'allowEmptyList' => [
                 'code' => '<?php
                     function test(): void {
