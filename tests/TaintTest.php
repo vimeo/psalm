@@ -5964,6 +5964,32 @@ final class TaintTest extends TestCase
                     }',
                 'error_message' => 'TaintedHtml',
             ],
+            'taintInAMethodOfAClassDeclaredConditionallyInANamespace' => [
+                'code' => '<?php
+                    namespace Foo;
+
+                    if (!class_exists(C::class)) {
+                        final class C {
+                            public function m(): void {
+                                echo (string) $_GET["x"];
+                            }
+                        }
+                    }',
+                'error_message' => 'TaintedHtml',
+            ],
+            'taintInAMethodOfAClassDeclaredConditionallyInABracedNamespace' => [
+                'code' => '<?php
+                    namespace Foo {
+                        if (!class_exists(C::class)) {
+                            final class C {
+                                public function m(): void {
+                                    echo (string) $_GET["x"];
+                                }
+                            }
+                        }
+                    }',
+                'error_message' => 'TaintedHtml',
+            ],
             'nullsafeCallOnAPropertyStoresTheTaint' => [
                 'code' => '<?php // --taint-analysis
                     final class H {
