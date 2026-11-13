@@ -33,6 +33,7 @@ use Psalm\Storage\Assertion\Truthy;
 use Psalm\Type;
 use Psalm\Type\Atomic;
 use Psalm\Type\Atomic\Scalar;
+use Psalm\Type\Atomic\TAnonymousClassInstance;
 use Psalm\Type\Atomic\TArray;
 use Psalm\Type\Atomic\TArrayKey;
 use Psalm\Type\Atomic\TBool;
@@ -3173,7 +3174,10 @@ final class SimpleAssertionReconciler extends Reconciler
      */
     private static function isFinalObject(Codebase $codebase, TNamedObject $type): bool
     {
-        if ($type instanceof TClosure || ($type->definite_class && !$type->is_static)) {
+        if ($type instanceof TClosure
+            || $type instanceof TAnonymousClassInstance
+            || ($type->definite_class && !$type->is_static)
+        ) {
             return true;
         }
 

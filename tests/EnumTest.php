@@ -1078,6 +1078,27 @@ final class EnumTest extends TestCase
                 'ignored_issues' => [],
                 'php_version' => '8.1',
             ],
+            'iteratorAggregateEnumIsIterable' => [
+                'code' => '<?php
+                    /** @implements IteratorAggregate<int, string> */
+                    enum E implements IteratorAggregate {
+                        case A;
+
+                        public function getIterator(): Iterator {
+                            return new ArrayIterator(["a"]);
+                        }
+                    }
+
+                    /** @param iterable<int, string> $i */
+                    function takesStrings(iterable $i): void {}
+
+                    function f(E $e): void {
+                        takesStrings($e);
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
         ];
     }
 

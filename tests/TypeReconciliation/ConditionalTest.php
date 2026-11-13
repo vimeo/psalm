@@ -5353,6 +5353,24 @@ final class ConditionalTest extends TestCase
                     if (is_iterable($x)) {}',
                 'error_message' => 'TypeDoesNotContainType',
             ],
+            'isIterableOnExactGenericClass' => [
+                'code' => '<?php
+                    /** @template T */
+                    class Box {
+                        /** @param T $v */
+                        public function __construct($v) {}
+                    }
+
+                    $x = new Box(1);
+                    if (is_iterable($x)) {}',
+                'error_message' => 'TypeDoesNotContainType',
+            ],
+            'isIterableOnAnonymousClassInstance' => [
+                'code' => '<?php
+                    $x = new class {};
+                    if (is_iterable($x)) {}',
+                'error_message' => 'TypeDoesNotContainType',
+            ],
             'instanceofTraversableOnExactClass' => [
                 'code' => '<?php
                     $x = new stdClass();

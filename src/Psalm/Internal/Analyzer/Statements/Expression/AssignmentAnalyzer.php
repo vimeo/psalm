@@ -1581,8 +1581,8 @@ final class AssignmentAnalyzer
     }
 
     /**
-     * Adds to $new_assign_type the type of an item destructured from an ArrayAccess object: what it gives
-     * when traversed, else the values of its ArrayAccess parameters.
+     * Adds to $new_assign_type the type of an item destructured from an ArrayAccess object: the values of
+     * its ArrayAccess parameters (PHP calls offsetGet), else what it gives when traversed.
      *
      * @psalm-capabilities read-props|write-this-props|write-refs
      */
@@ -1591,17 +1591,15 @@ final class AssignmentAnalyzer
         Codebase $codebase,
         ?Union $new_assign_type,
     ): Union {
-        $key_type = null;
-        $value_type = null;
+        $value_type = ForeachAnalyzer::getArrayAccessValueType($atomic_type, $codebase);
 
-        ForeachAnalyzer::getKeyValueParamsForTraversableObject($atomic_type, $codebase, $key_type, $value_type);
+        if (!$value_type) {
+            $key_type = null;
 
-        return Type::combineUnionTypes(
-            $value_type
-                ?? ForeachAnalyzer::getArrayAccessValueType($atomic_type, $codebase)
-                ?? Type::getMixed(),
-            $new_assign_type,
-        );
+            ForeachAnalyzer::getKeyValueParamsForTraversableObject($atomic_type, $codebase, $key_type, $value_type);
+        }
+
+        return Type::combineUnionTypes($value_type ?? Type::getMixed(), $new_assign_type);
     }
 
     /**
