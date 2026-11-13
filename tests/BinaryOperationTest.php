@@ -1497,18 +1497,24 @@ final class BinaryOperationTest extends TestCase
                 ],
                 'ignored_issues' => ['ImplicitFloatToIntCast'],
             ],
-            'bitwiseOperationsOfWholeNumberFunctionsAreNotReported' => [
+            'bitwiseOperationsOfWholeNumberFunctionsOfKnownArgumentsAreNotReported' => [
                 'code' => <<<'PHP'
                     <?php
-                    function colors(int $r, int $g, int $b, string $octal): int {
-                        $a = round($b / 255) << 2 | (round($g / 255) << 1) | round($r / 255);
-                        $f = floor($r / 2) & 1;
-                        $c = ceil($g / 2) ^ 1;
-                        $o = octdec(substr($octal, 0, 3)) | 2;
-                        $h = hexdec(substr($octal, 0, 2)) & 255;
-                        $d = bindec(substr($octal, 0, 4)) >> 1;
+                    /**
+                     * @param int<0, 255> $r
+                     * @param int<0, 255> $g
+                     * @param int<0, 255> $b
+                     */
+                    function colors(int $r, int $g, int $b): int {
+                        $a = round($b) << 2 | (round($g) << 1) | round($r);
+                        $f = floor($r) & 1;
+                        $c = ceil($g) ^ 1;
+                        $o = octdec('377') | 2;
+                        $h = hexdec('ff') & 255;
+                        $d = bindec('1010') >> 1;
+                        $l = floor(7.5) | ceil(-1.2) | round(2.5, 0) | \floor(3);
 
-                        return $a + $f + $c + $o + $h + $d;
+                        return $a + $f + $c + $o + $h + $d + $l;
                     }
                     PHP,
                 'assertions' => [],
@@ -2438,6 +2444,39 @@ final class BinaryOperationTest extends TestCase
                 'code' => '<?php
                     function f(string $digits, float $x): int {
                         return round($x, 2) | 1;
+                    }',
+                'error_message' => 'ImplicitFloatToIntCast',
+                'error_levels' => [],
+                'php_version' => '8.3',
+            ],
+            'bitwiseOperationOfAFloorOfAnUnknownFloatIsReported' => [
+                'code' => '<?php
+                    function f(float $x): int {
+                        return floor($x / 2) | 1;
+                    }',
+                'error_message' => 'ImplicitFloatToIntCast',
+                'error_levels' => [],
+                'php_version' => '8.3',
+            ],
+            'bitwiseOperationOfAFloorOfTheLargestIntIsReported' => [
+                'code' => '<?php
+                    function f(): int {
+                        return floor(PHP_INT_MAX) | 1;
+                    }',
+                'error_message' => 'ImplicitFloatToIntCast',
+                'error_levels' => [],
+                'php_version' => '8.3',
+            ],
+            'bitwiseOperationOfAFloorOfANamespacedFunctionIsReported' => [
+                'code' => '<?php
+                    namespace App;
+
+                    function floor(int $n): float {
+                        return $n + 0.5;
+                    }
+
+                    function f(): int {
+                        return floor(3) | 1;
                     }',
                 'error_message' => 'ImplicitFloatToIntCast',
                 'error_levels' => [],
