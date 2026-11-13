@@ -10,5 +10,5 @@ namespace Psalm\Issue;
 final class ImplicitFloatToIntCast extends CodeIssue
 {
     public const ERROR_LEVEL = 3;
-    public const SHORTCODE = 376;
+    public const SHORTCODE = 378;
 }
