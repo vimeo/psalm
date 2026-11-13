@@ -810,6 +810,7 @@ final class PreloaderList {
         \Psalm\Internal\ExecutionEnvironment\BuildInfoCollector::class,
         \Psalm\Internal\ExecutionEnvironment\GitInfoCollector::class,
         \Psalm\Internal\ExecutionEnvironment\SystemCommandExecutor::class,
+        \Psalm\Internal\FileLink::class,
         \Psalm\Internal\FileManipulation\ClassDocblockManipulator::class,
         \Psalm\Internal\FileManipulation\CodeMigration::class,
         \Psalm\Internal\FileManipulation\FileManipulationBuffer::class,
