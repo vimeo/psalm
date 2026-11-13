@@ -68,7 +68,6 @@ use const FILTER_VALIDATE_BOOLEAN;
 use const PATHINFO_EXTENSION;
 use const PHP_EOL;
 use const STDERR;
-use const STDOUT;
 
 // phpcs:disable PSR1.Files.SideEffects
 

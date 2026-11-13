@@ -64,6 +64,7 @@ use const PHP_VERSION;
 use const PHP_VERSION_ID;
 use const STDERR;
 use const STDIN;
+use const STDOUT;
 
 /**
  * @internal
