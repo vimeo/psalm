@@ -1198,6 +1198,75 @@ final class AssignmentAnalyzer
             }
         }
 
+        if ($lhs_var_id !== null
+            && $rhs_var_id === null
+            && $stmt->var instanceof PhpParser\Node\Expr\Variable
+            && ($stmt->expr instanceof PhpParser\Node\Expr\FuncCall
+                || $stmt->expr instanceof PhpParser\Node\Expr\MethodCall
+                || $stmt->expr instanceof PhpParser\Node\Expr\StaticCall
+            )
+            && ($return_type = $statements_analyzer->node_data->getType($stmt->expr))
+            && $return_type->by_ref
+        ) {
+            // The call returns a reference whose target is outside the local variable map.
+            // A normal assignment still handles its type, annotations, diagnostics and data flow.
+            // Rebinding can release the old value before the normal assignment gets to inspect it.
+            DestructorAnalyzer::chargeOverwrite(
+                $statements_analyzer,
+                $context,
+                $stmt->var,
+                $lhs_var_id,
+                $return_type,
+            );
+            FunctionLikeAnalyzer::unbindByRefParam($statements_analyzer->getCodebase(), $context, $lhs_var_id);
+
+            if (isset($context->references_in_scope[$lhs_var_id])) {
+                $context->decrementReferenceCount($lhs_var_id);
+                unset($context->references_in_scope[$lhs_var_id]);
+            }
+
+            unset(
+                $context->references_possibly_from_confusing_scope[$lhs_var_id],
+                $context->references_to_external_scope[$lhs_var_id],
+            );
+
+            if (isset($context->vars_in_scope[$lhs_var_id])) {
+                $context->removeDescendents(
+                    $lhs_var_id,
+                    $context->vars_in_scope[$lhs_var_id],
+                    $return_type,
+                    $statements_analyzer,
+                );
+            }
+
+            // Detach any previous PHP-level alias before assigning the new value.
+            unset($context->vars_in_scope[$lhs_var_id]);
+            // Reuse the already analyzed return type without evaluating the call a second time.
+            $assignment_type = self::analyze(
+                $statements_analyzer,
+                $stmt->var,
+                null,
+                $return_type,
+                $context,
+                $doc_comment,
+                [],
+                $from_stmt === null ? $stmt : null,
+            );
+
+            // Binding the returned reference does not write through the previous alias.
+            if (isset($context->vars_in_scope[$lhs_var_id])) {
+                $context->vars_in_scope[$lhs_var_id] = $context->vars_in_scope[$lhs_var_id]->setByRef(true);
+            }
+            $context->references_to_external_scope[$lhs_var_id] = true;
+
+            // The assignment expression itself evaluates to the referenced value.
+            if ($from_stmt === null && $assignment_type !== null) {
+                $statements_analyzer->node_data->setType($stmt, $assignment_type->setByRef(false));
+            }
+
+            return true;
+        }
+
         if ($lhs_var_id === null || $rhs_var_id === null) {
             return false;
         }
@@ -1232,6 +1301,11 @@ final class AssignmentAnalyzer
         // When assigning an existing reference as a reference it removes the
         // old reference, so it's no longer potentially from a confusing scope.
         unset($context->references_possibly_from_confusing_scope[$lhs_var_id]);
+        $rhs_is_external = isset($context->references_to_external_scope[$rhs_var_id]);
+        unset($context->references_to_external_scope[$lhs_var_id]);
+        if ($rhs_is_external) {
+            $context->references_to_external_scope[$lhs_var_id] = true;
+        }
 
         $context->vars_in_scope[$lhs_var_id] = &$context->vars_in_scope[$rhs_var_id];
         $context->hasVariable($lhs_var_id);

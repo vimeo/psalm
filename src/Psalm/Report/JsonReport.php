@@ -29,7 +29,7 @@ final class JsonReport extends Report
         $issues_data = array_map(
             static function (IssueData $issue_data): array {
                 $issue_data = (array) $issue_data;
-                unset($issue_data['dupe_key']);
+                unset($issue_data['dupe_key'], $issue_data['group_key']);
                 return $issue_data;
             },
             $this->issues_data,
