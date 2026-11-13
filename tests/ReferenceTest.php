@@ -673,6 +673,7 @@ final class ReferenceTest extends TestCase
                         $reference = $value;
                     }
                     PHP,
+                'assertions' => [],
                 'ignored_issues' => ['MixedAssignment', 'UnsupportedPropertyReferenceUsage'],
             ],
             'returnedReferenceAssignmentFromStaticMethod' => [
@@ -692,6 +693,7 @@ final class ReferenceTest extends TestCase
                         $reference = $value;
                     }
                     PHP,
+                'assertions' => [],
                 'ignored_issues' => ['MixedAssignment'],
             ],
             'returnedReferenceAssignmentRespectsNamedVarAnnotation' => [
@@ -710,6 +712,8 @@ final class ReferenceTest extends TestCase
                         echo strlen($reference);
                     }
                     PHP,
+                'assertions' => [],
+                'ignored_issues' => [],
                 'php_version' => '8.0',
             ],
             'returnedReferenceAssignmentInvalidatesCachedOffsets' => [

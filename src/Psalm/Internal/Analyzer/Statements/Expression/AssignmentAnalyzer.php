@@ -1210,6 +1210,14 @@ final class AssignmentAnalyzer
         ) {
             // The call returns a reference whose target is outside the local variable map.
             // A normal assignment still handles its type, annotations, diagnostics and data flow.
+            // Rebinding can release the old value before the normal assignment gets to inspect it.
+            DestructorAnalyzer::chargeOverwrite(
+                $statements_analyzer,
+                $context,
+                $stmt->var,
+                $lhs_var_id,
+                $return_type,
+            );
             FunctionLikeAnalyzer::unbindByRefParam($statements_analyzer->getCodebase(), $context, $lhs_var_id);
 
             if (isset($context->references_in_scope[$lhs_var_id])) {
