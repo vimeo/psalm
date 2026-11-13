@@ -3210,7 +3210,14 @@ final class FunctionCallTest extends TestCase
                     /** @param array{1?: int, 0: string} $outOfOrder */
                     function outOfOrder(array $outOfOrder): void {
                         if (array_is_list($outOfOrder)) {
-                            /** @psalm-check-type-exact $outOfOrder = list{string} */
+                            /** @psalm-check-type-exact $outOfOrder = list{0: string, 1?: int} */
+                        }
+                    }
+
+                    /** @param array{2?: bool, 0?: string, 1: int} $outOfOrderWithRequiredKey */
+                    function outOfOrderWithRequiredKey(array $outOfOrderWithRequiredKey): void {
+                        if (array_is_list($outOfOrderWithRequiredKey)) {
+                            /** @psalm-check-type-exact $outOfOrderWithRequiredKey = list{0: string, 1: int, 2?: bool} */
                         }
                     }
                     PHP,

@@ -90,6 +90,7 @@ use function count;
 use function explode;
 use function in_array;
 use function is_int;
+use function ksort;
 use function min;
 use function strlen;
 use function strpos;
@@ -2472,8 +2473,21 @@ final class SimpleAssertionReconciler extends Reconciler
         $properties = [];
         $last_required_key = $non_empty ? 0 : -1;
 
-        // in the order of the shape: a key that is not the next one of a list has to be absent
+        $int_properties = [];
+
         foreach ($shape->properties as $key => $property) {
+            if (is_int($key)) {
+                $int_properties[$key] = $property;
+            } elseif (!$property->possibly_undefined) {
+                return null;
+            }
+        }
+
+        // `array{1?: int, 0: string}` is a list too: the keys count in numeric order, not in the order of the shape.
+        // A key that is not the next one of a list has to be absent
+        ksort($int_properties);
+
+        foreach ($int_properties as $key => $property) {
             if ($key !== count($properties)) {
                 if (!$property->possibly_undefined) {
                     return null;
