@@ -11,10 +11,8 @@ use Psalm\Config;
 use Psalm\Context;
 use Psalm\Internal\Analyzer\FunctionLikeAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\Call\Method\MethodCallPurityAnalyzer;
-use Psalm\Internal\Analyzer\Statements\Expression\ExpressionIdentifier;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\Internal\Analyzer\TraitAnalyzer;
-use Psalm\Internal\MethodIdentifier;
 use Psalm\Internal\Type\Comparator\AtomicTypeComparator;
 use Psalm\Internal\Type\Comparator\TypeComparisonResult;
 use Psalm\Internal\Type\Comparator\UnionTypeComparator;
@@ -22,7 +20,6 @@ use Psalm\Internal\Type\LiteralCast;
 use Psalm\Internal\Type\TemplateBound;
 use Psalm\Issue\FalseOperand;
 use Psalm\Issue\ImplicitToStringCast;
-use Psalm\Issue\ImpureMethodCall;
 use Psalm\Issue\InvalidOperand;
 use Psalm\Issue\MixedOperand;
 use Psalm\Issue\NullOperand;
@@ -30,7 +27,6 @@ use Psalm\Issue\PossiblyFalseOperand;
 use Psalm\Issue\PossiblyInvalidOperand;
 use Psalm\Issue\PossiblyNullOperand;
 use Psalm\IssueBuffer;
-use Psalm\Storage\Capabilities;
 use Psalm\Type;
 use Psalm\Type\Atomic;
 use Psalm\Type\Atomic\TArrayKey;
@@ -41,7 +37,6 @@ use Psalm\Type\Atomic\TIntRange;
 use Psalm\Type\Atomic\TLiteralInt;
 use Psalm\Type\Atomic\TLiteralString;
 use Psalm\Type\Atomic\TLowercaseString;
-use Psalm\Type\Atomic\TNamedObject;
 use Psalm\Type\Atomic\TNonEmptyNonspecificLiteralString;
 use Psalm\Type\Atomic\TNonEmptyString;
 use Psalm\Type\Atomic\TNonFalsyString;
@@ -53,7 +48,6 @@ use Psalm\Type\Atomic\TTemplateParam;
 use Psalm\Type\Atomic\TTypeVariable;
 use Psalm\Type\TaintKind;
 use Psalm\Type\Union;
-use UnexpectedValueException;
 
 use function count;
 use function preg_match;
@@ -643,55 +637,13 @@ final class ConcatAnalyzer
                 );
             }
 
-            foreach ($operand_type->getAtomicTypes() as $atomic_type) {
-                if ($atomic_type instanceof TNamedObject) {
-                    $to_string_method_id = new MethodIdentifier(
-                        $atomic_type->value,
-                        '__tostring',
-                    );
-
-                    if ($codebase->methodExists(
-                        $to_string_method_id,
-                        $context->calling_method_id,
-                        $codebase->collect_locations
-                            ? new CodeLocation($statements_analyzer->getSource(), $operand)
-                            : null,
-                        !$context->collect_initializations
-                            && !$context->collect_mutations
-                            ? $statements_analyzer
-                            : null,
-                        $statements_analyzer->getFilePath(),
-                    )) {
-                        try {
-                            $storage = $codebase->methods->getStorage($to_string_method_id);
-                        } catch (UnexpectedValueException) {
-                            continue;
-                        }
-
-                        $var_id = ExpressionIdentifier::getExtendedVarId(
-                            $operand,
-                            $statements_analyzer->getFQCLN(),
-                            $statements_analyzer,
-                        );
-                        // a concatenation passes no argument, so the __toString's write-refs costs nothing
-                        $statements_analyzer->signalMutation(
-                            MethodCallPurityAnalyzer::getMethodCapabilities(
-                                $statements_analyzer,
-                                $operand,
-                                $storage,
-                            ) & ~Capabilities::WRITE_REFS,
-                            $context,
-                            'possibly-mutating method '
-                                        . $atomic_type->value . '::__toString',
-                            ImpureMethodCall::class,
-                            $operand,
-                            null,
-                            false,
-                            $var_id === '$this' ? $storage : null,
-                        );
-                    }
-                }
-            }
+            MethodCallPurityAnalyzer::signalImplicitToStringCall(
+                $statements_analyzer,
+                $context,
+                $operand,
+                $operand_type_part,
+                $operand,
+            );
         }
 
         if (!$operand_type_match

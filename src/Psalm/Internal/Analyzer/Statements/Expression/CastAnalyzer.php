@@ -24,7 +24,6 @@ use Psalm\Internal\Type\LiteralCast;
 use Psalm\Internal\Type\TypeCombiner;
 use Psalm\Internal\Type\TypeVariableTracker;
 use Psalm\Internal\TypeVisitor\TypeVariableResolver;
-use Psalm\Issue\ImpureMethodCall;
 use Psalm\Issue\InvalidCast;
 use Psalm\Issue\PossiblyInvalidCast;
 use Psalm\Issue\RedundantCast;
@@ -32,7 +31,6 @@ use Psalm\Issue\RedundantCastGivenDocblockType;
 use Psalm\Issue\RiskyCast;
 use Psalm\Issue\UnrecognizedExpression;
 use Psalm\IssueBuffer;
-use Psalm\Storage\Capabilities;
 use Psalm\Type;
 use Psalm\Type\Atomic;
 use Psalm\Type\Atomic\Scalar;
@@ -839,33 +837,6 @@ final class CastAnalyzer
                                 $intersection_method_id,
                                 $self_class,
                             ) ?? Type::getString();
-
-                            $declaring_method_id = $codebase->methods->getDeclaringMethodId($intersection_method_id);
-
-                            if ($declaring_method_id !== null) {
-                                $to_string_storage = $codebase->methods->getStorage($declaring_method_id);
-                                $var_id = ExpressionIdentifier::getExtendedVarId(
-                                    $stmt,
-                                    $statements_analyzer->getFQCLN(),
-                                    $statements_analyzer,
-                                );
-
-                                // a cast passes no argument, so the __toString's write-refs costs nothing
-                                $statements_analyzer->signalMutation(
-                                    MethodCallPurityAnalyzer::getMethodCapabilities(
-                                        $statements_analyzer,
-                                        $stmt,
-                                        $to_string_storage,
-                                    ) & ~Capabilities::WRITE_REFS,
-                                    $context,
-                                    'possibly-mutating method ' . $intersection_type->value . '::__toString',
-                                    ImpureMethodCall::class,
-                                    $stmt,
-                                    null,
-                                    false,
-                                    $var_id === '$this' ? $to_string_storage : null,
-                                );
-                            }
                         }
                     }
 
@@ -875,6 +846,14 @@ final class CastAnalyzer
                         $return_types[] = Type::getString();
                     }
                 }
+
+                MethodCallPurityAnalyzer::signalImplicitToStringCall(
+                    $statements_analyzer,
+                    $context,
+                    $stmt,
+                    $atomic_type,
+                    $stmt,
+                );
 
                 if ($return_types) {
                     $castable_types = [

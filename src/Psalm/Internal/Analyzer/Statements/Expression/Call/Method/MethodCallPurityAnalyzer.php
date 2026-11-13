@@ -15,7 +15,9 @@ use Psalm\Internal\Analyzer\PurityWildcardInference;
 use Psalm\Internal\Analyzer\Statements\Expression\Assignment\InstancePropertyAssignmentAnalyzer as AssignmentAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\Call\ByRefArgumentAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\Call\CallPurityResolver;
+use Psalm\Internal\Analyzer\Statements\Expression\Call\ClassTemplateParamCollector;
 use Psalm\Internal\Analyzer\Statements\Expression\Call\NoDiscardAnalyzer;
+use Psalm\Internal\Analyzer\Statements\Expression\ExpressionIdentifier;
 use Psalm\Internal\Analyzer\Statements\Expression\GlobalStateAnalyzer;
 use Psalm\Internal\Analyzer\Statements\ReturnAnalyzer;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
@@ -91,6 +93,133 @@ final class MethodCallPurityAnalyzer
             $receiver_is_fresh,
         );
     }
+
+    /**
+     * __toString takes no parameters, so its write-refs costs nothing. A reference the object holds
+     * is charged where it is handed to the object.
+     */
+    public static function signalImplicitToStringCall(
+        StatementsAnalyzer $statements_analyzer,
+        Context $context,
+        Expr $receiver,
+        Atomic $type,
+        PhpParser\Node $location,
+    ): void {
+        if ($type instanceof TTemplateParam) {
+            foreach ($type->as->getAtomicTypes() as $bound) {
+                self::signalImplicitToStringCall($statements_analyzer, $context, $receiver, $bound, $location);
+            }
+
+            return;
+        }
+
+        if (!$type instanceof TNamedObject) {
+            return;
+        }
+
+        self::signalNamedToStringCall($statements_analyzer, $context, $receiver, $type, $location);
+
+        foreach ($type->extra_types as $intersection_type) {
+            if ($intersection_type instanceof TNamedObject) {
+                self::signalNamedToStringCall($statements_analyzer, $context, $receiver, $intersection_type, $location);
+            }
+        }
+    }
+
+    private static function signalNamedToStringCall(
+        StatementsAnalyzer $statements_analyzer,
+        Context $context,
+        Expr $receiver,
+        TNamedObject $type,
+        PhpParser\Node $location,
+    ): void {
+        $codebase = $statements_analyzer->getCodebase();
+        if (!$codebase->classlike_storage_provider->has($type->value)) {
+            return;
+        }
+
+        $method_id = new MethodIdentifier($type->value, '__tostring');
+        if (!$codebase->methodExists(
+            $method_id,
+            $context->calling_method_id,
+            $codebase->collect_locations ? new CodeLocation($statements_analyzer->getSource(), $location) : null,
+            !$context->collect_initializations && !$context->collect_mutations ? $statements_analyzer : null,
+            $statements_analyzer->getFilePath(),
+        )) {
+            return;
+        }
+
+        $declaring_method_id = $codebase->methods->getDeclaringMethodId($method_id);
+        if ($declaring_method_id === null) {
+            return;
+        }
+
+        $storage = $codebase->methods->getStorage($declaring_method_id);
+        $class_storage = $codebase->classlike_storage_provider->get($type->value);
+        $template_capabilities = Capabilities::NONE;
+        $inferred_template_capabilities = Capabilities::NONE;
+        if ($storage->purity_from_templates !== []) {
+            $class_template_params = ClassTemplateParamCollector::collect(
+                $codebase,
+                $codebase->methods->getClassLikeStorageForMethod($declaring_method_id),
+                $class_storage,
+                '__tostring',
+                $type,
+                self::isReceiverThis($receiver),
+            ) ?? [];
+            $template_capabilities = CallPurityResolver::getCallCapabilities(
+                $statements_analyzer,
+                $codebase,
+                $storage,
+                Capabilities::NONE,
+                null,
+                $class_template_params,
+                self::isReceiverThis($receiver),
+                self::isFromGlobalState($statements_analyzer, $receiver),
+            );
+            $inferred_template_capabilities = self::getInferredTemplateCapabilities(
+                $statements_analyzer,
+                $codebase,
+                $receiver,
+                $storage,
+                $class_storage,
+                null,
+                $class_template_params,
+                $template_capabilities,
+            );
+        }
+
+        $capabilities = self::getMethodCapabilities($statements_analyzer, $receiver, $storage)
+            & ~Capabilities::WRITE_REFS;
+
+        $var_id = ExpressionIdentifier::getExtendedVarId(
+            $receiver,
+            $statements_analyzer->getFQCLN(),
+            $statements_analyzer,
+        );
+
+        $statements_analyzer->signalMutation(
+            $capabilities | $template_capabilities,
+            $context,
+            'possibly-mutating method ' . $type->value . '::__toString',
+            ImpureMethodCall::class,
+            $location,
+            $capabilities | $inferred_template_capabilities,
+            false,
+            ($var_id === '$this'
+                || $storage->final
+                || $class_storage->final
+                || $storage->visibility === ClassLikeAnalyzer::VISIBILITY_PRIVATE)
+                ? $storage
+                : null,
+            self::receiverAllowsInternalMutations($statements_analyzer, $receiver),
+        );
+
+        if ($inferred_template_capabilities !== Capabilities::NONE) {
+            $statements_analyzer->signalMutationOnlyInferred($inferred_template_capabilities);
+        }
+    }
+
 
     /**
      * The capabilities a call of a method of the class of $class_storage whose name isn't known

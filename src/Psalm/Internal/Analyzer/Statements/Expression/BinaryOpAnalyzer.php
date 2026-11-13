@@ -20,9 +20,7 @@ use Psalm\Internal\Codebase\CombinedFlowGraph;
 use Psalm\Internal\Codebase\TaintFlowGraph;
 use Psalm\Internal\Codebase\VariableUseGraph;
 use Psalm\Internal\DataFlow\DataFlowNode;
-use Psalm\Internal\MethodIdentifier;
 use Psalm\Issue\DocblockTypeContradiction;
-use Psalm\Issue\ImpureMethodCall;
 use Psalm\Issue\InvalidOperand;
 use Psalm\Issue\NullOperand;
 use Psalm\Issue\PossiblyNullOperand;
@@ -31,11 +29,9 @@ use Psalm\Issue\RedundantConditionGivenDocblockType;
 use Psalm\Issue\TypeDoesNotContainType;
 use Psalm\IssueBuffer;
 use Psalm\Plugin\EventHandler\Event\AddRemoveTaintsEvent;
-use Psalm\Storage\Capabilities;
 use Psalm\Type;
 use Psalm\Type\Atomic\TLiteralInt;
 use Psalm\Type\Atomic\TLiteralString;
-use Psalm\Type\Atomic\TNamedObject;
 use Psalm\Type\TaintKind;
 use Psalm\Type\Union;
 use UnexpectedValueException;
@@ -181,6 +177,19 @@ final class BinaryOpAnalyzer
                 ),
             );
 
+            $left_type = $statements_analyzer->node_data->getType($stmt->left);
+            $right_type = $statements_analyzer->node_data->getType($stmt->right);
+            if ($left_type && $right_type) {
+                self::checkForImplicitToStringComparison(
+                    $context,
+                    $statements_analyzer,
+                    $stmt,
+                    $left_type,
+                    $right_type,
+                );
+            }
+
+
             self::addDataFlow(
                 $statements_analyzer,
                 $stmt,
@@ -315,16 +324,12 @@ final class BinaryOpAnalyzer
                 }
             }
 
-            $codebase = $statements_analyzer->getCodebase();
-
-            if ($stmt instanceof PhpParser\Node\Expr\BinaryOp\Equal
+            if (!($stmt instanceof PhpParser\Node\Expr\BinaryOp\Identical
+                    || $stmt instanceof PhpParser\Node\Expr\BinaryOp\NotIdentical)
                 && $stmt_left_type
                 && $stmt_right_type
-                && ($context->capabilities !== Capabilities::ALL
-                    || $codebase->alter_code
-                )
             ) {
-                self::checkForImpureEqualityComparison(
+                self::checkForImplicitToStringComparison(
                     $context,
                     $statements_analyzer,
                     $stmt,
@@ -472,89 +477,34 @@ final class BinaryOpAnalyzer
         }
     }
 
-    private static function checkForImpureEqualityComparison(
+    private static function checkForImplicitToStringComparison(
         Context $context,
         StatementsAnalyzer $statements_analyzer,
-        PhpParser\Node\Expr\BinaryOp\Equal $stmt,
+        PhpParser\Node\Expr\BinaryOp $stmt,
         Union $stmt_left_type,
         Union $stmt_right_type,
     ): void {
-        $codebase = $statements_analyzer->getCodebase();
-
         if ($stmt_left_type->hasString() && $stmt_right_type->hasObjectType()) {
             foreach ($stmt_right_type->getAtomicTypes() as $atomic_type) {
-                if ($atomic_type instanceof TNamedObject) {
-                    try {
-                        $storage = $codebase->methods->getStorage(
-                            new MethodIdentifier(
-                                $atomic_type->value,
-                                '__tostring',
-                            ),
-                        );
-                    } catch (UnexpectedValueException) {
-                        continue;
-                    }
-                    $var_id = ExpressionIdentifier::getExtendedVarId(
-                        $stmt->right,
-                        $statements_analyzer->getFQCLN(),
-                        $statements_analyzer,
-                    );
-
-                    // a comparison passes no argument, so the __toString's write-refs costs nothing
-                    $statements_analyzer->signalMutation(
-                        MethodCallPurityAnalyzer::getMethodCapabilities(
-                            $statements_analyzer,
-                            $stmt->right,
-                            $storage,
-                        ) & ~Capabilities::WRITE_REFS,
-                        $context,
-                        'possibly-mutating method '
-                                    . $atomic_type->value . '::__toString',
-                        ImpureMethodCall::class,
-                        $stmt,
-                        null,
-                        false,
-                        $var_id === '$this' ? $storage : null,
-                    );
-                }
+                MethodCallPurityAnalyzer::signalImplicitToStringCall(
+                    $statements_analyzer,
+                    $context,
+                    $stmt->right,
+                    $atomic_type,
+                    $stmt,
+                );
             }
-        } elseif ($stmt_right_type->hasString() && $stmt_left_type->hasObjectType()) {
+        }
+
+        if ($stmt_right_type->hasString() && $stmt_left_type->hasObjectType()) {
             foreach ($stmt_left_type->getAtomicTypes() as $atomic_type) {
-                if ($atomic_type instanceof TNamedObject) {
-                    try {
-                        $storage = $codebase->methods->getStorage(
-                            new MethodIdentifier(
-                                $atomic_type->value,
-                                '__tostring',
-                            ),
-                        );
-                    } catch (UnexpectedValueException) {
-                        continue;
-                    }
-
-                    $var_id = ExpressionIdentifier::getExtendedVarId(
-                        $stmt->left,
-                        $statements_analyzer->getFQCLN(),
-                        $statements_analyzer,
-                    );
-
-                    // a comparison passes no argument, so the __toString's write-refs costs nothing
-                    $statements_analyzer->signalMutation(
-                        MethodCallPurityAnalyzer::getMethodCapabilities(
-                            $statements_analyzer,
-                            $stmt->left,
-                            $storage,
-                        ) & ~Capabilities::WRITE_REFS,
-                        $context,
-                        'possibly-mutating method '
-                                    . $atomic_type->value . '::__toString',
-                        ImpureMethodCall::class,
-                        $stmt,
-                        null,
-                        false,
-                        $var_id === '$this' ? $storage : null,
-                    );
-                }
+                MethodCallPurityAnalyzer::signalImplicitToStringCall(
+                    $statements_analyzer,
+                    $context,
+                    $stmt->left,
+                    $atomic_type,
+                    $stmt,
+                );
             }
         }
     }

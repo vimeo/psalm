@@ -110,4 +110,40 @@ final class PurityAnnotationSuggestionTest extends TestCase
             implode("\n", array_column($issues, 'message')),
         );
     }
+
+    public function testToStringCastInfersUnannotatedCallerLikeExplicitCall(): void
+    {
+        $this->testConfig->throw_exception = false;
+        $this->testConfig->suggest_purity_annotations = true;
+
+        $file_path = self::$src_dir_path . 'somefile.php';
+        $this->addFile(
+            $file_path,
+            '<?php
+                final class Name {
+                    public function __toString(): string {
+                        return "x";
+                    }
+                }
+
+                function viaCast(Name $n): string {
+                    return (string) $n;
+                }
+
+                function viaCall(Name $n): string {
+                    return $n->__toString();
+                }',
+        );
+
+        $this->analyzeFile($file_path, new Context());
+        $this->project_analyzer->consolidateAnalyzedData();
+
+        $suggestions = array_values(array_filter(
+            IssueBuffer::getIssuesDataForFile($file_path),
+            static fn($issue): bool => $issue->type === 'MissingPureAnnotation',
+        ));
+
+        self::assertStringStartsWith('viaCast could be marked @psalm-pure', $suggestions[0]->message);
+        self::assertStringStartsWith('viaCall could be marked @psalm-pure', $suggestions[1]->message);
+    }
 }
