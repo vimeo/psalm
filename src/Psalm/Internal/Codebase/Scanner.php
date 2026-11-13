@@ -356,6 +356,7 @@ final class Scanner
      * Takes the files and classes queued for scanning out of the queue, to put them back with restoreQueue()
      *
      * @return array{array<string, string>, array<string, string>, array<string, bool>}
+     * @psalm-capabilities read-props|write-this-props|write-refs
      */
     public function takeQueue(): array
     {
@@ -370,6 +371,7 @@ final class Scanner
 
     /**
      * @param array{array<string, string>, array<string, string>, array<string, bool>} $queue
+     * @psalm-capabilities read-props|write-this-props|write-refs
      */
     public function restoreQueue(array $queue): void
     {
