@@ -422,6 +422,27 @@ final class PsalmEndToEndTest extends TestCase
         yield 'FORCE_COLOR' => [['FORCE_COLOR' => '1'], true];
     }
 
+    public function testPsalterAcceptsTheLongMonochromeOptionAndItOverridesForceColor(): void
+    {
+        $this->runPsalmInit();
+        $psalmXml = file_get_contents(self::$tmpDir . '/psalm.xml');
+        $psalmXml = str_replace('<psalm', '<psalm runTaintAnalysis="false"', (string)$psalmXml);
+        file_put_contents(self::$tmpDir . '/psalm.xml', $psalmXml);
+        file_put_contents(self::$tmpDir . '/src/A.php', "<?php\n\nfunction a() {\n    return 1;\n}\n");
+
+        $process = new Process(
+            [PHP_BINARY, $this->psalter, '--monochrome', '--dry-run', '--no-cache', '--issues=MissingReturnType', 'src'],
+            self::$tmpDir,
+            ['FORCE_COLOR' => '1'] + self::agentEnvVarsToUnset(),
+        );
+        $process->run();
+
+        $this->assertStringNotContainsString('Unrecognised argument', $process->getErrorOutput());
+        $this->assertSame(2, $process->getExitCode(), $process->getOutput() . $process->getErrorOutput());
+        $this->assertStringContainsString('+function a(): int {', $process->getOutput());
+        $this->assertStringNotContainsString("\e", $process->getOutput());
+    }
+
     public function testPsalterNoDiffListsTheChangedFilesWithoutTheDiffAndStillWritesThem(): void
     {
         $process = $this->runPsalterOnAFileWithAMissingReturnType(['--no-diff']);
