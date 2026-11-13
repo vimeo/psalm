@@ -11,6 +11,7 @@ use Psalm\Context;
 use Psalm\Exception\CodeException;
 use Psalm\Internal\Analyzer\ProjectAnalyzer;
 use Psalm\Internal\Codebase\CodeUseGraph;
+use Psalm\Internal\MethodIdentifier;
 use Psalm\IssueBuffer;
 use Psalm\Plugin\EventHandler\Event\MethodExistenceProviderEvent;
 use Psalm\Storage\Capabilities;
@@ -426,12 +427,121 @@ final class UnusedCodeTest extends TestCase
         // Some appearing methods have no corresponding declaring method ID.
         // This must not crash the potential-reachability collector.
         $storage = $this->project_analyzer->getCodebase()->classlike_storage_provider->get('DynamicController');
-        $storage->appearing_method_ids['synthetic'] = new \Psalm\Internal\MethodIdentifier('ExternalClass', 'synthetic');
+        $storage->appearing_method_ids['synthetic'] = new MethodIdentifier('ExternalClass', 'synthetic');
 
         $this->project_analyzer->consolidateAnalyzedData();
 
         self::assertSame(
             ['PossiblyUnusedMethod'],
+            array_column(IssueBuffer::getIssuesDataForFile($file_path), 'type'),
+        );
+    }
+
+    public function testUnrelatedDynamicCallerDoesNotReachProtectedMethods(): void
+    {
+        $this->project_analyzer->getConfig()->throw_exception = false;
+        $this->project_analyzer->getConfig()->setCustomErrorLevel('PossiblyUnusedMethod', Config::REPORT_INFO);
+        $file_path = self::$src_dir_path . 'somefile.php';
+
+        $this->addFile($file_path, '<?php
+            final class Target {
+                private string $secret = "unread";
+                protected function action(): string { return $this->secret; }
+            }
+            final class Dispatcher {
+                public function dispatch(Target $target, string $name): void {
+                    $target->$name();
+                }
+            }
+            (new Dispatcher())->dispatch(new Target(), (string) getenv("ACTION"));');
+
+        $this->analyzeFile($file_path, new Context(), false);
+        $this->project_analyzer->consolidateAnalyzedData();
+
+        self::assertContains(
+            'UnusedProperty',
+            array_column(IssueBuffer::getIssuesDataForFile($file_path), 'type'),
+        );
+    }
+
+    public function testDynamicCallFromSameClassCanReachProtectedMethod(): void
+    {
+        $this->project_analyzer->getConfig()->throw_exception = false;
+        $this->project_analyzer->getConfig()->setCustomErrorLevel('PossiblyUnusedMethod', Config::REPORT_INFO);
+        $file_path = self::$src_dir_path . 'somefile.php';
+
+        $this->addFile($file_path, '<?php
+            final class Controller {
+                private string $value = "used";
+                protected function action(): string { return $this->value; }
+                public function dispatch(string $name): void {
+                    if (method_exists($this, $name)) {
+                        echo (string) $this->$name();
+                    }
+                }
+            }
+            (new Controller())->dispatch((string) getenv("ACTION"));');
+
+        $this->analyzeFile($file_path, new Context(), false);
+        $this->project_analyzer->consolidateAnalyzedData();
+
+        self::assertSame(
+            ['PossiblyUnusedMethod'],
+            array_column(IssueBuffer::getIssuesDataForFile($file_path), 'type'),
+        );
+    }
+
+    public function testPrivateTraitAdaptationDoesNotReachPrivateStateFromDynamicCall(): void
+    {
+        $this->project_analyzer->getConfig()->throw_exception = false;
+        $this->project_analyzer->getConfig()->setCustomErrorLevel('PossiblyUnusedMethod', Config::REPORT_INFO);
+        $file_path = self::$src_dir_path . 'somefile.php';
+
+        $this->addFile($file_path, '<?php
+            trait ActionTrait {
+                public function action(): string { return $this->secret; }
+            }
+            final class Controller {
+                use ActionTrait { action as private; }
+                private string $secret = "unread";
+            }
+            $controller = new Controller();
+            $name = (string) getenv("ACTION");
+            if (method_exists($controller, $name)) {
+                $controller->$name();
+            }');
+
+        $this->analyzeFile($file_path, new Context(), false);
+        $this->project_analyzer->consolidateAnalyzedData();
+
+        self::assertContains(
+            'UnusedProperty',
+            array_column(IssueBuffer::getIssuesDataForFile($file_path), 'type'),
+        );
+    }
+
+    public function testRecursiveDynamicEntryMethodsKeepPossiblyUnusedDiagnostics(): void
+    {
+        $this->project_analyzer->getConfig()->throw_exception = false;
+        $this->project_analyzer->getConfig()->setCustomErrorLevel('PossiblyUnusedMethod', Config::REPORT_INFO);
+        $file_path = self::$src_dir_path . 'somefile.php';
+
+        $this->addFile($file_path, '<?php
+            final class Controller {
+                public function first(): void { $this->second(); }
+                public function second(): void { $this->first(); }
+            }
+            $controller = new Controller();
+            $name = (string) getenv("ACTION");
+            if (method_exists($controller, $name)) {
+                $controller->$name();
+            }');
+
+        $this->analyzeFile($file_path, new Context(), false);
+        $this->project_analyzer->consolidateAnalyzedData();
+
+        self::assertSame(
+            ['PossiblyUnusedMethod', 'PossiblyUnusedMethod'],
             array_column(IssueBuffer::getIssuesDataForFile($file_path), 'type'),
         );
     }

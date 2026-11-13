@@ -891,11 +891,21 @@ final class ClassLikes
 
         // A dynamically invoked method remains only *possibly* called, but code it
         // reads or invokes must not be reported as definitely unused.
-        $possibly_used_nodes = $find_unused_code
-            ? $code_use_graph->getPotentiallyUsedNodes(
-                $this->getPotentialDynamicMethodCalls($codebase->analyzer->getMixedMemberNames()),
-            )
+        $potential_calls = $find_unused_code
+            ? $this->getPotentialDynamicMethodCalls($codebase->analyzer->getMixedMemberNames())
             : [];
+        $possibly_used_nodes = $code_use_graph->getPotentiallyUsedNodes($potential_calls);
+
+        // A dynamic entry point remains possibly unused even if it is also
+        // referenced by another method in the same recursive call group.
+        $dynamic_entry_nodes = [];
+        foreach ($potential_calls as $class_calls) {
+            foreach ($class_calls as $callees) {
+                foreach ($callees as $callee => $_) {
+                    $dynamic_entry_nodes[$callee] = true;
+                }
+            }
+        }
 
         $suggest_purity_annotations = $project_analyzer->suggestsPurityAnnotations();
         $benefit = $project_analyzer->getPuritySuggestionReason();
@@ -923,7 +933,12 @@ final class ClassLikes
                             || isset($possibly_used_nodes[$class_node])
                         ) {
                             // Speculatively reachable classes still need their members checked.
-                            $this->checkMethodReferences($classlike_storage, $methods, $possibly_used_nodes);
+                            $this->checkMethodReferences(
+                                $classlike_storage,
+                                $methods,
+                                $possibly_used_nodes,
+                                $dynamic_entry_nodes,
+                            );
                             $this->checkPropertyReferences($classlike_storage, $possibly_used_nodes);
                         } else {
                             IssueBuffer::maybeAdd(
@@ -2146,6 +2161,7 @@ final class ClassLikes
      *
      * @param array<string, array<string, bool>> $mixed_member_names
      * @return array<string, array<string, array<string, true>>>
+     * @psalm-capabilities read-props
      */
     private function getPotentialDynamicMethodCalls(array $mixed_member_names): array
     {
@@ -2202,8 +2218,13 @@ final class ClassLikes
                     }
                 }
 
+                // Trait adaptations can change the actual visibility of an
+                // imported method without modifying its declaring storage.
+                $visibility = $class_storage->trait_visibility_map[$method_name]
+                    ?? $method_storage->visibility;
+
                 $references = $mixed_member_names[$method_name] ?? [];
-                $references += $method_storage->visibility === ClassLikeAnalyzer::VISIBILITY_PRIVATE
+                $references += $visibility === ClassLikeAnalyzer::VISIBILITY_PRIVATE
                     ? $class_references
                     : $inherited_references;
                 if ($references === []) {
@@ -2216,7 +2237,7 @@ final class ClassLikes
                     $is_method_caller = str_contains($reference, '::');
 
                     // A call from outside the class cannot invoke its private methods.
-                    if ($method_storage->visibility === ClassLikeAnalyzer::VISIBILITY_PRIVATE
+                    if ($visibility === ClassLikeAnalyzer::VISIBILITY_PRIVATE
                         && (!$is_method_caller
                             || (!str_starts_with(strtolower($reference), $fq_class_name_lc . '::')
                                 && !str_starts_with(
@@ -2227,11 +2248,30 @@ final class ClassLikes
                         continue;
                     }
 
-                    // Protected methods cannot be called from top-level code.
-                    if ($method_storage->visibility === ClassLikeAnalyzer::VISIBILITY_PROTECTED
-                        && !$is_method_caller
-                    ) {
-                        continue;
+                    // Protected methods require a caller in the same inheritance
+                    // hierarchy as the method's appearing owner. Having a method
+                    // context alone is not sufficient to access them.
+                    if ($visibility === ClassLikeAnalyzer::VISIBILITY_PROTECTED) {
+                        if (!$is_method_caller) {
+                            continue;
+                        }
+
+                        $caller_class_lc = strtolower(explode('::', $reference, 2)[0]);
+                        $owner_class_lc = strtolower($appearing_method_id->fq_class_name);
+                        if ($caller_class_lc !== $owner_class_lc) {
+                            try {
+                                $caller_storage = $this->classlike_storage_provider->get($caller_class_lc);
+                                $owner_storage = $this->classlike_storage_provider->get($owner_class_lc);
+                            } catch (InvalidArgumentException) {
+                                continue;
+                            }
+
+                            if (!isset($caller_storage->parent_classes[$owner_class_lc])
+                                && !isset($owner_storage->parent_classes[$caller_class_lc])
+                            ) {
+                                continue;
+                            }
+                        }
                     }
 
                     // Non-method references are file-level calls (or free functions,
@@ -2250,11 +2290,13 @@ final class ClassLikes
 
     /**
      * @param array<string, true> $possibly_used_nodes
+     * @param array<string, true> $dynamic_entry_nodes
      */
     private function checkMethodReferences(
         ClassLikeStorage $classlike_storage,
         Methods $methods,
         array $possibly_used_nodes,
+        array $dynamic_entry_nodes,
     ): void {
         $project_analyzer = ProjectAnalyzer::getInstance();
         $codebase = $project_analyzer->getCodebase();
@@ -2319,11 +2361,13 @@ final class ClassLikes
                     continue;
                 }
 
-                // Keep PossiblyUnusedMethod for dynamic entry points, but not for
-                // methods called by one of those entry points.
-                foreach ($codebase->code_use_graph->getReferencingNodes($method_node) as $source_node => $_) {
-                    if (isset($possibly_used_nodes[$source_node])) {
-                        continue 2;
+                // A dynamic entry point must keep its warning, including when
+                // methods in a recursive group reference each other.
+                if (!isset($dynamic_entry_nodes[$method_node])) {
+                    foreach ($codebase->code_use_graph->getReferencingNodes($method_node) as $source_node => $_) {
+                        if (isset($possibly_used_nodes[$source_node])) {
+                            continue 2;
+                        }
                     }
                 }
             }
