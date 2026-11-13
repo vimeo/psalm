@@ -836,7 +836,12 @@ final class IssueBuffer
         );
 
         if ($prints_to_console && $codebase->alter_code && !$error_count) {
-            self::printAlterSummary($project_analyzer, $codebase->analyzer->getChangedFilesCount(), $start_time);
+            self::printAlterSummary(
+                $codebase->analyzer->getChangedFilesCount(),
+                $project_analyzer->dry_run,
+                $project_analyzer->stdout_report_options->use_color,
+                $start_time,
+            );
         } elseif ($prints_to_console) {
             echo str_repeat('-', 30) . "\n";
 
@@ -964,19 +969,20 @@ final class IssueBuffer
     }
 
     private static function printAlterSummary(
-        ProjectAnalyzer $project_analyzer,
         int $changed_files_count,
+        bool $dry_run,
+        bool $use_color,
         float $start_time,
     ): void {
         if ($changed_files_count === 0) {
             $message = 'No changes';
         } else {
             $message = $changed_files_count . ($changed_files_count === 1 ? ' file ' : ' files ')
-                . ($project_analyzer->dry_run ? 'would be changed (dry run)' : 'changed');
+                . ($dry_run ? 'would be changed (dry run)' : 'changed');
         }
 
         echo str_repeat('-', 30) . "\n"
-            . ($project_analyzer->stdout_report_options?->use_color ? "\e[0;32m" . $message . "\e[0m" : $message) . "\n"
+            . ($use_color ? "\e[0;32m" . $message . "\e[0m" : $message) . "\n"
             . str_repeat('-', 30) . "\n\n";
 
         if ($start_time) {

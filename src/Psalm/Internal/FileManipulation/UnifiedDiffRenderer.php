@@ -8,6 +8,7 @@ use SebastianBergmann\Diff\Differ;
 use SebastianBergmann\Diff\Output\StrictUnifiedDiffOutputBuilder;
 
 use function array_pop;
+use function array_slice;
 use function count;
 use function explode;
 use function get_cfg_var;
@@ -71,6 +72,8 @@ final class UnifiedDiffRenderer
         $lines = explode("\n", $diff);
         // every diff line, including the last one, ends with a newline
         array_pop($lines);
+        // drop the `---` and `+++` headers
+        $lines = array_slice($lines, 2);
 
         return $separator
             . $this->formatTitle($title, $absolute_path, $first_changed_line)
@@ -119,7 +122,7 @@ final class UnifiedDiffRenderer
     {
         $output = '';
         $count = count($lines);
-        $i = 2;
+        $i = 0;
 
         while ($i < $count) {
             $first_char = $lines[$i][0];
@@ -145,18 +148,17 @@ final class UnifiedDiffRenderer
                     continue;
                 }
 
-                $removed_output = '';
                 $added_output = '';
                 for ($j = 0; $j < $run_length; $j++) {
                     [$removed, $added] = self::highlightChange(
                         substr($lines[$i + $j], 1),
                         substr($lines[$removed_end + $j], 1),
                     );
-                    $removed_output .= "\e[31m-" . $removed . self::RESET . "\n";
+                    $output .= "\e[31m-" . $removed . self::RESET . "\n";
                     $added_output .= "\e[32m+" . $added . self::RESET . "\n";
                 }
 
-                $output .= $removed_output . $added_output;
+                $output .= $added_output;
 
                 $i = $added_end;
                 continue;
