@@ -402,21 +402,16 @@ final class MethodCallAnalyzer extends CallAnalyzer
             }
         }
 
+        if ($result->returns_by_ref) {
+            $stmt_type = ($stmt_type ?? Type::getMixed())->setByRef(true);
+        }
+
         if ($stmt_type) {
             $statements_analyzer->node_data->setType($stmt, $stmt_type);
 
             if ($stmt_type->isNever()) {
                 $context->has_returned = true;
             }
-        }
-
-        if ($result->returns_by_ref) {
-            if (!$stmt_type) {
-                $stmt_type = Type::getMixed();
-                $statements_analyzer->node_data->setType($stmt, $stmt_type);
-            }
-
-            $stmt_type = $stmt_type->setByRef($result->returns_by_ref);
         }
 
         if ($codebase->store_node_types

@@ -1251,8 +1251,9 @@ final class TypeParser
                     $constant_name = self::getDefinedConstantName($atomic_type->value);
 
                     if ($constant_name !== null) {
+                        // silenced, as reading a deprecated constant (ASSERT_ACTIVE) emits E_DEPRECATED
                         /** @var mixed */
-                        $constant_value = constant($constant_name);
+                        $constant_value = @constant($constant_name);
 
                         if (!is_int($constant_value)) {
                             throw new TypeParseTreeException(

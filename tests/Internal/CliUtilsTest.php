@@ -8,13 +8,21 @@ use Override;
 use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\TestCase;
 use Psalm\Internal\CliUtils;
+use Psalm\Tests\EndToEnd\PsalmRunnerTrait;
 
+use function array_keys;
+use function getenv;
+use function putenv;
 use function realpath;
+use function stream_isatty;
 
 use const DIRECTORY_SEPARATOR;
+use const STDOUT;
 
 final class CliUtilsTest extends TestCase
 {
+    use PsalmRunnerTrait;
+
     /**
      * @var list<string>
      */
@@ -156,5 +164,110 @@ final class CliUtilsTest extends TestCase
         $argv = $_input;
         $result = CliUtils::getPathsToCheck($fpaths);
         self::assertEquals($expected, $result);
+    }
+
+    public function testUseColorWithoutAnyEnvironmentHintFollowsTheTtyRule(): void
+    {
+        $this->withEnv([], static function (): void {
+            self::assertTrue(CliUtils::useColor([], false));
+            self::assertSame(stream_isatty(STDOUT), CliUtils::useColor([], true));
+        });
+    }
+
+    public function testMonochromeFlagBeatsForceColor(): void
+    {
+        $this->withEnv(['FORCE_COLOR' => '1'], static function (): void {
+            self::assertFalse(CliUtils::useColor(['m' => false], false));
+            self::assertFalse(CliUtils::useColor(['m' => false], true));
+        });
+    }
+
+    public function testForceColorBeatsEveryAutomaticOptOut(): void
+    {
+        $this->withEnv(
+            ['FORCE_COLOR' => '1', 'NO_COLOR' => '1', 'AI_AGENT' => '1', 'TERM' => 'dumb'],
+            static function (): void {
+                self::assertTrue(CliUtils::useColor([], false));
+                self::assertTrue(CliUtils::useColor([], true));
+            },
+        );
+    }
+
+    public function testEmptyForceColorIsIgnored(): void
+    {
+        $this->withEnv(['FORCE_COLOR' => '', 'NO_COLOR' => '1'], static function (): void {
+            self::assertFalse(CliUtils::useColor([], false));
+        });
+    }
+
+    public function testNoColorDisablesColor(): void
+    {
+        $this->withEnv(['NO_COLOR' => '1'], static function (): void {
+            self::assertFalse(CliUtils::useColor([], false));
+        });
+        $this->withEnv(['NO_COLOR' => ''], static function (): void {
+            self::assertTrue(CliUtils::useColor([], false));
+        });
+    }
+
+    public function testAiAgentDisablesColor(): void
+    {
+        $this->withEnv(['AI_AGENT' => '1'], static function (): void {
+            self::assertFalse(CliUtils::useColor([], false));
+        });
+    }
+
+    public function testDumbTerminalDisablesColor(): void
+    {
+        $this->withEnv(['TERM' => 'dumb'], static function (): void {
+            self::assertFalse(CliUtils::useColor([], false));
+            self::assertFalse(CliUtils::useColor([], true));
+        });
+    }
+
+    public function testWithEnvRestoresTheInheritedEnvironment(): void
+    {
+        $original = getenv('FORCE_COLOR');
+        putenv('FORCE_COLOR=inherited-value');
+
+        try {
+            $this->withEnv(['FORCE_COLOR' => '1'], static function (): void {
+                self::assertSame('1', getenv('FORCE_COLOR'));
+            });
+
+            self::assertSame('inherited-value', getenv('FORCE_COLOR'));
+        } finally {
+            putenv($original === false ? 'FORCE_COLOR' : 'FORCE_COLOR=' . $original);
+        }
+    }
+
+    /**
+     * Runs $test with a clean color/agent environment plus $env, then restores the previous one.
+     *
+     * @param array<string, string> $env
+     * @param callable(): void $test
+     */
+    private function withEnv(array $env, callable $test): void
+    {
+        $names = array_keys(self::agentEnvVarsToUnset());
+        $names[] = 'TERM';
+
+        $saved = [];
+        foreach ($names as $name) {
+            $saved[$name] = getenv($name);
+            putenv($name);
+        }
+
+        try {
+            foreach ($env as $name => $value) {
+                putenv($name . '=' . $value);
+            }
+
+            $test();
+        } finally {
+            foreach ($saved as $name => $value) {
+                putenv($value === false ? $name : $name . '=' . $value);
+            }
+        }
     }
 }
