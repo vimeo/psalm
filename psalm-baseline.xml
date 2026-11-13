@@ -968,7 +968,6 @@
       <code><![CDATA[$lhs_type_part]]></code>
     </ImplicitToStringCast>
     <RiskyTruthyFalsyComparison>
-      <code><![CDATA[!$class_storage->mixin_declaring_fqcln]]></code>
       <code><![CDATA[$class_storage->mixin_declaring_fqcln]]></code>
       <code><![CDATA[$class_storage->template_types]]></code>
       <code><![CDATA[$class_storage->template_types]]></code>

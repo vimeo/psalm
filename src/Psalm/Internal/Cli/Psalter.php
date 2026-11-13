@@ -182,8 +182,15 @@ final class Psalter
                 --find-unused-code
                     Include unused code as a candidate for removal
 
-                --threads=INT
-                    If greater than one, Psalm will run analysis on multiple threads, speeding things up.
+                --threads=INT|auto
+                    If greater than one, Psalm will run the scan and analysis on multiple threads,
+                    speeding things up.
+                    `auto` (the default) uses the threads setting of the config, or else one thread per CPU core.
+
+                --scan-threads=INT|auto
+                    If greater than one, Psalm will run the scan on multiple threads, speeding things up
+                    (if specified, takes priority over the --threads flag).
+                    `auto` (the default) uses the scanThreads setting of the config, or else one thread per CPU core.
 
                 --codeowner=[codeowner]
                     You can specify a GitHub code ownership group, and only that owner's code will be updated.

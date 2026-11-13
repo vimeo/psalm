@@ -64,6 +64,11 @@ require_once __DIR__ . '/../../IssueBuffer.php';
  */
 final class Refactor
 {
+    public const LONG_OPTIONS = [
+        'help', 'debug', 'debug-by-line', 'debug-emitted-issues', 'config:', 'root:', 'monochrome',
+        'scan-threads:', 'threads:', 'move:', 'into:', 'rename:', 'to:', 'no-progress', 'no-cache',
+    ];
+
     /** @param array<int,string> $argv */
     public static function run(array $argv): void
     {
@@ -78,10 +83,7 @@ final class Refactor
         $args = array_slice($argv, 1);
 
         $valid_short_options = ['f:', 'm', 'h', 'r:', 'c:'];
-        $valid_long_options = [
-            'help', 'debug', 'debug-by-line', 'debug-emitted-issues', 'config:', 'root:',
-            'scan-threads:', 'threads:', 'move:', 'into:', 'rename:', 'to:', 'no-progress',
-        ];
+        $valid_long_options = self::LONG_OPTIONS;
 
         // get options from command line
         $options = CliUtils::chosenByOperator(getopt(implode('', $valid_short_options), $valid_long_options));
@@ -120,6 +122,10 @@ final class Refactor
             $options['h'] = false;
         }
 
+        if (array_key_exists('monochrome', $options)) {
+            $options['m'] = false;
+        }
+
         if (isset($options['config'])) {
             $options['c'] = $options['config'];
         }
@@ -152,21 +158,33 @@ final class Refactor
                     Disable the progress indicator.
                     Auto-enabled when an AI coding agent is driving the shell outside CI.
 
+                -m, --monochrome
+                    Enable monochrome output.
+
                 -c, --config=psalm.xml
                     Path to a psalm.xml configuration file. Run psalm --init to create one.
 
                 -r, --root
                     If running Psalm globally you'll need to specify a project root. Defaults to cwd
 
-                --threads=auto
-                    If greater than one, Psalm will run analysis on multiple threads, speeding things up.
-                    By default
+                --threads=INT|auto
+                    If greater than one, Psalm will run the scan and analysis on multiple threads,
+                    speeding things up.
+                    `auto` (the default) uses the threads setting of the config, or else one thread per CPU core.
+
+                --scan-threads=INT|auto
+                    If greater than one, Psalm will run the scan on multiple threads, speeding things up
+                    (if specified, takes priority over the --threads flag).
+                    `auto` (the default) uses the scanThreads setting of the config, or else one thread per CPU core.
 
                 --move "[Identifier]" --into "[Class]"
                     Moves the specified item into the class. More than one item can be moved into a class
                     by passing a comma-separated list of values e.g.
 
                     --move "Ns\Foo::bar,Ns\Foo::baz" --into "Biz\Bang\DestinationClass"
+
+                --no-cache
+                    Runs Psalm without using cache
 
                 --rename "[Identifier]" --to "[NewIdentifier]"
                     Renames a specified item (e.g. method) and updates all references to it that Psalm can
@@ -217,7 +235,24 @@ final class Refactor
 
         $path_to_config = CliUtils::getPathToConfig($options);
 
-        $args = CliUtils::getArguments();
+        // `--move=X` is the same as `--move X`
+        $args = [];
+
+        foreach (CliUtils::getArguments() as $arg) {
+            $separator = strpos($arg, '=');
+
+            if ($separator !== false) {
+                $option = substr($arg, 0, $separator);
+
+                if (in_array($option, ['--move', '--into', '--rename', '--to'], true)) {
+                    $args[] = $option;
+                    $args[] = substr($arg, $separator + 1);
+                    continue;
+                }
+            }
+
+            $args[] = $arg;
+        }
 
         $operation = null;
         $last_arg = null;
@@ -256,7 +291,7 @@ final class Refactor
                 continue;
             }
 
-            if ($arg[0] === '-') {
+            if (str_starts_with($arg, '-')) {
                 $operation = null;
                 continue;
             }
@@ -313,6 +348,11 @@ final class Refactor
             Report::TYPE_CONSOLE,
             $autoloaders,
         );
+
+        if (isset($options['no-cache'])) {
+            $config->cache_directory = null;
+        }
+
         $config->setIncludeCollector($include_collector);
 
         if ($config->resolve_from_config_file) {
@@ -325,14 +365,20 @@ final class Refactor
         $threads = Psalm::getThreads($options, $config, false);
         $scanThreads = Psalm::getThreads($options, $config, true);
 
-        $providers = new Providers(
-            new FileProvider(),
-            null,
-            new FileStorageCacheProvider($config, Composer::getLockFile($current_dir)),
-            new ClassLikeStorageCacheProvider($config, Composer::getLockFile($current_dir)),
-            null,
-            new ProjectCacheProvider(),
-        );
+        if ($config->cache_directory === null) {
+            $providers = new Providers(
+                new FileProvider(),
+            );
+        } else {
+            $providers = new Providers(
+                new FileProvider(),
+                null,
+                new FileStorageCacheProvider($config, Composer::getLockFile($current_dir)),
+                new ClassLikeStorageCacheProvider($config, Composer::getLockFile($current_dir)),
+                null,
+                new ProjectCacheProvider(),
+            );
+        }
 
         $debug = array_key_exists('debug', $options) || array_key_exists('debug-by-line', $options);
         // CI takes precedence over AI detection, matching Psalm.php / Psalter.php.

@@ -32,6 +32,7 @@ use function readdir;
 use function rmdir;
 use function str_contains;
 use function str_replace;
+use function strpos;
 use function strtolower;
 use function substr_count;
 use function sys_get_temp_dir;
@@ -238,6 +239,63 @@ final class PsalmEndToEndTest extends TestCase
         (new Process([PHP_BINARY, $this->psalter, '--alter', '--issues=MissingPureAnnotation'], self::$tmpDir))->mustRun();
 
         $this->assertStringContainsString('@psalm-pure', (string) file_get_contents(self::$tmpDir . '/src/Slug.php'));
+    }
+
+    /**
+     * @param list<string> $args
+     */
+    #[DataProvider('provideRefactorMoveInvocations')]
+    public function testRefactorMovesAMethodIntoAnotherClass(bool $viaPsalm, array $args): void
+    {
+        $this->runPsalmInit();
+        $psalmXml = file_get_contents(self::$tmpDir . '/psalm.xml');
+        $psalmXml = str_replace('<psalm', '<psalm runTaintAnalysis="false"', (string)$psalmXml);
+        file_put_contents(self::$tmpDir . '/psalm.xml', $psalmXml);
+        file_put_contents(
+            self::$tmpDir . '/src/Moves.php',
+            "<?php\n\nnamespace Ns;\n\nclass A\n{\n    public static function foo(): void\n    {\n    }\n}\n\n"
+            . "class B\n{\n}\n",
+        );
+
+        $process = new Process(
+            [PHP_BINARY, $viaPsalm ? $this->psalm : $this->psalmRefactor, ...$args],
+            self::$tmpDir,
+            self::agentEnvVarsToUnset(),
+        );
+        $process->run();
+
+        $this->assertStringNotContainsString('Cannot locate', $process->getErrorOutput());
+        $this->assertStringNotContainsString('No --move or --rename arguments supplied', $process->getErrorOutput());
+
+        $contents = (string) file_get_contents(self::$tmpDir . '/src/Moves.php');
+        $this->assertSame(1, substr_count($contents, 'function foo'), $contents);
+        $this->assertGreaterThan(
+            (int) strpos($contents, 'class B'),
+            (int) strpos($contents, 'function foo'),
+            'foo should now be declared in B: ' . $contents . $process->getErrorOutput(),
+        );
+    }
+
+    /**
+     * @return iterable<string, array{bool, list<string>}>
+     * @psalm-pure
+     */
+    public static function provideRefactorMoveInvocations(): iterable
+    {
+        yield 'psalm-refactor with separate values' => [
+            false,
+            ['--no-cache', '--move', 'Ns\A::foo', '--into', 'Ns\B'],
+        ];
+
+        yield 'psalm-refactor with values after an equals sign' => [
+            false,
+            ['--monochrome', '--move=Ns\A::foo', '--into=Ns\B'],
+        ];
+
+        yield 'psalm --refactor' => [
+            true,
+            ['--refactor', '--move', 'Ns\A::foo', '--into', 'Ns\B'],
+        ];
     }
 
     public function testPsalterDryRunPrintsEachChangedFileOnceForOverlappingPaths(): void
@@ -986,6 +1044,102 @@ final class PsalmEndToEndTest extends TestCase
 
         $this->assertSame(0, $process->getExitCode(), $process->getErrorOutput());
         $this->assertSame('', $process->getErrorOutput());
+    }
+
+    public function testShowInfoWithoutAValueShowsInfoIssues(): void
+    {
+        $this->initProjectWithInfoIssues();
+
+        $result = $this->runPsalm(['--no-progress', '--show-info'], self::$tmpDir);
+        $this->assertStringContainsString('INFO: MissingReturnType', $result['STDOUT']);
+
+        $result = $this->runPsalm(['--no-progress', '--show-info=false'], self::$tmpDir);
+        $this->assertStringNotContainsString('INFO: MissingReturnType', $result['STDOUT']);
+    }
+
+    public function testShowInfoWithoutAValueDoesNotTakeThePathThatFollowsAsItsValue(): void
+    {
+        $this->initProjectWithInfoIssues();
+
+        $result = $this->runPsalm(['--no-progress', '--show-info', self::$tmpDir . '/src/A.php'], self::$tmpDir);
+
+        $this->assertStringContainsString('A.php', $result['STDOUT']);
+        $this->assertStringNotContainsString('B.php', $result['STDOUT']);
+    }
+
+    public function testReportShowInfoWithoutAValueWritesTheReport(): void
+    {
+        $this->initProjectWithInfoIssues();
+        $report = self::$tmpDir . '/report.json';
+        $report_without_info = self::$tmpDir . '/report-without-info.json';
+
+        $this->runPsalm(['--no-progress', '--report-show-info', '--report=' . $report], self::$tmpDir);
+        $this->runPsalm(
+            ['--no-progress', '--report-show-info=false', '--report=' . $report_without_info],
+            self::$tmpDir,
+        );
+
+        $this->assertFileExists($report);
+        $this->assertStringContainsString('MissingReturnType', (string) file_get_contents($report));
+        $this->assertFileExists($report_without_info);
+        $this->assertStringNotContainsString('MissingReturnType', (string) file_get_contents($report_without_info));
+    }
+
+    /**
+     * @param list<string> $args
+     */
+    #[DataProvider('provideInvalidThreadsArguments')]
+    public function testInvalidThreadsIsAUsageError(string $cli, array $args, string $message): void
+    {
+        $this->runPsalmInit(1);
+
+        $process = new Process(
+            [PHP_BINARY, $cli === 'psalter' ? $this->psalter : $this->psalm, '--no-progress', ...$args],
+            self::$tmpDir,
+            self::agentEnvVarsToUnset(),
+        );
+        $process->run();
+
+        $this->assertSame(1, $process->getExitCode(), $process->getOutput() . $process->getErrorOutput());
+        $this->assertStringContainsString($message, $process->getErrorOutput());
+    }
+
+    /**
+     * @return iterable<string, array{string, list<string>, string}>
+     * @psalm-pure
+     */
+    public static function provideInvalidThreadsArguments(): iterable
+    {
+        $message = ' expects a positive integer or "auto"';
+
+        yield 'psalm --threads=abc' => ['psalm', ['--threads=abc'], '--threads' . $message];
+        yield 'psalm --threads=0' => ['psalm', ['--threads=0'], '--threads' . $message];
+        yield 'psalm --scan-threads=-1' => ['psalm', ['--scan-threads=-1'], '--scan-threads' . $message];
+        yield 'psalter --threads=abc' => ['psalter', ['--issues=all', '--threads=abc'], '--threads' . $message];
+    }
+
+    /**
+     * A project with two files, each with an info issue
+     */
+    private function initProjectWithInfoIssues(): void
+    {
+        $this->runPsalmInit(1);
+
+        $psalmXml = file_get_contents(self::$tmpDir . '/psalm.xml');
+        assert($psalmXml !== false);
+        $psalmXml = str_replace(
+            ['findUnusedCode="true"', '</psalm>'],
+            [
+                'findUnusedCode="false" runTaintAnalysis="false"',
+                '<issueHandlers><MissingReturnType errorLevel="info" /></issueHandlers></psalm>',
+            ],
+            $psalmXml,
+        );
+        file_put_contents(self::$tmpDir . '/psalm.xml', $psalmXml);
+
+        unlink(self::$tmpDir . '/src/FileWithErrors.php');
+        file_put_contents(self::$tmpDir . '/src/A.php', "<?php\n\nfunction a() {\n    return 1;\n}\n");
+        file_put_contents(self::$tmpDir . '/src/B.php', "<?php\n\nfunction b() {\n    return 1;\n}\n");
     }
 
     /**

@@ -15,6 +15,7 @@ use Psalm\Exception\ConfigNotFoundException;
 use Psalm\Internal\Analyzer\ProjectAnalyzer;
 use Psalm\Internal\Cli\Psalm;
 use Psalm\Internal\Cli\Psalter;
+use Psalm\Internal\Cli\Refactor;
 use Psalm\Report;
 use RuntimeException;
 use UnexpectedValueException;
@@ -328,7 +329,8 @@ final class CliUtils
                 $ignored_arguments = ['config', 'printer', 'root'];
 
                 // the value of an option that requires one follows it, as in `--threads 4`
-                foreach ([...Psalm::LONG_OPTIONS, ...Psalter::LONG_OPTIONS] as $long_option) {
+                $long_options = [...Psalm::LONG_OPTIONS, ...Psalter::LONG_OPTIONS, ...Refactor::LONG_OPTIONS];
+                foreach ($long_options as $long_option) {
                     if (str_ends_with($long_option, ':') && !str_ends_with($long_option, '::')) {
                         $ignored_arguments[] = substr($long_option, 0, -1);
                     }
