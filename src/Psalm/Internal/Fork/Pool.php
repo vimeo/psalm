@@ -29,6 +29,7 @@ use Psalm\Progress\Progress;
 use Revolt\EventLoop;
 use Revolt\EventLoop\Driver\StreamSelectDriver;
 use RuntimeException;
+use Throwable;
 
 use function Amp\Future\await;
 use function Amp\Future\awaitAll;
@@ -67,11 +68,13 @@ final class Pool
     }
     /**
      * @param int<2, max> $threads
+     * @param ContextFactory|null $context_factory starts the workers; forks them when null (tests inject failures)
      */
     public function __construct(
         public readonly int $threads,
         private readonly float $timeLimit,
         private readonly Progress $progress,
+        ?ContextFactory $context_factory = null,
     ) {
         // Workers can't use a driver with a native handle (see ForkContext::isSupported()): a forked worker
         // shares an epoll instance with its parent, which crashes the parent, and doesn't inherit a kqueue.
@@ -90,7 +93,7 @@ final class Pool
         $this->pool = new ContextWorkerPool(
             $threads,
             new ContextWorkerFactory(
-                contextFactory: new class() implements ContextFactory {
+                contextFactory: $context_factory ?? new class() implements ContextFactory {
                     /**
                      * @psalm-mutation-free
                      */
@@ -145,33 +148,45 @@ final class Pool
         $cnt = 0;
 
         $results = [];
-        foreach ($process_task_data_iterator as $file) {
-            $execution = $this->pool->submit(new $main_task($file));
-            $results []= $f = $execution->getFuture();
-            if ($message_handler !== null) {
-                $results []= $this->pumpMessages($execution, $f, $message_handler);
-            }
-            if ($task_done_closure) {
-                $f->map($task_done_closure);
-            }
-            // once per task: repeating it every few seconds would bury the rest of the output
-            $id = EventLoop::delay($this->timeLimit, function () use ($file): void {
-                $this->progress->warning(
-                    Config::getInstance()->shortenFileName($file)
-                    . " is taking over {$this->timeLimit}s to process (--debug-by-line shows the line it is on)",
-                );
-            });
-            $f->finally(static function () use ($id): void {
-                EventLoop::cancel($id);
-            });
-            $f->map(function () use (&$cnt, $total): void {
-                $cnt++;
-                if (!($cnt % 10)) {
-                    $percent = (int) (($cnt*100) / $total);
-                    $this->progress->debug("Processing tasks: $cnt/$total ($percent%)...".PHP_EOL);
+        try {
+            foreach ($process_task_data_iterator as $file) {
+                $execution = $this->pool->submit(new $main_task($file));
+                $results []= $f = $execution->getFuture();
+                if ($message_handler !== null) {
+                    $results []= $this->pumpMessages($execution, $f, $message_handler);
                 }
-            });
+                if ($task_done_closure) {
+                    $results []= $f->map($task_done_closure);
+                }
+                // once per task: repeating it every few seconds would bury the rest of the output
+                $id = EventLoop::delay($this->timeLimit, function () use ($file): void {
+                    $this->progress->warning(
+                        Config::getInstance()->shortenFileName($file)
+                        . " is taking over {$this->timeLimit}s to process (--debug-by-line shows the line it is on)",
+                    );
+                });
+                $results []= $f->finally(static function () use ($id): void {
+                    EventLoop::cancel($id);
+                });
+                $results []= $f->map(function () use (&$cnt, $total): void {
+                    $cnt++;
+                    if (!($cnt % 10)) {
+                        $percent = (int) (($cnt*100) / $total);
+                        $this->progress->debug("Processing tasks: $cnt/$total ($percent%)...".PHP_EOL);
+                    }
+                });
+            }
+        } catch (Throwable $e) {
+            // Not awaited yet: the tasks submitted so far fail with the pool, and their derived futures would
+            // report that again when destroyed.
+            foreach ($results as $result) {
+                $result->ignore();
+            }
+
+            throw $e;
         }
+
+        // awaiting subscribes to every future, so a failure thrown from here is not reported again by the others
         await($results);
     }
 
@@ -193,9 +208,10 @@ final class Pool
     {
         $channel = $execution->getChannel();
 
+        // the task's own future, awaited in run(), reports a failure
         $result->finally(static function () use ($channel): void {
             $channel->close();
-        });
+        })->ignore();
 
         return async(static function () use ($channel, $message_handler): void {
             try {
