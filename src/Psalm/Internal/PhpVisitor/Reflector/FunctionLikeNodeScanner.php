@@ -719,6 +719,7 @@ final class FunctionLikeNodeScanner
      * Only simple writes to native scalar properties of `$this` can be proven
      * independent of a direct getter of a native object property on another class.
      * This intentionally excludes nested mutations, calls, hooks and references.
+     *
      * @psalm-capabilities read-props
      */
     private static function hasOnlyDirectScalarPropertyWrites(
