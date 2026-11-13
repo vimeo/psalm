@@ -2924,35 +2924,15 @@
     </InvalidOperand>
   </file>
   <file src="src/Psalm/Report/ByIssueLevelAndTypeReport.php">
-    <PossiblyInvalidArgument>
-      <code><![CDATA[$this->link_format]]></code>
-    </PossiblyInvalidArgument>
-    <PossiblyInvalidPropertyAssignmentValue>
-      <code><![CDATA[(
-                ini_get('xdebug.file_link_format') ?: get_cfg_var('xdebug.file_link_format')
-            ) ?: 'file://%f#L%l']]></code>
-    </PossiblyInvalidPropertyAssignmentValue>
     <RiskyTruthyFalsyComparison>
       <code><![CDATA[$issue_data->other_references]]></code>
       <code><![CDATA[$issue_data->taint_trace]]></code>
-      <code><![CDATA[ini_get('xdebug.file_link_format')]]></code>
-      <code><![CDATA[ini_get('xdebug.file_link_format') ?: get_cfg_var('xdebug.file_link_format')]]></code>
     </RiskyTruthyFalsyComparison>
   </file>
   <file src="src/Psalm/Report/ConsoleReport.php">
-    <PossiblyInvalidArgument>
-      <code><![CDATA[$this->link_format]]></code>
-    </PossiblyInvalidArgument>
-    <PossiblyInvalidPropertyAssignmentValue>
-      <code><![CDATA[(
-                ini_get('xdebug.file_link_format') ?: get_cfg_var('xdebug.file_link_format')
-            ) ?: 'file://%f#L%l']]></code>
-    </PossiblyInvalidPropertyAssignmentValue>
     <RiskyTruthyFalsyComparison>
       <code><![CDATA[$issue_data->other_references]]></code>
       <code><![CDATA[$issue_data->taint_trace]]></code>
-      <code><![CDATA[ini_get('xdebug.file_link_format')]]></code>
-      <code><![CDATA[ini_get('xdebug.file_link_format') ?: get_cfg_var('xdebug.file_link_format')]]></code>
     </RiskyTruthyFalsyComparison>
   </file>
   <file src="src/Psalm/Report/JunitReport.php">
