@@ -263,7 +263,7 @@ final class TaintTest extends TestCase
     }
 
     /**
-     * json_encode() removes the html taint only when its flags are known to escape <, > and &, and never the
+     * json_encode() removes the html taint only when every literal its flags may be escapes <, > and &, and never the
      * has_quotes one: the " delimiting a JSON string ends a double-quoted attribute, whatever the flags.
      */
     public function testJsonEncodeRemovesTheHtmlTaintOnlyWithItsHexFlags(): void
@@ -281,6 +281,8 @@ final class TaintTest extends TestCase
                 $args = [$_GET["e"], \JSON_HEX_TAG | \JSON_HEX_AMP];
                 echo \json_encode(...$args);
                 echo json_encode($_GET["f"], \JSON_HEX_TAG | \JSON_HEX_AMP);
+                echo \json_encode($_GET["g"], $flags | \JSON_HEX_TAG | \JSON_HEX_AMP);
+                echo \json_encode($_GET["h"], $flags > 0 ? \JSON_HEX_TAG | \JSON_HEX_AMP : \JSON_HEX_TAG | \JSON_HEX_AMP | \JSON_HEX_QUOT);
             }
 
             /** @psalm-flow ($value) -> return */
@@ -311,6 +313,9 @@ final class TaintTest extends TestCase
                 [10, 'TaintedTextWithQuotes'],
                 [11, 'TaintedHtml'],
                 [11, 'TaintedTextWithQuotes'],
+                [12, 'TaintedHtml'],
+                [12, 'TaintedTextWithQuotes'],
+                [13, 'TaintedTextWithQuotes'],
             ],
             array_map(static fn(IssueData $issue): array => [$issue->line_from, $issue->type], $issues),
         );
@@ -423,7 +428,100 @@ final class TaintTest extends TestCase
     }
 
     /**
-     * json_encode() escapes every control character, so its output can't split a header, unless it pretty prints.
+     * The flags only remove a taint when every value they may have escapes it: the bits an int computed from an
+     * unknown int has are unknown, and a value that may be other than an int may be any int once coerced.
+     */
+    public function testFlagsRemoveTaintsOnlyWhenEveryValueTheyMayHaveEscapesThem(): void
+    {
+        $this->testConfig->throw_exception = false;
+        $file_path = self::$src_dir_path . 'somefile.php';
+        $this->addFile($file_path, '<?php
+            /**
+             * @template T of int
+             * @param 0|1 $small
+             * @param int-mask<ENT_SUBSTITUTE, ENT_HTML5> $mask
+             * @param int-mask<JSON_HEX_TAG, JSON_HEX_AMP>|string $mask_or_string
+             * @param 3|string $literal_or_string
+             * @param mixed $mixed
+             * @param int|string $int_or_string
+             * @param T $template
+             */
+            function f(
+                int $o, int $small, int $mask, bool $c, $mask_or_string, $literal_or_string, $mixed, $int_or_string, float $float,
+                $template,
+            ): void {
+                echo json_encode($_GET["a"], $o | JSON_HEX_TAG | JSON_HEX_AMP);
+                echo json_encode($_GET["b"], $small | JSON_HEX_AMP);
+                echo json_encode($_GET["c"], $c ? JSON_HEX_TAG | JSON_HEX_AMP : JSON_HEX_TAG);
+                echo json_encode($_GET["d"], $o ?: JSON_HEX_TAG | JSON_HEX_AMP);
+                echo json_encode($_GET["e"], $literal_or_string);
+                echo json_encode($_GET["f"], $mixed);
+                echo json_encode($_GET["g"], $int_or_string);
+                echo json_encode($_GET["h"], $float);
+                echo json_encode($_GET["i"], $template);
+                header("A: " . json_encode($_GET["j"], $mask_or_string));
+                header("A: " . json_encode($_GET["k"], $mixed));
+                header("A: " . json_encode($_GET["l"], $int_or_string));
+                header("A: " . json_encode($_GET["m"], $float));
+                header("A: " . json_encode($_GET["n"], $template));
+                echo htmlspecialchars((string) $_GET["o"], $o | ENT_QUOTES);
+                echo htmlspecialchars((string) $_GET["p"], $mask | ENT_COMPAT);
+                echo htmlspecialchars((string) $_GET["q"], $literal_or_string);
+                echo htmlspecialchars((string) $_GET["r"], $mixed);
+                echo htmlspecialchars((string) $_GET["s"], $int_or_string);
+                echo htmlentities((string) $_GET["t"], $float);
+                echo htmlentities((string) $_GET["u"], $template);
+            }
+        ');
+        $this->project_analyzer->trackTaintedInputs();
+        $this->project_analyzer->getCodebase()->config->initializePlugins($this->project_analyzer);
+
+        $this->analyzeFile($file_path, new Context(), false);
+
+        $issues = array_values(array_filter(
+            IssueBuffer::getIssuesDataForFile($file_path),
+            static fn(IssueData $issue): bool => !in_array($issue->type, self::IGNORE, true),
+        ));
+
+        self::assertEqualsCanonicalizing(
+            [
+                [16, 'TaintedHtml'],
+                [16, 'TaintedTextWithQuotes'],
+                [17, 'TaintedHtml'],
+                [17, 'TaintedTextWithQuotes'],
+                [18, 'TaintedHtml'],
+                [18, 'TaintedTextWithQuotes'],
+                [19, 'TaintedHtml'],
+                [19, 'TaintedTextWithQuotes'],
+                [20, 'TaintedHtml'],
+                [20, 'TaintedTextWithQuotes'],
+                [21, 'TaintedHtml'],
+                [21, 'TaintedTextWithQuotes'],
+                [22, 'TaintedHtml'],
+                [22, 'TaintedTextWithQuotes'],
+                [23, 'TaintedHtml'],
+                [23, 'TaintedTextWithQuotes'],
+                [24, 'TaintedHtml'],
+                [24, 'TaintedTextWithQuotes'],
+                [25, 'TaintedHeader'],
+                [26, 'TaintedHeader'],
+                [27, 'TaintedHeader'],
+                [28, 'TaintedHeader'],
+                [29, 'TaintedHeader'],
+                [30, 'TaintedTextWithQuotes'],
+                [31, 'TaintedTextWithQuotes'],
+                [32, 'TaintedTextWithQuotes'],
+                [33, 'TaintedTextWithQuotes'],
+                [34, 'TaintedTextWithQuotes'],
+                [35, 'TaintedTextWithQuotes'],
+                [36, 'TaintedTextWithQuotes'],
+            ],
+            array_map(static fn(IssueData $issue): array => [$issue->line_from, $issue->type], $issues),
+        );
+    }
+
+    /**
+     * json_encode() escapes every control character, so its output can't split a header, unless it may pretty print.
      */
     public function testJsonEncodeRemovesTheHeaderTaintUnlessItPrettyPrints(): void
     {
@@ -439,6 +537,8 @@ final class TaintTest extends TestCase
                 $args = [$_GET["f"], JSON_THROW_ON_ERROR];
                 header("A: " . json_encode(...$args));
                 header("A: " . json_encode(flags: JSON_UNESCAPED_UNICODE, value: $_GET["g"]));
+                header("A: " . json_encode($_GET["h"], $flags > 0 ? JSON_THROW_ON_ERROR : JSON_UNESCAPED_UNICODE));
+                header("A: " . json_encode($_GET["i"], $flags > 0 ? JSON_THROW_ON_ERROR : JSON_PRETTY_PRINT));
             }
         ');
         $this->project_analyzer->trackTaintedInputs();
@@ -457,6 +557,7 @@ final class TaintTest extends TestCase
                 [6, 'TaintedHeader'],
                 [7, 'TaintedHeader'],
                 [9, 'TaintedHeader'],
+                [12, 'TaintedHeader'],
             ],
             array_map(static fn(IssueData $issue): array => [$issue->line_from, $issue->type], $issues),
         );
@@ -3807,6 +3908,38 @@ final class TaintTest extends TestCase
                     html(json_encode($_GET["x"], JSON_HEX_TAG | JSON_HEX_AMP | JSON_THROW_ON_ERROR));
                     html(json_encode(["k" => $_GET["x"]], JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_HEX_AMP | JSON_UNESCAPED_UNICODE | JSON_THROW_ON_ERROR));
                     html(json_encode(flags: JSON_HEX_TAG | JSON_HEX_AMP | JSON_THROW_ON_ERROR, value: $_GET["x"]));',
+            ],
+            'jsonEncodeWithHexTagAndAmpInEveryLiteralEscapesHtml' => [
+                'code' => '<?php
+                    /** @psalm-taint-sink html $html */
+                    function html(string $html): void {}
+
+                    /**
+                     * @param 0|4 $small
+                     * @param int-mask<JSON_PRETTY_PRINT, JSON_UNESCAPED_SLASHES> $mask
+                     */
+                    function f(int $small, int $mask, bool $c): void {
+                        html(json_encode($_GET["a"], $small | JSON_HEX_TAG | JSON_HEX_AMP));
+                        html(json_encode($_GET["b"], $mask | JSON_HEX_TAG | JSON_HEX_AMP));
+                        html(json_encode(
+                            $_GET["c"],
+                            $c ? JSON_HEX_TAG | JSON_HEX_AMP : JSON_HEX_TAG | JSON_HEX_AMP | JSON_PRETTY_PRINT,
+                        ));
+                        html(json_encode(flags: $small | JSON_HEX_TAG | JSON_HEX_AMP, value: $_GET["d"]));
+                    }',
+            ],
+            'htmlFunctionsWithEntQuotesInEveryLiteralEscapeQuotes' => [
+                'code' => '<?php
+                    /** @psalm-taint-sink has_quotes $s */
+                    function quoted(string $s): void {}
+
+                    /** @param int-mask<ENT_SUBSTITUTE, ENT_HTML5> $mask */
+                    function f(int $mask, bool $c): void {
+                        quoted(htmlspecialchars((string) $_GET["a"], $mask | ENT_QUOTES));
+                        quoted(htmlentities((string) $_GET["b"], $c ? ENT_QUOTES : ENT_QUOTES | ENT_SUBSTITUTE));
+                        quoted(htmlspecialchars(flags: $mask | ENT_QUOTES, string: (string) $_GET["c"]));
+                        quoted(htmlspecialchars_decode(htmlspecialchars((string) $_GET["d"], ENT_QUOTES), ENT_NOQUOTES));
+                    }',
             ],
             'jsonEncodeQualifiedOrImportedWithHexTagAndAmpEscapesHtml' => [
                 'code' => '<?php

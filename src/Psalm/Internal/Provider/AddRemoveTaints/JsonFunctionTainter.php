@@ -7,6 +7,7 @@ namespace Psalm\Internal\Provider\AddRemoveTaints;
 use Override;
 use PhpParser;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
+use Psalm\Internal\Type\IntMask;
 use Psalm\Plugin\EventHandler\AddTaintsInterface;
 use Psalm\Plugin\EventHandler\Event\AddRemoveTaintsEvent;
 use Psalm\Plugin\EventHandler\RemoveTaintsInterface;
@@ -88,16 +89,19 @@ final class JsonFunctionTainter implements AddTaintsInterface, RemoveTaintsInter
             }
         }
 
-        $flag_value = $flags !== null && $flags->isSingleIntLiteral() ? $flags->getSingleIntLiteral()->value : null;
+        // only literals, or an int-mask, tell the bits the flags have: `$flags | JSON_HEX_TAG` with an unknown $flags
+        // is an int
+        $possible_bits = $flags !== null ? IntMask::getPossibleBits($flags) : null;
+        $certain_bits = $flags !== null ? IntMask::getCertainBits($flags) : null;
         $removed_taints = 0;
 
         // every control character is escaped, so the output holds no CR, LF or NUL (the layout of
         // JSON_PRETTY_PRINT has LF)
-        if (!$has_flags || ($flag_value !== null && ($flag_value & JSON_PRETTY_PRINT) === 0)) {
+        if (!$has_flags || ($possible_bits !== null && ($possible_bits & JSON_PRETTY_PRINT) === 0)) {
             $removed_taints |= TaintKind::INPUT_HEADER;
         }
 
-        if ($flag_value !== null && ($flag_value & self::HTML_FLAGS) === self::HTML_FLAGS) {
+        if ($certain_bits !== null && ($certain_bits & self::HTML_FLAGS) === self::HTML_FLAGS) {
             $removed_taints |= TaintKind::INPUT_HTML;
         }
 

@@ -67,7 +67,8 @@ final class HtmlFunctionTainter implements AddTaintsInterface, RemoveTaintsInter
     }
 
     /**
-     * Called to see what taints should be removed
+     * htmlspecialchars() and htmlentities() escape <, > and & whatever the flags, and both quotes when every value
+     * the flags may have has ENT_QUOTES, or without flags from PHP 8.1 on.
      */
     #[Override]
     public static function removeTaints(AddRemoveTaintsEvent $event): int
@@ -87,34 +88,28 @@ final class HtmlFunctionTainter implements AddTaintsInterface, RemoveTaintsInter
 
         $function_id = strtolower($item->name->getFirst());
 
-        if ($function_id === 'htmlentities'
-            || $function_id === 'htmlspecialchars'
-        ) {
-            $second_arg = self::getFlagsArg($item);
-
-            if ($second_arg === null) {
-                if ($statements_analyzer->getCodebase()->analysis_php_version_id >= 8_01_00) {
-                    return TaintKind::INPUT_HTML|TaintKind::INPUT_HAS_QUOTES;
-                }
-                return TaintKind::INPUT_HTML;
-            }
-
-            $second_arg_value = $statements_analyzer->node_data->getType($second_arg);
-
-            if (!$second_arg_value || !$second_arg_value->isSingleIntLiteral()) {
-                return TaintKind::INPUT_HTML;
-            }
-
-            $second_arg_value = $second_arg_value->getSingleIntLiteral()->value;
-
-            if (($second_arg_value & ENT_QUOTES) === ENT_QUOTES) {
-                return TaintKind::INPUT_HTML|TaintKind::INPUT_HAS_QUOTES;
-            }
-
-            return TaintKind::INPUT_HTML;
+        if ($function_id !== 'htmlentities' && $function_id !== 'htmlspecialchars') {
+            return 0;
         }
 
-        return 0;
+        $flags_arg = self::getFlagsArg($item);
+
+        if ($flags_arg === null) {
+            return $statements_analyzer->getCodebase()->analysis_php_version_id >= 8_01_00
+                ? TaintKind::INPUT_HTML | TaintKind::INPUT_HAS_QUOTES
+                : TaintKind::INPUT_HTML;
+        }
+
+        // only literals, or an int-mask, tell the bits the flags have: `$flags | ENT_QUOTES` with an unknown $flags
+        // is an int
+        $flags = $statements_analyzer->node_data->getType($flags_arg);
+        $certain_bits = $flags !== null ? IntMask::getCertainBits($flags) : null;
+
+        if ($certain_bits !== null && ($certain_bits & ENT_QUOTES) === ENT_QUOTES) {
+            return TaintKind::INPUT_HTML | TaintKind::INPUT_HAS_QUOTES;
+        }
+
+        return TaintKind::INPUT_HTML;
     }
 
     /**

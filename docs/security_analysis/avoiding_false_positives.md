@@ -10,7 +10,7 @@ There are a number of ways you can prevent them:
 
 Some operations remove taints from data – for example, wrapping `$_GET['name']` in an `htmlentities` call prevents cross-site-scripting attacks in that `$_GET` call.
 
-`json_encode()` removes the `html` taint when its flags are a known value including `JSON_HEX_TAG` and `JSON_HEX_AMP`: what it returns then has no `<`, `>` or `&`. It keeps the `has_quotes` taint whatever the flags, as the `"` delimiting a JSON string ends a double-quoted attribute; a function that only puts JSON in a `<script>`, or with `JSON_HEX_APOS` in an attribute in single quotes, can declare `@psalm-taint-escape has_quotes`.
+`json_encode()` removes the `html` taint when its flags always include `JSON_HEX_TAG` and `JSON_HEX_AMP` (see [escaping by flags](#escaping-by-flags)): what it returns then has no `<`, `>` or `&`. It keeps the `has_quotes` taint whatever the flags, as the `"` delimiting a JSON string ends a double-quoted attribute; a function that only puts JSON in a `<script>`, or with `JSON_HEX_APOS` in an attribute in single quotes, can declare `@psalm-taint-escape has_quotes`.
 
 The decoders give back what the escapes before them removed. `json_decode()` gives back the `html`, `has_quotes` and `header` taints, since a JSON string can hold any character as an escape sequence: `json_decode(json_encode($_GET['a'], JSON_HEX_TAG | JSON_HEX_AMP))` is tainted HTML again. `html_entity_decode()` and `htmlspecialchars_decode()` give back the `html` taint, and the `has_quotes` one unless none of the flags they may have decode a quote (`ENT_NOQUOTES`): `ENT_COMPAT` alone decodes `&quot;`.
 
@@ -29,6 +29,12 @@ function echoVar(string $str) : void {
 
 echoVar($_GET["text"]);
 ```
+
+## Escaping by flags
+
+What `json_encode()`, `htmlspecialchars()` and `htmlentities()` escape depends on their flags, which Psalm reads from the type of the argument. A taint is only removed when every value the flags may have escapes it: the flags have to be a literal, a union of literals (`$c ? ENT_QUOTES : ENT_QUOTES | ENT_SUBSTITUTE`, or `$small | ENT_QUOTES` with `$small` of type `0|4`) or an [`int-mask`](../annotating_code/type_syntax/scalar_types.md#int-mask1-2-4) Psalm can list the values of. `json_encode()` removes the `html` taint when they all have `JSON_HEX_TAG` and `JSON_HEX_AMP`, and the `header` one when none has `JSON_PRETTY_PRINT`; `htmlspecialchars()` and `htmlentities()` always remove the `html` taint, and the `has_quotes` one when they all have `ENT_QUOTES` (or without flags, from PHP 8.1 on).
+
+Flags computed from an `int` Psalm knows nothing more of are an `int` too, so `$flags | JSON_HEX_TAG | JSON_HEX_AMP` removes nothing, although it always has both bits: give `$flags` a literal or `int-mask` type, or pass the constants directly. Flags of any other type (`mixed`, `int|string`, `int-mask<…>|string`, a `float`, a template) remove nothing either: what may be other than an int may be any int once coerced.
 
 ## Types
 
