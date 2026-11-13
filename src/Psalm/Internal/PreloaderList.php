@@ -798,6 +798,7 @@ final class PreloaderList {
         \Psalm\Internal\Codebase\VariableUseGraph::class,
         \Psalm\Internal\Composer::class,
         \Psalm\Internal\DataFlow\DataFlowNode::class,
+        \Psalm\Internal\DataFlow\NodeTable::class,
         \Psalm\Internal\DataFlow\Path::class,
         \Psalm\Internal\Diff\AstDiffer::class,
         \Psalm\Internal\Diff\ClassStatementsDiffer::class,

@@ -256,7 +256,8 @@ final class PsalmEndToEndTest extends TestCase
             self::$tmpDir,
             self::agentEnvVarsToUnset(),
         );
-        $process->mustRun();
+        $process->run();
+        $this->assertSame(2, $process->getExitCode(), $process->getOutput() . $process->getErrorOutput());
         $output = $process->getOutput();
 
         $this->assertSame(1, preg_match_all('/^\d\) src\/A\.php:3$/m', $output), $output);
@@ -290,11 +291,76 @@ final class PsalmEndToEndTest extends TestCase
             self::$tmpDir,
             self::agentEnvVarsToUnset(),
         );
-        $process->mustRun();
+        $process->run();
+        $this->assertSame(2, $process->getExitCode(), $process->getOutput() . $process->getErrorOutput());
         $output = $process->getOutput();
 
         $this->assertStringContainsString("1) src/A.php:3\n", $output);
         $this->assertStringContainsString("2) src/B.php:3\n", $output);
+    }
+
+    public function testPsalterDryRunExitsWithCode2AndLeavesFilesUnchangedWhenFilesWouldChange(): void
+    {
+        $this->runPsalmInit();
+        $psalmXml = file_get_contents(self::$tmpDir . '/psalm.xml');
+        $psalmXml = str_replace('<psalm', '<psalm runTaintAnalysis="false"', (string)$psalmXml);
+        file_put_contents(self::$tmpDir . '/psalm.xml', $psalmXml);
+        $source = "<?php\n\nfunction a() {\n    return 1;\n}\n";
+        file_put_contents(self::$tmpDir . '/src/A.php', $source);
+
+        $process = new Process(
+            [PHP_BINARY, $this->psalter, '--dry-run', '--no-cache', '--issues=MissingReturnType', 'src'],
+            self::$tmpDir,
+            self::agentEnvVarsToUnset(),
+        );
+        $process->run();
+
+        $this->assertSame(2, $process->getExitCode(), $process->getOutput() . $process->getErrorOutput());
+        $this->assertStringContainsString('would be changed (dry run)', $process->getOutput());
+        $this->assertSame($source, file_get_contents(self::$tmpDir . '/src/A.php'));
+    }
+
+    public function testPsalmAlterDryRunExitsWithCode2WhenFilesWouldChange(): void
+    {
+        $this->runPsalmInit();
+        $psalmXml = file_get_contents(self::$tmpDir . '/psalm.xml');
+        $psalmXml = str_replace('<psalm', '<psalm runTaintAnalysis="false"', (string)$psalmXml);
+        file_put_contents(self::$tmpDir . '/psalm.xml', $psalmXml);
+        file_put_contents(self::$tmpDir . '/src/A.php', "<?php\n\nfunction a() {\n    return 1;\n}\n");
+
+        // runPsalm() asserts the exit code is 2 when $shouldFail is true
+        $this->runPsalm(
+            ['--alter', '--dry-run', '--no-cache', '--issues=MissingReturnType', 'src'],
+            self::$tmpDir,
+            true,
+            false,
+        );
+    }
+
+    public function testPsalterDryRunExitsWithCode0WhenNothingWouldChange(): void
+    {
+        $this->runPsalmInit();
+        $psalmXml = file_get_contents(self::$tmpDir . '/psalm.xml');
+        $psalmXml = str_replace('<psalm', '<psalm runTaintAnalysis="false"', (string)$psalmXml);
+        file_put_contents(self::$tmpDir . '/psalm.xml', $psalmXml);
+        file_put_contents(self::$tmpDir . '/src/A.php', "<?php\n\nfunction a(): int {\n    return 1;\n}\n");
+
+        $process = new Process(
+            [PHP_BINARY, $this->psalter, '--dry-run', '--no-cache', '--issues=MissingReturnType', 'src'],
+            self::$tmpDir,
+            self::agentEnvVarsToUnset(),
+        );
+        $process->run();
+
+        $this->assertSame(0, $process->getExitCode(), $process->getOutput() . $process->getErrorOutput());
+        $this->assertStringContainsString('No changes', $process->getOutput());
+    }
+
+    public function testPsalterRealRunThatChangesFilesExitsWithCode0(): void
+    {
+        $process = $this->runPsalterOnAFileWithAMissingReturnType([]);
+
+        $this->assertSame(0, $process->getExitCode());
     }
 
     public function testPsalterAppliesAFixOnceWhenPathsOverlap(): void

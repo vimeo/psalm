@@ -159,7 +159,7 @@ final class Psalter
                     Executes a plugin, an alternative to using the Psalm config
 
                 --dry-run
-                    Does not write the changes
+                    Does not write the changes, and exits with code 2 if there are any.
 
                 --no-diff
                     Does not print the diff, only the list of changed files
