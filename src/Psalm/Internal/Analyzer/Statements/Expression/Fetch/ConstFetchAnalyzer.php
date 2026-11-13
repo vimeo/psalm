@@ -353,29 +353,28 @@ final class ConstFetchAnalyzer
             return $context->vars_in_scope[$const_name];
         }
 
-        $file_path = $statements_analyzer->getRootFilePath();
         $codebase = $statements_analyzer->getCodebase();
 
         $file_storage_provider = $codebase->file_storage_provider;
 
-        $file_storage = $file_storage_provider->get($file_path);
-        // the file of the code declares its constants before the code runs, also when the root file doesn't include
-        // it (a method followed into its class's file)
-        $code_file_storage = $file_storage_provider->get($statements_analyzer->getFilePath());
+        // the constants of the file of the code are known as when the file is analysed itself, also when the root file
+        // doesn't include it (a method followed into its class's file)
+        foreach ([$statements_analyzer->getRootFilePath(), $statements_analyzer->getFilePath()] as $file_path) {
+            $file_storage = $file_storage_provider->get($file_path);
 
-        foreach ([$const_name, $fq_const_name] as $name) {
-            $declaring_file_path = $file_storage->declaring_constants[$name]
-                ?? $code_file_storage->declaring_constants[$name]
-                ?? null;
+            foreach ([$const_name, $fq_const_name] as $name) {
+                if (isset($file_storage->declaring_constants[$name])) {
+                    $constant_storage = $file_storage_provider->get($file_storage->declaring_constants[$name]);
 
-            if ($declaring_file_path !== null) {
-                $constant_storage = $file_storage_provider->get($declaring_file_path);
+                    if (isset($constant_storage->unresolved_constants[$name])) {
+                        return self::resolveConstType(
+                            $statements_analyzer,
+                            $constant_storage->unresolved_constants[$name],
+                        );
+                    }
 
-                if (isset($constant_storage->unresolved_constants[$name])) {
-                    return self::resolveConstType($statements_analyzer, $constant_storage->unresolved_constants[$name]);
+                    return $constant_storage->constants[$name];
                 }
-
-                return $constant_storage->constants[$name];
             }
         }
 

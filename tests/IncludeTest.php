@@ -1350,15 +1350,18 @@ final class IncludeTest extends TestCase
 
     /**
      * The constructor of the parent reads the constants its file declares: they are known when a subclass follows
-     * it, whichever file is analysed first.
+     * it, whichever file is analysed first. Each order uses its own namespace, as the constants a namespace's
+     * statements declare stay known to the process.
      *
      * @param list<string> $file_names
      */
     #[DataProvider('providerParentAndChildOrders')]
-    public function testConstantsOfAFollowedFileAreKnownWhicheverFileIsAnalysedFirst(array $file_names): void
-    {
+    public function testConstantsOfAFollowedFileAreKnownWhicheverFileIsAnalysedFirst(
+        array $file_names,
+        string $namespace,
+    ): void {
         $this->addFile((string) getcwd() . DIRECTORY_SEPARATOR . 'Base.php', '<?php
-            namespace Shop;
+            namespace ' . $namespace . ';
 
             const MAX_ITEMS = 5;
             define("DEFAULT_CURRENCY", "EUR");
@@ -1374,7 +1377,7 @@ final class IncludeTest extends TestCase
             }
         ');
         $this->addFile((string) getcwd() . DIRECTORY_SEPARATOR . 'Child.php', '<?php
-            namespace Shop;
+            namespace ' . $namespace . ';
 
             final class Child extends Base {
                 public function __construct() {
@@ -1387,13 +1390,13 @@ final class IncludeTest extends TestCase
     }
 
     /**
-     * @return iterable<string, array{list<string>}>
+     * @return iterable<string, array{list<string>, string}>
      * @psalm-pure
      */
     public static function providerParentAndChildOrders(): iterable
     {
-        yield 'parent first' => [['Base.php', 'Child.php']];
-        yield 'child first' => [['Child.php', 'Base.php']];
+        yield 'parent first' => [['Base.php', 'Child.php'], 'ParentFirst'];
+        yield 'child first' => [['Child.php', 'Base.php'], 'ChildFirst'];
     }
 
     /**
