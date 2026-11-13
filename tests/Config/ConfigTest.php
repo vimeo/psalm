@@ -1740,6 +1740,8 @@ final class ConfigTest extends DeferredAnalyzerTestCase
         yield 'a method of a stub, reported' => ['\\DateTimeImmutable::createFromFormat("Y-m-d", $date)', false, true];
         yield 'a method of a mutable class, ignored' => ['\\DateTime::createFromFormat("Y-m-d", $date)', true, false];
         yield 'a method of a mutable class, reported' => ['\\DateTime::createFromFormat("Y-m-d", $date)', false, true];
+        yield 'a method of the call map, ignored' => ['(new \\DateTime())->modify($date)', true, false];
+        yield 'a method of the call map, not reported either' => ['(new \\DateTime())->modify($date)', false, false];
         yield 'a function, ignored' => ['date_create_from_format("Y-m-d", $date)', true, false];
         yield 'a function, reported' => ['date_create_from_format("Y-m-d", $date)', false, true];
     }
