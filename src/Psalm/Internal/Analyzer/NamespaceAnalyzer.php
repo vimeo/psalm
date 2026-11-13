@@ -60,6 +60,7 @@ final class NamespaceAnalyzer extends SourceAnalyzer
         }
 
         $codebase = $this->getCodebase();
+        $file_context = $this->source->context;
 
         foreach ($this->namespace->stmts as $stmt) {
             if ($stmt instanceof PhpParser\Node\Stmt\Trait_) {
@@ -79,8 +80,11 @@ final class NamespaceAnalyzer extends SourceAnalyzer
                     $leftover_stmts[] = new PhpParser\Node\Stmt\Nop($stmt->getAttributes());
                 }
             } elseif ($stmt instanceof PhpParser\Node\Stmt\Const_) {
-                foreach ($stmt->consts as $const) {
-                    self::$public_namespace_constants[$this->namespace_name][$const->name->name] = Type::getMixed();
+                // the analysis of the top-level code gives them their types, below
+                if ($file_context !== null) {
+                    foreach ($stmt->consts as $const) {
+                        self::$public_namespace_constants[$this->namespace_name][$const->name->name] = Type::getMixed();
+                    }
                 }
 
                 $leftover_stmts[] = $stmt;
@@ -88,8 +92,6 @@ final class NamespaceAnalyzer extends SourceAnalyzer
                 $leftover_stmts[] = $stmt;
             }
         }
-
-        $file_context = $this->source->context;
 
         // a file analyzer only collecting the class-likes and functions of the file (e.g. for the mutations of a
         // method) doesn't analyze its top-level code, as for a file without a namespace

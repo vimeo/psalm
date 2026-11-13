@@ -126,6 +126,38 @@ final class IncludeTest extends TestCase
                     (string) getcwd() . DIRECTORY_SEPARATOR . 'a' . DIRECTORY_SEPARATOR . 'script.php',
                 ],
             ],
+            'namespaceConstantKeepsItsTypeInTheMutationsOfAParentConstructor' => [
+                'files' => [
+                    (string) getcwd() . DIRECTORY_SEPARATOR . 'base.php' => '<?php
+                        namespace App;
+
+                        const COUNT = 1;
+
+                        class Base {
+                            public int $count;
+
+                            public function __construct() {
+                                $this->count = COUNT;
+                            }
+                        }',
+                    (string) getcwd() . DIRECTORY_SEPARATOR . 'child.php' => '<?php
+                        namespace App;
+
+                        require __DIR__ . "/base.php";
+
+                        final class Child extends Base {
+                            public int $child;
+
+                            public function __construct() {
+                                parent::__construct();
+                                $this->child = COUNT;
+                            }
+                        }',
+                ],
+                'files_to_check' => [
+                    (string) getcwd() . DIRECTORY_SEPARATOR . 'child.php',
+                ],
+            ],
             'requireOfAResolvedPathCheckedByFileExistsInAnAndCondition' => [
                 'files' => [
                     (string) getcwd() . DIRECTORY_SEPARATOR . 'a' . DIRECTORY_SEPARATOR . 'script.php' => '<?php
