@@ -130,6 +130,10 @@ if (PHP_SAPI !== 'cli') {
 echo $_SERVER['argv'][1] ?? ''; // not reported
 ```
 
+A function or method can make the check for its callers by [asserting](../annotating_code/adding_assertions.md#asserting-the-sapi)
+`PHP_SAPI` (`@psalm-assert 'cli' PHP_SAPI`, or `@psalm-assert-if-true 'cli' PHP_SAPI` on one returning a `bool`): the
+code after the call, or the branch it guards, then counts as command-line code too.
+
 Code marked `@psalm-cli-only` can only be called from such code, or [CliOnlyCall](../running_psalm/issues/CliOnlyCall.md)
 is reported. Printing a secret is still reported, and the values stay tainted for every other sink. A function called
 from command-line code is checked as usual, so mark it too if it only runs from the command line.
