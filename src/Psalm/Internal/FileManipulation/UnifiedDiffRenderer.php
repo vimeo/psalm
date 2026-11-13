@@ -86,6 +86,7 @@ final class UnifiedDiffRenderer
      */
     private static function getFirstChangedLine(string $old_contents, string $new_contents): int
     {
+        // Differ strips common leading lines, so the first differing byte is on the first changed line.
         $line = substr_count($new_contents, "\n", 0, strspn($old_contents ^ $new_contents, "\0")) + 1;
         $last_line = substr_count($new_contents, "\n") + (str_ends_with($new_contents, "\n") ? 0 : 1);
 

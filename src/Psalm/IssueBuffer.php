@@ -889,8 +889,7 @@ final class IssueBuffer
             echo str_repeat('-', 30) . "\n" . "\n";
 
             if ($start_time) {
-                echo 'Checks took ' . number_format(microtime(true) - $start_time, 2) . ' seconds';
-                echo ' and used ' . number_format(memory_get_peak_usage() / (1_024 * 1_024), 3) . 'MB of memory' . "\n";
+                self::printTiming($start_time);
 
                 $analysis_summary = $codebase->analyzer->getTypeInferenceSummary($codebase);
                 echo $analysis_summary . "\n";
@@ -986,9 +985,14 @@ final class IssueBuffer
             . str_repeat('-', 30) . "\n\n";
 
         if ($start_time) {
-            echo 'Checks took ' . number_format(microtime(true) - $start_time, 2) . ' seconds';
-            echo ' and used ' . number_format(memory_get_peak_usage() / (1_024 * 1_024), 3) . 'MB of memory' . "\n";
+            self::printTiming($start_time);
         }
+    }
+
+    private static function printTiming(float $start_time): void
+    {
+        echo 'Checks took ' . number_format(microtime(true) - $start_time, 2) . ' seconds';
+        echo ' and used ' . number_format(memory_get_peak_usage() / (1_024 * 1_024), 3) . 'MB of memory' . "\n";
     }
 
     public static function printSuccessMessage(ProjectAnalyzer $project_analyzer): void
