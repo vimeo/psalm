@@ -374,8 +374,10 @@ final class PsalmEndToEndTest extends TestCase
      * @param list<string> $file_args
      */
     #[DataProvider('provideFileOptionsWithAValueThatLooksLikeAnOption')]
-    public function testPsalterNeverWidensAnExplicitFileSelectionToTheWholeProject(array $file_args): void
-    {
+    public function testPsalterNeverWidensAnExplicitFileSelectionToTheWholeProject(
+        array $file_args,
+        string $expected_error,
+    ): void {
         $source = $this->writeAFileWithAMissingReturnType();
 
         $process = new Process(
@@ -386,19 +388,21 @@ final class PsalmEndToEndTest extends TestCase
         $process->run();
 
         $this->assertSame(1, $process->getExitCode(), $process->getOutput() . $process->getErrorOutput());
-        $this->assertStringContainsString('Invalid usage', $process->getErrorOutput());
+        $this->assertStringContainsString($expected_error, $process->getErrorOutput());
         $this->assertSame($source, file_get_contents(self::$tmpDir . '/src/A.php'));
     }
 
     /**
-     * @return iterable<string, array{list<string>}>
+     * @return iterable<string, array{list<string>, string}>
      * @psalm-pure
      */
     public static function provideFileOptionsWithAValueThatLooksLikeAnOption(): iterable
     {
-        yield 'a value after an equals sign' => [['-f=-target.php']];
-        yield 'a value in a separate argument' => [['-f', '-target.php']];
-        yield 'a value that is a short option' => [['-f', '-m']];
+        yield 'a value after an equals sign' => [['-f=-target.php'], 'Invalid usage'];
+        yield 'a value in a separate argument' => [['-f', '-target.php'], 'Invalid usage'];
+        yield 'a value that is a short option' => [['-f', '-m'], 'Invalid usage'];
+        yield 'zero' => [['-f', '0'], 'Cannot locate 0'];
+        yield 'an empty string' => [['-f', ''], 'Cannot locate'];
     }
 
     public function testPsalmForwardsToPsalterWhenAlterFollowsAPath(): void

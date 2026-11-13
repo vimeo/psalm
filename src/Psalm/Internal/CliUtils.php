@@ -459,7 +459,8 @@ final class CliUtils
     {
         $paths_to_check = [];
 
-        if ($f_paths) {
+        // '0' and '' are paths too: ignoring them would widen the selection to the whole project
+        if ($f_paths !== null && $f_paths !== false && $f_paths !== []) {
             $input_paths = is_array($f_paths) ? $f_paths : [$f_paths];
             $input_is_f_paths = true;
         } else {
@@ -546,7 +547,7 @@ final class CliUtils
         $filtered_input_paths = [...$filtered_input_paths, ...$terminated_paths];
 
         foreach ($filtered_input_paths as $path_to_check) {
-            if ($path_to_check[0] === '-' && !in_array($path_to_check, $terminated_paths, true)) {
+            if (str_starts_with($path_to_check, '-') && !in_array($path_to_check, $terminated_paths, true)) {
                 fwrite(STDERR, 'Invalid usage, expecting psalm [options] [file...]' . PHP_EOL);
                 exit(1);
             }

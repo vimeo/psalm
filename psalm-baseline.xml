@@ -1430,7 +1430,6 @@
       <code><![CDATA[!$end_psalm_open_tag]]></code>
       <code><![CDATA[!$path_to_check]]></code>
       <code><![CDATA[$config->error_baseline]]></code>
-      <code><![CDATA[$f_paths]]></code>
       <code><![CDATA[$path_to_config]]></code>
       <code><![CDATA[$version = $config->getPHPVersionFromComposerJson()]]></code>
       <code><![CDATA[$version = $config->getPhpVersionFromConfig()]]></code>
