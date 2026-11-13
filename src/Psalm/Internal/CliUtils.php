@@ -47,6 +47,7 @@ use function preg_split;
 use function realpath;
 use function str_ends_with;
 use function str_starts_with;
+use function strcspn;
 use function stream_get_meta_data;
 use function stream_isatty;
 use function stream_set_blocking;
@@ -468,10 +469,22 @@ final class CliUtils
         }
 
         $filtered_input_paths = [];
+        $terminated_paths = [];
 
         for ($i = 0, $iMax = count($input_paths); $i < $iMax; ++$i) {
             /** @var string */
             $input_path = $input_paths[$i];
+
+            if ($input_path === '--') {
+                // everything after the terminator is a path, even when it starts with "-"
+                for ($j = $i + 1; $j < $iMax; ++$j) {
+                    /** @var string */
+                    $terminated_path = $input_paths[$j];
+                    $terminated_paths[] = $terminated_path;
+                }
+
+                break;
+            }
 
             if ($input_path[0] === '-' && strlen($input_path) === 2) {
                 if ($input_path[1] === 'c' || $input_path[1] === 'f' || $input_path[1] === 'r') {
@@ -481,6 +494,15 @@ final class CliUtils
             }
 
             if ($input_path[0] === '-' && $input_path[2] === '=') {
+                continue;
+            }
+
+            if ($input_path[0] === '-' && $input_path[1] !== '-' && strlen($input_path) > 2) {
+                // a group of short options like -mh, or -cpsalm.xml with the value attached;
+                // the value of the option that ends a group follows it, as in `-mc psalm.xml`
+                if (strcspn($input_path, 'cfr', 1) + 1 === strlen($input_path) - 1) {
+                    ++$i;
+                }
                 continue;
             }
 
@@ -513,8 +535,10 @@ final class CliUtils
             }
         }
 
+        $filtered_input_paths = [...$filtered_input_paths, ...$terminated_paths];
+
         foreach ($filtered_input_paths as $path_to_check) {
-            if ($path_to_check[0] === '-') {
+            if ($path_to_check[0] === '-' && !in_array($path_to_check, $terminated_paths, true)) {
                 fwrite(STDERR, 'Invalid usage, expecting psalm [options] [file...]' . PHP_EOL);
                 exit(1);
             }

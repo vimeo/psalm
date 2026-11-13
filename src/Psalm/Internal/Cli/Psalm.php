@@ -47,7 +47,7 @@ use function array_key_exists;
 use function array_keys;
 use function array_map;
 use function array_merge;
-use function array_shift;
+use function array_search;
 use function array_slice;
 use function array_sum;
 use function array_values;
@@ -1105,7 +1105,12 @@ final class Psalm
 
         if (isset($options['review'])) {
             require_once __DIR__ . '/Review.php';
-            array_shift($argv);
+            // psalm-review takes the report right after the script name, wherever --review was given
+            $review_position = array_search('--review', $argv, true);
+            if ($review_position !== false) {
+                unset($argv[$review_position]);
+            }
+
             Review::run(array_values($argv));
             exit;
         }

@@ -414,6 +414,35 @@ final class PsalmEndToEndTest extends TestCase
         yield 'psalm-refactor' => [__DIR__ . '/../../psalm-refactor', ['--move', 'A::b', '--into', 'C', '-z']];
     }
 
+    /**
+     * @param list<string> $args
+     */
+    #[DataProvider('provideReviewInvocations')]
+    public function testPsalmReviewReadsTheReportWhereverReviewIsGiven(array $args): void
+    {
+        $report = self::$tmpDir . '/report.json';
+        file_put_contents($report, '[]');
+
+        try {
+            $process = new Process([PHP_BINARY, $this->psalm, ...$args], self::$tmpDir, self::agentEnvVarsToUnset());
+            $process->run();
+
+            $this->assertSame(0, $process->getExitCode(), $process->getOutput() . $process->getErrorOutput());
+        } finally {
+            unlink($report);
+        }
+    }
+
+    /**
+     * @return iterable<string, array{list<string>}>
+     * @psalm-pure
+     */
+    public static function provideReviewInvocations(): iterable
+    {
+        yield 'review first' => [['--review', 'report.json', 'code']];
+        yield 'review after the report' => [['report.json', '--review', 'code']];
+    }
+
     public function testPsalterDryRunExitsWithCode0WhenNothingWouldChange(): void
     {
         $this->runPsalmInit();
