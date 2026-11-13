@@ -109,6 +109,8 @@ final class IfElseAnalyzer
                 ? clone $context
                 : null;
 
+        $negated_phantom_classes_before_cond = $context->negated_phantom_classes;
+
         try {
             $if_conditional_scope = IfConditionalAnalyzer::analyze(
                 $statements_analyzer,
@@ -126,8 +128,8 @@ final class IfElseAnalyzer
             $post_if_context = $if_conditional_scope->post_if_context;
 
             // where the condition about a class that was negated is false, the class exists
-            $post_if_context->phantom_classes += $post_if_context->negated_phantom_classes;
-            $context->phantom_classes += $context->negated_phantom_classes;
+            $post_if_context->promoteNegatedPhantomClasses($negated_phantom_classes_before_cond);
+            $context->promoteNegatedPhantomClasses($negated_phantom_classes_before_cond);
             $assigned_in_conditional_var_ids = $if_conditional_scope->assigned_in_conditional_var_ids;
         } catch (ScopeAnalysisException) {
             return false;

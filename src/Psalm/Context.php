@@ -26,6 +26,7 @@ use Psalm\Type\Atomic\TObjectWithProperties;
 use Psalm\Type\Union;
 use RuntimeException;
 
+use function array_diff_key;
 use function array_keys;
 use function array_search;
 use function array_shift;
@@ -1196,6 +1197,18 @@ final class Context
         } else {
             $this->phantom_classes[$class_name] = true;
         }
+    }
+
+    /**
+     * Where a negated condition about classes is false they exist: the phantom classes of what it checked, not of a
+     * negated condition that encloses it
+     *
+     * @param array<lowercase-string,true> $negated_before the negated classes before the condition
+     * @psalm-external-mutation-free
+     */
+    public function promoteNegatedPhantomClasses(array $negated_before): void
+    {
+        $this->phantom_classes += array_diff_key($this->negated_phantom_classes, $negated_before);
     }
 
     /**

@@ -67,6 +67,8 @@ final class OrAnalyzer
 
         $post_leaving_if_context = null;
 
+        $negated_phantom_classes_before_cond = $context->negated_phantom_classes;
+
         // we cap this at max depth of 4 to prevent quadratic behaviour
         // when analysing <expr> || <expr> || <expr> || <expr> || <expr>
         if (!$stmt->left instanceof PhpParser\Node\Expr\BinaryOp\BooleanOr
@@ -211,6 +213,9 @@ final class OrAnalyzer
         $changed_var_ids = [];
 
         $right_context = clone $context;
+
+        // the right side runs where the left one is false: a negated `class_exists()` of it found the class
+        $right_context->promoteNegatedPhantomClasses($negated_phantom_classes_before_cond);
 
         if ($stmt->left instanceof PhpParser\Node\Expr\BinaryOp\BooleanOr
             && $left_assigned_var_ids

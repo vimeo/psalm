@@ -52,6 +52,8 @@ final class TernaryAnalyzer
 
         $if_scope = new IfScope();
 
+        $negated_phantom_classes_before_cond = $context->negated_phantom_classes;
+
         try {
             // the else of an `||` is analysed again from where the condition started, not from where it ended
             $pre_condition_context = $stmt->cond instanceof PhpParser\Node\Expr\BinaryOp\BooleanOr
@@ -217,6 +219,9 @@ final class TernaryAnalyzer
         }
 
         $t_else_context = clone $context;
+
+        // where a negated `class_exists()` of the condition is false, the class exists
+        $t_else_context->promoteNegatedPhantomClasses($negated_phantom_classes_before_cond);
 
         // the else runs when every operand of an `||` was evaluated and falsy, so what they assigned is known there
         if (array_filter($assigned_in_conditional_var_ids) !== [] && $pre_condition_context !== null) {

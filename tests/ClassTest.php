@@ -963,6 +963,32 @@ final class ClassTest extends TestCase
                         }
                     }',
             ],
+            'classOfANegatedClassExistsIsDefinedInTheElseOfATernary' => [
+                'code' => '<?php
+                    function build(): ?object {
+                        return !class_exists("DynamicClass")
+                            ? null
+                            : new DynamicClass();
+                    }
+
+                    function buildMatch(): ?object {
+                        return match (true) {
+                            !class_exists("OtherDynamicClass") => null,
+                            default => new OtherDynamicClass(),
+                        };
+                    }',
+                'assertions' => [],
+                'ignored_issues' => ['MixedReturnStatement'],
+                'php_version' => '8.0',
+            ],
+            'classOfANegatedClassExistsIsDefinedOnTheRightOfAnOr' => [
+                'code' => '<?php
+                    function check(): bool {
+                        return !class_exists("DynamicClass") || (new DynamicClass())->ok();
+                    }',
+                'assertions' => [],
+                'ignored_issues' => ['MixedMethodCall', 'MixedReturnStatement'],
+            ],
             'classDeclaredByTheFirstStatementOfANegatedClassExistsBlock' => [
                 'code' => '<?php
                     class Real {
@@ -1568,6 +1594,26 @@ final class ClassTest extends TestCase
     public static function providerInvalidCodeParse(): iterable
     {
         return [
+            'classOfANegatedClassExistsIsUndefinedAfterAnUnrelatedNestedIf' => [
+                'code' => '<?php
+                    function f(bool $flag): void {
+                        if (!class_exists("DynamicClass")) {
+                            if ($flag) {
+                                echo "unrelated";
+                            }
+
+                            new DynamicClass();
+                        }
+                    }',
+                'error_message' => 'UndefinedClass',
+            ],
+            'classOfANegatedClassExistsIsUndefinedInTheIfOfATernary' => [
+                'code' => '<?php
+                    function f(): ?object {
+                        return !class_exists("DynamicClass") ? new DynamicClass() : null;
+                    }',
+                'error_message' => 'UndefinedClass',
+            ],
             'aliasOfAMissingClassIsUndefined' => [
                 'code' => '<?php
                     class_alias("MissingSource", "Alias", false);
