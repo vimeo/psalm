@@ -27,6 +27,7 @@ use Psalm\Internal\Type\TemplateResult;
 use Psalm\Issue\NonStaticSelfCall;
 use Psalm\Issue\ParentNotFound;
 use Psalm\IssueBuffer;
+use Psalm\Plugin\EventHandler\Event\AddRemoveCallTaintsEvent;
 use Psalm\Plugin\EventHandler\Event\AddRemoveTaintsEvent;
 use Psalm\Storage\Capabilities;
 use Psalm\Storage\MethodStorage;
@@ -451,6 +452,12 @@ final class StaticCallAnalyzer extends CallAnalyzer
             $added_taints = $codebase->config->eventDispatcher->dispatchAddTaints($event);
             $removed_taints = $codebase->config->eventDispatcher->dispatchRemoveTaints($event);
         }
+
+        [$call_added_taints, $call_removed_taints] = $codebase->config->eventDispatcher->dispatchAddRemoveCallTaints(
+            new AddRemoveCallTaintsEvent($codebase, $cased_method_id, null, null, $node_location),
+        );
+        $added_taints |= $call_added_taints;
+        $removed_taints |= $call_removed_taints;
 
         if ($conditionally_removed_taints || $added_taints !== 0 || $removed_taints !== 0) {
             // a node of this call's own: what it removes depends on its arguments, and $method_source may be
