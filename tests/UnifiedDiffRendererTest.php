@@ -87,6 +87,16 @@ final class UnifiedDiffRendererTest extends TestCase
         $this->assertStringContainsString("\e[2m\\ No newline at end of file\e[0m\n", $output);
     }
 
+    public function testHiddenDiffLeavesOnlyTheTitles(): void
+    {
+        $renderer = new UnifiedDiffRenderer(false, false, false);
+
+        $output = $renderer->render(1, 'a.txt', '/p/a.txt', "a\n", "b\n")
+            . $renderer->render(2, 'b.txt', '/p/b.txt', "a\n", "b\n");
+
+        $this->assertSame("1) a.txt:1\n2) b.txt:1\n", $output);
+    }
+
     #[DataProvider('firstChangedLineProvider')]
     public function testTitleLinePointsAtTheFirstChangedLine(string $old, string $new, int $expected_line): void
     {
