@@ -2679,6 +2679,67 @@ final class UnusedVariableTest extends TestCase
 
                     print_r($output_rows);',
             ],
+            'aliasedReturnedReferenceUsesAssignedValue' => [
+                'code' => <<<'PHP'
+                    <?php
+                    function &sharedText(): string {
+                        /** @var string $text */
+                        static $text = '';
+                        return $text;
+                    }
+
+                    function updateThroughAliasedReference(string $value): void {
+                        $reference = &sharedText();
+                        $alias = &$reference;
+                        $alias = $value;
+                    }
+                    PHP,
+            ],
+            'returnedReferenceArrayAssignmentUsesValue' => [
+                'code' => <<<'PHP'
+                    <?php
+                    /** @return array<string, string> */
+                    function &storage(): array {
+                        /** @var array<string, string> $items */
+                        static $items = [];
+                        return $items;
+                    }
+
+                    function store(string $value): void {
+                        $items = &storage();
+                        $items['key'] = $value;
+                    }
+                    PHP,
+            ],
+            'returnedReferenceToArrayElementUsesValueAndInput' => [
+                'code' => <<<'PHP'
+                    <?php
+                    /** @param array<string, mixed> $data */
+                    function &findNode(array &$data, string $path): mixed {
+                        $node = &$data[$path];
+                        return $node;
+                    }
+
+                    /**
+                     * @param array<string, string> $fields
+                     * @param array<string, string> $input
+                     * @return array<string, mixed>
+                     * @psalm-suppress MixedArrayAssignment
+                     */
+                    function apply(array $fields, array $input): array {
+                        $data = [];
+                        foreach ($fields as $group => $name) {
+                            $node = &findNode($data, $group);
+                            $value = $input[$name];
+                            $node[$name] = $value;
+                        }
+                        return $data;
+                    }
+                    PHP,
+                'assertions' => [],
+                'ignored_issues' => ['MixedAssignment'],
+                'php_version' => '8.0',
+            ],
             'usedInAssignOpToByRef' => [
                 'code' => '<?php
                     function foo(int &$d): void  {

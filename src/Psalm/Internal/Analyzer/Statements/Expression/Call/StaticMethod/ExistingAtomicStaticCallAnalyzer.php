@@ -593,11 +593,14 @@ final class ExistingAtomicStaticCallAnalyzer
             $return_type_candidate = $return_type_candidate->setProperties(['reference_free' => true]);
         }
 
-        $stmt_type = $statements_analyzer->node_data->getType($stmt);
-        $statements_analyzer->node_data->setType(
-            $stmt,
-            Type::combineUnionTypes($stmt_type, $return_type_candidate),
+        $stmt_type = Type::combineUnionTypes(
+            $statements_analyzer->node_data->getType($stmt),
+            $return_type_candidate,
         );
+        if ($method_storage?->returns_by_ref) {
+            $stmt_type = $stmt_type->setByRef(true);
+        }
+        $statements_analyzer->node_data->setType($stmt, $stmt_type);
 
         if ($codebase->store_node_types
             && !$context->collect_initializations
