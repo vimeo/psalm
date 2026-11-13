@@ -77,6 +77,8 @@ abstract class LibraryStubsTestCase extends TestCase
         $file_path = self::$src_dir_path . 'somefile.php';
         $this->addFile($file_path, $code);
         $this->project_analyzer->trackTaintedInputs();
+        // the taint handlers psalm registers (AddRemoveTaints) remove and add taints of the cases too
+        $this->project_analyzer->getCodebase()->config->initializePlugins($this->project_analyzer);
 
         $this->analyzeFile($file_path, new Context(), false);
 
