@@ -52,7 +52,7 @@ class FileAnalyzer extends SourceAnalyzer
     private ?string $root_file_name = null;
 
     /**
-     * @var array<string, bool> the files required so far => whether only code only running from the command line did
+     * @var array<string, bool> file => whether it was only required from command-line code
      */
     private array $required_file_paths = [];
 
@@ -633,7 +633,7 @@ class FileAnalyzer extends SourceAnalyzer
     }
 
     /**
-     * Whether the file was only required from code only running from the command line, so its code was analyzed as such
+     * Whether the file was only required from command-line code, so its code was analyzed as such
      *
      * @psalm-mutation-free
      */
@@ -644,7 +644,7 @@ class FileAnalyzer extends SourceAnalyzer
 
     /**
      * @psalm-mutation-free
-     * @return array<string, bool> the files required so far => whether only code only running from the command line did
+     * @return array<string, bool> file => whether it was only required from command-line code
      */
     public function getRequiredFilePaths(): array
     {
