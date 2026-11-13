@@ -128,6 +128,61 @@ You can also specify an absolute path to your plugin:
     </plugins>
 ```
 
+### Code only running from the command line
+
+A plugin can say that code only runs from the command line, like [`@psalm-cli-only`](../../security_analysis/annotations.md#psalm-cli-only)
+does: what it prints isn't reported as `TaintedHtml`, and calling it from other code reports
+[CliOnlyCall](../issues/CliOnlyCall.md). Set `cli_only` on the storage of a class, method or function, and mark a
+file whose top-level code only runs from the command line with `markAsCliOnly()`:
+
+```php
+<?php
+
+use Psalm\Plugin\EventHandler\AfterClassLikeVisitInterface;
+use Psalm\Plugin\EventHandler\BeforeFileAnalysisInterface;
+use Psalm\Plugin\EventHandler\Event\AfterClassLikeVisitEvent;
+use Psalm\Plugin\EventHandler\Event\BeforeFileAnalysisEvent;
+
+final class ConsolePlugin implements AfterClassLikeVisitInterface, BeforeFileAnalysisInterface
+{
+    public static function afterClassLikeVisit(AfterClassLikeVisitEvent $event): void
+    {
+        $storage = $event->getStorage();
+        if (isset($storage->parent_classes['illuminate\database\migrations\migration'])) {
+            $storage->cli_only = true;
+        }
+    }
+
+    public static function beforeAnalyzeFile(BeforeFileAnalysisEvent $event): void
+    {
+        $path = $event->getStatementsSource()->getFilePath();
+        if (str_contains($path, '/database/migrations/') || str_ends_with($path, '/routes/console.php')) {
+            $event->markAsCliOnly();
+        }
+    }
+}
+```
+
+The top-level code of a marked file, the closures in it and the files it includes run from the command line. The
+functions and classes it declares are checked as usual.
+
+```php
+<?php // database/migrations/2025_01_01_000000_create_users_table.php
+
+return new class extends Migration { // no CliOnlyCall
+    public function up(): void
+    {
+        echo $_SERVER['argv'][1] ?? ''; // not reported
+    }
+};
+```
+
+```php
+<?php // app/Http/Controllers/UserController.php
+
+(new CreateUsersTable())->up(); // CliOnlyCall
+```
+
 ### Using Xdebug
 
 As Psalm disables _Xdebug_ at runtime, if you need to debug your code step-by-step when authoring a plugin, you can allow the extension by running Psalm as following:

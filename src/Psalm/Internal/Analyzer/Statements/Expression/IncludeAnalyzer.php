@@ -14,6 +14,7 @@ use Psalm\Exception\UnpreparedAnalysisException;
 use Psalm\Internal\Analyzer\FileAnalyzer;
 use Psalm\Internal\Analyzer\Statements\ExpressionAnalyzer;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
+use Psalm\Internal\Codebase\CliOutput;
 use Psalm\Internal\DataFlow\DataFlowNode;
 use Psalm\Internal\Provider\NodeDataProvider;
 use Psalm\Internal\Type\Comparator\UnionTypeComparator;
@@ -211,6 +212,9 @@ final class IncludeAnalyzer
                     $current_file_analyzer->getRootFilePath(),
                     $current_file_analyzer->getRootFileName(),
                 );
+
+                // the included code runs in the process of the code including it
+                $include_file_analyzer->cli_only = CliOutput::isInCliOnlyCode($statements_analyzer, $context);
 
                 $include_file_analyzer->addParentFilePath($current_file_analyzer->getFilePath());
                 $include_file_analyzer->addRequiredFilePath($current_file_analyzer->getFilePath());

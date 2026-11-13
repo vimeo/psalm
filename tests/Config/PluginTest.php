@@ -30,7 +30,6 @@ use Psalm\Tests\Config\Plugin\FixableIssuePlugin;
 use Psalm\Tests\DeferredAnalyzerTestCase;
 use Psalm\Tests\Internal\Provider\FakeParserCacheProvider;
 use Psalm\Tests\TestConfig;
-use Psalm\Type;
 
 use function array_fill_keys;
 use function array_keys;
@@ -43,6 +42,7 @@ use function ob_end_clean;
 use function ob_start;
 use function restore_error_handler;
 use function set_error_handler;
+use function sort;
 use function sprintf;
 
 use const DIRECTORY_SEPARATOR;
@@ -492,7 +492,7 @@ final class PluginTest extends DeferredAnalyzerTestCase
         );
     }
 
-    public function testBeforeFileAnalysisHookMakesTheTopLevelCodeOfAFileCliOnly(): void
+    public function testBeforeFileAnalysisHookMarksTheTopLevelCodeOfAFileCliOnly(): void
     {
         $this->project_analyzer = $this->getProjectAnalyzerWithConfig(
             TestConfig::loadFromXML(
@@ -512,7 +512,9 @@ final class PluginTest extends DeferredAnalyzerTestCase
             #[Override]
             public static function beforeAnalyzeFile(BeforeFileAnalysisEvent $event): void
             {
-                $event->getFileContext()->vars_in_scope[Context::PHP_SAPI_VAR_ID] = Type::getString('cli');
+                if (basename($event->getStatementsSource()->getFilePath()) === 'console.php') {
+                    $event->markAsCliOnly();
+                }
             }
         };
 
@@ -520,39 +522,67 @@ final class PluginTest extends DeferredAnalyzerTestCase
         (new PluginRegistrationSocket($codebase->config, $codebase))->registerHooksFromClass(get_class($hook));
         $codebase->config->throw_exception = false;
 
-        $file_path = (string) getcwd() . '/src/somefile.php';
+        $dir = (string) getcwd() . '/src/';
+        $files = [
+            'console.php' => '<?php
+                /** @psalm-cli-only */
+                function import(): void {}
 
-        $this->addFile(
-            $file_path,
-            '<?php
-            /** @psalm-cli-only */
-            function import(): void {}
-
-            import();
-            array_map(function (int $i): void {
+                require __DIR__ . "/helper.php";
                 import();
-            }, [1]);
-            array_map(fn(int $i) => import(), [1]);
-            echo (string) $_GET["name"];
+                array_map(function (int $i): void {
+                    import();
+                }, [1]);
+                array_map(fn(int $i) => import(), [1]);
+                echo (string) $_GET["name"];
 
-            function handle(): void {
+                function handle(): void {
+                    import();
+                    echo (string) $_GET["name"];
+                }
+
+                return new /** @psalm-cli-only */ class {};',
+            'helper.php' => '<?php
+                import();
+                echo (string) $_GET["name"];',
+            'web.php' => '<?php
+                require __DIR__ . "/console.php";
                 import();
                 echo (string) $_GET["name"];
-            }
 
-            return new /** @psalm-cli-only */ class {};',
-        );
-
-        $this->analyzeFile($file_path, new Context(), false, true);
-
-        $issues = [];
-        foreach (IssueBuffer::getIssuesDataForFile($file_path) as $issue) {
-            if ($issue->type === 'CliOnlyCall' || $issue->type === 'TaintedHtml') {
-                $issues[] = $issue->type . ' (line ' . $issue->line_from . ')';
-            }
+                /** @psalm-cli-only */
+                function boot(): void {
+                    require __DIR__ . "/boot.php";
+                }',
+            'boot.php' => '<?php
+                import();',
+        ];
+        foreach ($files as $name => $code) {
+            $this->addFile($dir . $name, $code);
+            $codebase->addFilesToAnalyze([$dir . $name => $dir . $name]);
         }
 
-        self::assertSame(['CliOnlyCall (line 13)', 'TaintedHtml (line 14)'], $issues);
+        $this->analyzeFile($dir . 'web.php', new Context(), false, true);
+
+        $issues = [];
+        foreach (IssueBuffer::getIssuesData() as $file_issues) {
+            foreach ($file_issues as $issue) {
+                if ($issue->type === 'CliOnlyCall' || $issue->type === 'TaintedHtml') {
+                    $issues[] = basename($issue->file_path) . ':' . $issue->line_from . ' ' . $issue->type;
+                }
+            }
+        }
+        sort($issues);
+
+        self::assertSame(
+            [
+                'console.php:14 CliOnlyCall',
+                'console.php:15 TaintedHtml',
+                'web.php:3 CliOnlyCall',
+                'web.php:4 TaintedHtml',
+            ],
+            $issues,
+        );
     }
 
     public function testFloatCheckerPlugin(): void

@@ -134,37 +134,6 @@ A function or method can make the check for its callers by [asserting](../annota
 `PHP_SAPI` (`@psalm-assert 'cli' PHP_SAPI`, or `@psalm-assert-if-true 'cli' PHP_SAPI` on one returning a `bool`): the
 code after the call, or the branch it guards, then counts as command-line code too.
 
-A plugin that knows a whole file only runs from the command line (a framework's migrations or console routes file) can
-narrow `PHP_SAPI` in the file's context before Psalm analyzes it. The file's top-level code and the closures in it then
-count as command-line code; the functions and classes it declares are checked as usual.
-
-```php
-<?php
-
-use Psalm\Context;
-use Psalm\Plugin\EventHandler\BeforeFileAnalysisInterface;
-use Psalm\Plugin\EventHandler\Event\BeforeFileAnalysisEvent;
-use Psalm\Type;
-
-final class ConsoleFiles implements BeforeFileAnalysisInterface
-{
-    public static function beforeAnalyzeFile(BeforeFileAnalysisEvent $event): void
-    {
-        if (str_contains($event->getStatementsSource()->getFilePath(), '/database/migrations/')) {
-            $event->getFileContext()->vars_in_scope[Context::PHP_SAPI_VAR_ID] = Type::getString('cli');
-        }
-    }
-}
-```
-
-```php
-<?php // database/migrations/2025_01_01_000000_create_users_table.php
-
-return new /** @psalm-cli-only */ class extends Migration { // no CliOnlyCall
-    public function up(): void {}
-};
-```
-
 Code marked `@psalm-cli-only` can only be called from such code, or [CliOnlyCall](../running_psalm/issues/CliOnlyCall.md)
 is reported. Printing a secret is still reported, and the values stay tainted for every other sink. A function called
 from command-line code is checked as usual, so mark it too if it only runs from the command line.

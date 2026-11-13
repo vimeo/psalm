@@ -11,7 +11,7 @@ use Psalm\StatementsSource;
 use Psalm\Storage\FileStorage;
 
 /**
- * @psalm-immutable
+ * @psalm-external-mutation-free
  * @api
  */
 final class BeforeFileAnalysisEvent
@@ -29,24 +29,37 @@ final class BeforeFileAnalysisEvent
         private readonly FileStorage $file_storage,
         private readonly Codebase $codebase,
         private readonly array $stmts,
+        private bool $cli_only = false,
     ) {
     }
 
+    /**
+     * @psalm-mutation-free
+     */
     public function getStatementsSource(): StatementsSource
     {
         return $this->statements_source;
     }
 
+    /**
+     * @psalm-mutation-free
+     */
     public function getFileContext(): Context
     {
         return $this->file_context;
     }
 
+    /**
+     * @psalm-mutation-free
+     */
     public function getFileStorage(): FileStorage
     {
         return $this->file_storage;
     }
 
+    /**
+     * @psalm-mutation-free
+     */
     public function getCodebase(): Codebase
     {
         return $this->codebase;
@@ -54,9 +67,32 @@ final class BeforeFileAnalysisEvent
 
     /**
      * @return list<Stmt>
+     * @psalm-mutation-free
      */
     public function getStmts(): array
     {
         return $this->stmts;
+    }
+
+    /**
+     * Whether the top-level code of the file, and the closures in it, only run from the command line: a plugin marked
+     * the file, or it is included from such code
+     *
+     * @psalm-mutation-free
+     */
+    public function isCliOnly(): bool
+    {
+        return $this->cli_only;
+    }
+
+    /**
+     * Says that the top-level code of the file, and the closures in it, only run from the command line (e.g. a
+     * framework's migrations), like code marked `@psalm-cli-only`. The functions and classes it declares are not.
+     *
+     * @psalm-external-mutation-free
+     */
+    public function markAsCliOnly(): void
+    {
+        $this->cli_only = true;
     }
 }

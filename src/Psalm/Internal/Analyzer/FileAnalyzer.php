@@ -95,6 +95,9 @@ class FileAnalyzer extends SourceAnalyzer
 
     public Codebase $codebase;
 
+    /** Whether the top-level code of the file, and the closures in it, only run from the command line */
+    public bool $cli_only = false;
+
     private int $first_statement_offset = -1;
 
     private ?NodeDataProvider $node_data = null;
@@ -158,8 +161,9 @@ class FileAnalyzer extends SourceAnalyzer
             return;
         }
 
-        $event = new BeforeFileAnalysisEvent($this, $this->context, $file_storage, $codebase, $stmts);
+        $event = new BeforeFileAnalysisEvent($this, $this->context, $file_storage, $codebase, $stmts, $this->cli_only);
         $codebase->config->eventDispatcher->dispatchBeforeFileAnalysis($event);
+        $this->cli_only = $event->isCliOnly();
 
         if ($codebase->alter_code) {
             foreach ($stmts as $stmt) {

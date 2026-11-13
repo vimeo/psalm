@@ -21,8 +21,10 @@ use Psalm\CodeLocation;
 use Psalm\Codebase;
 use Psalm\Context;
 use Psalm\Internal\Analyzer\ClosureAnalyzer;
+use Psalm\Internal\Analyzer\FileAnalyzer;
 use Psalm\Internal\Analyzer\FunctionLikeAnalyzer;
 use Psalm\Internal\Analyzer\MethodAnalyzer;
+use Psalm\Internal\Analyzer\NamespaceAnalyzer;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\Internal\MethodIdentifier;
 use Psalm\Issue\CliOnlyCall;
@@ -42,7 +44,8 @@ use function strtolower;
 
 /**
  * What the code that only runs from the command line prints goes to a terminal, not to an HTML response: in the
- * function-likes with `@psalm-cli-only`, the methods of the classes with it, the code a PHP_SAPI check guards, and
+ * function-likes with `@psalm-cli-only`, the methods of the classes with it, the top-level code of the files a plugin
+ * marked (BeforeFileAnalysisEvent::markAsCliOnly()), the code a PHP_SAPI check guards, and
  * the closures in their bodies, what echo, print, printf(), vprintf(), var_dump(), debug_zval_dump(), and print_r()
  * and var_export() not returning it print isn't an HTML sink. They stay sinks of the other taints (secrets), and the
  * values stay tainted elsewhere. Such code is only called from code only running from the command line too.
@@ -86,8 +89,8 @@ final class CliOutput
     /**
      * Whether the code being analyzed only runs from the command line: that of a function-like with `@psalm-cli-only`
      * or requiring an instance of a class with `@psalm-cli-only-instances`, of a method of a class with the former, of
-     * an instance method of a class with the latter, the code a PHP_SAPI or php_sapi_name() check guards, or a closure
-     * in them
+     * an instance method of a class with the latter, the top-level code of a file a plugin marked (or included from
+     * such code), the code a PHP_SAPI or php_sapi_name() check guards, or a closure in them
      */
     public static function isInCliOnlyCode(StatementsAnalyzer $statements_analyzer, Context $context): bool
     {
@@ -109,6 +112,10 @@ final class CliOutput
             if ($source instanceof StatementsAnalyzer) {
                 $source = $source->getSource();
             }
+        }
+
+        if ($source instanceof FileAnalyzer || $source instanceof NamespaceAnalyzer) {
+            return $statements_analyzer->getFileAnalyzer()->cli_only;
         }
 
         if (!$source instanceof FunctionLikeAnalyzer) {
