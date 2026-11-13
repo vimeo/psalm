@@ -27,6 +27,7 @@ use Psalm\Type\Atomic\TKeyedArray;
 use Psalm\Type\Atomic\TLiteralClassString;
 use Psalm\Type\Atomic\TLiteralInt;
 use Psalm\Type\Atomic\TLiteralString;
+use Psalm\Type\Atomic\TMixed;
 use Psalm\Type\Atomic\TNamedObject;
 use Psalm\Type\Atomic\TObject;
 use Psalm\Type\Atomic\TObjectWithProperties;
@@ -151,17 +152,23 @@ final class TemplateStandinTypeReplacer
         }
 
         $had_template = false;
+        $is_unknown_mixed = false;
 
         foreach ($original_atomic_types as $key => $atomic_type) {
             $matches_input_key = $input_type && $input_type->hasType($key);
 
+            $star_stand_in = $replace
+                ? StarProjection::standIn($atomic_type, $template_result, $add_lower_bound, $codebase)
+                : null;
+            $is_unknown_mixed = $is_unknown_mixed || ($star_stand_in !== null && $star_stand_in[0] instanceof TMixed);
+
             // nothing is left to infer the other atoms from, so keep them as they are
-            if (!$matches_input_key && $input_type && !$other_input_type) {
+            if ($star_stand_in === null && !$matches_input_key && $input_type && !$other_input_type) {
                 $atomic_types[] = $atomic_type;
                 continue;
             }
 
-            $atomic_types = [...$atomic_types, ...self::handleAtomicStandin(
+            $atomic_types = [...$atomic_types, ...$star_stand_in ?? self::handleAtomicStandin(
                 $atomic_type,
                 $key,
                 $template_result,
@@ -178,6 +185,11 @@ final class TemplateStandinTypeReplacer
                 count($original_atomic_types) === 1,
                 $had_template,
             )];
+        }
+
+        // see StarProjection::standIn()
+        if ($is_unknown_mixed) {
+            $atomic_types = [new TMixed()];
         }
 
         // the result keeps the parent nodes: this also runs on argument types, whose data flow must survive
@@ -993,8 +1005,8 @@ final class TemplateStandinTypeReplacer
             // the construction site, e.g. `new Table($items)`) cannot answer
             // this structural question itself: it is resolved to its
             // construction-site inference for the gate, while the upper bound
-            // recorded below still reconciles against the variable's bounds
-            $gate_replacement_type = $replacement_type;
+            // recorded below still reconciles against the variable's bounds; a `*` is what is known of it
+            $gate_replacement_type = StarProjection::read($replacement_type, $atomic_type->as);
 
             foreach ($replacement_type->getAtomicTypes() as $replacement_atomic_type) {
                 if ($replacement_atomic_type instanceof TTypeVariable) {
@@ -1526,9 +1538,15 @@ final class TemplateStandinTypeReplacer
                 $params = $template_extends[$container_type_part_value];
 
                 $new_input_params = [];
+                $replacement_result = new TemplateResult([], $replacement_templates);
 
                 foreach ($params as $extended_input_param_type) {
                     $new_input_param = null;
+                    // `LBox<*>` with `@extends Box<list<T>>` is a `Box<*>` that reads as `list<object>`: what it
+                    // binds Box's template to is unknown too
+                    $is_star_projected = false;
+                    $is_whole_template = $extended_input_param_type->isSingle()
+                        && $extended_input_param_type->getSingleAtomic() instanceof TTemplateParam;
 
                     foreach ($extended_input_param_type->getAtomicTypes() as $extended_template) {
                         $extended_templates = $extended_template instanceof TTemplateParam
@@ -1558,7 +1576,12 @@ final class TemplateStandinTypeReplacer
                                     true,
                                 );
 
-                                $candidate_param_types[] = ($input_type_params[$old_params_offset] ?? Type::getMixed())
+                                $candidate_param_type = $input_type_params[$old_params_offset] ?? Type::getMixed();
+
+                                $is_star_projected = $is_star_projected
+                                    || (!$is_whole_template && StarProjection::isStar($candidate_param_type));
+
+                                $candidate_param_types[] = $candidate_param_type
                                     ->setProperties(['from_template_default' => true]);
                             }
                         }
@@ -1571,13 +1594,18 @@ final class TemplateStandinTypeReplacer
                         );
                     }
 
+                    $is_star_projected = $is_star_projected
+                        || StarProjection::mentionsStarTemplate($new_input_param, $replacement_result);
+
                     $new_input_param = TemplateInferredTypeReplacer::replace(
                         $new_input_param,
-                        new TemplateResult([], $replacement_templates),
+                        $replacement_result,
                         $codebase,
                     );
 
-                    $new_input_params[] = $new_input_param;
+                    $new_input_params[] = $is_star_projected
+                        ? StarProjection::createForArgument($extended_input_param_type, $replacement_result, $codebase)
+                        : $new_input_param;
                 }
 
                 $input_type_params = $new_input_params;

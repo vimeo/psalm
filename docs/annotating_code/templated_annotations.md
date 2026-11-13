@@ -538,6 +538,64 @@ class Collection {
 
 This is perfectly valid, and Psalm won't complain.
 
+## Star projection
+
+A `*` type argument (`Pair<int, *>`, PHPStan's syntax) stands for some unknown type within the template's bound. Any argument fits it, reading the template gives its bound, and writing to it accepts nothing:
+
+```php
+<?php
+/** @template T of object */
+final class Box {
+    /** @param T $value */
+    public function set(object $value): void {}
+}
+
+/**
+ * @template TFirst
+ * @template TSecond of object
+ */
+final class Pair {
+    /** @return TSecond */
+    public function second(): object { throw new Exception(); }
+
+    /** @param TSecond $second */
+    public function setSecond(object $second): void {}
+
+    /** @return Box<TSecond> */
+    public function box(): Box { throw new Exception(); }
+
+    /** @return Closure(TSecond): void */
+    public function consumer(): Closure { throw new Exception(); }
+}
+
+/** @param Pair<int, *> $pair */
+function takesAnyPair(Pair $pair): void {
+    $second = $pair->second(); // object
+    $pair->setSecond(new stdClass()); // InvalidArgument: expects never
+    $box = $pair->box(); // Box<*>
+    $box->set(new stdClass()); // InvalidArgument: expects never
+    $consumer = $pair->consumer(); // Closure(never): void
+}
+
+/** @param Pair<int, stdClass> $pair */
+function takesPairOfStdClass(Pair $pair): void {}
+
+/**
+ * @param Pair<int, stdClass> $concrete
+ * @param Pair<string, stdClass> $other
+ * @param Pair<int, *> $any
+ */
+function f(Pair $concrete, Pair $other, Pair $any): void {
+    takesAnyPair($concrete); // no issue
+    takesAnyPair($other); // InvalidArgument
+    takesPairOfStdClass($any); // InvalidArgument
+}
+```
+
+A `*` argument itself fits only another `*`, an argument left out (`Pair $pair`), or a covariant argument that holds the whole bound. `class-string<*>` is any class-string, and the array-like builtins (`array<*>`, `non-empty-array<*>`, `list<*>`, `non-empty-list<*>`, `iterable<*>`) read `*` as `mixed`. A `*` argument is not allowed in `@extends`, `@implements` or `@use` (`InvalidDocblock`).
+
+An invariant argument built from the unknown type stays unknown: `$pair->box()` is a `Box<*>`, so `$box->set()` accepts nothing. PHPStan reads it as `Box<mixed>` and accepts the write. `key-of`, `value-of`, `properties-of` and `T[K]` of a template bound to `*` read as those of the template's bound, and accept nothing where a value is passed in. So does an array shape or a non-empty list requiring a value of the unknown type: a parameter typed `array{second: TSecond}` accepts nothing, not even the empty array.
+
 ## Builtin templated classes and interfaces
 
 Psalm has support for a number of builtin classes and interfaces that you can extend/implement in your own code.

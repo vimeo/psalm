@@ -7,6 +7,7 @@ namespace Psalm\Internal\Analyzer\Statements\Expression\Call;
 use AssertionError;
 use Psalm\Codebase;
 use Psalm\Internal\MethodIdentifier;
+use Psalm\Internal\Type\StarProjection;
 use Psalm\Internal\Type\TemplateDefaults;
 use Psalm\Internal\Type\TemplateResult;
 use Psalm\Internal\Type\TypeExpander;
@@ -115,6 +116,9 @@ final class ClassTemplateParamCollector
         $e = $static_class_storage->template_extended_params;
 
         if ($lhs_type_part instanceof TGenericObject) {
+            // members of a `Pair<int, *>` see the template bound to `*`, knowing what the `*` is known to be
+            $lhs_type_part = StarProjection::boundArguments($lhs_type_part, $codebase);
+
             if ($class_storage === $static_class_storage && $class_storage->template_types) {
                 $lhs_type_params = TemplateDefaults::fillTypeArguments(
                     $lhs_type_part->type_params,
@@ -272,6 +276,15 @@ final class ClassTemplateParamCollector
         TGenericObject $lhs_type_part,
         ?TemplateResult $template_result = null,
     ): ?Union {
+        // `@extends Box<list<T>>` on an `LBox<*>`: what Box's template is bound to is unknown too, so it is `*`,
+        // knowing it reads as a `list<object>`
+        if ($template_result !== null
+            && !($input_type_extends->isSingle() && $input_type_extends->getSingleAtomic() instanceof TTemplateParam)
+            && StarProjection::mentionsStarTemplate($input_type_extends, $template_result)
+        ) {
+            return StarProjection::createForArgument($input_type_extends, $template_result, $codebase);
+        }
+
         $output_type_extends = null;
         foreach ($input_type_extends->getAtomicTypes() as $type_extends_atomic) {
             if ($type_extends_atomic instanceof TTemplateParam) {

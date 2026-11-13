@@ -842,6 +842,12 @@ final class TypeParser
         $generic_params = [];
 
         foreach ($parse_tree->children as $i => $child_tree) {
+            if ($child_tree instanceof Value && $child_tree->value === StarProjection::NAME) {
+                $generic_params[] = StarProjection::create($from_docblock);
+
+                continue;
+            }
+
             $tree_type = self::getTypeFromTree(
                 $child_tree,
                 $codebase,
@@ -877,6 +883,19 @@ final class TypeParser
         }
 
         $generic_type_value = TypeTokenizer::fixScalarTerms($generic_type);
+
+        // a builtin generic has no template for `*` to stand for: `array<*>` is `array<mixed>`, as in PHPStan
+        if (in_array(
+            $generic_type_value,
+            ['array', 'non-empty-array', 'associative-array', 'list', 'non-empty-list', 'iterable'],
+            true,
+        )) {
+            foreach ($generic_params as $i => $generic_param) {
+                if (StarProjection::isStar($generic_param)) {
+                    $generic_params[$i] = new Union([new TMixed(false, $from_docblock)]);
+                }
+            }
+        }
 
         if ($purity_params !== []) {
             return self::getTypeWithPurityArguments(
@@ -1040,6 +1059,18 @@ final class TypeParser
             || $generic_type_value === 'interface-string'
             || $generic_type_value === 'enum-string'
         ) {
+            // `class-string<*>` is any class-string, as in PHPStan
+            if (StarProjection::isStar($generic_params[0])) {
+                return new TClassString(
+                    'object',
+                    null,
+                    false,
+                    $generic_type_value === 'interface-string',
+                    $generic_type_value === 'enum-string',
+                    $from_docblock,
+                );
+            }
+
             $class_name = $generic_params[0]->getId(false);
 
             if (isset($template_type_map[$class_name])) {
@@ -1083,6 +1114,11 @@ final class TypeParser
                     'There should only be two params for class-string-map, '
                     . count($generic_params) . ' provided',
                 );
+            }
+
+            // the values of a class-string-map are read, and it has no template for `*` to stand for
+            if (StarProjection::isStar($generic_params[1])) {
+                throw new TypeParseTreeException('class-string-map cannot take a * value');
             }
 
             $template_marker_parts = array_values($generic_params[0]->getAtomicTypes());

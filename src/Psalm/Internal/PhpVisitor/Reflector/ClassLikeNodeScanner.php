@@ -36,6 +36,7 @@ use Psalm\Internal\Scanner\ClassLikeDocblockComment;
 use Psalm\Internal\Scanner\FileScanner;
 use Psalm\Internal\Scanner\ParsedDocblock;
 use Psalm\Internal\Scanner\UnresolvedConstantComponent;
+use Psalm\Internal\Type\StarProjection;
 use Psalm\Internal\Type\TemplateDefaults;
 use Psalm\Internal\Type\TypeAlias;
 use Psalm\Internal\Type\TypeAlias\ClassTypeAlias;
@@ -77,6 +78,7 @@ use Psalm\Type\Atomic\TTemplateParam;
 use Psalm\Type\Union;
 use UnexpectedValueException;
 
+use function array_any;
 use function array_column;
 use function array_diff_key;
 use function array_fill_keys;
@@ -1379,6 +1381,10 @@ final class ClassLikeNodeScanner
                 );
             }
 
+            if ($this->reportStarArgument($storage, $node, $atomic_type, '@extends')) {
+                return;
+            }
+
             $extended_type_parameters = [];
 
             $storage->template_type_extends_count[$atomic_type->value] = count($atomic_type->type_params);
@@ -1462,6 +1468,10 @@ final class ClassLikeNodeScanner
                     new CodeLocation($this->file_scanner, $node, null, true),
                 );
 
+                return;
+            }
+
+            if ($this->reportStarArgument($storage, $node, $atomic_type, '@implements')) {
                 return;
             }
 
@@ -1551,6 +1561,10 @@ final class ClassLikeNodeScanner
                 return;
             }
 
+            if ($this->reportStarArgument($storage, $node, $atomic_type, '@use')) {
+                return;
+            }
+
             $used_type_parameters = [];
 
             $storage->template_type_uses_count[$generic_class_lc] = count($atomic_type->type_params);
@@ -1561,6 +1575,27 @@ final class ClassLikeNodeScanner
 
             $storage->template_extended_offsets[$atomic_type->value] = $used_type_parameters;
         }
+    }
+
+    /**
+     * Reports a `*` argument, which cannot bind a template of the parent (`@extends Box<*>`), as PHPStan does
+     */
+    private function reportStarArgument(
+        ClassLikeStorage $storage,
+        PhpParser\Node $node,
+        TGenericObject $atomic_type,
+        string $tag,
+    ): bool {
+        if (!array_any($atomic_type->type_params, StarProjection::isStar(...))) {
+            return false;
+        }
+
+        $storage->docblock_issues[] = new InvalidDocblock(
+            'The * type argument of ' . $atomic_type->getId() . ' is not allowed in ' . $tag,
+            new CodeLocation($this->file_scanner, $node, null, true),
+        );
+
+        return true;
     }
 
     private static function registerEmptyConstructor(ClassLikeStorage $class_storage): void

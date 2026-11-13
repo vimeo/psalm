@@ -28,6 +28,7 @@ use Psalm\Type\Atomic\TNonEmptyArray;
 use Psalm\Type\Atomic\TObject;
 use Psalm\Type\Atomic\TObjectWithProperties;
 use Psalm\Type\Atomic\TPropertiesOf;
+use Psalm\Type\Atomic\TStarProjection;
 use Psalm\Type\Atomic\TTemplateIndexedAccess;
 use Psalm\Type\Atomic\TTemplateKeyOf;
 use Psalm\Type\Atomic\TTemplateParam;
@@ -68,7 +69,7 @@ final class TemplateInferredTypeReplacer
 
         $types = [];
 
-        foreach ($union->getAtomicTypes() as $key => $atomic_type) {
+        foreach (self::readStars($union, $template_result, $codebase)->getAtomicTypes() as $key => $atomic_type) {
             $should_set = true;
 
             if ($atomic_type instanceof TConditional && $codebase) {
@@ -97,38 +98,7 @@ final class TemplateInferredTypeReplacer
                     }
                 }
             } elseif ($atomic_type instanceof TTemplateParamClass) {
-                $template_type = isset($inferred_lower_bounds[$atomic_type->param_name][$atomic_type->defining_class])
-                    ? TemplateStandinTypeReplacer::getMostSpecificTypeFromBounds(
-                        $inferred_lower_bounds[$atomic_type->param_name][$atomic_type->defining_class],
-                        $codebase,
-                    )
-                    : null;
-
-                $class_template_type = null;
-
-                if ($template_type) {
-                    foreach ($template_type->getAtomicTypes() as $template_type_part) {
-                        if ($template_type_part instanceof TMixed
-                            || $template_type_part instanceof TObject
-                        ) {
-                            $class_template_type = new TClassString();
-                        } elseif ($template_type_part instanceof TNamedObject) {
-                            $class_template_type = new TClassString(
-                                $template_type_part->value,
-                                $template_type_part,
-                            );
-                        } elseif ($template_type_part instanceof TTemplateParam) {
-                            $first_atomic_type = $template_type_part->as->getSingleAtomic();
-
-                            $class_template_type = new TTemplateParamClass(
-                                $template_type_part->param_name,
-                                $template_type_part->as->getId(),
-                                $first_atomic_type instanceof TNamedObject ? $first_atomic_type : null,
-                                $template_type_part->defining_class,
-                            );
-                        }
-                    }
-                }
+                $class_template_type = self::replaceTemplateParamClass($codebase, $atomic_type, $inferred_lower_bounds);
 
                 if ($class_template_type) {
                     $should_set = false;
@@ -215,6 +185,12 @@ final class TemplateInferredTypeReplacer
                 }
 
                 $atomic_type = $atomic_type->setTypes($intersected_types);
+            } elseif ($atomic_type instanceof TStarProjection && $atomic_type->as !== null) {
+                // what is known of a `*` may mention templates (`Dep<T, *>` with `B of A` knows `B` is a `T`)
+                $atomic_type = new TStarProjection(
+                    $atomic_type->from_docblock,
+                    self::replace($atomic_type->as, $template_result, $codebase),
+                );
             } elseif ($atomic_type instanceof TConditional
                 && $codebase
             ) {
@@ -264,6 +240,37 @@ final class TemplateInferredTypeReplacer
     }
 
     /**
+     * The union with each atomic reading a template bound to `*` read through what is known of the `*` (see
+     * StarProjection::standIn()); any value when one is known to be nothing more than mixed
+     *
+     * @psalm-capabilities read-props|write-this-props|write-refs
+     */
+    private static function readStars(Union $union, TemplateResult $template_result, ?Codebase $codebase): Union
+    {
+        $atomic_types = [];
+
+        foreach ($union->getAtomicTypes() as $atomic_type) {
+            $star_read = StarProjection::standIn($atomic_type, $template_result, true, $codebase);
+
+            if ($star_read === null) {
+                $atomic_types[] = $atomic_type;
+
+                continue;
+            }
+
+            if ($star_read[0] instanceof TMixed) {
+                return $union->getBuilder()->setTypes([new TMixed()])->freeze();
+            }
+
+            $atomic_types = [...$atomic_types, ...$star_read];
+        }
+
+        return $atomic_types === array_values($union->getAtomicTypes()) || $atomic_types === []
+            ? $union
+            : $union->getBuilder()->setTypes($atomic_types)->freeze();
+    }
+
+    /**
      * @param array<string, array<string, non-empty-list<TemplateBound>>> $inferred_lower_bounds
      * @psalm-capabilities read-props|write-this-props|write-props|write-refs
      */
@@ -284,7 +291,8 @@ final class TemplateInferredTypeReplacer
         );
 
         if ($traversed_type) {
-            $template_type = $traversed_type;
+            // a `*` argument (`Pair<int, *>`) reads as what is known of it, else the template's bound
+            $template_type = StarProjection::read($traversed_type, $atomic_type->as);
 
             if ($template_type->isMixed() && !$atomic_type->as->isMixed()) {
                 $template_type = $atomic_type->as;
@@ -382,6 +390,51 @@ final class TemplateInferredTypeReplacer
         }
 
         return $template_type;
+    }
+
+    /**
+     * @param array<string, array<string, non-empty-list<TemplateBound>>> $inferred_lower_bounds
+     * @psalm-external-mutation-free
+     */
+    private static function replaceTemplateParamClass(
+        ?Codebase $codebase,
+        TTemplateParamClass $atomic_type,
+        array $inferred_lower_bounds,
+    ): TClassString|TTemplateParamClass|null {
+        if (!isset($inferred_lower_bounds[$atomic_type->param_name][$atomic_type->defining_class])) {
+            return null;
+        }
+
+        $template_type = TemplateStandinTypeReplacer::getMostSpecificTypeFromBounds(
+            $inferred_lower_bounds[$atomic_type->param_name][$atomic_type->defining_class],
+            $codebase,
+        );
+
+        $class_template_type = null;
+
+        foreach ($template_type->getAtomicTypes() as $template_type_part) {
+            if ($template_type_part instanceof TMixed
+                || $template_type_part instanceof TObject
+            ) {
+                $class_template_type = new TClassString();
+            } elseif ($template_type_part instanceof TNamedObject) {
+                $class_template_type = new TClassString(
+                    $template_type_part->value,
+                    $template_type_part,
+                );
+            } elseif ($template_type_part instanceof TTemplateParam) {
+                $first_atomic_type = $template_type_part->as->getSingleAtomic();
+
+                $class_template_type = new TTemplateParamClass(
+                    $template_type_part->param_name,
+                    $template_type_part->as->getId(),
+                    $first_atomic_type instanceof TNamedObject ? $first_atomic_type : null,
+                    $template_type_part->defining_class,
+                );
+            }
+        }
+
+        return $class_template_type;
     }
 
     /**

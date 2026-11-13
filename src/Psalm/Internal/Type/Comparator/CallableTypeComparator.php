@@ -18,6 +18,7 @@ use Psalm\Internal\Type\TemplateInferredTypeReplacer;
 use Psalm\Internal\Type\TemplateResult;
 use Psalm\Internal\Type\TemplateStandinTypeReplacer;
 use Psalm\Internal\Type\TypeExpander;
+use Psalm\Internal\TypeVisitor\StarProjectionVisitor;
 use Psalm\Storage\Capabilities;
 use Psalm\Storage\FunctionLikeParameter;
 use Psalm\Storage\FunctionLikeStorage;
@@ -317,6 +318,43 @@ final class CallableTypeComparator
         return true;
     }
 
+    /**
+     * The callable of a method of a generic object (`[$box, 'set']`, an invokable `Box<int>`) with the class
+     * templates bound by the object: calling it writes to the method's parameters, so `*` ones accept nothing
+     */
+    private static function bindReceiverTemplates(
+        Codebase $codebase,
+        TCallable $callable,
+        TGenericObject $receiver,
+        MethodIdentifier $declaring_method_id,
+    ): TCallable {
+        if (!$codebase->classOrInterfaceExists($receiver->value)) {
+            return $callable;
+        }
+
+        $receiver_template_types = ClassTemplateParamCollector::collect(
+            $codebase,
+            $codebase->methods->getClassLikeStorageForMethod($declaring_method_id),
+            $codebase->classlike_storage_provider->get($receiver->value),
+            $declaring_method_id->method_name,
+            $receiver,
+        );
+
+        if ($receiver_template_types === null) {
+            return $callable;
+        }
+
+        $template_result = new TemplateResult([], $receiver_template_types);
+
+        $bound_callable = TemplateInferredTypeReplacer::replace(
+            StarProjectionVisitor::project(new Union([$callable]), $template_result, $codebase),
+            $template_result,
+            $codebase,
+        )->getSingleAtomic();
+
+        return $bound_callable instanceof TCallable ? $bound_callable : $callable;
+    }
+
     private static function getCallableFromMethodId(
         Codebase $codebase,
         MethodIdentifier $method_id,
@@ -362,29 +400,8 @@ final class CallableTypeComparator
                 $codebase,
             );
 
-            // the templates of the class are what the generic object has for them
-            if ($callable_object instanceof TGenericObject
-                && $codebase->classOrInterfaceExists($callable_object->value)
-            ) {
-                $class_template_params = ClassTemplateParamCollector::collect(
-                    $codebase,
-                    $codebase->methods->getClassLikeStorageForMethod($method_id),
-                    $codebase->classlike_storage_provider->get($callable_object->value),
-                    $method_id->method_name,
-                    $callable_object,
-                );
-
-                if ($class_template_params !== null) {
-                    $replaced = TemplateInferredTypeReplacer::replace(
-                        new Union([$callable]),
-                        new TemplateResult([], $class_template_params),
-                        $codebase,
-                    )->getSingleAtomic();
-
-                    if ($replaced instanceof TCallable) {
-                        $callable = $replaced;
-                    }
-                }
+            if ($callable_object instanceof TGenericObject) {
+                $callable = self::bindReceiverTemplates($codebase, $callable, $callable_object, $declaring_method_id);
             }
 
             // Resolve method-level templates against the expected callable shape, so
@@ -783,6 +800,15 @@ final class CallableTypeComparator
                             $template_result,
                         ),
                     );
+
+                    if ($input_type_part instanceof Atomic\TGenericObject) {
+                        $callable = self::bindReceiverTemplates(
+                            $codebase,
+                            $callable,
+                            $input_type_part,
+                            $declaring_method_id,
+                        );
+                    }
 
                     if ($template_result) {
                         $callable = TemplateInferredTypeReplacer::replace(

@@ -6,14 +6,17 @@ namespace Psalm\Tests;
 
 use ArrayAccess;
 use Countable;
+use PHPUnit\Framework\Attributes\DataProvider;
 use Psalm\Codebase;
 use Psalm\Exception\TypeParseTreeException;
 use Psalm\Internal\Codebase\InternalCallMapHandler;
 use Psalm\Type;
 use Psalm\Type\Atomic\TClassConstant;
+use Psalm\Type\Atomic\TGenericObject;
 use Psalm\Type\Atomic\TLiteralFloat;
 use Psalm\Type\Atomic\TLiteralInt;
 use Psalm\Type\Atomic\TLiteralString;
+use Psalm\Type\Atomic\TStarProjection;
 use Psalm\Type\Atomic\TTemplateKeyOf;
 use Psalm\Type\Union;
 use ReflectionFunction;
@@ -25,7 +28,9 @@ use function array_map;
 use function function_exists;
 use function mb_substr;
 use function print_r;
+use function serialize;
 use function stripos;
+use function unserialize;
 
 final class TypeParseTest extends TestCase
 {
@@ -2005,5 +2010,124 @@ final class TypeParseTest extends TestCase
     {
         $type = Type::parseString('interface-string');
         self::assertSame('interface-string', $type->toNamespacedString(null, [], null, false));
+    }
+
+    /**
+     * @return iterable<string, array{string, string}>
+     * @psalm-pure
+     */
+    public static function starProjectionProvider(): iterable
+    {
+        yield 'trailing' => ['Pair<int, *>', 'Pair<int, *>'];
+        yield 'middle' => ['Relation<Model, string, *>', 'Relation<Model, string, *>'];
+        yield 'all' => ['Relation<*, *, *>', 'Relation<*, *, *>'];
+        yield 'closure param' => ['Closure(Relation<*, *, *>): mixed', 'Closure[impure](Relation<*, *, *>):mixed'];
+        yield 'keyed array value' => ['array{a: Relation<*, *, *>}', 'array{a: Relation<*, *, *>}'];
+        yield 'purity args' => ['Traversable[pure]<int, *>', 'Traversable[pure]<int, *>'];
+        yield 'class-string<*>' => ['class-string<*>', 'class-string'];
+        yield 'class-string of a starred generic' => ['class-string<Pair<int, *>>', 'class-string<Pair<int, *>>'];
+        yield 'array<*>' => ['array<*>', 'array<array-key, mixed>'];
+        yield 'list<*>' => ['list<*>', 'list<mixed>'];
+        yield 'iterable<*>' => ['iterable<*>', 'iterable<mixed, mixed>'];
+        yield 'union of starred and concrete' => ['Pair<int, *>|Pair<int, stdClass>', 'Pair<int, *>|Pair<int, stdClass>'];
+    }
+
+    #[DataProvider('starProjectionProvider')]
+    public function testStarProjectionRoundTrip(string $string, string $expected_id): void
+    {
+        $type = Type::parseString($string);
+        self::assertSame($expected_id, $type->getId());
+
+        $reparsed = Type::parseString($type->getId());
+        self::assertTrue($type->equals($reparsed), 'getId() round trip');
+        self::assertSame($type->getId(), $reparsed->getId());
+
+        $namespaced = $type->toNamespacedString(null, [], null, false);
+        self::assertTrue($type->equals(Type::parseString($namespaced)), 'toNamespacedString() round trip: ' . $namespaced);
+
+        /** @var Union $unserialized */
+        $unserialized = unserialize(serialize($type));
+        self::assertTrue($type->equals($unserialized), 'serialize() round trip');
+    }
+
+    public function testStarProjectionNextToTemplate(): void
+    {
+        $type = Type::parseString('Relation<Model, TModel, *>', null, ['TModel' => ['Relation' => Type::getObject()]]);
+        self::assertSame('Relation<Model, TModel:Relation as object, *>', $type->getId());
+        self::assertSame('Relation<Model, TModel, *>', $type->getId(false));
+    }
+
+    public function testStarProjectionCombinedWithAnyTypeIsAStar(): void
+    {
+        $star = Type::parseString('Box<*>')->getSingleAtomic();
+        self::assertInstanceOf(TGenericObject::class, $star);
+        $star = $star->type_params[0];
+
+        foreach ([
+            Type::combineUnionTypes($star, Type::getInt()),
+            Type::combineUnionTypes(Type::getInt(), $star),
+            Type::combineUnionTypes($star, Type::getMixed()),
+            Type::combineUnionTypes(Type::getMixed(), $star),
+        ] as $combined) {
+            self::assertInstanceOf(TStarProjection::class, $combined->getSingleAtomic());
+        }
+    }
+
+    public function testStarProjectionsKnownDifferentlyAreNotEqualAndCombineToBoth(): void
+    {
+        $objects = new Union([new TStarProjection(false, Type::getList(Type::getObject()))]);
+        $ints = new Union([new TStarProjection(false, Type::getInt())]);
+
+        self::assertSame('*', $objects->getId());
+        self::assertTrue($objects->equals(new Union([new TStarProjection(false, Type::getList(Type::getObject()))])));
+        /** @var Union $unserialized */
+        $unserialized = unserialize(serialize($objects));
+        self::assertTrue($objects->equals($unserialized));
+        self::assertFalse($objects->equals($ints));
+        self::assertFalse($objects->equals(new Union([new TStarProjection()])));
+
+        foreach ([
+            Type::combineUnionTypes($objects, $ints),
+            Type::combineUnionTypes($ints, $objects),
+            Type::combineUnionTypes($objects, Type::getInt()),
+            Type::combineUnionTypes(Type::getInt(), $objects),
+        ] as $combined) {
+            $star = $combined->getSingleAtomic();
+            self::assertInstanceOf(TStarProjection::class, $star);
+            self::assertSame('int|list<object>', $star->as?->getId());
+        }
+
+        // a `*` not known to be more than its template's bound keeps nothing narrower
+        $unknown = Type::combineUnionTypes($objects, new Union([new TStarProjection()]))->getSingleAtomic();
+        self::assertInstanceOf(TStarProjection::class, $unknown);
+        self::assertNull($unknown->as);
+    }
+
+    /**
+     * @return iterable<string, array{string}>
+     * @psalm-pure
+     */
+    public static function invalidStarProjectionProvider(): iterable
+    {
+        yield 'bare' => ['*'];
+        yield 'nullable' => ['?*'];
+        yield 'nullable argument' => ['Pair<int, ?*>'];
+        yield 'in a union argument' => ['Pair<int, *|null>'];
+        yield 'array of' => ['Pair<int, *[]>'];
+        yield 'keyed array value' => ['array{a: *}'];
+        yield 'int range' => ['int<*, 5>'];
+        yield 'key-of' => ['key-of<*>'];
+        yield 'value-of' => ['value-of<*>'];
+        yield 'properties-of' => ['properties-of<*>'];
+        yield 'int-mask-of' => ['int-mask-of<*>'];
+        yield 'class-string-map' => ['class-string-map<*, int>'];
+        yield 'class-string-map value' => ['class-string-map<T, *>'];
+    }
+
+    #[DataProvider('invalidStarProjectionProvider')]
+    public function testInvalidStarProjection(string $string): void
+    {
+        $this->expectException(TypeParseTreeException::class);
+        Type::parseString($string);
     }
 }

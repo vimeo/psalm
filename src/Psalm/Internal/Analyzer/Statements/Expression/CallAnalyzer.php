@@ -22,6 +22,7 @@ use Psalm\Internal\Codebase\InternalCallMapHandler;
 use Psalm\Internal\MethodIdentifier;
 use Psalm\Internal\Type\Comparator\TypeComparisonResult;
 use Psalm\Internal\Type\Comparator\UnionTypeComparator;
+use Psalm\Internal\Type\StarProjection;
 use Psalm\Internal\Type\TemplateBound;
 use Psalm\Internal\Type\TemplateInferredTypeReplacer;
 use Psalm\Internal\Type\TemplateResult;
@@ -1094,9 +1095,12 @@ abstract class CallAnalyzer
             foreach ($template_result->upper_bounds as $template_name => $defining_map) {
                 foreach ($defining_map as $defining_id => $upper_bound) {
                     if (isset($template_result->lower_bounds[$template_name][$defining_id])) {
-                        $lower_bound_type = TemplateStandinTypeReplacer::getMostSpecificTypeFromBounds(
-                            $template_result->lower_bounds[$template_name][$defining_id],
-                            $statements_analyzer->getCodebase(),
+                        // a class template bound to `*` (`Mapped<*>`) is some type that is only known to be its bound
+                        $lower_bound_type = StarProjection::read(
+                            TemplateStandinTypeReplacer::getMostSpecificTypeFromBounds(
+                                $template_result->lower_bounds[$template_name][$defining_id],
+                                $statements_analyzer->getCodebase(),
+                            ),
                         );
 
                         $upper_bound_type = $upper_bound->type;

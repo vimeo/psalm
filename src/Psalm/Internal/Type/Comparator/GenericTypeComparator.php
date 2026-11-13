@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Psalm\Internal\Type\Comparator;
 
 use Psalm\Codebase;
+use Psalm\Internal\Type\StarProjection;
 use Psalm\Internal\Type\TemplateStandinTypeReplacer;
 use Psalm\Type\Atomic;
 use Psalm\Type\Atomic\TGenericObject;
@@ -80,6 +81,29 @@ final class GenericTypeComparator
             }
 
             $container_param = $container_type_part->type_params[$i];
+
+            // `*` fits any argument, and an argument left out of the container (`@param Pair $p`) fits `*`
+            if (StarProjection::isStar($container_param)
+                || ($container_param->from_template_default && StarProjection::isStar($input_param))
+            ) {
+                continue;
+            }
+
+            // a `*` argument is some unknown type: it fits only a covariant argument holding what is known of it
+            // (`BoxReader<*>` with `@implements Reader<Box<T>>` reads as a `Box<*>`, not as a `Box<object>`)
+            if (StarProjection::isStar($input_param)) {
+                if (!($container_type_params_covariant[$i] ?? false)
+                    || !UnionTypeComparator::isContainedBy(
+                        $codebase,
+                        StarProjection::read($input_param),
+                        $container_param,
+                    )
+                ) {
+                    $all_types_contain = false;
+                }
+
+                continue;
+            }
 
             // a param standing for `never` (an empty construction's type
             // variable included) is widened to the container's param: the

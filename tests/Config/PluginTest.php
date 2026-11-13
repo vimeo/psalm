@@ -923,6 +923,183 @@ final class PluginTest extends DeferredAnalyzerTestCase
         $this->analyzeFile($file_path, new Context());
     }
 
+    public function testMethodProviderGivenAStarTypeParameterSeesItsBound(): void
+    {
+        $this->analyzeWithTemplateParameterPlugin('
+            /** @param Box<*> $box */
+            function run(Box $box): void {
+                takesObject($box->get());
+
+                foreach ($box->all() as $item) {
+                    takesObject($item);
+                }
+
+                $parameter = $box->parameterId();
+                /** @psalm-check-type-exact $parameter = "object" */
+            }');
+    }
+
+    public function testMethodProviderTakingTheReceiversStarArgumentAcceptsNothing(): void
+    {
+        $this->expectException(CodeException::class);
+        $this->expectExceptionMessage('somefile.php:44:42 - Argument 1 expects never, but stdClass provided');
+
+        $this->analyzeWithTemplateParameterPlugin('
+            /** @param Box<*> $box */
+            function run(Box $box): void {
+                $box->receiverConsumer()(new \stdClass());
+            }');
+    }
+
+    public function testMethodProviderTakingABoxOfTheReceiversStarArgumentAcceptsNoBox(): void
+    {
+        $this->expectException(CodeException::class);
+        $this->expectExceptionMessage('somefile.php:47:37 - Argument 1 expects Ns\Box<never>, but Ns\Box<stdClass> provided');
+
+        $this->analyzeWithTemplateParameterPlugin('
+            /**
+             * @param Box<*> $box
+             * @param Box<\stdClass> $other
+             */
+            function run(Box $box, Box $other): void {
+                $box->boxConsumer()($other);
+            }');
+    }
+
+    public function testMethodProviderReturningABoxOfTheReceiversStarArgumentKeepsItUnknown(): void
+    {
+        $this->expectException(CodeException::class);
+        $this->expectExceptionMessage('somefile.php:46:32 - Argument 1 of Ns\Box::set expects never, but stdClass provided');
+
+        $this->analyzeWithTemplateParameterPlugin('
+            /** @param Box<*> $box */
+            function run(Box $box): void {
+                foreach ($box->boxes() as $item) {
+                    takesObject($item->get());
+                    $item->set(new \stdClass());
+                }
+            }');
+    }
+
+    public function testMethodProviderReturningAnIntersectionReadsTheReceiversStarArgument(): void
+    {
+        $this->analyzeWithTemplateParameterPlugin(self::MARKED_SOURCE . '
+            /** @param Source<*> $source */
+            function run(Source $source): void {
+                foreach ($source->markedItems()->get() as $item) {
+                    takesObject($item);
+                }
+            }');
+    }
+
+    public function testMethodProviderReturningAnIntersectionWithAClosureOfTheReceiversStarArgumentAcceptsNoBox(): void
+    {
+        $this->expectException(CodeException::class);
+        $this->expectExceptionMessage('somefile.php:65:50 - Argument 1 expects Ns\Box<never>, but Ns\Box<stdClass> provided');
+
+        $this->analyzeWithTemplateParameterPlugin(self::MARKED_SOURCE . '
+            /**
+             * @param Source<*> $source
+             * @param Box<\stdClass> $box
+             */
+            function run(Source $source, Box $box): void {
+                $source->markedConsumer()->get()($box);
+            }');
+    }
+
+    private const MARKED_SOURCE = '
+            /** @template T */
+            interface Marker {}
+
+            /** @template T */
+            interface Holder {
+                /** @return T */
+                public function get(): mixed;
+            }
+
+            /** @template T of object */
+            abstract class Source {
+                /** @return Marker<int>&Holder<list<T>> */
+                abstract public function markedItems(): object;
+
+                /** @return Marker<int>&Holder<\Closure(Box<T>): void> */
+                abstract public function markedConsumer(): object;
+            }
+';
+
+    private function analyzeWithTemplateParameterPlugin(string $code): void
+    {
+        require_once __DIR__ . '/Plugin/TemplateParameterPlugin.php';
+
+        $this->project_analyzer = $this->getProjectAnalyzerWithConfig(
+            TestConfig::loadFromXML(
+                dirname(__DIR__, 2) . DIRECTORY_SEPARATOR,
+                '<?xml version="1.0"?>
+                <psalm
+                    errorLevel="1"
+                >
+                    <projectFiles>
+                        <directory name="src" />
+                    </projectFiles>
+                    <plugins>
+                        <pluginClass class="Psalm\\Test\\Config\\Plugin\\TemplateParameterPlugin" />
+                    </plugins>
+                </psalm>',
+            ),
+        );
+
+        $this->project_analyzer->getCodebase()->config->initializePlugins($this->project_analyzer);
+
+        $file_path = (string) getcwd() . '/src/somefile.php';
+
+        $this->addFile(
+            $file_path,
+            '<?php
+                namespace Ns;
+
+                /** @template T of object */
+                final class Box {
+                    /** @return T */
+                    public function get(): object {
+                        throw new \Exception();
+                    }
+
+                    /** @return list<T> */
+                    public function all(): array {
+                        throw new \Exception();
+                    }
+
+                    /** @return non-empty-string */
+                    public function parameterId(): string {
+                        throw new \Exception();
+                    }
+
+                    /** @return \Closure(T): void */
+                    public function receiverConsumer(): \Closure {
+                        throw new \Exception();
+                    }
+
+                    /** @param T $value */
+                    public function set(object $value): void {}
+
+                    /** @return list<Box<T>> */
+                    public function boxes(): array {
+                        throw new \Exception();
+                    }
+
+                    /** @return \Closure(Box<T>): void */
+                    public function boxConsumer(): \Closure {
+                        throw new \Exception();
+                    }
+                }
+
+                function takesObject(object $value): void {}
+' . $code,
+        );
+
+        $this->analyzeFile($file_path, new Context());
+    }
+
     public function testFunctionProviderHooks(): void
     {
         require_once __DIR__ . '/Plugin/FunctionPlugin.php';
