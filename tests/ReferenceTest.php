@@ -635,6 +635,108 @@ final class ReferenceTest extends TestCase
                     }
                 ',
             ],
+            'dynamicArrayOffsetReferenceCanBeConditionallySet' => [
+                'code' => <<<'PHP'
+                    <?php
+                    /** @param array<string, string> $form */
+                    function hasReference(array &$form, string $identifier): bool {
+                        if (isset($form[$identifier])) {
+                            $field = &$form[$identifier];
+                        } elseif (isset($form[$identifier . '_wrapper'])) {
+                            $field = &$form[$identifier . '_wrapper'];
+                        }
+
+                        if (isset($field)) {
+                            return true;
+                        }
+
+                        return false;
+                    }
+                    PHP,
+                'assertions' => [],
+                'ignored_issues' => ['UnsupportedReferenceUsage'],
+            ],
+            'returnedReferenceAssignmentFromInstanceMethod' => [
+                'code' => <<<'PHP'
+                    <?php
+                    final class InstanceReferenceStore {
+                        public string $value = '';
+
+                        /** @psalm-suppress MissingReturnType */
+                        public function &getReference() {
+                            return $this->value;
+                        }
+                    }
+
+                    function assignThroughInstanceReference(InstanceReferenceStore $store, string $value): void {
+                        $reference = &$store->getReference();
+                        $reference = $value;
+                    }
+                    PHP,
+                'assertions' => [],
+                'ignored_issues' => ['MixedAssignment', 'UnsupportedPropertyReferenceUsage'],
+            ],
+            'returnedReferenceAssignmentFromStaticMethod' => [
+                'code' => <<<'PHP'
+                    <?php
+                    final class StaticReferenceStore {
+                        public static string $value = '';
+
+                        /** @psalm-suppress MissingReturnType */
+                        public static function &getReference() {
+                            return self::$value;
+                        }
+                    }
+
+                    function assignThroughStaticReference(string $value): void {
+                        $reference = &StaticReferenceStore::getReference();
+                        $reference = $value;
+                    }
+                    PHP,
+                'assertions' => [],
+                'ignored_issues' => ['MixedAssignment'],
+            ],
+            'returnedReferenceAssignmentRespectsNamedVarAnnotation' => [
+                'code' => <<<'PHP'
+                    <?php
+                    function &getUnionReference(): int|string {
+                        /** @var string $value */
+                        static $value = 'text';
+                        return $value;
+                    }
+
+                    function useNarrowedReturnedReference(): void {
+                        /** @var string $reference */
+                        $reference = &getUnionReference();
+                        /** @psalm-check-type-exact $reference = string */
+                        echo strlen($reference);
+                    }
+                    PHP,
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'returnedReferenceAssignmentInvalidatesCachedOffsets' => [
+                'code' => <<<'PHP'
+                    <?php
+                    final class ReferenceArray {
+                        /** @var array{key: string} */
+                        public static array $values = ['key' => 'text'];
+                    }
+
+                    /** @return array{key: string} */
+                    function &arrayReference(): array {
+                        return ReferenceArray::$values;
+                    }
+
+                    function getReferenceValue(): string {
+                        $values = ['key' => 42];
+                        $previousValue = $values['key'];
+                        $values = &arrayReference();
+                        return $values['key'];
+                    }
+                    PHP,
+            ],
             'dontCrashOnReferenceToMixedVariableArrayOffset' => [
                 'code' => '<?php
                     function func(&$a): void

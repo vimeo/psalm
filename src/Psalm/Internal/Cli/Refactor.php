@@ -141,6 +141,13 @@ final class Refactor
                 --debug, --debug-by-line, --debug-emitted-issues
                     Debug information
 
+                -m
+                    Enable monochrome output.
+                    Auto-enabled when NO_COLOR is set to a non-empty value, when
+                    TERM=dumb, when stdout is not a terminal, or when an AI coding
+                    agent is driving the shell.
+                    FORCE_COLOR set to a non-empty value forces colors on instead.
+
                 --no-progress
                     Disable the progress indicator.
                     Auto-enabled when an AI coding agent is driving the shell outside CI.
@@ -344,9 +351,7 @@ final class Refactor
         }
 
         $report_options = new ReportOptions();
-        $report_options->use_color = !array_key_exists('m', $options)
-            && !CliUtils::noColorRequested()
-            && !CliUtils::runningUnderAiAgent();
+        $report_options->use_color = CliUtils::useColor($options, true);
 
         $project_analyzer = new ProjectAnalyzer(
             $config,

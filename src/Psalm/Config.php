@@ -3252,6 +3252,9 @@ final class Config
         if ($autoload_included_files) {
             $codebase->register_autoload_files = true;
 
+            // what the plugins queued is scanned with the project's files, in parallel, not here
+            $queued = $codebase->scanner->takeQueue();
+
             $progress->debug('Registering autoloaded files' . "\n");
             foreach ($autoload_included_files as $file_path) {
                 $file_path = str_replace(['/', '\\'], DIRECTORY_SEPARATOR, $file_path);
@@ -3260,6 +3263,8 @@ final class Config
             }
 
             $codebase->scanner->scanFiles($codebase->classlikes);
+
+            $codebase->scanner->restoreQueue($queued);
 
             $progress->debug('Finished registering autoloaded files' . "\n");
 
