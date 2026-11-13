@@ -307,7 +307,8 @@ final class ObjectComparator
 
         if ($intersection_container_type_lower === 'iterable') {
             if ($intersection_input_type_lower === 'traversable'
-                || ($codebase->classlikes->classExists($intersection_input_type_lower)
+                || (($codebase->classlikes->classExists($intersection_input_type_lower)
+                        || $codebase->classlikes->enumExists($intersection_input_type_lower))
                     && $codebase->classlikes->classImplements(
                         $intersection_input_type_lower,
                         'Traversable',

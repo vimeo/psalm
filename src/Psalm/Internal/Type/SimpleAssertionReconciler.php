@@ -3173,7 +3173,7 @@ final class SimpleAssertionReconciler extends Reconciler
      */
     private static function isFinalObject(Codebase $codebase, TNamedObject $type): bool
     {
-        if ($type instanceof TClosure || $type->definite_class) {
+        if ($type instanceof TClosure || ($type->definite_class && !$type->is_static)) {
             return true;
         }
 

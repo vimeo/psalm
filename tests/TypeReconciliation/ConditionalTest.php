@@ -1846,6 +1846,22 @@ final class ConditionalTest extends TestCase
                 'ignored_issues' => [],
                 'php_version' => '8.1',
             ],
+            'isCountableOnNewStaticIntersectsCountable' => [
+                'code' => '<?php
+                    /** @psalm-consistent-constructor */
+                    class Base {
+                        /** @return (Base&Countable)|null */
+                        public function make(): ?Countable {
+                            $x = new static();
+                            return is_countable($x) ? $x : null;
+                        }
+                    }
+
+                    $r = (new Base())->make();',
+                'assertions' => [
+                    '$r===' => 'Base&Countable|null',
+                ],
+            ],
             'removeCallableString' => [
                 'code' => '<?php
                     $s = rand(0,1) ? "strlen" : [1];
