@@ -54,6 +54,7 @@ use function array_sum;
 use function array_values;
 use function chdir;
 use function count;
+use function ctype_digit;
 use function defined;
 use function extension_loaded;
 use function file_exists;
@@ -71,6 +72,7 @@ use function in_array;
 use function ini_get;
 use function is_array;
 use function is_dir;
+use function is_int;
 use function is_numeric;
 use function is_string;
 use function json_encode;
@@ -154,10 +156,10 @@ final class Psalm
         'output-format:',
         'plugin:',
         'report:',
-        'report-show-info:',
+        'report-show-info::',
         'root:',
         'set-baseline::',
-        'show-info:',
+        'show-info::',
         'show-snippet::',
         'stats',
         'threads:',
@@ -459,6 +461,10 @@ final class Psalm
     /** @return int<1, max> */
     public static function getThreads(array $options, Config $config, bool $for_scan): int
     {
+        // validated before the platform checks, so that a wrong value is an error everywhere
+        $scan_threads = self::parseThreadsOption($options, 'scan-threads');
+        $analysis_threads = self::parseThreadsOption($options, 'threads');
+
         if (defined('PHP_WINDOWS_VERSION_MAJOR')) {
             // No support desired for Windows at the moment
             return 1;
@@ -467,30 +473,49 @@ final class Psalm
             return 1;
         }
 
-        if ($for_scan) {
-            if (isset($options['scan-threads'])) {
-                $threads = max(1, (int)$options['scan-threads']);
-            } elseif (isset($options['threads'])) {
-                $threads = max(1, (int)$options['threads']);
-            } elseif (isset($options['debug'])) {
-                $threads = 1;
-            } elseif ($config->scan_threads) {
-                $threads = $config->scan_threads;
-            } else {
-                $threads = max(1, (new CpuCoreCounter())->getCountWithFallback(1));
-            }
-        } else {
-            if (isset($options['threads'])) {
-                $threads = max(1, (int)$options['threads']);
-            } elseif (isset($options['debug'])) {
-                $threads = 1;
-            } elseif ($config->threads) {
-                $threads = $config->threads;
-            } else {
-                $threads = max(1, (new CpuCoreCounter())->getCountWithFallback(1));
+        $requested = $for_scan ? ($scan_threads ?? $analysis_threads) : $analysis_threads;
+
+        if (is_int($requested)) {
+            return $requested;
+        }
+
+        // not given, or `auto`: the default
+        if (isset($options['debug'])) {
+            return 1;
+        }
+
+        $config_threads = $for_scan ? $config->scan_threads : $config->threads;
+
+        if ($config_threads) {
+            return $config_threads;
+        }
+
+        return max(1, (new CpuCoreCounter())->getCountWithFallback(1));
+    }
+
+    /**
+     * @return int<1, max>|'auto'|null null if the option isn't given
+     */
+    private static function parseThreadsOption(array $options, string $name): int|string|null
+    {
+        if (!isset($options[$name])) {
+            return null;
+        }
+
+        if ($options[$name] === 'auto') {
+            return 'auto';
+        }
+
+        if (is_string($options[$name]) && ctype_digit($options[$name])) {
+            $threads = (int) $options[$name];
+
+            if ($threads >= 1) {
+                return $threads;
             }
         }
-        return $threads;
+
+        fwrite(STDERR, '--' . $name . ' expects a positive integer or "auto"' . PHP_EOL);
+        exit(1);
     }
 
     /**
@@ -525,9 +550,9 @@ final class Psalm
      */
     private static function initShowInfo(array $options): bool
     {
+        // a valueless `--show-info` is `--show-info=true`
         return isset($options['show-info'])
-            ? $options['show-info'] === 'true' || $options['show-info'] === '1'
-            : false;
+            && ($options['show-info'] === false || $options['show-info'] === 'true' || $options['show-info'] === '1');
     }
 
     /*private static function initIsDiff(array $options): bool
@@ -712,9 +737,7 @@ final class Psalm
     {
         $debug = array_key_exists('debug', $options) || array_key_exists('debug-by-line', $options);
 
-        $show_info = isset($options['show-info'])
-            ? $options['show-info'] === 'true' || $options['show-info'] === '1'
-            : false;
+        $show_info = self::initShowInfo($options);
 
         // CI takes precedence over AI detection: persistent CI logs still want
         // per-phase breadcrumbs for humans reviewing the build. Agents that
@@ -1496,11 +1519,13 @@ final class Psalm
             --force-jit
                 Enable JIT acceleration. Exits immediately if JIT cannot be enabled.
 
-            --threads=INT
+            --threads=INT|auto
                 If greater than one, Psalm will run the scan and analysis on multiple threads, speeding things up.
+                `auto` (the default) uses the threads setting of the config, or else one thread per CPU core.
 
-            --scan-threads=INT
+            --scan-threads=INT|auto
                 If greater than one, Psalm will run the scan on multiple threads, speeding things up (if specified, takes priority over the --threads flag).
+                `auto` (the default) uses the scanThreads setting of the config, or else one thread per CPU core.
 
             --no-diff
                 Turns off Psalm’s diff mode, checks all files regardless of whether they’ve changed.

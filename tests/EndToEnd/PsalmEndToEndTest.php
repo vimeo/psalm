@@ -886,6 +886,102 @@ final class PsalmEndToEndTest extends TestCase
         $this->assertSame('', $process->getErrorOutput());
     }
 
+    public function testShowInfoWithoutAValueShowsInfoIssues(): void
+    {
+        $this->initProjectWithInfoIssues();
+
+        $result = $this->runPsalm(['--no-progress', '--show-info'], self::$tmpDir);
+        $this->assertStringContainsString('INFO: MissingReturnType', $result['STDOUT']);
+
+        $result = $this->runPsalm(['--no-progress', '--show-info=false'], self::$tmpDir);
+        $this->assertStringNotContainsString('INFO: MissingReturnType', $result['STDOUT']);
+    }
+
+    public function testShowInfoWithoutAValueDoesNotTakeThePathThatFollowsAsItsValue(): void
+    {
+        $this->initProjectWithInfoIssues();
+
+        $result = $this->runPsalm(['--no-progress', '--show-info', self::$tmpDir . '/src/A.php'], self::$tmpDir);
+
+        $this->assertStringContainsString('A.php', $result['STDOUT']);
+        $this->assertStringNotContainsString('B.php', $result['STDOUT']);
+    }
+
+    public function testReportShowInfoWithoutAValueWritesTheReport(): void
+    {
+        $this->initProjectWithInfoIssues();
+        $report = self::$tmpDir . '/report.json';
+        $report_without_info = self::$tmpDir . '/report-without-info.json';
+
+        $this->runPsalm(['--no-progress', '--report-show-info', '--report=' . $report], self::$tmpDir);
+        $this->runPsalm(
+            ['--no-progress', '--report-show-info=false', '--report=' . $report_without_info],
+            self::$tmpDir,
+        );
+
+        $this->assertFileExists($report);
+        $this->assertStringContainsString('MissingReturnType', (string) file_get_contents($report));
+        $this->assertFileExists($report_without_info);
+        $this->assertStringNotContainsString('MissingReturnType', (string) file_get_contents($report_without_info));
+    }
+
+    /**
+     * @param list<string> $args
+     */
+    #[DataProvider('provideInvalidThreadsArguments')]
+    public function testInvalidThreadsIsAUsageError(string $cli, array $args, string $message): void
+    {
+        $this->runPsalmInit(1);
+
+        $process = new Process(
+            [PHP_BINARY, $cli === 'psalter' ? $this->psalter : $this->psalm, '--no-progress', ...$args],
+            self::$tmpDir,
+            self::agentEnvVarsToUnset(),
+        );
+        $process->run();
+
+        $this->assertSame(1, $process->getExitCode(), $process->getOutput() . $process->getErrorOutput());
+        $this->assertStringContainsString($message, $process->getErrorOutput());
+    }
+
+    /**
+     * @return iterable<string, array{string, list<string>, string}>
+     * @psalm-pure
+     */
+    public static function provideInvalidThreadsArguments(): iterable
+    {
+        $message = ' expects a positive integer or "auto"';
+
+        yield 'psalm --threads=abc' => ['psalm', ['--threads=abc'], '--threads' . $message];
+        yield 'psalm --threads=0' => ['psalm', ['--threads=0'], '--threads' . $message];
+        yield 'psalm --scan-threads=-1' => ['psalm', ['--scan-threads=-1'], '--scan-threads' . $message];
+        yield 'psalter --threads=abc' => ['psalter', ['--issues=all', '--threads=abc'], '--threads' . $message];
+    }
+
+    /**
+     * A project with two files, each with an info issue
+     */
+    private function initProjectWithInfoIssues(): void
+    {
+        $this->runPsalmInit(1);
+
+        $psalmXml = file_get_contents(self::$tmpDir . '/psalm.xml');
+        assert($psalmXml !== false);
+        $psalmXml = str_replace(
+            ['findUnusedCode="true"', '</psalm>'],
+            [
+                'findUnusedCode="false" runTaintAnalysis="false"',
+                '<issueHandlers><MissingReturnType errorLevel="info" /></issueHandlers></psalm>',
+            ],
+            $psalmXml,
+        );
+        file_put_contents(self::$tmpDir . '/psalm.xml', $psalmXml);
+
+        unlink(self::$tmpDir . '/src/FileWithErrors.php');
+        file_put_contents(self::$tmpDir . '/src/A.php', "<?php\n\nfunction a() {\n    return 1;\n}\n");
+        file_put_contents(self::$tmpDir . '/src/B.php', "<?php\n\nfunction b() {\n    return 1;\n}\n");
+    }
+
     /**
      * What a taint analysis of the files $files of the project prints
      *
