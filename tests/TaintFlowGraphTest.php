@@ -17,6 +17,7 @@ use Psalm\Type\TaintKind;
 use function array_diff;
 use function array_keys;
 use function array_reverse;
+use function hrtime;
 use function json_encode;
 use function ksort;
 use function memory_get_usage;
@@ -515,5 +516,79 @@ final class TaintFlowGraphTest extends TestCase
         $this->assertLessThan(400, $bytes_per_path);
         $this->assertSame(TaintKind::INPUT_HTML, $paths[0]->added_taints);
         $this->assertSame(10_000, $paths[9_999]->length);
+    }
+
+    /**
+     * A sink the body of a specialized function adds taints for is reported through each call to it (see
+     * TaintFlowResolution::addEntrySink()). Here those flows all have the same origins, so all but the first are
+     * dropped as already reported, and finding that out mustn't rebuild the trace of each, through the whole body,
+     * for each of its taints: a trace for each call and taint took seconds to tens of seconds.
+     */
+    public function testFlowsReportedThroughManyCallsAreDroppedWithoutRebuildingTheirTraces(): void
+    {
+        $calls = 1_000;
+        // the trace reported is longer, below Xdebug's default max nesting level of getPredecessorPath()
+        $steps = 300;
+
+        $body = '';
+        for ($i = 1; $i <= $steps; $i++) {
+            $body .= "    \$x$i = \$x" . ($i - 1) . " . '';\n";
+        }
+
+        $code = "<?php\n"
+            . "/** @psalm-taint-unescape input */\n"
+            . "function unescape(string \$s): string { return \$s; }\n"
+            . "/** @psalm-taint-sink input \$s */\n"
+            . "function sink(string \$s): void {}\n"
+            . "/** @psalm-taint-specialize */\n"
+            . "function f(string \$p): void {\n"
+            . "    \$x0 = unescape(\$p);\n"
+            . $body
+            . "    sink(\$x$steps);\n"
+            . "}\n"
+            . "\$c = (string) \$_GET['c'];\n"
+            . str_repeat("f(\$c);\n", $calls);
+        // the parameter of sink()
+        $sink_line = 5;
+
+        IssueBuffer::clear();
+        $this->project_analyzer->trackTaintedInputs();
+        $codebase = $this->project_analyzer->getCodebase();
+        $codebase->config->throw_exception = false;
+
+        $path = self::$src_dir_path . 'somefile.php';
+        $this->file_provider->registerFile($path, $code);
+        $codebase->addFilesToAnalyze([$path => $path]);
+        $codebase->scanFiles();
+        $this->project_analyzer->getConfig()->visitStubFiles($codebase);
+
+        $graph = new TaintFlowGraph();
+        $codebase->taint_flow_graph = $graph;
+        (new FileAnalyzer($this->project_analyzer, $path, $codebase->config->shortenFileName($path)))
+            ->analyze(new Context());
+
+        $start = hrtime(true);
+        $graph->connectSinksAndSources($codebase->progress);
+        $nanoseconds = hrtime(true) - $start;
+
+        $html_lines = [];
+        $taint_issues = 0;
+
+        foreach (IssueBuffer::getIssuesData() as $file_issues) {
+            foreach ($file_issues as $issue) {
+                if ($issue->type === 'TaintedHtml') {
+                    $html_lines[] = $issue->line_from;
+                }
+
+                if (str_starts_with($issue->type, 'Tainted')) {
+                    $taint_issues++;
+                }
+            }
+        }
+
+        // the flows of the unescaped taints and of those the calls keep, whatever the number of calls
+        $this->assertSame([$sink_line, $sink_line], $html_lines);
+        $this->assertSame(2 * 17, $taint_issues);
+        $this->assertLessThan(2_000_000_000, $nanoseconds);
     }
 }

@@ -13,6 +13,7 @@ use Psalm\Progress\Progress;
 use Psalm\Type\TaintKind;
 
 use function array_filter;
+use function array_intersect_key;
 use function array_key_exists;
 use function array_key_first;
 use function array_map;
@@ -253,6 +254,13 @@ final class TaintFlowResolution
     private const TRACE_ADDED = 2;
     private const TRACE_ANY = 3;
 
+    /**
+     * What findReach() finds when no reach gave the taint, and when the first reach of the state did (else, the
+     * index of the later reach in $later_reaches)
+     */
+    private const NO_REACH = -1;
+    private const FIRST_REACH = -2;
+
     /** @var array<string, true> */
     private array $sink_reachable = [];
 
@@ -476,11 +484,136 @@ final class TaintFlowResolution
      * State => how the flows that gave it more taints reached it:
      * list of [predecessor, caller link, path type, sequence number, kept taints added, added taints added]
      *
-     * @var array<int, list<array{int, int, int, int, int, int}>>
+     * @var array<int, non-empty-list<array{int, int, int, int, int, int}>>
      */
     private array $later_reaches = [];
 
+    /**
+     * State => the kept and the added taints its later reaches gave it (see $later_reaches): the rest of its taints
+     * are those of its first reach
+     *
+     * @var array<int, int>
+     */
+    private array $state_later_kept = [];
+
+    /** @var array<int, int> */
+    private array $state_later_added = [];
+
+    /**
+     * State => taint => the index in $later_reaches of the reach that gave it that taint as a kept one, and as an
+     * added one: each taint comes to a state once as either (see findReach()). At most one entry per taint a later
+     * reach gave, which those few states get.
+     *
+     * @var array<int, array<int, int>>
+     */
+    private array $later_kept_reaches = [];
+
+    /** @var array<int, array<int, int>> */
+    private array $later_added_reaches = [];
+
+    /**
+     * The clock of the resolution: it ticks whenever a state is reached, and whenever an entry gets its first caller
+     * or a caller giving it a taint first, which is all a trace's walk back reads that changes during the walk. A
+     * flow is reported once the walk is done, as it was when it reached its sink (see reportFlows()).
+     */
     private int $sequence = 0;
+
+    /**
+     * For the walks back reportFlows() makes to find the origin of a flow, position in a walk where it just left a
+     * body walk or went into one (where the walks from many flows meet), packed in an int (see getTracePosition())
+     * => the origin the rest of the walk found. The walks are made in the order of the times they are made for,
+     * and only once the walk is done, so an origin holds for the walks made later, until the time in
+     * $trace_origin_untils if any, and unless one of them already jumped to one of the states in
+     * $trace_origin_jumps the rest of the walk jumped to. At most one entry per position, freed once reported.
+     *
+     * @var array<int, string>
+     */
+    private array $trace_origins = [];
+
+    /** @var array<int, array<int, true>> */
+    private array $trace_origin_jumps = [];
+
+    /** @var array<int, int> */
+    private array $trace_origin_untils = [];
+
+    /**
+     * The times before which the decisions the current walk back made that depend on the time it is made for hold
+     * (see findReachAt())
+     *
+     * @var list<int>
+     */
+    private array $trace_untils = [];
+
+    /**
+     * The positions of the current walk back to an origin where many walks meet (see $trace_origins), with the
+     * number of states it had jumped to and of decisions it had made then (see $trace_jumps and $trace_untils)
+     *
+     * @var list<array{int, int<0, max>, int<0, max>}>
+     */
+    private array $trace_positions = [];
+
+    /**
+     * The states the current walk back to an origin jumped to, in order
+     *
+     * @var list<int>
+     */
+    private array $trace_jumps = [];
+
+    /**
+     * The context a walk back is in and the stack of calls of it (see $call_stacks) at a position (see
+     * getTracePosition()), packed in an int => their id
+     *
+     * @var array<int, int>
+     */
+    private array $trace_frames = [];
+
+    /**
+     * The stacks of calls a walk back is in (see buildTrace()), interned: id => the innermost call, and the id of the
+     * stack of the calls around it. 0 is the empty stack. A walk pushes the calls of a caller link at once, and
+     * pops them one by one; as arrays, each push copied the stack, and each position (see getTracePosition()) made
+     * a string of it. There are as many as stacks the caller links make, freed once reported.
+     *
+     * @var non-empty-list<array{int, int}>
+     */
+    private array $call_stacks = [[-1, 0]];
+
+    /**
+     * Call and id of a stack, packed (see packKey()) => the id of the stack with that call on top of it
+     *
+     * @var array<int, int>
+     */
+    private array $call_stack_ids = [];
+
+    /**
+     * Id of a stack => caller link => the id of the stack with the calls of the link on top of it
+     *
+     * @var array<int, array<int, int>>
+     */
+    private array $call_stack_pushes = [];
+
+    /**
+     * State whose first reach came from a link of a chain (see getChainLast()) => the last link of that chain. At
+     * most one entry per state the walks back went through, freed once reported.
+     *
+     * @var array<int, int>
+     */
+    private array $chain_lasts = [];
+
+    /**
+     * State in $chain_lasts => the taints a trace following them as added ones still follows as such past its chain
+     * (see buildTrace()), if not all
+     *
+     * @var array<int, int>
+     */
+    private array $chain_added = [];
+
+    /**
+     * The flows into a sink the walk reached, to report once it is done (see reportFlows()): list of [sink id,
+     * state the flow enters it from, caller link, taints, time it reached the sink at]
+     *
+     * @var list<array{string, int, int, int, int}>
+     */
+    private array $flows = [];
 
     /** @var list<int> */
     private array $queue = [];
@@ -652,12 +785,20 @@ final class TaintFlowResolution
     private array $entry_taints = [];
 
     /**
-     * Entry => the flow entering it that gave it some taints first, which traces go back to (see buildTrace())
-     * => those taints. A few flows give an entry all its taints: keyed by taint, it took millions of entries.
+     * Entry => the flows entering it that gave it some taints first, which traces go back to (see buildTrace()),
+     * in order: list of [the state of the flow, those taints, when (see $sequence)]. A few flows give an entry all
+     * its taints: keyed by taint, it took millions of entries.
      *
-     * @var array<int, array<int, int>>
+     * @var array<int, list<array{int, int, int}>>
      */
     private array $entry_taint_callers = [];
+
+    /**
+     * Entry => when it got its first caller (see $sequence)
+     *
+     * @var array<int, int>
+     */
+    private array $entry_first_caller_times = [];
 
     /**
      * Entry => the states of its walk that left the calls entering it (see leaveCalls()) => the node they left
@@ -869,6 +1010,8 @@ final class TaintFlowResolution
 
             $progress->taskDone(0);
         }
+
+        $this->reportFlows();
     }
 
     /**
@@ -2031,6 +2174,23 @@ final class TaintFlowResolution
         $this->state_kept[$state] |= $new_kept;
         $this->state_added[$state] |= $new_added;
         $this->later_reaches[$state][] = [$predecessor, $link, $path_type, $this->sequence++, $new_kept, $new_added];
+        $this->state_later_kept[$state] = ($this->state_later_kept[$state] ?? 0) | $new_kept;
+        $this->state_later_added[$state] = ($this->state_later_added[$state] ?? 0) | $new_added;
+        $index = count($this->later_reaches[$state]) - 1;
+
+        for ($bit = 0; $bit < 64 && ($new_kept | $new_added) !== 0; $bit++) {
+            $taint = 1 << $bit;
+
+            if (($new_kept & $taint) !== 0) {
+                $this->later_kept_reaches[$state][$taint] = $index;
+                $new_kept &= ~$taint;
+            }
+
+            if (($new_added & $taint) !== 0) {
+                $this->later_added_reaches[$state][$taint] = $index;
+                $new_added &= ~$taint;
+            }
+        }
 
         if (!isset($this->queued[$state])) {
             $this->queue[] = $state;
@@ -2218,6 +2378,8 @@ final class TaintFlowResolution
      * assignments $open_assignments before it, and keeping $kept and adding $added taints past it, from state
      * $predecessor (seen through the calls of $link): reports the flow into the sink it reaches if any, and
      * reaches its destination.
+     *
+     * @psalm-capabilities read-props|write-this-props|write-refs
      */
     private function takeEdge(
         int $context,
@@ -2394,6 +2556,8 @@ final class TaintFlowResolution
      * This keeps the resolution context-sensitive for specialized calls, however many rounds apart their
      * flows arrive, while the states stay bounded by the number of entries rather than by the number of
      * calls or call chains.
+     *
+     * @psalm-capabilities read-props|write-this-props|write-refs
      */
     private function enterSpecializedCall(int $caller, string $unspecialized_id, string $specialization_key): void
     {
@@ -2422,6 +2586,8 @@ final class TaintFlowResolution
      * return it, so the call site each flow was entered through doesn't matter anymore. (The filters of an
      * entry share its node, so a property only their walks reach would otherwise be walked in each of them,
      * with all that its value reaches.)
+     *
+     * @psalm-capabilities read-props|write-this-props|write-refs
      */
     private function enterConvergence(int $caller, string $id): void
     {
@@ -2633,6 +2799,8 @@ final class TaintFlowResolution
      * getFilter() and dependOnClass()), and applies to it what their walks reached. A copy of a call (see
      * copyToFilter()) enters $entry $as_copy: the walk of the entry is the same for it as for the call it copies,
      * only the filters for the positions it was copied for differ.
+     *
+     * @psalm-capabilities read-props|write-this-props|write-refs
      */
     private function addEntryCaller(
         int $entry,
@@ -2684,6 +2852,7 @@ final class TaintFlowResolution
         }
 
         $this->entry_callers[$entry][$caller] = $specialization_key;
+        $this->entry_first_caller_times[$entry] ??= $this->sequence++;
 
         $caller_context = $this->state_contexts[$caller];
 
@@ -2768,6 +2937,8 @@ final class TaintFlowResolution
      * enter. Past the fetch, the open assignments of the flow are the same whatever the open assignment it
      * observed was: a fetch of a given key closes it, and an array key fetch leaves it unknown. So a filter
      * is shared by all the calls passing it.
+     *
+     * @psalm-capabilities read-props|write-this-props|write-refs
      */
     private function getFilter(int $entry, int $family, int $depth, string $fetched_key): int
     {
@@ -2864,6 +3035,8 @@ final class TaintFlowResolution
      * it doesn't ignore it: as a call if that's one of the calls entering its context at a position it was copied
      * for, which decides; else, as a copy if that's known without the calls entering its context, the call it
      * copies telling them apart by it otherwise.
+     *
+     * @psalm-capabilities read-props|write-this-props|write-refs
      */
     private function addFilterCopy(
         int $filter,
@@ -2932,6 +3105,7 @@ final class TaintFlowResolution
      * of each expression type, made if needed (see getFilter()).
      *
      * @param array{int, int} $closed
+     * @psalm-capabilities read-props|write-this-props|write-refs
      */
     private function getConversionFilter(int $entry, array $closed): int
     {
@@ -2997,6 +3171,7 @@ final class TaintFlowResolution
      * $anywhere is false, made if needed (see getFilter()).
      *
      * @param array{int, int} $closed
+     * @psalm-capabilities read-props|write-this-props|write-refs
      */
     private function getAnywhereFilter(int $entry, array $closed, bool $anywhere): int
     {
@@ -3058,6 +3233,8 @@ final class TaintFlowResolution
      * of the flows of state $state, or null if they don't know it: it is one of those of the flows entering
      * their context, which decides (see dependOnClass(), or getFilter() in a filter not split by class),
      * through $levels more convergences at most (see getAssignmentClass()).
+     *
+     * @psalm-capabilities read-props|write-this-props|write-refs
      */
     private function passesFetch(
         int $state,
@@ -3153,6 +3330,8 @@ final class TaintFlowResolution
      * The class (see getClass()) of the open assignment of type $family at depth $depth of the flows of state
      * $state, or null if they don't know it: it is one of those of the flows entering their context, which
      * decides (see dependOnClass()), through $levels more convergences at most.
+     *
+     * @psalm-capabilities read-props|write-this-props|write-refs
      */
     private function getAssignmentClass(int $state, int $family, int $depth, int $levels, bool $defer = true): ?string
     {
@@ -3336,6 +3515,8 @@ final class TaintFlowResolution
      * at position $position of the calls entering $entry. They go on in each filter of $entry for the calls
      * with a given class there (see dependOnClass()), as they would in $entry, but knowing it. The calls
      * that don't know it either find it through $levels more convergences at most (see getAssignmentClass()).
+     *
+     * @psalm-capabilities read-props|write-this-props|write-refs
      */
     private function dependOnClass(int $entry, int $position, int $state, int $levels): void
     {
@@ -3368,6 +3549,8 @@ final class TaintFlowResolution
      *
      * A filter for the calls of a given class knows it, and its walk goes on from the states of the walk of
      * $entry that depend on it (see dependOnClass()), like the walk of $entry for those calls.
+     *
+     * @psalm-capabilities read-props|write-this-props|write-refs
      */
     private function addClassFilterCaller(
         int $entry,
@@ -3593,6 +3776,8 @@ final class TaintFlowResolution
      * The body walk of $entry reached sink $sink_id from node $predecessor_id in state $state (seen through
      * the calls of $link, see buildTrace()). Like everything the walk reaches, that flow depends on the call
      * entering $entry, so it is a finding for every such call (see addSinkThroughCaller()).
+     *
+     * @psalm-capabilities read-props|write-this-props|write-refs
      */
     private function addEntrySink(
         int $entry,
@@ -3709,6 +3894,8 @@ final class TaintFlowResolution
      * The walk of convergence $convergence reached sink $sink_id from node $predecessor_id in state $state (seen
      * through the calls of $link): reports the taints of the flows entering the convergence it keeps, and
      * those it adds, and records it to report those that the flows entering it later have.
+     *
+     * @psalm-capabilities read-props|write-this-props|write-refs
      */
     private function addConvergenceSink(
         int $convergence,
@@ -3759,6 +3946,8 @@ final class TaintFlowResolution
      * The flows of state $caller entering entry $convergence have its taints (see getUnionTaints()): if it
      * is a convergence, reports those that the sinks its walk reached keep (see addConvergenceSink()). So do
      * the flows of its walk entering other entries.
+     *
+     * @psalm-capabilities read-props|write-this-props|write-refs
      */
     private function addEntryTaints(int $convergence, int $caller): void
     {
@@ -3771,8 +3960,7 @@ final class TaintFlowResolution
         $this->entry_taints[$convergence] = ($this->entry_taints[$convergence] ?? 0) | $new_taints;
 
         if ($new_taints !== 0) {
-            $this->entry_taint_callers[$convergence][$caller] = ($this->entry_taint_callers[$convergence][$caller] ?? 0)
-                | $new_taints;
+            $this->entry_taint_callers[$convergence][] = [$caller, $new_taints, $this->sequence++];
         }
 
         // the flows of its walk that left the calls entering it get the new taints too (see leaveCalls())
@@ -3803,6 +3991,8 @@ final class TaintFlowResolution
      * Reports a flow into a sink reached by the body walk of an entry, as seen from one call entering it. If
      * that call is itself made inside the body walk of an enclosing entry, the flow is a finding for every
      * call entering that one instead.
+     *
+     * @psalm-capabilities read-props|write-this-props|write-refs
      */
     private function addSinkThroughCaller(
         string $sink_id,
@@ -3881,12 +4071,11 @@ final class TaintFlowResolution
     }
 
     /**
-     * Reports the flows of taints $taints from state $state (seen through the call of state $caller if any,
-     * and those of $link, see buildTrace()) into sink $sink_id, unless already reported.
+     * Records the flows of taints $taints from state $state (seen through the call of state $caller if any,
+     * and those of $link, see buildTrace()) into sink $sink_id, to report once the walk is done (see
+     * reportFlows()), unless already looked at.
      *
-     * A flow is identified by its origin and by the node it enters the sink from: the origin keeps distinct
-     * sources apart where they share that node (e.g. two calls to a specialized function), the node keeps
-     * distinct call sites of the same source apart. Each taint kind is reported once per flow.
+     * @psalm-capabilities read-props|write-this-props|write-refs
      */
     private function reportFlow(string $sink_id, int $state, int $caller, int $link, int $taints): void
     {
@@ -3900,6 +4089,44 @@ final class TaintFlowResolution
 
         $this->reported_pointers[$sink_id][$pointer_key] = $looked_at | $taints;
 
+        if ($caller !== -1) {
+            $link = $this->getLink($caller, $link);
+        }
+
+        $this->flows[] = [$sink_id, $state, $link, $taints, $this->sequence];
+    }
+
+    /**
+     * Reports the flows into sinks the walk reached (see reportFlow()), in the order it reached them, unless already
+     * reported. Nothing the walk does depends on what is reported: deferred to the fixed point, the trace of each
+     * flow is rebuilt from the graph as it was when the flow reached its sink (see buildTrace()), and the walks back
+     * to the origins of the flows share what they found (see $trace_origins).
+     *
+     * A flow is identified by its origin and by the node it enters the sink from: the origin keeps distinct
+     * sources apart where they share that node (e.g. two calls to a specialized function), the node keeps
+     * distinct call sites of the same source apart. Each taint kind is reported once per flow.
+     */
+    private function reportFlows(): void
+    {
+        // in the order of their times, which the origins kept hold for from then on (see $trace_origins)
+        foreach ($this->flows as [$sink_id, $state, $link, $taints, $time]) {
+            $this->reportRecordedFlow($sink_id, $state, $link, $taints, $time);
+        }
+
+        $this->flows = [];
+        $this->trace_origins = [];
+        $this->trace_origin_jumps = [];
+        $this->trace_origin_untils = [];
+        $this->trace_frames = [];
+        $this->call_stacks = [[-1, 0]];
+        $this->call_stack_ids = [];
+        $this->call_stack_pushes = [];
+        $this->chain_lasts = [];
+        $this->chain_added = [];
+    }
+
+    private function reportRecordedFlow(string $sink_id, int $state, int $link, int $taints, int $time): void
+    {
         // a value choosing the server of a URL can also inject any URL syntax in it, such as the `..` segments of
         // its path: each is reported as the most general issue alone
         if (($taints & TaintKind::INPUT_SSRF) !== 0) {
@@ -3911,10 +4138,6 @@ final class TaintFlowResolution
         $sink = $this->sinks[$sink_id];
         $predecessor_id = $this->state_nodes[$state];
 
-        if ($caller !== -1) {
-            $link = $this->getLink($caller, $link);
-        }
-
         for ($taint = 1; $taints !== 0; $taint <<= 1) {
             if (($taints & $taint) === 0) {
                 continue;
@@ -3922,18 +4145,15 @@ final class TaintFlowResolution
 
             $taints &= ~$taint;
 
-            $trace = $this->buildTrace($state, $link, $taint);
-
-            if ($trace === []) {
-                continue;
-            }
-
-            $origin = $trace[0][0];
+            // most flows are ones already reported: find their origin without building the whole trace
+            $origin = $this->findOrigin($state, $link, $taint, $time);
             $reported = $this->reported_flows[$sink_id][$predecessor_id][$origin] ?? 0;
 
             if (($reported & $taint) !== 0) {
                 continue;
             }
+
+            $trace = $this->buildTrace($state, $link, $taint, false, $time);
 
             $this->reported_flows[$sink_id][$predecessor_id][$origin] = $reported | $taint | match ($taint) {
                 TaintKind::INPUT_SSRF => TaintKind::INPUT_URL_COMPONENT | TaintKind::INPUT_URL_PATH,
@@ -3967,8 +4187,232 @@ final class TaintFlowResolution
     }
 
     /**
+     * Keeps origin $origin for the positions of the current walk back (see $trace_positions), whose rest jumped to
+     * the states of $trace_jumps after each, and then to those of $later_jumps, and made the decisions of
+     * $trace_untils after each, and then held before time $until
+     *
+     * @param array<int, true> $later_jumps
+     * @psalm-external-mutation-free
+     */
+    private function keepTraceOrigins(string $origin, array $later_jumps, int $until): void
+    {
+        $jumps = count($this->trace_jumps);
+        $until_count = count($this->trace_untils);
+
+        for ($i = count($this->trace_positions) - 1; $i >= 0; $i--) {
+            [$position, $jumps_before, $untils_before] = $this->trace_positions[$i];
+
+            for ($jump = $jumps_before; $jump < $jumps; $jump++) {
+                $later_jumps[$this->trace_jumps[$jump]] = true;
+            }
+
+            for ($decision = $untils_before; $decision < $until_count; $decision++) {
+                $until = min($until, $this->trace_untils[$decision]);
+            }
+
+            $jumps = $jumps_before;
+            $until_count = $untils_before;
+
+            $this->trace_origins[$position] = $origin;
+
+            if ($later_jumps) {
+                $this->trace_origin_jumps[$position] = $later_jumps;
+            } else {
+                unset($this->trace_origin_jumps[$position]);
+            }
+
+            if ($until !== PHP_INT_MAX) {
+                $this->trace_origin_untils[$position] = $until;
+            } else {
+                unset($this->trace_origin_untils[$position]);
+            }
+        }
+    }
+
+    /**
+     * A position of a walk back (see buildTrace()) packed in an int: state, which taints it follows, taint, and the
+     * id of the context and stack of calls (see $call_stacks) it is in, or null if it doesn't fit, or if the rest
+     * of the walk depends on $before too: when a reach of the state came at or after it
+     *
+     * @psalm-external-mutation-free
+     */
+    private function getTracePosition(
+        int $state,
+        int $which,
+        int $taint,
+        int $context,
+        int $calls,
+        int $before,
+    ): ?int {
+        $later_reaches = $this->later_reaches[$state] ?? null;
+        $last_sequence = $later_reaches === null
+            ? $this->state_sequence[$state]
+            : $later_reaches[count($later_reaches) - 1][3];
+
+        if (($before !== PHP_INT_MAX && $before <= $last_sequence) || $state >= 1 << 25 || $calls >= 1 << 31) {
+            return null;
+        }
+
+        $frame = $this->trace_frames[self::packKey($context + 1, $calls, 31)] ??= count($this->trace_frames);
+
+        if ($frame >= 1 << 30) {
+            return null;
+        }
+
+        return self::packKey(($frame << 8) | ($which << 6) | self::getTaintIndex($taint), $state, 25);
+    }
+
+    /**
+     * $high (less than 2^38) and $low (less than 2^$low_bits) packed in an int, with $high mixed into its low bits:
+     * PHP spreads int keys over the buckets of an array by their lowest bits alone, so the keys of the same $low
+     * would all go into one bucket, and every lookup and insert would go through all of them
+     *
+     * @psalm-pure
+     */
+    private static function packKey(int $high, int $low, int $low_bits): int
+    {
+        return ($high << $low_bits) | ($low ^ ((($high * 0x5BD1E9) >> 13) & ((1 << $low_bits) - 1)));
+    }
+
+    /**
+     * The origin kept for position $position (see $trace_origins) that holds for a walk back made for time $time
+     * that already jumped to the states of $jumped, if any
+     *
+     * @param array<int, true> $jumped
+     * @psalm-mutation-free
+     */
+    private function getKnownOrigin(int $position, int $time, array $jumped): ?string
+    {
+        $origin = $this->trace_origins[$position] ?? null;
+
+        if ($origin === null
+            || ($this->trace_origin_untils[$position] ?? PHP_INT_MAX) <= $time
+            || (isset($this->trace_origin_jumps[$position])
+                && array_intersect_key($jumped, $this->trace_origin_jumps[$position]) !== [])
+        ) {
+            return null;
+        }
+
+        return $origin;
+    }
+
+    /**
+     * The index of the bit of taint $taint
+     *
+     * @psalm-pure
+     */
+    private static function getTaintIndex(int $taint): int
+    {
+        $index = 0;
+
+        while ($taint > 1) {
+            $taint >>= 1;
+            $index++;
+        }
+
+        return $index;
+    }
+
+    /**
+     * Whether state $state is a link of a chain for a walk back that got to it before sequence number $before: one
+     * that goes on to the state it was first reached from, whatever taint it follows, the calls it is in, and the
+     * time it is made for. That's a state no other reach of which came before (those that gave it more taints after
+     * don't count for this walk), reached from a state, not leaving any call, and not the root of a body walk. It
+     * stays one: the reaches that come later come after $before. Most states are.
+     *
+     * @psalm-mutation-free
+     */
+    private function isChainLink(int $state, int $before): bool
+    {
+        if ($state === -1
+            || isset($this->root_entries[$state])
+            || isset($this->state_links[$state])
+            || $this->state_predecessors[$state] === -1
+        ) {
+            return false;
+        }
+
+        $later_reaches = $this->later_reaches[$state] ?? null;
+
+        return $later_reaches === null || $later_reaches[0][3] >= $before;
+    }
+
+    /**
+     * The last link of the chain (see isChainLink()) a walk back from the first reach of state $state goes through,
+     * or $state if its predecessor isn't one: the walk goes on from its predecessor, before its sequence number.
+     * That depends on nothing that changes, so it holds during the walk too (see $chain_lasts and $chain_added).
+     *
+     * @psalm-external-mutation-free
+     */
+    private function getChainLast(int $state): int
+    {
+        if (isset($this->chain_lasts[$state])) {
+            return $this->chain_lasts[$state];
+        }
+
+        // the states whose predecessor is a link, in the order of the walk
+        $reached = [];
+        $last = $state;
+        $added = self::ALL_TAINTS;
+
+        while ($this->isChainLink($this->state_predecessors[$last], $this->state_sequence[$last])) {
+            $reached[] = $last;
+            $last = $this->state_predecessors[$last];
+
+            if (isset($this->chain_lasts[$last])) {
+                $added = $this->chain_added[$last] ?? self::ALL_TAINTS;
+                $last = $this->chain_lasts[$last];
+
+                break;
+            }
+        }
+
+        for ($i = count($reached) - 1; $i >= 0; $i--) {
+            $link = $this->state_predecessors[$reached[$i]];
+
+            // an added taint the state the link goes back to didn't add yet was added by the edge (see buildTrace())
+            if ($this->state_path_types[$link] !== -1) {
+                $added &= $this->getAddedBefore($this->state_predecessors[$link], $this->state_sequence[$link]);
+            }
+
+            $this->chain_lasts[$reached[$i]] = $last;
+
+            if ($added !== self::ALL_TAINTS) {
+                $this->chain_added[$reached[$i]] = $added;
+            }
+        }
+
+        return $last;
+    }
+
+    /**
+     * The taints state $state added before sequence number $before (see findReach())
+     *
+     * @psalm-mutation-free
+     */
+    private function getAddedBefore(int $state, int $before): int
+    {
+        if ($this->state_sequence[$state] >= $before) {
+            return 0;
+        }
+
+        $added = $this->state_added[$state] & ~($this->state_later_added[$state] ?? 0);
+
+        foreach ($this->later_reaches[$state] ?? [] as [, , , $sequence, , $later_added]) {
+            if ($sequence >= $before) {
+                break;
+            }
+
+            $added |= $later_added;
+        }
+
+        return $added;
+    }
+
+    /**
      * Rebuilds the steps (node id and type of the edge it was reached through) of a flow of taint $taint
-     * from its origin to state $state, seen through the calls of $link.
+     * from its origin to state $state, seen through the calls of $link, as of time $time (see $sequence): as the
+     * graph was when the flow reached its sink.
      *
      * Each state remembers the state it was first reached from, and those that gave it more taints later
      * on. Going back from $state, the trace follows the one that gave it $taint, and whether that taint is
@@ -3977,20 +4421,30 @@ final class TaintFlowResolution
      * entered by. That's the innermost call it left (a flow reported through the calls entering a body walk,
      * or that left it through them) if any, else the first call to enter it.
      *
-     * With $stable_origin, returns no trace if later taints could change its origin.
+     * With $stable_origin, returns no trace if later taints could change its origin, and else its first step
+     * alone: it skips the links of chains (see getChainLast()).
      *
      * @return list<array{string, int}>
-     * @psalm-mutation-free
+     * @psalm-external-mutation-free
      */
-    private function buildTrace(int $state, int $link, int $taint, bool $stable_origin = false): array
-    {
-        $callers = $this->pushCallers([], $link);
+    private function buildTrace(
+        int $state,
+        int $link,
+        int $taint,
+        bool $stable_origin = false,
+        int $time = PHP_INT_MAX,
+    ): array {
+        // the stack of calls the trace is in (see $call_stacks)
+        $calls = $this->pushCalls(0, $link);
 
         // the context the trace entered the walk it is in through: the filter whose calls it comes from
         $context = $this->state_contexts[$state];
         $jumped = [];
+        $this->trace_untils = [];
 
-        $which = ($this->state_added[$state] & $taint) !== 0 ? self::TRACE_ADDED : self::TRACE_KEPT;
+        $which = $this->findReachAt($state, $taint, self::TRACE_ADDED, PHP_INT_MAX, $time) !== self::NO_REACH
+            ? self::TRACE_ADDED
+            : self::TRACE_KEPT;
         $before = PHP_INT_MAX;
         $steps = [];
 
@@ -4001,37 +4455,16 @@ final class TaintFlowResolution
                 return [];
             }
 
-            if (isset($this->root_entries[$state])
-                && ($which !== self::TRACE_ADDED || $this->findReach($state, $taint, $which, $before) === null)
-            ) {
-                // the root of a body walk takes the place of the specialized node of the call entering it
-                $entry = $this->root_entries[$state];
+            if ($this->isTraceRoot($state, $taint, $which, $before, $time)) {
+                $left = $this->leaveRoot($state, $calls, $context, $taint, $time, $stable_origin);
 
-                $before = PHP_INT_MAX;
-
-                if ($callers) {
-                    $state = array_pop($callers);
-                } else {
-                    $taint_entry = $context !== -1 && $this->entry_bases[$context] === $entry ? $context : $entry;
-
-                    if ($stable_origin && (($this->entry_taints[$taint_entry] ?? 0) & $taint) === 0) {
-                        return [];
-                    }
-
-                    // one of the flows entering the walk with the taint, through the filter of it the trace came
-                    $state = ($context !== -1 && $this->entry_bases[$context] === $entry
-                        ? $this->findTaintCaller($context, $taint)
-                        : null)
-                        ?? $this->findTaintCaller($entry, $taint)
-                        ?? $this->state_predecessors[$state];
-                }
-
-                $context = $this->state_contexts[$state];
-
-                // A kept taint of a nested caller may later get an added origin, which getTraced() would prefer.
-                if ($stable_origin && $context !== -1 && ($this->state_added[$state] & $taint) === 0) {
+                if ($left === null) {
                     return [];
                 }
+
+                [$state, $calls] = $left;
+                $context = $this->state_contexts[$state];
+                $before = PHP_INT_MAX;
 
                 // back to a call the trace already left (going after a taint a convergence got first from
                 // somewhere else, see findTaintCaller()): it ends there rather than loop
@@ -4044,19 +4477,16 @@ final class TaintFlowResolution
                 $jumped[$state] = true;
 
                 if ($which !== self::TRACE_ANY) {
-                    $which = $this->getTraced($state, $taint, $before);
+                    $which = $this->getTraced($state, $taint, $before, $time);
                 }
 
                 continue;
             }
 
-            [$predecessor, $link, $path_type, $sequence] = $this->findReach($state, $taint, $which, $before)
-                ?? [
-                    $this->state_predecessors[$state],
-                    $this->state_links[$state] ?? 0,
-                    $this->state_path_types[$state],
-                    $this->state_sequence[$state],
-                ];
+            [$predecessor, $link, $path_type, $sequence] = $this->getReach(
+                $state,
+                $this->findReachAt($state, $taint, $which, $before, $time),
+            );
 
             if ($predecessor === -1) {
                 $steps[] = [$this->state_nodes[$state], -1];
@@ -4064,24 +4494,24 @@ final class TaintFlowResolution
                 break;
             }
 
-            if ($path_type !== -1) {
+            if ($path_type !== -1 && !$stable_origin) {
                 $steps[] = [$this->state_nodes[$state], $path_type];
             }
 
-            if ($link !== 0) {
-                // the flow left the body walk of the calls of $link: what it adds is added in that walk, or
-                // kept of the call (and added before it), or added by the edge it took past it
-                $callers = $this->pushCallers($callers, $link);
+            $which = $this->getTracedAfterStep($predecessor, $link, $path_type, $sequence, $taint, $which, $time);
 
-                if ($which === self::TRACE_ADDED) {
-                    $which = $this->getTraced($predecessor, $taint, $sequence);
-                }
-            } elseif ($which === self::TRACE_ADDED
-                && $path_type !== -1
-                && $this->findReach($predecessor, $taint, self::TRACE_ADDED, $sequence) === null
-            ) {
-                // the edge added it
-                $which = self::TRACE_ANY;
+            // the flow left the body walk of the calls of $link
+            $calls = $this->pushCalls($calls, $link);
+
+            // without the steps, the trace skips the links of the chain it goes on through, if any
+            $last = $stable_origin && $sequence === $this->state_sequence[$state]
+                ? $this->getChainLast($state)
+                : $state;
+
+            if ($last !== $state) {
+                $which = $this->getTracedPastChain($state, $taint, $which);
+                $predecessor = $this->state_predecessors[$last];
+                $sequence = $this->state_sequence[$last];
             }
 
             $state = $predecessor;
@@ -4098,36 +4528,330 @@ final class TaintFlowResolution
     }
 
     /**
-     * The flow entering entry $entry that gave it taint $taint first, or else the first flow entering it, or
-     * null if none did yet.
+     * The origin of the trace of a flow of taint $taint to state $state, seen through the calls of $link, as of time
+     * $time: the first step of buildTrace(), found without building the rest. Skips the links of chains (see
+     * getChainLast()), and shares what it finds with the other walks back made after it (see $trace_origins): only
+     * once the walk is done, as it reads what changes during the walk, and for times in order.
      *
-     * Following those, a trace leaves each walk for one that got the taint earlier, so it ends.
-     *
-     * @psalm-mutation-free
+     * @psalm-external-mutation-free
      */
-    private function findTaintCaller(int $entry, int $taint): ?int
+    private function findOrigin(int $state, int $link, int $taint, int $time): string
     {
-        foreach ($this->entry_taint_callers[$entry] ?? [] as $caller => $taints) {
-            if (($taints & $taint) !== 0) {
-                return $caller;
-            }
-        }
+        $calls = $this->pushCalls(0, $link);
+        $context = $this->state_contexts[$state];
+        $jumped = [];
+        $this->trace_untils = [];
 
-        return array_key_first($this->entry_callers[$entry]);
+        $which = $this->findReachAt($state, $taint, self::TRACE_ADDED, PHP_INT_MAX, $time) !== self::NO_REACH
+            ? self::TRACE_ADDED
+            : self::TRACE_KEPT;
+        $before = PHP_INT_MAX;
+        $this->trace_positions = [];
+        $this->trace_jumps = [];
+
+        // whether the walk just left a body walk or went into one: where many walks meet (see $trace_origins)
+        $keeps_position = false;
+
+        while (true) {
+            // From here on, the walk depends on the graph as of $time, on this position, and on the states it
+            // already jumped to only where it jumps to one of them again.
+            $known = $keeps_position
+                ? $this->lookUpOrigin($state, $which, $taint, $context, $calls, $before, $time, $jumped)
+                : null;
+
+            if ($known !== null) {
+                return $known;
+            }
+
+            $keeps_position = false;
+
+            if ($this->isTraceRoot($state, $taint, $which, $before, $time)) {
+                [$state, $calls] = $this->leaveRoot($state, $calls, $context, $taint, $time, false)
+                    ?? [$state, $calls];
+                $context = $this->state_contexts[$state];
+                $before = PHP_INT_MAX;
+
+                // where it ends rather than loop depends on where the walk had been: none of its positions are kept
+                if (isset($jumped[$state])) {
+                    return $this->state_nodes[$state];
+                }
+
+                $jumped[$state] = true;
+                $this->trace_jumps[] = $state;
+                $keeps_position = true;
+
+                if ($which !== self::TRACE_ANY) {
+                    $which = $this->getTraced($state, $taint, $before, $time);
+                }
+
+                continue;
+            }
+
+            [$predecessor, $link, $path_type, $sequence] = $this->getReach(
+                $state,
+                $this->findReachAt($state, $taint, $which, $before, $time),
+            );
+
+            if ($predecessor === -1) {
+                $this->keepTraceOrigins($this->state_nodes[$state], [], PHP_INT_MAX);
+
+                return $this->state_nodes[$state];
+            }
+
+            $which = $this->getTracedAfterStep($predecessor, $link, $path_type, $sequence, $taint, $which, $time);
+
+            if ($link !== 0) {
+                // the flow left the body walk of the calls of $link
+                $calls = $this->pushCalls($calls, $link);
+                $keeps_position = true;
+            }
+
+            $last = $sequence === $this->state_sequence[$state] ? $this->getChainLast($state) : $state;
+
+            if ($last !== $state) {
+                $which = $this->getTracedPastChain($state, $taint, $which);
+                $predecessor = $this->state_predecessors[$last];
+                $sequence = $this->state_sequence[$last];
+            }
+
+            $state = $predecessor;
+            $before = $sequence;
+        }
     }
 
     /**
-     * Which taints of state $state $taint came from before sequence number $before (see buildTrace())
+     * The call a walk back leaving the root of a body walk at state $state, in context $context and the stack of
+     * calls $calls (see $call_stacks), goes on with, and the stack of the calls it is still in; or null if that
+     * could change later, with $stable_origin (see buildTrace())
+     *
+     * @return array{int, int}|null
+     * @psalm-external-mutation-free
+     */
+    private function leaveRoot(
+        int $state,
+        int $calls,
+        int $context,
+        int $taint,
+        int $time,
+        bool $stable_origin,
+    ): ?array {
+        if ($calls !== 0) {
+            [$caller, $calls] = $this->call_stacks[$calls];
+        } else {
+            $caller = $this->getRootCaller($state, $context, $taint, $time, $stable_origin);
+
+            if ($caller === null) {
+                return null;
+            }
+        }
+
+        // A kept taint of a nested caller may later get an added origin, which getTraced() would prefer.
+        if ($stable_origin
+            && $this->state_contexts[$caller] !== -1
+            && ($this->state_added[$caller] & $taint) === 0
+        ) {
+            return null;
+        }
+
+        return [$caller, $calls];
+    }
+
+    /**
+     * Whether a walk back at state $state, following taint $taint as one of the taints $which, before sequence
+     * number $before, as of time $time, is at the root of a body walk it leaves (see buildTrace())
+     *
+     * @psalm-external-mutation-free
+     */
+    private function isTraceRoot(int $state, int $taint, int $which, int $before, int $time): bool
+    {
+        return isset($this->root_entries[$state])
+            && ($which !== self::TRACE_ADDED
+                || $this->findReachAt($state, $taint, $which, $before, $time) === self::NO_REACH);
+    }
+
+    /**
+     * The call a walk back leaving the root of body walk $state in context $context, outside of any call it left,
+     * goes on with (see buildTrace()), as of time $time: one of the flows entering the walk with taint $taint,
+     * through the filter of it the walk came; or null if that could change later, with $stable_origin.
+     *
+     * @psalm-external-mutation-free
+     */
+    private function getRootCaller(int $state, int $context, int $taint, int $time, bool $stable_origin): ?int
+    {
+        $entry = $this->root_entries[$state];
+        $through_filter = $context !== -1 && $this->entry_bases[$context] === $entry;
+
+        if ($stable_origin && (($this->entry_taints[$through_filter ? $context : $entry] ?? 0) & $taint) === 0) {
+            return null;
+        }
+
+        return ($through_filter ? $this->findTaintCaller($context, $taint, $time) : null)
+            ?? $this->findTaintCaller($entry, $taint, $time)
+            ?? $this->state_predecessors[$state];
+    }
+
+    /**
+     * The origin kept for the position of a walk back made for time $time that already jumped to the states of
+     * $jumped (see getTracePosition() for the rest), if any (see $trace_origins), which it keeps for the positions of
+     * that walk too; else that position is one of them
+     *
+     * @param array<int, true> $jumped
+     * @psalm-external-mutation-free
+     */
+    private function lookUpOrigin(
+        int $state,
+        int $which,
+        int $taint,
+        int $context,
+        int $calls,
+        int $before,
+        int $time,
+        array $jumped,
+    ): ?string {
+        $position = $this->getTracePosition($state, $which, $taint, $context, $calls, $before);
+
+        if ($position === null) {
+            return null;
+        }
+
+        $origin = $this->getKnownOrigin($position, $time, $jumped);
+
+        if ($origin === null) {
+            $this->trace_positions[] = [$position, count($this->trace_jumps), count($this->trace_untils)];
+
+            return null;
+        }
+
+        $this->keepTraceOrigins(
+            $origin,
+            $this->trace_origin_jumps[$position] ?? [],
+            $this->trace_origin_untils[$position] ?? PHP_INT_MAX,
+        );
+
+        return $origin;
+    }
+
+    /**
+     * The state, caller link, type of edge and sequence number of reach $reach of state $state (see findReach()):
+     * its first reach for FIRST_REACH, and also for NO_REACH
+     *
+     * @return array{int, int, int, int}
+     * @psalm-mutation-free
+     */
+    private function getReach(int $state, int $reach): array
+    {
+        if ($reach < 0) {
+            return [
+                $this->state_predecessors[$state],
+                $this->state_links[$state] ?? 0,
+                $this->state_path_types[$state],
+                $this->state_sequence[$state],
+            ];
+        }
+
+        [$predecessor, $link, $path_type, $sequence] = $this->later_reaches[$state][$reach];
+
+        return [$predecessor, $link, $path_type, $sequence];
+    }
+
+    /**
+     * Which taints a walk back following $taint as one of the taints $which follows it as once it took the reach
+     * from state $predecessor through caller link $link, edge type $path_type, with sequence number $sequence, as
+     * of time $time (see buildTrace())
+     *
+     * @psalm-external-mutation-free
+     */
+    private function getTracedAfterStep(
+        int $predecessor,
+        int $link,
+        int $path_type,
+        int $sequence,
+        int $taint,
+        int $which,
+        int $time,
+    ): int {
+        if ($which !== self::TRACE_ADDED) {
+            return $which;
+        }
+
+        // the flow left the body walk of the calls of $link: what it adds is added in that walk, or kept of the call
+        // (and added before it), or added by the edge it took past it
+        if ($link !== 0) {
+            return $this->getTraced($predecessor, $taint, $sequence, $time);
+        }
+
+        // the edge added it
+        return $path_type !== -1
+            && $this->findReachAt($predecessor, $taint, self::TRACE_ADDED, $sequence, $time) === self::NO_REACH
+            ? self::TRACE_ANY
+            : $which;
+    }
+
+    /**
+     * Which taints a walk back following $taint as one of the taints $which follows it as past the chain the
+     * predecessor of state $state is a link of (see getChainLast())
      *
      * @psalm-mutation-free
      */
-    private function getTraced(int $state, int $taint, int $before): int
+    private function getTracedPastChain(int $state, int $taint, int $which): int
     {
-        if ($this->findReach($state, $taint, self::TRACE_ADDED, $before) !== null) {
+        return $which === self::TRACE_ADDED && (($this->chain_added[$state] ?? self::ALL_TAINTS) & $taint) === 0
+            // an edge on the way added it
+            ? self::TRACE_ANY
+            : $which;
+    }
+
+    /**
+     * The flow entering entry $entry that gave it taint $taint first, or else the first flow entering it, or
+     * null if none did yet, as of time $time (see findReachAt() for $trace_untils).
+     *
+     * Following those, a trace leaves each walk for one that got the taint earlier, so it ends.
+     *
+     * @psalm-external-mutation-free
+     */
+    private function findTaintCaller(int $entry, int $taint, int $time): ?int
+    {
+        // each taint of an entry is given by one of them
+        foreach ($this->entry_taint_callers[$entry] ?? [] as [$caller, $taints, $at]) {
+            if (($taints & $taint) !== 0) {
+                if ($at < $time) {
+                    return $caller;
+                }
+
+                $this->trace_untils[] = $at + 1;
+
+                break;
+            }
+        }
+
+        $at = $this->entry_first_caller_times[$entry] ?? null;
+
+        if ($at === null) {
+            return null;
+        }
+
+        if ($at < $time) {
+            return array_key_first($this->entry_callers[$entry]);
+        }
+
+        $this->trace_untils[] = $at + 1;
+
+        return null;
+    }
+
+    /**
+     * Which taints of state $state $taint came from before sequence number $before, as of time $time (see
+     * findReachAt() for $trace_untils)
+     *
+     * @psalm-external-mutation-free
+     */
+    private function getTraced(int $state, int $taint, int $before, int $time): int
+    {
+        if ($this->findReachAt($state, $taint, self::TRACE_ADDED, $before, $time) !== self::NO_REACH) {
             return self::TRACE_ADDED;
         }
 
-        if ($this->findReach($state, $taint, self::TRACE_KEPT, $before) !== null) {
+        if ($this->findReachAt($state, $taint, self::TRACE_KEPT, $before, $time) !== self::NO_REACH) {
             return self::TRACE_KEPT;
         }
 
@@ -4135,70 +4859,98 @@ final class TaintFlowResolution
     }
 
     /**
-     * $callers, with the calls of $link on top
+     * The stack of calls $calls (see $call_stacks), with the calls of $link on top
      *
-     * @param list<int> $callers
-     * @return list<int>
-     * @psalm-mutation-free
+     * @psalm-external-mutation-free
      */
-    private function pushCallers(array $callers, int $link): array
+    private function pushCalls(int $calls, int $link): int
     {
-        // a link starts with the outermost call: the innermost one ends up on top
-        while ($link !== 0) {
-            [$caller, $link] = $this->links[$link];
-            $callers[] = $caller;
+        if ($link === 0) {
+            return $calls;
         }
 
-        return $callers;
+        if (isset($this->call_stack_pushes[$calls][$link])) {
+            return $this->call_stack_pushes[$calls][$link];
+        }
+
+        $pushed = $calls;
+
+        // a link starts with the outermost call: the innermost one ends up on top
+        for ($next = $link; $next !== 0;) {
+            [$caller, $next] = $this->links[$next];
+            $key = self::packKey($caller, $pushed, 32);
+
+            if (!isset($this->call_stack_ids[$key])) {
+                $this->call_stack_ids[$key] = count($this->call_stacks);
+                $this->call_stacks[] = [$caller, $pushed];
+            }
+
+            $pushed = $this->call_stack_ids[$key];
+        }
+
+        return $this->call_stack_pushes[$calls][$link] = $pushed;
     }
 
     /**
-     * How state $state was reached, before sequence number $before, by a flow giving it $taint (as one of
-     * the taints $which), or null if none did
+     * findReach() as of time $time: what was there before the reaches since, whose sequence numbers are $time or
+     * more. Each taint comes to a state (as one of the taints $which) through one reach, so the reach found then is
+     * the one found now if that one came before, and none else. When the answer is none and would be that reach
+     * from some time on, records that time in $trace_untils: walks back made for later times, which see all the
+     * reaches this one saw (see $trace_origins), decide the same before it only.
      *
-     * @return array{int, int, int, int}|null
-     * @psalm-mutation-free
+     * @psalm-external-mutation-free
      */
-    private function findReach(int $state, int $taint, int $which, int $before): ?array
+    private function findReachAt(int $state, int $taint, int $which, int $before, int $time): int
     {
-        $first_sequence = $this->state_sequence[$state];
-
-        if ($first_sequence >= $before) {
-            return null;
+        if ($before < $time) {
+            return $this->findReach($state, $taint, $which, $before);
         }
 
-        $later_kept = 0;
-        $later_added = 0;
+        $reach = $this->findReach($state, $taint, $which, PHP_INT_MAX);
 
-        foreach ($this->later_reaches[$state] ?? [] as [, , , , $kept, $added]) {
-            $later_kept |= $kept;
-            $later_added |= $added;
+        if ($reach === self::NO_REACH) {
+            return $reach;
+        }
+
+        $sequence = $reach === self::FIRST_REACH
+            ? $this->state_sequence[$state]
+            : $this->later_reaches[$state][$reach][3];
+
+        if ($sequence < $time) {
+            return $reach;
+        }
+
+        $this->trace_untils[] = $sequence + 1;
+
+        return self::NO_REACH;
+    }
+
+    /**
+     * How state $state was reached, before sequence number $before, by a flow giving it $taint (as one of the taints
+     * $which): FIRST_REACH, the index of a later reach in $later_reaches, or NO_REACH if none did
+     *
+     * @psalm-mutation-free
+     */
+    private function findReach(int $state, int $taint, int $which, int $before): int
+    {
+
+        if ($this->state_sequence[$state] >= $before) {
+            return self::NO_REACH;
         }
 
         if ($which === self::TRACE_ANY
-            || ($which === self::TRACE_KEPT && ($this->state_kept[$state] & ~$later_kept & $taint) !== 0)
-            || ($which === self::TRACE_ADDED && ($this->state_added[$state] & ~$later_added & $taint) !== 0)
+            || ($which === self::TRACE_KEPT
+                && ($this->state_kept[$state] & ~($this->state_later_kept[$state] ?? 0) & $taint) !== 0)
+            || ($which === self::TRACE_ADDED
+                && ($this->state_added[$state] & ~($this->state_later_added[$state] ?? 0) & $taint) !== 0)
         ) {
-            return [
-                $this->state_predecessors[$state],
-                $this->state_links[$state] ?? 0,
-                $this->state_path_types[$state],
-                $first_sequence,
-            ];
+            return self::FIRST_REACH;
         }
 
-        foreach ($this->later_reaches[$state] ?? [] as [$predecessor, $link, $path_type, $sequence, $kept, $added]) {
-            if ($sequence >= $before) {
-                break;
-            }
+        $index = $which === self::TRACE_KEPT
+            ? $this->later_kept_reaches[$state][$taint] ?? null
+            : $this->later_added_reaches[$state][$taint] ?? null;
 
-            if (($which === self::TRACE_KEPT && ($kept & $taint) !== 0)
-                || ($which === self::TRACE_ADDED && ($added & $taint) !== 0)
-            ) {
-                return [$predecessor, $link, $path_type, $sequence];
-            }
-        }
-
-        return null;
+        return $index !== null && $this->later_reaches[$state][$index][3] < $before ? $index : self::NO_REACH;
     }
 }
