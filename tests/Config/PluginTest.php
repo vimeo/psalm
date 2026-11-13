@@ -522,7 +522,7 @@ final class PluginTest extends DeferredAnalyzerTestCase
         (new PluginRegistrationSocket($codebase->config, $codebase))->registerHooksFromClass(get_class($hook));
         $codebase->config->throw_exception = false;
 
-        $dir = (string) getcwd() . '/src/';
+        $dir = (string) getcwd() . DIRECTORY_SEPARATOR . 'src' . DIRECTORY_SEPARATOR;
         $files = [
             'console.php' => '<?php
                 /** @psalm-cli-only */
