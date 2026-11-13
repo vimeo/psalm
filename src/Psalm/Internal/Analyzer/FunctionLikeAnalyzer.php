@@ -28,6 +28,7 @@ use Psalm\Internal\Analyzer\Statements\Expression\Call\CallPurityResolver;
 use Psalm\Internal\Analyzer\Statements\Expression\Call\FunctionCallReturnTypeFetcher;
 use Psalm\Internal\Analyzer\Statements\Expression\DestructorAnalyzer;
 use Psalm\Internal\Analyzer\Statements\ExpressionAnalyzer;
+use Psalm\Internal\Codebase\CliOutput;
 use Psalm\Internal\Codebase\CodeUseGraph;
 use Psalm\Internal\Codebase\TaintStore;
 use Psalm\Internal\DataFlow\DataFlowNode;
@@ -692,7 +693,9 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
             );
         }
 
-        if (!$check_stmts) {
+        // a signature that fails the check skips the body, but what the body initialises or mutates still counts:
+        // its regular analysis reports the signature
+        if (!$check_stmts && !$context->collect_initializations && !$context->collect_mutations) {
             // the body is not analysed, so its uses of the params are unknown
             if ($storage instanceof MethodStorage
                 && $this instanceof MethodAnalyzer
@@ -741,7 +744,21 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
             $statements_analyzer->addSuppressedIssues(['NoValue']);
         }
 
+        $cli_instance_guard = $this->function instanceof ClassMethod
+            && $storage instanceof MethodStorage
+            && CliOutput::isInstanceGuard($codebase, $storage, $context)
+                ? $this->function
+                : null;
+
+        if ($cli_instance_guard !== null) {
+            $statements_analyzer->cli_instance_guard = $function_stmts[0] ?? null;
+        }
+
         $statements_analyzer->analyze($function_stmts, $context, $global_context);
+
+        if ($cli_instance_guard !== null) {
+            CliOutput::checkInstanceGuard($statements_analyzer, $cli_instance_guard);
+        }
 
         // the objects created here that are still held when the function-like ends die with it
         $param_ids = [];

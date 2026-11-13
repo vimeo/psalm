@@ -86,7 +86,7 @@ final class ExistingAtomicStaticCallAnalyzer
         $config = $codebase->config;
 
         MethodCallProhibitionAnalyzer::analyze(
-            $codebase,
+            $statements_analyzer,
             $context,
             $method_id,
             $statements_analyzer->getFullyQualifiedFunctionMethodOrNamespaceName(),
