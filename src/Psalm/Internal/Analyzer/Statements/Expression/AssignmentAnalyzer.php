@@ -1208,8 +1208,8 @@ final class AssignmentAnalyzer
             && ($return_type = $statements_analyzer->node_data->getType($stmt->expr))
             && $return_type->by_ref
         ) {
-            // The return value is a reference, but we cannot identify its target by a local variable ID.
-            // Writes through it may update an argument, a property, or a global outside this scope.
+            // The call returns a reference whose target is outside the local variable map.
+            // A normal assignment still handles its type, annotations, diagnostics and data flow.
             FunctionLikeAnalyzer::unbindByRefParam($statements_analyzer->getCodebase(), $context, $lhs_var_id);
 
             if (isset($context->references_in_scope[$lhs_var_id])) {
@@ -1217,10 +1217,12 @@ final class AssignmentAnalyzer
                 unset($context->references_in_scope[$lhs_var_id]);
             }
 
-            unset($context->references_possibly_from_confusing_scope[$lhs_var_id]);
+            unset(
+                $context->references_possibly_from_confusing_scope[$lhs_var_id],
+                $context->references_to_external_scope[$lhs_var_id],
+            );
 
             if (isset($context->vars_in_scope[$lhs_var_id])) {
-                // A previous array shape and its cached offsets no longer describe the new reference.
                 $context->removeDescendents(
                     $lhs_var_id,
                     $context->vars_in_scope[$lhs_var_id],
@@ -1229,24 +1231,29 @@ final class AssignmentAnalyzer
                 );
             }
 
-            // Break a previous PHP-level alias in the type map before binding the new reference.
+            // Detach any previous PHP-level alias before assigning the new value.
             unset($context->vars_in_scope[$lhs_var_id]);
-            $context->vars_in_scope[$lhs_var_id] = $return_type;
+            // Reuse the already analyzed return type without evaluating the call a second time.
+            $assignment_type = self::analyze(
+                $statements_analyzer,
+                $stmt->var,
+                null,
+                $return_type,
+                $context,
+                $doc_comment,
+                [],
+                $from_stmt === null ? $stmt : null,
+            );
+
+            // Binding the returned reference does not write through the previous alias.
+            if (isset($context->vars_in_scope[$lhs_var_id])) {
+                $context->vars_in_scope[$lhs_var_id] = $context->vars_in_scope[$lhs_var_id]->setByRef(true);
+            }
             $context->references_to_external_scope[$lhs_var_id] = true;
-            $context->hasVariable($lhs_var_id);
 
-            $lhs_location = new CodeLocation($statements_analyzer->getSource(), $stmt->var);
-            $statements_analyzer->registerVariableAssignment($lhs_var_id, $lhs_location);
-
-            $lhs_node = DataFlowNode::getForAssignment($lhs_var_id, $lhs_location);
-            $context->vars_in_scope[$lhs_var_id] = $return_type->addParentNodes([
-                $lhs_node->id => $lhs_node,
-            ]);
-
-            // The reference assignment can itself be used as an expression (e.g. echo ($x = &f())).
-            // Preserve its value type and data-flow origins for type checking and taint analysis.
-            if ($from_stmt === null) {
-                $statements_analyzer->node_data->setType($stmt, $return_type->setByRef(false));
+            // The assignment expression itself evaluates to the referenced value.
+            if ($from_stmt === null && $assignment_type !== null) {
+                $statements_analyzer->node_data->setType($stmt, $assignment_type->setByRef(false));
             }
 
             return true;

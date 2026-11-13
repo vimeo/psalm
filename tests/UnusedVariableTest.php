@@ -2573,6 +2573,21 @@ final class UnusedVariableTest extends TestCase
 
                     print_r($output_rows);',
             ],
+            'aliasedReturnedReferenceUsesAssignedValue' => [
+                'code' => <<<'PHP'
+                    <?php
+                    function &sharedText(): string {
+                        static $text = '';
+                        return $text;
+                    }
+
+                    function updateThroughAliasedReference(string $value): void {
+                        $reference = &sharedText();
+                        $alias = &$reference;
+                        $alias = $value;
+                    }
+                    PHP,
+            ],
             'returnedReferenceArrayAssignmentUsesValue' => [
                 'code' => <<<'PHP'
                     <?php
@@ -2615,7 +2630,7 @@ final class UnusedVariableTest extends TestCase
                     }
                     PHP,
                 'assertions' => [],
-                'ignored_issues' => [],
+                'ignored_issues' => ['MixedAssignment'],
                 'php_version' => '8.0',
             ],
             'usedInAssignOpToByRef' => [

@@ -84,6 +84,41 @@ final class TaintTest extends TestCase
     }
 
     /**
+     * Taint must travel from a by-reference call through its local alias to the sink.
+     */
+    public function testReturnedReferenceAssignmentToVariablePreservesTaint(): void
+    {
+        $code = <<<'PHP'
+            <?php
+            final class ReferenceSource {
+                public static string $value = '';
+            }
+
+            /** @psalm-taint-source html */
+            function &getReferenceSource(): string {
+                return ReferenceSource::$value;
+            }
+
+            $reference = &getReferenceSource();
+            echo $reference;
+            PHP;
+
+        $this->expectException(CodeException::class);
+        $this->expectExceptionMessageMatches('/\bTaintedHtml\b/');
+
+        $file_path = self::$src_dir_path . 'somefile.php';
+        $this->project_analyzer->setPhpVersion('8.0', 'tests');
+        $this->addFile($file_path, $code);
+        $this->project_analyzer->trackTaintedInputs();
+
+        foreach (self::IGNORE as $issue_name) {
+            Config::getInstance()->setCustomErrorLevel($issue_name, Config::REPORT_SUPPRESS);
+        }
+
+        $this->analyzeFile($file_path, new Context(), false);
+    }
+
+    /**
      * A reference assignment used as an expression must retain the taint of the returned value.
      */
     public function testReturnedReferenceAssignmentExpressionPreservesTaint(): void

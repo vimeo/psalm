@@ -656,6 +656,61 @@ final class ReferenceTest extends TestCase
                 'assertions' => [],
                 'ignored_issues' => ['UnsupportedReferenceUsage'],
             ],
+            'returnedReferenceAssignmentFromInstanceMethod' => [
+                'code' => <<<'PHP'
+                    <?php
+                    final class InstanceReferenceStore {
+                        public string $value = '';
+
+                        /** @psalm-suppress MissingReturnType */
+                        public function &getReference() {
+                            return $this->value;
+                        }
+                    }
+
+                    function assignThroughInstanceReference(InstanceReferenceStore $store, string $value): void {
+                        $reference = &$store->getReference();
+                        $reference = $value;
+                    }
+                    PHP,
+                'ignored_issues' => ['MixedAssignment'],
+            ],
+            'returnedReferenceAssignmentFromStaticMethod' => [
+                'code' => <<<'PHP'
+                    <?php
+                    final class StaticReferenceStore {
+                        public static string $value = '';
+
+                        /** @psalm-suppress MissingReturnType */
+                        public static function &getReference() {
+                            return self::$value;
+                        }
+                    }
+
+                    function assignThroughStaticReference(string $value): void {
+                        $reference = &StaticReferenceStore::getReference();
+                        $reference = $value;
+                    }
+                    PHP,
+                'ignored_issues' => ['MixedAssignment'],
+            ],
+            'returnedReferenceAssignmentRespectsNamedVarAnnotation' => [
+                'code' => <<<'PHP'
+                    <?php
+                    /** @return int|string */
+                    function &getUnionReference(): int|string {
+                        static $value = 'text';
+                        return $value;
+                    }
+
+                    function useNarrowedReturnedReference(): void {
+                        /** @var string $reference */
+                        $reference = &getUnionReference();
+                        /** @psalm-check-type-exact $reference = string */
+                        echo strlen($reference);
+                    }
+                    PHP,
+            ],
             'returnedReferenceAssignmentInvalidatesCachedOffsets' => [
                 'code' => <<<'PHP'
                     <?php
