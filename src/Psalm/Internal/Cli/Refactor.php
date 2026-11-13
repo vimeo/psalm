@@ -158,9 +158,15 @@ final class Refactor
                 -r, --root
                     If running Psalm globally you'll need to specify a project root. Defaults to cwd
 
-                --threads=auto
-                    If greater than one, Psalm will run analysis on multiple threads, speeding things up.
-                    By default
+                --threads=INT|auto
+                    If greater than one, Psalm will run the scan and analysis on multiple threads,
+                    speeding things up.
+                    `auto` (the default) uses the threads setting of the config, or else one thread per CPU core.
+
+                --scan-threads=INT|auto
+                    If greater than one, Psalm will run the scan on multiple threads, speeding things up
+                    (if specified, takes priority over the --threads flag).
+                    `auto` (the default) uses the scanThreads setting of the config, or else one thread per CPU core.
 
                 --move "[Identifier]" --into "[Class]"
                     Moves the specified item into the class. More than one item can be moved into a class
