@@ -16,6 +16,7 @@ use ReflectionProperty;
 use function getcwd;
 use function preg_quote;
 use function set_time_limit;
+use function sort;
 use function strpos;
 
 use const DIRECTORY_SEPARATOR;
@@ -1169,8 +1170,8 @@ final class IncludeTest extends TestCase
         ');
 
         $this->assertSame(
-            ['UndefinedDocblockClass@3'],
-            $this->analyzeFilesInOrder([$class_file, $includer_file]),
+            ['file1.php: UndefinedDocblockClass@3'],
+            $this->analyzeFilesInOrder(['file1.php', 'file2.php']),
         );
     }
 
@@ -1187,14 +1188,131 @@ final class IncludeTest extends TestCase
     }
 
     /**
-     * A type that is declared outside the project is checked at the call, and the call reports its unknown class
-     * every time: it must not depend on whether an earlier call (or file, or worker process) checked it first.
+     * A type declared outside the project is checked at each call, and each of its issues is reported once, at the
+     * earliest call, whichever file is analysed first
+     *
+     * @param Config::REPORT_ERROR|Config::REPORT_INFO $reporting_level
+     * @param list<string> $file_names
      */
-    public function testUnknownClassInExternalReturnTypeIsReportedAtEveryCall(): void
+    #[DataProvider('providerReportingLevelsInFileOrders')]
+    public function testUnknownClassInExternalReturnTypeIsReportedAtTheEarliestCall(
+        string $reporting_level,
+        array $file_names,
+    ): void {
+        $this->project_analyzer->getCodebase()->config->setCustomErrorLevel('UndefinedDocblockClass', $reporting_level);
+        $this->addLibrary();
+        $this->addFile((string) getcwd() . DIRECTORY_SEPARATOR . 'first_caller.php', '<?php
+            function first(Library $library): void {
+                Library::staticMethod();
+                Library::staticMethod();
+                $library->method();
+                $library->method();
+                func();
+                func();
+                missing_function();
+                missing_function();
+            }
+        ');
+        $this->addFile((string) getcwd() . DIRECTORY_SEPARATOR . 'second_caller.php', '<?php
+            function second(Library $library): void {
+                Library::staticMethod();
+                $library->method();
+                func();
+            }
+        ');
+
+        $this->assertSame(
+            [
+                'first_caller.php: UndefinedDocblockClass@3',
+                'first_caller.php: UndefinedDocblockClass@5',
+                'first_caller.php: UndefinedDocblockClass@7',
+                'first_caller.php: UndefinedFunction@9',
+                'first_caller.php: UndefinedFunction@10',
+            ],
+            $this->analyzeFilesInOrder($file_names),
+        );
+        $this->assertSame($reporting_level === Config::REPORT_ERROR ? 5 : 2, IssueBuffer::getErrorCount());
+    }
+
+    /**
+     * A call whose issue is suppressed, or that a class_exists() check guards, doesn't take part: the earliest of
+     * the other calls reports it, whichever file is analysed first
+     *
+     * @param list<string> $file_names
+     */
+    #[DataProvider('providerExcludedCallsInFileOrders')]
+    public function testExcludedCallDoesNotHideTheUnknownClassAtTheOtherCalls(string $excluded_call, array $file_names): void
+    {
+        $this->addLibrary();
+        $this->addFile((string) getcwd() . DIRECTORY_SEPARATOR . 'first_caller.php', '<?php
+            ' . $excluded_call . '
+        ');
+        $this->addFile((string) getcwd() . DIRECTORY_SEPARATOR . 'second_caller.php', '<?php
+            function second(): void {
+                Library::staticMethod();
+            }
+        ');
+
+        $this->assertSame(
+            ['second_caller.php: UndefinedDocblockClass@3'],
+            $this->analyzeFilesInOrder($file_names),
+        );
+    }
+
+    /**
+     * @return iterable<string, array{list<string>}>
+     * @psalm-pure
+     */
+    public static function providerFileOrders(): iterable
+    {
+        yield 'first caller first' => [['first_caller.php', 'second_caller.php']];
+        yield 'second caller first' => [['second_caller.php', 'first_caller.php']];
+    }
+
+    /**
+     * @return iterable<string, array{Config::REPORT_ERROR|Config::REPORT_INFO, list<string>}>
+     * @psalm-pure
+     */
+    public static function providerReportingLevelsInFileOrders(): iterable
+    {
+        foreach ([Config::REPORT_ERROR, Config::REPORT_INFO] as $reporting_level) {
+            foreach (self::providerFileOrders() as $order => [$file_names]) {
+                yield $reporting_level . ', ' . $order => [$reporting_level, $file_names];
+            }
+        }
+    }
+
+    /**
+     * @return iterable<string, array{string, list<string>}>
+     * @psalm-pure
+     */
+    public static function providerExcludedCallsInFileOrders(): iterable
+    {
+        $excluded_calls = [
+            'suppressed' => '/** @psalm-suppress UndefinedDocblockClass */
+                function first(): void {
+                    Library::staticMethod();
+                }',
+            'class_exists' => 'function first(): void {
+                    if (class_exists(Unknown::class)) {
+                        Library::staticMethod();
+                    }
+                }',
+        ];
+
+        foreach ($excluded_calls as $name => $excluded_call) {
+            foreach (self::providerFileOrders() as $order => [$file_names]) {
+                yield $name . ', ' . $order => [$excluded_call, $file_names];
+            }
+        }
+    }
+
+    /**
+     * Adds a file outside the analysed ones, as the code in vendor/ is
+     */
+    private function addLibrary(): void
     {
         $library_file = (string) getcwd() . DIRECTORY_SEPARATOR . 'library.php';
-        $first_caller = (string) getcwd() . DIRECTORY_SEPARATOR . 'first_caller.php';
-        $second_caller = (string) getcwd() . DIRECTORY_SEPARATOR . 'second_caller.php';
 
         $this->addFile($library_file, '<?php
             class Library {
@@ -1208,68 +1326,39 @@ final class IncludeTest extends TestCase
             /** @return Unknown */
             function func() { return 1; }
         ');
-        $this->addFile($first_caller, '<?php
-            function first(Library $library): void {
-                Library::staticMethod();
-                Library::staticMethod();
-                $library->method();
-                $library->method();
-                func();
-                func();
-            }
-        ');
-        $this->addFile($second_caller, '<?php
-            function second(Library $library): void {
-                Library::staticMethod();
-                $library->method();
-                func();
-            }
-        ');
-
         $this->project_analyzer->getCodebase()->scanner->addFilesToDeepScan([$library_file => $library_file]);
-
-        $this->assertSame(
-            [
-                'UndefinedDocblockClass@3',
-                'UndefinedDocblockClass@4',
-                'UndefinedDocblockClass@5',
-                'UndefinedDocblockClass@6',
-                'UndefinedDocblockClass@7',
-                'UndefinedDocblockClass@8',
-                'UndefinedDocblockClass@3',
-                'UndefinedDocblockClass@4',
-                'UndefinedDocblockClass@5',
-            ],
-            $this->analyzeFilesInOrder([$first_caller, $second_caller]),
-        );
     }
 
     /**
-     * @param list<string> $file_paths
-     * @return list<string> the issues of the analysis, as "type@line" in the order of the files
+     * @param list<string> $file_names the files of the working directory to analyse, in that order
+     * @return list<string> the issues of the analysis, as "file: type@line", by file
      */
-    private function analyzeFilesInOrder(array $file_paths): array
+    private function analyzeFilesInOrder(array $file_names): array
     {
         $codebase = $this->project_analyzer->getCodebase();
         $config = $codebase->config;
         $config->throw_exception = false;
 
-        foreach ($file_paths as $file_path) {
+        foreach ($file_names as $file_name) {
+            $file_path = (string) getcwd() . DIRECTORY_SEPARATOR . $file_name;
             $codebase->scanner->addFilesToDeepScan([$file_path => $file_path]);
             $codebase->addFilesToAnalyze([$file_path => $file_path]);
         }
 
         $codebase->scanFiles();
 
-        foreach ($file_paths as $file_path) {
+        foreach ($file_names as $file_name) {
+            $file_path = (string) getcwd() . DIRECTORY_SEPARATOR . $file_name;
             (new FileAnalyzer($this->project_analyzer, $file_path, $config->shortenFileName($file_path)))->analyze();
         }
 
+        $sorted_file_names = $file_names;
+        sort($sorted_file_names);
         $issues = [];
 
-        foreach ($file_paths as $file_path) {
-            foreach (IssueBuffer::getIssuesDataForFile($file_path) as $issue) {
-                $issues[] = $issue->type . '@' . $issue->line_from;
+        foreach ($sorted_file_names as $file_name) {
+            foreach (IssueBuffer::getIssuesDataForFile((string) getcwd() . DIRECTORY_SEPARATOR . $file_name) as $issue) {
+                $issues[] = $file_name . ': ' . $issue->type . '@' . $issue->line_from;
             }
         }
 

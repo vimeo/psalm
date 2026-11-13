@@ -715,19 +715,27 @@ final class ExistingAtomicStaticCallAnalyzer
                 $return_type_location = $secondary_return_type_location;
             }
 
-            // only check the type locally if it's defined externally
+            // only check the type locally if it's defined externally, reporting its issues at one call
             if ($return_type_location && !$config->isInProjectDirs($return_type_location->file_path)) {
-                /** @psalm-suppress UnusedMethodCall Actually generates issues */
-                $return_type_candidate->check(
-                    $statements_analyzer,
-                    new CodeLocation($statements_analyzer, $stmt),
-                    $statements_analyzer->getSuppressedIssues(),
-                    $context->phantom_classes,
-                    true,
-                    false,
-                    false,
-                    $context,
+                $issue_group = IssueBuffer::setIssueGroup(
+                    $return_type_location->file_path . ':' . $return_type_location->raw_file_start,
                 );
+
+                try {
+                    /** @psalm-suppress UnusedMethodCall Actually generates issues */
+                    $return_type_candidate->check(
+                        $statements_analyzer,
+                        new CodeLocation($statements_analyzer, $stmt),
+                        $statements_analyzer->getSuppressedIssues(),
+                        $context->phantom_classes,
+                        true,
+                        false,
+                        false,
+                        $context,
+                    );
+                } finally {
+                    IssueBuffer::setIssueGroup($issue_group);
+                }
             }
         }
 

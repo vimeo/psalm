@@ -912,6 +912,7 @@ final class ReturnTypeAnalyzer
                 $parent_class,
             );
 
+            /** @psalm-suppress UnusedMethodCall Actually generates issues */
             self::checkTypeAsReturned(
                 $fleshed_out_return_type,
                 $function_like_analyzer,
@@ -1117,6 +1118,7 @@ final class ReturnTypeAnalyzer
      * TypeChecker)
      *
      * @param array<string> $suppressed_issues
+     * @psalm-pure
      */
     private static function checkTypeAsReturned(
         Union $type,
@@ -1142,14 +1144,7 @@ final class ReturnTypeAnalyzer
             $function_like_analyzer instanceof MethodAnalyzer,
         );
 
-        if (!$checker->check($type->getAtomicTypes())) {
-            return false;
-        }
-
-        /** @psalm-suppress InaccessibleProperty Does not affect anything else */
-        $type->checked = true;
-
-        return true;
+        return $checker->check($type);
     }
 
     /**

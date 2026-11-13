@@ -72,7 +72,13 @@ final class TypeChecker extends TypeVisitor
     private bool $has_errors = false;
 
     /**
-     * The types this run marked as checked
+     * Whether the result of the check holds wherever the type is: not when a phantom class (a class_exists() check
+     * around the code) let a class pass
+     */
+    private bool $context_free = true;
+
+    /**
+     * The types this checker marked as checked, for check() to unmark when the result can't be kept
      *
      * @var list<Atomic|Union|MutableUnion>
      */
@@ -200,28 +206,28 @@ final class TypeChecker extends TypeVisitor
     }
 
     /**
-     * @param non-empty-array<TypeNode> $types
-     * @return bool whether the types are fine. A type that failed the check stays unchecked, so that checking it
-     *              again reports the same errors, instead of accepting it because an earlier analysis (of the same
-     *              method in the context of another file) found them
+     * Checks the type, and marks it and the types in it as checked only if that raised no issue (a suppressed one
+     * included) and holds wherever the type is, so that checking it again elsewhere reports the same issues
+     *
+     * @return bool whether the type has no errors
      * @psalm-external-mutation-free
      */
-    public function check(array $types): bool
+    public function check(Union|MutableUnion $type): bool
     {
-        $this->traverseArray($types);
+        $issue_count = IssueBuffer::getAcceptedIssueCount();
 
-        if (!$this->has_errors) {
+        $this->traverse($type);
+
+        if ($this->context_free && IssueBuffer::getAcceptedIssueCount() === $issue_count) {
             return true;
         }
 
-        foreach ($this->checked_types as $type) {
-            /** @psalm-suppress InaccessibleProperty, ImpurePropertyAssignment Cache, doesn't affect anything else */
-            $type->checked = false;
+        foreach ($this->checked_types as $checked_type) {
+            /** @psalm-suppress InaccessibleProperty, ImpurePropertyAssignment `checked` only memoises the check */
+            $checked_type->checked = false;
         }
 
-        $this->checked_types = [];
-
-        return false;
+        return !$this->has_errors;
     }
 
     private function markChecked(Atomic|Union|MutableUnion $type): void
@@ -281,6 +287,8 @@ final class TypeChecker extends TypeVisitor
                 $this->has_errors = true;
                 return null;
             }
+        } else {
+            $this->context_free = false;
         }
 
         $fq_class_name_lc = strtolower($atomic->value);

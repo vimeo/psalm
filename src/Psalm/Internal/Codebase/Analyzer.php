@@ -257,7 +257,7 @@ final class Analyzer
             $project_analyzer->consolidateAnalyzedData();
         }
 
-        foreach (IssueBuffer::getIssuesData() as $file_path => $file_issues) {
+        foreach (IssueBuffer::getAllIssuesData() as $file_path => $file_issues) {
             $codebase->file_reference_provider->clearExistingIssuesForFile($file_path);
 
             foreach ($file_issues as $issue_data) {
