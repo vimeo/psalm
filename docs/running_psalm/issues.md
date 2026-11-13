@@ -8,6 +8,7 @@
  - [CheckType](issues/CheckType.md)
  - [CircularReference](issues/CircularReference.md)
  - [ClassMustBeFinal](issues/ClassMustBeFinal.md)
+ - [CliOnlyCall](issues/CliOnlyCall.md)
  - [ComplexFunction](issues/ComplexFunction.md)
  - [ComplexMethod](issues/ComplexMethod.md)
  - [ConfigIssue](issues/ConfigIssue.md)

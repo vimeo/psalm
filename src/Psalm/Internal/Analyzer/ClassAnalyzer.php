@@ -682,8 +682,7 @@ final class ClassAnalyzer extends ClassLikeAnalyzer
             }
         }
 
-        $pseudo_methods = $storage->pseudo_methods + $storage->pseudo_static_methods;
-        MethodComparator::comparePseudoMethods($pseudo_methods, $this->fq_class_name, $codebase, $storage);
+        MethodComparator::comparePseudoMethods($codebase, $storage);
 
         $event = new AfterClassLikeAnalysisEvent(
             $class,

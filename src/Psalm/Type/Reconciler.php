@@ -855,6 +855,10 @@ class Reconciler
                 return $existing_keys[$key] ?? Type::getIntRange(1, null);
             }
 
+            if ($key === Context::PHP_SAPI_VAR_ID) {
+                return $existing_keys[$key] ?? Type::getString();
+            }
+
             if (!isset($existing_keys[$key_parts[0]]) && str_contains($key, '::') && !str_contains($key, '$')) {
                 return self::getClassConstantTypeOfKey($codebase, $key, $statements_analyzer);
             }
@@ -1647,7 +1651,13 @@ class Reconciler
                             // do nothing
                         } else {
                             $properties = $base_atomic_type->properties;
-                            $properties[$array_key_offset] = $result_type;
+
+                            // only one of the keys the offset can be holds what the assertion says, and which one is
+                            // not known: the items it may be keep the types they have
+                            if (count($array_key_offsets) === 1 || !isset($properties[$array_key_offset])) {
+                                $properties[$array_key_offset] = $result_type;
+                            }
+
                             if ($base_atomic_type->is_list
                             && (($int_array_key_offset = ArrayAnalyzer::getLiteralArrayKeyInt($array_key_offset))
                                     === false

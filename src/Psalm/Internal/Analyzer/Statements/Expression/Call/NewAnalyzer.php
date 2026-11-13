@@ -22,6 +22,7 @@ use Psalm\Internal\Analyzer\Statements\Expression\GlobalStateAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\SimpleTypeInferer;
 use Psalm\Internal\Analyzer\Statements\ExpressionAnalyzer;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
+use Psalm\Internal\Codebase\CliOutput;
 use Psalm\Internal\Codebase\ConditionalTaintSinks;
 use Psalm\Internal\Codebase\ReceiverPropertyTaints;
 use Psalm\Internal\DataFlow\DataFlowNode;
@@ -619,6 +620,47 @@ final class NewAnalyzer extends CallAnalyzer
         }
     }
 
+    /**
+     * Reports the instantiation of a class deprecated, internal to other code, or only running from the command line
+     */
+    private static function checkInstantiationProhibitions(
+        StatementsAnalyzer $statements_analyzer,
+        Context $context,
+        PhpParser\Node\Expr\New_ $stmt,
+        ClassLikeStorage $storage,
+        string $fq_class_name,
+    ): void {
+        if ($storage->deprecated && strtolower($fq_class_name) !== strtolower((string)$context->self)) {
+            IssueBuffer::maybeAdd(
+                new DeprecatedClass(
+                    $fq_class_name . ' is marked deprecated',
+                    new CodeLocation($statements_analyzer->getSource(), $stmt),
+                    $fq_class_name,
+                ),
+                $statements_analyzer->getSuppressedIssues(),
+            );
+        }
+
+        $caller_identifier = $statements_analyzer->getFullyQualifiedFunctionMethodOrNamespaceName() ?? '';
+
+        if (!$context->collect_initializations
+            && !$context->collect_mutations
+            && !NamespaceAnalyzer::isWithinAny($caller_identifier, $storage->internal)
+        ) {
+            IssueBuffer::maybeAdd(
+                new InternalClass(
+                    $fq_class_name . ' is internal to ' . InternalClass::listToPhrase($storage->internal)
+                        . ' but called from ' . ($caller_identifier ?: 'root namespace'),
+                    new CodeLocation($statements_analyzer->getSource(), $stmt),
+                    $fq_class_name,
+                ),
+                $statements_analyzer->getSuppressedIssues(),
+            );
+        }
+
+        CliOutput::checkInstantiation($statements_analyzer, $context, $storage, $stmt);
+    }
+
     private static function analyzeNamedConstructor(
         StatementsAnalyzer $statements_analyzer,
         Codebase $codebase,
@@ -648,34 +690,7 @@ final class NewAnalyzer extends CallAnalyzer
             }
         }
 
-        if ($storage->deprecated && strtolower($fq_class_name) !== strtolower((string)$context->self)) {
-            IssueBuffer::maybeAdd(
-                new DeprecatedClass(
-                    $fq_class_name . ' is marked deprecated',
-                    new CodeLocation($statements_analyzer->getSource(), $stmt),
-                    $fq_class_name,
-                ),
-                $statements_analyzer->getSuppressedIssues(),
-            );
-        }
-
-
-        $caller_identifier = $statements_analyzer->getFullyQualifiedFunctionMethodOrNamespaceName() ?? '';
-
-        if (!$context->collect_initializations
-            && !$context->collect_mutations
-            && !NamespaceAnalyzer::isWithinAny($caller_identifier, $storage->internal)
-        ) {
-            IssueBuffer::maybeAdd(
-                new InternalClass(
-                    $fq_class_name . ' is internal to ' . InternalClass::listToPhrase($storage->internal)
-                        . ' but called from ' . ($caller_identifier ?: 'root namespace'),
-                    new CodeLocation($statements_analyzer->getSource(), $stmt),
-                    $fq_class_name,
-                ),
-                $statements_analyzer->getSuppressedIssues(),
-            );
-        }
+        self::checkInstantiationProhibitions($statements_analyzer, $context, $stmt, $storage, $fq_class_name);
 
         $method_id = new MethodIdentifier($fq_class_name, '__construct');
 
@@ -745,6 +760,7 @@ final class NewAnalyzer extends CallAnalyzer
             if ($declaring_method_id) {
                 $method_storage = $codebase->methods->getStorage($declaring_method_id);
 
+                $caller_identifier = $statements_analyzer->getFullyQualifiedFunctionMethodOrNamespaceName() ?? '';
                 if (!NamespaceAnalyzer::isWithinAny($caller_identifier, $method_storage->internal)) {
                     IssueBuffer::maybeAdd(
                         new InternalMethod(
