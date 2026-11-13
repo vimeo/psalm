@@ -418,6 +418,7 @@ final class ConstFetchAnalyzer
     public static function isConstVarId(string $var_id): bool
     {
         return $var_id !== Context::PHP_VERSION_ID_VAR_ID
+            && $var_id !== Context::PHP_SAPI_VAR_ID
             && preg_match('/^[a-zA-Z_\x80-\xff][\w\x80-\xff]*(\\\\[a-zA-Z_\x80-\xff][\w\x80-\xff]*)*$/', $var_id) === 1;
     }
 
