@@ -33,6 +33,14 @@ final class UnifiedDiffRendererTest extends TestCase
         );
     }
 
+    public function testPlainHeadersOfPathsWithSpacesAreTabTerminated(): void
+    {
+        $output = (new UnifiedDiffRenderer())->render(1, 'src/my file.php', '/p/src/my file.php', "a\n", "b\n");
+
+        $this->assertStringContainsString("\n--- a/src/my file.php\t\n+++ b/src/my file.php\t\n", $output);
+        $this->assertStringStartsWith("1) src/my file.php:1\n", $output);
+    }
+
     public function testColoredOutputHighlightsChangedPartsWithoutSplittingMultibyteCharacters(): void
     {
         $output = (new UnifiedDiffRenderer(true, true))->render(

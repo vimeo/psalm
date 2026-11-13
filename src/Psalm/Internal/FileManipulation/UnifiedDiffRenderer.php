@@ -16,6 +16,7 @@ use function is_string;
 use function max;
 use function min;
 use function ord;
+use function str_contains;
 use function str_ends_with;
 use function strlen;
 use function strrev;
@@ -50,10 +51,12 @@ final class UnifiedDiffRenderer
         string $old_contents,
         string $new_contents,
     ): string {
+        // like `git diff`, a trailing tab ends the file name so that `patch` accepts names containing spaces
+        $header_suffix = str_contains($relative_path, ' ') ? "\t" : '';
         $diff = (new Differ(
             new StrictUnifiedDiffOutputBuilder([
-                'fromFile' => 'a/' . $relative_path,
-                'toFile' => 'b/' . $relative_path,
+                'fromFile' => 'a/' . $relative_path . $header_suffix,
+                'toFile' => 'b/' . $relative_path . $header_suffix,
             ]),
         ))->diff($old_contents, $new_contents);
 
