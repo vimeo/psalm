@@ -1472,7 +1472,7 @@ final class ProjectAnalyzer
 
         $stmts = $this->getStatementsForMutations($file_analyzer->getFilePath());
 
-        $file_analyzer->populateCheckers($stmts);
+        $file_analyzer->populateCheckers($stmts, false);
 
         if (!$this_context->self) {
             $this_context->self = $fq_class_name;
