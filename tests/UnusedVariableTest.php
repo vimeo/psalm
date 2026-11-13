@@ -29,6 +29,157 @@ final class UnusedVariableTest extends TestCase
     public static function providerValidCodeParse(): array
     {
         return [
+            'assignmentUsedAfterBreakTwoFromSwitchInInfiniteWhile' => [
+                'code' => '<?php
+                    final class Step {
+                        public function code(): string {
+                            return random_int(0, 1) === 1 ? "a" : "b";
+                        }
+
+                        public function previous(): Step {
+                            return new Step();
+                        }
+                    }
+
+                    function build(Step $step, bool $flag): string {
+                        $label = "";
+                        if ($flag) {
+                            $label = "changed";
+                            while (true) {
+                                switch ($step->code()) {
+                                    case "a":
+                                        break;
+                                    default:
+                                        break 2;
+                                }
+                                $step = $step->previous();
+                            }
+                        }
+
+                        return $label;
+                    }',
+            ],
+            'assignmentUsedAfterBreakTwoFromSwitchInInfiniteFor' => [
+                'code' => '<?php
+                    function buildWithFor(int $mode, bool $flag): string {
+                        $label = "";
+                        if ($flag) {
+                            $label = "changed";
+                            for (;;) {
+                                switch ($mode) {
+                                    case 0:
+                                        break;
+                                    default:
+                                        break 2;
+                                }
+                            }
+                        }
+
+                        return $label;
+                    }',
+            ],
+            'assignmentUsedAfterBreakTwoInFirstCaseOfInfiniteWhile' => [
+                'code' => '<?php
+                    function buildWithEarlierBreak(int $mode, bool $flag): string {
+                        $label = "";
+                        if ($flag) {
+                            $label = "changed";
+                            while (true) {
+                                switch ($mode) {
+                                    case 0:
+                                        break 2;
+                                    default:
+                                        break;
+                                }
+                            }
+                        }
+
+                        return $label;
+                    }',
+            ],
+            'assignmentUsedAfterBreakTwoInFirstCaseOfInfiniteFor' => [
+                'code' => '<?php
+                    function buildWithEarlierForBreak(int $mode, bool $flag): string {
+                        $label = "";
+                        if ($flag) {
+                            $label = "changed";
+                            for (;;) {
+                                switch ($mode) {
+                                    case 0:
+                                        break 2;
+                                    default:
+                                        break;
+                                }
+                            }
+                        }
+
+                        return $label;
+                    }',
+            ],
+            'continueTwoDoesNotDiscardBreakTwoInAnotherCase' => [
+                'code' => '<?php
+                    function eventuallyBreaks(int $mode, bool $flag): string {
+                        $label = "";
+                        if ($flag) {
+                            $label = "changed";
+                            while (true) {
+                                switch ($mode) {
+                                    case 0:
+                                        break 2;
+                                    default:
+                                        continue 2;
+                                }
+                            }
+                        }
+
+                        return $label;
+                    }',
+            ],
+            'phpstanVarSetsTheTypeOfTheAssignedVariable' => [
+                'code' => '<?php
+                    /** @phpstan-var list<string> $a */
+                    $a = json_decode("[]", true);
+
+                    /** @phpstan-var list<int> */
+                    $b = json_decode("[]", true);
+
+                    echo json_encode([$a, $b]);',
+                'assertions' => [
+                    '$a' => 'list<string>',
+                    '$b' => 'list<int>',
+                ],
+            ],
+            'knownVarTypeOfPhpstanVarIsNotUnnecessary' => [
+                'code' => '<?php
+                    function foo() : string {
+                        return "hello";
+                    }
+
+                    /** @phpstan-var string */
+                    $a = foo();
+
+                    /** @phpstan-var string $b */
+                    $b = foo();
+
+                    /** @return string[] */
+                    function bar() : array {
+                        return ["hello"];
+                    }
+
+                    /** @phpstan-var string $s */
+                    foreach (bar() as $s) {
+                        echo $s;
+                    }
+
+                    /** @return Generator<int, int, string, void> */
+                    function gen(): Generator {
+                        /** @phpstan-var string $x */
+                        $x = yield 1;
+                        echo $x;
+                    }
+
+                    echo $a, $b;',
+            ],
             'counterDecrementedOnlyInTheSecondPassOfALoopIsUsed' => [
                 'code' => '<?php
                     /** @param string[] $tokens */
@@ -196,6 +347,21 @@ final class UnusedVariableTest extends TestCase
                         $k = "x";
                         sort($a[$k]);
                         return $a;
+                    }',
+            ],
+            'variablesOfAllCatchesAreUsedWhenTryAlwaysReturns' => [
+                'code' => '<?php
+                    function test(): void
+                    {
+                        try {
+                            return;
+                        } catch (\RuntimeException $exception) {
+                            $exception = new \LogicException("test", 0, $exception);
+                        } catch (Throwable $exception) {
+                            $exception = new \InvalidArgumentException("test 2", 0, $exception);
+                        }
+
+                        echo $exception->getMessage();
                     }',
             ],
             'callOfCallableNarrowedFromClassStringOrCallable' => [
@@ -2513,6 +2679,67 @@ final class UnusedVariableTest extends TestCase
 
                     print_r($output_rows);',
             ],
+            'aliasedReturnedReferenceUsesAssignedValue' => [
+                'code' => <<<'PHP'
+                    <?php
+                    function &sharedText(): string {
+                        /** @var string $text */
+                        static $text = '';
+                        return $text;
+                    }
+
+                    function updateThroughAliasedReference(string $value): void {
+                        $reference = &sharedText();
+                        $alias = &$reference;
+                        $alias = $value;
+                    }
+                    PHP,
+            ],
+            'returnedReferenceArrayAssignmentUsesValue' => [
+                'code' => <<<'PHP'
+                    <?php
+                    /** @return array<string, string> */
+                    function &storage(): array {
+                        /** @var array<string, string> $items */
+                        static $items = [];
+                        return $items;
+                    }
+
+                    function store(string $value): void {
+                        $items = &storage();
+                        $items['key'] = $value;
+                    }
+                    PHP,
+            ],
+            'returnedReferenceToArrayElementUsesValueAndInput' => [
+                'code' => <<<'PHP'
+                    <?php
+                    /** @param array<string, mixed> $data */
+                    function &findNode(array &$data, string $path): mixed {
+                        $node = &$data[$path];
+                        return $node;
+                    }
+
+                    /**
+                     * @param array<string, string> $fields
+                     * @param array<string, string> $input
+                     * @return array<string, mixed>
+                     * @psalm-suppress MixedArrayAssignment
+                     */
+                    function apply(array $fields, array $input): array {
+                        $data = [];
+                        foreach ($fields as $group => $name) {
+                            $node = &findNode($data, $group);
+                            $value = $input[$name];
+                            $node[$name] = $value;
+                        }
+                        return $data;
+                    }
+                    PHP,
+                'assertions' => [],
+                'ignored_issues' => ['MixedAssignment'],
+                'php_version' => '8.0',
+            ],
             'usedInAssignOpToByRef' => [
                 'code' => '<?php
                     function foo(int &$d): void  {
@@ -2810,6 +3037,23 @@ final class UnusedVariableTest extends TestCase
                         }
                     }
                 );',
+            ],
+            'paramUsedAsDynamicClassConstantNameOfAnExpression' => [
+                'code' => '<?php
+                    final class A {
+                        public const FOO = 1;
+                        public const BAR = 2;
+                    }
+
+                    /** @param \'FOO\'|\'BAR\' $const */
+                    function get(A $a, string $const): int {
+                        return $a::{$const};
+                    }
+
+                    echo get(new A(), "FOO");',
+                'assertions' => [],
+                'ignored_issues' => ['MixedReturnStatement'],
+                'php_version' => '8.3',
             ],
             'pipeUsesItsLeftHandSide' => [
                 'code' => '<?php
