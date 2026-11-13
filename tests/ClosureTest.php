@@ -2264,6 +2264,57 @@ final class ClosureTest extends TestCase
                     $result = $factorial(5);',
                 'assertions' => ['$result===' => 'int'],
             ],
+            'recursiveClosureOfATemplatedClassPassesTheTemplatedValuesOfItsMethodsToItself' => [
+                'code' => '<?php
+                    /**
+                     * @template TNode
+                     */
+                    final class Link {
+                        /**
+                         * @param TNode $to
+                         */
+                        public function __construct(public mixed $to) {}
+                    }
+
+                    /**
+                     * @template TNode
+                     */
+                    final class Graph {
+                        /**
+                         * @param array<int, list<Link<TNode>>> $links
+                         */
+                        public function __construct(private array $links = []) {}
+
+                        /**
+                         * @param TNode $from
+                         * @return list<Link<TNode>>
+                         */
+                        public function linksFrom(mixed $from): array {
+                            return $this->links[(int) $from] ?? [];
+                        }
+
+                        public function reaches(): bool {
+                            $visit =
+                                /**
+                                 * @param TNode $node
+                                 */
+                                function (mixed $node) use (&$visit): bool {
+                                    foreach ($this->linksFrom($node) as $link) {
+                                        if ($visit($link->to)) {
+                                            return true;
+                                        }
+                                    }
+
+                                    return false;
+                                };
+
+                            return false;
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.2',
+            ],
             'fromCallableOfAClassStringMethodReturningStaticIsTheClassItself' => [
                 'code' => '<?php
                     class P {
