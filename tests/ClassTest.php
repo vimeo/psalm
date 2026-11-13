@@ -2345,6 +2345,32 @@ final class ClassTest extends TestCase
                     }',
                 'error_message' => 'UndefinedClass - src' . DIRECTORY_SEPARATOR . 'somefile.php:3:25',
             ],
+            'methodOfAClassDeclaredConditionallyInANamespaceIsAnalyzed' => [
+                'code' => '<?php
+                    namespace Foo;
+
+                    if (!class_exists(C::class)) {
+                        final class C {
+                            public function m(): string {
+                                return 1;
+                            }
+                        }
+                    }',
+                'error_message' => 'InvalidReturnStatement - src' . DIRECTORY_SEPARATOR . 'somefile.php:7:40',
+            ],
+            'methodOfAClassDeclaredConditionallyInABracedNamespaceIsAnalyzed' => [
+                'code' => '<?php
+                    namespace Foo {
+                        if (!class_exists(C::class)) {
+                            final class C {
+                                public function m(): string {
+                                    return 1;
+                                }
+                            }
+                        }
+                    }',
+                'error_message' => 'InvalidReturnStatement - src' . DIRECTORY_SEPARATOR . 'somefile.php:6:44',
+            ],
             'newStaticOfAClassImplementingAnInterfaceWithoutAConstructor' => [
                 'code' => '<?php
                     interface Marker {}
