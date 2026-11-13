@@ -22,6 +22,7 @@ use Psalm\Internal\Analyzer\FunctionLike\ReturnTypeAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\Call\ClassTemplateParamCollector;
 use Psalm\Internal\Analyzer\Statements\Expression\ClassConstAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\Fetch\AtomicPropertyFetchAnalyzer;
+use Psalm\Internal\Codebase\CliOutput;
 use Psalm\Internal\FileManipulation\FileManipulationBuffer;
 use Psalm\Internal\FileManipulation\PropertyDocblockManipulator;
 use Psalm\Internal\MethodIdentifier;
@@ -608,6 +609,11 @@ final class ClassAnalyzer extends ClassLikeAnalyzer
         $statements_analyzer = new StatementsAnalyzer($this, new NodeDataProvider(), true);
         $statements_analyzer->analyze($member_stmts, $class_context, $global_context);
 
+        CliOutput::checkCliOnlyInstancesClass(
+            $storage,
+            $storage->suppressed_issues + $this->getSuppressedIssues(),
+        );
+
         ClassConstAnalyzer::analyze($storage, $this->getCodebase());
 
         $config = Config::getInstance();
@@ -682,8 +688,7 @@ final class ClassAnalyzer extends ClassLikeAnalyzer
             }
         }
 
-        $pseudo_methods = $storage->pseudo_methods + $storage->pseudo_static_methods;
-        MethodComparator::comparePseudoMethods($pseudo_methods, $this->fq_class_name, $codebase, $storage);
+        MethodComparator::comparePseudoMethods($codebase, $storage);
 
         $event = new AfterClassLikeAnalysisEvent(
             $class,
@@ -1409,25 +1414,8 @@ final class ClassAnalyzer extends ClassLikeAnalyzer
                     $fake_constructor_attributes,
                 );
 
-                $codebase->analyzer->disableMixedCounts();
-
-                $was_collecting_initializations = $class_context->collect_initializations;
-
-                $class_context->collect_initializations = true;
-                $class_context->collect_nonprivate_initializations = !$uninitialized_private_properties;
-
-                $constructor_analyzer = $this->analyzeClassMethod(
-                    $fake_stmt,
-                    $storage,
-                    $this,
-                    $class_context,
-                    $global_context,
-                    true,
-                );
-
-                $class_context->collect_initializations = $was_collecting_initializations;
-
-                $codebase->analyzer->enableMixedCounts();
+                // analysed below, where the properties it initialises are collected
+                $constructor_analyzer = new MethodAnalyzer($fake_stmt, $this);
             }
         }
 
@@ -1458,10 +1446,10 @@ final class ClassAnalyzer extends ClassLikeAnalyzer
                     $fq_class_name,
                     $template_params,
                     false,
-                    !$storage->final,
+                    true,
                 );
             } else {
-                $this_atomic_object_type = new TNamedObject($fq_class_name, !$storage->final);
+                $this_atomic_object_type = new TNamedObject($fq_class_name, true);
             }
 
             $method_context->vars_in_scope['$this'] = new Union([$this_atomic_object_type]);
@@ -1726,6 +1714,7 @@ final class ClassAnalyzer extends ClassLikeAnalyzer
                         $storage->name . ' is marked ' . Capabilities::toClassAnnotation($storage->capabilities)
                             . ' but ' . $fq_trait_name . ' is not',
                         new CodeLocation($previous_trait_analyzer ?? $this, $trait_name),
+                        $fq_trait_name,
                     ),
                     $storage->suppressed_issues + $this->getSuppressedIssues(),
                 );
@@ -1938,7 +1927,6 @@ final class ClassAnalyzer extends ClassLikeAnalyzer
         SourceAnalyzer $source,
         Context $class_context,
         ?Context $global_context = null,
-        bool $is_fake = false,
     ): ?MethodAnalyzer {
         $config = Config::getInstance();
 
@@ -2040,7 +2028,6 @@ final class ClassAnalyzer extends ClassLikeAnalyzer
             && $method_already_analyzed
             && !$class_context->collect_initializations
             && !$class_context->collect_mutations
-            && !$is_fake
         ) {
             $project_analyzer->progress->debug(
                 'Skipping analysis of pre-analyzed method ' . $analyzed_method_id . "\n",
@@ -2103,7 +2090,6 @@ final class ClassAnalyzer extends ClassLikeAnalyzer
         if (!$method_already_analyzed
             && !$class_context->collect_initializations
             && !$class_context->collect_mutations
-            && !$is_fake
         ) {
             $codebase->analyzer->setAnalyzedMethod($included_file_path, $trait_safe_method_id);
         }
@@ -2452,6 +2438,7 @@ final class ClassAnalyzer extends ClassLikeAnalyzer
                             . Capabilities::toClassAnnotation($interface_storage->capabilities) . ', but '
                         . $fq_class_name . ' is not',
                         $code_location,
+                        $fq_interface_name,
                     ),
                     $storage->suppressed_issues + $this->getSuppressedIssues(),
                 );
@@ -2696,6 +2683,7 @@ final class ClassAnalyzer extends ClassLikeAnalyzer
                             . Capabilities::toClassAnnotation($parent_class_storage->capabilities) . ', but '
                         . $fq_class_name . ' is not',
                         $code_location,
+                        $parent_fq_class_name,
                     ),
                     $storage->suppressed_issues + $this->getSuppressedIssues(),
                 );
@@ -2706,6 +2694,7 @@ final class ClassAnalyzer extends ClassLikeAnalyzer
                             . Capabilities::toClassAnnotation($storage->capabilities) . ', but parent class '
                         . $parent_fq_class_name . ' is not',
                         $code_location,
+                        $parent_fq_class_name,
                     ),
                     $storage->suppressed_issues + $this->getSuppressedIssues(),
                 );
@@ -2718,6 +2707,7 @@ final class ClassAnalyzer extends ClassLikeAnalyzer
                         $parent_fq_class_name . ' is marked with @psalm-taint-specialize, but '
                             . $fq_class_name . ' is not',
                         $code_location,
+                        $parent_fq_class_name,
                     ),
                     $storage->suppressed_issues + $this->getSuppressedIssues(),
                 );

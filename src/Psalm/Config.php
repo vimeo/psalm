@@ -455,6 +455,8 @@ final class Config
 
     public bool $suggest_purity_annotations = false;
 
+    public bool $assume_getters_mutation_free = true;
+
     /**
      * @var array<lowercase-string, bool>
      */
@@ -545,6 +547,9 @@ final class Config
     private array $autoloaders = [];
 
     public string $hash = '';
+
+    /** Whether loading a config adds the paths passed on the command line to its project files */
+    private static bool $add_command_line_paths = false;
 
     public ?string $error_baseline = null;
 
@@ -1134,6 +1139,7 @@ final class Config
             'strictOptionalCallableParams' => 'strict_optional_callable_params',
             'ensureOverrideAttribute' => 'ensure_override_attribute',
             'suggestPurityAnnotations' => 'suggest_purity_annotations',
+            'assumeGettersMutationFree' => 'assume_getters_mutation_free',
             'reportMixedIssues' => 'show_mixed_issues',
             'skipChecksOnUnresolvableIncludes' => 'skip_checks_on_unresolvable_includes',
             'sealAllMethods' => 'seal_all_methods',
@@ -1384,9 +1390,11 @@ final class Config
 
         global $argv;
 
+        // Only the CLI entry points read the arguments of the process: a host that loads a config as a library
+        // (PHPUnit, ParaTest, a Symfony console) has arguments of its own, and CliUtils exits on one it can't resolve.
         // Hack for Symfonys own argv resolution.
         // @see https://github.com/vimeo/psalm/issues/10465
-        if (!isset($argv[0]) || basename($argv[0]) !== 'psalm-plugin') {
+        if (self::$add_command_line_paths && basename($argv[0] ?? '') !== 'psalm-plugin') {
             $paths_to_check = CliUtils::getPathsToCheck(null);
         }
 
@@ -1706,6 +1714,16 @@ final class Config
     public function setComposerClassLoader(array $autoloaders): void
     {
         $this->autoloaders = $autoloaders;
+    }
+
+    /**
+     * The CLI entry points set this while they load the config
+     *
+     * @psalm-capabilities write-globals
+     */
+    public static function setAddCommandLinePaths(bool $add): void
+    {
+        self::$add_command_line_paths = $add;
     }
 
     /** @return array<string, IssueHandler> */
@@ -3234,6 +3252,9 @@ final class Config
         if ($autoload_included_files) {
             $codebase->register_autoload_files = true;
 
+            // what the plugins queued is scanned with the project's files, in parallel, not here
+            $queued = $codebase->scanner->takeQueue();
+
             $progress->debug('Registering autoloaded files' . "\n");
             foreach ($autoload_included_files as $file_path) {
                 $file_path = str_replace(['/', '\\'], DIRECTORY_SEPARATOR, $file_path);
@@ -3242,6 +3263,8 @@ final class Config
             }
 
             $codebase->scanner->scanFiles($codebase->classlikes);
+
+            $codebase->scanner->restoreQueue($queued);
 
             $progress->debug('Finished registering autoloaded files' . "\n");
 
