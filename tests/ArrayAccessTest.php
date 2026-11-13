@@ -1520,6 +1520,39 @@ final class ArrayAccessTest extends TestCase
                     $a = [1 => $test];
                     unset($a[$test->value]);',
             ],
+            'nestedUnsetAfterIssetOnMixedArray' => [
+                'code' => '<?php
+                    /**
+                     * @param array<string, mixed> $data
+                     * @return array<string, mixed>
+                     * @psalm-suppress MixedArrayAccess
+                     */
+                    function clean(array $data): array {
+                        if (isset($data["d"]["items"]["list"])) {
+                            echo "has items";
+                        }
+                        unset($data["d"]["result"]["meta"]);
+                        return $data;
+                    }
+                    echo count(clean([]));',
+            ],
+            'unsetOnPossiblyNullIntermediateArray' => [
+                'code' => '<?php
+                    /** @param array<string, array<string, int>|null> $data */
+                    function clearNested(array $data): array {
+                        unset($data["d"]["meta"]);
+                        return $data;
+                    }
+                    clearNested(["d" => null]);',
+            ],
+            'unsetOnNullArray' => [
+                'code' => '<?php
+                    function clearNull(): void {
+                        $data = null;
+                        unset($data["d"]["meta"]);
+                    }
+                    clearNull();',
+            ],
             'arrayAssertionShouldNotBeNull' => [
                 'code' => '<?php
                     function foo(?array $arr, string $s) : void {
@@ -1821,6 +1854,24 @@ final class ArrayAccessTest extends TestCase
                     $a = rand(0, 1) ? [1, 2] : null;
                     echo $a[0];',
                 'error_message' => 'PossiblyNullArrayAccess',
+            ],
+            'nullableArrayReadAsUnsetOffset' => [
+                'code' => '<?php
+                    /**
+                     * @param array<string, int> $data
+                     * @param array{key: string}|null $keys
+                     */
+                    function removeByKey(array $data, ?array $keys): void {
+                        unset($data[$keys["key"]]);
+                    }',
+                'error_message' => 'PossiblyNullArrayAccess',
+            ],
+            'cannotUnsetOffsetOfInt' => [
+                'code' => '<?php
+                    function invalidUnset(int $data): void {
+                        unset($data["key"]);
+                    }',
+                'error_message' => 'InvalidArrayAccess',
             ],
             'specificErrorMessage' => [
                 'code' => '<?php

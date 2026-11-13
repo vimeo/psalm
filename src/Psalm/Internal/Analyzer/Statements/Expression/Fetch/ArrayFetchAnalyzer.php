@@ -276,7 +276,7 @@ final class ArrayFetchAnalyzer
         if ($stmt_var_type) {
             if ($stmt_var_type->isNull()) {
                 // an offset passed by reference turns null into an array
-                if (!$context->inside_isset && !$context->inside_by_ref_offset) {
+                if (!$context->inside_isset && !$context->inside_unset && !$context->inside_by_ref_offset) {
                     IssueBuffer::maybeAdd(
                         new NullArrayAccess(
                             'Cannot access array value on null variable ' .
@@ -1036,7 +1036,7 @@ final class ArrayFetchAnalyzer
                         $array_access_type = new Union([new TNever]);
                     }
                 } else {
-                    if (!$context->inside_isset && !$context->inside_by_ref_offset) {
+                    if (!$context->inside_isset && !$context->inside_unset && !$context->inside_by_ref_offset) {
                         IssueBuffer::maybeAdd(
                             new PossiblyNullArrayAccess(
                                 'Cannot access array value on possibly null variable ' .
