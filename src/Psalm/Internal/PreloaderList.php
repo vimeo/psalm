@@ -815,6 +815,7 @@ final class PreloaderList {
         \Psalm\Internal\FileManipulation\FileManipulationBuffer::class,
         \Psalm\Internal\FileManipulation\FunctionDocblockManipulator::class,
         \Psalm\Internal\FileManipulation\PropertyDocblockManipulator::class,
+        \Psalm\Internal\FileManipulation\UnifiedDiffRenderer::class,
         \Psalm\Internal\Fork\AnalyzerTask::class,
         \Psalm\Internal\Fork\FileResultTask::class,
         \Psalm\Internal\Fork\IgbinarySerializer::class,

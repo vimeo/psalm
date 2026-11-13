@@ -60,10 +60,12 @@ use function file_put_contents;
 use function fwrite;
 use function implode;
 use function in_array;
+use function intdiv;
 use function is_dir;
 use function is_int;
 use function is_string;
 use function ksort;
+use function max;
 use function memory_get_peak_usage;
 use function microtime;
 use function mkdir;
@@ -945,10 +947,19 @@ final class IssueBuffer
             );
         }
 
-        if (in_array(
+        $prints_to_console = in_array(
             $project_analyzer->stdout_report_options->format,
             [Report::TYPE_CONSOLE, Report::TYPE_PHP_STORM, Report::TYPE_GITHUB_ACTIONS],
-        )) {
+        );
+
+        if ($prints_to_console && $codebase->alter_code && !$error_count) {
+            self::printAlterSummary(
+                $codebase->analyzer->getChangedFilesCount(),
+                $project_analyzer->dry_run,
+                $project_analyzer->stdout_report_options->use_color,
+                $start_time,
+            );
+        } elseif ($prints_to_console) {
             echo str_repeat('-', 30) . "\n";
 
             if ($error_count) {
@@ -995,8 +1006,7 @@ final class IssueBuffer
             echo str_repeat('-', 30) . "\n" . "\n";
 
             if ($start_time) {
-                echo 'Checks took ' . number_format(microtime(true) - $start_time, 2) . ' seconds';
-                echo ' and used ' . number_format(memory_get_peak_usage() / (1_024 * 1_024), 3) . 'MB of memory' . "\n";
+                self::printTiming($start_time);
 
                 $analysis_summary = $codebase->analyzer->getTypeInferenceSummary($codebase);
                 echo $analysis_summary . "\n";
@@ -1074,26 +1084,55 @@ final class IssueBuffer
         return false;
     }
 
+    private static function printAlterSummary(
+        int $changed_files_count,
+        bool $dry_run,
+        bool $use_color,
+        float $start_time,
+    ): void {
+        if ($changed_files_count === 0) {
+            $message = 'No changes';
+        } else {
+            $message = $changed_files_count . ($changed_files_count === 1 ? ' file ' : ' files ')
+                . ($dry_run ? 'would be changed (dry run)' : 'changed');
+        }
+
+        echo str_repeat('-', 30) . "\n";
+        self::printResultBlock($message, $use_color);
+        echo str_repeat('-', 30) . "\n\n";
+
+        if ($start_time) {
+            self::printTiming($start_time);
+        }
+    }
+
+    private static function printTiming(float $start_time): void
+    {
+        echo 'Checks took ' . number_format(microtime(true) - $start_time, 2) . ' seconds';
+        echo ' and used ' . number_format(memory_get_peak_usage() / (1_024 * 1_024), 3) . 'MB of memory' . "\n";
+    }
+
     public static function printSuccessMessage(ProjectAnalyzer $project_analyzer): void
     {
         if (!$project_analyzer->stdout_report_options) {
             throw new UnexpectedValueException('Cannot print success message without stdout report options');
         }
 
-        // this message will be printed
-        $message = "No errors found!";
+        self::printResultBlock('No errors found!', $project_analyzer->stdout_report_options->use_color);
+    }
 
-        // color block will contain this amount of characters
-        $blockSize = 30;
+    private static function printResultBlock(string $message, bool $use_color): void
+    {
+        // color block will contain at least this amount of characters
+        $blockSize = max(30, strlen($message) + 14);
 
         // message with prepended and appended whitespace to be same as $blockSize
-        $messageWithPadding = str_repeat(' ', 7) . $message . str_repeat(' ', 7);
+        $leftPadding = intdiv($blockSize - strlen($message), 2);
+        $messageWithPadding = str_repeat(' ', $leftPadding) . $message
+            . str_repeat(' ', $blockSize - strlen($message) - $leftPadding);
 
-        // top side of the color block
-        $paddingTop = str_repeat(' ', $blockSize);
-
-        // bottom side of the color block
-        $paddingBottom = str_repeat(' ', $blockSize);
+        // top and bottom sides of the color block
+        $paddingTop = $paddingBottom = str_repeat(' ', $blockSize);
 
         // background color, 42 = green
         $background = "42";
@@ -1104,7 +1143,7 @@ final class IssueBuffer
         // text style, 1 = bold
         $style = "2";
 
-        if ($project_analyzer->stdout_report_options->use_color) {
+        if ($use_color) {
             echo "\e[{$background};{$style}m{$paddingTop}\e[0m" . "\n";
             echo "\e[{$background};{$foreground};{$style}m{$messageWithPadding}\e[0m" . "\n";
             echo "\e[{$background};{$style}m{$paddingBottom}\e[0m" . "\n";
