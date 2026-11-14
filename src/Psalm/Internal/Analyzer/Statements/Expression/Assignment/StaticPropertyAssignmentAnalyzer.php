@@ -401,6 +401,7 @@ final class StaticPropertyAssignmentAnalyzer
 
     /**
      * @return ?string null when the class that `self`, `static` or `parent` stands for is unknown
+     * @psalm-capabilities read-props
      */
     private static function resolveRelativeClass(Context $context, string $class): ?string
     {
