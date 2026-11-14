@@ -28,6 +28,12 @@ final class TypeComparisonResult
     public ?bool $to_string_cast = null;
 
     /**
+     * A callable that takes a parameter by reference was given where it is called with a value for it: it is
+     * accepted, and reported where the type is checked (`CallableByReferenceMismatch`).
+     */
+    public ?bool $callable_by_reference_mismatch = null;
+
+    /**
      * This is primarily used for array access.
      * For example in this function we know that there are only two possible keys, 0 and 1
      * But we allow the array to be addressed by an arbitrary integer $i.

@@ -81,18 +81,24 @@ use Psalm\Type\Atomic\TVoid;
 use Psalm\Type\Union;
 use UnexpectedValueException;
 
+use function array_filter;
 use function array_keys;
 use function array_map;
 use function array_pop;
 use function array_search;
 use function array_values;
 use function assert;
+use function count;
+use function end;
 use function implode;
 use function in_array;
 use function is_string;
 use function reset;
 use function stripos;
 use function strtolower;
+use function substr;
+
+use const ARRAY_FILTER_USE_BOTH;
 
 /**
  * @internal
@@ -545,6 +551,8 @@ final class ForeachAnalyzer
 
         $written_type = $written_type->setProperties(['by_ref' => false, 'parent_nodes' => []]);
 
+        $written_keys = self::getKeysWrittenToTheItem($statements_analyzer, $stmt->stmts, substr($value_var_id, 1));
+
         $array_type = $context->vars_in_scope[$array_var_id];
 
         // a loop that is not left early visits every item, and an iteration that leaves the variable as it was
@@ -552,10 +560,18 @@ final class ForeachAnalyzer
         // iteration wrote the variable
         $visits_every_item = !in_array(ScopeAnalyzer::ACTION_BREAK, $loop_scope->final_actions, true);
 
-        $item_after_loop = static fn(Union $item): Union => $visits_every_item
-            && !UnionTypeComparator::isContainedBy($codebase, $item, $written_type)
-                ? $written_type
-                : Type::combineUnionTypes($item, $written_type, $codebase);
+        $item_after_loop = static function (Union $item) use (
+            $codebase,
+            $written_type,
+            $written_keys,
+            $visits_every_item,
+        ): Union {
+            $item_written_type = self::withoutKeysOfNarrowing($written_type, $item, $written_keys);
+
+            return $visits_every_item && !UnionTypeComparator::isContainedBy($codebase, $item, $item_written_type)
+                ? $item_written_type
+                : Type::combineUnionTypes($item, $item_written_type, $codebase);
+        };
 
         $atomic_types = [];
 
@@ -590,6 +606,217 @@ final class ForeachAnalyzer
 
         $context->vars_in_scope[$array_var_id] = $array_type->setTypes($atomic_types);
         $context->removeDescendents($array_var_id, $array_type, null, $statements_analyzer);
+    }
+
+    /**
+     * What an iteration may have written to an item is not the keys that a test of the variable added to its shape:
+     * `isset($row['name'])` makes `name?: mixed` part of the type of `$row`, but nothing wrote it into the item. Such a
+     * key is possibly undefined, of an unknown type, not one of the keys the items have, and not assigned in the loop.
+     *
+     * @param array<int|string, true>|null $written_keys the keys the loop assigns, null when it may assign any
+     */
+    private static function withoutKeysOfNarrowing(Union $written_type, Union $item_type, ?array $written_keys): Union
+    {
+        if ($written_keys === null) {
+            return $written_type;
+        }
+
+        $item_keys = [];
+
+        foreach ($item_type->getAtomicTypes() as $item_atomic_type) {
+            if ($item_atomic_type instanceof TNull) {
+                continue;
+            }
+
+            if (!$item_atomic_type instanceof TKeyedArray) {
+                return $written_type;
+            }
+
+            $item_keys += $item_atomic_type->properties;
+        }
+
+        $atomic_types = [];
+        $changed = false;
+
+        foreach ($written_type->getAtomicTypes() as $written_atomic_type) {
+            if ($written_atomic_type instanceof TKeyedArray) {
+                $properties = array_filter(
+                    $written_atomic_type->properties,
+                    static fn(Union $property, int|string $key): bool => isset($item_keys[$key])
+                        || isset($written_keys[$key])
+                        || !$property->possibly_undefined,
+                    ARRAY_FILTER_USE_BOTH,
+                );
+
+                if ($properties !== [] && count($properties) !== count($written_atomic_type->properties)) {
+                    $written_atomic_type = $written_atomic_type->setProperties($properties);
+                    $changed = true;
+                }
+            }
+
+            $atomic_types[] = $written_atomic_type;
+        }
+
+        return $changed ? $written_type->setTypes($atomic_types) : $written_type;
+    }
+
+    /**
+     * The keys that the statements assign in the array held by the variable (`$row['name'] = ...`, also as the start of
+     * a longer path), null when one is not a literal (`$row[$k] = ...`, `$row[] = ...`)
+     *
+     * @param array<PhpParser\Node\Stmt> $stmts
+     * @return array<int|string, true>|null
+     */
+    private static function getKeysWrittenToTheItem(
+        StatementsAnalyzer $statements_analyzer,
+        array $stmts,
+        string $var_name,
+    ): ?array {
+        $keys = [];
+
+        $nodes = (new NodeFinder())->find(
+            $stmts,
+            static fn(PhpParser\Node $node): bool => $node instanceof PhpParser\Node\Expr\Assign
+                || $node instanceof PhpParser\Node\Expr\AssignOp
+                || $node instanceof PhpParser\Node\Expr\AssignRef
+                || $node instanceof PhpParser\Node\Expr\CallLike,
+        );
+
+        foreach ($nodes as $node) {
+            if ($node instanceof PhpParser\Node\Expr\CallLike) {
+                // a key passed to a call may be written through its parameter, the variable itself may be changed
+                foreach ($node->getRawArgs() as $position => $arg) {
+                    if (!$arg instanceof PhpParser\Node\Arg
+                        || !self::mayPassByReference($statements_analyzer, $node, $position, $arg)
+                    ) {
+                        continue;
+                    }
+
+                    $dim = self::getKeyOfTheItem($arg->value, $var_name);
+
+                    if ($dim === false) {
+                        continue;
+                    }
+
+                    if ($dim === null) {
+                        return null;
+                    }
+
+                    $keys[$dim] = true;
+                }
+
+                continue;
+            }
+
+            assert(
+                $node instanceof PhpParser\Node\Expr\Assign
+                || $node instanceof PhpParser\Node\Expr\AssignOp
+                || $node instanceof PhpParser\Node\Expr\AssignRef,
+            );
+
+            $dim = self::getKeyOfTheItem($node->var, $var_name);
+
+            if ($dim === false) {
+                continue;
+            }
+
+            if ($dim === null) {
+                return null;
+            }
+
+            $keys[$dim] = true;
+        }
+
+        return $keys;
+    }
+
+    /**
+     * Whether the call may take the argument at the position by reference: false only for a function that is known
+     * and takes it by value. A named argument is matched by its name, an unpacked one (or one after it) may reach any
+     * parameter.
+     */
+    private static function mayPassByReference(
+        StatementsAnalyzer $statements_analyzer,
+        PhpParser\Node\Expr\CallLike $call,
+        int $position,
+        PhpParser\Node\Arg $arg,
+    ): bool {
+        if (!$call instanceof PhpParser\Node\Expr\FuncCall || !$call->name instanceof PhpParser\Node\Name) {
+            return true;
+        }
+
+        foreach ($call->getRawArgs() as $other_position => $other_arg) {
+            if ($other_position > $position) {
+                break;
+            }
+
+            if (!$other_arg instanceof PhpParser\Node\Arg || $other_arg->unpack) {
+                return true;
+            }
+        }
+
+        $functions = $statements_analyzer->getCodebase()->functions;
+        $function_name = $call->name->toString();
+
+        foreach ([
+            $functions->getFullyQualifiedFunctionNameFromString($function_name, $statements_analyzer),
+            $function_name,
+        ] as $function_id) {
+            $function_id = strtolower($function_id);
+
+            if (!$functions->functionExists($statements_analyzer, $function_id)) {
+                continue;
+            }
+
+            $params = $functions->getStorage($statements_analyzer, $function_id)->params;
+            $param = null;
+
+            if ($arg->name !== null) {
+                foreach ($params as $named_param) {
+                    if ($named_param->name === $arg->name->name && !$named_param->is_variadic) {
+                        $param = $named_param;
+                        break;
+                    }
+                }
+            } else {
+                $param = $params[$position] ?? null;
+            }
+
+            $param ??= ($last = end($params)) !== false && $last->is_variadic ? $last : null;
+
+            return $param === null || $param->by_ref;
+        }
+
+        return true;
+    }
+
+    /**
+     * @return int|string|false|null the literal key an expression reaches in the array held by the variable (the
+     *                                first one of a longer path), null when the key is not a literal or the expression
+     *                                is the variable itself, false when the expression is not part of the variable
+     * @psalm-capabilities read-props
+     */
+    private static function getKeyOfTheItem(PhpParser\Node\Expr $expr, string $var_name): int|string|false|null
+    {
+        $dim = null;
+        $target = $expr;
+
+        while ($target instanceof PhpParser\Node\Expr\ArrayDimFetch) {
+            $dim = $target->dim;
+            $target = $target->var;
+        }
+
+        if (!$target instanceof PhpParser\Node\Expr\Variable || $target->name !== $var_name) {
+            return false;
+        }
+
+        if ($expr === $target
+            || (!$dim instanceof PhpParser\Node\Scalar\String_ && !$dim instanceof PhpParser\Node\Scalar\Int_)
+        ) {
+            return null;
+        }
+
+        return $dim->value;
     }
 
     /**
