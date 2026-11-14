@@ -204,9 +204,6 @@ final class TypeCombiner
 
             $combination->array_type_params = [];
 
-            /**
-             * @psalm-suppress PossiblyNullArrayAccess
-             */
             unset(
                 $combination->value_types['array'],
                 $combination->named_object_types['Traversable'],
@@ -618,7 +615,6 @@ final class TypeCombiner
                 $combination->builtin_type_params['iterable'] = [Type::getMixed(), Type::getMixed()];
             }
 
-            /** @psalm-suppress PossiblyNullArrayAccess */
             unset(
                 $combination->named_object_types['Traversable'],
                 $combination->builtin_type_params['Traversable'],

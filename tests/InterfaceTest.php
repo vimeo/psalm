@@ -5,6 +5,8 @@ declare(strict_types=1);
 namespace Psalm\Tests;
 
 use Override;
+use Psalm\Context;
+use Psalm\IssueBuffer;
 use Psalm\Tests\Traits\InvalidCodeAnalysisTestTrait;
 use Psalm\Tests\Traits\ValidCodeAnalysisTestTrait;
 
@@ -15,6 +17,47 @@ final class InterfaceTest extends TestCase
     use InvalidCodeAnalysisTestTrait;
     use ValidCodeAnalysisTestTrait;
 
+    public function testEveryAccessOfAnUndeclaredPropertyOfAnInterfaceIsReported(): void
+    {
+        $this->project_analyzer->getConfig()->throw_exception = false;
+        $file_path = self::$src_dir_path . 'somefile.php';
+
+        $this->addFile(
+            $file_path,
+            '<?php
+                interface Shape {}
+
+                function readThenWrite(Shape $shape): void {
+                    echo $shape->name;
+                    $shape->name = "renamed";
+                }
+
+                function issetThenWrite(Shape $shape): void {
+                    if (isset($shape->name)) {
+                        $shape->name = "renamed";
+                    }
+                }
+
+                function negatedIssetThenWrite(Shape $shape): void {
+                    if (!isset($shape->name)) {
+                        $shape->name = "renamed";
+                    }
+                }',
+        );
+        $this->analyzeFile($file_path, new Context());
+
+        $lines = [];
+        foreach (IssueBuffer::getIssuesDataForFile($file_path) as $issue) {
+            if ($issue->type === 'NoInterfaceProperties') {
+                $lines[] = $issue->line_from;
+            }
+        }
+
+        // the read and the assignment after it, and the assignment where the isset() did not find the property;
+        // nothing in the function that checks with isset() first
+        $this->assertSame([5, 6, 17], $lines);
+    }
+
     /**
      * @psalm-pure
      */
@@ -22,6 +65,150 @@ final class InterfaceTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'assignmentToAPropertyOfAnInterfaceAfterIsset' => [
+                'code' => '<?php
+                    interface Shape {}
+
+                    function renameShape(Shape $shape): void {
+                        if (!isset($shape->name)) {
+                            return;
+                        }
+
+                        $shape->name = "renamed";
+                    }
+
+                    function renameShapeIfNamed(Shape $shape): void {
+                        if (isset($shape->name)) {
+                            $shape->name = "renamed";
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.2',
+            ],
+            'propertyOfAnInterfaceThatAnIntersectedInterfaceDeclaresIsRemembered' => [
+                'code' => '<?php
+                    final class Address {
+                        public function __construct(public string $email) {}
+                    }
+
+                    interface MailerConfig {}
+
+                    interface ProvidesDefaultSender {
+                        public ?Address $defaultSender { get; }
+                    }
+
+                    final class Mapper {
+                        public function __construct(private MailerConfig $mailerConfig) {}
+
+                        public function email(): string {
+                            if ($this->mailerConfig instanceof ProvidesDefaultSender
+                                && $this->mailerConfig->defaultSender
+                            ) {
+                                return $this->mailerConfig->defaultSender->email;
+                            }
+
+                            return "";
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.4',
+            ],
+            'propertyOfAnInterfaceGivenByAShapeOrAMixinIsRemembered' => [
+                'code' => '<?php
+                    interface I {}
+
+                    /** @param I&object{foo: ?int} $x */
+                    function f($x): int {
+                        if ($x->foo !== null) {
+                            return $x->foo;
+                        }
+
+                        return 0;
+                    }
+
+                    final class Data {
+                        public ?int $foo = null;
+                    }
+
+                    /** @mixin Data */
+                    interface J {}
+
+                    function g(J $x): int {
+                        if ($x->foo !== null) {
+                            return $x->foo;
+                        }
+
+                        return 0;
+                    }',
+            ],
+            'propertyDeclaredByAnInterfaceWinsOverItsMixinWhenRemembered' => [
+                'code' => '<?php
+                    final class Data {
+                        /** @deprecated */
+                        public int $foo = 0;
+                    }
+
+                    /** @mixin Data */
+                    interface J {
+                        public int $foo { get; }
+                    }
+
+                    function f(J $x): int {
+                        $a = $x->foo;
+
+                        return $a + $x->foo;
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.4',
+            ],
+            'propertyOfAShapeWinsOverTheMixinOfTheInterfaceWhenRemembered' => [
+                'code' => '<?php
+                    final class Data {
+                        /** @deprecated */
+                        public int $foo = 0;
+                    }
+
+                    /** @mixin Data */
+                    interface J {}
+
+                    /** @param J&object{foo: int} $x */
+                    function f($x): int {
+                        $a = $x->foo;
+
+                        return $a + $x->foo;
+                    }',
+            ],
+            'unsetOfAPropertyOfAnInterfaceAnIssetFound' => [
+                'code' => '<?php
+                    interface I {}
+
+                    function f(I $x): void {
+                        if (isset($x->foo)) {
+                            unset($x->foo);
+                        }
+                    }
+
+                    function g(I $x): void {
+                        if (isset($x->foo)) {
+                            unset($x->{"foo"});
+                        }
+                    }',
+            ],
+            'unsetOfAPropertyOfAClassAnIssetFound' => [
+                'code' => '<?php
+                    class A {}
+
+                    function f(A $x): void {
+                        if (isset($x->foo)) {
+                            unset($x->foo);
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => ['ClassMustBeFinal'],
+            ],
             'issetOfAPropertyOfAnInterfaceIsNotAnInterfaceProperty' => [
                 'code' => '<?php
                     interface Shape {}
@@ -38,7 +225,7 @@ final class InterfaceTest extends TestCase
                         return $shape->name ?? null;
                     }',
                 'assertions' => [],
-                'ignored_issues' => ['MixedReturnStatement', 'MixedInferredReturnType', 'RiskyTruthyFalsyComparison'],
+                'ignored_issues' => ['MixedReturnStatement', 'RiskyTruthyFalsyComparison'],
                 'php_version' => '8.2',
             ],
             'interfaceDeclaredInAConditional' => [
@@ -1166,6 +1353,67 @@ final class InterfaceTest extends TestCase
     public static function providerInvalidCodeParse(): iterable
     {
         return [
+            'assignmentToAPropertyOfAnInterfaceAfterAnIssetOfAnotherOne' => [
+                'code' => '<?php
+                    interface Shape {}
+
+                    function renameShape(Shape $shape): void {
+                        if (!isset($shape->name)) {
+                            return;
+                        }
+
+                        $shape->label = "renamed";
+                    }',
+                'error_message' => 'NoInterfaceProperties',
+            ],
+            'assignmentToAPropertyOfAnInterfaceGivenByAMixinAfterAFetch' => [
+                'code' => '<?php
+                    final class Data {
+                        public int $foo = 0;
+                    }
+
+                    /** @mixin Data */
+                    interface J {}
+
+                    function f(J $x): int {
+                        $old = $x->foo;
+                        $x->foo = "bad";
+
+                        return $old;
+                    }',
+                'error_message' => 'NoInterfaceProperties',
+            ],
+            'assignmentToAPropertyOfAnInterfaceGivenByAShapeAfterAFetch' => [
+                'code' => '<?php
+                    interface I {}
+
+                    /** @param I&object{foo: int} $x */
+                    function f($x): int {
+                        $old = $x->foo;
+                        $x->foo = "bad";
+
+                        return $old;
+                    }',
+                'error_message' => 'NoInterfaceProperties',
+            ],
+            'unsetOfAPropertyOfAnInterfaceGivenByAMixinAfterAFetchWritesIt' => [
+                'code' => '<?php
+                    final class Data {
+                        public int $foo = 0;
+                    }
+
+                    /** @mixin Data */
+                    interface J {}
+
+                    /** @psalm-capabilities read-props */
+                    function f(J $x): int {
+                        $old = $x->foo;
+                        unset($x->foo);
+
+                        return $old;
+                    }',
+                'error_message' => 'ImpurePropertyAssignment',
+            ],
             'interfaceExtendsUndefinedInterface' => [
                 'code' => '<?php
                     interface Foo extends Bar {}',

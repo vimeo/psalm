@@ -11,6 +11,7 @@ use Psalm\Internal\Codebase\Methods;
 use Psalm\Internal\Type\Comparator\CallableTypeComparator;
 use Psalm\Internal\Type\Comparator\KeyedArrayComparator;
 use Psalm\Internal\Type\Comparator\UnionTypeComparator;
+use Psalm\Internal\TypeVisitor\TemplateTypeCollector;
 use Psalm\Internal\TypeVisitor\TypeVariableResolver;
 use Psalm\Storage\Capabilities;
 use Psalm\Type;
@@ -121,35 +122,53 @@ final class TemplateStandinTypeReplacer
 
         $original_atomic_types = $union_type->getAtomicTypes();
 
-        // here we want to subtract atomic types from the input type
-        // when they're also in the union type, so those shared atomic
-        // types will never be inferred as part of the generic type
+        // input atoms that share a key with a union atom are matched by that atom, so they
+        // never become part of the type inferred for the other atoms, e.g. `null` for `T|null`
+        $other_input_type = $input_type;
+
         if ($input_type && !$input_type->isSingle()) {
             $new_input_type = $input_type->getBuilder();
+            $has_template_atom = false;
 
-            foreach ($original_atomic_types as $key => $_) {
+            foreach ($original_atomic_types as $key => $atomic_type) {
+                $has_template_atom = $has_template_atom || $atomic_type instanceof TTemplateParam;
+
                 if ($new_input_type->hasType($key)) {
                     $new_input_type->removeType($key);
                 }
             }
 
-            if (!$new_input_type->isUnionEmpty()) {
-                $input_type = $new_input_type->freeze();
-            } else {
-                return $union_type;
+            $other_input_type = $new_input_type->isUnionEmpty() ? null : $new_input_type->freeze();
+
+            // a bare template keeps the subtraction for every atom: its bounds would otherwise
+            // compete by depth with the deeper bounds a matched container atom adds
+            if ($has_template_atom) {
+                if (!$other_input_type) {
+                    return $union_type;
+                }
+
+                $input_type = $other_input_type;
             }
         }
 
         $had_template = false;
 
         foreach ($original_atomic_types as $key => $atomic_type) {
+            $matches_input_key = $input_type && $input_type->hasType($key);
+
+            // nothing is left to infer the other atoms from, so keep them as they are
+            if (!$matches_input_key && $input_type && !$other_input_type) {
+                $atomic_types[] = $atomic_type;
+                continue;
+            }
+
             $atomic_types = [...$atomic_types, ...self::handleAtomicStandin(
                 $atomic_type,
                 $key,
                 $template_result,
                 $codebase,
                 $statements_analyzer,
-                $input_type,
+                $matches_input_key ? $input_type : $other_input_type,
                 $input_arg_offset,
                 $calling_class,
                 $calling_function,
@@ -162,6 +181,7 @@ final class TemplateStandinTypeReplacer
             )];
         }
 
+        // the result keeps the parent nodes: this also runs on argument types, whose data flow must survive
         if ($replace) {
             if (array_values($original_atomic_types) === $atomic_types) {
                 return $union_type;
@@ -180,6 +200,7 @@ final class TemplateStandinTypeReplacer
                     'ignore_falsable_issues' => $union_type->ignore_falsable_issues,
                     'possibly_undefined' => $union_type->possibly_undefined,
                     'had_template' => $had_template,
+                    'parent_nodes' => $union_type->parent_nodes,
                 ]);
             }
 
@@ -188,6 +209,7 @@ final class TemplateStandinTypeReplacer
                 'ignore_falsable_issues' => $union_type->ignore_falsable_issues,
                 'possibly_undefined' => $union_type->possibly_undefined,
                 'had_template' => $had_template,
+                'parent_nodes' => $union_type->parent_nodes,
             ]);
         }
 
@@ -234,6 +256,7 @@ final class TemplateStandinTypeReplacer
                 $add_lower_bound,
                 $bound_equality_classlike,
                 $depth,
+                $was_single,
                 $had_template,
             );
         }
@@ -464,6 +487,42 @@ final class TemplateStandinTypeReplacer
             return [$replaced_atomic_type];
         }
 
+        return self::replaceMatchingAtomicTypes(
+            $atomic_type,
+            $matching_atomic_types,
+            $template_result,
+            $codebase,
+            $statements_analyzer,
+            $input_arg_offset,
+            $calling_class,
+            $calling_function,
+            $replace,
+            $add_lower_bound,
+            $depth,
+            $was_single,
+            $had_template,
+        );
+    }
+
+    /**
+     * @param non-empty-list<Atomic> $matching_atomic_types
+     * @return list<Atomic>
+     */
+    private static function replaceMatchingAtomicTypes(
+        Atomic $atomic_type,
+        array $matching_atomic_types,
+        TemplateResult $template_result,
+        Codebase $codebase,
+        ?StatementsAnalyzer $statements_analyzer,
+        ?int $input_arg_offset,
+        ?string $calling_class,
+        ?string $calling_function,
+        bool $replace,
+        bool $add_lower_bound,
+        int $depth,
+        bool $was_single,
+        bool &$had_template,
+    ): array {
         $atomic_types = [];
 
         foreach ($matching_atomic_types as $matching_atomic_type) {
@@ -482,7 +541,32 @@ final class TemplateStandinTypeReplacer
 
             // not where another alternative stays in the union: what it holds is not given by the inferred template
             if ($was_single && $replaced_atomic_type !== $atomic_type && !$template_result->readonly) {
-                $had_template = true;
+                // a generic object in a type param of another generic is compared invariantly: an argument of a
+                // subclass has to match what it inferred
+                $inferred_type = $replace
+                    && $input_arg_offset !== null
+                    && $depth > 1
+                    && $atomic_type instanceof TGenericObject
+                    && $matching_atomic_type instanceof TNamedObject
+                    && strtolower($matching_atomic_type->value) !== strtolower($atomic_type->value)
+                        ? TemplateInferredTypeReplacer::replace(new Union([$atomic_type]), $template_result, $codebase)
+                        : null;
+
+                $template_collector = new TemplateTypeCollector(true);
+
+                if ($inferred_type !== null) {
+                    // also through `key-of<T>`, `value-of<T>`, `properties-of<T>` and `T[K]`, at any depth
+                    $template_collector->traverseArray($inferred_type->getAtomicTypes());
+                }
+
+                if ($inferred_type !== null
+                    && $inferred_type->isSingle()
+                    && $template_collector->getTemplateTypes() === []
+                ) {
+                    $replaced_atomic_type = $inferred_type->getSingleAtomic();
+                } else {
+                    $had_template = true;
+                }
             }
 
             $atomic_types[] = $replaced_atomic_type;
@@ -603,35 +687,11 @@ final class TemplateStandinTypeReplacer
                     );
                 }
 
-                try {
-                    $classlike_storage =
-                        $codebase->classlike_storage_provider->get($atomic_input_type->value);
+                $matching_object = self::getObjectMatchingBase($codebase, $atomic_input_type, $base_type);
 
-                    if ($atomic_input_type instanceof TGenericObject
-                        && isset($classlike_storage->template_extended_params[$base_type->value])
-                    ) {
-                        $matching_atomic_types[$atomic_input_type->getId()] = $atomic_input_type;
-                        continue;
-                    }
-
-                    if (!empty($classlike_storage->template_extended_params[$base_type->value])) {
-                        $atomic_input_type = new TGenericObject(
-                            $base_type->value,
-                            array_values($classlike_storage->template_extended_params[$base_type->value]),
-                        );
-
-                        $matching_atomic_types[$atomic_input_type->getId()] = $atomic_input_type;
-                        continue;
-                    }
-
-                    if (in_array('Traversable', $classlike_storage->class_implements)
-                        && $base_type->value === 'Iterator'
-                    ) {
-                        $matching_atomic_types[$atomic_input_type->getId()] = $atomic_input_type;
-                        continue;
-                    }
-                } catch (InvalidArgumentException) {
-                    // do nothing
+                if ($matching_object) {
+                    $matching_atomic_types[$matching_object->getId()] = $matching_object;
+                    continue;
                 }
             }
 
@@ -686,6 +746,7 @@ final class TemplateStandinTypeReplacer
         bool $add_lower_bound,
         ?string $bound_equality_classlike,
         int $depth,
+        bool $was_single,
         bool &$had_template,
     ): array {
         if ($atomic_type->defining_class === $calling_class) {
@@ -828,8 +889,11 @@ final class TemplateStandinTypeReplacer
                     }
 
                     // a binding that is only read (class templates fixed by the receiver) is the actual
-                    // type, not a stand-in for what the arguments may still infer
-                    if (!$template_result->readonly) {
+                    // type, not a stand-in for what the arguments may still infer, unless the receiver
+                    // left the template to its bound and it is the whole type (other members stay required)
+                    if (!$template_result->readonly
+                        || ($was_single && PurityArguments::isOmittedArgument($template_type))
+                    ) {
                         $had_template = true;
                     }
                 }
@@ -1395,8 +1459,47 @@ final class TemplateStandinTypeReplacer
     }
 
     /**
+     * The object as the base it is matched against, if its class extends it: with the params that the templates of
+     * the base map to for this object, an object without type params leaving them at those of its class.
+     *
+     * @psalm-capabilities read-props|write-this-props|write-props|write-refs
+     */
+    private static function getObjectMatchingBase(
+        Codebase $codebase,
+        TNamedObject $atomic_input_type,
+        TNamedObject $base_type,
+    ): ?TNamedObject {
+        try {
+            $classlike_storage = $codebase->classlike_storage_provider->get($atomic_input_type->value);
+
+            if ($atomic_input_type instanceof TGenericObject
+                && isset($classlike_storage->template_extended_params[$base_type->value])
+            ) {
+                return $atomic_input_type;
+            }
+
+            if (!empty($classlike_storage->template_extended_params[$base_type->value])) {
+                /** @var non-empty-list<Union> $params */
+                $params = self::getMappedGenericTypeParams($codebase, $atomic_input_type, $base_type);
+
+                return new TGenericObject($base_type->value, $params);
+            }
+
+            if (in_array('Traversable', $classlike_storage->class_implements)
+                && $base_type->value === 'Iterator'
+            ) {
+                return $atomic_input_type;
+            }
+        } catch (InvalidArgumentException) {
+            // do nothing
+        }
+
+        return null;
+    }
+
+    /**
      * @param TGenericObject|TNamedObject|TIterable $input_type_part
-     * @param TGenericObject|TIterable $container_type_part
+     * @param TGenericObject|TNamedObject|TIterable $container_type_part
      * @psalm-capabilities read-props|write-this-props|write-props|write-refs
      * @return list<Union>
      */
