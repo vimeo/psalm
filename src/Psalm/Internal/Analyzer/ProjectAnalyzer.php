@@ -268,6 +268,8 @@ final class ProjectAnalyzer
         }
 
         self::$instance = $this;
+
+        NamespaceAnalyzer::clearCache();
     }
 
     private bool $extra_files_initialized = false;

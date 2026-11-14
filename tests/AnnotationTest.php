@@ -184,6 +184,20 @@ final class AnnotationTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'intMaskOfGlobalConstantsInNamespace' => [
+                'code' => '<?php
+                    namespace Abc;
+
+                    use const E_ALL;
+
+                    /** @param int-mask<E_ALL, \\E_WARNING> $flags */
+                    function takesFlags(int $flags): void {
+                        echo $flags;
+                    }
+
+                    takesFlags(E_ALL);
+                ',
+            ],
             'optionalShapeKeysNamedLikeScalarAliases' => [
                 'code' => '<?php
                     /** @var array{double?: string, integer?: int, boolean?: bool, real?: float} $a */
@@ -1986,6 +2000,51 @@ final class AnnotationTest extends TestCase
 
                     echo strlen($title);',
             ],
+            'intMaskOfAConstantOfTheNamespaceTakesPrecedenceOverTheGlobalOne' => [
+                'code' => '<?php
+                    namespace Foo;
+
+                    const E_ERROR = 4;
+
+                    /**
+                     * @param int-mask<E_ERROR> $y
+                     */
+                    function takesMask(int $y): void {
+                        /** @psalm-check-type-exact $y = 0|4 */
+                        echo $y;
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'intMaskOfAnImportedGlobalConstant' => [
+                'code' => '<?php
+                    namespace Foo;
+
+                    use const PHP_INT_MAX;
+
+                    /**
+                     * @param int-mask<PHP_INT_MAX> $y
+                     */
+                    function takesMask(int $y): void {
+                        echo $y;
+                    }
+
+                    takesMask(0);',
+            ],
+            'intMaskOfGlobalConstantsFromANamespace' => [
+                'code' => '<?php
+                    namespace Foo;
+
+                    /**
+                     * @param int-mask<E_ERROR, E_WARNING> $y
+                     */
+                    function takesMask(int $y): void {
+                        echo $y;
+                    }
+
+                    takesMask(E_ERROR);',
+            ],
             'keyOfAndValueOfOfImportedTypeAlias' => [
                 'code' => '<?php
                     /**
@@ -2026,6 +2085,28 @@ final class AnnotationTest extends TestCase
     public static function providerInvalidCodeParse(): iterable
     {
         return [
+            'intMaskOfANonIntegerConstantOfTheNamespace' => [
+                'code' => '<?php
+                    namespace Foo;
+
+                    const NAME = "x";
+
+                    /** @param int-mask<NAME> $flags */
+                    function takesFlags(int $flags): void {
+                        echo $flags;
+                    }',
+                'error_message' => 'InvalidDocblock',
+            ],
+            'intMaskOfNonIntegerGlobalConstantInNamespace' => [
+                'code' => '<?php
+                    namespace Abc;
+
+                    /** @param int-mask<PHP_VERSION> $flags */
+                    function takesFlags(int $flags): void {
+                        echo $flags;
+                    }',
+                'error_message' => 'InvalidDocblock',
+            ],
             'removedSelfAccessingCallableWithParamsIsInvalid' => [
                 'code' => <<<'PHP'
                     <?php
@@ -2884,6 +2965,42 @@ final class AnnotationTest extends TestCase
                     /** @var string $title */
                     global $title;',
                 'error_message' => 'InvalidGlobal',
+            ],
+            'intMaskOfAPartiallyQualifiedConstantDoesNotFallBackToTheGlobalOne' => [
+                'code' => '<?php
+                    namespace Foo;
+
+                    /**
+                     * @param int-mask<Sub\\E_ERROR> $y
+                     */
+                    function takesMask(int $y): void {
+                        echo $y;
+                    }',
+                'error_message' => 'UndefinedConstant',
+            ],
+            'intMaskOfAQualifiedConstantDoesNotFallBackToTheGlobalOne' => [
+                'code' => '<?php
+                    namespace Foo;
+
+                    /**
+                     * @param int-mask<\\Foo\\E_ERROR> $y
+                     */
+                    function takesMask(int $y): void {
+                        echo $y;
+                    }',
+                'error_message' => 'UndefinedConstant',
+            ],
+            'intMaskOfAnUndefinedConstantFromANamespace' => [
+                'code' => '<?php
+                    namespace Foo;
+
+                    /**
+                     * @param int-mask<NOT_A_CONSTANT> $y
+                     */
+                    function takesMask(int $y): void {
+                        echo $y;
+                    }',
+                'error_message' => 'UndefinedConstant',
             ],
             'keyOfImportedTypeAliasOfANonArrayIsInvalid' => [
                 'code' => '<?php
