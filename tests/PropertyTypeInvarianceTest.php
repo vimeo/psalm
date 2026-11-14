@@ -281,6 +281,22 @@ final class PropertyTypeInvarianceTest extends TestCase
                         protected $mightExist = "";
                     }',
             ],
+            'redeclaredPropertyWithoutDocblockTypeKeepsTheParentType' => [
+                'code' => '<?php
+                    class Mailer {
+                        /** @var non-empty-string */
+                        public string $from = "noreply@example.com";
+                    }
+
+                    final class AdminMailer extends Mailer {
+                        public string $from = "admin@example.com";
+                    }
+
+                    $from = (new AdminMailer())->from;',
+                'assertions' => [
+                    '$from===' => 'non-empty-string',
+                ],
+            ],
             'redeclaredPropertyWithoutDocblockTypeHasTheInheritedType' => [
                 'code' => '<?php
                     abstract class Model {}
