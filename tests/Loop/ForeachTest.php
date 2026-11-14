@@ -68,6 +68,93 @@ final class ForeachTest extends TestCase
                 'ignored_issues' => ['MixedAssignment'],
                 'php_version' => '8.1',
             ],
+            'aTestedKeyTheItemsDoNotHaveIsNotAddedToThemWhateverItsTypeOrTheItems' => [
+                'code' => '<?php
+                    /** @param list<string> $labels */
+                    function stringKey(array $labels): void {
+                        $rows = [];
+
+                        foreach ($labels as $l) {
+                            $rows[] = ["label" => $l, "value" => ""];
+                        }
+
+                        foreach ($rows as &$row) {
+                            /** @psalm-suppress InvalidArrayOffset */
+                            if (isset($row["name"]) && is_string($row["name"])) {
+                                $row["value"] = "y";
+                            }
+                        }
+
+                        unset($row);
+
+                        /** @psalm-check-type-exact $rows = list<array{label: string, value: "y"|""}> */
+                        echo count($rows);
+                    }
+
+                    /** @param list<array{label: string, value: ""}|null> $rows */
+                    function nullableItems(array $rows): void {
+                        foreach ($rows as &$row) {
+                            /** @psalm-suppress InvalidArrayOffset */
+                            if ($row !== null && isset($row["name"])) {
+                                $row["value"] = "y";
+                            }
+                        }
+
+                        unset($row);
+
+                        /** @psalm-check-type-exact $rows = list<array{label: string, value: "y"|""}|null> */
+                        echo count($rows);
+                    }
+
+                    /** @param list<array{label: string, value: ""}> $rows */
+                    function byValueCall(array $rows): void {
+                        foreach ($rows as &$row) {
+                            /** @psalm-suppress InvalidArrayOffset */
+                            if (isset($row["name"]) && strlen($row["name"]) > 1) {
+                                $row["value"] = "y";
+                            }
+                        }
+
+                        unset($row);
+
+                        /** @psalm-check-type-exact $rows = list<array{label: string, value: "y"|""}> */
+                        echo count($rows);
+                    }',
+                'assertions' => [],
+                'ignored_issues' => ['MixedArgument'],
+                'php_version' => '8.1',
+            ],
+            'aKeyPassedByReferenceOrAReassignedItemCountsAsWrittenInAForeachByReference' => [
+                'code' => '<?php
+                    /** @param list<array{label: string}> $rows */
+                    function passedByReference(array $rows): void {
+                        foreach ($rows as &$row) {
+                            preg_match("/a/", "a", $row["match"]);
+                        }
+
+                        unset($row);
+
+                        /** @psalm-check-type-exact $rows = list<array{label: string, match?: array<array-key, string>}> */
+                        echo count($rows);
+                    }
+
+                    /** @param list<array{label: string}> $rows */
+                    function reassigned(array $rows): void {
+                        foreach ($rows as &$row) {
+                            if (rand(0, 1)) {
+                                $row = ["label" => "a", "extra" => 1];
+                            }
+                        }
+
+                        unset($row);
+
+                        /** @psalm-check-type-exact $rows = list<array{extra?: 1, label: string}> */
+                        echo count($rows);
+                    }',
+                'assertions' => [],
+                'ignored_issues' => ['MixedAssignment'],
+                'php_version' => '8.1',
+            ],
             'issetOfAKeyTheItemsDoNotHaveInAForeachByReferenceDoesNotAddItToThem' => [
                 'code' => '<?php
                     /** @param list<string> $labels */

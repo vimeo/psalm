@@ -87,6 +87,7 @@ use function array_search;
 use function array_values;
 use function assert;
 use function count;
+use function end;
 use function implode;
 use function is_string;
 use function reset;
@@ -547,7 +548,7 @@ final class ForeachAnalyzer
 
         $written_type = $written_type->setProperties(['by_ref' => false, 'parent_nodes' => []]);
 
-        $written_keys = self::getKeysWrittenToTheItem($stmt->stmts, substr($value_var_id, 1));
+        $written_keys = self::getKeysWrittenToTheItem($statements_analyzer, $stmt->stmts, substr($value_var_id, 1));
 
         $array_type = $context->vars_in_scope[$array_var_id];
 
@@ -617,6 +618,10 @@ final class ForeachAnalyzer
         $item_keys = [];
 
         foreach ($item_type->getAtomicTypes() as $item_atomic_type) {
+            if ($item_atomic_type instanceof TNull) {
+                continue;
+            }
+
             if (!$item_atomic_type instanceof TKeyedArray) {
                 return $written_type;
             }
@@ -633,8 +638,7 @@ final class ForeachAnalyzer
                     $written_atomic_type->properties,
                     static fn(Union $property, int|string $key): bool => isset($item_keys[$key])
                         || isset($written_keys[$key])
-                        || !$property->possibly_undefined
-                        || !$property->isMixed(),
+                        || !$property->possibly_undefined,
                     ARRAY_FILTER_USE_BOTH,
                 );
 
@@ -657,47 +661,131 @@ final class ForeachAnalyzer
      * @param array<PhpParser\Node\Stmt> $stmts
      * @return array<int|string, true>|null
      */
-    private static function getKeysWrittenToTheItem(array $stmts, string $var_name): ?array
-    {
+    private static function getKeysWrittenToTheItem(
+        StatementsAnalyzer $statements_analyzer,
+        array $stmts,
+        string $var_name,
+    ): ?array {
         $keys = [];
 
-        $assignments = (new NodeFinder())->find(
+        $nodes = (new NodeFinder())->find(
             $stmts,
             static fn(PhpParser\Node $node): bool => $node instanceof PhpParser\Node\Expr\Assign
                 || $node instanceof PhpParser\Node\Expr\AssignOp
-                || $node instanceof PhpParser\Node\Expr\AssignRef,
+                || $node instanceof PhpParser\Node\Expr\AssignRef
+                || $node instanceof PhpParser\Node\Expr\CallLike,
         );
 
-        foreach ($assignments as $assignment) {
-            assert(
-                $assignment instanceof PhpParser\Node\Expr\Assign
-                || $assignment instanceof PhpParser\Node\Expr\AssignOp
-                || $assignment instanceof PhpParser\Node\Expr\AssignRef,
-            );
+        foreach ($nodes as $node) {
+            if ($node instanceof PhpParser\Node\Expr\CallLike) {
+                // a key passed to a call may be written through its parameter, the variable itself may be changed
+                foreach ($node->getRawArgs() as $position => $arg) {
+                    if (!$arg instanceof PhpParser\Node\Arg
+                        || !self::mayPassByReference($statements_analyzer, $node, $position)
+                    ) {
+                        continue;
+                    }
 
-            $target = $assignment->var;
-            $dim = null;
+                    $dim = self::getKeyOfTheItem($arg->value, $var_name);
 
-            while ($target instanceof PhpParser\Node\Expr\ArrayDimFetch) {
-                $dim = $target->dim;
-                $target = $target->var;
-            }
+                    if ($dim === false) {
+                        continue;
+                    }
 
-            if (!$target instanceof PhpParser\Node\Expr\Variable
-                || $target->name !== $var_name
-                || $assignment->var === $target
-            ) {
+                    if ($dim === null) {
+                        return null;
+                    }
+
+                    $keys[$dim] = true;
+                }
+
                 continue;
             }
 
-            if (!$dim instanceof PhpParser\Node\Scalar\String_ && !$dim instanceof PhpParser\Node\Scalar\Int_) {
+            assert(
+                $node instanceof PhpParser\Node\Expr\Assign
+                || $node instanceof PhpParser\Node\Expr\AssignOp
+                || $node instanceof PhpParser\Node\Expr\AssignRef,
+            );
+
+            $dim = self::getKeyOfTheItem($node->var, $var_name);
+
+            if ($dim === false) {
+                continue;
+            }
+
+            if ($dim === null) {
                 return null;
             }
 
-            $keys[$dim->value] = true;
+            $keys[$dim] = true;
         }
 
         return $keys;
+    }
+
+    /**
+     * Whether the call may take the argument at the position by reference: false only for a function that is known
+     * and takes it by value
+     */
+    private static function mayPassByReference(
+        StatementsAnalyzer $statements_analyzer,
+        PhpParser\Node\Expr\CallLike $call,
+        int $position,
+    ): bool {
+        if (!$call instanceof PhpParser\Node\Expr\FuncCall || !$call->name instanceof PhpParser\Node\Name) {
+            return true;
+        }
+
+        $functions = $statements_analyzer->getCodebase()->functions;
+        $function_name = $call->name->toString();
+
+        foreach ([
+            $functions->getFullyQualifiedFunctionNameFromString($function_name, $statements_analyzer),
+            $function_name,
+        ] as $function_id) {
+            $function_id = strtolower($function_id);
+
+            if (!$functions->functionExists($statements_analyzer, $function_id)) {
+                continue;
+            }
+
+            $params = $functions->getStorage($statements_analyzer, $function_id)->params;
+            $param = $params[$position] ?? (($last = end($params)) !== false && $last->is_variadic ? $last : null);
+
+            return $param === null || $param->by_ref;
+        }
+
+        return true;
+    }
+
+    /**
+     * @return int|string|false|null the literal key an expression reaches in the array held by the variable (the
+     *                                first one of a longer path), null when the key is not a literal or the expression
+     *                                is the variable itself, false when the expression is not part of the variable
+     * @psalm-capabilities read-props
+     */
+    private static function getKeyOfTheItem(PhpParser\Node\Expr $expr, string $var_name): int|string|false|null
+    {
+        $dim = null;
+        $target = $expr;
+
+        while ($target instanceof PhpParser\Node\Expr\ArrayDimFetch) {
+            $dim = $target->dim;
+            $target = $target->var;
+        }
+
+        if (!$target instanceof PhpParser\Node\Expr\Variable || $target->name !== $var_name) {
+            return false;
+        }
+
+        if ($expr === $target
+            || (!$dim instanceof PhpParser\Node\Scalar\String_ && !$dim instanceof PhpParser\Node\Scalar\Int_)
+        ) {
+            return null;
+        }
+
+        return $dim->value;
     }
 
     /**
