@@ -46,6 +46,7 @@ use Psalm\Type\Atomic\TValueOf;
 use Psalm\Type\Union;
 use UnexpectedValueException;
 
+use function array_filter;
 use function array_pop;
 use function assert;
 use function count;
@@ -362,10 +363,6 @@ final class Methods
 
             $params = $storage->params;
 
-            if ($storage->has_docblock_param_types) {
-                return $params;
-            }
-
             // a trait method appears in the class using it, which holds the docblock it inherits
             $appearing_method_id = $this->classlike_storage_provider->get($declaring_method_id->fq_class_name)->is_trait
                 ? $this->getAppearingMethodId($method_id)
@@ -384,41 +381,63 @@ final class Methods
                 return $params;
             }
 
-            if (!isset($class_storage->documenting_method_ids[$appearing_method_name])) {
-                return $params;
+            // a docblock documenting only some of the parameters leaves the other ones to the overridden methods, the
+            // nearest one that documents each of them
+            $overridden_method_ids = $this->getOverriddenMethodsDocumentingParams(
+                $class_storage,
+                $appearing_method_name,
+            );
+
+            if (!$storage->has_docblock_param_types
+                && isset($class_storage->documenting_method_ids[$appearing_method_name])
+            ) {
+                // the method that documents the whole signature of the others comes first
+                $documenting_method_id = $class_storage->documenting_method_ids[$appearing_method_name];
+
+                $overridden_method_ids = [
+                    $documenting_method_id,
+                    ...array_filter(
+                        $overridden_method_ids,
+                        static fn(MethodIdentifier $id): bool => (string) $id !== (string) $documenting_method_id,
+                    ),
+                ];
             }
 
-            $overridden_method_id = $class_storage->documenting_method_ids[$appearing_method_name];
+            foreach ($overridden_method_ids as $overridden_method_id) {
+                $overridden_storage = $this->getStorage($overridden_method_id);
 
-            $overridden_storage = $this->getStorage($overridden_method_id);
+                $overriding_fq_class_name = $overridden_method_id->fq_class_name;
 
-            $overriding_fq_class_name = $overridden_method_id->fq_class_name;
-
-            foreach ($params as $i => $param) {
-                if (isset($overridden_storage->params[$i]->type)
-                    && $overridden_storage->params[$i]->has_docblock_type
-                ) {
-                    $params[$i] = clone $param;
-                    /** @var Union $params[$i]->type */
-                    $params[$i]->type = $overridden_storage->params[$i]->type;
-
-                    if ($source) {
-                        $overridden_class_storage = $this->classlike_storage_provider->get($overriding_fq_class_name);
-                        $params[$i]->type = self::localizeType(
-                            $source->getCodebase(),
-                            $params[$i]->type,
-                            $appearing_fq_class_name,
-                            $overridden_class_storage->name,
-                        );
-                    }
-
-                    if ($params[$i]->signature_type
-                        && $params[$i]->signature_type->isNullable()
+                foreach ($params as $i => $param) {
+                    if (!$param->has_docblock_type
+                        && isset($overridden_storage->params[$i]->type)
+                        && $overridden_storage->params[$i]->has_docblock_type
                     ) {
-                        $params[$i]->type = $params[$i]->type->getBuilder()->addType(new TNull)->freeze();
-                    }
+                        $params[$i] = clone $param;
+                        /** @var Union $params[$i]->type */
+                        $params[$i]->type = $overridden_storage->params[$i]->type;
 
-                    $params[$i]->type_location = $overridden_storage->params[$i]->type_location;
+                        if ($source) {
+                            $overridden_class_storage = $this->classlike_storage_provider->get(
+                                $overriding_fq_class_name,
+                            );
+                            $params[$i]->type = self::localizeType(
+                                $source->getCodebase(),
+                                $params[$i]->type,
+                                $appearing_fq_class_name,
+                                $overridden_class_storage->name,
+                            );
+                        }
+
+                        if ($params[$i]->signature_type
+                            && $params[$i]->signature_type->isNullable()
+                        ) {
+                            $params[$i]->type = $params[$i]->type->getBuilder()->addType(new TNull)->freeze();
+                        }
+
+                        $params[$i]->type_location = $overridden_storage->params[$i]->type_location;
+                        $params[$i]->has_docblock_type = true;
+                    }
                 }
             }
 
@@ -1172,7 +1191,32 @@ final class Methods
         return $method_storage;
     }
 
-    /** @psalm-mutation-free */
+    /**
+     * The overridden methods whose docblock documents parameters, the nearest first
+     *
+     * @return list<MethodIdentifier>
+     * @psalm-mutation-free
+     */
+    private function getOverriddenMethodsDocumentingParams(
+        ClassLikeStorage $class_storage,
+        string $method_name,
+    ): array {
+        $method_ids = [];
+
+        foreach ($class_storage->overridden_method_ids[$method_name] ?? [] as $overridden_method_id) {
+            if ($this->hasStorage($overridden_method_id)
+                && $this->getStorage($overridden_method_id)->has_docblock_param_types
+            ) {
+                $method_ids[] = $overridden_method_id;
+            }
+        }
+
+        return $method_ids;
+    }
+
+    /**
+     * @psalm-capabilities read-props
+     */
     public function hasStorage(MethodIdentifier $method_id): bool
     {
         try {
