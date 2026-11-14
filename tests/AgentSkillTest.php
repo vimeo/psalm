@@ -16,6 +16,7 @@ use function dirname;
 use function file_exists;
 use function file_get_contents;
 use function glob;
+use function preg_match;
 use function preg_match_all;
 use function preg_replace;
 use function rtrim;
@@ -103,6 +104,28 @@ final class AgentSkillTest extends BaseTestCase
         $this->assertFalse(str_contains($gitattributes, '/skills '), 'skills/ must not be export-ignored');
         $composer = (string) file_get_contents(__DIR__ . '/../composer.json');
         $this->assertStringContainsString('"source": "skills"', $composer);
+    }
+
+    /**
+     * skills.sh installs every skill it finds in the repository, .agents/skills included, except internal ones.
+     */
+    public function testContributorSkillsAreInternal(): void
+    {
+        $files = self::glob(__DIR__ . '/../.agents/skills/*/SKILL.md');
+        $this->assertNotEmpty($files);
+        foreach ($files as $file) {
+            $this->assertTrue(self::isInternal($file), basename(dirname($file)) . ' must be internal');
+        }
+        $this->assertFalse(self::isInternal(self::SKILL_DIR . '/SKILL.md'), 'skills/psalm must not be internal');
+    }
+
+    private static function isInternal(string $skill_file): bool
+    {
+        if (preg_match('/\A---\R(.*?)\R---\R/s', (string) file_get_contents($skill_file), $matches) !== 1) {
+            return false;
+        }
+
+        return preg_match('/^metadata:\R  internal: "true"$/m', $matches[1]) === 1;
     }
 
     /**
