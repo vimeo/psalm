@@ -11,10 +11,18 @@ use Psalm\Internal\CliUtils;
 use Psalm\Tests\EndToEnd\PsalmRunnerTrait;
 
 use function array_keys;
+use function chdir;
+use function file_put_contents;
+use function getcwd;
 use function getenv;
+use function mkdir;
 use function putenv;
 use function realpath;
+use function rmdir;
 use function stream_isatty;
+use function sys_get_temp_dir;
+use function tempnam;
+use function unlink;
 
 use const DIRECTORY_SEPARATOR;
 use const STDOUT;
@@ -248,6 +256,69 @@ final class CliUtilsTest extends TestCase
             self::assertSame('inherited-value', getenv('FORCE_COLOR'));
         } finally {
             putenv($original === false ? 'FORCE_COLOR' : 'FORCE_COLOR=' . $original);
+        }
+    }
+
+    /**
+     * @param list<string> $args
+     * @param array<string, false|list<false|string>|string> $expected_options
+     */
+    #[DataProvider('provideOptionsAndPaths')]
+    public function testOptionsAndPathsAreSeparatedTheSameWayByTheParserAndThePathExtraction(
+        array $args,
+        array $expected_options,
+    ): void {
+        global $argv;
+        $argv = ['psalter', ...$args];
+
+        self::assertSame(
+            $expected_options,
+            CliUtils::getOptions($args, ['c:', 'm', 'h', 'f:', 'r:'], ['issues:', 'no-cache']),
+        );
+        self::assertSame(
+            [(string)realpath(__DIR__ . '/../fixtures/DummyProject/Bar.php')],
+            CliUtils::getPathsToCheck(false),
+        );
+    }
+
+    /** @return iterable<string, array{list<string>, array<string, false|list<false|string>|string>}> */
+    public static function provideOptionsAndPaths(): iterable
+    {
+        $bar = (string)realpath(__DIR__ . '/../fixtures/DummyProject/Bar.php');
+
+        yield 'a group of flags' => [['-mh', $bar], ['m' => false, 'h' => false]];
+        yield 'a value attached to an option' => [['-cx', $bar], ['c' => 'x']];
+        yield 'a value after an equals sign' => [['-c=x', $bar], ['c' => 'x']];
+        yield 'a group that ends with an option that takes a value' => [
+            ['-mc', 'x', $bar],
+            ['m' => false, 'c' => 'x'],
+        ];
+        yield 'options after the path' => [
+            [$bar, '--issues', 'x', '--no-cache'],
+            ['issues' => 'x', 'no-cache' => false],
+        ];
+    }
+
+    public function testEverythingAfterTheTerminatorIsAPath(): void
+    {
+        $dir = (string)tempnam(sys_get_temp_dir(), 'CliUtilsTest_');
+        unlink($dir);
+        mkdir($dir);
+        $file = $dir . DIRECTORY_SEPARATOR . '--target.php';
+        file_put_contents($file, "<?php\n");
+        $cwd = (string)getcwd();
+
+        try {
+            chdir($dir);
+
+            global $argv;
+            $argv = ['psalter', '--issues=MissingReturnType', '--', '--target.php'];
+
+            self::assertSame([(string)realpath($file)], CliUtils::getPathsToCheck(false));
+        } finally {
+            chdir($cwd);
+            unlink($file);
+            rmdir($dir);
         }
     }
 
