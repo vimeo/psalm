@@ -1653,26 +1653,22 @@ final class ArgumentsAnalyzer
                 || $arg->value instanceof PhpParser\Node\Expr\ClassConstFetch
                 || $arg->value instanceof PhpParser\Node\Expr\BinaryOp
                 || $arg->value instanceof PhpParser\Node\Expr\Ternary
-                // an internal function may take these by reference only when it prefers it, like `stream_select()`
+                // an internal function may take other expressions by reference only when it prefers it, like
+                // `stream_select()`, so only functions with storage outside the call map are strict about them
                 || ($function_storage !== null
-                    && (
-                        $arg->value instanceof PhpParser\Node\Expr\Assign
-                        || $arg->value instanceof PhpParser\Node\Expr\AssignOp
-                        || $arg->value instanceof PhpParser\Node\Expr\UnaryMinus
-                        || $arg->value instanceof PhpParser\Node\Expr\UnaryPlus
-                        || $arg->value instanceof PhpParser\Node\Expr\BooleanNot
-                        || $arg->value instanceof PhpParser\Node\Expr\BitwiseNot
-                        || $arg->value instanceof PhpParser\Node\Expr\PreInc
-                        || $arg->value instanceof PhpParser\Node\Expr\PostInc
-                        || $arg->value instanceof PhpParser\Node\Expr\PreDec
-                        || $arg->value instanceof PhpParser\Node\Expr\PostDec
-                        || $arg->value instanceof PhpParser\Node\Expr\Isset_
-                        || $arg->value instanceof PhpParser\Node\Expr\Empty_
-                        || $arg->value instanceof PhpParser\Node\Expr\Instanceof_
-                        || $arg->value instanceof PhpParser\Node\Expr\Clone_
-                        || $arg->value instanceof PhpParser\Node\Expr\Match_
-                        || $arg->value instanceof PhpParser\Node\Expr\Closure
-                        || $arg->value instanceof PhpParser\Node\Expr\ArrowFunction
+                    && !(
+                        $arg->value instanceof PhpParser\Node\Expr\Variable
+                        || $arg->value instanceof PhpParser\Node\Expr\ArrayDimFetch
+                        || $arg->value instanceof PhpParser\Node\Expr\PropertyFetch
+                        || $arg->value instanceof PhpParser\Node\Expr\NullsafePropertyFetch
+                        || $arg->value instanceof PhpParser\Node\Expr\StaticPropertyFetch
+                        || $arg->value instanceof PhpParser\Node\Expr\AssignRef
+                        // these are checked below, by the type of their result
+                        || $arg->value instanceof PhpParser\Node\Expr\ConstFetch
+                        || $arg->value instanceof PhpParser\Node\Expr\FuncCall
+                        || $arg->value instanceof PhpParser\Node\Expr\MethodCall
+                        || $arg->value instanceof PhpParser\Node\Expr\NullsafeMethodCall
+                        || $arg->value instanceof PhpParser\Node\Expr\StaticCall
                     ))
                 || (
                     (
