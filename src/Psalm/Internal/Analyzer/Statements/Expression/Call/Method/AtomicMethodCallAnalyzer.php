@@ -390,49 +390,24 @@ final class AtomicMethodCallAnalyzer extends CallAnalyzer
 
             // a `@method` of the class or of its interfaces wins over its mixins
             if (!MissingMethodCallHandler::hasPseudoMethod($codebase, $class_storage, $method_name_lc)) {
-                $mixin_method_exists = false;
-
-                $mixin = MixinLookup::findMember(
+                [$mixin, $mixin_method_exists] = self::findMixinWithMethod(
+                    $statements_analyzer,
+                    $stmt,
                     $codebase,
+                    $context,
                     $class_storage,
                     $lhs_type_part,
-                    static function (ClassLikeStorage $mixin_storage) use (
-                        $codebase,
-                        $context,
-                        $source,
-                        $stmt,
-                        $statements_analyzer,
-                        $method_name_lc,
-                        &$mixin_method_exists,
-                    ): bool {
-                        $mixin_method_exists = $codebase->methodExists(
-                            new MethodIdentifier($mixin_storage->name, $method_name_lc),
-                            $context->calling_method_id,
-                            $codebase->collect_locations
-                                ? new CodeLocation($source, $stmt->name)
-                                : null,
-                            !$context->collect_initializations
-                            && !$context->collect_mutations
-                                ? $statements_analyzer
-                                : null,
-                            $statements_analyzer->getFilePath(),
-                            true,
-                            $context->insideUse(),
-                        );
-
-                        return $mixin_method_exists || isset($mixin_storage->pseudo_methods[$method_name_lc]);
-                    },
+                    $method_name_lc,
                     $lhs_var_id === '$this',
                 );
 
                 if ($mixin !== null) {
-                    $method_id = new MethodIdentifier($mixin[1]->name, $method_name_lc);
-
                     if ($mixin_method_exists) {
                         $mixin_user_class = $fq_class_name;
-                        $mixin_method_id = $method_id;
                         [$lhs_type_part, $class_storage] = $mixin;
                         $fq_class_name = $class_storage->name;
+                        $method_id = new MethodIdentifier($fq_class_name, $method_name_lc);
+                        $mixin_method_id = $method_id;
                         $naive_method_exists = true;
                     } else {
                         // the call goes through the __call() of the class, with `$this` the class
@@ -843,6 +818,75 @@ final class AtomicMethodCallAnalyzer extends CallAnalyzer
                 $result->invalid_method_call_types[] = (string)$lhs_type_part;
                 return;
         }
+    }
+
+    /**
+     * The mixin with the method, bound for the receiver, and whether the method is a real one rather than a
+     * `@method` or a method an existence provider adds. The latter are only looked for when no mixin has the method
+     * otherwise.
+     *
+     * @param lowercase-string $method_name_lc
+     * @return array{array{TNamedObject, ClassLikeStorage}|null, bool}
+     */
+    private static function findMixinWithMethod(
+        StatementsAnalyzer $statements_analyzer,
+        PhpParser\Node\Expr\MethodCall $stmt,
+        Codebase $codebase,
+        Context $context,
+        ClassLikeStorage $class_storage,
+        TNamedObject $lhs_type_part,
+        string $method_name_lc,
+        bool $self_call,
+    ): array {
+        $mixin_method_exists = false;
+
+        foreach ([false, true] as $use_existence_provider) {
+            $mixin = MixinLookup::findMember(
+                $codebase,
+                $class_storage,
+                $lhs_type_part,
+                static function (ClassLikeStorage $mixin_storage) use (
+                    $statements_analyzer,
+                    $stmt,
+                    $codebase,
+                    $context,
+                    $method_name_lc,
+                    $use_existence_provider,
+                    &$mixin_method_exists,
+                ): bool {
+                    $mixin_method_exists = $codebase->methodExists(
+                        new MethodIdentifier($mixin_storage->name, $method_name_lc),
+                        $context->calling_method_id,
+                        $codebase->collect_locations
+                            ? new CodeLocation($statements_analyzer->getSource(), $stmt->name)
+                            : null,
+                        !$context->collect_initializations
+                        && !$context->collect_mutations
+                            ? $statements_analyzer
+                            : null,
+                        $statements_analyzer->getFilePath(),
+                        false,
+                        $context->insideUse(),
+                    );
+
+                    return $mixin_method_exists
+                        || isset($mixin_storage->pseudo_methods[$method_name_lc])
+                        || ($use_existence_provider
+                            && $codebase->methods->existence_provider->doesMethodExist(
+                                $mixin_storage->name,
+                                $method_name_lc,
+                                $statements_analyzer,
+                            ) === true);
+                },
+                $self_call,
+            );
+
+            if ($mixin !== null) {
+                return [$mixin, $mixin_method_exists];
+            }
+        }
+
+        return [null, false];
     }
 
     private static function handleCallableObject(

@@ -456,9 +456,12 @@ final class AtomicStaticCallAnalyzer
                 ),
             );
 
+            // the call is that of an instance of the class, which finds the method on the same mixin
             if ($mixin !== null) {
                 $mixin_context = clone $context;
-                $mixin_context->vars_in_scope['$__tmp_mixin_var__'] = new Union([$mixin[0]]);
+                $mixin_context->vars_in_scope['$__tmp_mixin_var__'] = new Union([
+                    $lhs_type_part instanceof TNamedObject ? $lhs_type_part : new TNamedObject($fq_class_name),
+                ]);
 
                 return self::forwardCallToInstanceMethod(
                     $statements_analyzer,

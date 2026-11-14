@@ -965,6 +965,74 @@ final class MixinAnnotationTest extends TestCase
                 'ignored_issues' => [],
                 'php_version' => '8.0',
             ],
+            'pseudoMethodOfAMixinWithoutReturnTypeGoesThroughTheCallOfTheClass' => [
+                'code' => '<?php
+                    /** @method foo() */
+                    final class Delegate
+                    {
+                        /** @param list<mixed> $args */
+                        public function __call(string $name, array $args): string
+                        {
+                            return "";
+                        }
+                    }
+
+                    /** @mixin Delegate */
+                    final class Host
+                    {
+                        /** @param list<mixed> $args */
+                        public function __call(string $name, array $args): int
+                        {
+                            return 1;
+                        }
+                    }
+
+                    $a = (new Host())->foo();',
+                'assertions' => [
+                    '$a===' => 'int',
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'staticCallThroughAMixinIsTheInstanceCall' => [
+                'code' => '<?php
+                    /** @template TModel of Model */
+                    class Builder
+                    {
+                        /** @return $this */
+                        public function where(): static
+                        {
+                            return $this;
+                        }
+                    }
+
+                    /** @mixin Builder<static> */
+                    abstract class Model
+                    {
+                        /** @param list<mixed> $args */
+                        public function __call(string $name, array $args): mixed
+                        {
+                            return null;
+                        }
+
+                        /** @param list<mixed> $args */
+                        public static function __callStatic(string $name, array $args): mixed
+                        {
+                            return null;
+                        }
+                    }
+
+                    final class Customer extends Model {}
+
+                    $a = Customer::where();
+                    $b = (new Customer())->where();',
+                'assertions' => [
+                    '$a===' => 'Customer',
+                    '$b===' => 'Customer',
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
             'nearestMixinWinsForAStaticMethodOfNestedMixins' => [
                 'code' => '<?php
                     final class Deep
@@ -2201,7 +2269,7 @@ final class MixinAnnotationTest extends TestCase
                         return $x->views;
                     }',
             ],
-            'templatedMixinNamedMixinKeepsPrecedenceForProperties' => [
+            'ownMixinOfTheChildWinsOverTheTemplatedMixinOfTheParentForAProperty' => [
                 'code' => '<?php
                     namespace T;
 
