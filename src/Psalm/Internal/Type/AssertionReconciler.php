@@ -1058,9 +1058,7 @@ final class AssertionReconciler extends Reconciler
             $matching_atomic_type = $new_range;
         }
 
-        $refined_string = $type_1_atomic instanceof TString && $type_2_atomic instanceof TString
-            ? StringRefinement::intersect($type_1_atomic, $type_2_atomic)
-            : null;
+        $refined_string = StringRefinement::intersectAsserted($type_1_atomic, $type_2_atomic);
 
         if ($refined_string !== null) {
             // e.g. lowercase-string and non-falsy-string, none of which is contained into the other completely
