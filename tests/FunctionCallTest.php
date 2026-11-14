@@ -4427,6 +4427,40 @@ final class FunctionCallTest extends TestCase
                 'error_levels' => [],
                 'php_version' => '7.4',
             ],
+            'languageConstructUnsetCalledAsAQualifiedFunction' => [
+                'code' => '<?php
+                    $what = 5;
+                    \unset($what);',
+                'error_message' => 'UndefinedFunction',
+            ],
+            'languageConstructIssetCalledAsAQualifiedFunction' => [
+                'code' => '<?php
+                    $what = 5;
+                    if (\isset($what)) {
+                    }',
+                'error_message' => 'UndefinedFunction',
+            ],
+            'languageConstructEmptyCalledAsAQualifiedFunction' => [
+                'code' => '<?php
+                    if (\empty("")) {
+                    }',
+                'error_message' => 'UndefinedFunction',
+            ],
+            'languageConstructPrintCalledAsAQualifiedFunction' => [
+                'code' => '<?php
+                    \print("word");',
+                'error_message' => 'UndefinedFunction',
+            ],
+            'languageConstructsCalledWithoutALeadingBackslashAreNotUndefinedFunctions' => [
+                'code' => '<?php
+                    $what = 5;
+                    unset($what);
+                    print("word");
+                    $other = [];
+                    if (isset($other["a"]) || empty($other)) {
+                    }',
+                'error_message' => 'RedundantCondition',
+            ],
         ];
     }
 

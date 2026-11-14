@@ -22953,11 +22953,6 @@ return array (
     'callback=' => 'callable[impure]',
     'data=' => 'mixed',
   ),
-  'empty' => 
-  array (
-    0 => 'bool',
-    'value' => 'mixed',
-  ),
   'emptyiterator::current' => 
   array (
     0 => 'never',
@@ -47463,12 +47458,6 @@ return array (
     'filename' => 'string',
     -2 => 'none',
   ),
-  'isset' => 
-  array (
-    0 => 'bool',
-    'value' => 'mixed',
-    '...rest=' => 'mixed',
-  ),
   'iterator::current' => 
   array (
     0 => 'mixed',
@@ -69351,11 +69340,6 @@ return array (
     0 => 'mixed',
     '&r arg' => 'array<array-key, mixed>|object',
     -2 => 'none',
-  ),
-  'print' => 
-  array (
-    0 => 'int',
-    'arg' => 'string',
   ),
   'print_r' => 
   array (
@@ -109397,12 +109381,6 @@ return array (
     'variable_representation' => 'string',
     'allowed_classes=' => 'array{allowed_classes?: array<array-key, class-string>|bool}',
     -2 => 'none',
-  ),
-  'unset' => 
-  array (
-    0 => 'void',
-    'var=' => 'mixed',
-    '...args=' => 'mixed',
   ),
   'untaint' => 
   array (
