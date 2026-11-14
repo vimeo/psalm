@@ -34,6 +34,7 @@ use Psalm\Tests\Config\Plugin\TestPluginIssueDefaultLevel;
 use Psalm\Tests\DeferredAnalyzerTestCase;
 use Psalm\Tests\Internal\Provider\FakeParserCacheProvider;
 use Psalm\Tests\TestConfig;
+use RuntimeException;
 use Throwable;
 use UnexpectedValueException;
 
@@ -1738,7 +1739,10 @@ final class ConfigTest extends DeferredAnalyzerTestCase
     {
         yield 'a method of a stub, ignored' => ['\\DateTimeImmutable::createFromFormat("Y-m-d", $date)', true, false];
         yield 'a method of a stub, reported' => ['\\DateTimeImmutable::createFromFormat("Y-m-d", $date)', false, true];
-        yield 'a method of the call map, ignored' => ['\\DateTime::createFromFormat("Y-m-d", $date)', true, false];
+        yield 'a method of a mutable class, ignored' => ['\\DateTime::createFromFormat("Y-m-d", $date)', true, false];
+        yield 'a method of a mutable class, reported' => ['\\DateTime::createFromFormat("Y-m-d", $date)', false, true];
+        yield 'a method of the call map, ignored' => ['(new \\DateTime())->modify($date)', true, false];
+        yield 'a method of the call map, not reported either' => ['(new \\DateTime())->modify($date)', false, false];
         yield 'a function, ignored' => ['date_create_from_format("Y-m-d", $date)', true, false];
         yield 'a function, reported' => ['date_create_from_format("Y-m-d", $date)', false, true];
     }
@@ -3368,6 +3372,34 @@ final class ConfigTest extends DeferredAnalyzerTestCase
 
         $this->assertSame('zstd', $config->compressor);
         $this->assertSame([], $config->config_warnings);
+    }
+
+    public function testRemoveCacheDirectoryToleratesAFileWrittenByAnotherProcess(): void
+    {
+        $dir = sys_get_temp_dir() . DIRECTORY_SEPARATOR . uniqid('psalm-cache-removal-', true);
+        mkdir($dir . DIRECTORY_SEPARATOR . 'classlike_cache', 0777, true);
+        file_put_contents($dir . DIRECTORY_SEPARATOR . 'classlike_cache' . DIRECTORY_SEPARATOR . 'cached', 'x');
+
+        // as in the CLI, where PHP warnings are turned into exceptions
+        set_error_handler(static function (int $severity, string $message): never {
+            throw new RuntimeException('PHP Error: ' . $message);
+        });
+
+        ConcurrentWriterStreamWrapper::register();
+
+        try {
+            // while this removes the cache, another Psalm process (a second language server on the same project)
+            // writes a file into the directory, which can then no longer be removed
+            Config::removeCacheDirectory(ConcurrentWriterStreamWrapper::PROTOCOL . '://' . $dir);
+
+            $this->assertFileDoesNotExist($dir . DIRECTORY_SEPARATOR . 'classlike_cache' . DIRECTORY_SEPARATOR . 'cached');
+        } finally {
+            ConcurrentWriterStreamWrapper::unregister();
+            restore_error_handler();
+            Config::removeCacheDirectory($dir);
+        }
+
+        $this->assertDirectoryDoesNotExist($dir);
     }
 
     /**
