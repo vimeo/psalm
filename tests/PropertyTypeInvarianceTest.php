@@ -532,23 +532,59 @@ final class PropertyTypeInvarianceTest extends TestCase
                     '$name===' => 'non-empty-string',
                 ],
             ],
-            'propertyOfAnImplementedInterface' => [
+            'privatePropertyIsNotInherited' => [
                 'code' => '<?php
-                    interface HasName {
+                    class ParentClass {
                         /** @var non-empty-string */
-                        public string $name { get; }
+                        private string $name = "a";
                     }
 
-                    final class Named implements HasName {
-                        public string $name = "a";
+                    final class ChildClass extends ParentClass {
+                        public string $name = "";
                     }
 
-                    $name = (new Named())->name;',
+                    $name = (new ChildClass())->name;',
                 'assertions' => [
                     '$name===' => 'string',
                 ],
-                'ignored_issues' => [],
-                'php_version' => '8.4',
+            ],
+            'inheritedPropertyTypeHasTheParentOfTheParent' => [
+                'code' => '<?php
+                    class GrandParentClass {}
+
+                    class ParentClass extends GrandParentClass {
+                        /** @var parent|null */
+                        public $up;
+                    }
+
+                    final class ChildClass extends ParentClass {
+                        public $up;
+                    }
+
+                    $up = (new ChildClass())->up;',
+                'assertions' => [
+                    '$up===' => 'GrandParentClass|null',
+                ],
+            ],
+            'inheritedPropertyTypeOfATraitHasTheSelfOfTheTraitUser' => [
+                'code' => '<?php
+                    trait T {
+                        /** @var self|null */
+                        public $next;
+                    }
+
+                    class ParentClass {
+                        use T;
+                    }
+
+                    final class ChildClass extends ParentClass {
+                        public $next;
+                    }
+
+                    $next = (new ChildClass())->next;',
+                'assertions' => [
+                    '$next===' => 'ParentClass|null',
+                ],
             ],
             'inheritedClassStringOfATemplateUnion' => [
                 'code' => '<?php
