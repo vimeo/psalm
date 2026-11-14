@@ -15,6 +15,7 @@ use Psalm\Tests\Traits\ValidCodeAnalysisTestTrait;
 use function array_filter;
 use function array_map;
 use function array_values;
+use function str_starts_with;
 
 use const DIRECTORY_SEPARATOR;
 
@@ -80,6 +81,39 @@ final class ForeachTest extends TestCase
                     => $issue->type . ' ' . $issue->line_from . ':' . $issue->column_from,
                 IssueBuffer::getIssuesDataForFile($file_path),
             ),
+        );
+    }
+
+    public function testAnItemAssignedToAVariableOfAPreviousIterationCreatesTheArray(): void
+    {
+        $this->project_analyzer->getConfig()->throw_exception = false;
+
+        $file_path = self::$src_dir_path . 'somefile.php';
+
+        $this->addFile(
+            $file_path,
+            '<?php
+                /** @param list<array{int, string}> $xs */
+                function f(array $xs): void {
+                    foreach ($xs as [$k, $v]) {
+                        echo count($by);
+                        $by[$k][] = $v;
+                    }
+                }',
+        );
+
+        $this->analyzeFile($file_path, new Context());
+
+        self::assertSame(
+            ['PossiblyNullArgument 5:36'],
+            array_values(array_map(
+                static fn(IssueData $issue): string
+                    => $issue->type . ' ' . $issue->line_from . ':' . $issue->column_from,
+                array_filter(
+                    IssueBuffer::getIssuesDataForFile($file_path),
+                    static fn(IssueData $issue): bool => str_starts_with($issue->type, 'PossiblyNull'),
+                ),
+            )),
         );
     }
 
