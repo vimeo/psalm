@@ -99,7 +99,6 @@ use UnexpectedValueException;
 use function array_filter;
 use function array_keys;
 use function array_map;
-use function array_merge;
 use function array_pop;
 use function array_shift;
 use function array_values;
@@ -371,10 +370,10 @@ final class ClassAnalyzer extends ClassLikeAnalyzer
             }
         }
 
-        if (($storage->templatedMixins || $storage->namedMixins)
-            && $storage->mixin_declaring_fqcln === $storage->name) {
-            /** @var non-empty-array<int, TTemplateParam|TNamedObject> $mixins */
-            $mixins = array_merge($storage->templatedMixins, $storage->namedMixins);
+        // the inherited mixins are checked where they are declared
+        $mixins = $storage->getOwnMixins();
+
+        if ($mixins) {
             $union = new Union($mixins);
 
             $static_self = new TNamedObject($storage->name, true);

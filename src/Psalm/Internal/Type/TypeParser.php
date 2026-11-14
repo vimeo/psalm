@@ -1227,8 +1227,9 @@ final class TypeParser
 
                 if ($atomic_type instanceof TNamedObject) {
                     if (defined($atomic_type->value)) {
+                        // silenced, as reading a deprecated constant (ASSERT_ACTIVE) emits E_DEPRECATED
                         /** @var mixed */
-                        $constant_value = constant($atomic_type->value);
+                        $constant_value = @constant($atomic_type->value);
 
                         if (!is_int($constant_value)) {
                             throw new TypeParseTreeException(
