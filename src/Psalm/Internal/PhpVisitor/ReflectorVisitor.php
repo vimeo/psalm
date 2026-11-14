@@ -464,11 +464,13 @@ final class ReflectorVisitor extends PhpParser\NodeVisitorAbstract implements Fi
         }
 
         if ($node instanceof PhpParser\Node\Stmt\Foreach_) {
-            if ($node->keyVar !== null) {
+            if ($node->keyVar !== null && !$this->recordThisPropertyMutation($node->keyVar)) {
                 $this->recordStaticPropertyMutation($node->keyVar);
             }
 
-            $this->recordStaticPropertyMutation($node->valueVar);
+            if (!$this->recordThisPropertyMutation($node->valueVar)) {
+                $this->recordStaticPropertyMutation($node->valueVar);
+            }
         }
 
         $this->recordExternalEffects($node);
@@ -540,9 +542,22 @@ final class ReflectorVisitor extends PhpParser\NodeVisitorAbstract implements Fi
         }
     }
 
-    /** Record writes to `$this->property` or an offset of it, including ++, -- and unset. */
+    /**
+     * Record writes to `$this->property` or an offset of it, including ++, --, unset and destructuring. Returns
+     * whether $target is such a property, so a destructuring target still gets checked for static properties.
+     */
     private function recordThisPropertyMutation(PhpParser\Node\Expr $target): bool
     {
+        if ($target instanceof PhpParser\Node\Expr\List_ || $target instanceof PhpParser\Node\Expr\Array_) {
+            foreach ($target->items as $item) {
+                if ($item !== null) {
+                    $this->recordThisPropertyMutation($item->value);
+                }
+            }
+
+            return false;
+        }
+
         while ($target instanceof PhpParser\Node\Expr\ArrayDimFetch) {
             $target = $target->var;
         }
