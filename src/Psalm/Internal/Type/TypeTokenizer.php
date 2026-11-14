@@ -347,7 +347,7 @@ final class TypeTokenizer
     }
 
     /**
-     * A space can't be inside a name within `<>`: `array<int string>` is a missing comma, not `intstring`
+     * A space can't be inside a name within `<>`, `{}` or `()`: `array<int string>` is a missing comma, not `intstring`
      *
      * @param array<int, array{0: string, 1: int}> $type_tokens
      * @throws TypeParseTreeException
@@ -366,9 +366,9 @@ final class TypeTokenizer
         $depth = 0;
 
         foreach ($type_tokens as [$type_token]) {
-            if ($type_token === '<') {
+            if ($type_token === '<' || $type_token === '{' || $type_token === '(') {
                 ++$depth;
-            } elseif ($type_token === '>') {
+            } elseif ($type_token === '>' || $type_token === '}' || $type_token === ')') {
                 --$depth;
             }
         }
