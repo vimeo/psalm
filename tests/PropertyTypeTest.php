@@ -4157,6 +4157,15 @@ final class PropertyTypeTest extends TestCase
                     takesInt($item->label);',
                 'error_message' => 'InvalidScalarArgument',
             ],
+            'promotedPropertyRedeclaresPropertyOfTheSameClass' => [
+                'code' => '<?php
+                    final class Order {
+                        public int $id;
+
+                        public function __construct(public int $id) {}
+                    }',
+                'error_message' => 'ParseError - src' . DIRECTORY_SEPARATOR . 'somefile.php:5:64 - Promoted property id clashes',
+            ],
             'staticPropertyOfATraitIsSharedWithTheSubclassesOfTheUsingClass' => [
                 'code' => '<?php
                     trait Holder {

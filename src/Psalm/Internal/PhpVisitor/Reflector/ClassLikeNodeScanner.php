@@ -2063,7 +2063,14 @@ final class ClassLikeNodeScanner
         foreach ($stmt->props as $property) {
             $doc_var_location = null;
 
-            if (isset($storage->properties[$property->name->name])) {
+            $existing_property = $storage->properties[$property->name->name] ?? null;
+
+            // only a property declared in the same file is a duplicate; stubs refine properties from reflection and
+            // other stubs
+            if ($existing_property
+                && $existing_property->location
+                && $existing_property->location->file_path === $this->file_path
+            ) {
                 $this->file_storage->scan_issues[] = new DuplicateProperty(
                     'Property ' . $fq_classlike_name . '::$' . $property->name->name . ' has already been defined',
                     new CodeLocation($this->file_scanner, $stmt, null, true),
