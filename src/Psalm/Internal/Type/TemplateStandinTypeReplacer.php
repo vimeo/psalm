@@ -749,7 +749,9 @@ final class TemplateStandinTypeReplacer
         bool $was_single,
         bool &$had_template,
     ): array {
-        if ($atomic_type->defining_class === $calling_class) {
+        // the bindings of a receiver of the class itself are read as they are: `$other->add()` inside the class
+        // of `$other`
+        if ($atomic_type->defining_class === $calling_class && !$template_result->readonly) {
             return [$atomic_type];
         }
 
