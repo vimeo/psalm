@@ -306,14 +306,7 @@ final class ForeachAnalyzer
 
         $foreach_context = clone $context;
 
-        $mixed_subject_type = null;
-        $refined_subject_id = null;
-
         if ($var_id && $foreach_context->hasVariable($var_id)) {
-            if ($foreach_context->vars_in_scope[$var_id]->hasMixed()) {
-                $mixed_subject_type = $foreach_context->vars_in_scope[$var_id];
-            }
-
             // refine the type of the array variable we iterate over
             // if we entered loop body, the array cannot be empty
             $foreach_context->vars_in_scope[$var_id] = AssertionReconciler::reconcile(
@@ -324,8 +317,6 @@ final class ForeachAnalyzer
                 true, // inside loop ?
                 $statements_analyzer->getTemplateTypeMap() ?? [],
             );
-
-            $refined_subject_id = $foreach_context->vars_in_scope[$var_id]->getId();
         }
 
         $foreach_context->inside_loop = true;
@@ -473,16 +464,6 @@ final class ForeachAnalyzer
 
         if (!$inner_loop_context) {
             throw new UnexpectedValueException('There should be an inner loop context');
-        }
-
-        // the loop was entered only if the value held an element, but a mixed value that was not iterated, or
-        // had none, is still what it was: the `non-empty-mixed` of the loop body does not hold after the loop
-        if ($var_id !== null
-            && $mixed_subject_type !== null
-            && isset($context->vars_in_scope[$var_id])
-            && $context->vars_in_scope[$var_id]->getId() === $refined_subject_id
-        ) {
-            $context->vars_in_scope[$var_id] = $mixed_subject_type;
         }
 
         if ($stmt->byRef
