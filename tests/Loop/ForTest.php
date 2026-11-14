@@ -78,7 +78,7 @@ final class ForTest extends TestCase
                 'assertions' => [
                     '$value===' => 'bool',
                 ],
-                'ignored_issues' => ['UnusedVariable'],
+                'ignored_issues' => [],
                 'php_version' => '8.2',
             ],
             'variableAssignedInALaterCommaSeparatedForConditionIsDefinedAfterTheLoop' => [

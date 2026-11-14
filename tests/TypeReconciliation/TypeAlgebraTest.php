@@ -13,6 +13,8 @@ use Psalm\Tests\Traits\ValidCodeAnalysisTestTrait;
 
 use function array_column;
 
+use const DIRECTORY_SEPARATOR;
+
 final class TypeAlgebraTest extends TestCase
 {
     use InvalidCodeAnalysisTestTrait;
@@ -410,6 +412,24 @@ final class TypeAlgebraTest extends TestCase
                         }
 
                         return 3;
+                    }',
+                'assertions' => [],
+            ],
+            'orOfAnExcludedValueAndAPossibleOneOfTheSameVariableIsNotReported' => [
+                'code' => '<?php
+                    final class Model {
+                        public const A = "MODEL_A";
+                        public const B = "MODEL_B";
+                    }
+
+                    function pick(string $m, bool $flag): int {
+                        if ($m !== Model::A) {
+                            if ($flag || $m === Model::B) {
+                                return 1;
+                            }
+                        }
+
+                        return 0;
                     }',
                 'assertions' => [],
             ],
@@ -1921,6 +1941,60 @@ final class TypeAlgebraTest extends TestCase
                 'error_levels' => [],
                 'php_version' => '8.1',
             ],
+            'deadOperandOnTheRightOfAnOrIsParadoxical' => [
+                'code' => '<?php
+                    final class Model {
+                        public const A = "MODEL_A";
+                        public const B = "MODEL_B";
+                    }
+
+                    function pick(string $m, bool $flag): int {
+                        if ($m !== Model::A && $m !== Model::B) {
+                            if ($flag || $m === Model::A) {
+                                return 1;
+                            }
+                        }
+
+                        return 0;
+                    }',
+                'error_message' => 'ParadoxicalCondition - src' . DIRECTORY_SEPARATOR . 'somefile.php:9:42',
+            ],
+            'deadOperandOnTheLeftOfAnOrIsParadoxical' => [
+                'code' => '<?php
+                    final class Model {
+                        public const A = "MODEL_A";
+                        public const B = "MODEL_B";
+                    }
+
+                    function pick(string $m, bool $flag): int {
+                        if ($m !== Model::A && $m !== Model::B) {
+                            if ($m === Model::A || $flag) {
+                                return 1;
+                            }
+                        }
+
+                        return 0;
+                    }',
+                'error_message' => 'ParadoxicalCondition - src' . DIRECTORY_SEPARATOR . 'somefile.php:9:33',
+            ],
+            'deadOperandInAChainOfOrsIsParadoxical' => [
+                'code' => '<?php
+                    final class Model {
+                        public const A = "MODEL_A";
+                        public const B = "MODEL_B";
+                    }
+
+                    function pick(string $m, bool $flag, bool $other): int {
+                        if ($m !== Model::A && $m !== Model::B) {
+                            if ($flag || $other || $m === Model::B) {
+                                return 1;
+                            }
+                        }
+
+                        return 0;
+                    }',
+                'error_message' => 'ParadoxicalCondition - src' . DIRECTORY_SEPARATOR . 'somefile.php:9:52',
+            ],
             'conditionOfOnlyValuesAnEarlierConditionExcludedIsParadoxical' => [
                 'code' => '<?php
                     function test(string $value): int {
@@ -2004,7 +2078,6 @@ final class TypeAlgebraTest extends TestCase
                         return $a;
                     }',
                 'error_message' => 'NullableReturnStatement',
-                'error_levels' => ['RiskyTruthyFalsyComparison'],
             ],
             'invertedTwoVarLogicNotNestedWithElseif' => [
                 'code' => '<?php

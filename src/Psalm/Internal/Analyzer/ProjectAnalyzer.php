@@ -133,6 +133,8 @@ final class ProjectAnalyzer
 
     public bool $dry_run = false;
 
+    public bool $show_diff = false;
+
     public bool $full_run = false;
 
     public bool $only_replace_php_types_with_non_docblock_types = false;
@@ -372,15 +374,15 @@ final class ProjectAnalyzer
         $this->initExtraFiles();
         $this->initProjectFiles();
 
+        $server->logInfo("Initializing: Initialize Plugins...");
+        $this->config->initializePlugins($this);
+
         $server->logInfo("Initializing: Visiting Autoload Files...");
         $this->visitAutoloadFiles();
         $this->codebase->diff_methods = true;
         $server->logInfo("Initializing: Loading Reference Cache...");
         $this->file_reference_provider->loadReferenceCache();
         $this->codebase->enterServerMode();
-
-        $server->logInfo("Initializing: Initialize Plugins...");
-        $this->config->initializePlugins($this);
 
         $this->codebase->scanner->addFilesToShallowScan($this->extra_files);
 
@@ -495,13 +497,12 @@ final class ProjectAnalyzer
             || count($diff_files) > 200
         ) {
             $this->config->visitPreloadedStubFiles($this->codebase, $this->progress);
+            $this->config->initializePlugins($this);
             $this->visitAutoloadFiles();
 
             $this->codebase->scanner->addFilesToShallowScan($this->extra_files);
             $this->codebase->scanner->addFilesToDeepScan($this->project_files);
             $this->codebase->analyzer->addFilesToAnalyze($this->project_files);
-
-            $this->config->initializePlugins($this);
 
             $this->codebase->scanFiles($this->scanThreads);
 
@@ -521,11 +522,10 @@ final class ProjectAnalyzer
 
                 if ($file_list) {
                     $this->config->visitPreloadedStubFiles($this->codebase, $this->progress);
+                    $this->config->initializePlugins($this);
                     $this->visitAutoloadFiles();
 
                     $this->checkDiffFilesWithConfig($this->config, $file_list);
-
-                    $this->config->initializePlugins($this);
 
                     $this->codebase->scanFiles($this->scanThreads);
                 } else {
@@ -822,10 +822,15 @@ final class ProjectAnalyzer
                     },
                 );
 
-                $existing_contents = $this->codebase->file_provider->getContents($file_path);
+                $original_contents = $this->codebase->file_provider->getContents($file_path);
+                $existing_contents = $original_contents;
 
                 foreach ($file_manipulations as $manipulation) {
                     $existing_contents = $manipulation->transform($existing_contents);
+                }
+
+                if ($existing_contents !== $original_contents) {
+                    $this->codebase->analyzer->markFileChanged($file_path);
                 }
 
                 $this->codebase->file_provider->setContents($file_path, $existing_contents);
@@ -1186,11 +1191,13 @@ final class ProjectAnalyzer
     public function alterCodeAfterCompletion(
         bool $dry_run = false,
         bool $safe_types = false,
+        bool $show_diff = false,
     ): void {
         $this->codebase->alter_code = true;
         $this->codebase->infer_types_from_usage = true;
         $this->show_issues = false;
         $this->dry_run = $dry_run;
+        $this->show_diff = $show_diff;
         $this->only_replace_php_types_with_non_docblock_types = $safe_types;
     }
 
@@ -1465,7 +1472,7 @@ final class ProjectAnalyzer
 
         $stmts = $this->getStatementsForMutations($file_analyzer->getFilePath());
 
-        $file_analyzer->populateCheckers($stmts);
+        $file_analyzer->populateCheckers($stmts, false);
 
         if (!$this_context->self) {
             $this_context->self = $fq_class_name;

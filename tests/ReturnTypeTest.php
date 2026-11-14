@@ -49,6 +49,19 @@ final class ReturnTypeTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'switchBreakWithFallthroughDefaultStillReturns' => [
+                'code' => '<?php
+                    function afterSwitch(int $value): int {
+                        switch ($value) {
+                            case 0:
+                                break;
+                            default:
+                                ++$value;
+                        }
+
+                        return $value;
+                    }',
+            ],
             'docblockStringLiteralWithEscapedBackslashes' => [
                 'code' => '<?php
                     /** @return "\\\\t" */
@@ -502,7 +515,7 @@ final class ReturnTypeTest extends TestCase
                         }
                     }',
                 'assertions' => [],
-                'ignored_issues' => ['MissingThrowsDocblock'],
+                'ignored_issues' => [],
                 'php_version' => '8.1',
             ],
             'intFunctionWithAnEmptyInfiniteLoop' => [
@@ -1912,6 +1925,22 @@ final class ReturnTypeTest extends TestCase
                     }
                     PHP,
             ],
+            'returnedReferenceAssignmentExpressionHasType' => [
+                'code' => <<<'PHP'
+                    <?php
+                    final class ReferenceText {
+                        public static string $value = 'hello';
+                    }
+
+                    function &textReference(): string {
+                        return ReferenceText::$value;
+                    }
+
+                    function readAssignedReference(): string {
+                        return ($value = &textReference());
+                    }
+                    PHP,
+            ],
             'neverReturnType' => [
                 'code' => '<?php
                     function exitProgram(bool $die): never
@@ -2265,7 +2294,6 @@ final class ReturnTypeTest extends TestCase
                         return $s->n;
                     }',
                 'assertions' => [],
-                'ignored_issues' => ['MissingThrowsDocblock'],
             ],
             'finalClassOverridesAGenericStaticReturnType' => [
                 'code' => <<<'PHP'
