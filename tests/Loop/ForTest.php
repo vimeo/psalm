@@ -62,6 +62,63 @@ final class ForTest extends TestCase
                         return $value;
                     }',
             ],
+            'forIndexBoundedByAVariableOfAnOuterLoopIsNotNarrowedByItsFirstValue' => [
+                'code' => '<?php
+                    /**
+                     * @param list<int> $old
+                     * @param list<int> $new
+                     */
+                    function trace(array $old, array $new): int {
+                        $max = count($old) + count($new);
+                        $v = [1 => 0];
+                        $result = 0;
+
+                        for ($d = 0; $d <= $max; $d++) {
+                            for ($k = -$d; $k <= $d; $k += 2) {
+                                if ($k === -$d || ($k !== $d && $v[$k - 1] < $v[$k + 1])) {
+                                    $x = $v[$k + 1];
+                                } else {
+                                    $x = $v[$k - 1] + 1;
+                                }
+
+                                $v[$k] = $x;
+                                $result = $x;
+                            }
+                        }
+
+                        return $result;
+                    }',
+                'assertions' => [],
+                'ignored_issues' => ['MixedAssignment', 'MixedOperand', 'MixedReturnStatement'],
+            ],
+            'forIndexBoundedByTheCountOfAKnownList' => [
+                'code' => '<?php
+                    function f(): string {
+                        $attrs = ["surname", "firstname", "middlename"];
+                        $result = "";
+
+                        for ($i = 0; $i < count($attrs); $i++) {
+                            $result .= $attrs[$i];
+                        }
+
+                        return $result;
+                    }',
+            ],
+            'whileIndexBoundedByTheCountOfAKnownList' => [
+                'code' => '<?php
+                    function f(): string {
+                        $attrs = ["surname", "firstname", "middlename"];
+                        $result = "";
+                        $i = 0;
+
+                        while ($i < count($attrs)) {
+                            $result .= $attrs[$i];
+                            $i++;
+                        }
+
+                        return $result;
+                    }',
+            ],
             'variableAssignedAfterAnInnerLoopThatOnlyBreaksItself' => [
                 'code' => '<?php
                     function f(): int {
@@ -275,6 +332,20 @@ final class ForTest extends TestCase
     public static function providerInvalidCodeParse(): iterable
     {
         return [
+            'forIndexUpToTheCountOfAKnownList' => [
+                'code' => '<?php
+                    function f(): string {
+                        $attrs = ["surname", "firstname", "middlename"];
+                        $result = "";
+
+                        for ($i = 0; $i <= count($attrs); $i++) {
+                            $result .= $attrs[$i];
+                        }
+
+                        return $result;
+                    }',
+                'error_message' => 'PossiblyInvalidArrayOffset - src' . DIRECTORY_SEPARATOR . 'somefile.php:7:40 - Cannot access value on variable $attrs using a int<0, 3> offset',
+            ],
             'variableAssignedAfterAnInnerLoopBreakingTheOuterOneIsPossiblyUndefined' => [
                 'code' => '<?php
                     function f(): void {

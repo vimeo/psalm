@@ -1051,6 +1051,22 @@ final class LoopAnalyzer
 
         $always_assigned_before_loop_body_vars = Context::getNewOrUpdatedVarIds($outer_context, $loop_context);
 
+        // the condition has been analysed: what it compares to (count($a)) has a type now. Only a literal is known
+        // to hold in every iteration: the range of anything else is one the loop has not settled on yet
+        if (self::comparesOnlyWithLiteralInts($statements_analyzer, $pre_condition)) {
+            $pre_condition_id = spl_object_id($pre_condition);
+            $pre_condition_clauses = FormulaGenerator::getFormula(
+                $pre_condition_id,
+                $pre_condition_id,
+                $pre_condition,
+                $loop_context->self,
+                $statements_analyzer,
+                $statements_analyzer->getCodebase(),
+                false,
+                false,
+            );
+        }
+
         $loop_context->clauses = Algebra::simplifyCNF(
             [...$outer_context->clauses, ...$pre_condition_clauses],
         );
@@ -1095,6 +1111,43 @@ final class LoopAnalyzer
         }
 
         return $always_assigned_before_loop_body_vars;
+    }
+
+    /**
+     * Whether every `<`, `<=`, `>` and `>=` of a condition has an operand that is an int literal and not a variable
+     *
+     * @psalm-capabilities read-props
+     */
+    private static function comparesOnlyWithLiteralInts(
+        StatementsAnalyzer $statements_analyzer,
+        PhpParser\Node\Expr $expr,
+    ): bool {
+        if ($expr instanceof PhpParser\Node\Expr\BinaryOp\BooleanAnd
+            || $expr instanceof PhpParser\Node\Expr\BinaryOp\BooleanOr
+            || $expr instanceof PhpParser\Node\Expr\BinaryOp\LogicalAnd
+            || $expr instanceof PhpParser\Node\Expr\BinaryOp\LogicalOr
+        ) {
+            return self::comparesOnlyWithLiteralInts($statements_analyzer, $expr->left)
+                && self::comparesOnlyWithLiteralInts($statements_analyzer, $expr->right);
+        }
+
+        if ($expr instanceof PhpParser\Node\Expr\BooleanNot) {
+            return self::comparesOnlyWithLiteralInts($statements_analyzer, $expr->expr);
+        }
+
+        if ($expr instanceof PhpParser\Node\Expr\BinaryOp\Smaller
+            || $expr instanceof PhpParser\Node\Expr\BinaryOp\SmallerOrEqual
+            || $expr instanceof PhpParser\Node\Expr\BinaryOp\Greater
+            || $expr instanceof PhpParser\Node\Expr\BinaryOp\GreaterOrEqual
+        ) {
+            // a variable has the literal of the first iteration, not of every one
+            return (!$expr->left instanceof PhpParser\Node\Expr\Variable
+                    && $statements_analyzer->node_data->getType($expr->left)?->isSingleIntLiteral() === true)
+                || (!$expr->right instanceof PhpParser\Node\Expr\Variable
+                    && $statements_analyzer->node_data->getType($expr->right)?->isSingleIntLiteral() === true);
+        }
+
+        return true;
     }
 
     /**
