@@ -175,7 +175,21 @@ final class IfElseAnalyzer
 
         $if_clauses = $if_clauses_handled;
 
-        $entry_clauses = $context->clauses;
+        $entry_clauses = [];
+
+        // what the earlier conditions said of a variable the condition assigns is not true of the new value
+        foreach ($context->clauses as $c) {
+            foreach ($c->possibilities as $key => $_value) {
+                foreach ($assigned_in_conditional_var_ids as $conditional_assigned_var_id => $_) {
+                    if (preg_match('/^' . preg_quote($conditional_assigned_var_id, '/') . '(\[|-|$)/', $key)) {
+                        $c = new Clause([], $cond_object_id, $cond_object_id, true);
+                        break 2;
+                    }
+                }
+            }
+
+            $entry_clauses[] = $c;
+        }
 
         // the clauses the condition has already reconciled are not established independently of it
         $already_reconciled_clauses = [
