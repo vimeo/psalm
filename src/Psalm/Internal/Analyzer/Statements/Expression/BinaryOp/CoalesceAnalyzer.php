@@ -19,6 +19,11 @@ use Psalm\Type\Atomic\TMixed;
 use Psalm\Type\Reconciler;
 use Psalm\Type\Union;
 
+use function bin2hex;
+use function hex2bin;
+use function preg_match;
+use function preg_quote;
+use function preg_replace;
 use function substr;
 
 /**
@@ -26,6 +31,25 @@ use function substr;
  */
 final class CoalesceAnalyzer
 {
+    private const OFFSET_MARKER = 'left operand of ?? at offset ';
+
+    /**
+     * The name of a variable as issue messages show it: the temporary variable of a left operand that is not a
+     * variable is shown as the code of the operand
+     *
+     * @psalm-pure
+     */
+    public static function getDisplayName(string $var_id): string
+    {
+        $pattern = '/^\$<' . preg_quote(self::OFFSET_MARKER, '/') . '\d+ ([0-9a-f]+)>$/';
+
+        if (preg_match($pattern, $var_id, $matches) === 1) {
+            return (string) hex2bin($matches[1] ?? '');
+        }
+
+        return $var_id;
+    }
+
     public static function analyze(
         StatementsAnalyzer $statements_analyzer,
         PhpParser\Node\Expr\BinaryOp\Coalesce $stmt,
@@ -61,8 +85,14 @@ final class CoalesceAnalyzer
             ) === null;
 
         if ($has_call_root || $has_untracked_offset) {
-            // unique, as the name of a variable that shows up in issue messages
-            $left_var_id = '$<left operand of ?? at offset ' . (int) $left_expr->getAttribute('startFilePos') . '>';
+            // the offset makes it unique; issue messages show the code of the operand ({@see self::getDisplayName()}),
+            // hex encoded as the name of a variable has no `->`, `[` or `(` that would be read as an offset
+            $left_var_id = '$<' . self::OFFSET_MARKER . (int) $left_expr->getAttribute('startFilePos')
+                . ' ' . bin2hex((string) preg_replace(
+                    '/\s+/',
+                    ' ',
+                    (new PhpParser\PrettyPrinter\Standard())->prettyPrintExpr($left_expr),
+                )) . '>';
 
             // an untracked offset is evaluated unconditionally, so its assignments belong to the real context
             $cloned = $has_untracked_offset ? $context : clone $context;

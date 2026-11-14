@@ -1429,7 +1429,20 @@ final class RedundantConditionTest extends TestCase
                     }
 
                     echo count(getArray() ?? []);',
-                'error_message' => 'left operand of ?? at offset',
+                'error_message' => 'RedundantCondition - src' . DIRECTORY_SEPARATOR . 'somefile.php:6:32 - Type array<array-key, mixed> for getArray() is never null',
+            ],
+            'redundantCoalesceOnMethodCallNamesTheCode' => [
+                'code' => '<?php
+                    final class A {
+                        public function m(): int {
+                            return 1;
+                        }
+                    }
+
+                    function f(A $a): int {
+                        return $a->m() ?? ($a->m() ?? 1);
+                    }',
+                'error_message' => 'RedundantCondition - src' . DIRECTORY_SEPARATOR . 'somefile.php:9:32 - Type int for $a->m() is never null',
             ],
             'notNullAfterAnIssetOfAConditionallyDefinedVariableIsRedundant' => [
                 'code' => '<?php

@@ -10,6 +10,7 @@ use Psalm\Codebase;
 use Psalm\Context;
 use Psalm\Internal\Analyzer\Statements\Expression\ArrayAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\Assignment\ArrayAssignmentAnalyzer;
+use Psalm\Internal\Analyzer\Statements\Expression\BinaryOp\CoalesceAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\Call\ClassTemplateParamCollector;
 use Psalm\Internal\Analyzer\Statements\Expression\Call\Method\MethodCallReturnTypeFetcher;
 use Psalm\Internal\Analyzer\Statements\Expression\Fetch\ConstFetchAnalyzer;
@@ -1354,6 +1355,8 @@ class Reconciler
         CodeLocation $code_location,
         array $suppressed_issues,
     ): void {
+        $key = CoalesceAnalyzer::getDisplayName($key);
+
         $assertion_string = (string)$assertion;
         $not = $assertion_string[0] === '!';
 
