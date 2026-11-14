@@ -184,6 +184,8 @@ final class ClosureAnalyzer extends FunctionLikeAnalyzer
      */
     /**
      * `use ($a)` binds `$a` in the closure, to null when it is undefined
+     *
+     * @psalm-capabilities read-props|write-this-props|write-refs
      */
     private static function getBoundUseType(Union $type): Union
     {

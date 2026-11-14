@@ -147,6 +147,20 @@ final class ClosureTest extends TestCase
                 'assertions' => [],
                 'ignored_issues' => ['PossiblyUndefinedVariable'],
             ],
+            'arrowFunctionParamNamedLikeAPossiblyUndefinedVariableDoesNotUseIt' => [
+                'code' => '<?php
+                    /** @param list<string> $names */
+                    function f(array $names, bool $b): int {
+                        if ($b) {
+                            $name = "x";
+                            echo $name;
+                        }
+
+                        $found = array_filter($names, static fn(string $name): bool => $name !== "");
+
+                        return count($found);
+                    }',
+            ],
             'useByReferenceOfAPossiblyUndefinedVariableDefinesIt' => [
                 'code' => '<?php
                     function f(): ?int {
