@@ -1395,7 +1395,8 @@ final class Config
         // Hack for Symfonys own argv resolution.
         // @see https://github.com/vimeo/psalm/issues/10465
         if (self::$add_command_line_paths && basename($argv[0] ?? '') !== 'psalm-plugin') {
-            $paths_to_check = CliUtils::getPathsToCheck(null);
+            // reading STDIN here would consume it before Psalm restarts, so the paths of `psalm -` are left out
+            $paths_to_check = CliUtils::getPathsToCheck(null, false);
         }
 
         if ($paths_to_check !== null) {
@@ -3252,6 +3253,9 @@ final class Config
         if ($autoload_included_files) {
             $codebase->register_autoload_files = true;
 
+            // what the plugins queued is scanned with the project's files, in parallel, not here
+            $queued = $codebase->scanner->takeQueue();
+
             $progress->debug('Registering autoloaded files' . "\n");
             foreach ($autoload_included_files as $file_path) {
                 $file_path = str_replace(['/', '\\'], DIRECTORY_SEPARATOR, $file_path);
@@ -3260,6 +3264,8 @@ final class Config
             }
 
             $codebase->scanner->scanFiles($codebase->classlikes);
+
+            $codebase->scanner->restoreQueue($queued);
 
             $progress->debug('Finished registering autoloaded files' . "\n");
 

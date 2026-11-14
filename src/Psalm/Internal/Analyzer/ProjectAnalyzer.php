@@ -133,6 +133,8 @@ final class ProjectAnalyzer
 
     public bool $dry_run = false;
 
+    public bool $show_diff = false;
+
     public bool $full_run = false;
 
     public bool $only_replace_php_types_with_non_docblock_types = false;
@@ -372,15 +374,15 @@ final class ProjectAnalyzer
         $this->initExtraFiles();
         $this->initProjectFiles();
 
+        $server->logInfo("Initializing: Initialize Plugins...");
+        $this->config->initializePlugins($this);
+
         $server->logInfo("Initializing: Visiting Autoload Files...");
         $this->visitAutoloadFiles();
         $this->codebase->diff_methods = true;
         $server->logInfo("Initializing: Loading Reference Cache...");
         $this->file_reference_provider->loadReferenceCache();
         $this->codebase->enterServerMode();
-
-        $server->logInfo("Initializing: Initialize Plugins...");
-        $this->config->initializePlugins($this);
 
         $this->codebase->scanner->addFilesToShallowScan($this->extra_files);
 
@@ -495,13 +497,12 @@ final class ProjectAnalyzer
             || count($diff_files) > 200
         ) {
             $this->config->visitPreloadedStubFiles($this->codebase, $this->progress);
+            $this->config->initializePlugins($this);
             $this->visitAutoloadFiles();
 
             $this->codebase->scanner->addFilesToShallowScan($this->extra_files);
             $this->codebase->scanner->addFilesToDeepScan($this->project_files);
             $this->codebase->analyzer->addFilesToAnalyze($this->project_files);
-
-            $this->config->initializePlugins($this);
 
             $this->codebase->scanFiles($this->scanThreads);
 
@@ -521,11 +522,10 @@ final class ProjectAnalyzer
 
                 if ($file_list) {
                     $this->config->visitPreloadedStubFiles($this->codebase, $this->progress);
+                    $this->config->initializePlugins($this);
                     $this->visitAutoloadFiles();
 
                     $this->checkDiffFilesWithConfig($this->config, $file_list);
-
-                    $this->config->initializePlugins($this);
 
                     $this->codebase->scanFiles($this->scanThreads);
                 } else {
@@ -822,10 +822,15 @@ final class ProjectAnalyzer
                     },
                 );
 
-                $existing_contents = $this->codebase->file_provider->getContents($file_path);
+                $original_contents = $this->codebase->file_provider->getContents($file_path);
+                $existing_contents = $original_contents;
 
                 foreach ($file_manipulations as $manipulation) {
                     $existing_contents = $manipulation->transform($existing_contents);
+                }
+
+                if ($existing_contents !== $original_contents) {
+                    $this->codebase->analyzer->markFileChanged($file_path);
                 }
 
                 $this->codebase->file_provider->setContents($file_path, $existing_contents);
@@ -1186,11 +1191,13 @@ final class ProjectAnalyzer
     public function alterCodeAfterCompletion(
         bool $dry_run = false,
         bool $safe_types = false,
+        bool $show_diff = false,
     ): void {
         $this->codebase->alter_code = true;
         $this->codebase->infer_types_from_usage = true;
         $this->show_issues = false;
         $this->dry_run = $dry_run;
+        $this->show_diff = $show_diff;
         $this->only_replace_php_types_with_non_docblock_types = $safe_types;
     }
 
@@ -1334,7 +1341,8 @@ final class ProjectAnalyzer
     /**
      * Parsed statements of files whose methods getMethodMutations() inlined, least recently used first.
      * Inlining $this->method() and parent::method() calls made by a constructor fetched the declaring file
-     * from the parser cache every time, which is a full unserialize when arrayCache is off.
+     * every time: a full unserialize from the parser cache when arrayCache is off, and for vendor files, which
+     * StatementsProvider keeps serialized, whatever arrayCache says.
      *
      * @var array<string, array{list<Stmt>, int}>
      */
@@ -1351,12 +1359,23 @@ final class ProjectAnalyzer
     private array $mutation_statements_seen = [];
 
     /**
+     * @internal
+     * @psalm-capabilities read-props|write-this-props|write-refs
+     */
+    public function clearStatementsForMutations(): void
+    {
+        $this->mutation_statements = [];
+        $this->mutation_statements_bytes = 0;
+        $this->mutation_statements_seen = [];
+    }
+
+    /**
      * @return list<Stmt>
      */
     private function getStatementsForMutations(string $file_path): array
     {
-        if ($this->config->array_cache || $this->codebase->server_mode || $this->codebase->language_server) {
-            // either the cache already keeps every AST in memory, or files can change under us
+        if ($this->codebase->server_mode || $this->codebase->language_server) {
+            // files can change under us
             return $this->codebase->getStatementsForFile($file_path);
         }
 
@@ -1420,6 +1439,7 @@ final class ProjectAnalyzer
         Context $this_context,
         string $root_file_path,
         string $root_file_name,
+        ?FileAnalyzer $calling_file_analyzer = null,
     ): void {
         $fq_class_name = $original_method_id->fq_class_name;
 
@@ -1446,9 +1466,13 @@ final class ProjectAnalyzer
             $file_analyzer = $this->getFileAnalyzerForClassLike($appearing_fq_class_name);
         }
 
+        // the files being analysed when the method is called: what the method's file includes of them is not
+        // included again
+        $calling_file_analyzer?->passIncludeChainTo($file_analyzer);
+
         $stmts = $this->getStatementsForMutations($file_analyzer->getFilePath());
 
-        $file_analyzer->populateCheckers($stmts);
+        $file_analyzer->populateCheckers($stmts, false);
 
         if (!$this_context->self) {
             $this_context->self = $fq_class_name;
