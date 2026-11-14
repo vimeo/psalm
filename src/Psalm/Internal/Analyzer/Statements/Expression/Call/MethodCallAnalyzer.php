@@ -234,7 +234,12 @@ final class MethodCallAnalyzer extends CallAnalyzer
             && !$stmt->getArgs()
             && $lhs_var_id && $stmt->name instanceof PhpParser\Node\Identifier
         ) {
-            if ($codebase->config->memoize_method_calls || $result->can_memoize) {
+            // the initialization and mutation passes skip the purity analysis that decides it,
+            // so they rely on what the normal pass of this call found
+            $was_memoizable = ($context->collect_initializations || $context->collect_mutations)
+                && $stmt->getAttribute('memoizable', false);
+
+            if ($codebase->config->memoize_method_calls || $result->can_memoize || $was_memoizable) {
                 $method_var_id = $lhs_var_id . '->' . strtolower($stmt->name->name) . '()';
 
                 if (isset($context->vars_in_scope[$method_var_id])) {
@@ -397,21 +402,16 @@ final class MethodCallAnalyzer extends CallAnalyzer
             }
         }
 
+        if ($result->returns_by_ref) {
+            $stmt_type = ($stmt_type ?? Type::getMixed())->setByRef(true);
+        }
+
         if ($stmt_type) {
             $statements_analyzer->node_data->setType($stmt, $stmt_type);
 
             if ($stmt_type->isNever()) {
                 $context->has_returned = true;
             }
-        }
-
-        if ($result->returns_by_ref) {
-            if (!$stmt_type) {
-                $stmt_type = Type::getMixed();
-                $statements_analyzer->node_data->setType($stmt, $stmt_type);
-            }
-
-            $stmt_type = $stmt_type->setByRef($result->returns_by_ref);
         }
 
         if ($codebase->store_node_types

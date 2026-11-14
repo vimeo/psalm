@@ -48,6 +48,8 @@ final class IssueData
         ?string $documentation_url = null,
         /** Whether the issue is a {@see \Psalm\Issue\SecurityIssue} */
         public readonly bool $is_security = false,
+        /** The issues of one group are reported once, see {@see \Psalm\IssueBuffer::setIssueGroup()} */
+        public readonly ?string $group_key = null,
     ) {
         $this->link = match (true) {
             $documentation_url !== null => $documentation_url,
