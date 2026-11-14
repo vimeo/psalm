@@ -472,7 +472,7 @@ final class AsymmetricVisibilityTest extends TestCase
                         public private(set) $foo;
                     }',
                 'error_message' => 'ParseError',
-                'error_levels' => ['MissingPropertyType'],
+                'error_levels' => [],
                 'php_version' => '8.4',
             ],
             'asymmetricVisibilityOnStaticPropertyBeforePhp85' => [
