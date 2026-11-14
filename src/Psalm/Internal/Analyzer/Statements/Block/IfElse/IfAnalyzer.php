@@ -444,7 +444,7 @@ final class IfAnalyzer
 
         foreach (array_diff_key($if_context->vars_in_scope, $outer_context->vars_in_scope) as $new_var => $type) {
             // only variables: `$a->b` and `$a['b']` are narrowings of an expression, not definitions
-            if (!preg_match('/^\$[a-zA-Z_\x80-\xff][a-zA-Z0-9_\x80-\xff]*$/', (string) $new_var)) {
+            if (!preg_match('/^\$[a-zA-Z_\x80-\xff][a-zA-Z0-9_\x80-\xff]*$/', $new_var)) {
                 continue;
             }
 
