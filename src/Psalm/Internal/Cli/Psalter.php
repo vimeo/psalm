@@ -134,8 +134,14 @@ final class Psalter
                 --debug, --debug-by-line, --debug-emitted-issues
                     Debug information
 
+                -f, --file=FILE
+                    Path to a file to update
+
                 -c, --config=psalm.xml
                     Path to a psalm.xml configuration file. Run psalm --init to create one.
+
+                --memory-limit=LIMIT
+                    Use a specific memory limit.
 
                 -m, --monochrome
                     Enable monochrome output.
