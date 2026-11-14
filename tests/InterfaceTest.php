@@ -115,6 +115,34 @@ final class InterfaceTest extends TestCase
                 'ignored_issues' => [],
                 'php_version' => '8.4',
             ],
+            'propertyOfAnInterfaceGivenByAShapeOrAMixinIsRemembered' => [
+                'code' => '<?php
+                    interface I {}
+
+                    /** @param I&object{foo: ?int} $x */
+                    function f($x): int {
+                        if ($x->foo !== null) {
+                            return $x->foo;
+                        }
+
+                        return 0;
+                    }
+
+                    final class Data {
+                        public ?int $foo = null;
+                    }
+
+                    /** @mixin Data */
+                    interface J {}
+
+                    function g(J $x): int {
+                        if ($x->foo !== null) {
+                            return $x->foo;
+                        }
+
+                        return 0;
+                    }',
+            ],
             'issetOfAPropertyOfAnInterfaceIsNotAnInterfaceProperty' => [
                 'code' => '<?php
                     interface Shape {}

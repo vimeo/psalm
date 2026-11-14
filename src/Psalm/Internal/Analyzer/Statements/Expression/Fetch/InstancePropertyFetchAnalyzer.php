@@ -30,6 +30,7 @@ use Psalm\Storage\Capabilities;
 use Psalm\Type;
 use Psalm\Type\Atomic\TNamedObject;
 use Psalm\Type\Atomic\TNull;
+use Psalm\Type\Atomic\TObjectWithProperties;
 use Psalm\Type\Atomic\TTemplateParam;
 use Psalm\Type\Union;
 
@@ -367,7 +368,8 @@ final class InstancePropertyFetchAnalyzer
     }
 
     /**
-     * Whether the type is an interface, intersected only with interfaces, that none of declares the property
+     * Whether the type is an interface, intersected only with interfaces, that none of declares the property, or
+     * gives it with a shape or a mixin
      */
     private static function isUndeclaredInterfaceProperty(
         Codebase $codebase,
@@ -383,6 +385,14 @@ final class InstancePropertyFetchAnalyzer
             $declares_property = false;
 
             foreach ([$atomic_type, ...array_values($atomic_type->getIntersectionTypes() ?: [])] as $part) {
+                if ($part instanceof TObjectWithProperties) {
+                    if (isset($part->properties[$property_name])) {
+                        $declares_property = true;
+                    }
+
+                    continue;
+                }
+
                 if (!$part instanceof TNamedObject) {
                     continue;
                 }
@@ -393,7 +403,8 @@ final class InstancePropertyFetchAnalyzer
                     $has_interface = true;
 
                     if (isset($codebase->classlike_storage_provider->get($part->value)
-                        ->declaring_property_ids[$property_name])
+                            ->declaring_property_ids[$property_name])
+                        || AtomicPropertyFetchAnalyzer::hasMixinProperty($codebase, $part, $property_name)
                     ) {
                         $declares_property = true;
                     }

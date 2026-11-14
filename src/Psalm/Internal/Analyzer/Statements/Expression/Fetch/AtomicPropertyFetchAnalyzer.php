@@ -1532,7 +1532,7 @@ final class AtomicPropertyFetchAnalyzer
     /**
      * Whether a mixin of the class has the property, real or `@property`
      */
-    private static function hasMixinProperty(Codebase $codebase, TNamedObject $lhs_type_part, string $prop_name): bool
+    public static function hasMixinProperty(Codebase $codebase, TNamedObject $lhs_type_part, string $prop_name): bool
     {
         return MixinLookup::findMember(
             $codebase,
