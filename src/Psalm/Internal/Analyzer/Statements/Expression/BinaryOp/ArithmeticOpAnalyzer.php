@@ -852,8 +852,17 @@ final class ArithmeticOpAnalyzer
                 return null;
             }
 
+            $widen_range = $context !== null && $context->inside_loop
+                && ($parent instanceof VirtualPlus || $parent instanceof VirtualMinus);
+
             if ($left_type_part instanceof TIntRange && $right_type_part instanceof TIntRange) {
-                self::analyzeOperandsBetweenIntRange($parent, $result_type, $left_type_part, $right_type_part);
+                self::analyzeOperandsBetweenIntRange(
+                    $parent,
+                    $result_type,
+                    $left_type_part,
+                    $right_type_part,
+                    $widen_range,
+                );
                 return null;
             }
 
@@ -865,6 +874,7 @@ final class ArithmeticOpAnalyzer
                     $result_type,
                     $left_type_part,
                     $right_type_part,
+                    $widen_range,
                 );
                 return null;
             }
@@ -1246,6 +1256,7 @@ final class ArithmeticOpAnalyzer
         ?Union &$result_type,
         TIntRange $left_type_part,
         TIntRange $right_type_part,
+        bool $widen_range = false,
     ): void {
         if ($parent instanceof PhpParser\Node\Expr\BinaryOp\Div) {
             //can't assume an int range will stay int after division
@@ -1334,6 +1345,22 @@ final class ArithmeticOpAnalyzer
         $min_value = $calculated_min_type !== null ? $calculated_min_type->getSingleIntLiteral()->value : null;
         $max_value = $calculated_max_type !== null ? $calculated_max_type->getSingleIntLiteral()->value : null;
 
+        // the loop is analysed a fixed number of times, so a bound that keeps moving with every
+        // `+=`/`-=` of a range is unbounded
+        if ($widen_range && $right_type_part->min_bound !== $right_type_part->max_bound) {
+            $is_minus = $parent instanceof PhpParser\Node\Expr\BinaryOp\Minus;
+            $grows_up = $is_minus ? $right_type_part->min_bound : $right_type_part->max_bound;
+            $grows_down = $is_minus ? $right_type_part->max_bound : $right_type_part->min_bound;
+
+            if ($grows_up === null || ($is_minus ? $grows_up < 0 : $grows_up > 0)) {
+                $max_value = null;
+            }
+
+            if ($grows_down === null || ($is_minus ? $grows_down > 0 : $grows_down < 0)) {
+                $min_value = null;
+            }
+        }
+
         $new_result_type = Type::getIntRange($min_value, $max_value);
 
         $result_type = Type::combineUnionTypes($new_result_type, $result_type);
@@ -1349,6 +1376,7 @@ final class ArithmeticOpAnalyzer
         ?Union &$result_type,
         Atomic $left_type_part,
         Atomic $right_type_part,
+        bool $widen_range = false,
     ): void {
         if (!$left_type_part instanceof TIntRange) {
             $left_type_part = TIntRange::convertToIntRange($left_type_part);
@@ -1357,7 +1385,7 @@ final class ArithmeticOpAnalyzer
             $right_type_part = TIntRange::convertToIntRange($right_type_part);
         }
 
-        self::analyzeOperandsBetweenIntRange($parent, $result_type, $left_type_part, $right_type_part);
+        self::analyzeOperandsBetweenIntRange($parent, $result_type, $left_type_part, $right_type_part, $widen_range);
     }
 
     /**
