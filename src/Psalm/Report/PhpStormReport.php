@@ -46,8 +46,9 @@ final class PhpStormReport extends Report
         $issue_reference = $issue_data->link ? ' (see ' . $issue_data->link . ')' : '';
 
         $issue_string .= ': ' . $issue_data->type
-            . "\nat " . $issue_data->file_path . ':' . $issue_data->line_from . ':' . $issue_data->column_from
-            . "\n" . $issue_data->message . $issue_reference . "\n";
+            . "\nat " . $this->escapeControlCharacters($issue_data->file_path)
+            . ':' . $issue_data->line_from . ':' . $issue_data->column_from
+            . "\n" . $this->escapeControlCharacters($issue_data->message) . $issue_reference . "\n";
 
 
         if ($issue_data->taint_trace) {
@@ -56,14 +57,16 @@ final class PhpStormReport extends Report
             $snippet = $issue_data->snippet;
 
             if (!$this->use_color) {
-                $issue_string .= $snippet;
+                $issue_string .= $this->escapeControlCharacters($snippet);
             } else {
                 $selection_start = $issue_data->from - $issue_data->snippet_from;
                 $selection_length = $issue_data->to - $issue_data->from;
 
-                $issue_string .= substr($snippet, 0, $selection_start)
-                    . ($is_error ? "\e[97;41m" : "\e[30;47m") . substr($snippet, $selection_start, $selection_length)
-                    . "\e[0m" . substr($snippet, $selection_length + $selection_start) . "\n";
+                $issue_string .= $this->escapeControlCharacters(substr($snippet, 0, $selection_start))
+                    . ($is_error ? "\e[97;41m" : "\e[30;47m")
+                    . $this->escapeControlCharacters(substr($snippet, $selection_start, $selection_length))
+                    . "\e[0m"
+                    . $this->escapeControlCharacters(substr($snippet, $selection_length + $selection_start)) . "\n";
             }
         }
 

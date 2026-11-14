@@ -16,7 +16,9 @@ use Psalm\Report\ConsoleReport;
 use Psalm\Report\EmacsReport;
 use Psalm\Report\GithubActionsReport;
 use Psalm\Report\JsonReport;
+use Psalm\Report\PhpStormReport;
 use Psalm\Report\ReportOptions;
+use Psalm\Report\TableReport;
 use Psalm\Report\TextReport;
 
 use function json_decode;
@@ -39,6 +41,8 @@ final class ReportControlCharactersTest extends TestCase
         yield 'text' => [/** @param array<int, IssueData> $i */ static fn(array $i, ReportOptions $o): Report => new TextReport($i, [], $o)];
         yield 'emacs' => [/** @param array<int, IssueData> $i */ static fn(array $i, ReportOptions $o): Report => new EmacsReport($i, [], $o)];
         yield 'github' => [/** @param array<int, IssueData> $i */ static fn(array $i, ReportOptions $o): Report => new GithubActionsReport($i, [], $o)];
+        yield 'phpstorm' => [/** @param array<int, IssueData> $i */ static fn(array $i, ReportOptions $o): Report => new PhpStormReport($i, [], $o)];
+        yield 'table' => [/** @param array<int, IssueData> $i */ static fn(array $i, ReportOptions $o): Report => new TableReport($i, [], $o)];
         yield 'by-issue-level' => [
             /** @param array<int, IssueData> $i */ static fn(array $i, ReportOptions $o): Report => new ByIssueLevelAndTypeReport($i, [], $o),
         ];
