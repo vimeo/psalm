@@ -2902,6 +2902,68 @@ final class AnnotationTest extends TestCase
                     global $title;',
                 'error_message' => 'InvalidGlobal',
             ],
+            'assertionWithOnlyAStarInPlaceOfTheType' => [
+                'code' => '<?php
+                    /**
+                     * @psalm-assert * $x
+                     */
+                    function f(int $x): void {
+                        echo $x;
+                    }',
+                'error_message' => 'Invalid @psalm-assert union type: Type is empty',
+            ],
+            'assertionWithOnlyANegationInPlaceOfTheType' => [
+                'code' => '<?php
+                    /**
+                     * @psalm-assert ! $x
+                     */
+                    function f(int $x): void {
+                        echo $x;
+                    }',
+                'error_message' => 'Invalid @psalm-assert union type: Type is empty',
+            ],
+            'selfOutWithOnlyAStarInPlaceOfTheType' => [
+                'code' => '<?php
+                    class X {
+                        /**
+                         * @psalm-self-out *
+                         */
+                        public function a(): void {}
+                    }',
+                'error_message' => 'InvalidDocblock',
+            ],
+            'thisOutWithOnlyAStarInPlaceOfTheType' => [
+                'code' => '<?php
+                    class X {
+                        /**
+                         * @psalm-this-out *
+                         */
+                        public function a(): void {}
+                    }',
+                'error_message' => 'InvalidDocblock',
+            ],
+            'ifThisIsWithOnlyAStarInPlaceOfTheType' => [
+                'code' => '<?php
+                    class X {
+                        /**
+                         * @psalm-if-this-is *
+                         */
+                        public function a(): void {}
+                    }',
+                'error_message' => 'InvalidDocblock',
+            ],
+            'returnTypeWithOnlyAStarInPlaceOfTheType' => [
+                'code' => '<?php
+                    class X {
+                        /**
+                         * @psalm-return      * @return list<int>
+                         */
+                        public static function a(): array {
+                            return [];
+                        }
+                    }',
+                'error_message' => 'InvalidDocblock',
+            ],
             'keyOfImportedTypeAliasOfANonArrayIsInvalid' => [
                 'code' => '<?php
                     /**
