@@ -919,6 +919,87 @@ final class PsalmEndToEndTest extends TestCase
         $this->assertSame(2, $result['CODE']);
     }
 
+    public function testPsalmReadsThePathsToCheckFromStdinForADash(): void
+    {
+        // only the clean file is named on STDIN: FileWithErrors.php is in the project, but isn't analysed
+        $process = $this->runPsalmWithPathsOnStdin(self::$tmpDir . '/src/Clean.php' . PHP_EOL);
+
+        $this->assertStringNotContainsString('Uninitialized string offset', $process->getErrorOutput());
+        $this->assertStringContainsString('No errors found!', $process->getOutput());
+        $this->assertSame(0, $process->getExitCode());
+    }
+
+    public function testPsalmReadsThePathsOfEveryLineOfStdinForADash(): void
+    {
+        $process = $this->runPsalmWithPathsOnStdin(
+            self::$tmpDir . '/src/Clean.php' . PHP_EOL . self::$tmpDir . '/src/FileWithErrors.php' . PHP_EOL,
+        );
+
+        $this->assertStringContainsString('2 errors', $process->getOutput());
+        $this->assertSame(2, $process->getExitCode());
+    }
+
+    public function testPsalmIgnoresTheEnvironmentWhenItReadsThePathsFromStdin(): void
+    {
+        $process = $this->runPsalmWithPathsOnStdin(
+            self::$tmpDir . '/src/Clean.php' . PHP_EOL,
+            ['PSALM_STDIN_PATHS' => self::$tmpDir . '/src/FileWithErrors.php'],
+        );
+
+        $this->assertStringContainsString('No errors found!', $process->getOutput());
+        $this->assertSame(0, $process->getExitCode());
+    }
+
+    /** @param array<string, string> $env */
+    private function runPsalmWithPathsOnStdin(string $stdin, array $env = []): Process
+    {
+        $this->runPsalmInit(1);
+        $psalmXml = file_get_contents(self::$tmpDir . '/psalm.xml');
+        $psalmXml = str_replace('<psalm', '<psalm runTaintAnalysis="false"', (string)$psalmXml);
+        file_put_contents(self::$tmpDir . '/psalm.xml', $psalmXml);
+        file_put_contents(self::$tmpDir . '/src/Clean.php', "<?php\nfunction clean(): void {}\n");
+
+        $process = new Process(
+            [
+                PHP_BINARY,
+                $this->psalm,
+                '--output-format=console',
+                '--no-progress',
+                '-c=' . self::$tmpDir . '/psalm.xml',
+                '-',
+            ],
+            self::$tmpDir,
+            $env + self::agentEnvVarsToUnset(),
+            $stdin,
+        );
+        $process->run();
+
+        return $process;
+    }
+
+    public function testPsalmRejectsAnEmptyPathWithoutCrashing(): void
+    {
+        $this->runPsalmInit(1);
+
+        $process = new Process(
+            [
+                PHP_BINARY,
+                $this->psalm,
+                '--output-format=console',
+                '--no-progress',
+                '-c=' . self::$tmpDir . '/psalm.xml',
+                '',
+            ],
+            self::$tmpDir,
+            self::agentEnvVarsToUnset(),
+        );
+        $process->run();
+
+        $this->assertStringNotContainsString('Uninitialized string offset', $process->getErrorOutput());
+        $this->assertStringContainsString('Cannot locate', $process->getErrorOutput());
+        $this->assertSame(1, $process->getExitCode());
+    }
+
     public function testParseErrorIsReportedOnEveryRunWithAWarmCache(): void
     {
         $this->runPsalmInit(1);
