@@ -1902,7 +1902,14 @@ final class Populator
      */
     private function inheritPropertyTypes(ClassLikeStorage $storage): void
     {
-        $constructor = $storage->methods['__construct'] ?? null;
+        $promoted_params = [];
+
+        foreach ($storage->methods['__construct']->params ?? [] as $param) {
+            if ($param->promoted_property) {
+                $promoted_params[$param->name] = $param;
+            }
+        }
+
         $parent_storage = $storage->parent_class !== null
             && $this->classlike_storage_provider->has($storage->parent_class)
                 ? $this->classlike_storage_provider->get($storage->parent_class)
@@ -1910,16 +1917,11 @@ final class Populator
         $template_result = null;
 
         foreach ($storage->properties as $property_name => $property_storage) {
-            $promoted_param = null;
-
-            if ($property_storage->is_promoted && $constructor) {
-                foreach ($constructor->params as $param) {
-                    if ($param->promoted_property && $param->name === $property_name) {
-                        $promoted_param = $param;
-                        break;
-                    }
-                }
+            if ($property_storage->has_docblock_type) {
+                continue;
             }
+
+            $promoted_param = $promoted_params[$property_name] ?? null;
 
             if ($property_storage->inherited_type) {
                 // populated again
@@ -1931,15 +1933,12 @@ final class Populator
                     $promoted_param->type = $property_storage->type;
                     $promoted_param->type_location = $property_storage->type_location;
                 }
-            } elseif ($property_storage->has_docblock_type) {
-                continue;
             }
 
             $documenting_class = $parent_storage?->declaring_property_ids[$property_name] ?? null;
 
             if ($parent_storage === null
                 || $documenting_class === null
-                || $this->isPrivateProperty($parent_storage, $property_name)
                 || !$this->classlike_storage_provider->has($documenting_class)
             ) {
                 continue;
@@ -1949,6 +1948,7 @@ final class Populator
                 ->properties[$property_name] ?? null;
 
             if ($documenting_property_storage === null
+                || $documenting_property_storage->visibility === ClassLikeAnalyzer::VISIBILITY_PRIVATE
                 || $documenting_property_storage->type === null
                 || !($documenting_property_storage->has_docblock_type || $documenting_property_storage->inherited_type)
                 || $property_storage->is_static !== $documenting_property_storage->is_static
@@ -1958,14 +1958,6 @@ final class Populator
                     : $documenting_property_storage->signature_type !== null
                         && $property_storage->signature_type->equals($documenting_property_storage->signature_type))
             ) {
-                continue;
-            }
-
-            // localizing a type computed from templates takes a Codebase, which population has not
-            $template_expression_finder = new ContainsTemplateExpressionVisitor();
-            $template_expression_finder->traverse($documenting_property_storage->type);
-
-            if ($template_expression_finder->matches()) {
                 continue;
             }
 
@@ -1983,6 +1975,14 @@ final class Populator
             }
 
             if ($storage->template_extended_params !== null) {
+                // localizing a type computed from templates takes a Codebase, which population has not
+                $template_expression_finder = new ContainsTemplateExpressionVisitor();
+                $template_expression_finder->traverse($type);
+
+                if ($template_expression_finder->matches()) {
+                    continue;
+                }
+
                 if ($template_result === null) {
                     $lower_bounds = [];
 
