@@ -756,7 +756,11 @@ final class Scanner
         }
 
         if (!$from_cache) {
-            if (!$file_storage->has_visitor_issues && $this->file_storage_provider->cache) {
+            // a file declaring a class already declared elsewhere is scanned again to report it
+            if (!$file_storage->has_visitor_issues
+                && $file_storage->duplicate_classlikes === []
+                && $this->file_storage_provider->cache
+            ) {
                 $this->file_storage_provider->cache->writeToCache($file_storage, $file_contents);
             }
         } else {

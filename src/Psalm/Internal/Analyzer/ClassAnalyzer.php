@@ -132,6 +132,9 @@ final class ClassAnalyzer extends ClassLikeAnalyzer
     /** @var array<string, true>|null */
     private ?array $properties_only_read_under_isset = null;
 
+    /** Whether this declaration's name was taken by another one, so its storage stands in for the other's */
+    public readonly bool $is_duplicate;
+
     /**
      * @param PhpParser\Node\Stmt\Class_|PhpParser\Node\Stmt\Enum_ $class
      */
@@ -146,6 +149,18 @@ final class ClassAnalyzer extends ClassLikeAnalyzer
         }
 
         parent::__construct($class, $source, $fq_class_name);
+
+        $duplicate_storage = null;
+        if ($class->name !== null) {
+            $duplicate_storage = $this->getCodebase()->file_storage_provider->get($this->getFilePath())
+                ->duplicate_classlikes[(int) $class->getAttribute('startFilePos')] ?? null;
+        }
+
+        $this->is_duplicate = $duplicate_storage !== null;
+
+        if ($duplicate_storage !== null) {
+            $this->storage = $duplicate_storage;
+        }
 
         if ($this->class instanceof PhpParser\Node\Stmt\Class_ && $this->class->extends) {
             $this->parent_fq_class_name = self::getFQCLNFromNameObject(
@@ -181,6 +196,16 @@ final class ClassAnalyzer extends ClassLikeAnalyzer
         ?Context $class_context = null,
         ?Context $global_context = null,
     ): void {
+        if ($this->is_duplicate) {
+            // the methods, properties and parents the statements of this declaration resolve to are its own
+            $this->getCodebase()->classlike_storage_provider->withStorage(
+                $this->storage,
+                fn() => $this->analyzeClass($class_context, $global_context),
+            );
+
+            return;
+        }
+
         // an anonymous class using a trait whose method creates it again is analysed while it already is
         if (!$this->class instanceof PhpParser\Node\Stmt\Class_ || $this->class->name !== null) {
             $this->analyzeClass($class_context, $global_context);

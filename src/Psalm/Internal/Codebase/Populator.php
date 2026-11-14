@@ -113,6 +113,25 @@ final class Populator
             $this->bindIterationPurity($class_storage);
         }
 
+        // a class declared again is populated as it is analysed, standing in for the declaration owning its name
+        foreach ($this->file_storage_provider->getNew() as $file_storage) {
+            foreach ($file_storage->duplicate_classlikes as $duplicate_storage) {
+                $this->classlike_storage_provider->withStorage(
+                    $duplicate_storage,
+                    function () use ($duplicate_storage): void {
+                        $this->populateClassLikeStorage($duplicate_storage);
+
+                        foreach ($duplicate_storage->methods as $method_storage) {
+                            $this->populateGeneratorPurity($method_storage, $duplicate_storage);
+                        }
+
+                        unset($this->iteration_purity_bound[$duplicate_storage->name]);
+                        $this->bindIterationPurity($duplicate_storage);
+                    },
+                );
+            }
+        }
+
         $this->progress->debug('ClassLikeStorage is populated' . "\n");
 
         $this->progress->debug('FileStorage is populating' . "\n");

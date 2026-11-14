@@ -6,6 +6,9 @@ namespace Psalm\Internal\Provider;
 
 use InvalidArgumentException;
 use LogicException;
+use PhpParser\Node\Stmt\ClassLike;
+use PhpParser\Node\Stmt\Class_;
+use PhpParser\Node\Stmt\Enum_;
 use Psalm\Issue\DuplicateClass;
 use Psalm\IssueBuffer;
 use Psalm\Storage\ClassLikeStorage;
@@ -135,9 +138,9 @@ final class ClassLikeStorageProvider
                 ) {
                     // the declaration in the smaller path wins: it is the one a single process finds first
                     $new_is_kept = strcmp($location->file_path, $duplicate_location->file_path) < 0;
-                    [$kept, $kept_location, $dropped_location] = $new_is_kept
-                        ? [$storage, $location, $duplicate_location]
-                        : [$duplicate_storage, $duplicate_location, $location];
+                    [$kept, $kept_location, $dropped, $dropped_location] = $new_is_kept
+                        ? [$storage, $location, $duplicate_storage, $duplicate_location]
+                        : [$duplicate_storage, $duplicate_location, $storage, $location];
 
                     IssueBuffer::maybeAdd(
                         new DuplicateClass(
@@ -146,7 +149,19 @@ final class ClassLikeStorageProvider
                         ),
                     );
 
-                    $kept->has_visitor_issues = true;
+                    $dropped_file_storage = FileStorageProvider::getAll()[strtolower($dropped_location->file_path)]
+                        ?? null;
+
+                    if ($dropped_file_storage !== null
+                        && $dropped->stmt_location !== null
+                        && self::isAnalyzedAsDuplicate($dropped, $kept)
+                    ) {
+                        // analysed against its own statements, with this storage standing in for the other one
+                        $dropped_file_storage->duplicate_classlikes[$dropped->stmt_location->raw_file_start]
+                            = $dropped;
+                    } else {
+                        $kept->has_visitor_issues = true;
+                    }
 
                     if (!$new_is_kept) {
                         continue;
@@ -155,6 +170,47 @@ final class ClassLikeStorageProvider
             }
             self::$new_storage[$k] = $storage;
             self::$storage[$k] = $storage;
+        }
+    }
+
+    /**
+     * A class or an enum declared again is analysed with a storage of its own; an interface or a trait,
+     * or a class replacing one, is not
+     *
+     * @psalm-mutation-free
+     */
+    public static function isAnalyzedAsDuplicate(
+        ClassLike|ClassLikeStorage $declaration,
+        ClassLikeStorage $kept,
+    ): bool {
+        $is_class = $declaration instanceof ClassLikeStorage
+            ? !$declaration->is_interface && !$declaration->is_trait
+            : $declaration instanceof Class_ || $declaration instanceof Enum_;
+
+        return $is_class && !$kept->is_interface && !$kept->is_trait;
+    }
+
+    /**
+     * Runs the callback with the storage standing in for the class-like of the same name
+     *
+     * @template T
+     * @param callable(): T $callback
+     * @return T
+     */
+    public function withStorage(ClassLikeStorage $storage, callable $callback): mixed
+    {
+        $fq_classlike_name_lc = strtolower($storage->name);
+        $previous = self::$storage[$fq_classlike_name_lc] ?? null;
+        self::$storage[$fq_classlike_name_lc] = $storage;
+
+        try {
+            return $callback();
+        } finally {
+            if ($previous === null) {
+                unset(self::$storage[$fq_classlike_name_lc]);
+            } else {
+                self::$storage[$fq_classlike_name_lc] = $previous;
+            }
         }
     }
 
