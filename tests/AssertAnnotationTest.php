@@ -4213,6 +4213,55 @@ final class AssertAnnotationTest extends TestCase
                 'ignored_issues' => [],
                 'php_version' => '8.1',
             ],
+            'assertAnOffsetOfAnArgument' => [
+                'code' => '<?php
+                    final class Obj {}
+
+                    /**
+                     * @psalm-assert Obj $context["obj"]
+                     */
+                    function assertObj(array $context): void {
+                        if (!isset($context["obj"]) || !$context["obj"] instanceof Obj) {
+                            throw new InvalidArgumentException("Object is not set");
+                        }
+                    }
+
+                    /**
+                     * @psalm-assert-if-true Obj $context["obj"]
+                     */
+                    function hasObj(array $context): bool {
+                        return isset($context["obj"]) && $context["obj"] instanceof Obj;
+                    }
+
+                    /**
+                     * @psalm-assert-if-false Obj $context["obj"]
+                     */
+                    function lacksObj(array $context): bool {
+                        return !isset($context["obj"]) || !$context["obj"] instanceof Obj;
+                    }
+
+                    function first(array $context): void {
+                        assertObj($context);
+                        $first = $context["obj"];
+                        /** @psalm-check-type-exact $first = Obj */;
+                    }
+
+                    function second(array $context): void {
+                        if (hasObj($context)) {
+                            $second = $context["obj"];
+                            /** @psalm-check-type-exact $second = Obj */;
+                        }
+                    }
+
+                    function third(array $context): void {
+                        if (!lacksObj($context)) {
+                            $third = $context["obj"];
+                            /** @psalm-check-type-exact $third = Obj */;
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => ['MixedAssignment', 'UnusedVariable'],
+            ],
         ];
     }
 
@@ -4754,6 +4803,26 @@ final class AssertAnnotationTest extends TestCase
                 'error_message' => 'TypeDoesNotContainType',
                 'error_levels' => [],
                 'php_version' => '8.2',
+            ],
+            'assertAnOffsetOfAnArgumentDoesNotAssertAnotherOffset' => [
+                'code' => '<?php
+                    final class Obj {}
+
+                    /**
+                     * @psalm-assert Obj $context["obj"]
+                     */
+                    function assertObj(array $context): void {
+                        if (!isset($context["obj"]) || !$context["obj"] instanceof Obj) {
+                            throw new InvalidArgumentException("Object is not set");
+                        }
+                    }
+
+                    function check(array $context): Obj {
+                        assertObj($context);
+
+                        return $context["other"];
+                    }',
+                'error_message' => 'MixedReturnStatement',
             ],
         ];
     }
