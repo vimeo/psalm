@@ -44,7 +44,8 @@ final class MethodCallProhibitionAnalyzer
             IssueBuffer::maybeAdd(
                 new DeprecatedMethod(
                     'The method ' . $codebase_methods->getCasedMethodId($method_id) .
-                        ' has been marked as deprecated',
+                        ' has been marked as deprecated'
+                        . ($storage->deprecation_message !== null ? ' (' . $storage->deprecation_message . ')' : ''),
                     $code_location,
                     (string) $method_id,
                 ),
