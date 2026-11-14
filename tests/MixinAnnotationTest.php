@@ -994,7 +994,7 @@ final class MixinAnnotationTest extends TestCase
                 'ignored_issues' => [],
                 'php_version' => '8.0',
             ],
-            'staticOfAMixinIsTheClassCalledByName' => [
+            'staticCallThroughAMixinIsTheInstanceCall' => [
                 'code' => '<?php
                     /** @template TModel of Model */
                     final class Builder
@@ -1018,9 +1018,11 @@ final class MixinAnnotationTest extends TestCase
 
                     class Customer extends Model {}
 
-                    $a = Customer::first();',
+                    $a = Customer::first();
+                    $b = (new Customer())->first();',
                 'assertions' => [
-                    '$a===' => 'Customer|null',
+                    '$a===' => 'Customer&static|null',
+                    '$b===' => 'Customer&static|null',
                 ],
                 'ignored_issues' => [],
                 'php_version' => '8.0',

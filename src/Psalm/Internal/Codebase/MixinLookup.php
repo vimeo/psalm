@@ -62,7 +62,6 @@ final class MixinLookup
 
     /**
      * @param Closure(ClassLikeStorage): bool $has_member whether a mixin class has the member
-     * @param bool $exact_class whether the receiver is of the class itself and not of a subclass, as in `Foo::bar()`
      * @return array{TNamedObject, ClassLikeStorage}|null the mixin with the member, bound for the receiver
      */
     public static function findMember(
@@ -71,21 +70,11 @@ final class MixinLookup
         Atomic $receiver,
         Closure $has_member,
         bool $self_call = false,
-        bool $exact_class = false,
     ): ?array {
         $visited = [];
         $seen_scopes = [];
 
-        return self::find(
-            $codebase,
-            $storage,
-            $receiver,
-            $has_member,
-            $self_call,
-            $exact_class,
-            $visited,
-            $seen_scopes,
-        );
+        return self::find($codebase, $storage, $receiver, $has_member, $self_call, $visited, $seen_scopes);
     }
 
     /**
@@ -133,7 +122,6 @@ final class MixinLookup
         Atomic $receiver,
         Closure $has_member,
         bool $self_call,
-        bool $exact_class,
         array &$visited,
         array &$seen_scopes,
     ): ?array {
@@ -164,7 +152,7 @@ final class MixinLookup
                     continue;
                 }
 
-                $bound_mixin = self::bind($codebase, $mixin, $scope, $storage, $receiver, $self_call, $exact_class);
+                $bound_mixin = self::bind($codebase, $mixin, $scope, $storage, $receiver, $self_call);
 
                 if ($bound_mixin === null) {
                     continue;
@@ -192,7 +180,6 @@ final class MixinLookup
                     $bound_mixin,
                     $has_member,
                     false,
-                    false,
                     $visited,
                     $seen_scopes,
                 );
@@ -217,7 +204,6 @@ final class MixinLookup
         ClassLikeStorage $storage,
         Atomic $receiver,
         bool $self_call,
-        bool $exact_class,
     ): ?TNamedObject {
         if ($mixin instanceof TTemplateParam) {
             try {
@@ -261,7 +247,7 @@ final class MixinLookup
             $declaring_storage->parent_class,
             true,
             false,
-            $storage->final || $exact_class,
+            $storage->final,
         );
 
         $bound_mixin = $bound_mixin->isSingle() ? $bound_mixin->getSingleAtomic() : null;

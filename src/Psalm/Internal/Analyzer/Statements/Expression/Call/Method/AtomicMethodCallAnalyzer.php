@@ -388,8 +388,11 @@ final class AtomicMethodCallAnalyzer extends CallAnalyzer
 
             $naive_method_exists = false;
 
-            // a `@method` of the class or of its interfaces wins over its mixins
-            if (!MissingMethodCallHandler::hasPseudoMethod($codebase, $class_storage, $method_name_lc)) {
+            // a `@method` of the class or of its interfaces, or a method an existence provider adds to the class,
+            // wins over its mixins
+            if (!$fake_method_exists
+                && !MissingMethodCallHandler::hasPseudoMethod($codebase, $class_storage, $method_name_lc)
+            ) {
                 [$mixin, $mixin_method_exists] = self::findMixinWithMethod(
                     $statements_analyzer,
                     $stmt,
