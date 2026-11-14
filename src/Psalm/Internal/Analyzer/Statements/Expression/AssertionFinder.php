@@ -110,6 +110,7 @@ use Psalm\Type\Union;
 use UnexpectedValueException;
 
 use function array_map;
+use function array_push;
 use function assert;
 use function count;
 use function explode;
@@ -3888,6 +3889,28 @@ final class AssertionFinder
     }
 
     /**
+     * What a key that exists in an array as an int is: the int, or the string that PHP casts to it, whichever the type
+     * of the value looked up can be
+     *
+     * @return list<Assertion>
+     * @psalm-pure
+     */
+    private static function getIntKeyAssertions(int $key, Union $looked_up_type): array
+    {
+        $assertions = [];
+
+        if (!$looked_up_type->isString()) {
+            $assertions[] = new IsIdentical(new TLiteralInt($key));
+        }
+
+        if (!$looked_up_type->isInt()) {
+            $assertions[] = new IsIdentical(TLiteralString::make((string) $key));
+        }
+
+        return $assertions;
+    }
+
+    /**
      * @return list<non-empty-array<string, non-empty-list<non-empty-list<Assertion>>>>
      */
     private static function getArrayKeyExistsAssertions(
@@ -3942,12 +3965,18 @@ final class AssertionFinder
                             if ($string_to_int === false) {
                                 $literal_assertions[] = new IsIdentical($array_literal_type);
                             } else {
-                                $literal_assertions[] = new IsLooselyEqual(new TLiteralInt($string_to_int));
+                                array_push(
+                                    $literal_assertions,
+                                    ...self::getIntKeyAssertions($string_to_int, $first_var_type),
+                                );
                             }
                         }
                     } elseif ($key_type->allIntLiterals() && !$key_type->possibly_undefined) {
                         foreach ($key_type->getLiteralInts() as $array_literal_type) {
-                            $literal_assertions[] = new IsLooselyEqual($array_literal_type);
+                            array_push(
+                                $literal_assertions,
+                                ...self::getIntKeyAssertions($array_literal_type->value, $first_var_type),
+                            );
                         }
                     } else {
                         $safe_to_track_literals = false;

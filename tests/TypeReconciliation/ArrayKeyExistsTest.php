@@ -23,6 +23,38 @@ final class ArrayKeyExistsTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'arrayKeyExistsOfAStringInAnArrayOfIntKeysNarrowsItToTheKeysAsStrings' => [
+                'code' => '<?php
+                    final class Codes {
+                        public const MAP = ["AA" => "971", "BB" => "972"];
+                    }
+
+                    function lookup(string $zip): string {
+                        $prefix = substr($zip, 0, 3);
+                        $flipped = array_flip(Codes::MAP);
+
+                        if (array_key_exists($prefix, $flipped)) {
+                            /** @psalm-check-type-exact $prefix = "971"|"972" */
+                            return $flipped[$prefix];
+                        }
+
+                        return "XX";
+                    }
+
+                    function ofInts(string|int $key): string {
+                        $items = [971 => "x", 972 => "y"];
+
+                        if (array_key_exists($key, $items)) {
+                            /** @psalm-check-type-exact $key = "971"|"972"|971|972 */
+                            return $items[$key];
+                        }
+
+                        return "z";
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
             'negatedKeyCheckKeepsWhatTheOtherOffsetsOfAnArrayHold' => [
                 'code' => '<?php
                     function f(array $options): string {
@@ -645,6 +677,21 @@ final class ArrayKeyExistsTest extends TestCase
     public static function providerInvalidCodeParse(): iterable
     {
         return [
+            'arrayKeyExistsOfAStringInAnArrayOfIntKeysDoesNotMakeAnyOffsetValid' => [
+                'code' => '<?php
+                    function lookup(string $key, string $other): string {
+                        $items = [971 => "x", 972 => "y"];
+
+                        if (array_key_exists($key, $items)) {
+                            return $items[$other];
+                        }
+
+                        return "z";
+                    }',
+                'error_message' => 'InvalidArrayOffset',
+                'error_levels' => [],
+                'php_version' => '8.1',
+            ],
             'negatedIssetKeepsAnOptionalKeyThatMayBeNull' => [
                 'code' => '<?php
                     /**
