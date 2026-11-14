@@ -53,6 +53,8 @@ final class TernaryAnalyzer
 
         $if_scope = new IfScope();
 
+        $negated_phantom_classes_before_cond = $context->negated_phantom_classes;
+
         try {
             $reassigned_var_ids = FormulaGenerator::getVarsAssignedByOredRightSides($stmt->cond, $context->self);
 
@@ -227,6 +229,9 @@ final class TernaryAnalyzer
         }
 
         $t_else_context = clone $context;
+
+        // where a negated `class_exists()` of the condition is false, the class exists
+        $t_else_context->promoteNegatedPhantomClasses($negated_phantom_classes_before_cond);
 
         // the else runs when every operand of an `||` was evaluated and falsy, so what they assigned is known there
         $else_rederived_var_ids = array_fill_keys(array_keys($reassigned_var_ids), 1)

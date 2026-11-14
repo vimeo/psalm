@@ -120,6 +120,40 @@ final class ArgumentsAnalyzer
         Context $context,
         ?TemplateResult $template_result = null,
     ): ?bool {
+        // what is negated is the call, not what its arguments are made of: a `class_exists()` in an argument of a
+        // negated call checks the class where the argument is evaluated
+        $was_inside_negation = $context->inside_negation;
+        $context->inside_negation = false;
+
+        try {
+            return self::analyzeArguments(
+                $statements_analyzer,
+                $args,
+                $function_params,
+                $method_id,
+                $allow_named_args,
+                $context,
+                $template_result,
+            );
+        } finally {
+            $context->inside_negation = $was_inside_negation;
+        }
+    }
+
+    /**
+     * @param   list<PhpParser\Node\Arg>          $args
+     * @param   array<int, FunctionLikeParameter>|null  $function_params
+     * @return  false|null
+     */
+    private static function analyzeArguments(
+        StatementsAnalyzer $statements_analyzer,
+        array $args,
+        ?array $function_params,
+        ?string $method_id,
+        bool $allow_named_args,
+        Context $context,
+        ?TemplateResult $template_result = null,
+    ): ?bool {
         $last_param = $function_params
             ? $function_params[count($function_params) - 1]
             : null;
@@ -313,6 +347,10 @@ final class ArgumentsAnalyzer
             $was_inside_isset = $context->inside_isset;
             $context->inside_isset = false;
 
+            // a `!` around the call does not negate what its arguments check
+            $was_inside_negation = $context->inside_negation;
+            $context->inside_negation = false;
+
             if (ExpressionAnalyzer::analyze(
                 $statements_analyzer,
                 $arg->value,
@@ -322,12 +360,14 @@ final class ArgumentsAnalyzer
                 null,
                 $high_order_template_result,
             ) === false) {
+                $context->inside_negation = $was_inside_negation;
                 $context->inside_isset = $was_inside_isset;
                 $context->inside_call = $was_inside_call;
 
                 return false;
             }
 
+            $context->inside_negation = $was_inside_negation;
             $context->inside_isset = $was_inside_isset;
             $context->inside_call = $was_inside_call;
 
