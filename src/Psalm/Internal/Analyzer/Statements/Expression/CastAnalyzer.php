@@ -51,7 +51,6 @@ use Psalm\Type\Atomic\TLiteralInt;
 use Psalm\Type\Atomic\TLiteralString;
 use Psalm\Type\Atomic\TMixed;
 use Psalm\Type\Atomic\TNamedObject;
-use Psalm\Type\Atomic\TNever;
 use Psalm\Type\Atomic\TNonEmptyArray;
 use Psalm\Type\Atomic\TNonEmptyString;
 use Psalm\Type\Atomic\TNonspecificLiteralInt;
@@ -399,11 +398,6 @@ final class CastAnalyzer
         while ($atomic_types) {
             $atomic_type = array_pop($atomic_types);
 
-            // the code with a never operand is unreachable and what made it so is reported on its own
-            if ($atomic_type instanceof TNever) {
-                continue;
-            }
-
             if ($atomic_type instanceof TInt) {
                 $valid_ints[] = $atomic_type;
 
@@ -592,11 +586,6 @@ final class CastAnalyzer
 
         while ($atomic_types) {
             $atomic_type = array_pop($atomic_types);
-
-            // the code with a never operand is unreachable and what made it so is reported on its own
-            if ($atomic_type instanceof TNever) {
-                continue;
-            }
 
             if ($atomic_type instanceof TFloat) {
                 $valid_floats[] = $atomic_type;
@@ -795,11 +784,6 @@ final class CastAnalyzer
 
         while ($atomic_types) {
             $atomic_type = array_pop($atomic_types);
-
-            // the code with a never operand is unreachable and what made it so is reported on its own
-            if ($atomic_type instanceof TNever) {
-                continue;
-            }
 
             $scalar_strings = self::castScalarToString($atomic_type);
 
