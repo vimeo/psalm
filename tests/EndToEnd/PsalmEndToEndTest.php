@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Psalm\Tests\EndToEnd;
 
 use PHPUnit\Framework\Attributes\DataProvider;
+use Psalm\Tests\Config\Plugin\ReportableFilePlugin;
 use Symfony\Component\Process\Process;
 
 use function assert;
@@ -163,7 +164,7 @@ final class PsalmEndToEndTest extends PsalmEndToEndTestCase
             ['<psalm', '</psalm>'],
             [
                 '<psalm runTaintAnalysis="false"',
-                '<plugins><pluginClass class="Psalm\Tests\Config\Plugin\ReportableFilePlugin" /></plugins></psalm>',
+                '<plugins><pluginClass class="' . ReportableFilePlugin::class . '" /></plugins></psalm>',
             ],
             (string) file_get_contents(self::$tmpDir . '/psalm.xml'),
         ));
