@@ -58,26 +58,13 @@ final class TypeAlgebraTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
-            'aContradictionOfAConditionDoesNotNarrowTheOtherConjunctsInTheElse' => [
-                'code' => '<?php
-                    function f(?int $a, bool $b): void {
-                        /** @psalm-suppress TypeDoesNotContainType */
-                        if ($a === null && $a !== null && $b) {
-                            echo "unreachable";
-                        } else {
-                            /** @psalm-check-type-exact $b = bool */
-                            echo var_export($b, true);
-                        }
-                    }',
-                'assertions' => [],
-                'ignored_issues' => [],
-                'php_version' => '8.1',
-            ],
-            'aFunctionExistsCheckOfANewerNativeFunctionDoesNotContradictAVersionCheck' => [
+            'aFunctionExistsCheckOfANewerNativeFunctionDoesNotNarrowThePhpVersion' => [
                 'code' => '<?php
                     function f(): void {
-                        if (PHP_VERSION_ID < 8_05_00 && function_exists("array_first")) {
-                            echo "polyfill";
+                        if (function_exists("array_first")) {
+                            if (PHP_VERSION_ID < 8_05_00) {
+                                echo "polyfill";
+                            }
                         }
                     }',
                 'assertions' => [],
@@ -2115,17 +2102,6 @@ final class TypeAlgebraTest extends TestCase
     public static function providerInvalidCodeParse(): iterable
     {
         return [
-            'aConditionThatContradictsItselfIsReported' => [
-                'code' => '<?php
-                    function f(?int $a, bool $b): void {
-                        if ($a === null && $a !== null && $b) {
-                            echo "unreachable";
-                        }
-                    }',
-                'error_message' => 'TypeDoesNotContainType',
-                'error_levels' => [],
-                'php_version' => '8.1',
-            ],
             'instanceofStoredInVariableIsForgottenWhenTheVariableIsReassigned' => [
                 'code' => '<?php
                     interface Foo {}

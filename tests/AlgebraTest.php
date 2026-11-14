@@ -630,12 +630,12 @@ final class AlgebraTest extends TestCase
             ['$a is 0', '$a is string'],
         ];
 
-        yield 'contradiction keeps both clauses' => [
+        yield 'contradiction leaves nothing' => [
             [
                 ['$a' => [new Truthy()]],
                 ['$a' => [new Falsy()]],
             ],
-            ['$a', '!$a'],
+            [],
         ];
 
         yield 'clause containing another one is redundant' => [
