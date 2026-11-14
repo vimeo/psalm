@@ -23,6 +23,7 @@ use Psalm\Internal\Analyzer\Statements\Expression\Call\ClassTemplateParamCollect
 use Psalm\Internal\Analyzer\Statements\Expression\Call\MethodCallAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\ExpressionIdentifier;
 use Psalm\Internal\Analyzer\Statements\Expression\Fetch\AtomicPropertyFetchAnalyzer;
+use Psalm\Internal\Analyzer\Statements\Expression\Fetch\InstancePropertyFetchAnalyzer;
 use Psalm\Internal\Analyzer\Statements\ExpressionAnalyzer;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\Internal\Analyzer\TraitAnalyzer;
@@ -1214,7 +1215,7 @@ final class InstancePropertyAssignmentAnalyzer
         // but we don't want to throw an error
         // Hack has a similar issue: https://github.com/facebook/hhvm/issues/5164
         if ($lhs_type_part instanceof TObject
-            || $codebase->classlikes->isUniversalObjectCrate($lhs_type_part->value)
+            || $codebase->classlikes->isUniversalObjectCrate($lhs_type_part->value, $prop_name)
             || in_array(
                 strtolower($lhs_type_part->value),
                 Config::getInstance()->getUniversalObjectCrates() + [
@@ -1307,6 +1308,11 @@ final class InstancePropertyAssignmentAnalyzer
                 } elseif (!$class_exists) {
                     // a property an isset() found is there: it is the object that has it, not the interface
                     if ($var_id !== null
+                        && InstancePropertyFetchAnalyzer::isUndeclaredInterfacePropertyOf(
+                            $codebase,
+                            $lhs_type_part,
+                            $prop_name,
+                        )
                         && isset($context->vars_in_scope[$var_id])
                         && !$context->vars_in_scope[$var_id]->isNull()
                         && !$context->vars_in_scope[$var_id]->possibly_undefined

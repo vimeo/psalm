@@ -6106,9 +6106,7 @@ final class TaintTest extends TestCase
                 'code' => '<?php // --taint-analysis
                     /** @param mixed $m */
                     function f($m): void {
-                        /** @psalm-suppress MixedArrayAccess */
                         preg_match("/(.*)/", (string) $_GET["x"], $m["k"]);
-                        /** @psalm-suppress MixedArrayAccess, MixedArgument */
                         echo $m["k"][1];
                     }',
                 'error_message' => 'TaintedHtml',
@@ -6132,6 +6130,28 @@ final class TaintTest extends TestCase
                     if (is_string($s)) {
                         fill($s);
                         output();
+                    }',
+                'error_message' => 'TaintedHtml',
+            ],
+            'taintAStaticPropertyOfStaticPassedByReference' => [
+                'code' => '<?php // --taint-analysis
+                    class Box {
+                        /** @var list<string> */
+                        protected static array $matches = [];
+
+                        public static function fill(string $s): void {
+                            preg_match("/(.*)/", $s, static::$matches);
+                        }
+
+                        public static function output(): void {
+                            echo static::$matches[0];
+                        }
+                    }
+
+                    $s = $_GET["q"];
+                    if (is_string($s)) {
+                        Box::fill($s);
+                        Box::output();
                     }',
                 'error_message' => 'TaintedHtml',
             ],
@@ -12135,19 +12155,16 @@ final class TaintTest extends TestCase
             ],
             'taintedHtmlWrittenToAPhpOutputStream' => [
                 'code' => '<?php
-                    /** @psalm-suppress PossiblyFalseArgument */
                     fwrite(fopen("php://output", "w"), (string) $_GET["x"]);',
                 'error_message' => 'TaintedHtml',
             ],
             'taintedHtmlWrittenToAPhpStdoutStream' => [
                 'code' => '<?php
-                    /** @psalm-suppress PossiblyFalseArgument */
                     fwrite(fopen("php://stdout", "w"), (string) $_GET["x"]);',
                 'error_message' => 'TaintedHtml',
             ],
             'taintedTextWithQuotesWrittenToAPhpOutputStream' => [
                 'code' => '<?php
-                    /** @psalm-suppress PossiblyFalseArgument */
                     fwrite(fopen("php://output", "w"), strip_tags((string) $_GET["x"]));',
                 'error_message' => 'TaintedTextWithQuotes',
             ],
@@ -13152,10 +13169,6 @@ final class TaintTest extends TestCase
             ],
             'taintOverMixed' => [
                 'code' => '<?php
-                    /**
-                     * @psalm-suppress MixedAssignment
-                     * @psalm-suppress MixedArgument
-                     */
                     function foo() : void {
                         $a = $_GET["bad"];
                         echo $a;
@@ -13165,7 +13178,6 @@ final class TaintTest extends TestCase
             'taintStrConversion' => [
                 'code' => '<?php
                     function foo() : void {
-                        /** @psalm-suppress PossiblyInvalidCast */
                         $a = strtoupper(strtolower((string) $_GET["bad"]));
                         echo $a;
                     }',
@@ -13958,13 +13970,11 @@ final class TaintTest extends TestCase
             ],
             'taintThroughArrayMapUntypedClosureOverMixedArray' => [
                 'code' => '<?php
-                    /** @psalm-suppress MissingClosureParamType, MissingClosureReturnType */
                     echo implode(",", array_map(fn($s) => $s, $_GET["a"]));',
                 'error_message' => 'TaintedHtml',
             ],
             'taintThroughArrayMapUntypedClosureIntoItsElements' => [
                 'code' => '<?php
-                    /** @psalm-suppress MissingClosureParamType, MissingClosureReturnType */
                     foreach (array_map(fn($s) => $s, $_GET["a"]) as $value) {
                         echo (string) $value;
                     }',
@@ -14157,10 +14167,8 @@ final class TaintTest extends TestCase
             'taintExit' => [
                 'code' => '<?php
                     if (rand(0, 1)) {
-                        /** @psalm-suppress PossiblyInvalidArgument */
                         exit($_GET[\'a\']);
                     } else {
-                        /** @psalm-suppress PossiblyInvalidArgument */
                         die($_GET[\'b\']);
                     }',
                 'error_message' => 'TaintedHtml',
@@ -14370,7 +14378,6 @@ final class TaintTest extends TestCase
                         echo $b[0];
                     }
 
-                    /** @psalm-suppress MixedArgumentTypeCoercion */
                     spread($_GET["a"]);',
                 'error_message' => 'TaintedHtml',
             ],
@@ -14878,10 +14885,8 @@ final class TaintTest extends TestCase
                         }
                     }
 
-                    /** @psalm-suppress InvalidReturnType */
                     function stub(): Unsafe { }
 
-                    /** @psalm-suppress MixedArgument */
                     echo stub()->isUnsafe();',
                 'error_message' => 'TaintedHtml',
             ],
@@ -15018,7 +15023,6 @@ final class TaintTest extends TestCase
             ],
             'taintPopen' => [
                 'code' => '<?php
-                    /** @psalm-suppress PossiblyInvalidCast */
                     $cb = popen($_POST[\'x\'], \'r\');',
                 'error_message' => 'TaintedShell',
             ],
@@ -15885,7 +15889,6 @@ final class TaintTest extends TestCase
                  * We arbitrarily chose system() to test this.
                  */
                 'code' => '<?php
-                    /** @psalm-suppress PossiblyInvalidArgument */
                     system(urlencode($_GET["bad"]));
                 ',
                 'error_message' => 'TaintedShell',

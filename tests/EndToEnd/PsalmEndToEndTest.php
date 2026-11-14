@@ -4,122 +4,35 @@ declare(strict_types=1);
 
 namespace Psalm\Tests\EndToEnd;
 
-use Exception;
-use Override;
 use PHPUnit\Framework\Attributes\DataProvider;
-use PHPUnit\Framework\TestCase;
-use Psalm\Internal\Analyzer\ProjectAnalyzer;
+use PHPUnit\Framework\Attributes\RequiresPhpExtension;
+use Psalm\Tests\Config\Plugin\ReportableFilePlugin;
 use Symfony\Component\Process\Process;
 
 use function assert;
 use function basename;
-use function closedir;
-use function copy;
-use function dirname;
-use function file_exists;
 use function file_get_contents;
 use function file_put_contents;
-use function getcwd;
-use function glob;
-use function implode;
-use function is_dir;
-use function is_string;
+use function json_decode;
 use function mkdir;
-use function opendir;
-use function preg_match_all;
 use function preg_replace;
-use function readdir;
-use function rmdir;
+use function sort;
 use function str_contains;
 use function str_replace;
-use function strpos;
-use function strtolower;
 use function substr_count;
 use function sys_get_temp_dir;
 use function tempnam;
 use function unlink;
 
-use const DIRECTORY_SEPARATOR;
+use const JSON_THROW_ON_ERROR;
 use const PHP_BINARY;
-use const PHP_EOL;
 
 /**
- * Tests some of the most important use cases of the psalm and psalter commands, by launching a new
- * process as if invoked by a real user.
- *
- * This is primarily intended to test the code in `psalm`, `src/psalm.php` and related files.
+ * Tests some of the most important use cases of the psalm command,
+ * by launching a new process as if invoked by a real user.
  */
-final class PsalmEndToEndTest extends TestCase
+final class PsalmEndToEndTest extends PsalmEndToEndTestCase
 {
-    use PsalmRunnerTrait;
-
-    private static string $tmpDir;
-
-    #[Override]
-    public static function setUpBeforeClass(): void
-    {
-        self::$tmpDir = tempnam(sys_get_temp_dir(), 'PsalmEndToEndTest_');
-        assert(self::$tmpDir !== false);
-        unlink(self::$tmpDir);
-        mkdir(self::$tmpDir);
-
-        $getcwd = getcwd();
-        if (!is_string($getcwd)) {
-            throw new Exception('Couldn\'t get working directory');
-        }
-
-        copy(__DIR__ . '/../fixtures/DummyProjectWithErrors/composer.json', self::$tmpDir . '/composer.json');
-
-        $process = new Process(['composer', 'install', '--no-plugins'], self::$tmpDir, null, null, 120);
-        $process->mustRun();
-    }
-
-    #[Override]
-    public static function tearDownAfterClass(): void
-    {
-        self::recursiveRemoveDirectory(self::$tmpDir);
-        parent::tearDownAfterClass();
-    }
-
-    #[Override]
-    public function setUp(): void
-    {
-        mkdir(self::$tmpDir . '/src');
-
-        copy(
-            __DIR__ . '/../fixtures/DummyProjectWithErrors/src/FileWithErrors.php',
-            self::$tmpDir . '/src/FileWithErrors.php',
-        );
-        parent::setUp();
-    }
-
-    #[Override]
-    public function tearDown(): void
-    {
-        @unlink(self::$tmpDir . '/psalm.xml');
-        @unlink(self::$tmpDir . '/CODEOWNERS');
-
-        if (file_exists(self::$tmpDir . '/plugins')) {
-            self::recursiveRemoveDirectory(self::$tmpDir . '/plugins');
-        }
-
-        $baseline_files = glob(self::$tmpDir . '/*baseline*.xml');
-        assert($baseline_files !== false);
-        foreach ($baseline_files as $baseline_file) {
-            unlink($baseline_file);
-        }
-
-        if (file_exists(self::$tmpDir . '/cache')) {
-            self::recursiveRemoveDirectory(self::$tmpDir . '/cache');
-        }
-
-        if (file_exists(self::$tmpDir . '/src')) {
-            self::recursiveRemoveDirectory(self::$tmpDir . '/src');
-        }
-
-        parent::tearDown();
-    }
-
     public function testHelpReturnsMessage(): void
     {
         $this->assertStringContainsString('Usage:', $this->runPsalm(['--help'], self::$tmpDir)['STDOUT']);
@@ -135,17 +48,17 @@ final class PsalmEndToEndTest extends TestCase
         try {
             file_put_contents($project_dir . '/composer.json', '{"require": {}}');
 
-            $long = new Process([PHP_BINARY, $this->psalm, '--version'], $project_dir, self::agentEnvVarsToUnset());
+            $long = self::newProcess([PHP_BINARY, $this->psalm, '--version'], $project_dir, self::agentEnvVarsToUnset());
             $long->run();
-            $short = new Process([PHP_BINARY, $this->psalm, '-v'], $project_dir, self::agentEnvVarsToUnset());
+            $short = self::newProcess([PHP_BINARY, $this->psalm, '-v'], $project_dir, self::agentEnvVarsToUnset());
             $short->run();
-            $language_server = new Process(
+            $language_server = self::newProcess(
                 [PHP_BINARY, __DIR__ . '/../../psalm-language-server', '--version'],
                 $project_dir,
                 self::agentEnvVarsToUnset(),
             );
             $language_server->run();
-            $analysis = new Process([PHP_BINARY, $this->psalm], $project_dir, self::agentEnvVarsToUnset());
+            $analysis = self::newProcess([PHP_BINARY, $this->psalm], $project_dir, self::agentEnvVarsToUnset());
             $analysis->run();
         } finally {
             self::recursiveRemoveDirectory($project_dir);
@@ -184,7 +97,7 @@ final class PsalmEndToEndTest extends TestCase
             mkdir($project_dir . '/vendor');
             file_put_contents($project_dir . '/vendor/autoload.php', "<?php\n");
 
-            $process = new Process([PHP_BINARY, $this->psalm, '--init'], $project_dir, self::agentEnvVarsToUnset());
+            $process = self::newProcess([PHP_BINARY, $this->psalm, '--init'], $project_dir, self::agentEnvVarsToUnset());
             $process->run();
         } finally {
             self::recursiveRemoveDirectory($project_dir);
@@ -198,323 +111,6 @@ final class PsalmEndToEndTest extends TestCase
         $this->assertStringNotContainsString('Uncaught', $process->getErrorOutput());
     }
 
-    public function testAlter(): void
-    {
-        $this->runPsalmInit();
-
-        $psalmXml = file_get_contents(self::$tmpDir . '/psalm.xml');
-        $psalmXml = str_replace('<psalm', '<psalm runTaintAnalysis="false"', (string)$psalmXml);
-        file_put_contents(self::$tmpDir . '/psalm.xml', $psalmXml);
-
-        $this->assertStringContainsString(
-            "\n        1 file changed        \n",
-            $this->runPsalm(['--alter', '--issues=all'], self::$tmpDir, false, true)['STDOUT'],
-        );
-
-        $this->assertSame(0, $this->runPsalm([], self::$tmpDir)['CODE']);
-    }
-
-    public function testPsalter(): void
-    {
-        $this->runPsalmInit();
-        $psalmXml = file_get_contents(self::$tmpDir . '/psalm.xml');
-        $psalmXml = str_replace('<psalm', '<psalm runTaintAnalysis="false"', (string)$psalmXml);
-        file_put_contents(self::$tmpDir . '/psalm.xml', $psalmXml);
-
-        (new Process([PHP_BINARY, $this->psalter, '--alter', '--issues=InvalidReturnType'], self::$tmpDir))->mustRun();
-        $this->assertSame(0, $this->runPsalm([], self::$tmpDir)['CODE']);
-    }
-
-    public function testPsalterAddsPurityAnnotationsWithoutTheConfigFlag(): void
-    {
-        $this->runPsalmInit();
-        $psalmXml = file_get_contents(self::$tmpDir . '/psalm.xml');
-        $psalmXml = str_replace('<psalm', '<psalm runTaintAnalysis="false"', (string)$psalmXml);
-        file_put_contents(self::$tmpDir . '/psalm.xml', $psalmXml);
-        file_put_contents(
-            self::$tmpDir . '/src/Slug.php',
-            "<?php\n\nfunction slug(string \$text): string\n{\n    return strtolower(trim(\$text));\n}\n",
-        );
-
-        (new Process([PHP_BINARY, $this->psalter, '--alter', '--issues=MissingPureAnnotation'], self::$tmpDir))->mustRun();
-
-        $this->assertStringContainsString('@psalm-pure', (string) file_get_contents(self::$tmpDir . '/src/Slug.php'));
-    }
-
-    /**
-     * @param list<string> $args
-     */
-    #[DataProvider('provideRefactorMoveInvocations')]
-    public function testRefactorMovesAMethodIntoAnotherClass(bool $viaPsalm, array $args): void
-    {
-        $this->runPsalmInit();
-        $psalmXml = file_get_contents(self::$tmpDir . '/psalm.xml');
-        $psalmXml = str_replace('<psalm', '<psalm runTaintAnalysis="false"', (string)$psalmXml);
-        file_put_contents(self::$tmpDir . '/psalm.xml', $psalmXml);
-        file_put_contents(
-            self::$tmpDir . '/src/Moves.php',
-            "<?php\n\nnamespace Ns;\n\nclass A\n{\n    public static function foo(): void\n    {\n    }\n}\n\n"
-            . "class B\n{\n}\n",
-        );
-
-        $process = new Process(
-            [PHP_BINARY, $viaPsalm ? $this->psalm : $this->psalmRefactor, ...$args],
-            self::$tmpDir,
-            self::agentEnvVarsToUnset(),
-        );
-        $process->run();
-
-        $this->assertStringNotContainsString('Cannot locate', $process->getErrorOutput());
-        $this->assertStringNotContainsString('No --move or --rename arguments supplied', $process->getErrorOutput());
-
-        $contents = (string) file_get_contents(self::$tmpDir . '/src/Moves.php');
-        $this->assertSame(1, substr_count($contents, 'function foo'), $contents);
-        $this->assertGreaterThan(
-            (int) strpos($contents, 'class B'),
-            (int) strpos($contents, 'function foo'),
-            'foo should now be declared in B: ' . $contents . $process->getErrorOutput(),
-        );
-    }
-
-    /**
-     * @return iterable<string, array{bool, list<string>}>
-     * @psalm-pure
-     */
-    public static function provideRefactorMoveInvocations(): iterable
-    {
-        yield 'psalm-refactor with separate values' => [
-            false,
-            ['--no-cache', '--move', 'Ns\A::foo', '--into', 'Ns\B'],
-        ];
-
-        yield 'psalm-refactor with values after an equals sign' => [
-            false,
-            ['--monochrome', '--move=Ns\A::foo', '--into=Ns\B'],
-        ];
-
-        yield 'psalm --refactor' => [
-            true,
-            ['--refactor', '--move', 'Ns\A::foo', '--into', 'Ns\B'],
-        ];
-    }
-
-    public function testPsalterDryRunPrintsEachChangedFileOnceForOverlappingPaths(): void
-    {
-        $this->runPsalmInit();
-        $psalmXml = file_get_contents(self::$tmpDir . '/psalm.xml');
-        $psalmXml = str_replace('<psalm', '<psalm runTaintAnalysis="false"', (string)$psalmXml);
-        file_put_contents(self::$tmpDir . '/psalm.xml', $psalmXml);
-        file_put_contents(self::$tmpDir . '/src/A.php', "<?php\n\nfunction a() {\n    return 1;\n}\n");
-        file_put_contents(self::$tmpDir . '/src/B.php', "<?php\n\nfunction b() {\n    return 2;\n}\n");
-
-        $process = new Process(
-            [
-                PHP_BINARY,
-                $this->psalter,
-                '--dry-run',
-                '--no-cache',
-                '--issues=MissingReturnType',
-                './src',
-                'src/A.php',
-                'src/B.php',
-                'src/../src/A.php',
-            ],
-            self::$tmpDir,
-            self::agentEnvVarsToUnset(),
-        );
-        $process->run();
-        $this->assertSame(2, $process->getExitCode(), $process->getOutput() . $process->getErrorOutput());
-        $output = $process->getOutput();
-
-        $this->assertSame(1, preg_match_all('/^\d\) src\/A\.php:3$/m', $output), $output);
-        $this->assertSame(1, preg_match_all('/^\d\) src\/B\.php:3$/m', $output), $output);
-        $this->assertSame(1, substr_count($output, '--- a/src/A.php'), $output);
-        $this->assertSame(1, substr_count($output, '--- a/src/B.php'), $output);
-        $this->assertStringContainsString("\n       2 files would be changed (dry run)       \n", $output);
-        $this->assertStringNotContainsString("\e", $output);
-    }
-
-    public function testPsalterDryRunNumbersFilesInSortedOrderRegardlessOfArgumentOrder(): void
-    {
-        $this->runPsalmInit();
-        $psalmXml = file_get_contents(self::$tmpDir . '/psalm.xml');
-        $psalmXml = str_replace('<psalm', '<psalm runTaintAnalysis="false"', (string)$psalmXml);
-        file_put_contents(self::$tmpDir . '/psalm.xml', $psalmXml);
-        file_put_contents(self::$tmpDir . '/src/A.php', "<?php\n\nfunction a() {\n    return 1;\n}\n");
-        file_put_contents(self::$tmpDir . '/src/B.php', "<?php\n\nfunction b() {\n    return 2;\n}\n");
-
-        $process = new Process(
-            [
-                PHP_BINARY,
-                $this->psalter,
-                '--dry-run',
-                '--no-cache',
-                '--issues=MissingReturnType',
-                'src/B.php',
-                'src',
-                'src/A.php',
-            ],
-            self::$tmpDir,
-            self::agentEnvVarsToUnset(),
-        );
-        $process->run();
-        $this->assertSame(2, $process->getExitCode(), $process->getOutput() . $process->getErrorOutput());
-        $output = $process->getOutput();
-
-        $this->assertStringContainsString("1) src/A.php:3\n", $output);
-        $this->assertStringContainsString("2) src/B.php:3\n", $output);
-    }
-
-    public function testPsalterDryRunExitsWithCode2AndLeavesFilesUnchangedWhenFilesWouldChange(): void
-    {
-        $this->runPsalmInit();
-        $psalmXml = file_get_contents(self::$tmpDir . '/psalm.xml');
-        $psalmXml = str_replace('<psalm', '<psalm runTaintAnalysis="false"', (string)$psalmXml);
-        file_put_contents(self::$tmpDir . '/psalm.xml', $psalmXml);
-        $source = "<?php\n\nfunction a() {\n    return 1;\n}\n";
-        file_put_contents(self::$tmpDir . '/src/A.php', $source);
-
-        $process = new Process(
-            [PHP_BINARY, $this->psalter, '--dry-run', '--no-cache', '--issues=MissingReturnType', 'src'],
-            self::$tmpDir,
-            self::agentEnvVarsToUnset(),
-        );
-        $process->run();
-
-        $this->assertSame(2, $process->getExitCode(), $process->getOutput() . $process->getErrorOutput());
-        $this->assertStringContainsString('would be changed (dry run)', $process->getOutput());
-        $this->assertSame($source, file_get_contents(self::$tmpDir . '/src/A.php'));
-    }
-
-    public function testPsalmAlterDryRunExitsWithCode2WhenFilesWouldChange(): void
-    {
-        $this->runPsalmInit();
-        $psalmXml = file_get_contents(self::$tmpDir . '/psalm.xml');
-        $psalmXml = str_replace('<psalm', '<psalm runTaintAnalysis="false"', (string)$psalmXml);
-        file_put_contents(self::$tmpDir . '/psalm.xml', $psalmXml);
-        file_put_contents(self::$tmpDir . '/src/A.php', "<?php\n\nfunction a() {\n    return 1;\n}\n");
-
-        // runPsalm() asserts the exit code is 2 when $shouldFail is true
-        $this->runPsalm(
-            ['--alter', '--dry-run', '--no-cache', '--issues=MissingReturnType', 'src'],
-            self::$tmpDir,
-            true,
-            false,
-        );
-    }
-
-    /**
-     * @param list<string> $args
-     */
-    #[DataProvider('provideOptionsThatFollowAPath')]
-    public function testPsalterReadsTheOptionsThatFollowAPath(array $args): void
-    {
-        $source = $this->writeAFileWithAMissingReturnType();
-
-        $process = new Process(
-            [PHP_BINARY, $this->psalter, ...$args],
-            self::$tmpDir,
-            self::agentEnvVarsToUnset(),
-        );
-        $process->run();
-
-        $this->assertSame(2, $process->getExitCode(), $process->getOutput() . $process->getErrorOutput());
-        $this->assertStringContainsString('would be changed (dry run)', $process->getOutput());
-        $this->assertSame($source, file_get_contents(self::$tmpDir . '/src/A.php'));
-    }
-
-    /**
-     * @return iterable<string, array{list<string>}>
-     * @psalm-pure
-     */
-    public static function provideOptionsThatFollowAPath(): iterable
-    {
-        yield 'a flag' => [['--no-cache', '--issues=MissingReturnType', 'src/A.php', '--dry-run']];
-        yield 'a value' => [['--no-cache', 'src/A.php', '--issues=MissingReturnType', '--dry-run']];
-        yield 'a value in a separate argument' => [
-            ['--no-cache', 'src/A.php', '--issues', 'MissingReturnType', '--dry-run'],
-        ];
-    }
-
-    /**
-     * @param list<string> $file_args
-     */
-    #[DataProvider('provideFileOptionsWithAValueThatLooksLikeAnOption')]
-    public function testPsalterNeverWidensAnExplicitFileSelectionToTheWholeProject(
-        array $file_args,
-        string $expected_error,
-    ): void {
-        $source = $this->writeAFileWithAMissingReturnType();
-
-        $process = new Process(
-            [PHP_BINARY, $this->psalter, '--no-cache', '--issues=MissingReturnType', ...$file_args],
-            self::$tmpDir,
-            self::agentEnvVarsToUnset(),
-        );
-        $process->run();
-
-        $this->assertSame(1, $process->getExitCode(), $process->getOutput() . $process->getErrorOutput());
-        $this->assertStringContainsString($expected_error, $process->getErrorOutput());
-        $this->assertSame($source, file_get_contents(self::$tmpDir . '/src/A.php'));
-    }
-
-    /**
-     * @return iterable<string, array{list<string>, string}>
-     * @psalm-pure
-     */
-    public static function provideFileOptionsWithAValueThatLooksLikeAnOption(): iterable
-    {
-        yield 'a value after an equals sign' => [['-f=-target.php'], 'Invalid usage'];
-        yield 'a value in a separate argument' => [['-f', '-target.php'], 'Invalid usage'];
-        yield 'a value that is a short option' => [['-f', '-m'], 'Invalid usage'];
-        yield 'zero' => [['-f', '0'], 'Cannot locate 0'];
-        yield 'an empty string' => [['-f', ''], 'Cannot locate'];
-    }
-
-    public function testPsalmForwardsToPsalterWhenAlterFollowsAPath(): void
-    {
-        $source = $this->writeAFileWithAMissingReturnType();
-
-        // runPsalm() asserts the exit code is 2 when $shouldFail is true
-        $result = $this->runPsalm(
-            ['src/A.php', '--alter', '--issues=MissingReturnType', '--dry-run', '--no-cache'],
-            self::$tmpDir,
-            true,
-            false,
-        );
-
-        $this->assertStringContainsString('+function a(): int {', $result['STDOUT']);
-        $this->assertSame($source, file_get_contents(self::$tmpDir . '/src/A.php'));
-    }
-
-    /**
-     * @param list<string> $args
-     */
-    #[DataProvider('provideCommandsWithAnUnrecognisedShortOption')]
-    public function testAnUnrecognisedShortOptionIsRejected(string $script, array $args): void
-    {
-        $this->runPsalmInit();
-
-        $process = new Process([PHP_BINARY, $script, ...$args], self::$tmpDir, self::agentEnvVarsToUnset());
-        $process->run();
-
-        $this->assertSame(1, $process->getExitCode(), $process->getOutput() . $process->getErrorOutput());
-        $this->assertStringContainsString('Unrecognised argument "-z"', $process->getErrorOutput());
-    }
-
-    /**
-     * @return iterable<string, array{string, list<string>}>
-     * @psalm-pure
-     */
-    public static function provideCommandsWithAnUnrecognisedShortOption(): iterable
-    {
-        $issues = ['--issues=MissingReturnType', '--dry-run', '-z'];
-
-        yield 'psalter' => [__DIR__ . '/../../psalter', $issues];
-        yield 'psalm --alter' => [__DIR__ . '/../../psalm', ['--alter', ...$issues]];
-        yield 'psalm-refactor' => [__DIR__ . '/../../psalm-refactor', ['--move', 'A::b', '--into', 'C', '-z']];
-    }
-
     /**
      * @param list<string> $args
      */
@@ -525,7 +121,7 @@ final class PsalmEndToEndTest extends TestCase
         file_put_contents($report, '[]');
 
         try {
-            $process = new Process([PHP_BINARY, $this->psalm, ...$args], self::$tmpDir, self::agentEnvVarsToUnset());
+            $process = self::newProcess([PHP_BINARY, $this->psalm, ...$args], self::$tmpDir, self::agentEnvVarsToUnset());
             $process->run();
 
             $this->assertSame(0, $process->getExitCode(), $process->getOutput() . $process->getErrorOutput());
@@ -542,363 +138,6 @@ final class PsalmEndToEndTest extends TestCase
     {
         yield 'review first' => [['--review', 'report.json', 'code']];
         yield 'review after the report' => [['report.json', '--review', 'code']];
-    }
-
-    public function testPsalterDryRunExitsWithCode0WhenNothingWouldChange(): void
-    {
-        $this->runPsalmInit();
-        $psalmXml = file_get_contents(self::$tmpDir . '/psalm.xml');
-        $psalmXml = str_replace('<psalm', '<psalm runTaintAnalysis="false"', (string)$psalmXml);
-        file_put_contents(self::$tmpDir . '/psalm.xml', $psalmXml);
-        file_put_contents(self::$tmpDir . '/src/A.php', "<?php\n\nfunction a(): int {\n    return 1;\n}\n");
-
-        $process = new Process(
-            [PHP_BINARY, $this->psalter, '--dry-run', '--no-cache', '--issues=MissingReturnType', 'src'],
-            self::$tmpDir,
-            self::agentEnvVarsToUnset(),
-        );
-        $process->run();
-
-        $this->assertSame(0, $process->getExitCode(), $process->getOutput() . $process->getErrorOutput());
-        $this->assertStringContainsString('No changes', $process->getOutput());
-    }
-
-    public function testPsalterRealRunThatChangesFilesExitsWithCode0(): void
-    {
-        $process = $this->runPsalterOnAFileWithAMissingReturnType([]);
-
-        $this->assertSame(0, $process->getExitCode());
-    }
-
-    public function testPsalterAppliesAFixOnceWhenPathsOverlap(): void
-    {
-        $this->runPsalmInit();
-        $psalmXml = file_get_contents(self::$tmpDir . '/psalm.xml');
-        $psalmXml = str_replace('<psalm', '<psalm runTaintAnalysis="false"', (string)$psalmXml);
-        file_put_contents(self::$tmpDir . '/psalm.xml', $psalmXml);
-        file_put_contents(self::$tmpDir . '/src/A.php', "<?php\n\nfunction a() {\n    return 1;\n}\n");
-        file_put_contents(self::$tmpDir . '/src/B.php', "<?php\n\nfunction b() {\n    return 2;\n}\n");
-
-        $process = new Process(
-            [PHP_BINARY, $this->psalter, '--no-cache', '--issues=MissingReturnType', 'src', 'src/A.php'],
-            self::$tmpDir,
-            self::agentEnvVarsToUnset(),
-        );
-        $process->mustRun();
-
-        $this->assertSame(
-            "<?php\n\nfunction a(): int {\n    return 1;\n}\n",
-            file_get_contents(self::$tmpDir . '/src/A.php'),
-        );
-        $this->assertSame(
-            "<?php\n\nfunction b(): int {\n    return 2;\n}\n",
-            file_get_contents(self::$tmpDir . '/src/B.php'),
-        );
-        $this->assertStringContainsString("\n       2 files changed        \n", $process->getOutput());
-    }
-
-    public function testPsalterPrintsTheDiffOfARealRun(): void
-    {
-        $process = $this->runPsalterOnAFileWithAMissingReturnType([]);
-        $output = $process->getOutput();
-
-        $this->assertStringNotContainsString('Altered', $process->getErrorOutput());
-        $this->assertStringContainsString("1) src/A.php:3\n", $output);
-        $this->assertStringContainsString("\n+function a(): int {\n", $output);
-        $this->assertStringContainsString("\n        1 file changed        \n", $output);
-    }
-
-    /**
-     * @param array<string, string> $env
-     */
-    #[DataProvider('provideColorEnvironments')]
-    public function testPsalterColorsPipedOutputOnlyWhenForced(array $env, bool $expect_color): void
-    {
-        $output = $this->runPsalterOnAFileWithAMissingReturnType([], $env)->getOutput();
-
-        $this->assertSame($expect_color, str_contains($output, "\e["));
-    }
-
-    /**
-     * @return iterable<string, array{array<string, string>, bool}>
-     * @psalm-pure
-     */
-    public static function provideColorEnvironments(): iterable
-    {
-        yield 'piped' => [[], false];
-        yield 'FORCE_COLOR' => [['FORCE_COLOR' => '1'], true];
-    }
-
-    public function testPsalterAcceptsTheLongMonochromeOptionAndItOverridesForceColor(): void
-    {
-        $this->runPsalmInit();
-        $psalmXml = file_get_contents(self::$tmpDir . '/psalm.xml');
-        $psalmXml = str_replace('<psalm', '<psalm runTaintAnalysis="false"', (string)$psalmXml);
-        file_put_contents(self::$tmpDir . '/psalm.xml', $psalmXml);
-        file_put_contents(self::$tmpDir . '/src/A.php', "<?php\n\nfunction a() {\n    return 1;\n}\n");
-
-        $process = new Process(
-            [PHP_BINARY, $this->psalter, '--monochrome', '--dry-run', '--no-cache', '--issues=MissingReturnType', 'src'],
-            self::$tmpDir,
-            ['FORCE_COLOR' => '1'] + self::agentEnvVarsToUnset(),
-        );
-        $process->run();
-
-        $this->assertStringNotContainsString('Unrecognised argument', $process->getErrorOutput());
-        $this->assertSame(2, $process->getExitCode(), $process->getOutput() . $process->getErrorOutput());
-        $this->assertStringContainsString('+function a(): int {', $process->getOutput());
-        $this->assertStringNotContainsString("\e", $process->getOutput());
-    }
-
-    public function testPsalterNoDiffListsTheChangedFilesWithoutTheDiffAndStillWritesThem(): void
-    {
-        $process = $this->runPsalterOnAFileWithAMissingReturnType(['--no-diff']);
-        $output = $process->getOutput();
-
-        $this->assertStringContainsString('Altered src/A.php', $process->getErrorOutput());
-
-        $this->assertStringStartsWith("1) src/A.php:3\n------------------------------\n", $output);
-        $this->assertStringNotContainsString('@@', $output);
-        $this->assertStringNotContainsString('+function a()', $output);
-        $this->assertStringNotContainsString('-function a()', $output);
-        $this->assertStringContainsString("\n        1 file changed        \n", $output);
-    }
-
-    /**
-     * @return string the contents of src/A.php, which psalter would change
-     */
-    private function writeAFileWithAMissingReturnType(): string
-    {
-        $this->runPsalmInit();
-        $psalmXml = file_get_contents(self::$tmpDir . '/psalm.xml');
-        $psalmXml = str_replace('<psalm', '<psalm runTaintAnalysis="false"', (string)$psalmXml);
-        file_put_contents(self::$tmpDir . '/psalm.xml', $psalmXml);
-
-        $source = "<?php\n\nfunction a() {\n    return 1;\n}\n";
-        file_put_contents(self::$tmpDir . '/src/A.php', $source);
-
-        return $source;
-    }
-
-    /**
-     * @param list<string> $extra_args
-     * @param array<string, string> $env
-     */
-    private function runPsalterOnAFileWithAMissingReturnType(array $extra_args, array $env = []): Process
-    {
-        $this->runPsalmInit();
-        $psalmXml = file_get_contents(self::$tmpDir . '/psalm.xml');
-        $psalmXml = str_replace('<psalm', '<psalm runTaintAnalysis="false"', (string)$psalmXml);
-        file_put_contents(self::$tmpDir . '/psalm.xml', $psalmXml);
-        file_put_contents(self::$tmpDir . '/src/A.php', "<?php\n\nfunction a() {\n    return 1;\n}\n");
-
-        $process = new Process(
-            [PHP_BINARY, $this->psalter, '--no-cache', '--issues=MissingReturnType', ...$extra_args, 'src'],
-            self::$tmpDir,
-            $env + self::agentEnvVarsToUnset(),
-        );
-        $process->mustRun();
-
-        $this->assertSame(
-            "<?php\n\nfunction a(): int {\n    return 1;\n}\n",
-            file_get_contents(self::$tmpDir . '/src/A.php'),
-        );
-
-        return $process;
-    }
-
-    /**
-     * @return iterable<string, array{list<string>}>
-     * @psalm-pure
-     */
-    public static function psalterFileOptionForms(): iterable
-    {
-        yield 'long option with equals sign' => [['--file=src/A.php']];
-        yield 'long option with separate value' => [['--file', 'src/A.php']];
-        yield 'short option' => [['-f', 'src/A.php']];
-    }
-
-    /** @param list<string> $file_args */
-    #[DataProvider('psalterFileOptionForms')]
-    public function testPsalterFileOptionRestrictsTheChangedFiles(array $file_args): void
-    {
-        $this->prepareProjectWithUntypedFunctions(['src/A.php', 'src/B.php']);
-
-        $process = $this->runPsalterDryRun(self::$tmpDir, $file_args);
-
-        $this->assertSame(2, $process->getExitCode(), $process->getOutput() . $process->getErrorOutput());
-        $this->assertStringContainsString("1) src/A.php:3\n", $process->getOutput());
-        $this->assertStringNotContainsString('src/B.php', $process->getOutput());
-        $this->assertStringContainsString("\n       1 file would be changed (dry run)       \n", $process->getOutput());
-    }
-
-    /**
-     * @return iterable<string, array{bool}>
-     * @psalm-pure
-     */
-    public static function pluginPathForms(): iterable
-    {
-        yield 'relative path' => [false];
-        yield 'absolute path' => [true];
-    }
-
-    #[DataProvider('pluginPathForms')]
-    public function testPsalterLoadsAPluginGivenByPath(bool $absolute): void
-    {
-        $this->prepareProjectWithUntypedFunctions(['src/A.php']);
-        mkdir(self::$tmpDir . '/plugins');
-        file_put_contents(
-            self::$tmpDir . '/plugins/plugin.php',
-            "<?php\n\nnamespace PsalmEndToEndTest;\n\n"
-            . "file_put_contents(__DIR__ . '/loaded.txt', 'loaded');\n\n"
-            . "final class MinimalPlugin\n{\n}\n",
-        );
-
-        $process = $this->runPsalterDryRun(
-            self::$tmpDir,
-            ['--plugin=' . ($absolute ? self::$tmpDir . '/' : '') . 'plugins/plugin.php'],
-        );
-
-        $this->assertStringNotContainsString('Cannot find plugin file', $process->getErrorOutput());
-        $this->assertSame(2, $process->getExitCode(), $process->getOutput() . $process->getErrorOutput());
-        $this->assertFileExists(self::$tmpDir . '/plugins/loaded.txt');
-    }
-
-    public function testPsalterFindsTheCodeownersFileInTheProjectRootGivenByTheRootOption(): void
-    {
-        $this->prepareProjectWithUntypedFunctions(['src/A.php', 'src/B.php']);
-        $psalm_xml = (string) file_get_contents(self::$tmpDir . '/psalm.xml');
-        file_put_contents(
-            self::$tmpDir . '/psalm.xml',
-            str_replace('resolveFromConfigFile="true"', 'resolveFromConfigFile="false"', $psalm_xml),
-        );
-        file_put_contents(self::$tmpDir . '/CODEOWNERS', "/src/A.php @alice\n/src/B.php @bob\n");
-
-        $process = $this->runPsalterDryRun(
-            dirname(self::$tmpDir),
-            ['-r', self::$tmpDir, '-c', self::$tmpDir . '/psalm.xml', '--codeowner=@bob'],
-        );
-
-        $this->assertSame(2, $process->getExitCode(), $process->getOutput() . $process->getErrorOutput());
-        $this->assertStringContainsString("1) src/B.php:3\n", $process->getOutput());
-        $this->assertStringNotContainsString('src/A.php', $process->getOutput());
-    }
-
-    public function testPsalterCodeownerOnlyChangesTheOwnedFilesInsideTheGivenPaths(): void
-    {
-        $this->prepareProjectWithUntypedFunctions(['src/A.php', 'src/sub/B.php']);
-        file_put_contents(self::$tmpDir . '/CODEOWNERS', "/src/A.php @alice\n/src/sub/B.php @alice\n");
-
-        $process = $this->runPsalterDryRun(self::$tmpDir, ['--codeowner=@alice', 'src/sub']);
-
-        $this->assertSame(2, $process->getExitCode(), $process->getOutput() . $process->getErrorOutput());
-        $this->assertStringContainsString("1) src/sub/B.php:3\n", $process->getOutput());
-        $this->assertStringNotContainsString('src/A.php', $process->getOutput());
-    }
-
-    public function testPsalterCodeownerFailsWhenNoOwnedFileIsInsideTheGivenPaths(): void
-    {
-        $this->prepareProjectWithUntypedFunctions(['src/A.php', 'src/sub/B.php']);
-        file_put_contents(self::$tmpDir . '/CODEOWNERS', "/src/A.php @alice\n/src/sub/B.php @bob\n");
-
-        $process = $this->runPsalterDryRun(self::$tmpDir, ['--codeowner=@alice', 'src/sub']);
-
-        $this->assertSame(1, $process->getExitCode(), $process->getOutput() . $process->getErrorOutput());
-        $this->assertStringContainsString(
-            'No PHP file in the given paths is owned by the requested --codeowner',
-            $process->getErrorOutput(),
-        );
-        $this->assertStringNotContainsString('src/A.php', $process->getOutput());
-    }
-
-    /**
-     * Creates `psalm.xml` and one function without a return type in each of the given files
-     *
-     * @param list<string> $files paths relative to the project root, in `src`
-     */
-    private function prepareProjectWithUntypedFunctions(array $files): void
-    {
-        $this->runPsalmInit();
-        $psalm_xml = (string) file_get_contents(self::$tmpDir . '/psalm.xml');
-        file_put_contents(
-            self::$tmpDir . '/psalm.xml',
-            str_replace('<psalm', '<psalm runTaintAnalysis="false"', $psalm_xml),
-        );
-
-        foreach ($files as $file) {
-            if (!is_dir(dirname(self::$tmpDir . '/' . $file))) {
-                mkdir(dirname(self::$tmpDir . '/' . $file), 0777, true);
-            }
-
-            $function_name = strtolower(basename($file, '.php'));
-            file_put_contents(
-                self::$tmpDir . '/' . $file,
-                "<?php\n\nfunction $function_name() {\n    return 1;\n}\n",
-            );
-        }
-    }
-
-    /** @param list<string> $args */
-    private function runPsalterDryRun(string $cwd, array $args): Process
-    {
-        $process = new Process(
-            [
-                PHP_BINARY,
-                $this->psalter,
-                '--dry-run',
-                '--no-diff',
-                '--no-cache',
-                '--issues=MissingReturnType',
-                ...$args,
-            ],
-            $cwd,
-            self::agentEnvVarsToUnset(),
-        );
-        $process->run();
-
-        return $process;
-    }
-
-    public function testPsalterFixesTheIssuesAPluginDeclares(): void
-    {
-        $this->runPsalmInit(1);
-        $psalm_xml = (string) file_get_contents(self::$tmpDir . '/psalm.xml');
-        file_put_contents(self::$tmpDir . '/psalm.xml', str_replace(
-            ['<psalm', '</psalm>'],
-            [
-                '<psalm runTaintAnalysis="false"',
-                '<plugins><pluginClass class="Psalm\Tests\Config\Plugin\FixableIssuePlugin" /></plugins></psalm>',
-            ],
-            $psalm_xml,
-        ));
-        unlink(self::$tmpDir . '/src/FileWithErrors.php');
-        file_put_contents(
-            self::$tmpDir . '/src/functions.php',
-            "<?php\n\nfunction legacy_call(): int\n{\n    return 1;\n}\n\nfunction modern_call(): int\n{\n    return 2;\n}\n",
-        );
-
-        $list = new Process([PHP_BINARY, $this->psalter, '--list-supported-issues'], self::$tmpDir);
-        $list->mustRun();
-        $this->assertSame(
-            implode(',', [...ProjectAnalyzer::getSupportedIssuesToFix(), 'LegacyCall']) . PHP_EOL,
-            $list->getOutput(),
-        );
-
-        foreach (['a', 'b', 'c'] as $file) {
-            file_put_contents(
-                self::$tmpDir . '/src/' . $file . '.php',
-                "<?php\n\nfunction $file(): int\n{\n    return legacy_call();\n}\n",
-            );
-        }
-
-        (new Process([PHP_BINARY, $this->psalter, '--issues=LegacyCall', '--threads=2'], self::$tmpDir))->mustRun();
-
-        foreach (['a', 'b', 'c'] as $file) {
-            $this->assertStringContainsString(
-                'return modern_call();',
-                (string) file_get_contents(self::$tmpDir . '/src/' . $file . '.php'),
-            );
-        }
     }
 
     public function testPsalm(): void
@@ -919,85 +158,70 @@ final class PsalmEndToEndTest extends TestCase
         $this->assertSame(2, $result['CODE']);
     }
 
-    public function testPsalmReadsThePathsToCheckFromStdinForADash(): void
-    {
-        // only the clean file is named on STDIN: FileWithErrors.php is in the project, but isn't analysed
-        $process = $this->runPsalmWithPathsOnStdin(self::$tmpDir . '/src/Clean.php' . PHP_EOL);
-
-        $this->assertStringNotContainsString('Uninitialized string offset', $process->getErrorOutput());
-        $this->assertStringContainsString('No errors found!', $process->getOutput());
-        $this->assertSame(0, $process->getExitCode());
-    }
-
-    public function testPsalmReadsThePathsOfEveryLineOfStdinForADash(): void
-    {
-        $process = $this->runPsalmWithPathsOnStdin(
-            self::$tmpDir . '/src/Clean.php' . PHP_EOL . self::$tmpDir . '/src/FileWithErrors.php' . PHP_EOL,
-        );
-
-        $this->assertStringContainsString('2 errors', $process->getOutput());
-        $this->assertSame(2, $process->getExitCode());
-    }
-
-    public function testPsalmIgnoresTheEnvironmentWhenItReadsThePathsFromStdin(): void
-    {
-        $process = $this->runPsalmWithPathsOnStdin(
-            self::$tmpDir . '/src/Clean.php' . PHP_EOL,
-            ['PSALM_STDIN_PATHS' => self::$tmpDir . '/src/FileWithErrors.php'],
-        );
-
-        $this->assertStringContainsString('No errors found!', $process->getOutput());
-        $this->assertSame(0, $process->getExitCode());
-    }
-
-    /** @param array<string, string> $env */
-    private function runPsalmWithPathsOnStdin(string $stdin, array $env = []): Process
+    // Psalm forks its workers only with these extensions (never on Windows)
+    #[RequiresPhpExtension('pcntl')]
+    #[RequiresPhpExtension('posix')]
+    public function testFilesAPluginMakesReportableAtBootAreReportedByEveryWorker(): void
     {
         $this->runPsalmInit(1);
-        $psalmXml = file_get_contents(self::$tmpDir . '/psalm.xml');
-        $psalmXml = str_replace('<psalm', '<psalm runTaintAnalysis="false"', (string)$psalmXml);
-        file_put_contents(self::$tmpDir . '/psalm.xml', $psalmXml);
-        file_put_contents(self::$tmpDir . '/src/Clean.php', "<?php\nfunction clean(): void {}\n");
-
-        $process = new Process(
+        file_put_contents(self::$tmpDir . '/psalm.xml', str_replace(
+            ['<psalm', '</psalm>'],
             [
-                PHP_BINARY,
-                $this->psalm,
-                '--output-format=console',
-                '--no-progress',
-                '-c=' . self::$tmpDir . '/psalm.xml',
-                '-',
+                '<psalm runTaintAnalysis="false"',
+                '<plugins><pluginClass class="' . ReportableFilePlugin::class . '" /></plugins></psalm>',
             ],
-            self::$tmpDir,
-            $env + self::agentEnvVarsToUnset(),
-            $stdin,
+            (string) file_get_contents(self::$tmpDir . '/psalm.xml'),
+        ));
+        unlink(self::$tmpDir . '/src/FileWithErrors.php');
+
+        // enough files for scanning and analysis to fork worker processes
+        for ($i = 0; $i < 520; $i++) {
+            file_put_contents(self::$tmpDir . "/src/f$i.php", "<?php\n\nfunction f$i(): void {}\n");
+        }
+
+        mkdir(self::$tmpDir . '/compiled');
+        file_put_contents(
+            self::$tmpDir . '/compiled/view.php',
+            "<?php\n\nfunction orderTotal(): int\n{\n    return 'total';\n}\n",
         );
-        $process->run();
-
-        return $process;
-    }
-
-    public function testPsalmRejectsAnEmptyPathWithoutCrashing(): void
-    {
-        $this->runPsalmInit(1);
+        file_put_contents(
+            self::$tmpDir . '/compiled/partial.php',
+            "<?php\n\nfunction orderRow(): void {}\n\nfunction orderRow(): void {}\n",
+        );
 
         $process = new Process(
             [
                 PHP_BINARY,
                 $this->psalm,
-                '--output-format=console',
-                '--no-progress',
-                '-c=' . self::$tmpDir . '/psalm.xml',
-                '',
+                '--no-cache',
+                '--debug',
+                '--threads=2',
+                '--scan-threads=2',
+                '--output-format=json',
             ],
             self::$tmpDir,
             self::agentEnvVarsToUnset(),
         );
+        $process->setTimeout(self::PROCESS_TIMEOUT);
         $process->run();
 
-        $this->assertStringNotContainsString('Uninitialized string offset', $process->getErrorOutput());
-        $this->assertStringContainsString('Cannot locate', $process->getErrorOutput());
-        $this->assertSame(1, $process->getExitCode());
+        $this->assertStringContainsString('Forking process for scanning', $process->getErrorOutput());
+
+        /** @var list<array{type: string, file_name: string}> $issues */
+        $issues = json_decode($process->getOutput(), true, 512, JSON_THROW_ON_ERROR);
+        $compiled_issues = [];
+        foreach ($issues as $issue) {
+            if (str_contains($issue['file_name'], 'compiled')) {
+                $compiled_issues[] = basename($issue['file_name']) . ': ' . $issue['type'];
+            }
+        }
+        sort($compiled_issues);
+
+        // DuplicateFunction is raised while scanning, the others while analyzing
+        $this->assertSame(
+            ['partial.php: DuplicateFunction', 'view.php: InvalidReturnStatement', 'view.php: InvalidReturnType'],
+            $compiled_issues,
+        );
     }
 
     public function testParseErrorIsReportedOnEveryRunWithAWarmCache(): void
@@ -1090,151 +314,6 @@ final class PsalmEndToEndTest extends TestCase
         @unlink(self::$tmpDir . '/composer.lock');
     }*/
 
-    public function testTainting(): void
-    {
-        $this->runPsalmInit(1);
-        $result = $this->runPsalm(['--taint-analysis'], self::$tmpDir, true);
-
-        $this->assertStringContainsString('TaintedHtml', $result['STDOUT']);
-        $this->assertStringContainsString('TaintedTextWithQuotes', $result['STDOUT']);
-        $this->assertStringContainsString('4 errors', $result['STDOUT']);
-        $this->assertStringContainsString('Psalm can automatically fix', $result['STDOUT']);
-        $this->assertStringContainsString('--alter --issues=InvalidReturnType', $result['STDOUT']);
-        $this->assertSame(2, $result['CODE']);
-    }
-
-    /**
-     * A partial taint analysis deep-scans the file declaring a method a class named by the files it analyzes
-     * inherits, whose body it analyzes again for that class: the classes the body names, like Other here, are
-     * scanned, and what the body passes from its argument to its result is found.
-     */
-    public function testPartialTaintAnalysisOfACallOfAnInheritedMethod(): void
-    {
-        foreach (['Base', 'Other', 'Child', 'Use'] as $name) {
-            copy(
-                __DIR__ . '/../fixtures/PartialRunOfAnInheritedMethod/src/' . $name . '.php',
-                self::$tmpDir . '/src/' . $name . '.php',
-            );
-        }
-
-        $this->runPsalmInit(1);
-
-        $result = $this->runPartialTaintAnalysis(['src/Use.php']);
-        $this->assertStringNotContainsString('Could not get class storage', $result);
-        $this->assertStringContainsString('TaintedHtml', $result);
-
-        $result = $this->runPartialTaintAnalysis(['src/Use.php', 'src/Child.php']);
-        $this->assertStringContainsString('TaintedHtml', $result);
-    }
-
-    public function testPsalmSetBaseline(): void
-    {
-        $this->runPsalmInit(1);
-        $this->runPsalm(['--set-baseline'], self::$tmpDir, true);
-
-        $this->assertSame(0, $this->runPsalm([], self::$tmpDir)['CODE']);
-    }
-
-    public function testPsalmSetBaselineWithArgument(): void
-    {
-        $this->runPsalmInit(1);
-        $this->runPsalm(['--set-baseline=psalm-custom-baseline.xml'], self::$tmpDir, true);
-
-        $this->assertSame(0, $this->runPsalm([], self::$tmpDir)['CODE']);
-    }
-
-    public function testBaselineDoesntHideUnsuppressibleIssues(): void
-    {
-        // another test can leave its baseline, which --set-baseline would apply
-        @unlink(self::$tmpDir . '/psalm-baseline.xml');
-
-        $this->runPsalmInit(1);
-
-        // with taint analysis, Psalm doesn't exit with an error code on GitHub
-        $psalmXml = (string) file_get_contents(self::$tmpDir . '/psalm.xml');
-        file_put_contents(
-            self::$tmpDir . '/psalm.xml',
-            str_replace('<psalm', '<psalm runTaintAnalysis="false"', $psalmXml),
-        );
-
-        $this->runPsalm(['--set-baseline'], self::$tmpDir, true);
-
-        $psalmXml = (string) file_get_contents(self::$tmpDir . '/psalm.xml');
-        file_put_contents(
-            self::$tmpDir . '/psalm.xml',
-            str_replace(
-                '</psalm>',
-                '<unsuppressibleIssues><issue name="InvalidReturnType" /></unsuppressibleIssues></psalm>',
-                $psalmXml,
-            ),
-        );
-
-        $result = $this->runPsalm([], self::$tmpDir, true);
-        $this->assertMatchesRegularExpression('/ERROR\S*: InvalidReturnType/', $result['STDOUT']);
-        $this->assertDoesNotMatchRegularExpression('/ERROR\S*: InvalidReturnStatement/', $result['STDOUT']);
-
-        $this->runPsalm(['--update-baseline'], self::$tmpDir, true);
-        $baseline = (string) file_get_contents(self::$tmpDir . '/psalm-baseline.xml');
-        $this->assertStringNotContainsString('<InvalidReturnType', $baseline);
-        $this->assertStringContainsString('<InvalidReturnStatement', $baseline);
-
-        unlink(self::$tmpDir . '/psalm-baseline.xml');
-    }
-
-    public function testPsalmSetBaselineWithUseBaselineKeepsConfig(): void
-    {
-        $this->runPsalmInit(1);
-        $this->runPsalm(['--set-baseline'], self::$tmpDir, true);
-        $config_before = file_get_contents(self::$tmpDir . '/psalm.xml');
-        $other_baseline = self::$tmpDir . '/psalm-other-baseline.xml';
-
-        $this->runPsalm(['--use-baseline=' . $other_baseline, '--set-baseline=' . $other_baseline], self::$tmpDir);
-
-        $this->assertFileExists($other_baseline);
-        $this->assertSame($config_before, file_get_contents(self::$tmpDir . '/psalm.xml'));
-    }
-
-    public function testPsalmSetBaselineWithoutArgumentWritesUseBaselineFile(): void
-    {
-        $this->runPsalmInit(1);
-        $config_before = file_get_contents(self::$tmpDir . '/psalm.xml');
-        $run_baseline = self::$tmpDir . '/psalm-run-baseline.xml';
-
-        $this->runPsalm(['--use-baseline=' . $run_baseline, '--set-baseline'], self::$tmpDir);
-
-        $this->assertFileExists($run_baseline);
-        $this->assertSame($config_before, file_get_contents(self::$tmpDir . '/psalm.xml'));
-    }
-
-    public function testTaintingWithoutInit(): void
-    {
-        $result = $this->runPsalm(['--taint-analysis'], self::$tmpDir, true, false);
-
-        $this->assertStringContainsString('TaintedHtml', $result['STDOUT']);
-        $this->assertStringContainsString('TaintedTextWithQuotes', $result['STDOUT']);
-        $this->assertStringContainsString('4 errors', $result['STDOUT']);
-        $this->assertSame(2, $result['CODE']);
-    }
-
-    public function testTaintGraphDumping(): void
-    {
-        $this->runPsalmInit(1);
-        $result = $this->runPsalm(
-            [
-                '--taint-analysis',
-                '--dump-taint-graph=' . self::$tmpDir . '/taints.dot',
-            ],
-            self::$tmpDir,
-            true,
-        );
-
-        $this->assertSame(2, $result['CODE']);
-        $this->assertFileEquals(
-            __DIR__ . '/../fixtures/expected_taint_graph.dot',
-            self::$tmpDir . '/taints.dot',
-        );
-    }
-
     public function testLegacyConfigWithoutresolveFromConfigFile(): void
     {
         $this->runPsalmInit(1);
@@ -1246,7 +325,7 @@ final class PsalmEndToEndTest extends TestCase
 
         file_put_contents(self::$tmpDir . '/src/psalm.xml', $psalmXmlContent);
 
-        $process = new Process([PHP_BINARY, $this->psalm, '--config=src/psalm.xml'], self::$tmpDir);
+        $process = self::newProcess([PHP_BINARY, $this->psalm, '--config=src/psalm.xml'], self::$tmpDir);
         $process->run();
         $this->assertSame(2, $process->getExitCode());
         $this->assertStringContainsString('InvalidReturnType', $process->getOutput());
@@ -1268,7 +347,7 @@ final class PsalmEndToEndTest extends TestCase
 
     public function testRefactorAcceptsNoProgressOption(): void
     {
-        $process = new Process(
+        $process = self::newProcess(
             [
                 PHP_BINARY,
                 __DIR__ . '/../../psalm-refactor',
@@ -1284,45 +363,6 @@ final class PsalmEndToEndTest extends TestCase
         $this->assertSame('', $process->getErrorOutput());
     }
 
-    public function testShowInfoWithoutAValueShowsInfoIssues(): void
-    {
-        $this->initProjectWithInfoIssues();
-
-        $result = $this->runPsalm(['--no-progress', '--show-info'], self::$tmpDir);
-        $this->assertStringContainsString('INFO: MissingReturnType', $result['STDOUT']);
-
-        $result = $this->runPsalm(['--no-progress', '--show-info=false'], self::$tmpDir);
-        $this->assertStringNotContainsString('INFO: MissingReturnType', $result['STDOUT']);
-    }
-
-    public function testShowInfoWithoutAValueDoesNotTakeThePathThatFollowsAsItsValue(): void
-    {
-        $this->initProjectWithInfoIssues();
-
-        $result = $this->runPsalm(['--no-progress', '--show-info', self::$tmpDir . '/src/A.php'], self::$tmpDir);
-
-        $this->assertStringContainsString('A.php', $result['STDOUT']);
-        $this->assertStringNotContainsString('B.php', $result['STDOUT']);
-    }
-
-    public function testReportShowInfoWithoutAValueWritesTheReport(): void
-    {
-        $this->initProjectWithInfoIssues();
-        $report = self::$tmpDir . '/report.json';
-        $report_without_info = self::$tmpDir . '/report-without-info.json';
-
-        $this->runPsalm(['--no-progress', '--report-show-info', '--report=' . $report], self::$tmpDir);
-        $this->runPsalm(
-            ['--no-progress', '--report-show-info=false', '--report=' . $report_without_info],
-            self::$tmpDir,
-        );
-
-        $this->assertFileExists($report);
-        $this->assertStringContainsString('MissingReturnType', (string) file_get_contents($report));
-        $this->assertFileExists($report_without_info);
-        $this->assertStringNotContainsString('MissingReturnType', (string) file_get_contents($report_without_info));
-    }
-
     /**
      * @param list<string> $args
      */
@@ -1331,7 +371,7 @@ final class PsalmEndToEndTest extends TestCase
     {
         $this->runPsalmInit(1);
 
-        $process = new Process(
+        $process = self::newProcess(
             [PHP_BINARY, $cli === 'psalter' ? $this->psalter : $this->psalm, '--no-progress', ...$args],
             self::$tmpDir,
             self::agentEnvVarsToUnset(),
@@ -1354,104 +394,5 @@ final class PsalmEndToEndTest extends TestCase
         yield 'psalm --threads=0' => ['psalm', ['--threads=0'], '--threads' . $message];
         yield 'psalm --scan-threads=-1' => ['psalm', ['--scan-threads=-1'], '--scan-threads' . $message];
         yield 'psalter --threads=abc' => ['psalter', ['--issues=all', '--threads=abc'], '--threads' . $message];
-    }
-
-    /**
-     * A project with two files, each with an info issue
-     */
-    private function initProjectWithInfoIssues(): void
-    {
-        $this->runPsalmInit(1);
-
-        $psalmXml = file_get_contents(self::$tmpDir . '/psalm.xml');
-        assert($psalmXml !== false);
-        $psalmXml = str_replace(
-            ['findUnusedCode="true"', '</psalm>'],
-            [
-                'findUnusedCode="false" runTaintAnalysis="false"',
-                '<issueHandlers><MissingReturnType errorLevel="info" /></issueHandlers></psalm>',
-            ],
-            $psalmXml,
-        );
-        file_put_contents(self::$tmpDir . '/psalm.xml', $psalmXml);
-
-        unlink(self::$tmpDir . '/src/FileWithErrors.php');
-        file_put_contents(self::$tmpDir . '/src/A.php', "<?php\n\nfunction a() {\n    return 1;\n}\n");
-        file_put_contents(self::$tmpDir . '/src/B.php', "<?php\n\nfunction b() {\n    return 1;\n}\n");
-    }
-
-    /**
-     * What a taint analysis of the files $files of the project prints
-     *
-     * @param list<string> $files
-     */
-    private function runPartialTaintAnalysis(array $files): string
-    {
-        $process = new Process(
-            [
-                PHP_BINARY,
-                $this->psalm,
-                '--output-format=console',
-                '--monochrome',
-                '--no-progress',
-                '--no-cache',
-                '--taint-analysis',
-                ...$files,
-            ],
-            self::$tmpDir,
-            self::agentEnvVarsToUnset(),
-        );
-        $process->run();
-
-        return $process->getOutput() . $process->getErrorOutput();
-    }
-
-    /**
-     * @return array{STDOUT: string, STDERR: string, CODE: int|null}
-     */
-    private function runPsalmInit(?int $level = null, ?string $php_version = null): array
-    {
-        $args = ['--init'];
-
-        if ($level) {
-            $args[] = 'src';
-            $args[] = (string)$level;
-        }
-
-        $ret = $this->runPsalm($args, self::$tmpDir, false, false);
-
-        $psalm_config_contents = file_get_contents(self::$tmpDir . '/psalm.xml');
-        assert($psalm_config_contents !== false);
-        $psalm_config_contents = str_replace(
-            'errorLevel="1"',
-            'errorLevel="1" '
-            . 'cacheDirectory="' . self::$tmpDir . '/cache" '
-            . ($php_version ? ('phpVersion="' . $php_version . '"') : ''),
-            $psalm_config_contents,
-        );
-        file_put_contents(self::$tmpDir . '/psalm.xml', $psalm_config_contents);
-
-        return $ret;
-    }
-
-    /** from comment by itay at itgoldman dot com at
-     * https://www.php.net/manual/en/function.rmdir.php#117354
-     */
-    private static function recursiveRemoveDirectory(string $src): void
-    {
-        $dir = opendir($src);
-        assert($dir !== false);
-        while (false !== ($file = readdir($dir))) {
-            if (($file !== '.') && ($file !== '..')) {
-                $full = $src . DIRECTORY_SEPARATOR . $file;
-                if (is_dir($full)) {
-                    self::recursiveRemoveDirectory($full);
-                } else {
-                    unlink($full);
-                }
-            }
-        }
-        closedir($dir);
-        rmdir($src);
     }
 }
