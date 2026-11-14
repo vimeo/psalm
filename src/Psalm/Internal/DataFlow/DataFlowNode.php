@@ -187,23 +187,35 @@ final class DataFlowNode implements Stringable
      * overrides of the classes extending it: shared by all those calls, so it has no location. The calls
      * specialized to their location have one of their own, which only goes to the overrides.
      *
+     * An override binds a named argument by its name (case-sensitive), unless the positional arguments before it
+     * (null: unknown, after an unpack) filled that parameter: those calls have a node per binding. So do the
+     * calls with an argument that may be any following parameter, and with one unpacked into a parameter that is
+     * not variadic, which an override binds by the name of the declared parameter.
+     *
      * @psalm-pure
      */
     public static function getForDispatch(
         string $cased_method_id,
         int $argument_offset,
         bool $specialized_calls = false,
-        ?string $variadic_argument_name = null,
+        ?string $named_argument = null,
         bool $any_following = false,
+        ?int $positional_arguments = null,
+        bool $unpacked_argument = false,
     ): self {
         $label = ($specialized_calls ? 'specialized ' : '') . 'dispatch of ' . $cased_method_id
             . '#' . ($argument_offset + 1);
-        // the names of arguments are case-sensitive
-        $arguments = $variadic_argument_name !== null
-            ? ' (' . $variadic_argument_name . ':)'
-            : ($any_following ? ' (...)' : '');
+        $binding = '';
 
-        return self::make(strtolower($label) . $arguments, $label . $arguments, null);
+        if ($named_argument !== null) {
+            $binding = ' (' . $named_argument . ': after ' . ($positional_arguments ?? 'unpack') . ')';
+        } elseif ($any_following) {
+            $binding = ' (...)';
+        } elseif ($unpacked_argument) {
+            $binding = ' unpacked';
+        }
+
+        return self::make(strtolower($label) . $binding, $label . $binding, null);
     }
 
     /**
@@ -524,6 +536,29 @@ final class DataFlowNode implements Stringable
         }
 
         return $fallback;
+    }
+
+    /**
+     * The declared index of the parameter of $storage that takes the named argument $name: the one of that name,
+     * else the variadic one, else none (the call throws).
+     *
+     * @psalm-mutation-free
+     */
+    public static function getParameterOffsetOfNamedArgument(FunctionLikeStorage $storage, string $name): ?int
+    {
+        $variadic_offset = null;
+
+        foreach ($storage->params as $i => $candidate) {
+            if ($candidate->name === $name) {
+                return $i;
+            }
+
+            if ($candidate->is_variadic) {
+                $variadic_offset = $i;
+            }
+        }
+
+        return $variadic_offset;
     }
 
     /**
