@@ -31,6 +31,7 @@ use function array_filter;
 use function array_map;
 use function array_values;
 use function count;
+use function in_array;
 use function spl_object_id;
 use function str_starts_with;
 use function strcspn;
@@ -477,6 +478,23 @@ final class FormulaGenerator
             );
         }
 
+        // `$a?->b() ?? false` is truthy exactly when `$a?->b()` is, and falsy where it is falsy or null
+        if ($conditional instanceof PhpParser\Node\Expr\BinaryOp\Coalesce
+            && $conditional->left instanceof PhpParser\Node\Expr\NullsafeMethodCall
+            && self::isFalsyLiteral($conditional->right)
+        ) {
+            return self::getFormula(
+                $conditional_object_id,
+                $creating_object_id,
+                $conditional->left,
+                $this_class_name,
+                $source,
+                $codebase,
+                $inside_negation,
+                $cache,
+            );
+        }
+
         $conditional_ref = '*' . (int) $conditional->getAttribute('startFilePos')
             . ':' . (int) $conditional->getAttribute('endFilePos');
 
@@ -797,5 +815,12 @@ final class FormulaGenerator
     private static function isNullLiteral(PhpParser\Node\Expr $expr): bool
     {
         return $expr instanceof PhpParser\Node\Expr\ConstFetch && strtolower($expr->name->getFirst()) === 'null';
+    }
+
+    private static function isFalsyLiteral(PhpParser\Node\Expr $expr): bool
+    {
+        return ($expr instanceof PhpParser\Node\Expr\ConstFetch
+                && in_array(strtolower($expr->name->getFirst()), ['false', 'null'], true))
+            || ($expr instanceof PhpParser\Node\Scalar\Int_ && $expr->value === 0);
     }
 }

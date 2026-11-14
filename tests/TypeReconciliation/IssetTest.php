@@ -81,6 +81,33 @@ final class IssetTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'nullsafeCallCoalescedWithAFalsyValueKeepsTheReceiverNullableWhereItIsFalsy' => [
+                'code' => <<<'PHP'
+                    <?php
+                    final class A {
+                        public function m(): bool {
+                            return rand() > 0;
+                        }
+                    }
+
+                    function f(?A $a): void {
+                        if ($a?->m() ?? false) {
+                            /** @psalm-check-type-exact $a = A */
+                        } else {
+                            /** @psalm-check-type-exact $a = A|null */
+                        }
+
+                        if (!($a?->m() ?? false)) {
+                            /** @psalm-check-type-exact $a = A|null */
+                        } else {
+                            /** @psalm-check-type-exact $a = A */
+                        }
+                    }
+                    PHP,
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
             'negatedIssetOfAConditionallyDefinedVariableIsNullWhereTheLoopMayNotAssignIt' => [
                 'code' => '<?php
                     /** @param list<string> $values */
@@ -1427,6 +1454,57 @@ final class IssetTest extends TestCase
                 'ignored_issues' => [],
                 'php_version' => '8.1',
             ],
+            'nullsafeCallCoalescedWithAFalsyValueNarrowsTheReceiver' => [
+                'code' => '<?php
+                    class Checker {
+                        public function isValid(): bool {
+                            return (bool) rand(0, 1);
+                        }
+
+                        public function count(): int {
+                            return rand(0, 3);
+                        }
+                    }
+
+                    class Holder {
+                        public function __construct(private ?Checker $checker = null) {}
+
+                        public function fromProperty(): Checker {
+                            if ($this->checker?->isValid() ?? false) {
+                                return $this->checker;
+                            }
+
+                            throw new RuntimeException();
+                        }
+
+                        public function fromParameter(?Checker $checker): Checker {
+                            if ($checker?->isValid() ?? null) {
+                                return $checker;
+                            }
+
+                            throw new RuntimeException();
+                        }
+
+                        public function fromZero(?Checker $checker): Checker {
+                            if ($checker?->count() ?? 0) {
+                                return $checker;
+                            }
+
+                            throw new RuntimeException();
+                        }
+
+                        public function negated(?Checker $checker): Checker {
+                            if (!($checker?->isValid() ?? false)) {
+                                throw new RuntimeException();
+                            }
+
+                            return $checker;
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
             'comparisonOfAnItemWithAUnionKeyKeepsTheTypesOfItemsOfOtherTypes' => [
                 'code' => <<<'PHP'
                     <?php
@@ -1889,6 +1967,25 @@ final class IssetTest extends TestCase
                 'error_message' => 'RedundantCondition',
                 'error_levels' => [],
                 'php_version' => '8.1',
+            ],
+            'nullsafeCallCoalescedWithATruthyValueDoesNotNarrowTheReceiver' => [
+                'code' => '<?php
+                    class Checker {
+                        public function isValid(): bool {
+                            return (bool) rand(0, 1);
+                        }
+                    }
+
+                    function check(?Checker $checker): Checker {
+                        if ($checker?->isValid() ?? true) {
+                            return $checker;
+                        }
+
+                        throw new RuntimeException();
+                    }',
+                'error_message' => 'NullableReturnStatement',
+                'error_levels' => [],
+                'php_version' => '8.0',
             ],
         ];
     }
