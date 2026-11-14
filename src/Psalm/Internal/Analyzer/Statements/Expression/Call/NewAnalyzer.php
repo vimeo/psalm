@@ -1635,6 +1635,35 @@ final class NewAnalyzer extends CallAnalyzer
             ) {
                 // do nothing
             } elseif ($lhs_type_part instanceof TNamedObject) {
+                if (!$lhs_type_part instanceof TAnonymousClassInstance
+                    && !$statements_analyzer->node_data->getType($stmt)
+                    && $codebase->classlikes->classExists($lhs_type_part->value, null, $context)
+                ) {
+                    $object_storage = $codebase->classlike_storage_provider->get($lhs_type_part->value);
+
+                    // a final class has no child that could change the constructor, and the object of an internal
+                    // class is mostly one just created (`$o = new stdClass; new $o`)
+                    if ($object_storage->user_defined
+                        && !$object_storage->final
+                        && !self::childConstructorsAcceptArgs(
+                            $statements_analyzer,
+                            $codebase,
+                            $context,
+                            $object_storage,
+                            $stmt->getArgs(),
+                        )
+                    ) {
+                        IssueBuffer::maybeAdd(
+                            new UnsafeInstantiation(
+                                'Cannot safely instantiate class ' . $lhs_type_part->value
+                                . ' with "new $object" as its constructor might change in child classes',
+                                new CodeLocation($statements_analyzer->getSource(), $stmt),
+                            ),
+                            $statements_analyzer->getSuppressedIssues(),
+                        );
+                    }
+                }
+
                 $new_types []= new Union([$lhs_type_part]);
                 continue;
             } else {
