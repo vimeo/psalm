@@ -493,6 +493,60 @@ final class ConditionalTest extends TestCase
                 'ignored_issues' => [],
                 'php_version' => '8.1',
             ],
+            'comparisonOfANullsafeFetchWithNullAssertsTheReceiver' => [
+                'code' => <<<'PHP'
+                    <?php
+                    final class A {
+                        public ?int $p = null;
+                    }
+
+                    function notNull(?A $a): int {
+                        if ($a?->p !== null) {
+                            return $a->p;
+                        }
+
+                        return 0;
+                    }
+
+                    function throwsOnNull(?A $a): int {
+                        if (null === $a?->p) {
+                            throw new Exception();
+                        }
+
+                        return $a->p;
+                    }
+                    PHP,
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.2',
+            ],
+            'identityOfANullsafeFetchWithAnotherVariableAssertsTheReceiver' => [
+                'code' => <<<'PHP'
+                    <?php
+                    final readonly class A {
+                        public function __construct(public int $a, public int $b) {}
+                    }
+
+                    function left(A $a1, ?A $a2): bool {
+                        return $a1->a === $a2?->a && $a1->b === $a2->b;
+                    }
+
+                    function right(A $a1, ?A $a2): bool {
+                        return $a2?->a === $a1->a && $a1->b === $a2->b;
+                    }
+
+                    function scalar(int $x, ?A $a2): int {
+                        if ($x === $a2?->a) {
+                            return $a2->b;
+                        }
+
+                        return 0;
+                    }
+                    PHP,
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.2',
+            ],
             'negatedInstanceofRemovesTheClassFromTheBoundOfATemplateParam' => [
                 'code' => '<?php
                     /**
@@ -4994,6 +5048,23 @@ final class ConditionalTest extends TestCase
                 'error_message' => 'TypeDoesNotContainType',
                 'error_levels' => [],
                 'php_version' => '8.1',
+            ],
+            'identityOfANullsafeFetchWithANullableDoesNotAssertTheReceiver' => [
+                'code' => '<?php
+                    final class A {
+                        public function __construct(public ?int $a, public int $b) {}
+                    }
+
+                    function f(?int $x, ?A $a2): int {
+                        if ($x === $a2?->a) {
+                            return $a2->b;
+                        }
+
+                        return 0;
+                    }',
+                'error_message' => 'PossiblyNullPropertyFetch',
+                'error_levels' => [],
+                'php_version' => '8.2',
             ],
             'negatedInstanceofOfTheWholeBoundOfATemplateParamLeavesNoType' => [
                 'code' => '<?php
