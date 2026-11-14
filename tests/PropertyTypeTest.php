@@ -5692,7 +5692,7 @@ final class PropertyTypeTest extends TestCase
                         /** @var array */
                         public string $s = [];
                     }',
-                'error_message' => 'MismatchingDocblockPropertyType - src' . DIRECTORY_SEPARATOR . 'somefile.php:3:34 - Parameter A::$s has wrong type',
+                'error_message' => 'MismatchingDocblockPropertyType - src' . DIRECTORY_SEPARATOR . 'somefile.php:3:34 - Property A::$s has wrong type',
             ],
             'overwritePropertyType' => [
                 'code' => '<?php
@@ -5709,7 +5709,7 @@ final class PropertyTypeTest extends TestCase
                         public int $s;
                     }',
                 'error_message' => 'MismatchingDocblockPropertyType - src' . DIRECTORY_SEPARATOR . 'somefile.php:3:34'
-                    . ' - Parameter A::$s has wrong type \'numeric-string\', should be \'int',
+                    . ' - Property A::$s has wrong type \'numeric-string\', should be \'int',
             ],
             'possiblyNullOnFunctionCallNotCoalesced' => [
                 'code' => '<?php

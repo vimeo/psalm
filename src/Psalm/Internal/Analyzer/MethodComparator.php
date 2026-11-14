@@ -759,7 +759,7 @@ final class MethodComparator
                                 new ConstructorSignatureMismatch(
                                     'Argument ' . ($i + 1) . ' of '
                                         . $cased_implementer_method_id . ' has wrong type \''
-                                        . $implementer_param_type . '\', expecting \''
+                                        . $implementer_param_type->getId() . '\', expecting \''
                                         . $guide_param_signature_type?->getId() . '\' as defined by '
                                         . $cased_guide_method_id,
                                     $implementer_param->location
@@ -776,7 +776,7 @@ final class MethodComparator
                                 new MethodSignatureMismatch(
                                     'Argument ' . ($i + 1) . ' of '
                                         . $cased_implementer_method_id . ' has wrong type \''
-                                        . $implementer_param_type . '\', expecting \''
+                                        . $implementer_param_type->getId() . '\', expecting \''
                                         . $guide_param_signature_type?->getId() . '\' as defined by '
                                         . $cased_guide_method_id,
                                     $implementer_param->location

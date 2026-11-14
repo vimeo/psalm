@@ -3212,6 +3212,69 @@ final class ReturnTypeTest extends TestCase
                 'error_levels' => [],
                 'php_version' => '8.3',
             ],
+            'notAllCodePathsReturnShowsExactDocblockType' => [
+                'code' => '<?php
+                    /** @return non-empty-string */
+                    function r1(): string {}',
+                'error_message' => 'Not all code paths of r1 end in a return statement, return type'
+                    . ' non-empty-string expected',
+            ],
+            'noReturnStatementsShowsExactDocblockType' => [
+                'code' => '<?php
+                    abstract class T2 {
+                        /** @return numeric-string */
+                        public function m(): string {
+                            /** nothing */
+                        }
+                    }',
+                'error_message' => "No return statements were found for method T2::m but return type"
+                    . " 'numeric-string' was expected",
+            ],
+            'invalidNullableReturnTypeShowsExactDocblockType' => [
+                'code' => '<?php
+                    /**
+                     * @psalm-suppress NullableReturnStatement
+                     * @return non-empty-string
+                     */
+                    function r4(): string {
+                        return rand(0, 1) ? "1" : null;
+                    }',
+                'error_message' => "The declared return type 'non-empty-string' for r4 is not nullable,"
+                    . " but ''1'|null' contains null",
+            ],
+            'invalidFalsableReturnTypeShowsExactDocblockType' => [
+                'code' => '<?php
+                    /**
+                     * @psalm-suppress FalsableReturnStatement
+                     * @return numeric-string
+                     */
+                    function r3(): string {
+                        return rand(0, 1) ? "1" : false;
+                    }',
+                'error_message' => "The declared return type 'numeric-string' for r3 does not allow false,"
+                    . " but ''1'|false' contains false",
+            ],
+            'falsableReturnStatementShowsExactDocblockType' => [
+                'code' => '<?php
+                    /**
+                     * @psalm-suppress InvalidFalsableReturnType
+                     * @return numeric-string
+                     */
+                    function r3(): string {
+                        return rand(0, 1) ? "1" : false;
+                    }',
+                'error_message' => "The declared return type 'numeric-string' for r3 does not allow false,"
+                    . " but the function returns ''1'|false",
+            ],
+            'invalidToStringShowsExactInferredType' => [
+                'code' => '<?php
+                    class S1 {
+                        public function __toString() {
+                            return 5;
+                        }
+                    }',
+                'error_message' => '__toString methods must return a string, 5 returned',
+            ],
         ];
     }
 }
