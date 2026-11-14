@@ -839,6 +839,16 @@ final class ClassLikes
         $this->existing_classlike_aliases[$alias_name] = true;
     }
 
+    /**
+     * Whether class_alias() gives a class the name
+     *
+     * @psalm-mutation-free
+     */
+    public function isClassAlias(string $name): bool
+    {
+        return isset($this->classlike_aliases_map[strtolower($name)]);
+    }
+
     /** @psalm-mutation-free */
     public function getUnAliasedName(string $alias_name): string
     {

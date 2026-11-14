@@ -132,3 +132,5 @@ class TaintBadDataPlugin implements AddTaintsInterface
     }
 }
 ```
+
+The taints a handler adds to an expression make it a source of its own. Where they only go on a path of the flow (the return of a call), the input taints among them are only added to the flows of user input: a flow of secrets reaching it doesn't become user input.

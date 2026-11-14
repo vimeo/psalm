@@ -19,11 +19,11 @@ use const JSON_PRETTY_PRINT;
 
 /**
  * The taints json_encode() removes with the flags it is called with: the html one for the HEX flags, the header one
- * unless it pretty prints
+ * unless it pretty prints. And those json_decode() gives back.
  *
  * @internal
  */
-final class JsonEncodeTainter implements RemoveTaintsInterface
+final class JsonFunctionTainter implements RemoveTaintsInterface
 {
     /**
      * JSON_HEX_TAG and JSON_HEX_AMP escape every <, > and & as <, > and &: the JSON syntax has none
@@ -35,6 +35,25 @@ final class JsonEncodeTainter implements RemoveTaintsInterface
      */
     private const HTML_FLAGS = JSON_HEX_TAG | JSON_HEX_AMP;
 
+    /**
+     * A JSON string can hold any character as an escape sequence, which the escapes of the text before do not see:
+     * what json_decode() gives has the taints they removed back, as `json_decode(json_encode($_GET['a'],
+     * JSON_HEX_TAG | JSON_HEX_AMP))` has its <, > and &.
+     */
+    public static function getGivenBackTaints(
+        StatementsAnalyzer $statements_analyzer,
+        PhpParser\Node\Expr\FuncCall $item,
+    ): int {
+        if ($item->isFirstClassCallable()
+            || !$item->name instanceof PhpParser\Node\Name
+            || !self::isBuiltin($statements_analyzer, $item->name, 'json_decode')
+        ) {
+            return 0;
+        }
+
+        return TaintKind::INPUT_HTML | TaintKind::INPUT_HAS_QUOTES | TaintKind::INPUT_HEADER;
+    }
+
     #[Override]
     public static function removeTaints(AddRemoveTaintsEvent $event): int
     {
@@ -45,13 +64,13 @@ final class JsonEncodeTainter implements RemoveTaintsInterface
             || !$item instanceof PhpParser\Node\Expr\FuncCall
             || $item->isFirstClassCallable()
             || !$item->name instanceof PhpParser\Node\Name
-            || !self::isJsonEncode($statements_analyzer, $item->name)
+            || !self::isBuiltin($statements_analyzer, $item->name, 'json_encode')
         ) {
             return 0;
         }
 
-        $flags = null;
-        $has_flags = false;
+        // without flags, it has none
+        [$certain_bits, $possible_bits] = [0, 0];
 
         foreach ($item->getArgs() as $offset => $arg) {
             if ($arg->unpack) {
@@ -59,21 +78,19 @@ final class JsonEncodeTainter implements RemoveTaintsInterface
             }
 
             if ($arg->name === null ? $offset === 1 : $arg->name->name === 'flags') {
-                $has_flags = true;
-                $flags = $statements_analyzer->node_data->getType($arg->value);
+                [$certain_bits, $possible_bits] = ConstantFlags::getBits($statements_analyzer, $arg->value);
             }
         }
 
-        $flag_value = $flags !== null && $flags->isSingleIntLiteral() ? $flags->getSingleIntLiteral()->value : null;
         $removed_taints = 0;
 
         // every control character is escaped, so the output holds no CR, LF or NUL (the layout of
         // JSON_PRETTY_PRINT has LF)
-        if (!$has_flags || ($flag_value !== null && ($flag_value & JSON_PRETTY_PRINT) === 0)) {
+        if (($possible_bits & JSON_PRETTY_PRINT) === 0) {
             $removed_taints |= TaintKind::INPUT_HEADER;
         }
 
-        if ($flag_value !== null && ($flag_value & self::HTML_FLAGS) === self::HTML_FLAGS) {
+        if (($certain_bits & self::HTML_FLAGS) === self::HTML_FLAGS) {
             $removed_taints |= TaintKind::INPUT_HTML;
         }
 
@@ -81,23 +98,28 @@ final class JsonEncodeTainter implements RemoveTaintsInterface
     }
 
     /**
-     * Whether the name calls the builtin json_encode(), not a function of the namespace named the same
+     * Whether the name calls the builtin function, not a function of the namespace named the same
+     *
+     * @param lowercase-string $function_id
      */
-    private static function isJsonEncode(StatementsAnalyzer $statements_analyzer, PhpParser\Node\Name $name): bool
-    {
+    private static function isBuiltin(
+        StatementsAnalyzer $statements_analyzer,
+        PhpParser\Node\Name $name,
+        string $function_id,
+    ): bool {
         $functions = $statements_analyzer->getCodebase()->functions;
 
-        $function_id = strtolower($name instanceof PhpParser\Node\Name\FullyQualified
+        $called_id = strtolower($name instanceof PhpParser\Node\Name\FullyQualified
             ? $name->toString()
             : $functions->getFullyQualifiedFunctionNameFromString($name->toString(), $statements_analyzer));
 
-        if ($function_id === 'json_encode') {
+        if ($called_id === $function_id) {
             return true;
         }
 
         // an unqualified name falls back to the global function when the namespace has none
         return !$name instanceof PhpParser\Node\Name\FullyQualified
-            && strtolower($name->toString()) === 'json_encode'
-            && !$functions->functionExists($statements_analyzer, $function_id);
+            && strtolower($name->toString()) === $function_id
+            && !$functions->functionExists($statements_analyzer, $called_id);
     }
 }

@@ -6,6 +6,7 @@ namespace Psalm\Internal\Scanner;
 
 use Override;
 use PhpParser;
+use PhpParser\NodeFinder;
 use PhpParser\NodeTraverser;
 use Psalm\Aliases;
 use Psalm\Codebase;
@@ -14,6 +15,10 @@ use Psalm\Internal\PhpVisitor\ReflectorVisitor;
 use Psalm\Progress\Progress;
 use Psalm\Progress\VoidProgress;
 use Psalm\Storage\FileStorage;
+
+use function ltrim;
+use function stripos;
+use function strtolower;
 
 /**
  * @internal
@@ -74,7 +79,76 @@ class FileScanner implements FileSource
 
         $traverser->traverse($stmts);
 
+        // the scan skips the bodies of the function-likes of the files it doesn't analyze, and the code of the
+        // conditions it decides are false
+        if (stripos($codebase->file_provider->getContents($file_storage->file_path), 'class_alias') !== false) {
+            self::scanClassAliases($file_storage, $stmts);
+        }
+
         $file_storage->deep_scan = $this->will_analyze;
+    }
+
+    /**
+     * Records the names the class_alias() calls of the file may give a class (see ConstantFlags)
+     *
+     * @param list<PhpParser\Node\Stmt> $stmts
+     */
+    private static function scanClassAliases(FileStorage $file_storage, array $stmts): void
+    {
+        $nodes = (new NodeFinder())->find(
+            $stmts,
+            static fn(PhpParser\Node $node): bool => ($node instanceof PhpParser\Node\Scalar\String_
+                    && strtolower(ltrim($node->value, '\\')) === 'class_alias')
+                || ($node instanceof PhpParser\Node\Expr\FuncCall
+                    && $node->name instanceof PhpParser\Node\Name
+                    && (strtolower($node->name->getLast()) === 'class_alias'
+                        || strtolower((string) $node->name->getAttribute('resolvedName')) === 'class_alias')),
+        );
+
+        foreach ($nodes as $node) {
+            // a callable string, or a first-class callable: called with any name
+            if (!$node instanceof PhpParser\Node\Expr\FuncCall || $node->isFirstClassCallable()) {
+                $file_storage->has_dynamic_class_alias = true;
+
+                continue;
+            }
+
+            $alias = null;
+
+            foreach ($node->getArgs() as $offset => $arg) {
+                if ($arg->unpack) {
+                    $file_storage->has_dynamic_class_alias = true;
+
+                    continue 2;
+                }
+
+                if ($arg->name === null ? $offset === 1 : strtolower($arg->name->name) === 'alias') {
+                    $alias = $arg->value;
+                }
+            }
+
+            if ($alias === null) {
+                continue;
+            }
+
+            if ($alias instanceof PhpParser\Node\Scalar\String_) {
+                $alias_name = $alias->value;
+            } elseif ($alias instanceof PhpParser\Node\Expr\ClassConstFetch
+                && $alias->class instanceof PhpParser\Node\Name
+                && $alias->name instanceof PhpParser\Node\Identifier
+                && strtolower($alias->name->name) === 'class'
+            ) {
+                $alias_name = (string) $alias->class->getAttribute('resolvedName');
+            } else {
+                $alias_name = '';
+            }
+
+            if ($alias_name !== '') {
+                $file_storage->possible_class_aliases[strtolower(ltrim($alias_name, '\\'))] = true;
+            } else {
+                $file_storage->has_dynamic_class_alias = true;
+            }
+        }
     }
 
     /** @psalm-mutation-free */

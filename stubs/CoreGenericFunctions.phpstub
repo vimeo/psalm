@@ -1721,6 +1721,10 @@ function ldap_escape(string $value, string $ignore = "", int $flags = 0) : strin
  *
  * @param int<1, 2147483647> $depth
  * @return mixed
+ *
+ * A JSON string can hold any character as an escape sequence: the taints escapes of the JSON text removed are given
+ * back in a plugin
+ *
  * @psalm-flow ($json) -(unserialization)-> return
  */
 function json_decode(string $json, ?bool $associative = null, int $depth = 512, int $flags = 0) {}
