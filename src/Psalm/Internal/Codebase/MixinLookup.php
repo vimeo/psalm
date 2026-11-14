@@ -62,7 +62,9 @@ final class MixinLookup
 
     /**
      * @param Closure(ClassLikeStorage): bool $has_member whether a mixin class has the member
-     * @return array{TNamedObject, ClassLikeStorage}|null the mixin with the member, bound for the receiver
+     * @return array{TNamedObject, ClassLikeStorage, TNamedObject|TTemplateParam}|null the mixin with the member,
+     *     bound for the receiver, its storage, and the mixin, as declared, of the class or of its traits or parent
+     *     classes the member was reached through
      */
     public static function findMember(
         Codebase $codebase,
@@ -114,7 +116,7 @@ final class MixinLookup
      * @param Closure(ClassLikeStorage): bool $has_member
      * @param array<lowercase-string, true> $visited
      * @param array<lowercase-string, true> $seen_scopes
-     * @return array{TNamedObject, ClassLikeStorage}|null
+     * @return array{TNamedObject, ClassLikeStorage, TNamedObject|TTemplateParam}|null
      */
     private static function find(
         Codebase $codebase,
@@ -171,7 +173,7 @@ final class MixinLookup
                 }
 
                 if ($has_member($mixin_storage)) {
-                    return [$bound_mixin, $mixin_storage];
+                    return [$bound_mixin, $mixin_storage, $mixin];
                 }
 
                 $found = self::find(
@@ -185,7 +187,7 @@ final class MixinLookup
                 );
 
                 if ($found !== null) {
-                    return $found;
+                    return [$found[0], $found[1], $mixin];
                 }
             }
         }

@@ -51,6 +51,7 @@ use Psalm\Type\Atomic;
 use Psalm\Type\Atomic\TClassString;
 use Psalm\Type\Atomic\TClosure;
 use Psalm\Type\Atomic\TDependentGetClass;
+use Psalm\Type\Atomic\TGenericObject;
 use Psalm\Type\Atomic\TLiteralClassString;
 use Psalm\Type\Atomic\TMixed;
 use Psalm\Type\Atomic\TNamedObject;
@@ -456,11 +457,14 @@ final class AtomicStaticCallAnalyzer
                 ),
             );
 
-            // the call is that of an instance of the class, which finds the method on the same mixin
+            // the call goes to the mixin; through a generic mixin it is analysed as the instance call on the class,
+            // which binds the mixin's type arguments (`Builder<static>`) for the class
             if ($mixin !== null) {
                 $mixin_context = clone $context;
                 $mixin_context->vars_in_scope['$__tmp_mixin_var__'] = new Union([
-                    $lhs_type_part instanceof TNamedObject ? $lhs_type_part : new TNamedObject($fq_class_name),
+                    !$mixin[2] instanceof TGenericObject
+                        ? $mixin[0]
+                        : ($lhs_type_part instanceof TNamedObject ? $lhs_type_part : new TNamedObject($fq_class_name)),
                 ]);
 
                 return self::forwardCallToInstanceMethod(

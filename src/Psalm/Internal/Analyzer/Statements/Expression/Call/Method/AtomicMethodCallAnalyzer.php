@@ -829,7 +829,7 @@ final class AtomicMethodCallAnalyzer extends CallAnalyzer
      * otherwise.
      *
      * @param lowercase-string $method_name_lc
-     * @return array{array{TNamedObject, ClassLikeStorage}|null, bool}
+     * @return array{array{TNamedObject, ClassLikeStorage, TNamedObject|TTemplateParam}|null, bool}
      */
     private static function findMixinWithMethod(
         StatementsAnalyzer $statements_analyzer,

@@ -994,6 +994,33 @@ final class MixinAnnotationTest extends TestCase
                 'ignored_issues' => [],
                 'php_version' => '8.0',
             ],
+            'staticCallThroughANonGenericMixinReturnsTheMixin' => [
+                'code' => '<?php
+                    class PendingRequest
+                    {
+                        public function withHeaders(): static
+                        {
+                            return $this;
+                        }
+                    }
+
+                    /** @mixin PendingRequest */
+                    final class Http
+                    {
+                        /** @param list<mixed> $args */
+                        public static function __callStatic(string $name, array $args): mixed
+                        {
+                            return null;
+                        }
+                    }
+
+                    $a = Http::withHeaders();',
+                'assertions' => [
+                    '$a===' => 'PendingRequest&static',
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
             'staticCallThroughAMixinIsTheInstanceCall' => [
                 'code' => '<?php
                     /** @template TModel of Model */
