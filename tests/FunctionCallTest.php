@@ -3219,6 +3219,64 @@ final class FunctionCallTest extends TestCase
                 'ignored_issues' => [],
                 'php_version' => '7.4',
             ],
+            'fileTestFunctionsAssertANonEmptyString' => [
+                'code' => '<?php
+                    /** @param non-empty-string $path */
+                    function takesNonEmptyString(string $path): void {}
+
+                    function check(string $path): void {
+                        if (file_exists($path)) {
+                            takesNonEmptyString($path);
+                        }
+                        if (is_file($path)) {
+                            takesNonEmptyString($path);
+                        }
+                        if (is_dir($path)) {
+                            takesNonEmptyString($path);
+                        }
+                        if (is_link($path)) {
+                            takesNonEmptyString($path);
+                        }
+                        if (is_readable($path)) {
+                            takesNonEmptyString($path);
+                        }
+                        if (is_writable($path)) {
+                            takesNonEmptyString($path);
+                        }
+                        if (is_writeable($path)) {
+                            takesNonEmptyString($path);
+                        }
+                        if (is_executable($path)) {
+                            takesNonEmptyString($path);
+                        }
+                    }',
+            ],
+            'fileTestFunctionsKeepAPossiblyEmptyStringWhenFalse' => [
+                'code' => '<?php
+                    function check(string $path): void {
+                        if (!file_exists($path)) {
+                            $a = $path;
+                        } else {
+                            $a = "x";
+                        }
+                        if (is_dir($path)) {
+                            $b = "x";
+                        } else {
+                            $b = $path;
+                        }
+                    }
+
+                    /** @var string $path */
+                    $path = "";
+                    if (is_file($path)) {
+                        $c = "x";
+                    } else {
+                        $c = $path;
+                    }',
+                'assertions' => [
+                    '$c===' => 'string',
+                ],
+            ],
             'filterVarIpGlobalRangeFlag' => [
                 'code' => <<<'PHP'
                     <?php
@@ -4426,6 +4484,22 @@ final class FunctionCallTest extends TestCase
                 'error_message' => 'InvalidScalarArgument',
                 'error_levels' => [],
                 'php_version' => '7.4',
+            ],
+            'fileTestFunctionOnAnEmptyStringIsAlwaysFalse' => [
+                'code' => '<?php
+                    $path = "";
+                    if (is_file($path)) {
+                        echo "never";
+                    }',
+                'error_message' => 'TypeDoesNotContainType',
+            ],
+            'fileTestFunctionsStayImpure' => [
+                'code' => '<?php
+                    /** @psalm-pure */
+                    function exists(string $path): bool {
+                        return file_exists($path);
+                    }',
+                'error_message' => 'ImpureFunctionCall',
             ],
         ];
     }
