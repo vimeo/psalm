@@ -3167,16 +3167,13 @@ final class SimpleAssertionReconciler extends Reconciler
 
     /**
      * Whether no subclass of the object can exist to add an interface it lacks.
-     * Unknown classes count as non-final unless the object is exact: they are already reported as undefined.
+     * Unknown classes count as non-final: they are already reported as undefined.
      *
      * @psalm-mutation-free
      */
     public static function isFinalObject(Codebase $codebase, TNamedObject $type): bool
     {
-        if ($type instanceof TClosure
-            || $type instanceof TAnonymousClassInstance
-            || ($type->definite_class && !$type->is_static)
-        ) {
+        if ($type instanceof TClosure || $type instanceof TAnonymousClassInstance) {
             return true;
         }
 

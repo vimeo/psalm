@@ -1846,110 +1846,18 @@ final class ConditionalTest extends TestCase
                 'ignored_issues' => [],
                 'php_version' => '8.1',
             ],
-            'isCountableOnNewStaticIntersectsCountable' => [
-                'code' => '<?php
-                    /** @psalm-consistent-constructor */
-                    class Base {
-                        /** @return (Base&Countable)|null */
-                        public function make(): ?Countable {
-                            $x = new static();
-                            return is_countable($x) ? $x : null;
-                        }
-                    }
-
-                    $r = (new Base())->make();',
-                'assertions' => [
-                    '$r===' => 'Base&Countable|null',
-                ],
-            ],
-            'exactObjectMergedWithParamStaysOpen' => [
+            'newObjectMergedWithParamCanBeCountable' => [
                 'code' => '<?php
                     class Foo {}
-                    class Sub extends Foo {}
 
-                    function getFoo(): Foo {
-                        return new Foo();
-                    }
-
-                    function getSub(): Sub {
-                        return new Sub();
-                    }
-
-                    /** @return list<Foo> */
-                    function getFoos(): array {
-                        return [];
-                    }
-
-                    $p = getFoo();
-
-                    $if_merged = new Foo();
-                    if (rand(0, 1)) {
-                        $if_merged = $p;
-                    }
-                    $a = is_countable($if_merged) ? $if_merged : null;
-
-                    $exact_first = rand(0, 1) ? new Foo() : $p;
-                    $b = is_countable($exact_first) ? $exact_first : null;
-
-                    $exact_last = rand(0, 1) ? $p : new Foo();
-                    $c = is_countable($exact_last) ? $exact_last : null;
-
-                    $looped = new Foo();
-                    foreach (getFoos() as $looped) {}
-                    $d = $looped instanceof Traversable ? $looped : null;
-
-                    $make = function () {
-                        if (rand(0, 1)) {
-                            return new Foo();
+                    function f(Foo $p, bool $b): void {
+                        $a = [new Foo()];
+                        if ($b) {
+                            $a = [$p];
                         }
-                        return getSub();
-                    };
-                    $absorbed = $make();
-                    $e = is_countable($absorbed) ? $absorbed : null;',
-                'assertions' => [
-                    '$a===' => 'Foo&Countable|null',
-                    '$b===' => 'Foo&Countable|null',
-                    '$c===' => 'Foo&Countable|null',
-                    '$d===' => 'Foo&Traversable|null',
-                    '$e===' => 'Foo&Countable|null',
-                ],
-                'ignored_issues' => ['MissingClosureReturnType'],
-            ],
-            'exactObjectMergedInElseOrCaseStaysOpen' => [
-                'code' => '<?php
-                    class A {}
-                    class B extends A {}
 
-                    function getA(): A {
-                        return new A();
-                    }
-
-                    $else_merged = new A();
-                    if (rand(0, 1)) {
-                        echo 1;
-                    } else {
-                        $else_merged = getA();
-                    }
-                    $a = is_countable($else_merged) ? $else_merged : null;
-
-                    $case_merged = new A();
-                    switch (rand(0, 2)) {
-                        case 1:
-                            $case_merged = getA();
-                            break;
-                    }
-                    $b = is_countable($case_merged) ? $case_merged : null;
-
-                    $narrowed = getA();
-                    if ($narrowed instanceof B) {
-                        $narrowed = new B();
-                    }
-                    $c = is_countable($narrowed) ? $narrowed : null;',
-                'assertions' => [
-                    '$a===' => 'A&Countable|null',
-                    '$b===' => 'A&Countable|null',
-                    '$c===' => 'A&Countable|null',
-                ],
+                        if (!is_countable($a[0])) {}
+                    }',
             ],
             'docblockFinalClassCanBeExtended' => [
                 'code' => '<?php
@@ -5451,40 +5359,10 @@ final class ConditionalTest extends TestCase
                     }',
                 'error_message' => 'DocblockTypeContradiction',
             ],
-            'isIterableOnExactClass' => [
-                'code' => '<?php
-                    $x = new stdClass();
-                    if (is_iterable($x)) {}',
-                'error_message' => 'TypeDoesNotContainType',
-            ],
-            'isIterableOnExactGenericClass' => [
-                'code' => '<?php
-                    /** @template T */
-                    class Box {
-                        /** @param T $v */
-                        public function __construct($v) {}
-                    }
-
-                    $x = new Box(1);
-                    if (is_iterable($x)) {}',
-                'error_message' => 'TypeDoesNotContainType',
-            ],
             'isIterableOnAnonymousClassInstance' => [
                 'code' => '<?php
                     $x = new class {};
                     if (is_iterable($x)) {}',
-                'error_message' => 'TypeDoesNotContainType',
-            ],
-            'instanceofTraversableOnExactClass' => [
-                'code' => '<?php
-                    $x = new stdClass();
-                    if ($x instanceof Traversable) {}',
-                'error_message' => 'TypeDoesNotContainType',
-            ],
-            'isCountableOnExactClass' => [
-                'code' => '<?php
-                    $x = new stdClass();
-                    if (is_countable($x)) {}',
                 'error_message' => 'TypeDoesNotContainType',
             ],
             'isCountableOnCountableEnum' => [
@@ -5593,34 +5471,6 @@ final class ConditionalTest extends TestCase
                     . 'somefile.php:7:29 - Type E for $e is never countable',
                 'error_levels' => [],
                 'php_version' => '8.1',
-            ],
-            'instanceofCountableOnExactClass' => [
-                'code' => '<?php
-                    $x = new stdClass();
-                    if ($x instanceof Countable) {}',
-                'error_message' => 'TypeDoesNotContainType - src' . DIRECTORY_SEPARATOR
-                    . 'somefile.php:3:25 - Type stdClass for $x is never Countable',
-            ],
-            'isIterableOnExactGenericClassWithoutArgs' => [
-                'code' => '<?php
-                    /** @template T */
-                    class Box {}
-
-                    $x = new Box();
-                    if (is_iterable($x)) {}',
-                'error_message' => 'TypeDoesNotContainType - src' . DIRECTORY_SEPARATOR
-                    . 'somefile.php:6:25 - Type Box<mixed> for $x is never iterable',
-            ],
-            'isIterableOnNewSelf' => [
-                'code' => '<?php
-                    class Me {
-                        public function f(): void {
-                            $x = new self();
-                            if (is_iterable($x)) {}
-                        }
-                    }',
-                'error_message' => 'TypeDoesNotContainType - src' . DIRECTORY_SEPARATOR
-                    . 'somefile.php:5:33 - Type Me for $x is never iterable',
             ],
         ];
     }

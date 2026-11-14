@@ -52,7 +52,6 @@ final class TGenericObject extends TNamedObject
         bool $is_static = false,
         array $extra_types = [],
         bool $from_docblock = false,
-        bool $definite_class = false,
     ) {
         if ($value[0] === '\\') {
             $value = substr($value, 1);
@@ -62,7 +61,7 @@ final class TGenericObject extends TNamedObject
         parent::__construct(
             $value,
             $is_static,
-            $definite_class,
+            false,
             $extra_types,
             $from_docblock,
         );
