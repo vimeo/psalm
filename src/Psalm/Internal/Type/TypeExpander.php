@@ -717,6 +717,22 @@ final class TypeExpander
                             $throw_on_unresolvable_constant,
                         ));
                     }
+
+                    if ($param->out_type) {
+                        $param = $param->setOutType(self::expandUnion(
+                            $codebase,
+                            $param->out_type,
+                            $self_class,
+                            $static_class_type,
+                            $parent_class,
+                            $evaluate_class_constants,
+                            $evaluate_conditional_types,
+                            $final,
+                            $expand_generic,
+                            $expand_templates,
+                            $throw_on_unresolvable_constant,
+                        ));
+                    }
                 }
                 unset($param);
             }
@@ -1388,9 +1404,9 @@ final class TypeExpander
             ) {
                 if ($throw_on_unresolvable_constant) {
                     throw new UnresolvableConstantException($type_param->fq_classlike_name, $type_param->const_name);
-                } else {
-                    return [$return_type];
                 }
+
+                return [$return_type];
             }
 
             $type_atomics = array_merge(

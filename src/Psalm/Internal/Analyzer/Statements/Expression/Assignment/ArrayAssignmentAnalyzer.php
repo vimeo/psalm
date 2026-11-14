@@ -1240,6 +1240,7 @@ final class ArrayAssignmentAnalyzer
         $existing_offsets = [];
 
         $root_var = end($child_stmts)->var;
+        $previous_dim_is_append = false;
 
         // First go from the root element up, and go as far as we can to figure out what
         // array types there are
@@ -1296,7 +1297,7 @@ final class ArrayAssignmentAnalyzer
             $existing_offsets[spl_object_id($child_stmt)] = isset($context->vars_in_scope[$extended_var_id])
                 && !$context->vars_in_scope[$extended_var_id]->possibly_undefined;
 
-            if ($parent_var_id && isset($context->vars_in_scope[$parent_var_id])) {
+            if ($parent_var_id && !$previous_dim_is_append && isset($context->vars_in_scope[$parent_var_id])) {
                 $array_type = $context->vars_in_scope[$parent_var_id];
                 $statements_analyzer->node_data->setType($child_stmt->var, $array_type);
             }
@@ -1321,6 +1322,11 @@ final class ArrayAssignmentAnalyzer
                     $child_stmt->dim,
                     $child_stmt_dim_type_or_int,
                 );
+            }
+
+            // the element an append creates holds nothing yet
+            if (!$child_stmt->dim && !$is_last) {
+                $child_stmt_type = Type::getNever();
             }
 
             $statements_analyzer->node_data->setType(
@@ -1369,6 +1375,7 @@ final class ArrayAssignmentAnalyzer
             $current_dim = $child_stmt->dim;
 
             $parent_var_id = $extended_var_id;
+            $previous_dim_is_append = !$child_stmt->dim;
         }
 
         if ($root_var_id !== null) {

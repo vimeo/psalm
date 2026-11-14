@@ -123,6 +123,7 @@ abstract class CallAnalyzer
                     $context,
                     $source->getRootFilePath(),
                     $source->getRootFileName(),
+                    $source->getFileAnalyzer(),
                 );
             }
         } elseif ($context->collect_initializations &&
@@ -139,6 +140,7 @@ abstract class CallAnalyzer
             $method_id = new MethodIdentifier($fq_class_name, $method_name_lc);
 
             $declaring_method_id = $codebase->methods->getDeclaringMethodId($method_id);
+            $source_appearing_method_id = $codebase->methods->getAppearingMethodId($method_id);
 
             if (isset($context->vars_in_scope['$this'])) {
                 foreach ($context->vars_in_scope['$this']->getAtomicTypes() as $atomic_type) {
@@ -251,18 +253,25 @@ abstract class CallAnalyzer
 
                 $old_calling_method_id = $context->calling_method_id;
 
-                if ($fq_class_name === $source->getFQCLN()) {
+                // the class whose code has the method: the class using the trait that declares it, or the ancestor
+                // the method appears in, as the class analyzer of the source only knows its own methods and traits
+                $appearing_method_id = $codebase->methods->getAppearingMethodId($method_id)
+                    ?? $source_appearing_method_id;
+                $method_class_name = $appearing_method_id !== null
+                    ? $appearing_method_id->fq_class_name
+                    : $declaring_method_id->fq_class_name;
+
+                if ($method_class_name === $source->getFQCLN()) {
                     $class_analyzer->getMethodMutations($method_name_lc, $context);
                 } else {
-                    $declaring_fq_class_name = $declaring_method_id->fq_class_name;
-
                     $old_self = $context->self;
-                    $context->self = $declaring_fq_class_name;
+                    $context->self = $method_class_name;
                     $project_analyzer->getMethodMutations(
-                        $declaring_method_id,
+                        new MethodIdentifier($method_class_name, $method_name_lc),
                         $context,
                         $source->getRootFilePath(),
                         $source->getRootFileName(),
+                        $source->getFileAnalyzer(),
                     );
                     $context->self = $old_self;
                 }
@@ -607,11 +616,72 @@ abstract class CallAnalyzer
             return [];
         }
 
+        return self::getMethodIdsFromObjectType($class_arg_type, $method_name_arg->value);
+    }
+
+    /**
+     * @return list<non-empty-string>
+     */
+    public static function getFunctionIdsFromFirstClassCallable(
+        StatementsAnalyzer $statements_analyzer,
+        PhpParser\Node\Expr\CallLike $callable,
+    ): array {
+        if ($callable instanceof PhpParser\Node\Expr\FuncCall) {
+            if (!$callable->name instanceof Name) {
+                return [];
+            }
+
+            $function_id = $callable->name->toString();
+
+            if (!$callable->name instanceof Name\FullyQualified) {
+                $functions = $statements_analyzer->getCodebase()->functions;
+                $namespaced_function_id = $functions->getFullyQualifiedFunctionNameFromString(
+                    $function_id,
+                    $statements_analyzer,
+                );
+
+                if ($functions->functionExists($statements_analyzer, strtolower($namespaced_function_id))) {
+                    $function_id = $namespaced_function_id;
+                }
+            }
+
+            return [$function_id];
+        }
+
+        if ($callable instanceof PhpParser\Node\Expr\StaticCall) {
+            if (!$callable->class instanceof Name || !$callable->name instanceof Identifier) {
+                return [];
+            }
+
+            $fq_class_name = ClassLikeAnalyzer::getFQCLNFromNameObject(
+                $callable->class,
+                $statements_analyzer->getAliases(),
+            );
+
+            return [$fq_class_name . '::' . $callable->name->name];
+        }
+
+        if ($callable instanceof PhpParser\Node\Expr\MethodCall
+            && $callable->name instanceof Identifier
+            && ($object_type = $statements_analyzer->node_data->getType($callable->var))
+        ) {
+            return self::getMethodIdsFromObjectType($object_type, $callable->name->name);
+        }
+
+        return [];
+    }
+
+    /**
+     * @return list<non-empty-string>
+     * @psalm-pure
+     */
+    private static function getMethodIdsFromObjectType(Union $object_type, string $method_name): array
+    {
         $method_ids = [];
 
-        foreach ($class_arg_type->getAtomicTypes() as $type_part) {
+        foreach ($object_type->getAtomicTypes() as $type_part) {
             if ($type_part instanceof TNamedObject) {
-                $method_id = $type_part->value . '::' . $method_name_arg->value;
+                $method_id = $type_part->value . '::' . $method_name;
 
                 foreach ($type_part->extra_types as $extra_type) {
                     if ($extra_type instanceof TTemplateParam
@@ -621,7 +691,7 @@ abstract class CallAnalyzer
                         throw new UnexpectedValueException('Shouldn’t get a generic param here');
                     }
 
-                    $method_id .= '&' . $extra_type->value . '::' . $method_name_arg->value;
+                    $method_id .= '&' . $extra_type->value . '::' . $method_name;
                 }
 
                 $method_ids[] = '$' . $method_id;
@@ -808,6 +878,9 @@ abstract class CallAnalyzer
             } elseif (str_contains($var_possibilities->var_id, '::$')) {
                 // allow assertions to bring external static props into scope
                 $assertion_var_id = $var_possibilities->var_id;
+            } elseif ($var_possibilities->var_id === Context::PHP_SAPI_VAR_ID) {
+                // a guard asserting the SAPI narrows it like an inline check, so e.g. the code after it is CLI code
+                $assertion_var_id = Context::PHP_SAPI_VAR_ID;
             } elseif (AssertionFinder::isArrayOffsetAssertionId($var_possibilities->var_id)) {
                 $assertion_var_id = AssertionFinder::getArrayOffsetVarId(
                     $var_possibilities->var_id,

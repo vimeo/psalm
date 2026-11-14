@@ -26,7 +26,9 @@ jobs:
       - id: skip_check
         uses: fkirc/skip-duplicate-actions@b974a9395958c231af965b70070979a577efa578 # v5.3.2
         with:
-          concurrent_skipping: always
+          # only skip when a newer run exists: "always" skips while any run is unfinished,
+          # so a run stuck in "queued" blocks every later build
+          concurrent_skipping: outdated_runs
           cancel_others: true
           do_not_skip: '["release", "workflow_dispatch"]'
           # list files that may affect or are included into the built phar
