@@ -21,6 +21,9 @@ use Psalm\Internal\Scope\LoopScope;
 use Psalm\IssueBuffer;
 use Psalm\Storage\Assertion;
 use Psalm\Type;
+use Psalm\Type\Atomic\TInt;
+use Psalm\Type\Atomic\TIntRange;
+use Psalm\Type\Atomic\TLiteralInt;
 use Psalm\Type\Reconciler;
 use Psalm\Type\Union;
 use UnexpectedValueException;
@@ -37,8 +40,13 @@ use function count;
 use function in_array;
 use function is_numeric;
 use function is_string;
+use function max;
+use function min;
 use function spl_object_id;
 use function str_contains;
+
+use const PHP_INT_MAX;
+use const PHP_INT_MIN;
 
 /**
  * @internal
@@ -251,8 +259,11 @@ final class LoopAnalyzer
                             $has_changes = true;
 
                             // widen the foreach context type with the initial context type
-                            $continue_context->vars_in_scope[$var_id] = Type::combineUnionTypes(
-                                $continue_context->vars_in_scope[$var_id],
+                            $continue_context->vars_in_scope[$var_id] = self::widenGrowingIntRange(
+                                Type::combineUnionTypes(
+                                    $continue_context->vars_in_scope[$var_id],
+                                    $original_parent_context->vars_in_scope[$var_id],
+                                ),
                                 $original_parent_context->vars_in_scope[$var_id],
                             );
 
@@ -608,6 +619,82 @@ final class LoopAnalyzer
         );
 
         return null;
+    }
+
+    /**
+     * The bounds of a range of integers, taking a loop that grows it as one that never stops: a bound that a pass
+     * moved is no longer one (`int<3, 4>` that is decremented is `int<min, 4>`, not `int<2, 4>`, the second pass
+     * of a loop would reach `int<1, 3>`). A type that is not a range is not widened.
+     *
+     * @psalm-pure
+     */
+    private static function widenGrowingIntRange(Union $merged, Union $initial): Union
+    {
+        $initial_range = self::getIntRangeBounds($initial, false);
+        $merged_range = self::getIntRangeBounds($merged, true);
+
+        if ($initial_range === null || $merged_range === null) {
+            return $merged;
+        }
+
+        $min = $merged_range[0];
+        $max = $merged_range[1];
+        $widened = false;
+
+        if ($min !== null && $initial_range[0] !== null && $min < $initial_range[0]) {
+            $min = null;
+            $widened = true;
+        }
+
+        if ($max !== null && $initial_range[1] !== null && $max > $initial_range[1]) {
+            $max = null;
+            $widened = true;
+        }
+
+        if (!$widened) {
+            return $merged;
+        }
+
+        // the widened type keeps what the merged one carries (the data flow parents of its variable)
+        return $merged->getBuilder()
+            ->setTypes([$min === null && $max === null ? new TInt() : new TIntRange($min, $max)])
+            ->freeze();
+    }
+
+    /**
+     * @return array{int|null, int|null}|null the bounds, null for none, if the type is only integers (and, if
+     *                                        $allow_literals, literal ones)
+     * @psalm-pure
+     */
+    private static function getIntRangeBounds(Union $type, bool $allow_literals): ?array
+    {
+        $min = PHP_INT_MAX;
+        $max = PHP_INT_MIN;
+        $min_unbounded = false;
+        $max_unbounded = false;
+
+        foreach ($type->getAtomicTypes() as $atomic) {
+            if ($atomic instanceof TIntRange) {
+                if ($atomic->min_bound === null) {
+                    $min_unbounded = true;
+                } else {
+                    $min = min($min, $atomic->min_bound);
+                }
+
+                if ($atomic->max_bound === null) {
+                    $max_unbounded = true;
+                } else {
+                    $max = max($max, $atomic->max_bound);
+                }
+            } elseif ($allow_literals && $atomic instanceof TLiteralInt) {
+                $min = min($min, $atomic->value);
+                $max = max($max, $atomic->value);
+            } else {
+                return null;
+            }
+        }
+
+        return [$min_unbounded ? null : $min, $max_unbounded ? null : $max];
     }
 
     /**
