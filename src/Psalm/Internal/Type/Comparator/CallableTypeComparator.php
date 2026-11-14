@@ -285,11 +285,32 @@ final class CallableTypeComparator
             }
 
             try {
-                $method_id = $codebase->methods->getDeclaringMethodId($method_id);
+                $declaring_method_id = $codebase->methods->getDeclaringMethodId($method_id);
 
-                if (!$method_id) {
-                    return false;
+                if (!$declaring_method_id) {
+                    // a method declared by `@method` is called through __call() or __callStatic()
+                    $class_storage = $codebase->classlike_storage_provider->get($method_id->fq_class_name);
+                    $pseudo_method = $class_storage->pseudo_methods[$method_id->method_name]
+                        ?? $class_storage->pseudo_static_methods[$method_id->method_name]
+                        ?? null;
+
+                    if ($pseudo_method === null) {
+                        return false;
+                    }
+
+                    return self::isContainedBy(
+                        $codebase,
+                        new TCallable(
+                            $pseudo_method->params,
+                            $pseudo_method->return_type,
+                            self::getCallableCapabilities($pseudo_method, []),
+                        ),
+                        $container_type_part,
+                        $atomic_comparison_result,
+                    );
                 }
+
+                $method_id = $declaring_method_id;
 
                 if (!$codebase->methods->hasStorage($method_id)) {
                     return false;
