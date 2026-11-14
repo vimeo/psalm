@@ -1190,6 +1190,58 @@ final class SwitchTypeTest extends TestCase
                         return -1;
                     }',
             ],
+            'conditionalBreaksOfACaseThatEndsInAThrowMergeTheTypes' => [
+                'code' => <<<'PHP'
+                    <?php
+                    function f(int $n): void {
+                        switch ($n) {
+                            case 1:
+                                $b = 10;
+                                break;
+                            case 2:
+                                if (rand()) {
+                                    $b = 20;
+                                    break;
+                                }
+
+                                throw new Exception();
+                            default:
+                                throw new Exception();
+                        }
+
+                        /** @psalm-check-type-exact $b = 10|20 */
+                    }
+                    PHP,
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
+            'conditionalBreakOfAnExitingCaseBeforeTheCaseThatDefinesTheVar' => [
+                'code' => <<<'PHP'
+                    <?php
+                    function f(int $n): void {
+                        switch ($n) {
+                            case 2:
+                                if (rand()) {
+                                    $b = 20;
+                                    break;
+                                }
+
+                                throw new Exception();
+                            case 1:
+                                $b = 10;
+                                break;
+                            default:
+                                throw new Exception();
+                        }
+
+                        /** @psalm-check-type-exact $b = 10|20 */
+                    }
+                    PHP,
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
             'conditionalBreakThenThrowDefinesVar' => [
                 'code' => '<?php
                     function foo(int $a): int {
@@ -1286,6 +1338,33 @@ final class SwitchTypeTest extends TestCase
     public static function providerInvalidCodeParse(): iterable
     {
         return [
+            'oneBreakOfACaseThatEndsInAThrowLacksTheVar' => [
+                'code' => <<<'PHP'
+                    <?php
+                    function f(int $n): int {
+                        switch ($n) {
+                            case 2:
+                                if (rand()) {
+                                    $b = 1;
+                                    break;
+                                }
+
+                                if (rand()) {
+                                    break;
+                                }
+
+                                throw new Exception();
+                            default:
+                                $b = 5;
+                        }
+
+                        return $b;
+                    }
+                    PHP,
+                'error_message' => 'PossiblyUndefinedVariable - src' . DIRECTORY_SEPARATOR . 'somefile.php:19:12',
+                'error_levels' => [],
+                'php_version' => '8.1',
+            ],
             'switchTrueCaseThatCannotMatch' => [
                 'code' => '<?php
                     class Foo {}

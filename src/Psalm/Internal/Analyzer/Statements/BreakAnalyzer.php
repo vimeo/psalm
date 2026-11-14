@@ -141,13 +141,22 @@ final class BreakAnalyzer
 
         $case_scope = $context->case_scope;
         if ($case_scope && $leaving_switch) {
-            foreach ($context->vars_in_scope as $var_id => $type) {
-                if ($case_scope->break_vars === null) {
-                    $case_scope->break_vars = [];
-                }
+            $is_first_break = $case_scope->break_vars === null;
+            $case_scope->break_vars ??= [];
 
+            // a variable that another break of the case has and this one lacks (or the other way around) is only
+            // possibly defined where the switch is left
+            foreach ($case_scope->break_vars as $var_id => $type) {
+                if (!isset($context->vars_in_scope[$var_id])) {
+                    $case_scope->break_vars[$var_id] = $type->setPossiblyUndefined(true);
+                }
+            }
+
+            foreach ($context->vars_in_scope as $var_id => $type) {
                 $case_scope->break_vars[$var_id] = Type::combineUnionTypes(
-                    $type,
+                    $is_first_break || isset($case_scope->break_vars[$var_id])
+                        ? $type
+                        : $type->setPossiblyUndefined(true),
                     $case_scope->break_vars[$var_id] ?? null,
                 );
             }
