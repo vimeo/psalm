@@ -1854,6 +1854,64 @@ final class PropertyTypeTest extends TestCase
                         return $e->attributes->item(0);
                     }',
             ],
+            'propertyMapKeyMatchesDeclaredCase' => [
+                'code' => '<?php
+                    namespace Parle;
+
+                    class Parser {
+                        public $reduceId;
+
+                        public function __construct() {
+                            $this->reduceId = 1;
+                        }
+                    }
+
+                    class RParser {
+                        public $reduceId;
+
+                        public function __construct() {
+                            $this->reduceId = 1;
+                        }
+                    }
+
+                    $parser = new Parser();
+                    $rparser = new RParser();
+                    $parserId = $parser->reduceId;
+                    $rparserId = $rparser->reduceId;',
+                'assertions' => [
+                    '$parserId===' => 'int',
+                    '$rparserId===' => 'int',
+                ],
+            ],
+            'propertyMapNestedNamespaceKeyMatchesDeclaredCase' => [
+                'code' => '<?php
+                    namespace MongoDB\Driver\Exception;
+
+                    class CommandException extends \Exception {
+                        public $resultDocument;
+
+                        public function __construct() {
+                            $this->resultDocument = new \stdClass();
+                        }
+                    }
+
+                    class RuntimeException extends \Exception {
+                        public $errorLabels;
+
+                        public function __construct() {
+                            $this->errorLabels = null;
+                        }
+                    }
+
+                    $command = new CommandException();
+                    $runtime = new RuntimeException();
+                    $document = $command->resultDocument;
+                    $labels = $runtime->errorLabels;',
+                'assertions' => [
+                    '$document===' => 'object',
+                    '$labels===' => 'array<array-key, mixed>|null',
+                ],
+            ],
             'goodArrayProperties' => [
                 'code' => '<?php
                     interface I1 {}
@@ -6129,6 +6187,15 @@ final class PropertyTypeTest extends TestCase
                         }
                     }',
                 'error_message' => 'PropertyNotSetInConstructor - src' . DIRECTORY_SEPARATOR . 'somefile.php:20:27 - Property B::$prop is not defined in constructor of B',
+            ],
+            'propertyMapWrongCasePropertyIsUndefined' => [
+                'code' => '<?php
+                    function foo(DOMDocumentType $t): string {
+                        return $t->publicid;
+                    }',
+                'error_message' => 'UndefinedPropertyFetch',
+                'error_levels' => [],
+                'php_version' => '8.4',
             ],
             'issetOnATypedPropertyThatAParentConstructorSetsIsRedundantInTheChild' => [
                 'code' => '<?php
