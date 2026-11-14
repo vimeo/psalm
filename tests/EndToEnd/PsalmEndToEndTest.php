@@ -5,18 +5,26 @@ declare(strict_types=1);
 namespace Psalm\Tests\EndToEnd;
 
 use PHPUnit\Framework\Attributes\DataProvider;
+use PHPUnit\Framework\Attributes\RequiresPhpExtension;
+use Psalm\Tests\Config\Plugin\ReportableFilePlugin;
+use Symfony\Component\Process\Process;
 
 use function assert;
+use function basename;
 use function file_get_contents;
 use function file_put_contents;
+use function json_decode;
 use function mkdir;
 use function preg_replace;
+use function sort;
+use function str_contains;
 use function str_replace;
 use function substr_count;
 use function sys_get_temp_dir;
 use function tempnam;
 use function unlink;
 
+use const JSON_THROW_ON_ERROR;
 use const PHP_BINARY;
 
 /**
@@ -148,6 +156,72 @@ final class PsalmEndToEndTest extends PsalmEndToEndTestCase
         $this->assertStringContainsString('InvalidReturnStatement', $result['STDOUT']);
         $this->assertStringContainsString('2 errors', $result['STDOUT']);
         $this->assertSame(2, $result['CODE']);
+    }
+
+    // Psalm forks its workers only with these extensions (never on Windows)
+    #[RequiresPhpExtension('pcntl')]
+    #[RequiresPhpExtension('posix')]
+    public function testFilesAPluginMakesReportableAtBootAreReportedByEveryWorker(): void
+    {
+        $this->runPsalmInit(1);
+        file_put_contents(self::$tmpDir . '/psalm.xml', str_replace(
+            ['<psalm', '</psalm>'],
+            [
+                '<psalm runTaintAnalysis="false"',
+                '<plugins><pluginClass class="' . ReportableFilePlugin::class . '" /></plugins></psalm>',
+            ],
+            (string) file_get_contents(self::$tmpDir . '/psalm.xml'),
+        ));
+        unlink(self::$tmpDir . '/src/FileWithErrors.php');
+
+        // enough files for scanning and analysis to fork worker processes
+        for ($i = 0; $i < 520; $i++) {
+            file_put_contents(self::$tmpDir . "/src/f$i.php", "<?php\n\nfunction f$i(): void {}\n");
+        }
+
+        mkdir(self::$tmpDir . '/compiled');
+        file_put_contents(
+            self::$tmpDir . '/compiled/view.php',
+            "<?php\n\nfunction orderTotal(): int\n{\n    return 'total';\n}\n",
+        );
+        file_put_contents(
+            self::$tmpDir . '/compiled/partial.php',
+            "<?php\n\nfunction orderRow(): void {}\n\nfunction orderRow(): void {}\n",
+        );
+
+        $process = new Process(
+            [
+                PHP_BINARY,
+                $this->psalm,
+                '--no-cache',
+                '--debug',
+                '--threads=2',
+                '--scan-threads=2',
+                '--output-format=json',
+            ],
+            self::$tmpDir,
+            self::agentEnvVarsToUnset(),
+        );
+        $process->setTimeout(self::PROCESS_TIMEOUT);
+        $process->run();
+
+        $this->assertStringContainsString('Forking process for scanning', $process->getErrorOutput());
+
+        /** @var list<array{type: string, file_name: string}> $issues */
+        $issues = json_decode($process->getOutput(), true, 512, JSON_THROW_ON_ERROR);
+        $compiled_issues = [];
+        foreach ($issues as $issue) {
+            if (str_contains($issue['file_name'], 'compiled')) {
+                $compiled_issues[] = basename($issue['file_name']) . ': ' . $issue['type'];
+            }
+        }
+        sort($compiled_issues);
+
+        // DuplicateFunction is raised while scanning, the others while analyzing
+        $this->assertSame(
+            ['partial.php: DuplicateFunction', 'view.php: InvalidReturnStatement', 'view.php: InvalidReturnType'],
+            $compiled_issues,
+        );
     }
 
     public function testParseErrorIsReportedOnEveryRunWithAWarmCache(): void
