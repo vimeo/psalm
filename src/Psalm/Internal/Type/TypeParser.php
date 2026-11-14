@@ -2612,7 +2612,9 @@ final class TypeParser
      */
     private static function extractIntersectionKey(Atomic $intersection_type): string
     {
-        return $intersection_type instanceof TIterable || $intersection_type instanceof TKeyedArray
+        return $intersection_type instanceof TIterable
+            || $intersection_type instanceof TKeyedArray
+            || $intersection_type instanceof TObjectWithProperties
             ? $intersection_type->getId()
             : $intersection_type->getKey();
     }

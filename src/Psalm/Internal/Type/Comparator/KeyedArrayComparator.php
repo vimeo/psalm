@@ -58,6 +58,25 @@ final class KeyedArrayComparator
         $all_types_contain = true;
 
         $input_properties = $input_type_part->properties;
+
+        // `object{a: int}&object{b: string}` has the properties of every shape of the intersection
+        if ($input_type_part instanceof TObjectWithProperties) {
+            foreach ($input_type_part->extra_types as $extra_type) {
+                if (!$extra_type instanceof TObjectWithProperties) {
+                    continue;
+                }
+
+                foreach ($extra_type->properties as $key => $extra_property_type) {
+                    $input_properties[$key] = isset($input_properties[$key])
+                        ? Type::intersectUnionTypes(
+                            $input_properties[$key],
+                            $extra_property_type,
+                            $codebase,
+                        ) ?? $input_properties[$key]
+                        : $extra_property_type;
+                }
+            }
+        }
         foreach ($container_type_part->properties as $key => $container_property_type) {
             if (!isset($input_properties[$key])) {
                 if (!$container_property_type->possibly_undefined) {
