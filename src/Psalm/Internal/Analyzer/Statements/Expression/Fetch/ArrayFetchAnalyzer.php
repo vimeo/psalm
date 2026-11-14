@@ -271,6 +271,7 @@ final class ArrayFetchAnalyzer
         }
 
         $can_store_result = false;
+        $object_fetch_parent_nodes = [];
         $chain_state = NullsafeChainState::None;
         $own_nullable = false;
 
@@ -318,6 +319,7 @@ final class ArrayFetchAnalyzer
                 $extended_var_id,
                 $context,
                 null,
+                object_fetch_parent_nodes: $object_fetch_parent_nodes,
             );
 
             $own_nullable = $stmt_type->isNullable() || $stmt_type->possibly_undefined;
@@ -447,6 +449,8 @@ final class ArrayFetchAnalyzer
             $context,
             key_prefix_path_suffix: self::getKeyPrefixPathSuffix($statements_analyzer, $stmt->dim),
         );
+
+        $stmt_type = $stmt_type->addParentNodes($object_fetch_parent_nodes);
 
         $statements_analyzer->node_data->setType($stmt, $stmt_type);
 
@@ -837,6 +841,9 @@ final class ArrayFetchAnalyzer
      * @psalm-suppress ComplexMethod to be refactored.
      * Good type/bad type behaviour could be mutualised with ArrayAnalyzer
      * @param bool $by_reference whether the item is written by a call it is passed to by reference
+     * @param array<string, DataFlowNode> $object_fetch_parent_nodes the nodes of what the offsetGet() calls return, for
+     *                                                              an array access on an object
+     * @param-out array<string, DataFlowNode> $object_fetch_parent_nodes
      */
     public static function getArrayAccessTypeGivenOffset(
         StatementsAnalyzer $statements_analyzer,
@@ -849,6 +856,7 @@ final class ArrayFetchAnalyzer
         ?PhpParser\Node\Expr $assign_value = null,
         ?Union $replacement_type = null,
         bool $by_reference = false,
+        array &$object_fetch_parent_nodes = [],
     ): Union {
         $offset_type = $offset_type_original->getBuilder();
 
@@ -1137,6 +1145,7 @@ final class ArrayFetchAnalyzer
                     $has_array_access,
                     // nothing replaces an item an assignment writes into, which is modified in place as well
                     $by_reference || $replacement_type === null,
+                    $object_fetch_parent_nodes,
                 );
             } elseif (!$array_type->hasMixed()) {
                 $non_array_types[] = (string)$type;
@@ -2292,6 +2301,10 @@ final class ArrayFetchAnalyzer
         }
     }
 
+    /**
+     * @param array<string, DataFlowNode> $object_fetch_parent_nodes
+     * @param-out array<string, DataFlowNode> $object_fetch_parent_nodes
+     */
     private static function handleArrayAccessOnNamedObject(
         StatementsAnalyzer $statements_analyzer,
         PhpParser\Node\Expr\ArrayDimFetch $stmt,
@@ -2302,6 +2315,7 @@ final class ArrayFetchAnalyzer
         ?Union &$array_access_type,
         bool &$has_array_access,
         bool $in_place,
+        array &$object_fetch_parent_nodes,
     ): void {
         $codebase = $statements_analyzer->getCodebase();
         if (strtolower($type->value) === 'simplexmlelement'
@@ -2532,6 +2546,9 @@ final class ArrayFetchAnalyzer
                 $statements_analyzer->removeSuppressedIssues(['MixedMethodCall']);
             }
         }
+
+        // what the method returned: taintArrayFetch() would otherwise replace it by the array's own nodes
+        $object_fetch_parent_nodes += $call_array_access_type->parent_nodes;
 
         $array_access_type = Type::combineUnionTypes(
             $array_access_type,
