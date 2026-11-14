@@ -31,7 +31,8 @@ use const PHP_EOL;
 use const STDERR;
 
 /**
- * The config, the providers and a configured ProjectAnalyzer, as `psalm` builds them from its options
+ * The config, the providers and a configured ProjectAnalyzer, as `psalm` builds them from its options. Overlay
+ * analysis builds them again in the same process where it cannot fork.
  *
  * @internal
  */
@@ -144,6 +145,29 @@ final class ProjectBootstrap
         }
 
         return $project_analyzer;
+    }
+
+    /**
+     * The baseline that applies to a run: the one `--use-baseline` names or the config's, unless `--ignore-baseline`
+     *
+     * @return array<string,array<string,array{o:int, s: list<string>}>>
+     */
+    public static function readBaseline(array $options, Config $config): array
+    {
+        if (isset($options['use-baseline'])) {
+            if (!is_string($options['use-baseline'])) {
+                fwrite(STDERR, '--use-baseline must be a string' . PHP_EOL);
+                exit(1);
+            }
+
+            $config->error_baseline = $options['use-baseline'];
+        }
+
+        if ($config->error_baseline === null || $config->error_baseline === '' || isset($options['ignore-baseline'])) {
+            return [];
+        }
+
+        return self::readBaselineFile($config->error_baseline);
     }
 
     /**

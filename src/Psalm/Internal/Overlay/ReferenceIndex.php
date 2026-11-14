@@ -12,11 +12,14 @@ use Psalm\Internal\Provider\FileReferenceCacheProvider;
 use Symfony\Component\Filesystem\Path;
 
 use function array_keys;
+use function array_pop;
 use function array_values;
 use function clearstatcache;
+use function count;
 use function file_exists;
 use function filesize;
 use function hash_file;
+use function is_array;
 use function ksort;
 use function str_contains;
 
@@ -98,6 +101,53 @@ final class ReferenceIndex
         ]);
     }
 
+    public static function load(FileReferenceCacheProvider $cache): ?self
+    {
+        $data = $cache->getReferenceIndex();
+
+        if (!is_array($data) || ($data['version'] ?? null) !== self::VERSION) {
+            return null;
+        }
+
+        /**
+         * @var array{
+         *     files: array<string, array{i: list<string>, a: list<string>}>,
+         *     members: array<string, list<string>>,
+         *     stamps: array<string, Stamp>,
+         *     project_files: list<string>,
+         * } $data
+         */
+        return new self($data['files'], $data['members'], $data['stamps'], $data['project_files']);
+    }
+
+    /**
+     * Why the index does not describe the project as it is, null if it does
+     *
+     * @param array<string, string> $project_files
+     */
+    public function getStaleReason(array $project_files, Config $config): ?string
+    {
+        if (count($project_files) !== count($this->project_files)) {
+            return 'the set of project files changed';
+        }
+
+        foreach ($this->project_files as $file_path) {
+            if (!isset($project_files[$file_path])) {
+                return $file_path . ' is not a project file any more';
+            }
+        }
+
+        $configuration_files = self::getConfigurationFiles($config);
+
+        foreach ([...$this->project_files, ...$configuration_files] as $file_path) {
+            if (!self::isUnchanged($file_path, $this->stamps[$file_path] ?? null)) {
+                return $file_path . ' changed';
+            }
+        }
+
+        return null;
+    }
+
     /**
      * Whether the file is as the stamp says (null: the file did not exist)
      *
@@ -136,6 +186,74 @@ final class ReferenceIndex
         }
 
         return [$size, $hash];
+    }
+
+    /**
+     * The files whose classes inherit from the classes of the given files, or depend on them like they do,
+     * transitively, the given files included
+     *
+     * @param list<string> $file_paths
+     * @return array<string, true>
+     * @psalm-capabilities read-props
+     */
+    public function getInheritors(array $file_paths): array
+    {
+        $result = [];
+        $pending = $file_paths;
+
+        while ($pending) {
+            $file_path = array_pop($pending);
+
+            if (isset($result[$file_path])) {
+                continue;
+            }
+
+            $result[$file_path] = true;
+
+            foreach ($this->files[$file_path]['i'] ?? [] as $inheriting) {
+                $pending[] = $inheriting;
+            }
+        }
+
+        return $result;
+    }
+
+    /**
+     * The inheritors of the files and the files referencing any of them
+     *
+     * @param list<string> $file_paths
+     * @return array<string, true>
+     * @psalm-capabilities read-props
+     */
+    public function getDependents(array $file_paths): array
+    {
+        $result = $this->getInheritors($file_paths);
+
+        foreach (array_keys($result) as $file_path) {
+            foreach ($this->files[$file_path]['a'] ?? [] as $referencing) {
+                $result[$referencing] = true;
+            }
+        }
+
+        return $result;
+    }
+
+    /**
+     * @param list<string> $nodes code use graph nodes of class members
+     * @return array<string, true>
+     * @psalm-capabilities read-props
+     */
+    public function getFilesReferencingMembers(array $nodes): array
+    {
+        $result = [];
+
+        foreach ($nodes as $node) {
+            foreach ($this->members[$node] ?? [] as $file_path) {
+                $result[$file_path] = true;
+            }
+        }
+
+        return $result;
     }
 
     /**

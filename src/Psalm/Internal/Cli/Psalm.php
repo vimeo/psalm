@@ -105,6 +105,7 @@ require_once __DIR__ . '/../IncludeCollector.php';
 require_once __DIR__ . '/../../IssueBuffer.php';
 require_once __DIR__ . '/../../Report.php';
 require_once __DIR__ . '/IdeDetector.php';
+require_once __DIR__ . '/OverlayExitGuard.php';
 
 /**
  * @internal
@@ -183,6 +184,9 @@ final class Psalm
         'find-unused-psalm-suppress',
         'error-level:',
         'record-references',
+        'overlay:',
+        'overlays-from:',
+        'overlay-timeout:',
     ];
 
     /**
@@ -198,6 +202,10 @@ final class Psalm
 
         ErrorHandler::install($argv);
 
+        $overlay_mode = OverlayExitGuard::installIfRequested($argv);
+        // overlay paths are relative to where psalm was started, before it changes to the project root
+        $overlay_cwd = (string) getcwd();
+
         $args = array_slice($argv, 1);
 
         // get options from command line
@@ -209,6 +217,10 @@ final class Psalm
             && '1' === getenv('RUNNER_DEBUG')
         ) {
             $options['debug'] = false;
+        }
+
+        if ($overlay_mode) {
+            OverlayExitGuard::rejectOptions($options);
         }
 
         self::forwardCliCall($options, $argv);
@@ -287,6 +299,8 @@ final class Psalm
             $config->cache_directory = null;
         }
 
+        $config->cache_read_only = $overlay_mode;
+
         $config->setIncludeCollector($include_collector);
 
         $in_ci = CliUtils::runningInCI();        // disable progressbar on CI
@@ -321,7 +335,14 @@ final class Psalm
             }
         }
 
-        $paths_to_check = CliUtils::getPathsToCheck($options['f'] ?? null);
+        $paths_to_check = CliUtils::getPathsToCheck($options['f'] ?? null, !$overlay_mode);
+
+        if ($overlay_mode && $paths_to_check !== null) {
+            OverlayExitGuard::fail(
+                'invalid_request',
+                'Paths cannot be given with overlays: the overlays name the files',
+            );
+        }
 
         if (isset($options['record-references']) && ($paths_to_check !== null || $config->cache_directory === null)) {
             fwrite(STDERR, '--record-references needs a full run with a cache: no paths, no --no-cache' . PHP_EOL);
@@ -378,17 +399,19 @@ final class Psalm
             $report_file_paths = [$report_file_paths];
         }
 
+        $file_report_options = ProjectAnalyzer::getFileReportOptions(
+            $report_file_paths,
+            isset($options['report-show-info'])
+                ? $options['report-show-info'] !== 'false' && $options['report-show-info'] !== '0'
+                : true,
+        );
+
         $project_analyzer = ProjectBootstrap::createProjectAnalyzer(
             $options,
             $config,
             $providers,
             $stdout_report_options,
-            ProjectAnalyzer::getFileReportOptions(
-                $report_file_paths,
-                isset($options['report-show-info'])
-                    ? $options['report-show-info'] !== 'false' && $options['report-show-info'] !== '0'
-                    : true,
-            ),
+            $file_report_options,
             $threads,
             $scanThreads,
             $progress,
@@ -400,6 +423,61 @@ final class Psalm
         $project_analyzer->record_references = isset($options['record-references']);
 
         $start_time = microtime(true);
+
+        if ($overlay_mode) {
+            $rebootstrap = static function () use (
+                $path_to_config,
+                $current_dir,
+                $output_format,
+                $autoloaders,
+                $run_taint_analysis,
+                $options,
+                $include_collector,
+                $stdout_report_options,
+                $file_report_options,
+                $threads,
+                $scanThreads,
+                $progress,
+                $plugins,
+            ): ProjectAnalyzer {
+                $config = ProjectBootstrap::loadConfig(
+                    $path_to_config,
+                    $current_dir,
+                    $output_format,
+                    $autoloaders,
+                    $run_taint_analysis,
+                    $options,
+                );
+                $config->cache_read_only = true;
+                $config->setIncludeCollector($include_collector);
+
+                return ProjectBootstrap::createProjectAnalyzer(
+                    $options,
+                    $config,
+                    ProjectBootstrap::initProviders($options, $config, $current_dir),
+                    $stdout_report_options,
+                    $file_report_options,
+                    $threads,
+                    $scanThreads,
+                    $progress,
+                    $plugins,
+                    null,
+                    $run_taint_analysis,
+                );
+            };
+
+            InternalCallMapHandler::getCallMap();
+
+            OverlayCommand::run(
+                $options,
+                $argv,
+                $overlay_cwd,
+                $project_analyzer,
+                $rebootstrap,
+                $include_collector,
+                ProjectBootstrap::readBaseline($options, $config),
+            );
+        }
 
         if ($config->run_taint_analysis || $run_taint_analysis) {
             $is_diff = false;
@@ -1437,11 +1515,22 @@ final class Psalm
                 Runs Psalm without using cached representations of unchanged methods.
 
             --record-references
-                Also write which files depend on which into the cache (a full run with a cache only)
+                Also record which files depend on which, for overlay analysis (see --overlay)
 
             --no-file-cache
                 Runs Psalm without using caching every single file for later diffing.
                 This reduces the space Psalm uses on disk and file I/O.
+
+        Overlay analysis (see https://psalm.dev/docs/running_psalm/overlays/):
+            --overlay=ORIGINAL=REPLACEMENT
+                Report the issues REPLACEMENT would introduce in place of ORIGINAL (repeatable).
+                Exits 0 (no new error), 2 (new errors) or 255 (no answer). Needs --record-references first.
+
+            --overlays-from=FILE|-
+                The overlays as a JSON request, from a file or standard input
+
+            --overlay-timeout=SECONDS
+                Give up SECONDS after the start, bootstrap and scan included (exit 255)
 
         Miscellaneous:
             -h, --help

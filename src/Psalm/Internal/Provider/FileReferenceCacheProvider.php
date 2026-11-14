@@ -138,6 +138,11 @@ final class FileReferenceCacheProvider
     }
 
     /** @see \Psalm\Internal\Overlay\ReferenceIndex */
+    public function getReferenceIndex(): ?array
+    {
+        return $this->cache->getItem(self::REFERENCE_INDEX_CACHE_NAME);
+    }
+
     public function setReferenceIndex(array $index): void
     {
         $this->cache->saveItem(self::REFERENCE_INDEX_CACHE_NAME, $index);
