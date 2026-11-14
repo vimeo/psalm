@@ -34,6 +34,16 @@ final class ForTest extends TestCase
                 'ignored_issues' => ['UnusedVariable'],
                 'php_version' => '8.2',
             ],
+            'variableDefinedBeforeAForAndAssignedSeveralTimesInItsConditionHasWhatTheLastConditionLeaves' => [
+                'code' => '<?php
+                    $value = "a";
+                    for (; $value = 42, $value = rand(0, 1) === 1;) {
+                        echo "again";
+                    }',
+                'assertions' => [
+                    '$value===' => 'false',
+                ],
+            ],
             'variableAssignedInALaterCommaSeparatedForConditionIsDefinedAfterTheLoop' => [
                 'code' => '<?php
                     function next_int(): int {
