@@ -93,10 +93,9 @@ final class UnionTypeComparator
         $input_atomic_types = array_reverse(self::getTypeParts($codebase, $input_type));
 
         // what the input parts that no container part accepts have in common: the result must not depend on the
-        // order of the input parts, so every such part is examined before the comparison fails. A part that
-        // could still be accepted (coerced, a scalar mismatch) is enough to report the lenient issue
+        // order of the input parts, so every such part is examined before the comparison fails
         $some_part_failed = false;
-        $failed_parts_coerced = false;
+        $failed_parts_coerced = true;
         $failed_parts_to_string_cast = false;
         $failed_parts_coerced_from_mixed = false;
         $failed_parts_coerced_from_as_mixed = false;
@@ -500,7 +499,7 @@ final class UnionTypeComparator
                 }
 
                 $some_part_failed = true;
-                $failed_parts_coerced = $failed_parts_coerced || $some_type_coerced;
+                $failed_parts_coerced = $failed_parts_coerced && $some_type_coerced;
                 $failed_parts_to_string_cast = $failed_parts_to_string_cast || $some_to_string_cast;
                 $failed_parts_coerced_from_mixed = $failed_parts_coerced_from_mixed || $some_type_coerced_from_mixed;
                 $failed_parts_coerced_from_as_mixed = $failed_parts_coerced_from_as_mixed

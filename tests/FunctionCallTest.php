@@ -3253,7 +3253,7 @@ final class FunctionCallTest extends TestCase
                 'error_levels' => [],
                 'php_version' => '8.5',
             ],
-            'callableAndScalarUnionIsCoercibleToInt' => [
+            'callableAndScalarUnionIsInvalidForInt' => [
                 'code' => '<?php
                     /** @param int $i */
                     function takesInt($i): void {}
@@ -3262,9 +3262,9 @@ final class FunctionCallTest extends TestCase
                     function f($x): void {
                         takesInt($x);
                     }',
-                'error_message' => 'ArgumentTypeCoercion',
+                'error_message' => 'InvalidArgument',
             ],
-            'scalarAndCallableUnionIsCoercibleToInt' => [
+            'scalarAndCallableUnionIsInvalidForInt' => [
                 'code' => '<?php
                     /** @param int $i */
                     function takesInt($i): void {}
@@ -3273,7 +3273,7 @@ final class FunctionCallTest extends TestCase
                     function f($x): void {
                         takesInt($x);
                     }',
-                'error_message' => 'ArgumentTypeCoercion',
+                'error_message' => 'InvalidArgument',
             ],
             'emptyStringIsNotANonEmptyLowercaseString' => [
                 'code' => '<?php
