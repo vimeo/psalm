@@ -23,9 +23,11 @@ Psalm exits with status `0` when it successfully completed and found no issues,
 successfully but found some issues. Any exit status apart from those indicate
 some internal problem.
 
-## Reference index
+With `--overlay` or `--overlays-from` the exit statuses differ: `0` no new error, `2` new errors, `255` no answer.
 
-`--record-references` makes a full run also write a reference index into the cache: which files depend on which, and the size and content hash of every file the run depended on. It needs a cache and no path arguments.
+## Overlay analysis
+
+`--overlay=ORIGINAL=REPLACEMENT` (repeatable) and `--overlays-from=FILE|-` report the issues that would be new if files had other contents, without changing anything on disk or in the cache. They need a reference index, written by a normal run with `--record-references`. `--overlay-timeout=SECONDS` limits the run from its start. See [Overlay analysis](overlays.md).
 
 ## Shepherd
 
