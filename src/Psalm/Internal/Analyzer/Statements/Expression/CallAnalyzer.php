@@ -364,11 +364,14 @@ abstract class CallAnalyzer
 
             $method_storage = $codebase->methods->getStorage($declaring_method_id);
 
+            if (!$context->isSuppressingExceptions($statements_analyzer)) {
+                $context->mergeFunctionExceptions($method_storage, $code_location);
+            }
+
             // the class using a trait holds the docblock its method inherits
             $documenting_class_storage = $declaring_class_storage->is_trait ? $class_storage : $declaring_class_storage;
 
             if ($declaring_class_storage->user_defined
-                && !$method_storage->has_docblock_param_types
                 && isset($documenting_class_storage->documenting_method_ids[$method_name])
             ) {
                 $documenting_method_id = $documenting_class_storage->documenting_method_ids[$method_name];
@@ -376,12 +379,45 @@ abstract class CallAnalyzer
                 $documenting_method_storage = $codebase->methods->getStorage($documenting_method_id);
 
                 if ($documenting_method_storage->template_types) {
-                    $method_storage = $documenting_method_storage;
-                }
-            }
+                    if (!$method_storage->has_docblock_param_types && !$method_storage->has_docblock_return_type) {
+                        $method_storage = $documenting_method_storage;
+                    } else {
+                        // the override keeps its storage (named arguments, taint sinks), so its own templates and
+                        // those of the params and return it inherits are inferred through the template result; a
+                        // template only re-documented params would bind stays unbound
+                        $template_result->template_types += $method_storage->template_types ?? [];
 
-            if (!$context->isSuppressingExceptions($statements_analyzer)) {
-                $context->mergeFunctionExceptions($method_storage, $code_location);
+                        $inherited_types = [];
+
+                        foreach ($method_params as $i => $param) {
+                            if ($param->type && !($method_storage->params[$i]->has_docblock_type ?? true)) {
+                                $inherited_types[] = $param->type;
+                            }
+                        }
+
+                        if ($documenting_method_storage->return_type
+                            && $codebase->methods->inheritsReturnTypeOfDocumentingMethod(
+                                $method_storage,
+                                $declaring_method_id,
+                                $documenting_method_storage,
+                            )
+                        ) {
+                            $inherited_types[] = $documenting_method_storage->return_type;
+                        }
+
+                        foreach ($inherited_types as $inherited_type) {
+                            foreach ($inherited_type->getTemplateTypes() as $template_type) {
+                                $bound = $documenting_method_storage->template_types
+                                    [$template_type->param_name][$template_type->defining_class] ?? null;
+
+                                if ($bound !== null) {
+                                    $template_result->template_types
+                                        [$template_type->param_name][$template_type->defining_class] = $bound;
+                                }
+                            }
+                        }
+                    }
+                }
             }
         }
 

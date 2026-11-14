@@ -9,6 +9,7 @@ use PhpParser;
 use Psalm\CodeLocation;
 use Psalm\Codebase;
 use Psalm\Context;
+use Psalm\Internal\Analyzer\ProjectAnalyzer;
 use Psalm\Internal\Analyzer\SourceAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\Call\ClassTemplateParamCollector;
 use Psalm\Internal\Analyzer\Statements\ExpressionAnalyzer;
@@ -46,6 +47,7 @@ use Psalm\Type\Atomic\TValueOf;
 use Psalm\Type\Union;
 use UnexpectedValueException;
 
+use function array_all;
 use function array_pop;
 use function assert;
 use function count;
@@ -362,7 +364,9 @@ final class Methods
 
             $params = $storage->params;
 
-            if ($storage->has_docblock_param_types) {
+            if ($storage->has_docblock_param_types
+                && array_all($params, static fn(FunctionLikeParameter $param): bool => $param->has_docblock_type)
+            ) {
                 return $params;
             }
 
@@ -395,31 +399,60 @@ final class Methods
             $overriding_fq_class_name = $overridden_method_id->fq_class_name;
 
             foreach ($params as $i => $param) {
-                if (isset($overridden_storage->params[$i]->type)
-                    && $overridden_storage->params[$i]->has_docblock_type
+                $overridden_param = $overridden_storage->params[$i] ?? null;
+
+                if ($param->has_docblock_type
+                    || !$overridden_param
+                    || !$overridden_param->type
+                    || !$overridden_param->has_docblock_type
                 ) {
-                    $params[$i] = clone $param;
-                    /** @var Union $params[$i]->type */
-                    $params[$i]->type = $overridden_storage->params[$i]->type;
-
-                    if ($source) {
-                        $overridden_class_storage = $this->classlike_storage_provider->get($overriding_fq_class_name);
-                        $params[$i]->type = self::localizeType(
-                            $source->getCodebase(),
-                            $params[$i]->type,
-                            $appearing_fq_class_name,
-                            $overridden_class_storage->name,
-                        );
-                    }
-
-                    if ($params[$i]->signature_type
-                        && $params[$i]->signature_type->isNullable()
-                    ) {
-                        $params[$i]->type = $params[$i]->type->getBuilder()->addType(new TNull)->freeze();
-                    }
-
-                    $params[$i]->type_location = $overridden_storage->params[$i]->type_location;
+                    continue;
                 }
+
+                $type = $overridden_param->type;
+
+                if ($source) {
+                    $overridden_class_storage = $this->classlike_storage_provider->get($overriding_fq_class_name);
+                    $type = self::localizeType(
+                        $source->getCodebase(),
+                        $type,
+                        $appearing_fq_class_name,
+                        $overridden_class_storage->name,
+                    );
+                }
+
+                // keep accepting what the override's native type accepts beyond the parent's
+                if ($param->signature_type
+                    && $overridden_param->signature_type
+                    && $param->signature_type->getId() !== $overridden_param->signature_type->getId()
+                ) {
+                    $codebase = $source?->getCodebase() ?? ProjectAnalyzer::getInstance()->getCodebase();
+                    $widened_types = [];
+
+                    foreach ($param->signature_type->getAtomicTypes() as $atomic) {
+                        if (!UnionTypeComparator::isContainedBy(
+                            $codebase,
+                            new Union([$atomic]),
+                            $overridden_param->signature_type,
+                        )) {
+                            $widened_types[] = $atomic;
+                        }
+                    }
+
+                    if ($widened_types) {
+                        $type = Type::combineUnionTypes($type, new Union($widened_types), $codebase, false, false);
+                    }
+                }
+
+                if ($param->signature_type
+                    && $param->signature_type->isNullable()
+                ) {
+                    $type = $type->getBuilder()->addType(new TNull)->freeze();
+                }
+
+                $params[$i] = clone $param;
+                $params[$i]->type = $type;
+                $params[$i]->type_location = $overridden_param->type_location;
             }
 
             return $params;
@@ -677,9 +710,13 @@ final class Methods
             return $candidate_type;
         }
 
-        if (isset($class_storage->documenting_method_ids[$appearing_method_name])) {
-            $overridden_method_id = $class_storage->documenting_method_ids[$appearing_method_name];
+        $overridden_method_id = $class_storage->documenting_method_ids[$appearing_method_name] ?? null;
+        $overridden_storage = $overridden_method_id !== null ? $this->getStorage($overridden_method_id) : null;
 
+        if ($overridden_method_id !== null
+            && $overridden_storage !== null
+            && $this->inheritsReturnTypeOfDocumentingMethod($storage, $declaring_method_id, $overridden_storage)
+        ) {
             // special override to allow inference of Iterator types
             if ($overridden_method_id->fq_class_name === 'Iterator'
                 && $storage->return_type
@@ -687,8 +724,6 @@ final class Methods
             ) {
                 return $storage->return_type;
             }
-
-            $overridden_storage = $this->getStorage($overridden_method_id);
 
             if ($overridden_storage->return_type) {
                 // a docblock `@return null` stands for void, a native `null` return type is a type of its own
@@ -1032,6 +1067,27 @@ final class Methods
         }
 
         return null;
+    }
+
+    /**
+     * The storage of a method a class takes from a trait is shared by every class using the trait, so it can't say
+     * whether the method inherits the return type of the method its class documents it by (see Populator)
+     *
+     * @psalm-capabilities read-props
+     */
+    public function inheritsReturnTypeOfDocumentingMethod(
+        MethodStorage $storage,
+        MethodIdentifier $declaring_method_id,
+        MethodStorage $documenting_storage,
+    ): bool {
+        if ($storage->inherited_return_type) {
+            return true;
+        }
+
+        return $this->classlike_storage_provider->get($declaring_method_id->fq_class_name)->is_trait
+            && !$storage->has_docblock_return_type
+            && $documenting_storage->has_docblock_return_type
+            && !Populator::returnUsesTemplateOfRedocumentedParams($storage, $documenting_storage);
     }
 
     /**
