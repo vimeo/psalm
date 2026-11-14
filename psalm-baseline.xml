@@ -3750,9 +3750,6 @@
     <MixedReturnStatement>
       <code><![CDATA[ReflectionMethod::createFromMethodName($functionName)]]></code>
     </MixedReturnStatement>
-    <RiskyTruthyFalsyComparison>
-      <code><![CDATA[empty($normalizedEntry['type'])]]></code>
-    </RiskyTruthyFalsyComparison>
   </file>
   <file src="tests/Internal/Provider/CountingParserCacheProvider.php">
     <InvalidExtendClass>

@@ -122,6 +122,28 @@ use function substr;
 final class ArrayFetchAnalyzer
 {
     /**
+     * The attribute holding the type of an array fetch inside isset()/empty() before the null of a
+     * missing key was added to it
+     */
+    public const TYPE_WITHOUT_ISSET_NULL_ATTRIBUTE = 'type_without_isset_null';
+
+    /**
+     * The type recorded in the TYPE_WITHOUT_ISSET_NULL_ATTRIBUTE of an array fetch
+     */
+    public static function getTypeWithoutIssetNull(PhpParser\Node $stmt): ?Union
+    {
+        return self::asUnion($stmt->getAttribute(self::TYPE_WITHOUT_ISSET_NULL_ATTRIBUTE));
+    }
+
+    /**
+     * @psalm-pure
+     */
+    private static function asUnion(mixed $value): ?Union
+    {
+        return $value instanceof Union ? $value : null;
+    }
+
+    /**
      * What a message names as the array: the variable or, as an expression with no variable id,
      * its constant, else a placeholder
      *
@@ -339,6 +361,18 @@ final class ArrayFetchAnalyzer
             }
 
             if ($context->inside_isset && !$stmt_type->hasMixed()) {
+                // the key of a sealed shape is there, unlike one of an array of unknown keys; set on every pass,
+                // so that a type that changed doesn't keep the one of an earlier pass
+                $stmt->setAttribute(
+                    self::TYPE_WITHOUT_ISSET_NULL_ATTRIBUTE,
+                    !$stmt_type->possibly_undefined
+                        && $stmt_var_type->isSingle()
+                        && ($var_atomic = $stmt_var_type->getSingleAtomic()) instanceof TKeyedArray
+                        && $var_atomic->fallback_params === null
+                        ? $stmt_type
+                        : null,
+                );
+
                 $stmt_type = Type::combineUnionTypes($stmt_type, Type::getNull());
             }
 
