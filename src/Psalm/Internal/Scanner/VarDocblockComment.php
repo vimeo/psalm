@@ -22,6 +22,11 @@ final class VarDocblockComment
     public ?int $type_end = null;
 
     /**
+     * Whether the type comes from a `@phpstan-var` tag
+     */
+    public bool $from_phpstan = false;
+
+    /**
      * Whether or not the property is deprecated
      */
     public bool $deprecated = false;

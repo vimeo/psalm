@@ -10,6 +10,7 @@ use Psalm\CodeLocation;
 use Psalm\CodeLocation\DocblockTypeLocation;
 use Psalm\Codebase;
 use Psalm\Config;
+use Psalm\Context;
 use Psalm\Exception\DocblockParseException;
 use Psalm\Exception\InvalidMethodOverrideException;
 use Psalm\Exception\TypeParseTreeException;
@@ -1704,6 +1705,11 @@ final class FunctionLikeDocblockScanner
                     continue;
                 }
 
+                if ($assertion['param_name'] === FunctionLikeDocblockParser::PHP_SAPI_ASSERTION_TARGET) {
+                    $storage->assertions[] = new Possibilities(Context::PHP_SAPI_VAR_ID, $assertion_type_parts);
+                    continue;
+                }
+
                 $offset_target = self::getArrayOffsetTarget($storage, $file_scanner, $stmt, $assertion['param_name']);
 
                 if ($offset_target !== null) {
@@ -1758,6 +1764,14 @@ final class FunctionLikeDocblockScanner
                     continue;
                 }
 
+                if ($assertion['param_name'] === FunctionLikeDocblockParser::PHP_SAPI_ASSERTION_TARGET) {
+                    $storage->if_true_assertions[] = new Possibilities(
+                        Context::PHP_SAPI_VAR_ID,
+                        $assertion_type_parts,
+                    );
+                    continue;
+                }
+
                 $offset_target = self::getArrayOffsetTarget($storage, $file_scanner, $stmt, $assertion['param_name']);
 
                 if ($offset_target !== null) {
@@ -1809,6 +1823,14 @@ final class FunctionLikeDocblockScanner
                 );
 
                 if (!$assertion_type_parts) {
+                    continue;
+                }
+
+                if ($assertion['param_name'] === FunctionLikeDocblockParser::PHP_SAPI_ASSERTION_TARGET) {
+                    $storage->if_false_assertions[] = new Possibilities(
+                        Context::PHP_SAPI_VAR_ID,
+                        $assertion_type_parts,
+                    );
                     continue;
                 }
 

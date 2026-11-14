@@ -40,6 +40,7 @@ use function implode;
 use function preg_match;
 use function preg_replace;
 use function reset;
+use function rtrim;
 use function str_contains;
 use function str_replace;
 use function strlen;
@@ -255,6 +256,10 @@ final class ClassLikeDocblockParser
             $info->cli_only = true;
         }
 
+        if (isset($parsed_docblock->tags['psalm-cli-only-instances'])) {
+            $info->cli_only_instances = true;
+        }
+
         if (isset($parsed_docblock->tags['psalm-taint-property-bag'])) {
             $property_bag = trim((string) reset($parsed_docblock->tags['psalm-taint-property-bag']));
             if (preg_match('/^\$([A-Za-z_]\w*)$/', $property_bag, $matches) !== 1 || !isset($matches[1])) {
@@ -392,9 +397,10 @@ final class ClassLikeDocblockParser
                         if (preg_match('/^ ?: ?(\S.*)$/s', $after_paren, $return_matches)
                             && isset($return_matches[1])
                         ) {
-                            $method_entry .= ':' . CommentAnalyzer::sanitizeDocblockType(
-                                CommentAnalyzer::splitDocLine($return_matches[1])[0],
-                            );
+                            $return_type = rtrim(CommentAnalyzer::splitDocLine($return_matches[1])[0], ';');
+                            if ($return_type !== '') {
+                                $method_entry .= ':' . CommentAnalyzer::sanitizeDocblockType($return_type);
+                            }
                         }
                     }
                 }
@@ -463,12 +469,23 @@ final class ClassLikeDocblockParser
                     }
 
                     if (!$has_return) {
-                        $docblock_lines[] = '@return ' . TypeParser::getTypeFromTree(
-                            $method_tree->children[1],
-                            $codebase,
-                            null,
-                            $purity_template_map,
-                        )->toNamespacedString($aliases->namespace, $aliases->uses, null, false);
+                        try {
+                            $return_type = TypeParser::getTypeFromTree(
+                                $method_tree->children[1],
+                                $codebase,
+                                null,
+                                $purity_template_map,
+                            );
+                        } catch (TypeParseTreeException $e) {
+                            throw new DocblockParseException(
+                                $method_entry . ' is not a valid method: ' . $e->getMessage(),
+                                0,
+                                $e,
+                            );
+                        }
+
+                        $docblock_lines[] = '@return '
+                            . $return_type->toNamespacedString($aliases->namespace, $aliases->uses, null, false);
                     }
 
                     $method_tree = $method_tree->children[0];
@@ -563,6 +580,11 @@ final class ClassLikeDocblockParser
                         ),
                     );
                 }
+
+                $statements[0]->stmts[0]->setAttribute(
+                    'psalm_tag',
+                    isset($parsed_docblock->tags['psalm-method'][$offset]),
+                );
 
                 $info->methods[] = $statements[0]->stmts[0];
             }
