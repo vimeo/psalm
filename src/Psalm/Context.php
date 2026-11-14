@@ -258,6 +258,12 @@ final class Context
     public array $phantom_classes = [];
 
     /**
+     * Whether this is the context of an operand of `&&`, which passes the classes it checked with class_exists
+     * on to the operator it is part of
+     */
+    public bool $inside_logical_operand = false;
+
+    /**
      * A list of functions checked with function_exists
      *
      * @var array<lowercase-string,true>

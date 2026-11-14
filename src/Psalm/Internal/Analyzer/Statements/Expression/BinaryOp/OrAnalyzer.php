@@ -65,6 +65,8 @@ final class OrAnalyzer
 
         $codebase = $statements_analyzer->getCodebase();
 
+        $pre_phantom_classes = $context->phantom_classes;
+
         $post_leaving_if_context = null;
 
         // we cap this at max depth of 4 to prevent quadratic behaviour
@@ -218,6 +220,20 @@ final class OrAnalyzer
 
         $right_context = clone $context;
 
+        // the classes the right side is only reached for when they exist, and those of checks on the left whose
+        // result GuardedClasses doesn't follow, which every check adds
+        $right_context->phantom_classes = [
+            ...$pre_phantom_classes,
+            ...array_diff_key(
+                array_diff_key($left_context->phantom_classes, $pre_phantom_classes),
+                GuardedClasses::checkedIn($stmt->left),
+            ),
+            ...GuardedClasses::unknownWhenResult($stmt->left, false, $codebase),
+        ];
+
+        // the classes checked with class_exists() on the left are checked after the condition too
+        $context->phantom_classes = array_merge($context->phantom_classes, $left_context->phantom_classes);
+
         if ($stmt->left instanceof PhpParser\Node\Expr\BinaryOp\BooleanOr
             && $left_assigned_var_ids
             && $post_leaving_if_context
@@ -287,6 +303,8 @@ final class OrAnalyzer
         }
 
         IfConditionalAnalyzer::handleParadoxicalCondition($statements_analyzer, $stmt->right);
+
+        $context->phantom_classes = array_merge($context->phantom_classes, $right_context->phantom_classes);
 
         $right_referenced_var_ids = $right_context->cond_referenced_var_ids;
         $right_context->cond_referenced_var_ids = array_merge($pre_referenced_var_ids, $right_referenced_var_ids);
