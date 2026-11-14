@@ -1530,8 +1530,8 @@ final class StubTest extends DeferredAnalyzerTestCase
     {
         $this->expectException(CodeException::class);
         $this->expectExceptionMessage(
-            "NullableReturnStatement - src/somefile.php:4:28 - The declared return type 'int' for tokenPos is not "
-            . "nullable, but the function returns 'int|null'",
+            'NullableReturnStatement - src' . DIRECTORY_SEPARATOR . 'somefile.php:4:28 - '
+            . "The declared return type 'int' for tokenPos is not nullable, but the function returns 'int|null'",
         );
         $this->setUpWithStubFile('tests/fixtures/stubs/property_type_of_mapped_class.phpstub', '8.4');
 
