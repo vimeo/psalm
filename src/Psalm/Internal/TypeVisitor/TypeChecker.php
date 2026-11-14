@@ -72,6 +72,19 @@ final class TypeChecker extends TypeVisitor
     private bool $has_errors = false;
 
     /**
+     * Whether the result of the check holds wherever the type is: not when a phantom class (a class_exists() check
+     * around the code) let a class pass
+     */
+    private bool $context_free = true;
+
+    /**
+     * The types this checker marked as checked, for check() to unmark when the result can't be kept
+     *
+     * @var list<Atomic|Union|MutableUnion>
+     */
+    private array $checked_types = [];
+
+    /**
      * Whether the node being visited is in an invariant type param of a generic object, where entering a
      * callable's parameter types doesn't change the position
      */
@@ -136,8 +149,7 @@ final class TypeChecker extends TypeVisitor
                 $this->prevent_template_covariance = $outer_prevents_covariance;
                 $this->in_invariant_position = $outer_in_invariant_position;
 
-                /** @psalm-suppress InaccessibleProperty Doesn't affect anything else */
-                $type->checked = true;
+                $this->markChecked($type);
 
                 return self::DONT_TRAVERSE_CHILDREN;
             }
@@ -155,8 +167,7 @@ final class TypeChecker extends TypeVisitor
             $this->checkKeyOrValueOfAlias($type);
         }
 
-        /** @psalm-suppress InaccessibleProperty Doesn't affect anything else */
-        $type->checked = true;
+        $this->markChecked($type);
 
         return null;
     }
@@ -194,9 +205,36 @@ final class TypeChecker extends TypeVisitor
         return $result;
     }
 
-    public function hasErrors(): bool
+    /**
+     * Checks the type, and marks it and the types in it as checked only if that raised no issue (a suppressed one
+     * included) and holds wherever the type is, so that checking it again elsewhere reports the same issues
+     *
+     * @return bool whether the type has no errors
+     * @psalm-external-mutation-free
+     */
+    public function check(Union|MutableUnion $type): bool
     {
-        return $this->has_errors;
+        $issue_count = IssueBuffer::getAcceptedIssueCount();
+
+        $this->traverse($type);
+
+        if ($this->context_free && IssueBuffer::getAcceptedIssueCount() === $issue_count) {
+            return true;
+        }
+
+        foreach ($this->checked_types as $checked_type) {
+            /** @psalm-suppress InaccessibleProperty, ImpurePropertyAssignment `checked` only memoises the check */
+            $checked_type->checked = false;
+        }
+
+        return !$this->has_errors;
+    }
+
+    private function markChecked(Atomic|Union|MutableUnion $type): void
+    {
+        /** @psalm-suppress InaccessibleProperty Doesn't affect anything else */
+        $type->checked = true;
+        $this->checked_types[] = $type;
     }
 
     /**
@@ -249,6 +287,8 @@ final class TypeChecker extends TypeVisitor
                 $this->has_errors = true;
                 return null;
             }
+        } else {
+            $this->context_free = false;
         }
 
         $fq_class_name_lc = strtolower($atomic->value);
