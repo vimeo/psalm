@@ -16,6 +16,7 @@ use Psalm\Internal\Codebase\TaintFlowGraph;
 use Psalm\Internal\FileManipulation\FileManipulationBuffer;
 use Psalm\Internal\LanguageServer\LanguageServer;
 use Psalm\Internal\MethodIdentifier;
+use Psalm\Internal\Overlay\ReferenceIndex;
 use Psalm\Internal\Provider\ClassLikeStorageProvider;
 use Psalm\Internal\Provider\FileProvider;
 use Psalm\Internal\Provider\FileReferenceProvider;
@@ -136,6 +137,9 @@ final class ProjectAnalyzer
     public bool $show_diff = false;
 
     public bool $full_run = false;
+
+    /** Whether a full run records the code use edges and writes the reference index of overlay analysis */
+    public bool $record_references = false;
 
     public bool $only_replace_php_types_with_non_docblock_types = false;
 
@@ -485,10 +489,11 @@ final class ProjectAnalyzer
 
         $this->full_run = true;
 
-        // only `--diff`, unused code detection and reference lookups read the code use graph edges
+        // `--diff`, unused code detection, reference lookups and the reference index read the code use graph edges
         $this->codebase->code_use_graph->record_edges = $is_diff
             || $this->codebase->find_unused_code !== null
-            || $this->codebase->collect_locations;
+            || $this->codebase->collect_locations
+            || $this->record_references;
 
         $reference_cache = $this->file_reference_provider->loadReferenceCache(true);
 
@@ -1136,6 +1141,10 @@ final class ProjectAnalyzer
 
         if ($this->project_cache_provider) {
             $this->project_cache_provider->processSuccessfulRun($start_time, $psalm_version);
+        }
+
+        if ($this->record_references && $this->file_reference_provider->cache) {
+            ReferenceIndex::build($this)->save($this->file_reference_provider->cache);
         }
     }
 

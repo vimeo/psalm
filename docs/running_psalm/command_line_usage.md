@@ -23,6 +23,10 @@ Psalm exits with status `0` when it successfully completed and found no issues,
 successfully but found some issues. Any exit status apart from those indicate
 some internal problem.
 
+## Reference index
+
+`--record-references` makes a full run also write a reference index into the cache: which files depend on which, and the size and content hash of every file the run depended on. It needs a cache and no path arguments.
+
 ## Shepherd
 
 Psalm currently offers some GitHub integration with public projects.

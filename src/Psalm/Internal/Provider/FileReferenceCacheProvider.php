@@ -29,6 +29,7 @@ final class FileReferenceCacheProvider
     private const UNKNOWN_MEMBER_CACHE_NAME = 'unknown_member_references';
     private const METHOD_PARAM_USE_CACHE_NAME = 'method_param_uses';
     private const CODE_USE_GRAPH_CACHE_NAME = 'code_use_graph';
+    private const REFERENCE_INDEX_CACHE_NAME = 'reference_index';
     /** @var Cache<array> */
     private readonly Cache $cache;
 
@@ -134,6 +135,12 @@ final class FileReferenceCacheProvider
     public function setCachedCodeUseGraph(array $data): void
     {
         $this->cache->saveItem(self::CODE_USE_GRAPH_CACHE_NAME, $data);
+    }
+
+    /** @see \Psalm\Internal\Overlay\ReferenceIndex */
+    public function setReferenceIndex(array $index): void
+    {
+        $this->cache->saveItem(self::REFERENCE_INDEX_CACHE_NAME, $index);
     }
 
     /**
