@@ -1247,6 +1247,16 @@ final class TaintTest extends TestCase
 
                     v(zzz: (string) $_GET["x"]);',
             ],
+            'dontTaintTheVariadicOfASpecializedFunctionWithASecondArgumentOfAnotherCall' => [
+                'code' => '<?php // --taint-analysis
+                    /** @psalm-taint-specialize */
+                    function v(string $a, string ...$rest): string {
+                        return $rest[1];
+                    }
+
+                    echo v("", "", "");
+                    $unused = v("", "", (string) $_GET["x"]);',
+            ],
             'guardAnOverrideParameterTakesNoArgumentOfTheParentVariadicItDoesNotBind' => [
                 'code' => '<?php // --taint-analysis
                     class Base {
@@ -6175,6 +6185,143 @@ final class TaintTest extends TestCase
                     }
 
                     v("", (string) $_GET["x"]);',
+                'error_message' => 'TaintedHtml',
+            ],
+            'taintTheVariadicWithASecondPositionalArgument' => [
+                'code' => '<?php // --taint-analysis
+                    function v(string $a, string ...$rest): void {
+                        echo $rest[1];
+                    }
+
+                    v("", "", (string) $_GET["x"]);',
+                'error_message' => 'TaintedHtml',
+            ],
+            'taintTheVariadicOfAMethodWithASecondPositionalArgument' => [
+                'code' => '<?php // --taint-analysis
+                    final class A {
+                        public function v(string $a, string ...$rest): void {
+                            echo $rest[1];
+                        }
+                    }
+
+                    (new A())->v("", "", (string) $_GET["x"]);',
+                'error_message' => 'TaintedHtml',
+            ],
+            'taintTheVariadicOfAStaticMethodWithASecondPositionalArgument' => [
+                'code' => '<?php // --taint-analysis
+                    final class A {
+                        public static function v(string $a, string ...$rest): void {
+                            echo $rest[1];
+                        }
+                    }
+
+                    A::v("", "", (string) $_GET["x"]);',
+                'error_message' => 'TaintedHtml',
+            ],
+            'taintTheVariadicOfAConstructorWithASecondPositionalArgument' => [
+                'code' => '<?php // --taint-analysis
+                    final class A {
+                        public function __construct(string $a, string ...$rest) {
+                            echo $rest[1];
+                        }
+                    }
+
+                    new A("", "", (string) $_GET["x"]);',
+                'error_message' => 'TaintedHtml',
+            ],
+            'taintTheVariadicWithANamedArgumentAfterAPositionalOne' => [
+                'code' => '<?php // --taint-analysis
+                    function v(string $a, string ...$rest): void {
+                        echo $rest["k"];
+                    }
+
+                    v("", "", k: (string) $_GET["x"]);',
+                'error_message' => 'TaintedHtml',
+            ],
+            'taintTheVariadicWithASecondUnpackedArgument' => [
+                'code' => '<?php // --taint-analysis
+                    function v(string $a, string ...$rest): void {
+                        echo $rest[1];
+                    }
+
+                    v("", "", ...[(string) $_GET["x"]]);',
+                'error_message' => 'TaintedHtml',
+            ],
+            'taintTheVariadicOfASpecializedFunctionWithASecondPositionalArgument' => [
+                'code' => '<?php // --taint-analysis
+                    /** @psalm-taint-specialize */
+                    function v(string $a, string ...$rest): string {
+                        return $rest[1];
+                    }
+
+                    echo v("", "", (string) $_GET["x"]);',
+                'error_message' => 'TaintedHtml',
+            ],
+            'taintTheVariadicOfAnInheritedMethodWithASecondPositionalArgument' => [
+                'code' => '<?php // --taint-analysis
+                    class Base {
+                        public function v(string $a, string ...$rest): void {
+                            echo $rest[1];
+                        }
+                    }
+
+                    final class Child extends Base {
+                        public function go(): void {
+                            $this->v("", "", (string) $_GET["x"]);
+                        }
+                    }',
+                'error_message' => 'TaintedHtml',
+            ],
+            'taintTheVariadicOfAParentMethodWithASecondPositionalArgument' => [
+                'code' => '<?php // --taint-analysis
+                    class Base {
+                        public function v(string $a, string ...$rest): void {
+                            echo $rest[1];
+                        }
+                    }
+
+                    final class Child extends Base {
+                        #[\Override]
+                        public function v(string $a, string ...$rest): void {
+                            parent::v($a, "", (string) $_GET["x"]);
+                        }
+                    }',
+                'error_message' => 'TaintedHtml',
+            ],
+            'taintTheVariadicOfAnOverrideWithASecondPositionalArgument' => [
+                'code' => '<?php // --taint-analysis
+                    class Base {
+                        public function v(string $a, string ...$rest): void {}
+                    }
+
+                    final class Child extends Base {
+                        #[\Override]
+                        public function v(string $a, string ...$rest): void {
+                            echo $rest[1];
+                        }
+                    }
+
+                    function viaParent(Base $receiver): void {
+                        $receiver->v("", "", (string) $_GET["x"]);
+                    }',
+                'error_message' => 'TaintedHtml',
+            ],
+            'taintTheVariadicSinkWithASecondPositionalArgument' => [
+                'code' => '<?php // --taint-analysis
+                    /** @psalm-taint-sink html $rest */
+                    function v(string $a, string ...$rest): void {}
+
+                    v("", "", (string) $_GET["x"]);',
+                'error_message' => 'TaintedHtml',
+            ],
+            'taintTheFlowOfTheVariadicWithASecondPositionalArgument' => [
+                'code' => '<?php // --taint-analysis
+                    /** @psalm-flow ($rest) -> return */
+                    function v(string $a, string ...$rest): string {
+                        return "";
+                    }
+
+                    echo v("", "", (string) $_GET["x"]);',
                 'error_message' => 'TaintedHtml',
             ],
             'taintAnOverrideParameterWithAPositionalArgumentOfTheParentVariadic' => [
