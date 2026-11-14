@@ -3353,6 +3353,62 @@ final class CapabilitiesTest extends TestCase
                     }',
                 'error_message' => 'NullableReturnStatement',
             ],
+            'mutatorWritingByReferenceMustNotKeepGetter' => [
+                'code' => '<?php
+                    final class Child {}
+                    final class Owner {
+                        public ?Child $child = null;
+                        /** @psalm-mutation-free */
+                        public function getChild(): ?Child { return $this->child; }
+                    }
+                    final class Other {
+                        private int $n = 0;
+                        public function take(?Child &$slot): void {
+                            ++$this->n;
+                            $slot = null;
+                        }
+                    }
+                    function afterTake(Owner $owner, Other $other): Child {
+                        if ($owner->getChild() === null) {
+                            return new Child();
+                        }
+                        $other->take($owner->child);
+                        return $owner->getChild();
+                    }',
+                'error_message' => 'NullableReturnStatement',
+            ],
+            'mutatorCallingAnImpureClosureOfItsPurityTemplateMustNotKeepGetter' => [
+                'code' => '<?php
+                    final class Child {}
+                    final class Owner {
+                        public ?Child $child = null;
+                        /** @psalm-mutation-free */
+                        public function getChild(): ?Child { return $this->child; }
+                    }
+                    final class Runner {
+                        private int $runs = 0;
+                        /**
+                         * @psalm-capabilities read-props|write-this-props
+                         * @psalm-purity-template P
+                         * @param Closure[P](): void $f
+                         * @psalm-purity-from-template P
+                         */
+                        public function run(Closure $f): void {
+                            ++$this->runs;
+                            $f();
+                        }
+                    }
+                    function afterRun(Owner $owner, Runner $runner): Child {
+                        if ($owner->getChild() === null) {
+                            return new Child();
+                        }
+                        $runner->run(function () use ($owner): void {
+                            $owner->child = null;
+                        });
+                        return $owner->getChild();
+                    }',
+                'error_message' => 'NullableReturnStatement',
+            ],
             'mutatorWithExternalEffectsMustNotKeepGetter' => [
                 'code' => '<?php
                     final class Child {}
@@ -6874,6 +6930,37 @@ final class CapabilitiesTest extends TestCase
                     }
                     Magic::noop();
                     return $a->x;
+                }',
+        );
+
+        $this->analyzeFile('somefile.php', new Context());
+    }
+
+    public function testWithoutRememberedPropertiesAWriteToAnotherObjectForgetsDirectGetters(): void
+    {
+        $this->expectException(CodeException::class);
+        $this->expectExceptionMessage('NullableReturnStatement');
+        Config::getInstance()->remember_property_assignments_after_call = false;
+
+        $this->addFile(
+            'somefile.php',
+            '<?php
+                final class Child {}
+                final class Owner {
+                    public ?Child $child = null;
+                    /** @psalm-mutation-free */
+                    public function getChild(): ?Child { return $this->child; }
+                }
+                final class Other {
+                    private int $n = 0;
+                    public function touch(): void { ++$this->n; }
+                }
+                function afterTouch(Owner $owner, Other $other): Child {
+                    if ($owner->getChild() === null) {
+                        return new Child();
+                    }
+                    $other->touch();
+                    return $owner->getChild();
                 }',
         );
 

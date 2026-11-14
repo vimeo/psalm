@@ -589,12 +589,11 @@ final class MethodCallPurityAnalyzer
             // may be NONE while the callee still writes its own properties.
             $context->removeMutableObjectVars(
                 true,
-                preserved_methods: $config->remember_property_assignments_after_call
-                    // the call writes nothing but properties of its receiver
-                    && ($method_storage->writes_only_this_properties
+                // the call writes nothing but properties of its receiver (and its by-reference arguments, which
+                // the caller forgets)
+                preserved_methods: ($method_storage->writes_only_this_properties
                         || ($callee_capabilities & Capabilities::WRITE_PROPS) === 0)
                     && ($template_capabilities & (Capabilities::WRITE_PROPS | Capabilities::WRITE_THIS_PROPS)) === 0
-                    && !self::hasByRefParam($method_storage)
                     ? self::getUnaffectedPropertyGetters(
                         $context,
                         $codebase,
@@ -647,8 +646,7 @@ final class MethodCallPurityAnalyzer
     /**
      * The memoized results of direct getters (`return $this->prop;`, see PropertyStorage::$getter_method) that a
      * call writing only the properties of its receiver cannot change. Such a result is the property it returns, and
-     * with `rememberPropertyAssignmentsAfterCall` what is known of a property of another object is kept after the
-     * call: the result is kept the same way, unless
+     * is kept like what is known of a property of another object, unless
      * - the getter is called on the receiver of the call or on what it holds (the call may write anything there,
      *   through the other methods of the receiver it calls),
      * - the getter returns a property of the name of one the call writes (the two objects may be the same, or the
@@ -785,18 +783,6 @@ final class MethodCallPurityAnalyzer
         }
 
         return null;
-    }
-
-    /** @psalm-capabilities read-props */
-    private static function hasByRefParam(MethodStorage $method_storage): bool
-    {
-        foreach ($method_storage->params as $param) {
-            if ($param->by_ref) {
-                return true;
-            }
-        }
-
-        return false;
     }
 
     /**
