@@ -3280,6 +3280,21 @@ final class FunctionCallTest extends TestCase
     public static function providerInvalidCodeParse(): iterable
     {
         return [
+            'aliasOfAUserFunctionImportedWithAnotherCasingIsReported' => [
+                'code' => '<?php
+                    namespace Lib {
+                        function fooBar(): int {
+                            return 1;
+                        }
+                    }
+
+                    namespace App {
+                        use function Lib\FOOBAR as run;
+
+                        echo run();
+                    }',
+                'error_message' => 'WrongCaseFunction - src' . DIRECTORY_SEPARATOR . 'somefile.php:11:30 - Function FOOBAR is declared as fooBar and has wrong casing',
+            ],
             'wrongCaseOfAFunctionCall' => [
                 'code' => '<?php
                     function fooBar(): void {}
