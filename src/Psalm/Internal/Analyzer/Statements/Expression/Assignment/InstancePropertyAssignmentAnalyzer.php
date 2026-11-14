@@ -1214,7 +1214,7 @@ final class InstancePropertyAssignmentAnalyzer
         // but we don't want to throw an error
         // Hack has a similar issue: https://github.com/facebook/hhvm/issues/5164
         if ($lhs_type_part instanceof TObject
-            || $codebase->classlikes->isUniversalObjectCrate($lhs_type_part->value)
+            || $codebase->classlikes->isUniversalObjectCrate($lhs_type_part->value, $prop_name)
             || in_array(
                 strtolower($lhs_type_part->value),
                 Config::getInstance()->getUniversalObjectCrates() + [

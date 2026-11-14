@@ -67,6 +67,43 @@ final class MethodMoveTest extends DeferredAnalyzerTestCase
     }
 
 
+    public function testMigrationAloneMarksTheFileAsChanged(): void
+    {
+        $this->project_analyzer = new ProjectAnalyzer(
+            new TestConfig(),
+            new Providers(
+                $this->file_provider,
+                new FakeParserCacheProvider(),
+            ),
+        );
+
+        $file_path = self::$src_dir_path . 'somefile.php';
+        $input = '<?php
+            namespace Ns;
+
+            class A {
+                public static function Foo() : void {}
+            }
+
+            class B {
+            }';
+
+        $this->addFile($file_path, $input);
+
+        $codebase = $this->project_analyzer->getCodebase();
+
+        $this->project_analyzer->refactorCodeAfterCompletion(['Ns\A::Foo' => 'Ns\B::Fedcba']);
+        $this->analyzeFile($file_path, new Context());
+        $this->project_analyzer->prepareMigration();
+
+        $this->assertSame(0, $codebase->analyzer->getChangedFilesCount());
+
+        $this->project_analyzer->migrateCode();
+
+        $this->assertNotSame($input, $codebase->getFileContents($file_path));
+        $this->assertSame(1, $codebase->analyzer->getChangedFilesCount());
+    }
+
     /**
      * @return array<string,array{input:string,output:string,migrations:array<string, string>}>
      * @psalm-pure
