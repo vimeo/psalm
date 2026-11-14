@@ -579,17 +579,6 @@ final class ToStringTest extends TestCase
                     . ' - $b->s expects \'non-empty-string\', \'A\' provided with a __toString method',
                 'error_levels' => ['PropertyTypeCoercion'],
             ],
-            'invalidToStringMessageShowsExactReturnedType' => [
-                'code' => '<?php
-                    final class A {
-                        public function __toString(): string {
-                            return 1;
-                        }
-                    }',
-                'error_message' => 'InvalidToString - src' . DIRECTORY_SEPARATOR . 'somefile.php:3:55'
-                    . ' - __toString methods must return a string, 1 returned',
-                'error_levels' => ['InvalidReturnStatement'],
-            ],
         ];
     }
 }

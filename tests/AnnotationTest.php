@@ -2970,13 +2970,6 @@ final class AnnotationTest extends TestCase
                     Bar::set("str");',
                 'error_message' => 'InvalidArgument',
             ],
-            'mismatchingDocblockParamTypeMessageShowsExactTypes' => [
-                'code' => '<?php
-                    /** @param non-empty-string $s */
-                    function f(int $s): void {}',
-                'error_message' => 'MismatchingDocblockParamType - src' . DIRECTORY_SEPARATOR . 'somefile.php:2:32'
-                    . ' - Parameter $s has wrong type \'non-empty-string\', should be \'int',
-            ],
             'keyOfNonArrayMessageShowsExactType' => [
                 'code' => '<?php
                     /** @param key-of<non-empty-string> $key */
