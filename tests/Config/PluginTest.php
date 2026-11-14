@@ -6,28 +6,34 @@ namespace Psalm\Tests\Config;
 
 use InvalidArgumentException;
 use Override;
+use PHPUnit\Framework\Attributes\DataProvider;
 use Psalm\Config;
 use Psalm\Context;
 use Psalm\Exception\CodeException;
 use Psalm\Exception\ConfigException;
+use Psalm\Exception\UnsupportedIssueToFixException;
 use Psalm\Internal\Analyzer\ProjectAnalyzer;
 use Psalm\Internal\DataFlow\DataFlowNode;
 use Psalm\Internal\IncludeCollector;
-use Psalm\Internal\Provider\FakeFileProvider;
 use Psalm\Internal\Provider\Providers;
-use Psalm\Internal\RuntimeCaches;
 use Psalm\IssueBuffer;
 use Psalm\Plugin\EventHandler\AfterCodebasePopulatedInterface;
 use Psalm\Plugin\EventHandler\AfterEveryFunctionCallAnalysisInterface;
+use Psalm\Plugin\EventHandler\BeforeFileAnalysisInterface;
 use Psalm\Plugin\EventHandler\Event\AfterCodebasePopulatedEvent;
 use Psalm\Plugin\EventHandler\Event\AfterEveryFunctionCallAnalysisEvent;
+use Psalm\Plugin\EventHandler\Event\BeforeFileAnalysisEvent;
 use Psalm\PluginRegistrationSocket;
 use Psalm\Report;
 use Psalm\Report\ReportOptions;
+use Psalm\Tests\Config\Plugin\FixableIssuePlugin;
+use Psalm\Tests\DeferredAnalyzerTestCase;
 use Psalm\Tests\Internal\Provider\FakeParserCacheProvider;
-use Psalm\Tests\TestCase;
 use Psalm\Tests\TestConfig;
 
+use function array_fill_keys;
+use function array_keys;
+use function basename;
 use function dirname;
 use function get_class;
 use function getcwd;
@@ -36,11 +42,13 @@ use function ob_end_clean;
 use function ob_start;
 use function restore_error_handler;
 use function set_error_handler;
+use function sort;
 use function sprintf;
+use function str_starts_with;
 
 use const DIRECTORY_SEPARATOR;
 
-final class PluginTest extends TestCase
+final class PluginTest extends DeferredAnalyzerTestCase
 {
     #[Override]
     public static function setUpBeforeClass(): void
@@ -52,16 +60,6 @@ final class PluginTest extends TestCase
         $argv = [];
 
         new TestConfig();
-    }
-
-    /**
-     * @psalm-external-mutation-free
-     */
-    #[Override]
-    public function setUp(): void
-    {
-        RuntimeCaches::clearAll();
-        $this->file_provider = new FakeFileProvider();
     }
 
     private function getProjectAnalyzerWithConfig(Config $config): ProjectAnalyzer
@@ -230,6 +228,117 @@ final class PluginTest extends TestCase
         $this->analyzeFile($file_path, new Context());
     }
 
+    /**
+     * @return list<string> the messages of the IncorrectFunctionCasing issues
+     */
+    private function analyzeWithFunctionCasingChecker(string $code): array
+    {
+        $this->project_analyzer = $this->getProjectAnalyzerWithConfig(
+            TestConfig::loadFromXML(
+                dirname(__DIR__, 2) . DIRECTORY_SEPARATOR,
+                '<?xml version="1.0"?>
+                <psalm
+                    errorLevel="1"
+                >
+                    <projectFiles>
+                        <directory name="src" />
+                    </projectFiles>
+                    <plugins>
+                        <plugin filename="examples/plugins/FunctionCasingChecker.php" />
+                    </plugins>
+                </psalm>',
+            ),
+        );
+
+        $this->project_analyzer->getCodebase()->config->initializePlugins($this->project_analyzer);
+        $this->project_analyzer->getCodebase()->config->throw_exception = false;
+
+        $file_path = (string) getcwd() . '/src/somefile.php';
+
+        $this->addFile($file_path, $code);
+        $this->analyzeFile($file_path, new Context(), false);
+
+        $messages = [];
+
+        foreach (IssueBuffer::getIssuesDataForFile($file_path) as $issue) {
+            if ($issue->type === 'IncorrectFunctionCasing') {
+                $messages[] = $issue->message . ' (line ' . $issue->line_from . ')';
+            }
+        }
+
+        return $messages;
+    }
+
+    public function testFunctionCasingCheckerAcceptsTheAliasOfATraitMethod(): void
+    {
+        self::assertSame(
+            [],
+            $this->analyzeWithFunctionCasingChecker(
+                '<?php
+                trait T {
+                    public function doThing(): void {}
+                }
+
+                class A {
+                    use T { doThing as aliasedThing; }
+                }
+
+                function f(A $a): void {
+                    $a->doThing();
+                    $a->aliasedThing();
+                }',
+            ),
+        );
+    }
+
+    public function testFunctionCasingCheckerExpectsTheCasingOfTheTraitAlias(): void
+    {
+        self::assertSame(
+            [
+                'Function is incorrectly cased, expecting doThing (line 11)',
+                'Function is incorrectly cased, expecting aliasedThing (line 12)',
+            ],
+            $this->analyzeWithFunctionCasingChecker(
+                '<?php
+                trait T {
+                    public function doThing(): void {}
+                }
+
+                class A {
+                    use T { doThing as aliasedThing; }
+                }
+
+                function f(A $a): void {
+                    $a->dothing();
+                    $a->aliasedthing();
+                }',
+            ),
+        );
+    }
+
+    public function testFunctionCasingCheckerExpectsTheCasingOfAMethodThatOverridesATraitAlias(): void
+    {
+        self::assertSame(
+            ['Function is incorrectly cased, expecting bar (line 13)'],
+            $this->analyzeWithFunctionCasingChecker(
+                '<?php
+                trait T {
+                    public function foo(): void {}
+                }
+
+                class A {
+                    use T { foo as bAr; }
+
+                    public function bar(): void {}
+                }
+
+                function f(A $a): void {
+                    $a->BAR();
+                }',
+            ),
+        );
+    }
+
     public function testEchoAnalyzerPluginWithJustHtml(): void
     {
         $this->project_analyzer = $this->getProjectAnalyzerWithConfig(
@@ -381,6 +490,140 @@ final class PluginTest extends TestCase
                 'after-analysis' => true,
             ],
             $file_storage->custom_metadata,
+        );
+    }
+
+    public function testBeforeFileAnalysisHookMarksTheTopLevelCodeOfAFileCliOnly(): void
+    {
+        $this->project_analyzer = $this->getProjectAnalyzerWithConfig(
+            TestConfig::loadFromXML(
+                dirname(__DIR__, 2) . DIRECTORY_SEPARATOR,
+                '<?xml version="1.0"?>
+                <psalm
+                    errorLevel="1"
+                >
+                    <projectFiles>
+                        <directory name="src" />
+                    </projectFiles>
+                </psalm>',
+            ),
+        );
+
+        $hook = new class implements BeforeFileAnalysisInterface {
+            #[Override]
+            public static function beforeAnalyzeFile(BeforeFileAnalysisEvent $event): void
+            {
+                if (str_starts_with(basename($event->getStatementsSource()->getFilePath()), 'console')) {
+                    $event->markFileAsCliOnly();
+                }
+            }
+        };
+
+        $codebase = $this->project_analyzer->getCodebase();
+        (new PluginRegistrationSocket($codebase->config, $codebase))->registerHooksFromClass(get_class($hook));
+        $codebase->config->throw_exception = false;
+        $codebase->config->respect_include_once = true;
+
+        $dir = (string) getcwd() . DIRECTORY_SEPARATOR . 'src' . DIRECTORY_SEPARATOR;
+        $files = [
+            'console.php' => '<?php
+                /** @psalm-cli-only */
+                function import(): void {}
+
+                require __DIR__ . "/helper.php";
+                import();
+                array_map(function (int $i): void {
+                    import();
+                }, [1]);
+                array_map(fn(int $i) => import(), [1]);
+                echo (string) $_GET["name"];
+
+                function handle(): void {
+                    import();
+                    echo (string) $_GET["name"];
+                }
+
+                return new /** @psalm-cli-only */ class {};',
+            'helper.php' => '<?php
+                import();
+                echo (string) $_GET["name"];',
+            'web.php' => '<?php
+                require __DIR__ . "/console.php";
+                import();
+                echo (string) $_GET["name"];
+
+                /** @psalm-cli-only */
+                function boot(): void {
+                    require __DIR__ . "/boot.php";
+                }
+
+                /** @psalm-cli-only */
+                function prepare(): void {
+                    require_once __DIR__ . "/once.php";
+                }
+
+                require_once __DIR__ . "/once.php";
+                require __DIR__ . "/console_ns.php";
+                require __DIR__ . "/command_child.php";',
+            'boot.php' => '<?php
+                import();',
+            'once.php' => '<?php
+                import();',
+            'console_ns.php' => '<?php
+                namespace App;
+
+                \import();
+                echo (string) $_GET["name"];
+
+                class Command
+                {
+                    public int $x;
+
+                    public function __construct()
+                    {
+                        $this->x = 1;
+                    }
+                }',
+            'command_child.php' => '<?php
+                namespace App;
+
+                final class ChildCommand extends Command
+                {
+                    public int $y;
+
+                    public function __construct()
+                    {
+                        parent::__construct();
+                        $this->y = 2;
+                    }
+                }',
+        ];
+        foreach ($files as $name => $code) {
+            $this->addFile($dir . $name, $code);
+            $codebase->addFilesToAnalyze([$dir . $name => $dir . $name]);
+        }
+
+        $this->analyzeFile($dir . 'web.php', new Context(), false, true);
+
+        $issues = [];
+        foreach (IssueBuffer::getIssuesData() as $file_issues) {
+            foreach ($file_issues as $issue) {
+                if ($issue->type === 'CliOnlyCall' || $issue->type === 'TaintedHtml') {
+                    $issues[] = basename($issue->file_path) . ':' . $issue->line_from . ' ' . $issue->type;
+                }
+            }
+        }
+        sort($issues);
+
+        self::assertSame(
+            [
+                'console.php:14 CliOnlyCall',
+                'console.php:15 TaintedHtml',
+                'once.php:2 CliOnlyCall',
+                'web.php:3 CliOnlyCall',
+                'web.php:4 TaintedHtml',
+            ],
+            $issues,
         );
     }
 
@@ -1774,5 +2017,264 @@ final class PluginTest extends TestCase
         );
 
         $this->analyzeFile($file_path, new Context());
+    }
+
+    public function testPluginFixesTheIssueItDeclaresWhenAskedTo(): void
+    {
+        $files = $this->alterWithFixableIssuePlugin(['LegacyCall']);
+
+        $this->assertStringNotContainsString('return legacy_call();', $files['somefile.php']);
+        $this->assertStringNotContainsString('return legacy_call();', $files['otherfile.php']);
+    }
+
+    public function testPluginFixesTheIssueItDeclaresWithAll(): void
+    {
+        $this->assertStringNotContainsString(
+            'return legacy_call();',
+            $this->alterWithFixableIssuePlugin(['all'])['somefile.php'],
+        );
+    }
+
+    public function testPluginDoesNotFixTheIssueItDeclaresWhenAskedForAnother(): void
+    {
+        $this->assertStringNotContainsString(
+            'return modern_call();',
+            $this->alterWithFixableIssuePlugin(['MissingReturnType'])['somefile.php'],
+        );
+    }
+
+    public function testPluginDoesNotFixTheIssueItDeclaresWhereItIsSuppressed(): void
+    {
+        $somefile = $this->alterWithFixableIssuePlugin(
+            ['LegacyCall'],
+            docblock: '/** @psalm-suppress LegacyCall */',
+        )['somefile.php'];
+
+        $this->assertMatchesRegularExpression('/function a\(\): int \{\s+return legacy_call\(\);/', $somefile);
+        $this->assertMatchesRegularExpression('/function b\(\): int \{\s+return modern_call\(\);/', $somefile);
+    }
+
+    public function testPluginDoesNotFixTheIssueItDeclaresWhenTheConfigSuppressesIt(): void
+    {
+        $files = $this->alterWithFixableIssuePlugin(
+            ['LegacyCall'],
+            issue_handlers: '<PluginIssue name="LegacyCall" errorLevel="suppress" />',
+        );
+
+        $this->assertStringNotContainsString('return modern_call();', $files['somefile.php']);
+        $this->assertStringNotContainsString('return modern_call();', $files['otherfile.php']);
+    }
+
+    public function testPluginDoesNotFixTheIssueItDeclaresInTheFilesTheConfigSuppressesItIn(): void
+    {
+        // a <file> filter needs the file on disk, and the test files aren't
+        $files = $this->alterWithFixableIssuePlugin(
+            ['LegacyCall'],
+            issue_handlers: '<PluginIssue name="LegacyCall">
+                <errorLevel type="suppress"><directory name="src/Psalm" /></errorLevel>
+            </PluginIssue>',
+        );
+
+        $this->assertStringNotContainsString('return legacy_call();', $files['somefile.php']);
+        $this->assertStringNotContainsString('return modern_call();', $files['otherfile.php']);
+    }
+
+    public function testPluginReportsTheIssueItDeclaresWithoutAlter(): void
+    {
+        $this->project_analyzer = $this->getProjectAnalyzerWithFixableIssuePlugin();
+        $this->project_analyzer->getCodebase()->config->initializePlugins($this->project_analyzer);
+
+        $this->expectException(CodeException::class);
+        $this->expectExceptionMessage('LegacyCall');
+
+        $this->analyzeLegacyCalls();
+    }
+
+    public function testPluginDoesNotFixTheIssueItDeclaresWithoutAlteringCode(): void
+    {
+        $this->project_analyzer = $this->getProjectAnalyzerWithFixableIssuePlugin();
+        $this->project_analyzer->setIssuesToFix(['LegacyCall' => true]);
+        $this->project_analyzer->getCodebase()->config->initializePlugins($this->project_analyzer);
+
+        $this->expectException(CodeException::class);
+        $this->expectExceptionMessage('LegacyCall');
+
+        $this->analyzeLegacyCalls();
+    }
+
+    public function testPluginDeclaringANonIssueClassStillReportsWithoutPsalter(): void
+    {
+        $this->project_analyzer = $this->getProjectAnalyzerWithFixableIssuePlugin(
+            '<fixableIssue>stdClass</fixableIssue>',
+        );
+        $this->project_analyzer->getCodebase()->config->initializePlugins($this->project_analyzer);
+
+        $this->expectException(CodeException::class);
+        $this->expectExceptionMessage('LegacyCall');
+
+        $this->analyzeLegacyCalls();
+    }
+
+    public function testUnsupportedIssueToFixListsThePluginDeclaredIssuesLast(): void
+    {
+        $this->project_analyzer = $this->getProjectAnalyzerWithFixableIssuePlugin();
+
+        $this->expectException(UnsupportedIssueToFixException::class);
+        $this->expectExceptionMessageMatches('/fix issue\(s\): Bogus\R.*,MissingThrowsDocblock,LegacyCall$/');
+
+        $this->project_analyzer->setIssuesToFix(['Bogus' => true, 'LegacyCall' => true]);
+    }
+
+    public function testPluginNotDeclaringFixableIssuesIsLeftOut(): void
+    {
+        require_once __DIR__ . '/Plugin/FilePlugin.php';
+
+        $this->project_analyzer = $this->getProjectAnalyzerWithFixableIssuePlugin(
+            other_plugins: '<pluginClass class="Psalm\Test\Config\Plugin\FilePlugin" />',
+        );
+        $this->project_analyzer->setIssuesToFix(['LegacyCall' => true]);
+
+        $this->assertSame(['LegacyCall' => true], $this->project_analyzer->getIssuesToFix());
+    }
+
+    public function testPluginDeclaringOnlyAnIssuePsalmFixesKeepsTheSupportedIssues(): void
+    {
+        $this->project_analyzer = $this->getProjectAnalyzerWithFixableIssuePlugin(
+            '<fixableIssue>Psalm\Issue\MissingReturnType</fixableIssue>',
+        );
+
+        $this->expectException(UnsupportedIssueToFixException::class);
+        $this->expectExceptionMessageMatches('/fix issue\(s\): LegacyCall\R.*,MissingThrowsDocblock$/');
+
+        $this->project_analyzer->setIssuesToFix(['LegacyCall' => true]);
+    }
+
+    public function testPluginDeclaringIssuesPsalmFixesKeepsWhatAllFixes(): void
+    {
+        $this->project_analyzer = $this->getProjectAnalyzerWithFixableIssuePlugin(
+            '<fixableIssue>Psalm\Issue\MissingReturnType</fixableIssue>
+            <fixableIssue>Psalm\Issue\MissingPureAnnotation</fixableIssue>
+            <fixableIssue>Psalm\Tests\Config\Plugin\LegacyCall</fixableIssue>
+            <fixableIssue>Psalm\Tests\Config\Plugin\LegacyCall</fixableIssue>',
+        );
+        $all_issues_to_fix = [...ProjectAnalyzer::getSupportedIssuesToFix(), 'LegacyCall'];
+
+        $this->project_analyzer->setAllIssuesToFix();
+
+        $this->assertSame($all_issues_to_fix, array_keys($this->project_analyzer->getIssuesToFix()));
+        $this->assertSame($all_issues_to_fix, $this->project_analyzer->getAllIssuesToFix());
+    }
+
+    /**
+     * @return iterable<string, array{string}>
+     * @psalm-pure
+     */
+    public static function provideNonIssueClasses(): iterable
+    {
+        yield 'not an issue class' => ['stdClass'];
+        yield 'abstract issue class' => ['Psalm\Issue\PluginIssue'];
+    }
+
+    #[DataProvider('provideNonIssueClasses')]
+    public function testPluginDeclaringANonIssueClassFails(string $class): void
+    {
+        $this->project_analyzer = $this->getProjectAnalyzerWithFixableIssuePlugin(
+            '<fixableIssue>' . $class . '</fixableIssue><fixableIssue>Psalm\Tests\Config\Plugin\LegacyCall</fixableIssue>',
+        );
+
+        $this->expectException(ConfigException::class);
+        $this->expectExceptionCode(1_635_800_583);
+        $this->expectExceptionMessage('Failed to get the fixable issues of plugin ' . FixableIssuePlugin::class);
+
+        $this->project_analyzer->setIssuesToFix(['LegacyCall' => true]);
+    }
+
+    private function getProjectAnalyzerWithFixableIssuePlugin(
+        string $plugin_config = '',
+        string $issue_handlers = '',
+        string $other_plugins = '',
+    ): ProjectAnalyzer {
+        return $this->getProjectAnalyzerWithConfig(
+            TestConfig::loadFromXML(
+                dirname(__DIR__, 2) . DIRECTORY_SEPARATOR,
+                '<?xml version="1.0"?>
+                <psalm loadLibraryPlugins="false">
+                    <projectFiles>
+                        <directory name="src" />
+                    </projectFiles>
+                    <plugins>' . $other_plugins . '
+                        <pluginClass class="Psalm\Tests\Config\Plugin\FixableIssuePlugin">'
+                            . $plugin_config
+                        . '</pluginClass>
+                    </plugins>
+                    <issueHandlers>' . $issue_handlers . '</issueHandlers>
+                </psalm>',
+            ),
+        );
+    }
+
+    /**
+     * @param list<string> $issues_to_fix
+     * @return array<string, string> the contents of somefile.php and otherfile.php once altered
+     */
+    private function alterWithFixableIssuePlugin(
+        array $issues_to_fix,
+        string $docblock = '',
+        string $issue_handlers = '',
+    ): array {
+        $this->project_analyzer = $this->getProjectAnalyzerWithFixableIssuePlugin(issue_handlers: $issue_handlers);
+
+        if ($issues_to_fix === ['all']) {
+            $this->project_analyzer->setAllIssuesToFix();
+        } else {
+            $this->project_analyzer->setIssuesToFix(array_fill_keys($issues_to_fix, true));
+        }
+
+        $this->project_analyzer->alterCodeAfterCompletion();
+        $codebase = $this->project_analyzer->getCodebase();
+        $codebase->config->initializePlugins($this->project_analyzer);
+
+        $files = [];
+        foreach ($this->analyzeLegacyCalls($docblock) as $file_path) {
+            $codebase->analyzer->updateFile($file_path, false);
+            $files[basename($file_path)] = $codebase->getFileContents($file_path);
+        }
+
+        return $files;
+    }
+
+    /**
+     * @return list<string> the paths of src/somefile.php, which declares the functions, and src/Psalm/otherfile.php
+     */
+    private function analyzeLegacyCalls(string $docblock = ''): array
+    {
+        $somefile = self::$src_dir_path . 'somefile.php';
+        $otherfile = self::$src_dir_path . 'Psalm' . DIRECTORY_SEPARATOR . 'otherfile.php';
+
+        $this->addFile(
+            $somefile,
+            '<?php
+                function legacy_call(): int { return 1; }
+                function modern_call(): int { return 2; }
+                ' . $docblock . '
+                function a(): int {
+                    return legacy_call();
+                }
+                function b(): int {
+                    return legacy_call();
+                }',
+        );
+        $this->addFile(
+            $otherfile,
+            '<?php
+                function c(): int {
+                    return legacy_call();
+                }',
+        );
+
+        $this->analyzeFile($somefile, new Context());
+        $this->analyzeFile($otherfile, new Context());
+
+        return [$somefile, $otherfile];
     }
 }

@@ -99,8 +99,8 @@ Setting this to `"false"` hides all issues with `Mixed` types in Psalm’s outpu
   resolveFromConfigFile="[bool]"
 />
 ```
-If this is enabled, relative directories mentioned in the config file will be resolved relative to the location
-of the config file. If it is disabled, or absent they will be resolved relative to the working directory of the Psalm process.
+If this is enabled (the default), relative directories mentioned in the config file will be resolved relative to the location
+of the config file. If it is disabled, they will be resolved relative to the working directory of the Psalm process.
 
 New versions of Psalm enable this option when generating config files. Older versions did not include it.
 
@@ -204,7 +204,12 @@ Setting this to `false` means that function calls will cause Psalm to forget wha
   allowStringToStandInForClass="[bool]"
 >
 ```
-When `true`, strings can be used as classes, meaning `$some_string::someMethod()` is allowed. If `false`, only class constant strings (of the form `Foo\Bar::class`) can stand in for classes, otherwise an `InvalidStringClass` issue is emitted. Defaults to `false`.
+When `true`, string literals naming existing, compatible classes are accepted in `class-string`
+arguments and return values, dynamic class expressions, and comparisons against class strings.
+When `false`, prefer `Foo\Bar::class` to a literal class name. Class expressions and
+comparisons emit `InvalidStringClass`; type-checked class-string arguments and returns
+emit the usual type diagnostics. Ordinary strings outside class-name contexts are unaffected.
+Defaults to `false`.
 
 #### disableSuppressAll
 
@@ -384,6 +389,22 @@ When `true`, Psalm will complain when referencing an explicit string offset on a
 ```
 When `true`, Psalm will complain when referencing an explicit integer offset on an array e.g. `$arr[7]` without a user first asserting that it exists (either via an `isset` check or via an object-like array). Defaults to `false`.
 
+#### strictOptionalCallableParams
+```xml
+<psalm
+  strictOptionalCallableParams="[bool]"
+>
+```
+When `true`, a callable whose parameter is required is not accepted where a `callable` type declares that parameter optional (`callable(string=): string`), because the receiver may call it without the argument. Defaults to `false`.
+
+```php
+/** @param callable(string=): string $c */
+function map(callable $c): string { return $c(); }
+
+map(fn(string $a): string => $a); // InvalidArgument
+map(fn(string $a = "d"): string => $a); // no issue
+```
+
 #### ensureOverrideAttribute
 ```xml
 <psalm
@@ -399,6 +420,34 @@ When `true`, Psalm will report class and interface methods that override a metho
 >
 ```
 When `true`, Psalm will report code that could carry a purity annotation: [MissingPureAnnotation](issues/MissingPureAnnotation.md), [MissingImmutableAnnotation](issues/MissingImmutableAnnotation.md), [MissingAbstractPureAnnotation](issues/MissingAbstractPureAnnotation.md) and [MissingInterfaceImmutableAnnotation](issues/MissingInterfaceImmutableAnnotation.md). Defaults to `false`. Running `psalm --alter --issues=MissingPureAnnotation` or `--issues=MissingImmutableAnnotation` turns it on for that run. Capability checks (`ImpureFunctionCall` and the like) compare a call with what the callee declares, whatever this is set to.
+
+#### assumeGettersMutationFree
+```xml
+<psalm
+  assumeGettersMutationFree="[bool]"
+>
+```
+When `true`, a method with no purity annotation whose body is `return $this->property;` (of a property with a type) is taken as mutation-free, so it can be called from a `@psalm-pure` function or a mutation-free method. Set it to `false` to take such a method as any other method without an annotation (it needs `@psalm-pure`, `@psalm-mutation-free` or `@psalm-capabilities` to be called from there), for example when the classes you call may change their getters. Defaults to `true`.
+
+```php
+<?php
+
+final class Lib
+{
+    private string $name = '';
+
+    public function getName(): string
+    {
+        return $this->name;
+    }
+}
+
+/** @psalm-pure */
+function name(Lib $lib): string
+{
+    return $lib->getName(); // no issue; ImpureMethodCall with assumeGettersMutationFree="false"
+}
+```
 
 #### loadLibraryStubs
 ```xml
@@ -422,7 +471,6 @@ When `true`, Psalm enables these plugins without listing them in [`<plugins>`](p
 | `psalm/plugin-mockery` | `composer.json` requires `mockery/mockery` |
 | `psalm/plugin-symfony` | `composer.json` requires `symfony/framework-bundle` |
 | `psalm/plugin-laravel` | `composer.json` requires `laravel/framework` or `orchestra/testbench` |
-| `psalm/plugin-sabre-event` | `composer.json` requires `sabre/event` |
 | the plugin of `webmozart/assert` (2.4 and later) | `webmozart/assert` is installed |
 
 Psalm itself requires the `psalm/*` plugins, so they don't need installing.
@@ -548,7 +596,7 @@ Whether or not to report issues only for files that were passed explicitly as ar
   cacheDirectory="[string]"
 >
 ```
-The directory used to store Psalm's cache data - if you specify one (and it does not already exist), its parent directory must already exist, otherwise Psalm will throw an error.
+The directory used to store Psalm's cache data. Psalm creates it recursively when initializing the cache.
 
 Defaults to `$XDG_CACHE_HOME/psalm`. If `$XDG_CACHE_HOME` is either not set or empty, a default equal to `$HOME/.cache/psalm` is used or `sys_get_temp_dir() . '/psalm'` when not defined.
 
@@ -802,6 +850,16 @@ or interfaces defined in a stub file, this stub should be configured with attrib
 <stubs>
   <file name="path/to/file.php" />
   <file name="path/to/abstract-class.php" preloadClasses="true" />
+</stubs>
+```
+
+A `<directory name="path/to/stubs" />` adds every `.php` and `.phpstub` file below it, in alphabetical order, and takes
+the same `preloadClasses` attribute:
+
+```xml
+<stubs>
+  <directory name="path/to/stubs" />
+  <directory name="path/to/base-classes" preloadClasses="true" />
 </stubs>
 ```
 

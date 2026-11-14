@@ -6,15 +6,14 @@ namespace Psalm\Internal\Analyzer\Statements\Expression\Assignment;
 
 use PhpParser;
 use Psalm\CodeLocation;
+use Psalm\Codebase;
 use Psalm\Context;
-use Psalm\FileManipulation;
 use Psalm\Internal\Analyzer\ClassAnalyzer;
 use Psalm\Internal\Analyzer\ClassLikeAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\ExpressionIdentifier;
 use Psalm\Internal\Analyzer\Statements\Expression\Fetch\StaticPropertyFetchAnalyzer;
 use Psalm\Internal\Analyzer\Statements\ExpressionAnalyzer;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
-use Psalm\Internal\FileManipulation\FileManipulationBuffer;
 use Psalm\Internal\Type\Comparator\TypeComparisonResult;
 use Psalm\Internal\Type\Comparator\UnionTypeComparator;
 use Psalm\Internal\Type\TypeExpander;
@@ -31,8 +30,10 @@ use Psalm\Type;
 use Psalm\Type\Atomic\TNamedObject;
 use Psalm\Type\Union;
 
-use function explode;
+use function strcspn;
+use function strpos;
 use function strtolower;
+use function substr;
 
 /**
  * @internal
@@ -159,53 +160,22 @@ final class StaticPropertyAssignmentAnalyzer
                 false,
             );
 
-            $declaring_property_id = strtolower($declaring_property_class) . '::$' . $prop_name;
-
             if ($codebase->alter_code && $stmt->class instanceof PhpParser\Node\Name) {
-                $moved_class = $codebase->classlikes->handleClassLikeReferenceInMigration(
-                    $codebase,
+                StaticPropertyFetchAnalyzer::handleMigration(
                     $statements_analyzer,
+                    $stmt,
                     $stmt->class,
-                    $fq_class_name,
                     $context,
+                    $fq_class_name,
+                    $declaring_property_class,
+                    $prop_name->name,
                 );
-
-                if (!$moved_class) {
-                    foreach ($codebase->property_transforms as $original_pattern => $transformation) {
-                        if ($declaring_property_id === $original_pattern) {
-                            [$old_declaring_fq_class_name] = explode('::$', $declaring_property_id);
-                            [$new_fq_class_name, $new_property_name] = explode('::$', $transformation);
-
-                            $file_manipulations = [];
-
-                            if (strtolower($new_fq_class_name) !== $old_declaring_fq_class_name) {
-                                $file_manipulations[] = new FileManipulation(
-                                    (int) $stmt->class->getAttribute('startFilePos'),
-                                    (int) $stmt->class->getAttribute('endFilePos') + 1,
-                                    Type::getStringFromFQCLN(
-                                        $new_fq_class_name,
-                                        $statements_analyzer->getNamespace(),
-                                        $statements_analyzer->getAliasedClassesFlipped(),
-                                        null,
-                                    ),
-                                );
-                            }
-
-                            $file_manipulations[] = new FileManipulation(
-                                (int) $stmt->name->getAttribute('startFilePos'),
-                                (int) $stmt->name->getAttribute('endFilePos') + 1,
-                                '$' . $new_property_name,
-                            );
-
-                            FileManipulationBuffer::add($statements_analyzer->getFilePath(), $file_manipulations);
-                        }
-                    }
-                }
             }
 
             $class_storage = $codebase->classlike_storage_provider->get($declaring_property_class);
 
             if ($var_id) {
+                self::forgetAliasesOfStaticProperty($codebase, $context, $var_id);
                 $context->vars_in_scope[$var_id] = $assignment_value_type;
             }
 
@@ -357,10 +327,99 @@ final class StaticPropertyAssignmentAnalyzer
             }
 
             if ($var_id) {
+                self::forgetAliasesOfStaticProperty($codebase, $context, $var_id);
                 $context->vars_in_scope[$var_id] = $assignment_value_type;
             }
         }
 
         return null;
+    }
+
+    /**
+     * `self::$p`, `static::$p`, `parent::$p` and `Foo::$p` can name the same property: what is known of the others
+     * does not hold after one of them is written
+     */
+    public static function forgetAliasesOfStaticProperty(
+        Codebase $codebase,
+        Context $context,
+        string $var_id,
+    ): void {
+        $separator = strpos($var_id, '::$');
+
+        if ($separator === false) {
+            return;
+        }
+
+        $assigned_class = substr($var_id, 0, $separator);
+        $property_end = strcspn($var_id, '[-', $separator + 3);
+        $property_id = substr($var_id, $separator + 3, $property_end);
+
+        foreach ($context->vars_in_scope as $other_id => $_) {
+            $other_separator = strpos($other_id, '::$');
+
+            if ($other_separator === false
+                || $other_id === $var_id
+                || substr($other_id, $other_separator + 3, strcspn($other_id, '[-', $other_separator + 3))
+                    !== $property_id
+            ) {
+                continue;
+            }
+
+            $other_class = substr($other_id, 0, $other_separator);
+
+            // the offsets and properties of the very property that is assigned stay as they are
+            if ($other_class === $assigned_class) {
+                continue;
+            }
+
+            if (self::mayBeTheSameProperty($codebase, $context, $assigned_class, $other_class, $property_id)) {
+                $context->remove($other_id);
+            }
+        }
+    }
+
+    private static function mayBeTheSameProperty(
+        Codebase $codebase,
+        Context $context,
+        string $first,
+        string $second,
+        string $property_name,
+    ): bool {
+        $first_class = self::resolveRelativeClass($context, $first);
+        $second_class = self::resolveRelativeClass($context, $second);
+
+        if ($first_class === null || $second_class === null) {
+            return true;
+        }
+
+        if (Context::getStaticPropertyDeclaringClass($codebase, $first_class, $property_name)
+            === Context::getStaticPropertyDeclaringClass($codebase, $second_class, $property_name)
+        ) {
+            return true;
+        }
+
+        // `static` can also be a descendant of the class the code is in, with a property of its own
+        return (strtolower($first) === 'static' && self::classExtends($codebase, $second_class, $first_class))
+            || (strtolower($second) === 'static' && self::classExtends($codebase, $first_class, $second_class));
+    }
+
+    private static function classExtends(Codebase $codebase, string $class, string $possible_parent): bool
+    {
+        return $codebase->classOrInterfaceExists($class)
+            && $codebase->classOrInterfaceExists($possible_parent)
+            && $codebase->classExtends($class, $possible_parent);
+    }
+
+    /**
+     * @return ?string null when the class that `self`, `static` or `parent` stands for is unknown
+     * @psalm-capabilities read-props
+     */
+    private static function resolveRelativeClass(Context $context, string $class): ?string
+    {
+        return match (strtolower($class)) {
+            'self', 'static' => $context->self,
+            'parent' => $context->parent,
+            default => $class,
+        };
     }
 }

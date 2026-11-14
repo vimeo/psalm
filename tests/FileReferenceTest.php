@@ -14,7 +14,6 @@ use Psalm\Internal\Provider\FakeFileProvider;
 use Psalm\Internal\Provider\FileReferenceCacheProvider;
 use Psalm\Internal\Provider\FileReferenceProvider;
 use Psalm\Internal\Provider\Providers;
-use Psalm\Internal\RuntimeCaches;
 use Psalm\Tests\Internal\Provider\FakeParserCacheProvider;
 
 use function array_values;
@@ -30,17 +29,7 @@ final class FileReferenceTest extends TestCase
     #[Override]
     public function setUp(): void
     {
-        RuntimeCaches::clearAll();
-
-        $this->file_provider = new FakeFileProvider();
-
-        $this->project_analyzer = new ProjectAnalyzer(
-            new TestConfig(),
-            new Providers(
-                $this->file_provider,
-                new FakeParserCacheProvider(),
-            ),
-        );
+        parent::setUp();
 
         $this->project_analyzer->getCodebase()->collectLocations();
         $this->project_analyzer->setPhpVersion('7.3', 'tests');
@@ -68,7 +57,7 @@ final class FileReferenceTest extends TestCase
         $found_references = $this->project_analyzer->getCodebase()->findReferencesToSymbol($symbol);
         $found_references = array_values($found_references);
 
-        $this->assertSame(count($found_references), count($expected_locations));
+        $this->assertCount(count($found_references), $expected_locations);
 
         foreach ($found_references as &$loc) {
             $loc = $loc->getLineNumber() . ':' . $loc->getColumn()
@@ -342,6 +331,29 @@ final class FileReferenceTest extends TestCase
 
         self::assertSame(['/b.php', '/c.php'], $provider->getFilesInheritingFromFile($file_path));
         self::assertSame(['/b.php', '/c.php'], $provider->getFilesReferencingFile($file_path));
+    }
+
+    public function testFileOfAClassInheritsFromTheClassesItsMixinLookupReaches(): void
+    {
+        $codebase = $this->project_analyzer->getCodebase();
+        $deep_path = self::$src_dir_path . 'deep.php';
+        $mid_path = self::$src_dir_path . 'mid.php';
+        $host_path = self::$src_dir_path . 'host.php';
+        $this->file_provider->registerFile($deep_path, '<?php final class Deep {}');
+        $this->file_provider->registerFile($mid_path, '<?php /** @mixin Deep */ final class Mid {}');
+        $this->file_provider->registerFile(
+            $host_path,
+            '<?php /** @mixin Mid */ trait ForwardsCalls {} abstract class Base { use ForwardsCalls; } final class Host extends Base {}',
+        );
+        $codebase->addFilesToAnalyze([$deep_path => $deep_path, $mid_path => $mid_path, $host_path => $host_path]);
+        $codebase->scanFiles();
+
+        $provider = $codebase->file_reference_provider;
+        $provider->updateReferenceCache($codebase, [$deep_path => true, $mid_path => true]);
+
+        // a change to the mixin of the mixin of a trait of the parent class reaches the file of the class
+        self::assertEqualsCanonicalizing([$mid_path, $host_path], $provider->getFilesInheritingFromFile($deep_path));
+        self::assertSame([$host_path], $provider->getFilesInheritingFromFile($mid_path));
     }
 
     private function scanFileWithReferenceCache(FileReferenceCacheProvider $cache): string

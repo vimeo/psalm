@@ -41,6 +41,8 @@ use Psalm\Type\Union;
 
 use function in_array;
 use function is_string;
+use function str_starts_with;
+use function strpbrk;
 
 /**
  * @internal
@@ -226,6 +228,25 @@ final class VariableFetchAnalyzer
             $expr_result = ExpressionAnalyzer::analyze($statements_analyzer, $stmt->name, $context);
             $context->inside_general_use = $was_inside_general_use;
 
+            // any variable assigned so far may be the one fetched
+            if ($statements_analyzer->data_flow_graph) {
+                foreach ($context->vars_in_scope as $scope_var_id => $scope_var_type) {
+                    if (!str_starts_with($scope_var_id, '$')
+                        || strpbrk($scope_var_id, '->[:') !== false
+                    ) {
+                        continue;
+                    }
+
+                    foreach ($scope_var_type->parent_nodes as $parent_node) {
+                        $statements_analyzer->data_flow_graph->addPath(
+                            $parent_node,
+                            DataFlowNode::getForVariableUse(),
+                            'variable-use',
+                        );
+                    }
+                }
+            }
+
             return $expr_result;
         }
 
@@ -317,42 +338,34 @@ final class VariableFetchAnalyzer
             if ($first_appearance && !$context->inside_isset && !$context->inside_unset) {
                 if ($context->is_global) {
                     if ($codebase->alter_code) {
-                        if (!isset($project_analyzer->getIssuesToFix()['PossiblyUndefinedGlobalVariable'])) {
-                            return true;
+                        if (isset($project_analyzer->getIssuesToFix()['PossiblyUndefinedGlobalVariable'])) {
+                            $branch_point = $statements_analyzer->getBranchPoint($var_name);
+
+                            if ($branch_point) {
+                                $statements_analyzer->addVariableInitialization($var_name, $branch_point);
+                            }
                         }
-
-                        $branch_point = $statements_analyzer->getBranchPoint($var_name);
-
-                        if ($branch_point) {
-                            $statements_analyzer->addVariableInitialization($var_name, $branch_point);
-                        }
-
-                        return true;
+                    } else {
+                        IssueBuffer::maybeAdd(
+                            new PossiblyUndefinedGlobalVariable(
+                                'Possibly undefined global variable ' . $var_name . ', first seen on line ' .
+                                    $first_appearance->getLineNumber(),
+                                new CodeLocation($statements_analyzer->getSource(), $stmt),
+                                $var_name,
+                            ),
+                            $statements_analyzer->getSuppressedIssues(),
+                            (bool) $statements_analyzer->getBranchPoint($var_name),
+                        );
                     }
+                } elseif ($codebase->alter_code
+                    && isset($project_analyzer->getIssuesToFix()['PossiblyUndefinedVariable'])
+                ) {
+                    $branch_point = $statements_analyzer->getBranchPoint($var_name);
 
-                    IssueBuffer::maybeAdd(
-                        new PossiblyUndefinedGlobalVariable(
-                            'Possibly undefined global variable ' . $var_name . ', first seen on line ' .
-                                $first_appearance->getLineNumber(),
-                            new CodeLocation($statements_analyzer->getSource(), $stmt),
-                            $var_name,
-                        ),
-                        $statements_analyzer->getSuppressedIssues(),
-                        (bool) $statements_analyzer->getBranchPoint($var_name),
-                    );
+                    if ($branch_point) {
+                        $statements_analyzer->addVariableInitialization($var_name, $branch_point);
+                    }
                 } else {
-                    if ($codebase->alter_code
-                        && isset($project_analyzer->getIssuesToFix()['PossiblyUndefinedVariable'])
-                    ) {
-                        $branch_point = $statements_analyzer->getBranchPoint($var_name);
-
-                        if ($branch_point) {
-                            $statements_analyzer->addVariableInitialization($var_name, $branch_point);
-                        }
-
-                        return true;
-                    }
-
                     IssueBuffer::maybeAdd(
                         new PossiblyUndefinedVariable(
                             'Possibly undefined variable ' . $var_name . ', first seen on line ' .

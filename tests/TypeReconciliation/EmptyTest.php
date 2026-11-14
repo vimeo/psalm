@@ -21,11 +21,44 @@ final class EmptyTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'emptyOfAnOffsetWithAKeyThatMayBeAnyString' => [
+                'code' => '<?php
+                    function f(string $k): void {
+                        $a = ["key" => "test"];
+                        if (empty($a[$k])) {
+                            echo "empty";
+                        }
+                    }',
+            ],
+            'emptyOfAnOptionalOffsetWithALiteralKeyVariable' => [
+                'code' => '<?php
+                    /** @param array{key?: non-empty-string} $a */
+                    function f(array $a): void {
+                        $k = "key";
+                        if (empty($a[$k])) {
+                            echo "empty";
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => ['RiskyTruthyFalsyComparison'],
+            ],
+            'emptyOfAnOffsetOfAnOpenShapeWithALiteralKeyVariable' => [
+                'code' => '<?php
+                    /** @param array<string, string> $a */
+                    function f(array $a): void {
+                        $k = "key";
+                        if (empty($a[$k])) {
+                            echo "empty";
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => ['RiskyTruthyFalsyComparison'],
+            ],
             'ifNotUndefinedAndEmpty' => [
                 'code' => '<?php
                     $a = !empty($b) ? $b : null;',
                 'assertions' => [
-                    '$a' => 'mixed|null',
+                    '$a' => 'non-empty-mixed|null',
                 ],
                 'ignored_issues' => ['MixedAssignment'],
             ],
@@ -646,6 +679,51 @@ final class EmptyTest extends TestCase
                     /** @var array<true> $a */
                     if (empty($a["a"])) {}',
             ],
+            'truthyMixedIsStringStaysNonFalsy' => [
+                'code' => '<?php
+                    /** @var mixed $m */
+                    $m = $_GET["a"];
+                    /** @var mixed $n */
+                    $n = $_GET["b"];
+                    /** @var mixed $o */
+                    $o = $_GET["c"];
+                    /** @var mixed $p */
+                    $p = $_GET["d"];
+                    if (empty($m) || !is_string($m)) {
+                        exit;
+                    }
+                    $a = $m;
+                    if (!is_string($n) || empty($n)) {
+                        exit;
+                    }
+                    $b = $n;
+                    if (!$o || !is_array($o)) {
+                        exit;
+                    }
+                    $c = $o;
+                    if (!$p || !is_bool($p)) {
+                        exit;
+                    }
+                    $d = $p;',
+                'assertions' => [
+                    '$a===' => 'non-falsy-string',
+                    '$b===' => 'non-falsy-string',
+                    '$c===' => 'non-empty-array<array-key, mixed>',
+                    '$d===' => 'true',
+                ],
+                'ignored_issues' => ['MixedAssignment'],
+            ],
+            'undefinedVariableNotEmptyThenIsString' => [
+                'code' => '<?php
+                    if (empty($s) || !is_string($s)) {
+                        exit;
+                    }
+                    $a = $s;',
+                'assertions' => [
+                    '$a===' => 'non-falsy-string',
+                ],
+                'ignored_issues' => ['MixedAssignment', 'UndefinedGlobalVariable'],
+            ],
         ];
     }
 
@@ -656,6 +734,15 @@ final class EmptyTest extends TestCase
     public static function providerInvalidCodeParse(): iterable
     {
         return [
+            'emptyOfAnOffsetWithALiteralKeyVariable' => [
+                'code' => '<?php
+                    $a = ["key" => "test"];
+                    $k = "key";
+                    if (empty($a[$k])) {
+                        echo "empty";
+                    }',
+                'error_message' => 'TypeDoesNotContainType',
+            ],
             'preventImpossibleEmpty' => [
                 'code' => '<?php
                     function foo(array $arr) : void {
@@ -675,7 +762,7 @@ final class EmptyTest extends TestCase
                         }
                     }',
                 'error_message' => 'RedundantCondition',
-                'error_levels' => ['MixedAssignment', 'MissingParamType'],
+                'error_levels' => ['MixedAssignment'],
             ],
             'preventEmptyOnBool' => [
                 'code' => '<?php

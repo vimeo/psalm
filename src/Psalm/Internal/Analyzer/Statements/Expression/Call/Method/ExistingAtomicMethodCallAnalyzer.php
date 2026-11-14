@@ -259,6 +259,20 @@ final class ExistingAtomicMethodCallAnalyzer extends CallAnalyzer
             $template_result->template_types += $method_storage->template_types;
         }
 
+        // a template (or intersection) receiver keeps `static` as declared, which the return type expansion resolves;
+        // so does one the method is not of (a `@mixin` user), as the arguments are checked with the method's class,
+        // and a call in a trait, whose closures every class using it shares
+        if ($static_type instanceof TNamedObject
+            && !$static_type->extra_types
+            && (strtolower($static_type->value) === strtolower($method_id->fq_class_name)
+                || $codebase->classExtendsOrImplements($static_type->value, $method_id->fq_class_name))
+            && !self::isInTrait($statements_analyzer)
+        ) {
+            $template_result->static_class_type = $static_type;
+            $template_result->static_class_is_final = $codebase->classlike_storage_provider->get($static_type->value)
+                ->final;
+        }
+
         if ($codebase->store_node_types
             && !$stmt->isFirstClassCallable()
             && !$context->collect_initializations
@@ -320,7 +334,7 @@ final class ExistingAtomicMethodCallAnalyzer extends CallAnalyzer
             $name_code_location = new CodeLocation($statements_analyzer, $stmt_name);
 
             MethodCallProhibitionAnalyzer::analyze(
-                $codebase,
+                $statements_analyzer,
                 $context,
                 $method_id,
                 $statements_analyzer->getFullyQualifiedFunctionMethodOrNamespaceName(),
@@ -474,22 +488,26 @@ final class ExistingAtomicMethodCallAnalyzer extends CallAnalyzer
                 self::applyAssertionsToContext(
                     $stmt_name,
                     ExpressionIdentifier::getExtendedVarId($stmt->var, null, $statements_analyzer),
-                    $assertions,
+                    self::getAssertionsOnArgs($assertions, $method_storage, $args),
                     $args,
                     $template_result,
                     $context,
                     $statements_analyzer,
+                    $fq_class_name,
                 );
             }
 
-            if ($method_storage->if_true_assertions) {
+            $if_true_assertions = $assertionsResolver->resolveIfTrue($method_storage, $class_storage);
+
+            if ($if_true_assertions) {
                 $possibilities = array_map(
                     static fn(Possibilities $assertion): Possibilities => $assertion->getUntemplatedCopy(
                         $template_result,
                         $lhs_var_id,
                         $codebase,
+                        $static_type,
                     ),
-                    $method_storage->if_true_assertions,
+                    self::getAssertionsOnArgs($if_true_assertions, $method_storage, $args),
                 );
                 if ($lhs_var_id === null) {
                     $possibilities = array_filter(
@@ -505,14 +523,17 @@ final class ExistingAtomicMethodCallAnalyzer extends CallAnalyzer
                 );
             }
 
-            if ($method_storage->if_false_assertions) {
+            $if_false_assertions = $assertionsResolver->resolveIfFalse($method_storage, $class_storage);
+
+            if ($if_false_assertions) {
                 $possibilities = array_map(
                     static fn(Possibilities $assertion): Possibilities => $assertion->getUntemplatedCopy(
                         $template_result,
                         $lhs_var_id,
                         $codebase,
+                        $static_type,
                     ),
-                    $method_storage->if_false_assertions,
+                    self::getAssertionsOnArgs($if_false_assertions, $method_storage, $args),
                 );
                 if ($lhs_var_id === null) {
                     $possibilities = array_filter(

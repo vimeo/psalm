@@ -17,7 +17,8 @@ The rest of this page covers what some projects will notice. The complete list o
 - **Callmap return types distinguish documentation from signatures.** Implementations of internal interfaces with only a documentary return type no longer need a native declaration. Native and PHP 8.1+ tentative signatures still require compatible returns, with `#[ReturnTypeWillChange]` applying only to tentative signatures. Tools reading the dictionary files must support their [compact format](../contributing/editing_callmaps.md#full-callmap-format).
 - **Taint analysis runs by default**, in the same run as type checking, and is faster than a separate `--taint-analysis` run (see the [release notes](https://github.com/vimeo/psalm/releases/tag/7.0.0)). To run type checking only, set `runTaintAnalysis="false"`.
 - **New security findings.** If taint analysis reports more than you want to deal with at once, you have these tools ([docs](https://psalm.dev/docs/security_analysis/avoiding_false_positives/)):
-    - `@psalm-cli-only` on a function, method or class: what its code prints is not reported as `TaintedHtml`;
+    - `@psalm-cli-only` on a function, method or class, or a `PHP_SAPI === 'cli'` check: what that code prints is not reported as `TaintedHtml`;
+    - `@psalm-cli-only-instances` on a class whose instances only exist in command-line processes: the same holds for its instance methods and the function-likes taking an instance of it;
     - `<taintAnalysis><ignoreFiles>` in `psalm.xml`: taint paths through the listed files and directories (tests, for example) are not reported;
     - `@psalm-taint-specialize`: each call of a function or each instance of a class is tracked separately;
     - `runTaintAnalysis="false"`: turn it off.
@@ -30,6 +31,6 @@ The rest of this page covers what some projects will notice. The complete list o
 - **Dead code in libraries:** graph-based detection also reports code used only by other unused code, cycles included. Mark entry points and public API with `@psalm-api` (or `@api`).
 - **`--output-format=compact`** now selects the new compact format. Use `table` for the old output.
 - **PHP 8.1 and 32-bit PHP** are no longer supported for running Psalm. Code targeting older PHP versions can still be analysed.
-- **`psalm/plugin-phpunit`:** Psalm 7 requires `^0.21`. Projects that pin `^0.19` or `^0.20` must raise the constraint.
+- **`psalm/plugin-phpunit`:** Psalm 7 requires `^0.21 || ^0.22 || ^1.0`. Projects that pin `^0.19` or `^0.20` must raise the constraint.
 - **Docker:** use the official image, `ghcr.io/psalm/psalm`.
 - **Plugins:** taints are integers (`TaintKind` bitmask) in the plugin API. `TKeyedArray` is built with `TKeyedArray::make()`. Several `Codebase` methods take a `Context`. Plugins must require `psalm/psalm-plugin-api` (`^0.4`), because from now on a Psalm minor or patch release may break the plugin API (see [psalm/psalm-plugin-api](https://packagist.org/packages/psalm/psalm-plugin-api)).

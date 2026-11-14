@@ -40,6 +40,11 @@ final class ClosedInheritanceToUnion
                     $codebase,
                 );
 
+                // a class that can be instantiated is one of the objects too
+                if (!$storage->abstract && !$storage->is_interface) {
+                    $new_types[] = $atomic_type;
+                }
+
                 foreach ($replaced_inheritors->getAtomicTypes() as $replaced_atomic_type) {
                     $new_types[] = $replaced_atomic_type;
                 }

@@ -29,6 +29,8 @@ These issues have very low false-positive rates and indicate definite problems. 
 
  - [AbstractMethodCall](issues/AbstractMethodCall.md)
  - [CheckType](issues/CheckType.md)
+ - [CliOnlyCall](issues/CliOnlyCall.md)
+ - [CliOnlyInstancesUnguarded](issues/CliOnlyInstancesUnguarded.md)
  - [ComplexFunction](issues/ComplexFunction.md)
  - [ComplexMethod](issues/ComplexMethod.md)
  - [ConfigIssue](issues/ConfigIssue.md)
@@ -91,6 +93,7 @@ These issues have very low false-positive rates and indicate definite problems. 
  - [OverriddenPropertyAccess](issues/OverriddenPropertyAccess.md)
  - [ParadoxicalCondition](issues/ParadoxicalCondition.md)
  - [ParentNotFound](issues/ParentNotFound.md)
+ - [ParseError](issues/ParseError.md)
  - [TooFewArguments](issues/TooFewArguments.md)
  - [UndefinedAttributeClass](issues/UndefinedAttributeClass.md)
  - [UndefinedClass](issues/UndefinedClass.md)
@@ -189,6 +192,7 @@ These issues become info (non-blocking) at level 3 and higher.
 These issues become info (non-blocking) at level 4 and higher.
 
  - [ArgumentTypeCoercion](issues/ArgumentTypeCoercion.md)
+ - [CallableByReferenceMismatch](issues/CallableByReferenceMismatch.md)
  - [LessSpecificReturnStatement](issues/LessSpecificReturnStatement.md)
  - [MoreSpecificReturnType](issues/MoreSpecificReturnType.md)
  - [NonInvariantDocblockPropertyType](issues/NonInvariantDocblockPropertyType.md)
@@ -233,6 +237,7 @@ These issues become info (non-blocking) at level 5 and higher.
 
  - [FalseOperand](issues/FalseOperand.md)
  - [ForbiddenCode](issues/ForbiddenCode.md)
+ - [HiddenGeneratorReturn](issues/HiddenGeneratorReturn.md)
  - [IfThisIsMismatch](issues/IfThisIsMismatch.md)
  - [ImplementedParamTypeMismatch](issues/ImplementedParamTypeMismatch.md)
  - [ImplementedReturnTypeMismatch](issues/ImplementedReturnTypeMismatch.md)

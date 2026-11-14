@@ -50,13 +50,16 @@ final class EchoAnalyzer
 
             if ($statements_analyzer->taint_flow_graph) {
                 if ($expr_type && $expr_type->hasObjectType()) {
-                    $expr_type = CastAnalyzer::castStringAttempt(
+                    // only the data-flow path is wanted: the argument check below reports an object that can't be
+                    // a string, whether or not a graph is built
+                    $expr_type = $expr_type->setParentNodes(CastAnalyzer::castStringAttempt(
                         $statements_analyzer,
                         $context,
                         $expr_type,
                         $expr,
                         false,
-                    );
+                        false,
+                    )->parent_nodes);
                 }
 
                 $call_location = new CodeLocation($statements_analyzer->getSource(), $stmt);
@@ -70,7 +73,7 @@ final class EchoAnalyzer
                         | TaintKind::INPUT_HAS_QUOTES
                         | TaintKind::USER_SECRET
                         | TaintKind::SYSTEM_SECRET)
-                    & ~(CliOutput::isInCliOnlyCode($statements_analyzer) ? CliOutput::HTML_TAINTS : 0),
+                    & ~(CliOutput::isInCliOnlyCode($statements_analyzer, $context) ? CliOutput::HTML_TAINTS : 0),
                 );
 
 

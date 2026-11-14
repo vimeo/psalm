@@ -6,6 +6,7 @@ namespace Psalm\Tests;
 
 use Override;
 use PHPUnit\Framework\Attributes\DataProvider;
+use PHPUnit\Framework\Attributes\RequiresPhp;
 use PHPUnit\Framework\Attributes\RunInSeparateProcess;
 use Psalm\Config;
 use Psalm\Context;
@@ -15,11 +16,10 @@ use Psalm\Exception\InvalidClasslikeOverrideException;
 use Psalm\Exception\InvalidMethodOverrideException;
 use Psalm\Internal\Analyzer\ProjectAnalyzer;
 use Psalm\Internal\IncludeCollector;
-use Psalm\Internal\Provider\FakeFileProvider;
 use Psalm\Internal\Provider\Providers;
-use Psalm\Internal\RuntimeCaches;
 use Psalm\Tests\Internal\Provider\FakeParserCacheProvider;
 
+use function array_values;
 use function assert;
 use function dirname;
 use function explode;
@@ -32,7 +32,7 @@ use function substr;
 
 use const DIRECTORY_SEPARATOR;
 
-final class StubTest extends TestCase
+final class StubTest extends DeferredAnalyzerTestCase
 {
     #[Override]
     public static function setUpBeforeClass(): void
@@ -44,16 +44,6 @@ final class StubTest extends TestCase
         $argv = [];
 
         new TestConfig();
-    }
-
-    /**
-     * @psalm-external-mutation-free
-     */
-    #[Override]
-    public function setUp(): void
-    {
-        RuntimeCaches::clearAll();
-        $this->file_provider = new FakeFileProvider();
     }
 
     private function getProjectAnalyzerWithConfig(Config $config): ProjectAnalyzer
@@ -96,6 +86,232 @@ final class StubTest extends TestCase
                 </psalm>',
             ),
         );
+    }
+
+    public function testNonexistentStubDirectory(): void
+    {
+        $this->expectException(ConfigException::class);
+        $this->expectExceptionMessage('Cannot resolve stubs directory path');
+        TestConfig::loadFromXML(
+            dirname(__DIR__),
+            '<?xml version="1.0"?>
+            <psalm
+                errorLevel="1"
+            >
+                <projectFiles>
+                    <directory name="src" />
+                </projectFiles>
+
+                <stubs>
+                    <directory name="tests/fixtures/invalid_stubs_directory" />
+                </stubs>
+            </psalm>',
+        );
+    }
+
+    public function testStubDirectoryDeclaresItsStubsRecursively(): void
+    {
+        $config = TestConfig::loadFromXML(
+            dirname(__DIR__),
+            '<?xml version="1.0"?>
+            <psalm
+                errorLevel="1"
+            >
+                <projectFiles>
+                    <directory name="src" />
+                </projectFiles>
+
+                <stubs>
+                    <directory name="tests/fixtures/stubs_directory" />
+                </stubs>
+            </psalm>',
+        );
+
+        $directory = dirname(__DIR__) . DIRECTORY_SEPARATOR . 'tests' . DIRECTORY_SEPARATOR
+            . 'fixtures' . DIRECTORY_SEPARATOR . 'stubs_directory' . DIRECTORY_SEPARATOR;
+
+        $this->assertSame(
+            [
+                $directory . 'nested' . DIRECTORY_SEPARATOR . 'two.php',
+                $directory . 'one.phpstub',
+            ],
+            array_values($config->getStubFiles()),
+        );
+    }
+
+    public function testStubDirectoryWithPreloadedClassesIsNotAPlainStubFile(): void
+    {
+        $config = TestConfig::loadFromXML(
+            dirname(__DIR__),
+            '<?xml version="1.0"?>
+            <psalm
+                errorLevel="1"
+            >
+                <projectFiles>
+                    <directory name="src" />
+                </projectFiles>
+
+                <stubs>
+                    <directory name="tests/fixtures/stubs_directory" preloadClasses="true" />
+                </stubs>
+            </psalm>',
+        );
+
+        $this->assertSame([], $config->getStubFiles());
+    }
+
+    public function testStubDirectoryMustBeADirectory(): void
+    {
+        $this->expectException(ConfigException::class);
+        $this->expectExceptionMessage('Cannot resolve stubs directory path');
+        TestConfig::loadFromXML(
+            dirname(__DIR__),
+            '<?xml version="1.0"?>
+            <psalm
+                errorLevel="1"
+            >
+                <projectFiles>
+                    <directory name="src" />
+                </projectFiles>
+
+                <stubs>
+                    <directory name="tests/fixtures/stubs_directory/one.phpstub" />
+                </stubs>
+            </psalm>',
+        );
+    }
+
+    public function testStubDirectoryByAbsolutePathAndNextToStubFiles(): void
+    {
+        $fixtures = dirname(__DIR__) . DIRECTORY_SEPARATOR . 'tests' . DIRECTORY_SEPARATOR . 'fixtures';
+
+        $config = TestConfig::loadFromXML(
+            dirname(__DIR__),
+            '<?xml version="1.0"?>
+            <psalm
+                errorLevel="1"
+            >
+                <projectFiles>
+                    <directory name="src" />
+                </projectFiles>
+
+                <stubs>
+                    <file name="tests/fixtures/stubs/systemclass.phpstub" />
+                    <directory name="' . $fixtures . DIRECTORY_SEPARATOR . 'stubs_directory' . '" />
+                </stubs>
+            </psalm>',
+        );
+
+        $this->assertSame(
+            [
+                $fixtures . DIRECTORY_SEPARATOR . 'stubs' . DIRECTORY_SEPARATOR . 'systemclass.phpstub',
+                $fixtures . DIRECTORY_SEPARATOR . 'stubs_directory' . DIRECTORY_SEPARATOR . 'nested'
+                    . DIRECTORY_SEPARATOR . 'two.php',
+                $fixtures . DIRECTORY_SEPARATOR . 'stubs_directory' . DIRECTORY_SEPARATOR . 'one.phpstub',
+            ],
+            array_values($config->getStubFiles()),
+        );
+    }
+
+    public function testStubDirectoriesAndFilesFollowTheOrderOfTheConfig(): void
+    {
+        $fixtures = dirname(__DIR__) . DIRECTORY_SEPARATOR . 'tests' . DIRECTORY_SEPARATOR . 'fixtures';
+
+        $config = TestConfig::loadFromXML(
+            dirname(__DIR__),
+            '<?xml version="1.0"?>
+            <psalm
+                errorLevel="1"
+            >
+                <projectFiles>
+                    <directory name="src" />
+                </projectFiles>
+
+                <stubs>
+                    <file name="tests/fixtures/stubs/systemclass.phpstub" />
+                    <directory name="tests/fixtures/stubs_directory" />
+                    <file name="tests/fixtures/stubs/DomainException.phpstub" />
+                </stubs>
+            </psalm>',
+        );
+
+        $this->assertSame(
+            [
+                $fixtures . DIRECTORY_SEPARATOR . 'stubs' . DIRECTORY_SEPARATOR . 'systemclass.phpstub',
+                $fixtures . DIRECTORY_SEPARATOR . 'stubs_directory' . DIRECTORY_SEPARATOR . 'nested'
+                    . DIRECTORY_SEPARATOR . 'two.php',
+                $fixtures . DIRECTORY_SEPARATOR . 'stubs_directory' . DIRECTORY_SEPARATOR . 'one.phpstub',
+                $fixtures . DIRECTORY_SEPARATOR . 'stubs' . DIRECTORY_SEPARATOR . 'DomainException.phpstub',
+            ],
+            array_values($config->getStubFiles()),
+        );
+    }
+
+    #[DataProvider('providerStubDirectoryPreloadClasses')]
+    public function testStubDirectoryPreloadClassesAttribute(string $attribute, bool $is_preloaded): void
+    {
+        $config = TestConfig::loadFromXML(
+            dirname(__DIR__),
+            '<?xml version="1.0"?>
+            <psalm
+                errorLevel="1"
+            >
+                <projectFiles>
+                    <directory name="src" />
+                </projectFiles>
+
+                <stubs>
+                    <directory name="tests/fixtures/stubs_directory"' . $attribute . ' />
+                </stubs>
+            </psalm>',
+        );
+
+        $this->assertCount($is_preloaded ? 0 : 2, $config->getStubFiles());
+    }
+
+    /**
+     * @psalm-pure
+     * @return iterable<string, array{string, bool}>
+     */
+    public static function providerStubDirectoryPreloadClasses(): iterable
+    {
+        yield 'without the attribute' => ['', false];
+        yield 'true' => [' preloadClasses="true"', true];
+        yield '1' => [' preloadClasses="1"', true];
+        yield 'false' => [' preloadClasses="false"', false];
+        yield '0' => [' preloadClasses="0"', false];
+    }
+
+    public function testStubDirectoryFunctions(): void
+    {
+        $this->project_analyzer = $this->getProjectAnalyzerWithConfig(
+            TestConfig::loadFromXML(
+                dirname(__DIR__),
+                '<?xml version="1.0"?>
+                <psalm
+                    errorLevel="1"
+                >
+                    <projectFiles>
+                        <directory name="src" />
+                    </projectFiles>
+
+                    <stubs>
+                        <directory name="tests/fixtures/stubs_directory" />
+                    </stubs>
+                </psalm>',
+            ),
+        );
+
+        $file_path = (string) getcwd() . '/src/somefile.php';
+
+        $this->addFile(
+            $file_path,
+            '<?php
+                $a = stub_directory_one();
+                $b = stub_directory_two();',
+        );
+
+        $this->analyzeFile($file_path, new Context());
     }
 
     public function testStubFileClass(): void
@@ -1174,6 +1390,127 @@ final class StubTest extends TestCase
         );
 
         $this->analyzeFile($file_path, new Context());
+    }
+
+    #[RequiresPhp('>= 8.4.0')]
+    public function testStubOfBuiltinClassDeclaresPromotedProperty(): void
+    {
+        $this->project_analyzer = $this->getProjectAnalyzerWithConfig(
+            TestConfig::loadFromXML(
+                dirname(__DIR__),
+                '<?xml version="1.0"?>
+                <psalm
+                    errorLevel="1"
+                >
+                    <projectFiles>
+                        <directory name="src" />
+                    </projectFiles>
+
+                    <stubs>
+                        <file name="tests/fixtures/stubs/promoted_property_of_builtin_class.phpstub" />
+                    </stubs>
+                </psalm>',
+            ),
+        );
+        $this->project_analyzer->setPhpVersion('8.4', 'tests');
+
+        $file_path = (string) getcwd() . '/src/somefile.php';
+
+        $this->addFile(
+            $file_path,
+            '<?php
+                /** @return non-empty-string */
+                function constantName(ReflectionConstant $constant): string
+                {
+                    return $constant->name;
+                }',
+        );
+
+        $this->analyzeFile($file_path, new Context());
+    }
+
+    public function testStubRedeclaresPropertyOfAnotherStubWithPromotion(): void
+    {
+        $this->project_analyzer = $this->getProjectAnalyzerWithConfig(
+            TestConfig::loadFromXML(
+                dirname(__DIR__),
+                '<?xml version="1.0"?>
+                <psalm
+                    errorLevel="1"
+                >
+                    <projectFiles>
+                        <directory name="src" />
+                    </projectFiles>
+
+                    <stubs>
+                        <file name="tests/fixtures/stubs/promoted_property_of_stubbed_class.phpstub" />
+                    </stubs>
+                </psalm>',
+            ),
+        );
+        $this->project_analyzer->setPhpVersion('8.2', 'tests');
+
+        $file_path = (string) getcwd() . '/src/somefile.php';
+
+        $this->addFile(
+            $file_path,
+            '<?php
+                final class OrderNotFound extends Exception
+                {
+                    /** @return non-empty-string */
+                    public function reason(): string
+                    {
+                        return $this->message;
+                    }
+                }',
+        );
+
+        $this->analyzeFile($file_path, new Context());
+    }
+
+    public function testStubRedeclaresPropertyOfAnotherStubWithoutDuplicateProperty(): void
+    {
+        $this->project_analyzer = $this->getProjectAnalyzerWithConfig(
+            TestConfig::loadFromXML(
+                dirname(__DIR__),
+                '<?xml version="1.0"?>
+                <psalm
+                    errorLevel="1"
+                >
+                    <projectFiles>
+                        <directory name="src" />
+                    </projectFiles>
+
+                    <stubs>
+                        <file name="tests/fixtures/stubs/property_of_stubbed_class.phpstub" />
+                    </stubs>
+                </psalm>',
+            ),
+        );
+
+        $file_path = (string) getcwd() . '/src/somefile.php';
+
+        $this->addFile(
+            $file_path,
+            '<?php
+                final class OrderNotFound extends Exception
+                {
+                    /** @return non-empty-string */
+                    public function reason(): string
+                    {
+                        return $this->message;
+                    }
+                }',
+        );
+
+        $this->analyzeFile($file_path, new Context());
+
+        $stub_path = dirname(__DIR__) . DIRECTORY_SEPARATOR . 'tests' . DIRECTORY_SEPARATOR . 'fixtures'
+            . DIRECTORY_SEPARATOR . 'stubs' . DIRECTORY_SEPARATOR . 'property_of_stubbed_class.phpstub';
+        $this->assertSame(
+            [],
+            $this->project_analyzer->getCodebase()->file_storage_provider->get($stub_path)->scan_issues,
+        );
     }
 
     public function testStubFileWithPartialClassDefinitionWithMoreMethods(): void

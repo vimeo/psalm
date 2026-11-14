@@ -52,6 +52,12 @@ use const PATHINFO_EXTENSION;
 final class FunctionLikeDocblockParser
 {
     /**
+     * The assertion target of `PHP_SAPI` and `php_sapi_name()`. The `$` of a parameter target is dropped, so
+     * `PHP_SAPI` itself would clash with a parameter named `$PHP_SAPI`; this can't.
+     */
+    public const PHP_SAPI_ASSERTION_TARGET = '\\PHP_SAPI';
+
+    /**
      * @throws DocblockParseException if there was a problem parsing the docblock
      */
     public static function parse(
@@ -175,22 +181,24 @@ final class FunctionLikeDocblockParser
                 }
 
                 if (count($line_parts) > 1) {
-                    if (preg_match('/^(\.\.\.)?&?\$[A-Za-z0-9_\x80-\xff]+,?$/', $line_parts[1])
+                    if (preg_match('/^(\.\.\.)?&?\$[A-Za-z0-9_\x80-\xff]+[,;]?$/', $line_parts[1])
                         && $line_parts[0][0] !== '{'
                     ) {
                         if ($line_parts[1][0] === '&') {
                             $line_parts[1] = substr($line_parts[1], 1);
                         }
 
-                        if ($line_parts[0][0] === '$' && !preg_match('/^\$this(\||$)/', $line_parts[0])) {
+                        if ($line_parts[0][0] === '$'
+                            && !preg_match('/^\$this *(\||$)/', CommentAnalyzer::sanitizeDocblockType($line_parts[0]))
+                        ) {
                             throw new IncorrectDocblockException('Misplaced variable');
                         }
 
-                        $line_parts[1] = (string) preg_replace('/,$/', '', $line_parts[1], 1);
+                        $line_parts[1] = (string) preg_replace('/[,;]$/', '', $line_parts[1], 1);
 
                         $info->globals[] = [
                             'name' => $line_parts[1],
-                            'type' => $line_parts[0],
+                            'type' => CommentAnalyzer::sanitizeDocblockType($line_parts[0]),
                             'line_number' => $comment->getStartLine() + substr_count(
                                 $comment_text,
                                 "\n",
@@ -246,9 +254,13 @@ final class FunctionLikeDocblockParser
 
         if (isset($parsed_docblock->tags['throws'])) {
             foreach ($parsed_docblock->tags['throws'] as $offset => $throws_entry) {
-                // Take everything up to the first whitespace that is not inside
-                // generic parameters, e.g. `Foo<int, string>|Bar description`
-                preg_match('/^(?:[^\s<]++|(<(?:[^<>]++|(?1))*+>))++/', $throws_entry, $matches);
+                // Take everything up to the first whitespace that is not inside generic parameters or next to
+                // a `|`, e.g. `Foo<int, string> | Bar description`
+                preg_match(
+                    '/^(?:[^\s<|]++|(<(?:[^<>]++|(?1))*+>)|(?: |\n *\*?)*\|(?: |\n *\*?)*)++/',
+                    $throws_entry,
+                    $matches,
+                );
                 $throws_class = $matches[0] ?? '';
 
                 if ($throws_class === '') {
@@ -440,9 +452,15 @@ final class FunctionLikeDocblockParser
             foreach ($parsed_docblock->tags[$tag] as $assertion) {
                 $line_parts = self::sanitizeAssertionLineParts(CommentAnalyzer::splitDocLine($assertion));
 
+                if (self::isPhpSapiAssertionTarget($line_parts[1])) {
+                    $param_name = self::PHP_SAPI_ASSERTION_TARGET;
+                } else {
+                    $param_name = $line_parts[1][0] === '$' ? substr($line_parts[1], 1) : $line_parts[1];
+                }
+
                 $assertions[] = [
                     'type'       => $line_parts[0],
-                    'param_name' => $line_parts[1][0] === '$' ? substr($line_parts[1], 1) : $line_parts[1],
+                    'param_name' => $param_name,
                 ];
             }
 
@@ -632,12 +650,12 @@ final class FunctionLikeDocblockParser
             }
 
             if (count($line_parts) > 1) {
-                if (preg_match('/^&?(\.\.\.)?&?\$[A-Za-z0-9_\x80-\xff]+,?$/', $line_parts[1])
+                if (preg_match('/^&?(\.\.\.)?&?\$[A-Za-z0-9_\x80-\xff]+[,;]?$/', $line_parts[1])
                     && ($line_parts[0] === '' || $line_parts[0][0] !== '{')
                 ) {
                     $line_parts[1] = str_replace('&', '', $line_parts[1]);
 
-                    $line_parts[1] = (string) preg_replace('/,$/', '', $line_parts[1], 1);
+                    $line_parts[1] = (string) preg_replace('/[,;]$/', '', $line_parts[1], 1);
 
                     $end = $offset + strlen($line_parts[0]);
 
@@ -645,7 +663,7 @@ final class FunctionLikeDocblockParser
 
                     if ($line_parts[0] === ''
                         || ($line_parts[0][0] === '$'
-                            && !preg_match('/^\$this(\||$)/', $line_parts[0]))
+                            && !preg_match('/^\$this *(\||$)/', $line_parts[0]))
                     ) {
                         throw new IncorrectDocblockException('Misplaced variable');
                     }
@@ -664,7 +682,12 @@ final class FunctionLikeDocblockParser
                     ];
 
                     if (isset($line_parts[1]) && isset($line_parts[2])) {
-                        $description = substr($param, strlen($line_parts[0]) + strlen($line_parts[1]) + 2);
+                        // the description follows the name as written: `& $x`, or on the next line
+                        $description = (string) preg_replace(
+                            '/^[\s*]*&?[\s*]*\S+/',
+                            '',
+                            substr($param, $end - $offset),
+                        );
                         $info_param['description'] = trim($description);
                         // Handle multiline description.
                         $info_param['description'] = (string) preg_replace(
@@ -714,7 +737,9 @@ final class FunctionLikeDocblockParser
      */
     private static function sanitizeAssertionLineParts(array $line_parts): array
     {
-        if (count($line_parts) < 2 || !str_contains($line_parts[1], '$')) {
+        if (count($line_parts) < 2
+            || (!str_contains($line_parts[1], '$') && !self::isPhpSapiAssertionTarget($line_parts[1]))
+        ) {
             throw new IncorrectDocblockException('Misplaced variable');
         }
 
@@ -733,6 +758,19 @@ final class FunctionLikeDocblockParser
         }
 
         return $line_parts;
+    }
+
+    /**
+     * Whether an assertion targets the SAPI PHP runs in, `PHP_SAPI` or `php_sapi_name()`, as comparing them inline
+     * narrows it (e.g. `@psalm-assert 'cli' PHP_SAPI` on a function that throws outside the command line)
+     *
+     * @psalm-pure
+     */
+    private static function isPhpSapiAssertionTarget(string $target): bool
+    {
+        $target = str_starts_with($target, '\\') ? substr($target, 1) : $target;
+
+        return $target === 'PHP_SAPI' || strtolower($target) === 'php_sapi_name()';
     }
 
     /**
@@ -761,7 +799,9 @@ final class FunctionLikeDocblockParser
             $line_parts = CommentAnalyzer::splitDocLine($return_block);
 
             if ($line_parts[0][0] !== '{') {
-                if ($line_parts[0][0] === '$' && !preg_match('/^\$this(\||$)/', $line_parts[0])) {
+                if ($line_parts[0][0] === '$'
+                    && !preg_match('/^\$this *(\||$)/', CommentAnalyzer::sanitizeDocblockType($line_parts[0]))
+                ) {
                     throw new IncorrectDocblockException('Misplaced variable');
                 }
 
@@ -937,7 +977,7 @@ final class FunctionLikeDocblockParser
             return null;
         }
 
-        if (!preg_match('/^(\.\.\.)?&?\$[A-Za-z0-9_\x80-\xff]+,?$/', $line_parts[1])
+        if (!preg_match('/^(\.\.\.)?&?\$[A-Za-z0-9_\x80-\xff]+[,;]?$/', $line_parts[1])
             || $line_parts[0][0] === '{'
         ) {
             return null;
@@ -956,12 +996,12 @@ final class FunctionLikeDocblockParser
         $line_parts[0] = CommentAnalyzer::sanitizeDocblockType($line_parts[0]);
 
         if ($line_parts[0] === ''
-            || ($line_parts[0][0] === '$' && !preg_match('/^\$this(\||$)/', $line_parts[0]))
+            || ($line_parts[0][0] === '$' && !preg_match('/^\$this *(\||$)/', $line_parts[0]))
         ) {
             throw new IncorrectDocblockException('Misplaced variable');
         }
 
-        $line_parts[1] = (string) preg_replace('/,$/', '', $line_parts[1], 1);
+        $line_parts[1] = (string) preg_replace('/[,;]$/', '', $line_parts[1], 1);
 
         return [
             'name' => trim($line_parts[1]),

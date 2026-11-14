@@ -39,7 +39,6 @@ use Psalm\Progress\VoidProgress;
 use Psalm\Report;
 use Psalm\Report\ReportOptions;
 use ReflectionClass;
-use RuntimeException;
 use Symfony\Component\Filesystem\Path;
 use Throwable;
 
@@ -48,12 +47,13 @@ use function array_key_exists;
 use function array_keys;
 use function array_map;
 use function array_merge;
-use function array_shift;
+use function array_search;
 use function array_slice;
 use function array_sum;
 use function array_values;
 use function chdir;
 use function count;
+use function ctype_digit;
 use function defined;
 use function extension_loaded;
 use function file_exists;
@@ -65,12 +65,12 @@ use function gc_collect_cycles;
 use function gc_disable;
 use function getcwd;
 use function getenv;
-use function getopt;
 use function implode;
 use function in_array;
 use function ini_get;
 use function is_array;
 use function is_dir;
+use function is_int;
 use function is_numeric;
 use function is_string;
 use function json_encode;
@@ -124,7 +124,7 @@ final class Psalm
         'r:',
     ];
 
-    private const LONG_OPTIONS = [
+    public const LONG_OPTIONS = [
         'clear-cache',
         'consolidate-cache',
         'clear-global-cache',
@@ -154,10 +154,10 @@ final class Psalm
         'output-format:',
         'plugin:',
         'report:',
-        'report-show-info:',
+        'report-show-info::',
         'root:',
         'set-baseline::',
-        'show-info:',
+        'show-info::',
         'show-snippet::',
         'stats',
         'threads:',
@@ -203,10 +203,7 @@ final class Psalm
         $args = array_slice($argv, 1);
 
         // get options from command line
-        $options = CliUtils::chosenByOperator(getopt(implode('', self::SHORT_OPTIONS), self::LONG_OPTIONS));
-        if (false === $options) {
-            throw new RuntimeException('Failed to parse CLI options');
-        }
+        $options = CliUtils::getOptions($args, self::SHORT_OPTIONS, self::LONG_OPTIONS);
 
         // debug CI environment
         if (!array_key_exists('debug', $options)
@@ -218,7 +215,7 @@ final class Psalm
 
         self::forwardCliCall($options, $argv);
 
-        self::validateCliArguments($args);
+        CliUtils::rejectUnrecognisedOptions($args, self::SHORT_OPTIONS, self::LONG_OPTIONS);
 
         CliUtils::setMemoryLimit($options);
 
@@ -260,7 +257,12 @@ final class Psalm
             // phpcs:ignore SlevomatCodingStandard.Namespaces.ReferenceUsedNamesOnly.ReferenceViaFullyQualifiedName
             /** @return list<ClassLoader> */
             static fn(): array =>
-                CliUtils::requireAutoloaders($current_dir, isset($options['r']), $vendor_dir),
+                CliUtils::requireAutoloaders(
+                    $current_dir,
+                    isset($options['r']),
+                    $vendor_dir,
+                    !array_key_exists('v', $options),
+                ),
         );
 
         $run_taint_analysis = self::shouldRunTaintAnalysis($options);
@@ -454,38 +456,61 @@ final class Psalm
     /** @return int<1, max> */
     public static function getThreads(array $options, Config $config, bool $for_scan): int
     {
+        // validated before the platform checks, so that a wrong value is an error everywhere
+        $scan_threads = self::parseThreadsOption($options, 'scan-threads');
+        $analysis_threads = self::parseThreadsOption($options, 'threads');
+
         if (defined('PHP_WINDOWS_VERSION_MAJOR')) {
             // No support desired for Windows at the moment
             return 1;
-        } elseif (!extension_loaded('pcntl')) {
-            // Psalm requires pcntl for multi-threads support
+        } elseif (!extension_loaded('pcntl') || !extension_loaded('posix') || !function_exists('pcntl_fork')) {
+            // the worker pool forks its workers and kills them with posix_kill()
             return 1;
         }
 
-        if ($for_scan) {
-            if (isset($options['scan-threads'])) {
-                $threads = max(1, (int)$options['scan-threads']);
-            } elseif (isset($options['threads'])) {
-                $threads = max(1, (int)$options['threads']);
-            } elseif (isset($options['debug'])) {
-                $threads = 1;
-            } elseif ($config->scan_threads) {
-                $threads = $config->scan_threads;
-            } else {
-                $threads = max(1, (new CpuCoreCounter())->getCountWithFallback(1));
-            }
-        } else {
-            if (isset($options['threads'])) {
-                $threads = max(1, (int)$options['threads']);
-            } elseif (isset($options['debug'])) {
-                $threads = 1;
-            } elseif ($config->threads) {
-                $threads = $config->threads;
-            } else {
-                $threads = max(1, (new CpuCoreCounter())->getCountWithFallback(1));
+        $requested = $for_scan ? ($scan_threads ?? $analysis_threads) : $analysis_threads;
+
+        if (is_int($requested)) {
+            return $requested;
+        }
+
+        // not given, or `auto`: the default
+        if (isset($options['debug'])) {
+            return 1;
+        }
+
+        $config_threads = $for_scan ? $config->scan_threads : $config->threads;
+
+        if ($config_threads) {
+            return $config_threads;
+        }
+
+        return max(1, (new CpuCoreCounter())->getCountWithFallback(1));
+    }
+
+    /**
+     * @return int<1, max>|'auto'|null null if the option isn't given
+     */
+    private static function parseThreadsOption(array $options, string $name): int|string|null
+    {
+        if (!isset($options[$name])) {
+            return null;
+        }
+
+        if ($options[$name] === 'auto') {
+            return 'auto';
+        }
+
+        if (is_string($options[$name]) && ctype_digit($options[$name])) {
+            $threads = (int) $options[$name];
+
+            if ($threads >= 1) {
+                return $threads;
             }
         }
-        return $threads;
+
+        fwrite(STDERR, '--' . $name . ' expects a positive integer or "auto"' . PHP_EOL);
+        exit(1);
     }
 
     /**
@@ -520,9 +545,9 @@ final class Psalm
      */
     private static function initShowInfo(array $options): bool
     {
+        // a valueless `--show-info` is `--show-info=true`
         return isset($options['show-info'])
-            ? $options['show-info'] === 'true' || $options['show-info'] === '1'
-            : false;
+            && ($options['show-info'] === false || $options['show-info'] === 'true' || $options['show-info'] === '1');
     }
 
     /*private static function initIsDiff(array $options): bool
@@ -531,46 +556,6 @@ final class Psalm
             && !isset($options['set-baseline'])
             && !isset($options['update-baseline']);
     }*/
-
-    /**
-     * @param array<int,string> $args
-     */
-    private static function validateCliArguments(array $args): void
-    {
-        array_map(
-            static function (string $arg): void {
-                if (str_starts_with($arg, '--') && $arg !== '--') {
-                    $arg_name = (string) preg_replace('/=.*$/', '', substr($arg, 2), 1);
-
-                    if (!in_array($arg_name, self::LONG_OPTIONS)
-                        && !in_array($arg_name . ':', self::LONG_OPTIONS)
-                        && !in_array($arg_name . '::', self::LONG_OPTIONS)
-                    ) {
-                        fwrite(
-                            STDERR,
-                            'Unrecognised argument "--' . $arg_name . '"' . PHP_EOL
-                            . 'Type --help to see a list of supported arguments'. PHP_EOL,
-                        );
-                        exit(1);
-                    }
-                } elseif (str_starts_with($arg, '-') && $arg !== '-' && $arg !== '--') {
-                    $arg_name = (string) preg_replace('/=.*$/', '', substr($arg, 1));
-
-                    if (!in_array($arg_name, self::SHORT_OPTIONS)
-                        && !in_array($arg_name . ':', self::SHORT_OPTIONS)
-                    ) {
-                        fwrite(
-                            STDERR,
-                            'Unrecognised argument "-' . $arg_name . '"' . PHP_EOL
-                            . 'Type --help to see a list of supported arguments'. PHP_EOL,
-                        );
-                        exit(1);
-                    }
-                }
-            },
-            $args,
-        );
-    }
 
     /**
      * @param array<int, string> $args
@@ -707,9 +692,7 @@ final class Psalm
     {
         $debug = array_key_exists('debug', $options) || array_key_exists('debug-by-line', $options);
 
-        $show_info = isset($options['show-info'])
-            ? $options['show-info'] === 'true' || $options['show-info'] === '1'
-            : false;
+        $show_info = self::initShowInfo($options);
 
         // CI takes precedence over AI detection: persistent CI logs still want
         // per-phase breadcrumbs for humans reviewing the build. Agents that
@@ -961,9 +944,7 @@ final class Psalm
         bool $in_ci,
     ): ReportOptions {
         $stdout_report_options = new ReportOptions();
-        $stdout_report_options->use_color = !array_key_exists('m', $options)
-            && !CliUtils::noColorRequested()
-            && !CliUtils::runningUnderAiAgent();
+        $stdout_report_options->use_color = CliUtils::useColor($options, false);
         $stdout_report_options->show_info = $show_info;
         $stdout_report_options->show_suggestions = !array_key_exists('no-suggestions', $options);
         /**
@@ -1147,7 +1128,12 @@ final class Psalm
 
         if (isset($options['review'])) {
             require_once __DIR__ . '/Review.php';
-            array_shift($argv);
+            // psalm-review takes the report right after the script name, wherever --review was given
+            $review_position = array_search('--review', $argv, true);
+            if ($review_position !== false) {
+                unset($argv[$review_position]);
+            }
+
             Review::run(array_values($argv));
             exit;
         }
@@ -1493,11 +1479,13 @@ final class Psalm
             --force-jit
                 Enable JIT acceleration. Exits immediately if JIT cannot be enabled.
 
-            --threads=INT
+            --threads=INT|auto
                 If greater than one, Psalm will run the scan and analysis on multiple threads, speeding things up.
+                `auto` (the default) uses the threads setting of the config, or else one thread per CPU core.
 
-            --scan-threads=INT
+            --scan-threads=INT|auto
                 If greater than one, Psalm will run the scan on multiple threads, speeding things up (if specified, takes priority over the --threads flag).
+                `auto` (the default) uses the scanThreads setting of the config, or else one thread per CPU core.
 
             --no-diff
                 Turns off Psalm’s diff mode, checks all files regardless of whether they’ve changed.
@@ -1564,8 +1552,9 @@ final class Psalm
         Output:
             -m, --monochrome
                 Enable monochrome output.
-                Auto-enabled when NO_COLOR is set to a non-empty value or when
-                an AI coding agent is driving the shell.
+                Auto-enabled when NO_COLOR is set to a non-empty value, when
+                TERM=dumb, or when an AI coding agent is driving the shell.
+                FORCE_COLOR set to a non-empty value forces colors on instead.
 
             --output-format=console
                 Changes the output format.

@@ -104,19 +104,23 @@ use function array_unique;
 use function array_unshift;
 use function array_values;
 use function assert;
+use function chr;
 use function constant;
 use function count;
 use function defined;
 use function end;
 use function explode;
+use function hexdec;
 use function in_array;
 use function is_int;
 use function is_numeric;
 use function ltrim;
+use function octdec;
 use function preg_match;
 use function preg_replace;
 use function reset;
 use function str_contains;
+use function str_ends_with;
 use function str_starts_with;
 use function stripslashes;
 use function strlen;
@@ -124,6 +128,8 @@ use function strpos;
 use function strtolower;
 use function strtr;
 use function substr;
+
+use const PHP_INT_MAX;
 
 /**
  * @psalm-suppress InaccessibleProperty Allowed during construction
@@ -260,14 +266,18 @@ final class TypeParser
 
         $first_class = array_keys($template_type_map[$template_param_name])[0];
 
-        $conditional_type = self::getTypeFromTree(
-            $parse_tree->condition->children[0],
-            $codebase,
-            null,
-            $template_type_map,
-            $type_aliases,
-            $from_docblock,
-        );
+        $condition_tree = $parse_tree->condition->children[0];
+
+        $conditional_type = self::isFalsyKeyword($condition_tree)
+            ? self::getFalsyUnion($from_docblock)
+            : self::getTypeFromTree(
+                $condition_tree,
+                $codebase,
+                null,
+                $template_type_map,
+                $type_aliases,
+                $from_docblock,
+            );
 
         $if_type = self::getTypeFromTree(
             $parse_tree->children[0],
@@ -313,6 +323,42 @@ final class TypeParser
             $from_docblock,
             $subject_type,
         );
+    }
+
+    /**
+     * `empty` is an alias of `never`, which no value is of; as a condition `empty` and `falsy` mean PHP's `empty()`.
+     * The token as written tells the keyword from a class named `falsy`, e.g. `\falsy`, an alias or `falsy::VALUE`.
+     *
+     * @psalm-mutation-free
+     */
+    private static function isFalsyKeyword(ParseTree $parse_tree): bool
+    {
+        if (!$parse_tree instanceof Value) {
+            return false;
+        }
+
+        $keyword = $parse_tree->text ?? $parse_tree->value;
+
+        return ($keyword === 'empty' || $keyword === 'falsy')
+            && ($parse_tree->value === $keyword || str_ends_with($parse_tree->value, '\\' . $keyword));
+    }
+
+    /**
+     * The values `empty()` is true for
+     *
+     * @psalm-pure
+     */
+    private static function getFalsyUnion(bool $from_docblock): Union
+    {
+        return new Union([
+            new TFalse($from_docblock),
+            new TLiteralInt(0, $from_docblock),
+            new TLiteralFloat(0.0, $from_docblock),
+            TLiteralString::make('', $from_docblock),
+            TLiteralString::make('0', $from_docblock),
+            new TNull($from_docblock),
+            Type::getEmptyArrayAtomic(),
+        ], ['from_docblock' => $from_docblock]);
     }
 
     /**
@@ -519,7 +565,10 @@ final class TypeParser
         }
 
         if ($parse_tree->value[0] === '"' || $parse_tree->value[0] === '\'') {
-            return Type::getAtomicStringFromLiteral(substr($parse_tree->value, 1, -1), $from_docblock);
+            return Type::getAtomicStringFromLiteral(
+                self::unescapeStringLiteral(substr($parse_tree->value, 1, -1), $parse_tree->value[0]),
+                $from_docblock,
+            );
         }
 
         if (strpos($parse_tree->value, '::')) {
@@ -1178,8 +1227,9 @@ final class TypeParser
 
                 if ($atomic_type instanceof TNamedObject) {
                     if (defined($atomic_type->value)) {
+                        // silenced, as reading a deprecated constant (ASSERT_ACTIVE) emits E_DEPRECATED
                         /** @var mixed */
-                        $constant_value = constant($atomic_type->value);
+                        $constant_value = @constant($atomic_type->value);
 
                         if (!is_int($constant_value)) {
                             throw new TypeParseTreeException(
@@ -2173,7 +2223,17 @@ final class TypeParser
         foreach ($parse_tree->children as $child_tree) {
             $is_variadic = false;
             $is_optional = false;
+            $is_by_ref = false;
             $param_name = '';
+
+            // `$x=` wraps the named parameter in a parameter that only carries the default
+            if ($child_tree instanceof CallableParamTree
+                && isset($child_tree->children[0])
+                && $child_tree->children[0] instanceof CallableParamTree
+            ) {
+                $is_optional = $child_tree->has_default;
+                $child_tree = $child_tree->children[0];
+            }
 
             if ($child_tree instanceof CallableParamTree) {
                 if (isset($child_tree->children[0])) {
@@ -2190,7 +2250,8 @@ final class TypeParser
                 }
 
                 $is_variadic = $child_tree->variadic;
-                $is_optional = $child_tree->has_default;
+                $is_optional = $is_optional || $child_tree->has_default;
+                $is_by_ref = $child_tree->by_ref;
                 $param_name = $child_tree->name ?? '';
             } else {
                 if ($child_tree instanceof Value && strpos($child_tree->value, '$') > 0) {
@@ -2209,7 +2270,7 @@ final class TypeParser
 
             $param = new FunctionLikeParameter(
                 $param_name,
-                false,
+                $is_by_ref,
                 $tree_type instanceof Union ? $tree_type : new Union([$tree_type]),
                 null,
                 null,
@@ -2759,5 +2820,80 @@ final class TypeParser
             false,
             $from_docblock,
         );
+    }
+
+    /**
+     * The value of the string literal `$quote . $literal . $quote`, as PHP reads it
+     *
+     * @psalm-pure
+     */
+    private static function unescapeStringLiteral(string $literal, string $quote): string
+    {
+        if ($quote === '\'') {
+            return strtr($literal, ['\\\\' => '\\', '\\\'' => '\'']);
+        }
+
+        $simple_escapes = ['n' => "\n", 'r' => "\r", 't' => "\t", 'v' => "\v", 'e' => "\e", 'f' => "\f",
+            '\\' => '\\', '$' => '$', '"' => '"'];
+
+        $value = '';
+        $length = strlen($literal);
+
+        for ($i = 0; $i < $length; $i++) {
+            if ($literal[$i] !== '\\' || $i + 1 === $length) {
+                $value .= $literal[$i];
+
+                continue;
+            }
+
+            $next = $literal[$i + 1];
+
+            if (isset($simple_escapes[$next])) {
+                $value .= $simple_escapes[$next];
+                $i++;
+            } elseif (preg_match(
+                '/\G(?:([0-7]{1,3})|x([0-9A-Fa-f]{1,2})|u\{([0-9A-Fa-f]+)\})/',
+                $literal,
+                $match,
+                0,
+                $i + 1,
+            )) {
+                if (isset($match[1]) && $match[1] !== '') {
+                    $value .= chr(((int) octdec($match[1])) & 0xFF);
+                } elseif (isset($match[2]) && $match[2] !== '') {
+                    $value .= chr((int) hexdec($match[2]));
+                } else {
+                    // checked before the conversion: more digits than the largest code point has overflow an int
+                    $hex_digits = ltrim($match[3] ?? '0', '0');
+                    $code_point = strlen($hex_digits) > 6 ? PHP_INT_MAX : (int) hexdec($hex_digits);
+
+                    // as PHP: always UTF-8, a surrogate is encoded like any other code point
+                    if ($code_point > 0x10FFFF) {
+                        throw new TypeParseTreeException(
+                            'Invalid UTF-8 codepoint escape sequence: Codepoint too large',
+                        );
+                    }
+
+                    $value .= $code_point < 0x80
+                        ? chr($code_point)
+                        : ($code_point < 0x800
+                            ? chr(0xC0 | $code_point >> 6) . chr(0x80 | $code_point & 0x3F)
+                            : ($code_point < 0x10000
+                                ? chr(0xE0 | $code_point >> 12)
+                                    . chr(0x80 | $code_point >> 6 & 0x3F)
+                                    . chr(0x80 | $code_point & 0x3F)
+                                : chr(0xF0 | $code_point >> 18)
+                                    . chr(0x80 | $code_point >> 12 & 0x3F)
+                                    . chr(0x80 | $code_point >> 6 & 0x3F)
+                                    . chr(0x80 | $code_point & 0x3F)));
+                }
+
+                $i += strlen($match[0] ?? '');
+            } else {
+                $value .= '\\';
+            }
+        }
+
+        return $value;
     }
 }

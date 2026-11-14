@@ -141,9 +141,9 @@ final class LanguageClient
     {
         if ($this->server->clientCapabilities->window->workDoneProgress ?? false) {
             return new Progress($this->handler, $token);
-        } else {
-            return new LegacyProgress($this->handler);
         }
+
+        return new LegacyProgress($this->handler);
     }
 
     /**

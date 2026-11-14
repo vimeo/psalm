@@ -9,6 +9,7 @@ use PhpParser;
 use Psalm\CodeLocation;
 use Psalm\Codebase;
 use Psalm\Context;
+use Psalm\Internal\Analyzer\ClassAnalyzer;
 use Psalm\Internal\Analyzer\ClassLikeAnalyzer;
 use Psalm\Internal\Analyzer\ClassLikeNameOptions;
 use Psalm\Internal\Analyzer\MethodAnalyzer;
@@ -17,15 +18,17 @@ use Psalm\Internal\Analyzer\Statements\Expression\Call\ArgumentMapPopulator;
 use Psalm\Internal\Analyzer\Statements\Expression\Call\ArgumentsAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\Call\CallPurityResolver;
 use Psalm\Internal\Analyzer\Statements\Expression\Call\ClassTemplateParamCollector;
+use Psalm\Internal\Analyzer\Statements\Expression\Call\Method\MethodCallPurityAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\Call\Method\MethodCallReturnTypeFetcher;
 use Psalm\Internal\Analyzer\Statements\Expression\Call\Method\MethodVisibilityAnalyzer;
+use Psalm\Internal\Analyzer\Statements\Expression\Call\Method\MissingMethodCallHandler;
 use Psalm\Internal\Analyzer\Statements\Expression\Call\MethodCallAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\Call\NewAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\Call\StaticCallAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\CallAnalyzer;
-use Psalm\Internal\Analyzer\Statements\Expression\Fetch\AtomicPropertyFetchAnalyzer;
 use Psalm\Internal\Analyzer\Statements\ExpressionAnalyzer;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
+use Psalm\Internal\Codebase\MixinLookup;
 use Psalm\Internal\MethodIdentifier;
 use Psalm\Internal\Type\Comparator\UnionTypeComparator;
 use Psalm\Internal\Type\TemplateResult;
@@ -50,6 +53,7 @@ use Psalm\Type\Atomic\TClosure;
 use Psalm\Type\Atomic\TDependentGetClass;
 use Psalm\Type\Atomic\TGenericObject;
 use Psalm\Type\Atomic\TLiteralClassString;
+use Psalm\Type\Atomic\TLiteralString;
 use Psalm\Type\Atomic\TMixed;
 use Psalm\Type\Atomic\TNamedObject;
 use Psalm\Type\Atomic\TNull;
@@ -59,11 +63,11 @@ use Psalm\Type\Atomic\TString;
 use Psalm\Type\Atomic\TTemplateParam;
 use Psalm\Type\Union;
 
-use function array_filter;
 use function array_values;
 use function assert;
 use function count;
 use function in_array;
+use function ltrim;
 use function strtolower;
 
 /**
@@ -84,6 +88,17 @@ final class AtomicStaticCallAnalyzer
         bool &$args_analyzed,
         ?TemplateResult $inferred_template_result = null,
     ): void {
+        // A literal class name is not just an opaque string when the option allows it.
+        // Analyze the actual target so method existence, visibility and arguments are checked.
+        if ($lhs_type_part::class === TLiteralString::class
+            && $statements_analyzer->getCodebase()->config->allow_string_standin_for_class
+        ) {
+            $class_name = ltrim($lhs_type_part->value, '\\');
+            if ($statements_analyzer->getCodebase()->classlike_storage_provider->has($class_name)) {
+                $lhs_type_part = new TLiteralClassString($class_name);
+            }
+        }
+
         $intersection_types = [];
 
         if ($lhs_type_part instanceof TNamedObject) {
@@ -110,9 +125,15 @@ final class AtomicStaticCallAnalyzer
 
             $intersection_types = $lhs_type_part->extra_types;
         } elseif ($lhs_type_part instanceof TClassString
-            && $lhs_type_part->as_type
+            && ($lhs_type_part->as_type
+                || ($lhs_type_part->is_enum
+                    && $stmt->name instanceof PhpParser\Node\Identifier
+                    && $statements_analyzer->getCodebase()->methodExists('UnitEnum::' . $stmt->name->name)
+                )
+            )
         ) {
-            $fq_class_name = $lhs_type_part->as_type->value;
+            // any enum implements UnitEnum, but only what UnitEnum declares is known of an unspecified one
+            $fq_class_name = $lhs_type_part->as_type->value ?? 'UnitEnum';
 
             if (!ClassLikeAnalyzer::checkFullyQualifiedClassLikeName(
                 $statements_analyzer,
@@ -125,7 +146,7 @@ final class AtomicStaticCallAnalyzer
                 return;
             }
 
-            $intersection_types = $lhs_type_part->as_type->extra_types;
+            $intersection_types = $lhs_type_part->as_type->extra_types ?? [];
         } elseif ($lhs_type_part instanceof TDependentGetClass
             && !$lhs_type_part->as_type->hasObject()
         ) {
@@ -271,7 +292,12 @@ final class AtomicStaticCallAnalyzer
                         if ($method_exists) {
                             $declaring_method_id = $codebase->methods->getDeclaringMethodId($method_identifier)
                                 ?? $method_identifier;
-                            $method_storage = $codebase->methods->getStorage($declaring_method_id);
+                            [$closure, $method_template_types] = MethodCallReturnTypeFetcher::getInheritedClosure(
+                                $codebase,
+                                $declaring_method_id,
+                                $codebase->methods->getStorage($declaring_method_id),
+                                $statements_analyzer,
+                            );
                             $self_fq_class_name = $stmt->class instanceof PhpParser\Node\Name
                                 && $stmt->class->getParts() === ['parent']
                                 ? (string) $statements_analyzer->getFQCLN()
@@ -285,12 +311,8 @@ final class AtomicStaticCallAnalyzer
                                 $method_identifier,
                                 $codebase->classlike_storage_provider->get($declaring_method_id->fq_class_name),
                                 $codebase->classlike_storage_provider->get($fq_class_name),
-                                new TClosure(
-                                    $method_storage->params,
-                                    $method_storage->return_type,
-                                    $method_storage->capabilities,
-                                ),
-                                $method_storage->template_types ?? [],
+                                $closure,
+                                $method_template_types,
                                 $self_fq_class_name,
                                 $self_fq_class_name,
                                 $inferred_template_result,
@@ -424,18 +446,25 @@ final class AtomicStaticCallAnalyzer
 
         $args = $stmt->isFirstClassCallable() ? [] : $stmt->getArgs();
 
-        if (!$naive_method_exists
-            && $class_storage->mixin_declaring_fqcln
-            && $class_storage->namedMixins
-        ) {
-            foreach ($class_storage->getNamedMixinsForLookup() as $mixin) {
-                $new_method_id = new MethodIdentifier(
-                    $mixin->value,
-                    $method_name_lc,
-                );
+        $method_visible = $naive_method_exists
+            && MethodAnalyzer::isMethodVisible($method_id, $context, $statements_analyzer->getSource());
 
-                if ($codebase->methodExists(
-                    $new_method_id,
+        // the caller can't access the method, so PHP calls __callStatic() of the class, which forwards to its mixins
+        $hidden_by_magic_call = $naive_method_exists
+            && !$method_visible
+            && isset($class_storage->declaring_method_ids['__callstatic'])
+            && $stmt->getAttribute(ClassAnalyzer::FAKE_CONSTRUCTOR_CALL_ATTRIBUTE) !== true;
+
+        // a `@method static` of the class or of its interfaces wins over its mixins
+        if ((!$naive_method_exists || $hidden_by_magic_call)
+            && self::findPseudoMethodAndClassStorages($codebase, $class_storage, $method_name_lc, false) === null
+        ) {
+            $mixin = MixinLookup::findMember(
+                $codebase,
+                $class_storage,
+                $lhs_type_part,
+                static fn(ClassLikeStorage $mixin_storage): bool => $codebase->methodExists(
+                    new MethodIdentifier($mixin_storage->name, $method_name_lc),
                     $context->calling_method_id,
                     $codebase->collect_locations
                         ? new CodeLocation($statements_analyzer, $stmt_name)
@@ -447,75 +476,31 @@ final class AtomicStaticCallAnalyzer
                     $statements_analyzer->getFilePath(),
                     true,
                     $context->insideUse(),
-                )) {
-                    $mixin_candidates = [];
-                    foreach ($class_storage->templatedMixins as $mixin_candidate) {
-                        $mixin_candidates[] = $mixin_candidate;
-                    }
+                ),
+            );
 
-                    // Forward to the declared mixins only: each resolves its own transitive chain.
-                    foreach ($class_storage->namedMixins as $mixin_candidate) {
-                        $mixin_candidates[] = $mixin_candidate;
-                    }
+            // the call goes to the mixin; through a generic mixin it is analysed as the instance call on the class,
+            // which binds the mixin's type arguments (`Builder<static>`) for the class
+            if ($mixin !== null) {
+                $receiver = $mixin['type'];
 
-                    $mixin_candidates_no_generic = array_filter(
-                        $mixin_candidates,
-                        static fn(Atomic $check): bool => !($check instanceof TGenericObject),
-                    );
-
-                    // $mixin_candidates_no_generic will only be empty when there are TGenericObject entries.
-                    // In that case, Union will be initialized with an empty array but
-                    // replaced with non-empty types in the following loop.
-                    /** @psalm-suppress ArgumentTypeCoercion */
-                    $mixin_candidate_type = new Union($mixin_candidates_no_generic);
-
-                    foreach ($mixin_candidates as $tGenericMixin) {
-                        if (!($tGenericMixin instanceof TGenericObject)) {
-                            continue;
-                        }
-
-                        $mixin_declaring_class_storage = $codebase->classlike_storage_provider->get(
-                            $class_storage->mixin_declaring_fqcln,
-                        );
-
-                        $new_mixin_candidate_type = AtomicPropertyFetchAnalyzer::localizePropertyType(
-                            $codebase,
-                            new Union([$lhs_type_part]),
-                            $tGenericMixin,
-                            $class_storage,
-                            $mixin_declaring_class_storage,
-                        )->getBuilder();
-
-                        foreach ($mixin_candidate_type->getAtomicTypes() as $type) {
-                            $new_mixin_candidate_type->addType($type);
-                        }
-
-                        $mixin_candidate_type = $new_mixin_candidate_type->freeze();
-                    }
-
-                    $new_lhs_type = TypeExpander::expandUnion(
-                        $codebase,
-                        $mixin_candidate_type,
-                        $fq_class_name,
-                        $fq_class_name,
-                        $class_storage->parent_class,
-                        true,
-                        false,
-                        $class_storage->final,
-                    );
-
-                    $mixin_context = clone $context;
-                    $mixin_context->vars_in_scope['$__tmp_mixin_var__'] = $new_lhs_type;
-
-                    return self::forwardCallToInstanceMethod(
-                        $statements_analyzer,
-                        $stmt,
-                        $stmt_name,
-                        $mixin_context,
-                        '__tmp_mixin_var__',
-                        true,
-                    );
+                if ($mixin['declared'] instanceof TGenericObject) {
+                    $receiver = $lhs_type_part instanceof TNamedObject
+                        ? $lhs_type_part
+                        : new TNamedObject($fq_class_name);
                 }
+
+                $mixin_context = clone $context;
+                $mixin_context->vars_in_scope['$__tmp_mixin_var__'] = new Union([$receiver]);
+
+                return self::forwardCallToInstanceMethod(
+                    $statements_analyzer,
+                    $stmt,
+                    $stmt_name,
+                    $mixin_context,
+                    '__tmp_mixin_var__',
+                    true,
+                );
             }
         }
 
@@ -525,10 +510,8 @@ final class AtomicStaticCallAnalyzer
             $codebase,
             $class_storage,
             $method_name_lc,
+            $method_visible,
         );
-
-        $method_visible = $naive_method_exists
-            && MethodAnalyzer::isMethodVisible($method_id, $context, $statements_analyzer->getSource());
 
         self::recordCallStaticReference($statements_analyzer, $stmt, $context, $method_id, $method_visible);
 
@@ -652,7 +635,17 @@ final class AtomicStaticCallAnalyzer
         $with_pseudo = $callstatic_method_exists
             || $codebase->config->use_phpdoc_method_without_magic_or_parent;
 
-        if ($codebase->methods->getDeclaringMethodId($method_id, $with_pseudo)) {
+        // PHP doesn't call a method the caller can't access, but __callStatic()
+        $forwarded_to_callstatic = $naive_method_exists
+            && $callstatic_method_exists
+            && $stmt->getAttribute(ClassAnalyzer::FAKE_CONSTRUCTOR_CALL_ATTRIBUTE) !== true
+            && !MethodAnalyzer::isMethodVisible(
+                $method_id,
+                $context,
+                $statements_analyzer->getSource(),
+            );
+
+        if (!$forwarded_to_callstatic && $codebase->methods->getDeclaringMethodId($method_id, $with_pseudo)) {
             if ((!$stmt->class instanceof PhpParser\Node\Name
                     || $stmt->class->getFirst() !== 'parent'
                     || $statements_analyzer->isStatic())
@@ -767,6 +760,31 @@ final class AtomicStaticCallAnalyzer
                         return false;
                     }
                 }
+
+                // the call of a method the caller can't access is the call of __callStatic()
+                if ($forwarded_to_callstatic) {
+                    $callstatic_self_class = null;
+                    $callstatic_return_type = $codebase->methods->getMethodReturnType(
+                        $codebase,
+                        $callstatic_id,
+                        $callstatic_self_class,
+                    );
+
+                    if ($callstatic_return_type !== null) {
+                        $statements_analyzer->node_data->setType(
+                            $stmt,
+                            TypeExpander::expandUnion(
+                                $codebase,
+                                $callstatic_return_type,
+                                $callstatic_self_class ?? $fq_class_name,
+                                $fq_class_name,
+                                $class_storage->parent_class,
+                            ),
+                        );
+
+                        return true;
+                    }
+                }
             } elseif ($found_method_and_class_storage && ($naive_method_exists || $with_pseudo)) {
                 [$pseudo_method_storage, $defining_class_storage] = $found_method_and_class_storage;
 
@@ -856,7 +874,9 @@ final class AtomicStaticCallAnalyzer
             }
         }
 
-        if ($naive_method_exists || !$callstatic_method_exists || $class_storage->hasSealedMethods($config)) {
+        if (!$forwarded_to_callstatic
+            && ($naive_method_exists || !$callstatic_method_exists || $class_storage->hasSealedMethods($config))
+        ) {
             $does_method_exist = MethodAnalyzer::checkMethodExists(
                 $codebase,
                 $method_id,
@@ -910,11 +930,13 @@ final class AtomicStaticCallAnalyzer
             );
         }
 
-        if ($context->self && ! NamespaceAnalyzer::isWithinAny($context->self, $class_storage->internal)) {
+        $caller_identifier = $statements_analyzer->getFullyQualifiedFunctionMethodOrNamespaceName() ?? '';
+
+        if (!NamespaceAnalyzer::isWithinAny($caller_identifier, $class_storage->internal)) {
             IssueBuffer::maybeAdd(
                 new InternalClass(
                     $fq_class_name . ' is internal to ' . InternalClass::listToPhrase($class_storage->internal)
-                        . ' but called from ' . $context->self,
+                        . ' but called from ' . ($caller_identifier ?: 'root namespace'),
                     new CodeLocation($statements_analyzer->getSource(), $stmt),
                     $fq_class_name,
                 ),
@@ -1020,14 +1042,23 @@ final class AtomicStaticCallAnalyzer
         Context $context,
         ?int $magic_method_capabilities,
     ): ?bool {
+        $codebase = $statements_analyzer->getCodebase();
+
+        $pseudo_method_storage = MissingMethodCallHandler::selectOverload(
+            $statements_analyzer,
+            $codebase,
+            $args,
+            $context,
+            $class_storage->pseudo_static_method_overloads[$method_id->method_name] ?? null,
+            $pseudo_method_storage,
+        );
+
         if (!$context->isSuppressingExceptions($statements_analyzer)) {
             $context->mergeFunctionExceptions(
                 $pseudo_method_storage,
                 new CodeLocation($statements_analyzer, $stmt),
             );
         }
-
-        $codebase = $statements_analyzer->getCodebase();
 
         $declaring_method_id = $class_storage->declaring_pseudo_static_method_ids[$method_id->method_name] ?? null;
         $declaring_class_storage = $declaring_method_id
@@ -1314,6 +1345,7 @@ final class AtomicStaticCallAnalyzer
      *
      * @param ClassLikeStorage $static_class_storage The called class
      * @param lowercase-string $method_name_lc
+     * @param bool $method_visible Whether the call reaches a real method instead of `__callStatic`
      * @return array{MethodStorage, ClassLikeStorage}|null
      * @psalm-mutation-free
      */
@@ -1321,14 +1353,19 @@ final class AtomicStaticCallAnalyzer
         Codebase $codebase,
         ClassLikeStorage $static_class_storage,
         string $method_name_lc,
+        bool $method_visible,
     ): ?array {
         if ($pseudo_method_storage = $static_class_storage->pseudo_static_methods[$method_name_lc] ?? null) {
             return [$pseudo_method_storage, $static_class_storage];
         }
 
-        $ancestors = $static_class_storage->class_implements + $static_class_storage->parent_classes;
+        // the class already has the ones of its parents that its own public methods don't override, and the ones of
+        // its interfaces don't override a method the call reaches
+        if ($method_visible) {
+            return null;
+        }
 
-        foreach ($ancestors as $fq_class_name => $_) {
+        foreach ($static_class_storage->class_implements as $fq_class_name => $_) {
             $class_storage = $codebase->classlikes->getStorageFor($fq_class_name);
 
             if ($class_storage && isset($class_storage->pseudo_static_methods[$method_name_lc])) {
@@ -1377,6 +1414,8 @@ final class AtomicStaticCallAnalyzer
         ) === false) {
             return false;
         }
+
+        MethodCallPurityAnalyzer::forwardReturnsThis($fake_method_call_expr, $stmt);
 
         $fake_method_call_type = $statements_analyzer->node_data->getType($fake_method_call_expr);
 

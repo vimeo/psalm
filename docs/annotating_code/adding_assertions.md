@@ -110,6 +110,56 @@ function isNull($value): bool {
 }
 ```
 
+### Asserting that an array key exists
+
+`array-key-exists` asserts that the array in one parameter has the key held by another parameter. The same works with `@psalm-assert-if-true` and `@psalm-assert-if-false` (`!array-key-exists` asserts the opposite):
+
+```php
+<?php
+/**
+ * @psalm-assert array-key-exists $array[$key]
+ */
+function check(int|string $key, array $array): void {
+  if (!array_key_exists($key, $array)) {
+    throw new RuntimeException();
+  }
+}
+
+function f(array $array, int $key): void {
+  check(0, $array);
+  echo $array[0]; // no PossiblyUndefinedIntArrayOffset
+  check($key, $array);
+  echo $array[$key]; // no PossiblyUndefinedIntArrayOffset
+  check(strtoupper("a"), $array); // asserts nothing: the key is neither a literal nor a variable
+}
+```
+
+### Asserting the SAPI
+
+`PHP_SAPI` (or `php_sapi_name()`) can be the target of an assertion, so a function guarding the SAPI works like the
+check in it. Code after `requireCli()`, or inside `if (isCli())`, runs from the command line: it can call
+[`@psalm-cli-only`](../running_psalm/issues/CliOnlyCall.md) code, and what it prints
+[isn't HTML](../security_analysis/avoiding_false_positives.md#output-of-command-line-code):
+
+```php
+<?php
+/**
+ * @psalm-assert 'cli' PHP_SAPI
+ */
+function requireCli(): void {
+  if (PHP_SAPI !== 'cli') {
+    throw new LogicException('Run it from the command line');
+  }
+}
+
+/**
+ * @psalm-assert-if-true 'cli' PHP_SAPI
+ */
+function isCli(): bool {
+  return PHP_SAPI === 'cli';
+}
+```
+
 ### Asserting return values of methods
 
 You can also use the `@psalm-assert-if-true` and `@psalm-assert-if-false` annotations to assert return values of

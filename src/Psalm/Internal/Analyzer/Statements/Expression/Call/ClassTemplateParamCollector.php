@@ -6,6 +6,8 @@ namespace Psalm\Internal\Analyzer\Statements\Expression\Call;
 
 use AssertionError;
 use Psalm\Codebase;
+use Psalm\Internal\MethodIdentifier;
+use Psalm\Internal\Type\PurityArguments;
 use Psalm\Internal\Type\TemplateDefaults;
 use Psalm\Internal\Type\TemplateResult;
 use Psalm\Internal\Type\TypeExpander;
@@ -40,6 +42,24 @@ final class ClassTemplateParamCollector
         ?Atomic $lhs_type_part = null,
         bool $self_call = false,
     ): ?array {
+        // a trait method without a docblock takes the one of the parent method in the class using it, so its types
+        // are written with the templates of that class (which the receiver may extend)
+        if ($class_storage->is_trait && $class_storage !== $static_class_storage && $method_name !== null) {
+            $appearing_method_id = $codebase->methods->getAppearingMethodId(
+                new MethodIdentifier($static_class_storage->name, $method_name),
+            );
+
+            if ($appearing_method_id !== null) {
+                $appearing_class_storage = $codebase->classlike_storage_provider->get(
+                    $appearing_method_id->fq_class_name,
+                );
+
+                if (isset($appearing_class_storage->documenting_method_ids[$method_name])) {
+                    $class_storage = $appearing_class_storage;
+                }
+            }
+        }
+
         $non_trait_class_storage = $class_storage->is_trait
             ? $static_class_storage
             : $class_storage;
@@ -138,7 +158,29 @@ final class ClassTemplateParamCollector
                 );
             }
             foreach ($template_types as $type_name => $_) {
-                if (isset($class_template_params[$type_name])) {
+                // the templates of the classes documenting the method resolve against the receiver as well
+                foreach ($candidate_class_storages as $candidate_class_storage) {
+                    if ($candidate_class_storage !== $class_storage
+                        && $candidate_class_storage !== $static_class_storage
+                        && $template_result !== null
+                        && isset($e[$candidate_class_storage->name][$type_name])
+                        && !isset($class_template_params[$type_name][$candidate_class_storage->name])
+                    ) {
+                        $resolved_type = self::resolveTemplateParam(
+                            $codebase,
+                            $e[$candidate_class_storage->name][$type_name],
+                            $static_class_storage,
+                            $lhs_type_part,
+                            $template_result,
+                        );
+
+                        if ($resolved_type !== null) {
+                            $class_template_params[$type_name][$candidate_class_storage->name] = $resolved_type;
+                        }
+                    }
+                }
+
+                if (isset($class_template_params[$type_name][$class_storage->name])) {
                     continue;
                 }
 
@@ -155,11 +197,10 @@ final class ClassTemplateParamCollector
                         $template_result,
                     );
 
-                    $class_template_params[$type_name] = [
-                        $class_storage->name => $output_type_extends ?? Type::getMixed(),
-                    ];
+                    $class_template_params[$type_name][$class_storage->name]
+                        = $output_type_extends ?? Type::getMixed();
                 } else {
-                    $class_template_params[$type_name] = [$class_storage->name => Type::getMixed()];
+                    $class_template_params[$type_name][$class_storage->name] = Type::getMixed();
                 }
             }
         }
@@ -171,21 +212,50 @@ final class ClassTemplateParamCollector
                         && isset($e[$candidate_class_storage->name][$type_name])
                         && !isset($class_template_params[$type_name][$candidate_class_storage->name])
                     ) {
-                        $class_template_params[$type_name][$candidate_class_storage->name] = new Union(
-                            self::expandType(
+                        // the arguments the object was created with replace the templates of its own class
+                        $resolved_type = null;
+
+                        if ($lhs_type_part instanceof TGenericObject
+                            && $static_class_storage->template_types !== null
+                        ) {
+                            $own_params = self::collect(
+                                $codebase,
+                                $static_class_storage,
+                                $static_class_storage,
+                                null,
+                                $lhs_type_part,
+                            );
+
+                            $resolved_type = self::resolveTemplateParam(
                                 $codebase,
                                 $e[$candidate_class_storage->name][$type_name],
-                                $e,
-                                $static_class_storage->name,
-                                $static_class_storage->template_types,
-                            ),
-                        );
+                                $static_class_storage,
+                                $lhs_type_part,
+                                $own_params !== null
+                                    ? new TemplateResult($static_class_storage->template_types, $own_params)
+                                    : null,
+                            );
+                        }
+
+                        $class_template_params[$type_name][$candidate_class_storage->name] = $resolved_type
+                            ?? new Union(
+                                self::expandType(
+                                    $codebase,
+                                    $e[$candidate_class_storage->name][$type_name],
+                                    $e,
+                                    $static_class_storage->name,
+                                    $static_class_storage->template_types,
+                                ),
+                            );
                     }
                 }
 
                 if (!$self_call) {
-                    if (!isset($class_template_params[$type_name])) {
-                        $class_template_params[$type_name][$class_storage->name] = $type;
+                    // a receiver without type arguments is its templates' bounds, also where the templates of the
+                    // classes it extends are mapped already
+                    if (!isset($class_template_params[$type_name][$class_storage->name])) {
+                        $class_template_params[$type_name][$class_storage->name]
+                            = PurityArguments::getOmittedArgument($type);
                     }
                 }
             }

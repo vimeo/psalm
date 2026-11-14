@@ -7,6 +7,10 @@ namespace Psalm\Tests;
 use Override;
 use Psalm\Tests\Traits\InvalidCodeAnalysisTestTrait;
 use Psalm\Tests\Traits\ValidCodeAnalysisTestTrait;
+use Psalm\Type;
+use Psalm\Type\Atomic\TLiteralString;
+
+use function mb_internal_encoding;
 
 use const DIRECTORY_SEPARATOR;
 
@@ -21,6 +25,23 @@ final class ReturnTypeTest extends TestCase
         $this->testInvalidCode('<?php function f(void $p): void {}', 'ParseError');
     }
 
+    public function testUnicodeEscapeOfADocblockStringLiteralIsNotTheInternalEncoding(): void
+    {
+        $encoding = mb_internal_encoding();
+        mb_internal_encoding('ISO-8859-1');
+
+        try {
+            $type = Type::parseString('"\u{e9}\u{1F600}"');
+        } finally {
+            mb_internal_encoding($encoding);
+        }
+
+        $atomic = $type->getSingleAtomic();
+
+        self::assertInstanceOf(TLiteralString::class, $atomic);
+        self::assertSame("\u{e9}\u{1F600}", $atomic->value);
+    }
+
     /**
      * @psalm-pure
      */
@@ -28,6 +49,164 @@ final class ReturnTypeTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'switchBreakWithFallthroughDefaultStillReturns' => [
+                'code' => '<?php
+                    function afterSwitch(int $value): int {
+                        switch ($value) {
+                            case 0:
+                                break;
+                            default:
+                                ++$value;
+                        }
+
+                        return $value;
+                    }',
+            ],
+            'docblockStringLiteralWithEscapedBackslashes' => [
+                'code' => '<?php
+                    /** @return "\\\\t" */
+                    function backslashAndLetter(): string {
+                        return "\\\\t";
+                    }
+
+                    /** @return "\\\\\\\\" */
+                    function twoBackslashes(): string {
+                        return "\\\\\\\\";
+                    }
+
+                    /** @return \'\\\\\\\\\' */
+                    function twoBackslashesSingleQuoted(): string {
+                        return \'\\\\\\\\\';
+                    }',
+            ],
+            'docblockStringLiteralWithAUnicodeEscapeWithLeadingZeros' => [
+                'code' => '<?php
+                    /** @return "\u{0000000000e9}" */
+                    function leadingZeros(): string {
+                        return "é";
+                    }',
+            ],
+            'docblockStringLiteralWithNonAsciiUnicodeEscapes' => [
+                'code' => '<?php
+                    /** @return "\u{e9}\u{20AC}\u{1F600}" */
+                    function nonAscii(): string {
+                        return "é€😀";
+                    }',
+            ],
+            'docblockStringLiteralWithEscapeSequences' => [
+                'code' => '<?php
+                    /** @return "\t" */
+                    function tab(): string {
+                        return "\t";
+                    }
+
+                    /** @return "a\nb" */
+                    function newline(): string {
+                        return "a\nb";
+                    }
+
+                    /** @return "\x41\101\u{42}" */
+                    function numeric(): string {
+                        return "AAB";
+                    }
+
+                    /** @return "\$x" */
+                    function dollar(): string {
+                        return \'$x\';
+                    }
+
+                    /** @return "say \"hi\"" */
+                    function quotes(): string {
+                        return \'say "hi"\';
+                    }',
+            ],
+            'docblockStringLiteralKeepsWhatIsNotAnEscapeSequence' => [
+                'code' => '<?php
+                    /** @return "\d+" */
+                    function regex(): string {
+                        return "\\d+";
+                    }
+
+                    /** @return "\\d" */
+                    function backslash(): string {
+                        return "\\d";
+                    }
+
+                    /** @return \'a\\\\b\' */
+                    function single(): string {
+                        return \'a\\\\b\';
+                    }
+
+                    /** @return \'it\\\'s\' */
+                    function apostrophe(): string {
+                        return "it\'s";
+                    }',
+            ],
+            'generatorReturnTypeAllowsAnImplicitReturnOfNull' => [
+                'code' => '<?php
+                    /** @return Generator<int, int, mixed, string|null> */
+                    function nullable(bool $r): Generator {
+                        if ($r) {
+                            return "string";
+                        }
+
+                        yield 1;
+                    }
+
+                    /** @return Generator<int, int, mixed, mixed> */
+                    function untyped(bool $r): Generator {
+                        if ($r) {
+                            return "string";
+                        }
+
+                        yield 1;
+                    }
+
+                    /** @return Generator<int, int, mixed, string> */
+                    function everyPathReturns(bool $r): Generator {
+                        yield 1;
+
+                        if ($r) {
+                            return "a";
+                        }
+
+                        return "b";
+                    }',
+            ],
+            'generatorMethodThatThrowsInInfiniteLoop' => [
+                'code' => '<?php
+                    class A {
+                        /**
+                         * @return Generator<int>
+                         */
+                        public function events(): Generator {
+                            while (true) {
+                                if (rand(0, 1)) {
+                                    throw new Exception("failed");
+                                }
+
+                                foreach ([1, 2] as $event) {
+                                    yield $event;
+                                }
+                            }
+                        }
+                    }',
+            ],
+            'generatorThatThrowsInInfiniteLoop' => [
+                'code' => '<?php
+                    /**
+                     * @return Generator<int>
+                     */
+                    function events(): Generator {
+                        while (true) {
+                            if (rand(0, 1)) {
+                                throw new Exception("failed");
+                            }
+
+                            yield 1;
+                        }
+                    }',
+            ],
             'narrowerNativeReturnTypeWinsOverInheritedDocblockWithStringable' => [
                 'code' => '<?php
                     abstract class A {
@@ -224,6 +403,25 @@ final class ReturnTypeTest extends TestCase
                         }
                     }',
             ],
+            'voidFunctionThatNeverEndsIsCorrect' => [
+                'code' => '<?php
+                    function work(): void {}
+
+                    class Listener {
+                        /** @return void */
+                        public function listen() {
+                            while (true) {
+                                work();
+                            }
+                        }
+
+                        /** @return void */
+                        public function stop() {
+                            work();
+                            exit(1);
+                        }
+                    }',
+            ],
             'voidNeverDeclaredWithANeverReturningCallPathAndAnImplicitReturn' => [
                 'code' => '<?php
                     function stop(): never {
@@ -284,6 +482,47 @@ final class ReturnTypeTest extends TestCase
                 'assertions' => [],
                 'ignored_issues' => [],
                 'php_version' => '8.0',
+            ],
+            'neverFunctionWithAnEmptyInfiniteLoop' => [
+                'code' => '<?php
+                    function whileLoop(): never {
+                        while (true) {}
+                    }
+
+                    function forLoop(): never {
+                        for (;;) {}
+                    }
+
+                    function doLoop(): never {
+                        do {} while (true);
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
+            'neverFunctionWithAnInfiniteLoopThatMayThrow' => [
+                'code' => '<?php
+                    /** @throws Exception */
+                    function boom(): void {
+                        throw new Exception();
+                    }
+
+                    function run(): never {
+                        while (true) {
+                            if (random_int(0, 100000) === 0) {
+                                boom();
+                            }
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
+            'intFunctionWithAnEmptyInfiniteLoop' => [
+                'code' => '<?php
+                    function run(): int {
+                        while (true) {}
+                    }',
             ],
             'nativeNullReturnTypeOfAnInterfaceMethodWithADocblock' => [
                 'code' => '<?php
@@ -625,6 +864,50 @@ final class ReturnTypeTest extends TestCase
                                 default:
                                     throw new \Exception("badness");
                             }
+                        }
+                    }',
+            ],
+            'switchWhoseCasesFallThroughIntoADefaultThatEnds' => [
+                'code' => '<?php
+                    function toEnd(int $value): int {
+                        switch ($value) {
+                            case 0:
+                                echo "zero";
+                            default:
+                                return 2;
+                        }
+                    }
+
+                    function toThrow(int $value): int {
+                        switch ($value) {
+                            case 0:
+                                return 1;
+                            case 1:
+                                echo "one";
+                            default:
+                                throw new Exception();
+                        }
+                    }',
+            ],
+            'switchWithADefaultInTheMiddleThatFallsThroughIntoAnEndingCase' => [
+                'code' => '<?php
+                    function defaultFirst(int $x): int {
+                        switch ($x) {
+                            default:
+                                echo "x";
+                            case 1:
+                                return 1;
+                        }
+                    }
+
+                    function defaultBetween(int $x): int {
+                        switch ($x) {
+                            case 0:
+                                return 0;
+                            default:
+                                echo "x";
+                            case 1:
+                                throw new Exception();
                         }
                     }',
             ],
@@ -1686,6 +1969,22 @@ final class ReturnTypeTest extends TestCase
                     }
                     PHP,
             ],
+            'returnedReferenceAssignmentExpressionHasType' => [
+                'code' => <<<'PHP'
+                    <?php
+                    final class ReferenceText {
+                        public static string $value = 'hello';
+                    }
+
+                    function &textReference(): string {
+                        return ReferenceText::$value;
+                    }
+
+                    function readAssignedReference(): string {
+                        return ($value = &textReference());
+                    }
+                    PHP,
+            ],
             'neverReturnType' => [
                 'code' => '<?php
                     function exitProgram(bool $die): never
@@ -2039,7 +2338,72 @@ final class ReturnTypeTest extends TestCase
                         return $s->n;
                     }',
                 'assertions' => [],
-                'ignored_issues' => ['MissingThrowsDocblock'],
+            ],
+            'finalClassOverridesAGenericStaticReturnType' => [
+                'code' => <<<'PHP'
+                    <?php
+                    /** @template T of object */
+                    final class Box
+                    {
+                        /** @param T $value */
+                        public function __construct(public readonly object $value) {}
+                    }
+
+                    class Base
+                    {
+                        /** @return Box<static> */
+                        public function box(): Box
+                        {
+                            return new Box($this);
+                        }
+                    }
+
+                    final class Leaf extends Base
+                    {
+                        /** @return Box<static> */
+                        #[\Override]
+                        public function box(): Box
+                        {
+                            return parent::box();
+                        }
+                    }
+                    PHP,
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.3',
+            ],
+            'finalClassOverridesAGenericThisReturnType' => [
+                'code' => <<<'PHP'
+                    <?php
+                    /** @template T of object */
+                    final class Box
+                    {
+                        /** @param T $value */
+                        public function __construct(public readonly object $value) {}
+                    }
+
+                    class Base
+                    {
+                        /** @return Box<static> */
+                        public function box(): Box
+                        {
+                            return new Box($this);
+                        }
+                    }
+
+                    final class Leaf extends Base
+                    {
+                        /** @return Box<$this> */
+                        #[\Override]
+                        public function box(): Box
+                        {
+                            return parent::box();
+                        }
+                    }
+                    PHP,
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.3',
             ],
         ];
     }
@@ -2051,6 +2415,139 @@ final class ReturnTypeTest extends TestCase
     public static function providerInvalidCodeParse(): iterable
     {
         return [
+            'switchWithADefaultInTheMiddleThatFallsThroughIntoACaseThatDoesNotEnd' => [
+                'code' => '<?php
+                    function classify(int $x): int {
+                        switch ($x) {
+                            default:
+                                echo "x";
+                            case 1:
+                                echo "one";
+                        }
+                    }',
+                'error_message' => 'InvalidReturnType',
+            ],
+            'switchWithADefaultInTheMiddleFollowedByABreak' => [
+                'code' => '<?php
+                    function classify(int $x): int {
+                        switch ($x) {
+                            default:
+                                echo "x";
+                            case 1:
+                                return 1;
+                            case 2:
+                                break;
+                        }
+                    }',
+                'error_message' => 'InvalidReturnType',
+            ],
+            'switchDefaultThatFallsThroughWithoutReturning' => [
+                'code' => '<?php
+                    function classify(int $value): int {
+                        switch ($value) {
+                            case 0:
+                                return 1;
+                            default:
+                                echo "Other value";
+                        }
+                    }',
+                'error_message' => 'InvalidReturnType',
+            ],
+            'switchCaseThatFallsThroughIntoADefaultWithoutReturning' => [
+                'code' => '<?php
+                    function classify(int $value): int {
+                        switch ($value) {
+                            case 0:
+                                return 1;
+                            case 1:
+                                echo "one";
+                            default:
+                                echo "other";
+                        }
+                    }',
+                'error_message' => 'InvalidReturnType',
+            ],
+            'switchDefaultThatBreaksWithoutReturning' => [
+                'code' => '<?php
+                    function classify(int $value): int {
+                        switch ($value) {
+                            case 0:
+                                return 1;
+                            default:
+                                break;
+                        }
+                    }',
+                'error_message' => 'InvalidReturnType',
+            ],
+            'finalMethodOfASubclassableClassKeepsItsStaticReturnType' => [
+                'code' => <<<'PHP'
+                    <?php
+                    /** @template T of object */
+                    final class Box
+                    {
+                        /** @param T $value */
+                        public function __construct(public readonly object $value) {}
+                    }
+
+                    class Base
+                    {
+                        /** @return Box<Mid> */
+                        public function box(): Box
+                        {
+                            return new Box(new Mid());
+                        }
+                    }
+
+                    class Mid extends Base
+                    {
+                        /** @return Box<static> */
+                        #[\Override]
+                        final public function box(): Box
+                        {
+                            return new Box($this);
+                        }
+                    }
+                    PHP,
+                'error_message' => 'ImplementedReturnTypeMismatch',
+                'error_levels' => [],
+                'php_version' => '8.3',
+            ],
+            'docblockStringLiteralWithAUnicodeEscapeThatOverflowsAnInt' => [
+                'code' => '<?php
+                    /** @return "\u{FFFFFFFFFFFFFFFF}" */
+                    function overflow(): string {
+                        return "";
+                    }',
+                'error_message' => 'InvalidDocblock',
+            ],
+            'docblockStringLiteralWithATooLargeUnicodeEscape' => [
+                'code' => '<?php
+                    /** @return "\u{110000}" */
+                    function tooLarge(): string {
+                        return "";
+                    }',
+                'error_message' => 'InvalidDocblock',
+            ],
+            'docblockStringLiteralWithEscapeSequenceIsNotTheBackslashAndLetter' => [
+                'code' => '<?php
+                    /** @return "\t" */
+                    function tab(): string {
+                        return "\\\\t";
+                    }',
+                'error_message' => 'InvalidReturnStatement',
+            ],
+            'generatorReturnsImplicitlyOnAPath' => [
+                'code' => '<?php
+                    /** @return Generator<int, int, mixed, string> */
+                    function foo(bool $r): Generator {
+                        if ($r) {
+                            return "string";
+                        }
+
+                        yield 1;
+                    }',
+                'error_message' => 'InvalidReturnType - src' . DIRECTORY_SEPARATOR . 'somefile.php:2:33 - Not all code paths of foo end in a return statement, the generator return type string expected',
+            ],
             'voidNeverDeclaredWithOnlyAnImplicitReturn' => [
                 'code' => '<?php
                     /**
@@ -2117,6 +2614,28 @@ final class ReturnTypeTest extends TestCase
                         takesIterable($object);
                     }',
                 'error_message' => 'InvalidArgument',
+            ],
+            'neverFunctionWithALoopThatBreaks' => [
+                'code' => '<?php
+                    function run(): never {
+                        while (true) {
+                            if (random_int(0, 9) === 0) {
+                                break;
+                            }
+                        }
+                    }',
+                'error_message' => 'InvalidReturnType',
+                'error_levels' => [],
+                'php_version' => '8.1',
+            ],
+            'neverFunctionWithAFiniteLoop' => [
+                'code' => '<?php
+                    function run(): never {
+                        while (random_int(0, 9) > 0) {}
+                    }',
+                'error_message' => 'InvalidReturnType',
+                'error_levels' => [],
+                'php_version' => '8.1',
             ],
             'unrepresentableScalarIntersection' => [
                 'code' => '<?php
@@ -2504,7 +3023,7 @@ final class ReturnTypeTest extends TestCase
 
                 $res = map(function(int $i): string { return (string) $i; })([1,2,3]);
                 ',
-                'error_message' => 'MixedAssignment - src' . DIRECTORY_SEPARATOR . 'somefile.php:10:43 - Unable to determine the type that $key is being assigned to',
+                'error_message' => 'MixedAssignment - src' . DIRECTORY_SEPARATOR . 'somefile.php:10:51 - Unable to determine the type that $value is being assigned to',
             ],
             'cannotInferReturnClosureWithMoreSpecificTypes' => [
                 'code' => '<?php
@@ -2764,6 +3283,104 @@ final class ReturnTypeTest extends TestCase
                     }
                     PHP,
                 'error_message' => 'InvalidReturnStatement',
+            ],
+            'finalClassOverridesAGenericStaticReturnTypeWithAnotherType' => [
+                'code' => <<<'PHP'
+                    <?php
+                    /** @template T of object */
+                    final class Box
+                    {
+                        /** @param T $value */
+                        public function __construct(public readonly object $value) {}
+                    }
+
+                    class Base
+                    {
+                        /** @return Box<static> */
+                        public function box(): Box
+                        {
+                            return new Box($this);
+                        }
+                    }
+
+                    final class Other {}
+
+                    final class Leaf extends Base
+                    {
+                        /** @return Box<Other> */
+                        #[\Override]
+                        public function box(): Box
+                        {
+                            return new Box(new Other());
+                        }
+                    }
+                    PHP,
+                'error_message' => 'ImplementedReturnTypeMismatch',
+                'error_levels' => [],
+                'php_version' => '8.3',
+            ],
+            'notAllCodePathsReturnShowsExactDocblockType' => [
+                'code' => '<?php
+                    /** @return non-empty-string */
+                    function r1(): string {}',
+                'error_message' => 'Not all code paths of r1 end in a return statement, return type'
+                    . ' non-empty-string expected',
+            ],
+            'noReturnStatementsShowsExactDocblockType' => [
+                'code' => '<?php
+                    abstract class T2 {
+                        /** @return numeric-string */
+                        public function m(): string {
+                            /** nothing */
+                        }
+                    }',
+                'error_message' => "No return statements were found for method T2::m but return type"
+                    . " 'numeric-string' was expected",
+            ],
+            'invalidNullableReturnTypeShowsExactDocblockType' => [
+                'code' => '<?php
+                    /**
+                     * @psalm-suppress NullableReturnStatement
+                     * @return non-empty-string
+                     */
+                    function r4(): string {
+                        return rand(0, 1) ? "1" : null;
+                    }',
+                'error_message' => "The declared return type 'non-empty-string' for r4 is not nullable,"
+                    . " but ''1'|null' contains null",
+            ],
+            'invalidFalsableReturnTypeShowsExactDocblockType' => [
+                'code' => '<?php
+                    /**
+                     * @psalm-suppress FalsableReturnStatement
+                     * @return numeric-string
+                     */
+                    function r3(): string {
+                        return rand(0, 1) ? "1" : false;
+                    }',
+                'error_message' => "The declared return type 'numeric-string' for r3 does not allow false,"
+                    . " but ''1'|false' contains false",
+            ],
+            'falsableReturnStatementShowsExactDocblockType' => [
+                'code' => '<?php
+                    /**
+                     * @psalm-suppress InvalidFalsableReturnType
+                     * @return numeric-string
+                     */
+                    function r3(): string {
+                        return rand(0, 1) ? "1" : false;
+                    }',
+                'error_message' => "The declared return type 'numeric-string' for r3 does not allow false,"
+                    . " but the function returns ''1'|false",
+            ],
+            'invalidToStringShowsExactInferredType' => [
+                'code' => '<?php
+                    class S1 {
+                        public function __toString() {
+                            return 5;
+                        }
+                    }',
+                'error_message' => '__toString methods must return a string, 5 returned',
             ],
         ];
     }

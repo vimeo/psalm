@@ -160,6 +160,54 @@ You can also use more complex rules in the `<issueHandler />` element, as you ca
 </PluginIssue>
 ```
 
+## Fixing plugin issues with Psalter
+
+A plugin class can declare the issues it knows how to fix. Psalter then accepts them in `--issues`, includes them in `--issues=all` and lists them with `--list-supported-issues`:
+
+```php
+final class Plugin implements PluginEntryPointInterface, PluginFixableIssuesInterface
+{
+    #[Override]
+    public function getFixableIssues(?SimpleXMLElement $config = null): array
+    {
+        return [UnspecificEqualsAssertion::class];
+    }
+}
+```
+
+The plugin's hooks add their file replacements only when `Codebase::shouldFixIssue()` says Psalter was asked to fix the issue and nothing suppresses it there (`@psalm-suppress` or the config's issue handlers):
+
+```php
+$issue = new UnspecificEqualsAssertion($message, new CodeLocation($source, $call));
+
+if ($event->getCodebase()->shouldFixIssue($issue, $source->getSuppressedIssues())) {
+    $event->setFileReplacements([new FileManipulation($start, $end, 'assertSame')]);
+} else {
+    IssueBuffer::accepts($issue, $source->getSuppressedIssues(), true);
+}
+```
+
+Passing `true` as the third argument of `IssueBuffer::accepts()` makes Psalm suggest the fix at the end of its report.
+
+Only plugins enabled with `<pluginClass>` (or enabled automatically because the project requires their library) can declare fixable issues. They require `psalm/psalm-plugin-api` `^0.4.2`.
+
+## Reporting issues in files Psalm doesn't analyze
+
+A plugin that compiles templates to PHP analyzes the compiled file and reports its issues on the template. Psalm reports issues only in project files, so make the templates reportable from the plugin entry point. They are neither scanned nor analyzed:
+
+```php
+final class Plugin implements PluginEntryPointInterface
+{
+    #[Override]
+    public function __invoke(PluginRegistrationSocket $registration, ?SimpleXMLElement $config = null): void
+    {
+        $registration->codebase->addReportableFiles(['/app/resources/views/order.blade.php']);
+    }
+}
+```
+
+An issue is checked in the process that raises it. Templates added in `__invoke()` are reportable in every scanning and analysis process. Templates added later, e.g. in an `AfterCodebasePopulatedInterface` handler, are reportable only for issues raised while analyzing.
+
 ## Upgrading file-based plugin to composer-based version
 
 Create new plugin project using skeleton, then pass the class name of you file-based plugin to `registerHooksFromClass()`

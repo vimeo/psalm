@@ -20,9 +20,11 @@ use Psalm\Internal\Codebase\TaintFlowGraph;
 use Psalm\Internal\Codebase\VariableUseGraph;
 use Psalm\Internal\DataFlow\DataFlowNode;
 use Psalm\Internal\MethodIdentifier;
+use Psalm\Internal\Type\Comparator\ClassLikeStringComparator;
 use Psalm\Issue\DocblockTypeContradiction;
 use Psalm\Issue\ImpureMethodCall;
 use Psalm\Issue\InvalidOperand;
+use Psalm\Issue\InvalidStringClass;
 use Psalm\Issue\NullOperand;
 use Psalm\Issue\PossiblyNullOperand;
 use Psalm\Issue\RedundantCondition;
@@ -32,6 +34,9 @@ use Psalm\IssueBuffer;
 use Psalm\Plugin\EventHandler\Event\AddRemoveTaintsEvent;
 use Psalm\Storage\Capabilities;
 use Psalm\Type;
+use Psalm\Type\Atomic\TClassString;
+use Psalm\Type\Atomic\TDependentGetClass;
+use Psalm\Type\Atomic\TLiteralClassString;
 use Psalm\Type\Atomic\TLiteralInt;
 use Psalm\Type\Atomic\TLiteralString;
 use Psalm\Type\Atomic\TNamedObject;
@@ -207,6 +212,28 @@ final class BinaryOpAnalyzer
             $stmt_left_type = $statements_analyzer->node_data->getType($stmt->left);
             $stmt_right_type = $statements_analyzer->node_data->getType($stmt->right);
 
+            if (!$statements_analyzer->getCodebase()->config->allow_string_standin_for_class
+                && ($stmt instanceof PhpParser\Node\Expr\BinaryOp\Equal
+                    || $stmt instanceof PhpParser\Node\Expr\BinaryOp\NotEqual
+                    || $stmt instanceof PhpParser\Node\Expr\BinaryOp\Identical
+                    || $stmt instanceof PhpParser\Node\Expr\BinaryOp\NotIdentical)
+                && $stmt_left_type !== null
+                && $stmt_right_type !== null
+            ) {
+                self::checkClassStringLiteralComparison(
+                    $statements_analyzer,
+                    $stmt->left,
+                    $stmt_left_type,
+                    $stmt_right_type,
+                );
+                self::checkClassStringLiteralComparison(
+                    $statements_analyzer,
+                    $stmt->right,
+                    $stmt_right_type,
+                    $stmt_left_type,
+                );
+            }
+
             if (($stmt instanceof PhpParser\Node\Expr\BinaryOp\Greater
                     || $stmt instanceof PhpParser\Node\Expr\BinaryOp\GreaterOrEqual
                     || $stmt instanceof PhpParser\Node\Expr\BinaryOp\Smaller
@@ -242,6 +269,7 @@ final class BinaryOpAnalyzer
                 && $stmt->left instanceof PhpParser\Node\Expr\FuncCall
                 && $stmt->left->name instanceof PhpParser\Node\Name
                 && $stmt->left->name->getParts() === ['substr']
+                && !$stmt->left->isPartialFunctionApplication()
                 && isset($stmt->left->getArgs()[1])
                 && $stmt_right_type
                 && $stmt_right_type->hasLiteralString()
@@ -349,6 +377,60 @@ final class BinaryOpAnalyzer
         );
 
         return true;
+    }
+
+    /**
+     * Report a class-name literal independently of the types' ability to compare equal.
+     * That keeps type reconciliation correct in both configurations.
+     * Only a literal written at the comparison site is reported: a variable whose type merely
+     * contains a literal (e.g. class-string|'libXMLError') is not a string used instead of ::class.
+     */
+    private static function checkClassStringLiteralComparison(
+        StatementsAnalyzer $statements_analyzer,
+        PhpParser\Node\Expr $literal_expr,
+        Union $literal_type,
+        Union $class_type,
+    ): void {
+        if (!$literal_expr instanceof PhpParser\Node\Scalar\String_) {
+            return;
+        }
+
+        $codebase = $statements_analyzer->getCodebase();
+
+        foreach ($literal_type->getAtomicTypes() as $literal) {
+            if ($literal::class !== TLiteralString::class) {
+                continue;
+            }
+
+            foreach ($class_type->getAtomicTypes() as $class_string) {
+                if ($class_string instanceof TLiteralClassString) {
+                    $matches = $literal->value === $class_string->value;
+                } elseif ($class_string instanceof TClassString
+                    || $class_string instanceof TDependentGetClass
+                ) {
+                    $matches = ClassLikeStringComparator::canLiteralNameBeClassString(
+                        $codebase,
+                        $literal,
+                        $class_string,
+                        true,
+                    );
+                } else {
+                    continue;
+                }
+
+                if ($matches) {
+                    IssueBuffer::maybeAdd(
+                        new InvalidStringClass(
+                            'Use ::class instead of a string literal for a class name',
+                            new CodeLocation($statements_analyzer, $literal_expr),
+                        ),
+                        $statements_analyzer->getSuppressedIssues(),
+                    );
+
+                    return;
+                }
+            }
+        }
     }
 
     private static function checkForNullableOperands(

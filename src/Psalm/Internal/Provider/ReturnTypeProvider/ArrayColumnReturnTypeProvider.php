@@ -6,17 +6,35 @@ namespace Psalm\Internal\Provider\ReturnTypeProvider;
 
 use Override;
 use Psalm\CodeLocation;
+use Psalm\Codebase;
 use Psalm\Context;
 use Psalm\Internal\Analyzer\SourceAnalyzer;
+use Psalm\Internal\Analyzer\Statements\Expression\ArrayAnalyzer;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
+use Psalm\Internal\MethodIdentifier;
+use Psalm\Internal\Type\TypeCombiner;
+use Psalm\Issue\InvalidArgument;
+use Psalm\Issue\PossiblyInvalidArgument;
+use Psalm\IssueBuffer;
 use Psalm\Plugin\EventHandler\Event\FunctionReturnTypeProviderEvent;
 use Psalm\Plugin\EventHandler\FunctionReturnTypeProviderInterface;
 use Psalm\Type;
 use Psalm\Type\Atomic;
 use Psalm\Type\Atomic\TArray;
+use Psalm\Type\Atomic\TArrayKey;
+use Psalm\Type\Atomic\TBool;
 use Psalm\Type\Atomic\TClassStringMap;
+use Psalm\Type\Atomic\TFalse;
+use Psalm\Type\Atomic\TFloat;
+use Psalm\Type\Atomic\TInt;
 use Psalm\Type\Atomic\TKeyedArray;
+use Psalm\Type\Atomic\TLiteralInt;
+use Psalm\Type\Atomic\TNamedObject;
 use Psalm\Type\Atomic\TNonEmptyArray;
+use Psalm\Type\Atomic\TNull;
+use Psalm\Type\Atomic\TString;
+use Psalm\Type\Atomic\TTemplateParam;
+use Psalm\Type\Atomic\TTrue;
 use Psalm\Type\Union;
 
 use function count;
@@ -218,7 +236,51 @@ final class ArrayColumnReturnTypeProvider implements FunctionReturnTypeProviderI
             }
 
             if ((null !== $key_column_name) && isset($row_shape->properties[$key_column_name])) {
-                $result_key_type = $row_shape->properties[$key_column_name];
+                $key_column_type = $row_shape->properties[$key_column_name];
+                $codebase = $statements_source->getCodebase();
+                $invalid_key_types = self::getTypesThatCannotBeKeys($codebase, $key_column_type);
+
+                // array_column() skips the rows without the value column before it reads their index
+                if ($value_column_name_is_null) {
+                    $rows_may_be_skipped = false;
+                    $rows_are_all_skipped = false;
+                } elseif (null !== $value_column_name && isset($row_shape->properties[$value_column_name])) {
+                    $rows_may_be_skipped = $row_shape->properties[$value_column_name]->possibly_undefined;
+                    $rows_are_all_skipped = false;
+                } else {
+                    $rows_may_be_skipped = true;
+                    $rows_are_all_skipped = null !== $value_column_name && $row_shape->fallback_params === null;
+                }
+
+                if ($invalid_key_types !== [] && !$rows_are_all_skipped) {
+                    // a row without the index column is appended
+                    $all_invalid = !$rows_may_be_skipped
+                        && !$key_column_type->possibly_undefined
+                        && count($invalid_key_types) === count($key_column_type->getAtomicTypes());
+
+                    IssueBuffer::maybeAdd(
+                        $all_invalid
+                            ? new InvalidArgument(
+                                'The index column has the type ' . $key_column_type->getId()
+                                . ', which cannot be an array key',
+                                $code_location,
+                                'array_column',
+                            )
+                            : new PossiblyInvalidArgument(
+                                'The index column has the type ' . $key_column_type->getId()
+                                . ', which may not be an array key',
+                                $code_location,
+                                'array_column',
+                            ),
+                        $statements_source->getSuppressedIssues(),
+                    );
+
+                    if ($all_invalid && $codebase->analysis_php_version_id >= 8_00_00) {
+                        return Type::getNever();
+                    }
+                }
+
+                $result_key_type = self::castToArrayKey($codebase, $key_column_type);
             }
         }
 
@@ -236,6 +298,85 @@ final class ArrayColumnReturnTypeProvider implements FunctionReturnTypeProviderI
     }
 
     /**
+     * The parts of the index column type that array_column() throws a TypeError for: arrays, and objects that
+     * aren't cast to a string
+     *
+     * @return list<Atomic>
+     */
+    private static function getTypesThatCannotBeKeys(Codebase $codebase, Union $key_type): array
+    {
+        $invalid = [];
+
+        foreach ($key_type->getAtomicTypes() as $atomic_type) {
+            if ($atomic_type instanceof TArray
+                || $atomic_type instanceof TKeyedArray
+                || ($atomic_type instanceof TNamedObject && !self::isCastToAString($codebase, $atomic_type))
+            ) {
+                $invalid[] = $atomic_type;
+            }
+        }
+
+        return $invalid;
+    }
+
+    /**
+     * Before PHP 8, an object with a __toString() in the index column is cast to a string; since then it is a
+     * TypeError, like any other object
+     */
+    private static function isCastToAString(Codebase $codebase, TNamedObject $object): bool
+    {
+        return $codebase->analysis_php_version_id < 8_00_00
+            && $codebase->classOrInterfaceExists($object->value)
+            && $codebase->methodExists(new MethodIdentifier($object->value, '__tostring'));
+    }
+
+    /**
+     * The type of the key array_column() sets for a value: null, bools, floats and, before PHP 8, objects with a
+     * __toString() are cast to the array key they stand for. What can't be a key is left out (see
+     * getTypesThatCannotBeKeys()), and a type that is nothing but that is an array key.
+     */
+    private static function castToArrayKey(Codebase $codebase, Union $key_type): Union
+    {
+        $atomic_types = [];
+
+        foreach ($key_type->getAtomicTypes() as $atomic_type) {
+            if ($atomic_type instanceof TNull) {
+                $atomic_types[] = Type::getAtomicStringFromLiteral('');
+            } elseif ($atomic_type instanceof TFalse) {
+                $atomic_types[] = new TLiteralInt(0);
+            } elseif ($atomic_type instanceof TTrue) {
+                $atomic_types[] = new TLiteralInt(1);
+            } elseif ($atomic_type instanceof TBool) {
+                $atomic_types[] = new TLiteralInt(0);
+                $atomic_types[] = new TLiteralInt(1);
+            } elseif ($atomic_type instanceof TFloat) {
+                $atomic_types[] = new TInt();
+            } elseif ($atomic_type instanceof TInt
+                || $atomic_type instanceof TString
+                || $atomic_type instanceof TArrayKey
+                || $atomic_type instanceof TTemplateParam
+            ) {
+                $atomic_types[] = $atomic_type;
+            } elseif ($atomic_type instanceof TNamedObject && self::isCastToAString($codebase, $atomic_type)) {
+                $atomic_types[] = new TString();
+            } elseif ($atomic_type instanceof TArray
+                || $atomic_type instanceof TKeyedArray
+                || $atomic_type instanceof TNamedObject
+            ) {
+                continue;
+            } else {
+                $atomic_types[] = new TArrayKey();
+            }
+        }
+
+        if ($atomic_types === []) {
+            return Type::getArrayKey();
+        }
+
+        return ArrayAnalyzer::castArrayKeyType(TypeCombiner::combine($atomic_types));
+    }
+
+    /**
      * @return TArray|TKeyedArray|TClassStringMap|null
      */
     private static function getRowShape(
@@ -248,12 +389,32 @@ final class ArrayColumnReturnTypeProvider implements FunctionReturnTypeProviderI
             if ($row_type->hasArray()) {
                 return $row_type->getArray();
             } elseif ($row_type->hasObjectType()) {
-                return GetObjectVarsReturnTypeProvider::getGetObjectVarsReturnType(
+                $row_shape = GetObjectVarsReturnTypeProvider::getGetObjectVarsReturnType(
                     $row_type,
                     $statements_source,
                     $context,
                     $code_location,
                 );
+
+                // array_column() also reads the columns that __isset() says are set
+                $object_type = $row_type->getSingleAtomic();
+                if ($object_type instanceof TNamedObject
+                    && $statements_source->getCodebase()->methodExists(
+                        new MethodIdentifier($object_type->value, '__isset'),
+                    )
+                ) {
+                    if ($row_shape instanceof TKeyedArray) {
+                        return TKeyedArray::make(
+                            $row_shape->properties,
+                            null,
+                            [Type::getString(), Type::getMixed()],
+                        );
+                    }
+
+                    return new TArray([Type::getString(), Type::getMixed()]);
+                }
+
+                return $row_shape;
             }
         }
         return null;

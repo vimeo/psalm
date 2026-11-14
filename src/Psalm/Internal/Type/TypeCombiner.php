@@ -204,9 +204,6 @@ final class TypeCombiner
 
             $combination->array_type_params = [];
 
-            /**
-             * @psalm-suppress PossiblyNullArrayAccess
-             */
             unset(
                 $combination->value_types['array'],
                 $combination->named_object_types['Traversable'],
@@ -618,7 +615,6 @@ final class TypeCombiner
                 $combination->builtin_type_params['iterable'] = [Type::getMixed(), Type::getMixed()];
             }
 
-            /** @psalm-suppress PossiblyNullArrayAccess */
             unset(
                 $combination->named_object_types['Traversable'],
                 $combination->builtin_type_params['Traversable'],
@@ -804,9 +800,7 @@ final class TypeCombiner
                     $has_defined_keys = true;
                 }
 
-                if (($candidate_property_type->possibly_undefined || ($value_type->possibly_undefined ?? true))
-                    && $combination->fallbackKeyContains($candidate_property_name)
-                ) {
+                if ($value_type === null && $combination->fallbackKeyContains($candidate_property_name)) {
                     $combination->objectlike_entries[$candidate_property_name] = Type::combineUnionTypes(
                         $combination->objectlike_entries[$candidate_property_name],
                         $combination->objectlike_value_type,
@@ -1178,6 +1172,7 @@ final class TypeCombiner
             } else {
                 $shared_classlikes = $codebase ? self::getSharedTypes($combination, $codebase) : [];
 
+                $had_literals = $combination->strings !== null;
                 $combination->strings = null;
 
                 if (isset($combination->value_types['string'])
@@ -1194,7 +1189,13 @@ final class TypeCombiner
                     && $combination->value_types['string'] instanceof TNumericString
                     && !$type instanceof TLiteralClassString
                 ) {
-                    if (!is_numeric($type->value)) {
+                    if (!$had_literals
+                        && $type->value === ''
+                        && $combination->value_types['string']::class === TNumericString::class
+                    ) {
+                        // stays beside the numeric-string, as when the literal is combined first
+                        $combination->strings = [$type_key => $type];
+                    } elseif (!is_numeric($type->value)) {
                         $combination->value_types['string'] = $type->value === ''
                             ? new TString()
                             : new TNonEmptyString();
@@ -1443,6 +1444,9 @@ final class TypeCombiner
                     } else {
                         $combination->value_types['string'] = new TString();
                     }
+                } else {
+                    // the literals beside this string type were placed when it was first added
+                    return;
                 }
             }
 
@@ -1574,11 +1578,10 @@ final class TypeCombiner
         }
 
         if ($type instanceof TLiteralInt) {
-            if ($combination->ints !== null && count($combination->ints) < $literal_limit) {
-                $combination->ints[$type_key] = $type;
-            } else {
-                $combination->ints[$type_key] = $type;
+            $is_below_limit = $combination->ints !== null && count($combination->ints) < $literal_limit;
+            $combination->ints[$type_key] = $type;
 
+            if (!$is_below_limit) {
                 $all_nonnegative = !array_any(
                     $combination->ints,
                     static fn($int): bool => $int->value < 0,

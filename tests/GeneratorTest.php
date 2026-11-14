@@ -8,6 +8,8 @@ use Override;
 use Psalm\Tests\Traits\InvalidCodeAnalysisTestTrait;
 use Psalm\Tests\Traits\ValidCodeAnalysisTestTrait;
 
+use const DIRECTORY_SEPARATOR;
+
 final class GeneratorTest extends TestCase
 {
     use InvalidCodeAnalysisTestTrait;
@@ -310,6 +312,124 @@ final class GeneratorTest extends TestCase
                     '$_a' => 'Closure[pure]():Generator[pure]<int, string, mixed, list{string}>',
                 ],
             ],
+            'generatorReturnNullOrNothingWithIterableReturnType' => [
+                'code' => '<?php
+                    /** @return iterable<int, string> */
+                    function a(): iterable {
+                        if (rand(0, 1)) {
+                            return;
+                        }
+                        if (rand(0, 1)) {
+                            return null;
+                        }
+                        yield "a";
+                    }',
+            ],
+            'generatorReturnWithIntersectionReturnType' => [
+                'code' => '<?php
+                    /** @return Traversable&Generator<int, int, mixed, int> */
+                    function a(): Traversable {
+                        yield 1;
+                        return 2;
+                    }',
+            ],
+            'generatorReturnWithUnionOfGeneratorAndIterator' => [
+                'code' => '<?php
+                    /** @return Generator<int, string, mixed, int>|Iterator<int, string> */
+                    function a(): Iterator {
+                        yield "a";
+                        return new ArrayIterator([]);
+                    }',
+            ],
+            'generatorReturnWithTemplateBoundedByGenerator' => [
+                'code' => '<?php
+                    /**
+                     * @template T of Generator<int, int, mixed, int>
+                     * @return T
+                     */
+                    function a(): Generator {
+                        yield 1;
+                        return 1;
+                    }',
+                'assertions' => [],
+                'ignored_issues' => ['InvalidReturnType'],
+            ],
+            'generatorReturnMatchingDeclaredReturnType' => [
+                'code' => '<?php
+                    /** @return Generator<int, int, mixed, string> */
+                    function a(): Generator {
+                        yield 1;
+                        return "a";
+                    }',
+            ],
+            'arrowFunctionGeneratorWithIterableReturnType' => [
+                'code' => '<?php
+                    /** @return Generator<int, int, mixed, int> */
+                    function withResult(): Generator {
+                        yield 1;
+                        return 3;
+                    }
+
+                    $a = fn(): iterable => yield 1;
+                    $b = fn(): Generator => yield 1;
+                    $c = fn(): Generator => yield from [1, 2];
+                    $e = fn(): iterable => yield from withResult();
+                    $d = function (): iterable {
+                        yield 1;
+                        return;
+                    };',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
+            'yieldFromReturnedByGenerator' => [
+                'code' => '<?php
+                    /** @return Generator<int, int, mixed, int> */
+                    function inner(): Generator {
+                        yield 1;
+                        return 3;
+                    }
+
+                    /** @return Generator<int, int, mixed, int> */
+                    function outer(): Generator {
+                        return yield from inner();
+                    }',
+            ],
+            'generatorReturnInTraitMethodMatchingDeclaredReturnType' => [
+                'code' => '<?php
+                    trait T {
+                        /** @return Generator<int, int, mixed, int> */
+                        public function values(): Generator {
+                            yield 1;
+                            return 42;
+                        }
+
+                        public function nothing(): iterable {
+                            yield 1;
+                            return;
+                        }
+                    }
+
+                    final class C {
+                        use T;
+                    }',
+            ],
+            'generatorReturnInTraitMethodWithTemplatedReturnTypeSpecializedToGenerator' => [
+                'code' => '<?php
+                    /** @template T of Traversable */
+                    trait GenericGenerator {
+                        /** @return T */
+                        public function gen(): Traversable {
+                            yield 1;
+                            return 42;
+                        }
+                    }
+
+                    final class ConcreteGenerator {
+                        /** @use GenericGenerator<Generator<int, int, mixed, int>> */
+                        use GenericGenerator;
+                    }',
+            ],
         ];
     }
 
@@ -329,9 +449,6 @@ final class GeneratorTest extends TestCase
                         yield 2;
                     }
 
-                    /**
-                     * @psalm-suppress InvalidNullableReturnType
-                     */
                     function notagenerator() : Generator {
                         if (rand(0, 1)) {
                             return;
@@ -411,6 +528,125 @@ final class GeneratorTest extends TestCase
                         }
                     }',
                 'error_message' => 'PossibleRawObjectIteration',
+            ],
+            'hiddenGeneratorReturnWithIterable' => [
+                'code' => '<?php
+                    /** @return iterable<int, string> */
+                    function a(): iterable {
+                        yield "a";
+                        return 1;
+                    }',
+                'error_message' => 'HiddenGeneratorReturn - src' . DIRECTORY_SEPARATOR . 'somefile.php:5:32',
+            ],
+            'hiddenGeneratorReturnWithIterator' => [
+                'code' => '<?php
+                    function a(): Iterator {
+                        yield "a";
+                        return 1;
+                    }',
+                'error_message' => 'HiddenGeneratorReturn - src' . DIRECTORY_SEPARATOR . 'somefile.php:4:32',
+            ],
+            'hiddenGeneratorReturnWithTraversable' => [
+                'code' => '<?php
+                    function a(): Traversable {
+                        yield "a";
+                        return 1;
+                    }',
+                'error_message' => 'HiddenGeneratorReturn - src' . DIRECTORY_SEPARATOR . 'somefile.php:4:32',
+            ],
+            'hiddenGeneratorReturnInClosure' => [
+                'code' => '<?php
+                    $a = function (): iterable {
+                        yield "a";
+                        return 1;
+                    };',
+                'error_message' => 'HiddenGeneratorReturn - src' . DIRECTORY_SEPARATOR . 'somefile.php:4:32',
+            ],
+            'hiddenGeneratorReturnWithYieldFrom' => [
+                'code' => '<?php
+                    function inner(): Generator {
+                        yield 1;
+                        return 3;
+                    }
+
+                    function outer(): iterable {
+                        return yield from inner();
+                    }',
+                'error_message' => 'HiddenGeneratorReturn - src' . DIRECTORY_SEPARATOR . 'somefile.php:8:32',
+            ],
+            'generatorReturnDoesNotMatchDeclaredReturnType' => [
+                'code' => '<?php
+                    /** @return Generator<int, int, mixed, string> */
+                    function a(): Generator {
+                        yield 1;
+                        return 1;
+                    }',
+                'error_message' => 'InvalidReturnStatement - src' . DIRECTORY_SEPARATOR . 'somefile.php:5:32',
+            ],
+            'generatorReturnDoesNotMatchIntersectionWithGeneratorFirst' => [
+                'code' => '<?php
+                    /** @return Traversable&Generator<int, int, mixed, int> */
+                    function a(): Traversable {
+                        yield 1;
+                        return "not an int";
+                    }',
+                'error_message' => 'InvalidReturnStatement - src' . DIRECTORY_SEPARATOR . 'somefile.php:5:32'
+                    . ' - The inferred type \'\'not an int\'\' does not match the declared return type \'int\' for a',
+            ],
+            'generatorReturnDoesNotMatchIntersectionWithGeneratorLast' => [
+                'code' => '<?php
+                    /** @return Generator<int, int, mixed, int>&Traversable */
+                    function a(): Generator {
+                        yield 1;
+                        return "not an int";
+                    }',
+                'error_message' => 'InvalidReturnStatement - src' . DIRECTORY_SEPARATOR . 'somefile.php:5:32'
+                    . ' - The inferred type \'\'not an int\'\' does not match the declared return type \'int\' for a',
+            ],
+            'hiddenGeneratorReturnOfAnExplicitYield' => [
+                'code' => '<?php
+                    function a(): iterable {
+                        return yield "hello";
+                    }',
+                'error_message' => 'HiddenGeneratorReturn - src' . DIRECTORY_SEPARATOR . 'somefile.php:3:32',
+            ],
+            'hiddenGeneratorReturnOfAnExplicitYieldInClosure' => [
+                'code' => '<?php
+                    $a = function (): iterable {
+                        return yield "hello";
+                    };',
+                'error_message' => 'HiddenGeneratorReturn - src' . DIRECTORY_SEPARATOR . 'somefile.php:3:32',
+            ],
+            'hiddenGeneratorReturnInTraitMethod' => [
+                'code' => '<?php
+                    trait T {
+                        public function values(): iterable {
+                            yield 1;
+                            return 42;
+                        }
+                    }
+
+                    final class C {
+                        use T;
+                    }',
+                'error_message' => 'HiddenGeneratorReturn - src' . DIRECTORY_SEPARATOR . 'somefile.php:5:36',
+            ],
+            'hiddenGeneratorReturnInTraitMethodWithTemplatedReturnTypeSpecializedToIterator' => [
+                'code' => '<?php
+                    /** @template T of Traversable */
+                    trait GenericGenerator {
+                        /** @return T */
+                        public function gen(): Traversable {
+                            yield 1;
+                            return 42;
+                        }
+                    }
+
+                    final class ConcreteGenerator {
+                        /** @use GenericGenerator<Iterator<int, int>> */
+                        use GenericGenerator;
+                    }',
+                'error_message' => 'HiddenGeneratorReturn - src' . DIRECTORY_SEPARATOR . 'somefile.php:7:36',
             ],
         ];
     }

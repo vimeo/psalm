@@ -671,7 +671,7 @@ final class TypeVariableTest extends TestCase
                         });
                     }',
                 'assertions' => [],
-                'ignored_issues' => ['MixedArgumentTypeCoercion', 'MixedReturnStatement', 'MixedInferredReturnType'],
+                'ignored_issues' => ['MixedArgumentTypeCoercion', 'MixedReturnStatement'],
             ],
             'contravariantClosureParamIsAnUpperBound' => [
                 // the closure must accept whatever the collection holds: that
@@ -1147,6 +1147,107 @@ final class TypeVariableTest extends TestCase
                 'ignored_issues' => [],
                 'php_version' => '8.1',
             ],
+            'typeVariableResolvedByForeach' => [
+                'code' => '<?php
+                    /** @template T */
+                    final class Box {
+                        /** @param T $value */
+                        public function __construct(private mixed $value) {}
+
+                        /** @return T */
+                        public function get(): mixed { return $this->value; }
+
+                        /** @param T $value */
+                        public function set(mixed $value): void { $this->value = $value; }
+                    }
+
+                    /**
+                     * @template T
+                     * @param Box<T> $box
+                     * @return T
+                     */
+                    function unbox(Box $box): mixed { return $box->get(); }
+
+                    final class Foo { public function bar(): void {} }
+
+                    /** @var array<string, int> $arr */
+                    $arr = [];
+                    $key = null;
+                    $val = null;
+                    foreach (unbox(new Box($arr)) as $k => $v) {
+                        $key = $k;
+                        $val = $v;
+                    }',
+                'assertions' => [
+                    '$key' => 'null|string',
+                    '$val' => 'int|null',
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
+            'typeVariableResolvedByDestructuring' => [
+                'code' => '<?php
+                    /** @template T */
+                    final class Box {
+                        /** @param T $value */
+                        public function __construct(private mixed $value) {}
+
+                        /** @return T */
+                        public function get(): mixed { return $this->value; }
+
+                        /** @param T $value */
+                        public function set(mixed $value): void { $this->value = $value; }
+                    }
+
+                    /**
+                     * @template T
+                     * @param Box<T> $box
+                     * @return T
+                     */
+                    function unbox(Box $box): mixed { return $box->get(); }
+
+                    final class Foo { public function bar(): void {} }
+
+                    /** @var array{string, int} $tuple */
+                    $tuple = ["a", 1];
+                    [$a, $b] = unbox(new Box($tuple));',
+                'assertions' => [
+                    '$a' => 'string',
+                    '$b' => 'int',
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
+            'typeVariableResolvedByClone' => [
+                'code' => '<?php
+                    /** @template T */
+                    final class Box {
+                        /** @param T $value */
+                        public function __construct(private mixed $value) {}
+
+                        /** @return T */
+                        public function get(): mixed { return $this->value; }
+
+                        /** @param T $value */
+                        public function set(mixed $value): void { $this->value = $value; }
+                    }
+
+                    /**
+                     * @template T
+                     * @param Box<T> $box
+                     * @return T
+                     */
+                    function unbox(Box $box): mixed { return $box->get(); }
+
+                    final class Foo { public function bar(): void {} }
+
+                    $copy = clone unbox(new Box(new Foo()));',
+                'assertions' => [
+                    '$copy' => 'Foo',
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
             'constructorWithSiblingImplementationsSatisfiesInvariantProperty' => [
                 'code' => '<?php
                     /** @template V */
@@ -1590,6 +1691,29 @@ final class TypeVariableTest extends TestCase
                     $box->add("nope");',
                 'error_message' => 'IncompatibleTypeParameters - src' . DIRECTORY_SEPARATOR
                     . "somefile.php:11:31 - Type 'nope' should be a subtype of int",
+            ],
+            'typeVariableOfNamespacedFileScopeIsReconciled' => [
+                // the namespace declaration must not skip the reconciliation of
+                // the bounds the file's top-level statements collected
+                'code' => '<?php
+                    namespace Foo;
+
+                    /** @template T */
+                    final class Box {
+                        /** @param T $value */
+                        public function __construct(public mixed $value) {}
+                    }
+
+                    /** @param Box<int> $box */
+                    function takesIntBox(Box $box): int {
+                        return $box->value;
+                    }
+
+                    takesIntBox(new Box("x"));',
+                'error_message' => 'IncompatibleTypeParameters - src' . DIRECTORY_SEPARATOR
+                    . "somefile.php:15:33 - Type 'x' should be a subtype of int",
+                'error_levels' => [],
+                'php_version' => '8.1',
             ],
         ];
     }
