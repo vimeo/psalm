@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Psalm\Internal\Analyzer\Statements\Expression\Call;
 
 use PhpParser;
+use PhpParser\NodeFinder;
 use Psalm\CodeLocation;
 use Psalm\Context;
 use Psalm\Internal\Analyzer\ClassLikeAnalyzer;
@@ -267,6 +268,26 @@ final class StaticCallAnalyzer extends CallAnalyzer
                             true,
                             $context,
                         );
+                    } elseif ($statements_analyzer->data_flow_graph && !$stmt->isFirstClassCallable()) {
+                        // not evaluated, but written: the variables its arguments name are used by it
+                        $variables = (new NodeFinder())->findInstanceOf(
+                            $stmt->getArgs(),
+                            PhpParser\Node\Expr\Variable::class,
+                        );
+
+                        foreach ($variables as $variable) {
+                            $variable_type = is_string($variable->name)
+                                ? $context->vars_in_scope['$' . $variable->name] ?? null
+                                : null;
+
+                            foreach ($variable_type !== null ? $variable_type->parent_nodes : [] as $parent_node) {
+                                $statements_analyzer->data_flow_graph->addPath(
+                                    $parent_node,
+                                    DataFlowNode::getForVariableUse(),
+                                    'variable-use',
+                                );
+                            }
+                        }
                     }
 
                     return $does_class_exist !== false;
