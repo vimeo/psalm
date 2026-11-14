@@ -155,6 +155,27 @@ final class CallableTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'callableArrayNamingAMagicMethodMatchesATypedCallable' => [
+                'code' => '<?php
+                    /**
+                     * @method int magic(string $s)
+                     */
+                    class Foo {
+                        public function __call(string $name, array $arguments): mixed {
+                            return 1;
+                        }
+                    }
+
+                    /** @param callable(string): int $c */
+                    function take(callable $c): void {
+                        $c("x");
+                    }
+
+                    take([new Foo(), "magic"]);',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
             'byReferenceCallbackOfArrayWalkIsAccepted' => [
                 'code' => '<?php
                     /** @param list<int> $numbers */
@@ -3149,6 +3170,27 @@ final class CallableTest extends TestCase
     public static function providerInvalidCodeParse(): iterable
     {
         return [
+            'callableArrayNamingAMagicMethodMismatchesATypedCallable' => [
+                'code' => '<?php
+                    /**
+                     * @method int magic(string $s)
+                     */
+                    class Foo {
+                        public function __call(string $name, array $arguments): mixed {
+                            return 1;
+                        }
+                    }
+
+                    /** @param callable(int): void $c */
+                    function take(callable $c): void {
+                        $c(1);
+                    }
+
+                    take([new Foo(), "magic"]);',
+                'error_message' => 'InvalidArgument',
+                'error_levels' => [],
+                'php_version' => '8.1',
+            ],
             'byReferenceFunctionNameIsNotCallableWithValue' => [
                 'code' => '<?php
                     /** @param callable(int): int $closure */
