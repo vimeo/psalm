@@ -787,6 +787,15 @@ final class TemplateInferredTypeReplacer
             );
         }
 
+        // `Factory&Closure`, what `$factory instanceof Closure` leaves, is a Closure
+        if ($candidate instanceof TIterable || $candidate instanceof TNamedObject) {
+            foreach ($candidate->getIntersectionTypes() as $intersection_type) {
+                if (!self::isDisjointFromClosure($codebase, $intersection_type, $conditional_atomic_type)) {
+                    return false;
+                }
+            }
+        }
+
         return $candidate instanceof TIterable
             || ($candidate instanceof TNamedObject && strtolower($candidate->value) !== 'closure');
     }

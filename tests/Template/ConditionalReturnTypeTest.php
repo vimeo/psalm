@@ -21,6 +21,34 @@ final class ConditionalReturnTypeTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'conditionalOnClosureKeepsTheIfBranchForAnInterfaceNarrowedToClosure' => [
+                'code' => <<<'PHP'
+                    <?php
+                    interface Factory {}
+
+                    /**
+                     * @template T of object
+                     * @param T $v
+                     * @return (T is Closure ? 'closure' : 'other')
+                     */
+                    function kind(object $v): string {
+                        return 'other';
+                    }
+
+                    function f(Factory $factory): void {
+                        /** @psalm-check-type-exact $plain = 'other' */
+                        $plain = kind($factory);
+
+                        if ($factory instanceof Closure) {
+                            /** @psalm-check-type-exact $narrowed = 'closure'|'other' */
+                            $narrowed = kind($factory);
+                        }
+                    }
+                    PHP,
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
             'conditionalOnNeverOfAnOptionalKeyIsTheKeyTypeWhenSet' => [
                 'code' => '<?php
                     /**
