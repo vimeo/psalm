@@ -882,7 +882,6 @@ final class IssueBuffer
                         );
                     }
                 }
-            } else {
             }
         }
 
