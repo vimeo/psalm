@@ -54,6 +54,46 @@ final class TryCatchTest extends TestCase
                         return $foo;
                     }',
             ],
+            'variableAssignedInSeveralCatchesOfATryThatAlwaysThrows' => [
+                'code' => '<?php
+                    try {
+                        if (rand(0, 1)) {
+                            throw new InvalidArgumentException();
+                        } else {
+                            throw new RuntimeException();
+                        }
+                    } catch (InvalidArgumentException) {
+                        $foo = false;
+                    } catch (RuntimeException) {
+                        $foo = true;
+                    }',
+                'assertions' => [
+                    '$foo' => 'bool',
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'variableAssignedInSeveralCatchesOfATryThatAlwaysThrowsIsUsedInACondition' => [
+                'code' => '<?php
+                    function test(): string {
+                        try {
+                            if (rand(0, 1)) {
+                                throw new InvalidArgumentException();
+                            } else {
+                                throw new Exception();
+                            }
+                        } catch (InvalidArgumentException) {
+                            $foo = false;
+                        } catch (Exception) {
+                            $foo = true;
+                        }
+
+                        return $foo ? "foo" : "bar";
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
             'variableAssignedByEveryCaseOfASwitchInTry' => [
                 'code' => '<?php
                     function inTryAndCatch(string $s): int {
@@ -264,6 +304,24 @@ final class TryCatchTest extends TestCase
                         }
 
                         return 0;
+                    }',
+            ],
+            'typesOfAllCatchesWhenTryAlwaysReturns' => [
+                'code' => '<?php
+                    function f(): string {
+                        try {
+                            return "a";
+                        } catch (\RuntimeException $e) {
+                            $m = "x";
+                        } catch (Throwable $e) {
+                            $m = "y";
+                        }
+
+                        if ($m === "x") {
+                            return "first";
+                        }
+
+                        return "second";
                     }',
             ],
             'addThrowableInterfaceType' => [
@@ -812,6 +870,48 @@ final class TryCatchTest extends TestCase
                         return $foo;
                     }',
                 'error_message' => 'PossiblyUndefinedVariable',
+            ],
+            'variableAssignedInOnlyOneCatchOfATryThatAlwaysThrowsIsPossiblyUndefined' => [
+                'code' => '<?php
+                    function test(): bool {
+                        try {
+                            if (rand(0, 1)) {
+                                throw new InvalidArgumentException();
+                            } else {
+                                throw new RuntimeException();
+                            }
+                        } catch (InvalidArgumentException) {
+                            $foo = false;
+                        } catch (RuntimeException) {
+                            echo "runtime";
+                        }
+
+                        return $foo;
+                    }',
+                'error_message' => 'PossiblyUndefinedVariable',
+                'error_levels' => [],
+                'php_version' => '8.0',
+            ],
+            'variableAssignedInTheLaterCatchOnlyOfATryThatAlwaysThrowsIsPossiblyUndefined' => [
+                'code' => '<?php
+                    function test(): bool {
+                        try {
+                            if (rand(0, 1)) {
+                                throw new InvalidArgumentException();
+                            } else {
+                                throw new RuntimeException();
+                            }
+                        } catch (InvalidArgumentException) {
+                            echo "invalid";
+                        } catch (RuntimeException) {
+                            $foo = true;
+                        }
+
+                        return $foo;
+                    }',
+                'error_message' => 'PossiblyUndefinedVariable',
+                'error_levels' => [],
+                'php_version' => '8.0',
             ],
             'variableNotAssignedByEveryCaseOfASwitchInTry' => [
                 'code' => '<?php

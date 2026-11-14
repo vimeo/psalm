@@ -1216,6 +1216,16 @@ final class ConfigTest extends DeferredAnalyzerTestCase
         );
     }
 
+    public function testAllIssueTypesIncludeTheIssuesWithAShortcode(): void
+    {
+        $issue_types = IssueHandler::getAllIssueTypes();
+
+        // psalm.dev resolves the https://psalm.dev/<shortcode> links of the issues in this list
+        $this->assertContains('ParseError', $issue_types);
+        $this->assertNotContains('CodeIssue', $issue_types);
+        $this->assertNotContains('PluginIssue', $issue_types);
+    }
+
     public function testAllPossibleIssues(): void
     {
         $all_possible_handlers = implode(
@@ -1244,6 +1254,110 @@ final class ConfigTest extends DeferredAnalyzerTestCase
                     </issueHandlers>
                 </psalm>',
             ),
+        );
+    }
+
+    #[DataProvider('providerConfigPathErrorNamesTheElement')]
+    public function testConfigPathErrorNamesTheElement(string $xml, string $expected_message): void
+    {
+        $this->expectException(ConfigException::class);
+        $this->expectExceptionMessage($expected_message);
+        Config::loadFromXML(
+            dirname(__DIR__, 2),
+            '<?xml version="1.0"?>
+            <psalm>
+                <projectFiles>
+                    <directory name="src" />
+                </projectFiles>
+                ' . $xml . '
+            </psalm>',
+        );
+    }
+
+    /**
+     * @psalm-pure
+     * @return iterable<string, array{string, string}>
+     */
+    public static function providerConfigPathErrorNamesTheElement(): iterable
+    {
+        yield 'directory of an issue handler' => [
+            '<issueHandlers>
+                <RedundantConditionGivenDocblockType>
+                    <errorLevel type="suppress">
+                        <directory name="missing_dir/" />
+                    </errorLevel>
+                </RedundantConditionGivenDocblockType>
+            </issueHandlers>',
+            'In <RedundantConditionGivenDocblockType>: Could not resolve config path to ',
+        ];
+        yield 'file of an issue handler' => [
+            '<issueHandlers>
+                <MixedAssignment>
+                    <errorLevel type="suppress">
+                        <file name="missing_file.php" />
+                    </errorLevel>
+                </MixedAssignment>
+            </issueHandlers>',
+            'In <MixedAssignment>: Could not resolve config path to ',
+        ];
+        yield 'glob directory of an issue handler' => [
+            '<issueHandlers>
+                <MixedAssignment>
+                    <errorLevel type="suppress">
+                        <directory name="missing_dir/*" />
+                    </errorLevel>
+                </MixedAssignment>
+            </issueHandlers>',
+            'In <MixedAssignment>: Could not resolve config path to ',
+        ];
+        yield 'glob file of an issue handler' => [
+            '<issueHandlers>
+                <MixedAssignment>
+                    <errorLevel type="suppress">
+                        <file name="missing_dir/*.php" />
+                    </errorLevel>
+                </MixedAssignment>
+            </issueHandlers>',
+            'In <MixedAssignment>: Could not resolve config path to ',
+        ];
+        yield 'plugin issue handler' => [
+            '<issueHandlers>
+                <PluginIssue name="MyPluginIssue">
+                    <errorLevel type="suppress">
+                        <directory name="missing_dir/" />
+                    </errorLevel>
+                </PluginIssue>
+            </issueHandlers>',
+            'In <PluginIssue name="MyPluginIssue">: Could not resolve config path to ',
+        ];
+        yield 'extraFiles' => [
+            '<extraFiles>
+                <directory name="missing_dir/" />
+            </extraFiles>',
+            'In <extraFiles>: Could not resolve config path to ',
+        ];
+        yield 'ignoreFiles of the taint analysis' => [
+            '<taintAnalysis>
+                <ignoreFiles>
+                    <directory name="missing_dir/" />
+                </ignoreFiles>
+            </taintAnalysis>',
+            'In <taintAnalysis><ignoreFiles>: Could not resolve config path to ',
+        ];
+    }
+
+    public function testConfigPathErrorOfTheProjectFilesNamesTheElement(): void
+    {
+        $this->expectException(ConfigException::class);
+        $this->expectExceptionMessage('In <projectFiles>: Could not resolve config path to ');
+        Config::loadFromXML(
+            dirname(__DIR__, 2),
+            '<?xml version="1.0"?>
+            <psalm>
+                <projectFiles>
+                    <directory name="missing_dir/" />
+                </projectFiles>
+            </psalm>',
         );
     }
 
@@ -1552,6 +1666,154 @@ final class ConfigTest extends DeferredAnalyzerTestCase
             $this->assertStringContainsString('<xs:enumeration value="' . $stub . '"/>', (string) $schema, $stub);
         }
     }
+
+    public function testMutableDependencySuppressedForAReferencedClass(): void
+    {
+        $this->project_analyzer = $this->getProjectAnalyzerWithConfig(
+            TestConfig::loadFromXML(
+                dirname(__DIR__, 2),
+                '<?xml version="1.0"?>
+                <psalm>
+                    <issueHandlers>
+                        <MutableDependency>
+                            <errorLevel type="suppress">
+                                <referencedClass name="AbstractSerializable" />
+                            </errorLevel>
+                        </MutableDependency>
+                    </issueHandlers>
+                </psalm>',
+            ),
+        );
+
+        $file_path = (string) getcwd() . '/src/somefile.php';
+
+        $this->addFile(
+            $file_path,
+            '<?php
+                abstract class AbstractSerializable {}
+
+                /** @psalm-immutable */
+                final class Document extends AbstractSerializable {}',
+        );
+
+        $this->analyzeFile($file_path, new Context());
+    }
+
+    public function testImmutableDependencySuppressedForAReferencedClass(): void
+    {
+        $this->project_analyzer = $this->getProjectAnalyzerWithConfig(
+            TestConfig::loadFromXML(
+                dirname(__DIR__, 2),
+                '<?xml version="1.0"?>
+                <psalm>
+                    <issueHandlers>
+                        <ImmutableDependency>
+                            <errorLevel type="suppress">
+                                <referencedClass name="ImmutableParent" />
+                            </errorLevel>
+                        </ImmutableDependency>
+                    </issueHandlers>
+                </psalm>',
+            ),
+        );
+
+        $file_path = (string) getcwd() . '/src/somefile.php';
+
+        $this->addFile(
+            $file_path,
+            '<?php
+                /** @psalm-immutable */
+                abstract class ImmutableParent {}
+
+                final class Child extends ImmutableParent {}',
+        );
+
+        $this->analyzeFile($file_path, new Context());
+    }
+
+    public function testMutableDependencyNotSuppressedForAnotherReferencedClass(): void
+    {
+        $this->expectExceptionMessage('MutableDependency');
+        $this->expectException(CodeException::class);
+        $this->project_analyzer = $this->getProjectAnalyzerWithConfig(
+            TestConfig::loadFromXML(
+                dirname(__DIR__, 2),
+                '<?xml version="1.0"?>
+                <psalm>
+                    <issueHandlers>
+                        <MutableDependency>
+                            <errorLevel type="suppress">
+                                <referencedClass name="SomethingElse" />
+                            </errorLevel>
+                        </MutableDependency>
+                    </issueHandlers>
+                </psalm>',
+            ),
+        );
+
+        $file_path = (string) getcwd() . '/src/somefile.php';
+
+        $this->addFile(
+            $file_path,
+            '<?php
+                abstract class AbstractSerializable {}
+
+                /** @psalm-immutable */
+                final class Document extends AbstractSerializable {}',
+        );
+
+        $this->analyzeFile($file_path, new Context());
+    }
+
+    /**
+     * @psalm-pure
+     * @return iterable<string, array{string, bool, bool}>
+     */
+    public static function providerIgnoreInternalFalseReturn(): iterable
+    {
+        yield 'a method of a stub, ignored' => ['\\DateTimeImmutable::createFromFormat("Y-m-d", $date)', true, false];
+        yield 'a method of a stub, reported' => ['\\DateTimeImmutable::createFromFormat("Y-m-d", $date)', false, true];
+        yield 'a method of the call map, ignored' => ['\\DateTime::createFromFormat("Y-m-d", $date)', true, false];
+        yield 'a function, ignored' => ['date_create_from_format("Y-m-d", $date)', true, false];
+        yield 'a function, reported' => ['date_create_from_format("Y-m-d", $date)', false, true];
+    }
+
+    #[DataProvider('providerIgnoreInternalFalseReturn')]
+    public function testIgnoreInternalFunctionFalseReturnAppliesToStubbedMethods(
+        string $call,
+        bool $ignore_false_return,
+        bool $is_reported,
+    ): void {
+        if ($is_reported) {
+            $this->expectException(CodeException::class);
+            $this->expectExceptionMessage('PossiblyFalseReference');
+        }
+
+        $this->project_analyzer = $this->getProjectAnalyzerWithConfig(
+            TestConfig::loadFromXML(
+                dirname(__DIR__, 2),
+                '<?xml version="1.0"?>
+                <psalm ignoreInternalFunctionFalseReturn="' . ($ignore_false_return ? 'true' : 'false') . '">
+                </psalm>',
+            ),
+        );
+
+        $file_path = (string) getcwd() . '/src/somefile.php';
+
+        $this->addFile(
+            $file_path,
+            '<?php
+                function resetTimestamp(string $date): void {
+                    ' . $call . '->setTimestamp(0);
+                }',
+        );
+
+        $this->analyzeFile($file_path, new Context());
+
+        // an ignored issue: the analysis went through without an exception
+        $this->addToAssertionCount(1);
+    }
+
 
     public function testValidThrowInvalidCatch(): void
     {
@@ -3141,5 +3403,59 @@ final class ConfigTest extends DeferredAnalyzerTestCase
 
         $this->assertSame('zstd', $config->compressor);
         $this->assertSame([], $config->config_warnings);
+    }
+
+    /**
+     * @psalm-pure
+     * @return iterable<string, array{string, bool, bool}>
+     */
+    public static function providerAssumeGettersMutationFree(): iterable
+    {
+        $open = 'class Lib { private string $name = ""; public function getName(): string { return $this->name; } }';
+        $final = 'final class Lib { private string $name = ""; public function getName(): string { return $this->name; } }';
+        $annotated = 'final class Lib { private string $name = "";'
+            . ' /** @psalm-mutation-free */ public function getName(): string { return $this->name; } }';
+
+        yield 'a getter of an open class, assumed' => [$open, true, false];
+        yield 'a getter of an open class, not assumed' => [$open, false, true];
+        yield 'a getter of a final class, assumed' => [$final, true, false];
+        yield 'a getter of a final class, not assumed' => [$final, false, true];
+        yield 'an annotated getter, not assumed' => [$annotated, false, false];
+    }
+
+    #[DataProvider('providerAssumeGettersMutationFree')]
+    public function testAssumeGettersMutationFree(string $class, bool $assume, bool $is_reported): void
+    {
+        if ($is_reported) {
+            $this->expectException(CodeException::class);
+            $this->expectExceptionMessage('ImpureMethodCall');
+        }
+
+        $this->project_analyzer = $this->getProjectAnalyzerWithConfig(
+            TestConfig::loadFromXML(
+                dirname(__DIR__, 2),
+                '<?xml version="1.0"?>
+                <psalm assumeGettersMutationFree="' . ($assume ? 'true' : 'false') . '">
+                </psalm>',
+            ),
+        );
+
+        $file_path = (string) getcwd() . '/src/somefile.php';
+
+        $this->addFile(
+            $file_path,
+            '<?php
+                ' . $class . '
+
+                /** @psalm-pure */
+                function name(Lib $lib): string {
+                    return $lib->getName();
+                }',
+        );
+
+        $this->analyzeFile($file_path, new Context());
+
+        // an accepted call: the analysis went through without an exception
+        $this->addToAssertionCount(1);
     }
 }
