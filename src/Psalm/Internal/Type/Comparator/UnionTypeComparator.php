@@ -35,6 +35,7 @@ use function array_pop;
 use function array_push;
 use function array_reverse;
 use function array_unique;
+use function array_values;
 use function assert;
 use function count;
 use function implode;
@@ -91,6 +92,17 @@ final class UnionTypeComparator
 
         $input_atomic_types = array_reverse(self::getTypeParts($codebase, $input_type));
 
+        // what the input parts that no container part accepts have in common: the result must not depend on the
+        // order of the input parts, so every such part is examined before the comparison fails
+        $some_part_failed = false;
+        $failed_parts_coerced = true;
+        $failed_parts_to_string_cast = false;
+        $failed_parts_coerced_from_mixed = true;
+        $failed_parts_coerced_from_as_mixed = true;
+        $failed_parts_scalar_match_found = true;
+        $failed_parts_missing_shape_fields = [];
+        $failed_parts_all_miss_shape_fields = true;
+
         while ($input_type_part = array_pop($input_atomic_types)) {
             if ($input_type_part instanceof TNull && $ignore_null) {
                 continue;
@@ -137,8 +149,6 @@ final class UnionTypeComparator
             $all_to_string_cast = true;
             $some_to_string_cast = false;
 
-            $all_type_coerced = null;
-            $all_type_coerced_from_mixed = null;
             $all_type_coerced_from_as_mixed = null;
 
             $some_type_coerced = false;
@@ -353,7 +363,8 @@ final class UnionTypeComparator
                         && $atomic_comparison_result->type_coerced_from_scalar !== null
                     ) {
                         $union_comparison_result->type_coerced_from_scalar
-                            = $atomic_comparison_result->type_coerced_from_scalar;
+                            = $atomic_comparison_result->type_coerced_from_scalar
+                                || $union_comparison_result->type_coerced_from_scalar;
                     }
 
                     if ($is_atomic_contained_by
@@ -391,20 +402,6 @@ final class UnionTypeComparator
                         $some_type_coerced_from_mixed = true;
                     }
 
-                    if ($atomic_comparison_result->type_coerced !== true || $all_type_coerced === false) {
-                        $all_type_coerced = false;
-                    } else {
-                        $all_type_coerced = true;
-                    }
-
-                    if ($atomic_comparison_result->type_coerced_from_mixed !== true
-                        || $all_type_coerced_from_mixed === false
-                    ) {
-                        $all_type_coerced_from_mixed = false;
-                    } else {
-                        $all_type_coerced_from_mixed = true;
-                    }
-
                     if ($atomic_comparison_result->type_coerced_from_as_mixed !== true
                         || $all_type_coerced_from_as_mixed === false
                     ) {
@@ -440,9 +437,7 @@ final class UnionTypeComparator
                         }
                     }
 
-                    $all_type_coerced_from_mixed = false;
                     $all_type_coerced_from_as_mixed = false;
-                    $all_type_coerced = false;
                 }
             }
 
@@ -468,8 +463,6 @@ final class UnionTypeComparator
 
                 $type_match_found = true;
                 $all_to_string_cast = false;
-                $all_type_coerced = false;
-                $all_type_coerced_from_mixed = false;
                 $all_type_coerced_from_as_mixed = false;
             } elseif ($union_comparison_result && $alternative_bounds && !$unconditional_match) {
                 // every accepting alternative constrained a type variable, so
@@ -498,76 +491,62 @@ final class UnionTypeComparator
                 ) {
                     $union_comparison_result->to_string_cast = true;
                 }
-
-                if ($all_type_coerced) {
-                    $union_comparison_result->type_coerced = true;
-                }
-
-                if ($all_type_coerced_from_mixed) {
-                    $union_comparison_result->type_coerced_from_mixed = true;
-
-                    if (($input_type->from_template_default && $input_type->from_docblock)
-                        || $all_type_coerced_from_as_mixed
-                    ) {
-                        $union_comparison_result->type_coerced_from_as_mixed = true;
-                    }
-                }
             }
 
             if (!$type_match_found) {
-                if ($union_comparison_result) {
-                    $remaining_types_coerced = true;
-
-                    if ($some_type_coerced && $some_to_string_cast && $input_atomic_types) {
-                        foreach ($input_atomic_types as $remaining_input_type) {
-                            $remaining_comparison_result = new TypeComparisonResult();
-                            $remaining_type_contained = self::isContainedBy(
-                                $codebase,
-                                new Union([$remaining_input_type]),
-                                $container_type,
-                                $ignore_null,
-                                $ignore_false,
-                                $remaining_comparison_result,
-                                $allow_interface_equality,
-                                $allow_float_int_equality,
-                            );
-
-                            if (!$remaining_type_contained
-                                && $remaining_comparison_result->type_coerced !== true
-                            ) {
-                                $remaining_types_coerced = false;
-                                break;
-                            }
-                        }
-                    }
-
-                    if ($some_type_coerced && (!$some_to_string_cast || $remaining_types_coerced)) {
-                        $union_comparison_result->type_coerced = true;
-                    } elseif ($some_to_string_cast) {
-                        $union_comparison_result->type_coerced = false;
-                    }
-
-                    if ($some_type_coerced_from_mixed) {
-                        $union_comparison_result->type_coerced_from_mixed = true;
-
-                        if (($input_type->from_template_default && $input_type->from_docblock)
-                            || $all_type_coerced_from_as_mixed
-                        ) {
-                            $union_comparison_result->type_coerced_from_as_mixed = true;
-                        }
-                    }
-
-                    if (!$scalar_type_match_found) {
-                        $union_comparison_result->scalar_type_match_found = false;
-                    }
-
-                    if ($some_missing_shape_fields && !$some_type_coerced && !$scalar_type_match_found) {
-                        $union_comparison_result->missing_shape_fields = $some_missing_shape_fields;
-                    }
+                if (!$union_comparison_result) {
+                    return false;
                 }
 
-                return false;
+                $some_part_failed = true;
+                $failed_parts_coerced = $failed_parts_coerced && $some_type_coerced;
+                $failed_parts_to_string_cast = $failed_parts_to_string_cast || $some_to_string_cast;
+                $failed_parts_coerced_from_mixed = $failed_parts_coerced_from_mixed && $some_type_coerced_from_mixed;
+                $failed_parts_coerced_from_as_mixed = $failed_parts_coerced_from_as_mixed
+                    && $some_type_coerced_from_mixed
+                    && (($input_type->from_template_default && $input_type->from_docblock)
+                        || $all_type_coerced_from_as_mixed);
+                $failed_parts_scalar_match_found = $failed_parts_scalar_match_found && $scalar_type_match_found;
+
+                if ($some_missing_shape_fields && !$some_type_coerced && !$scalar_type_match_found) {
+                    $failed_parts_missing_shape_fields = array_merge(
+                        $failed_parts_missing_shape_fields,
+                        $some_missing_shape_fields,
+                    );
+                } else {
+                    $failed_parts_all_miss_shape_fields = false;
+                }
             }
+        }
+
+        if ($some_part_failed && $union_comparison_result) {
+            if ($failed_parts_coerced) {
+                $union_comparison_result->type_coerced = true;
+            } elseif ($failed_parts_to_string_cast) {
+                $union_comparison_result->type_coerced = false;
+            }
+
+            if ($failed_parts_coerced_from_mixed) {
+                $union_comparison_result->type_coerced_from_mixed = true;
+
+                if ($failed_parts_coerced_from_as_mixed) {
+                    $union_comparison_result->type_coerced_from_as_mixed = true;
+                }
+            }
+
+            if (!$failed_parts_scalar_match_found) {
+                $union_comparison_result->scalar_type_match_found = false;
+            }
+
+            if ($failed_parts_all_miss_shape_fields && $failed_parts_missing_shape_fields) {
+                $missing_shape_fields = array_values(array_unique($failed_parts_missing_shape_fields));
+                sort($missing_shape_fields);
+                $union_comparison_result->missing_shape_fields = $missing_shape_fields;
+            }
+        }
+
+        if ($some_part_failed) {
+            return false;
         }
 
         return true;

@@ -139,6 +139,63 @@ final class TypeComparatorTest extends TestCase
         );
     }
 
+    #[DataProvider('getUnionMemberOrderComparisons')]
+    public function testComparisonResultDoesNotDependOnUnionMemberOrder(
+        string $container_type_string,
+        string $input_member_1,
+        string $input_member_2,
+    ): void {
+        $container_type = Type::parseString($container_type_string);
+        $results = [];
+
+        foreach ([[$input_member_1, $input_member_2], [$input_member_2, $input_member_1]] as $members) {
+            $result = new TypeComparisonResult();
+
+            UnionTypeComparator::isContainedBy(
+                $this->project_analyzer->getCodebase(),
+                Type::parseString($members[0] . '|' . $members[1]),
+                $container_type,
+                false,
+                false,
+                $result,
+            );
+
+            $results[] = [
+                $result->scalar_type_match_found,
+                $result->type_coerced,
+                $result->type_coerced_from_mixed,
+                $result->type_coerced_from_as_mixed,
+                $result->type_coerced_from_scalar,
+                $result->to_string_cast,
+                $result->missing_shape_fields,
+            ];
+        }
+
+        $this->assertSame($results[0], $results[1]);
+    }
+
+    /**
+     * @return iterable<string, list{string, string, string}>
+     * @psalm-pure
+     */
+    public static function getUnionMemberOrderComparisons(): iterable
+    {
+        yield 'scalar and callable into int' => ['int', 'scalar', 'callable'];
+        yield 'scalar and object into int' => ['int', 'scalar', 'object'];
+        yield 'string and callable into int' => ['int', 'string', 'callable'];
+        yield 'string and null into int' => ['int', 'string', 'null'];
+        yield 'mixed and string into int' => ['int', 'mixed', 'string'];
+        yield 'mixed and callable into int' => ['int', 'mixed', 'callable'];
+        yield 'literal and callable into int' => ['int', '1', 'callable'];
+        yield 'int and float into string' => ['string', 'int', 'float'];
+        yield 'matching and coercible member' => ['non-empty-string', 'non-empty-string', 'string'];
+        yield 'non-matching and coercible shapes' => [
+            'array{a: int, b: string}',
+            'array{a: int}',
+            'array{b: string}',
+        ];
+    }
+
     /**
      * @return iterable<string, list{string, string}>
      * @psalm-pure
