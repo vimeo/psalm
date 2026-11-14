@@ -22,6 +22,7 @@ use Psalm\Type\Atomic\TArray;
 use Psalm\Type\Atomic\TClassString;
 use Psalm\Type\Atomic\TEnumCase;
 use Psalm\Type\Atomic\TFloat;
+use Psalm\Type\Atomic\TGenericObject;
 use Psalm\Type\Atomic\TInt;
 use Psalm\Type\Atomic\TIterable;
 use Psalm\Type\Atomic\TKeyedArray;
@@ -238,9 +239,9 @@ final class NegatedAssertionReconciler extends Reconciler
 
             // go deeper than the direct hit, eliminating subtypes
             if ($assertion_type) {
-                // an object that is Traversable is iterable
+                // an object that is Traversable is iterable, with the same key and value types
                 $object_assertion_type = $assertion_type instanceof TIterable
-                    ? new TNamedObject('Traversable')
+                    ? new TGenericObject('Traversable', $assertion_type->type_params)
                     : $assertion_type;
 
                 if ($object_assertion_type instanceof TNamedObject) {
