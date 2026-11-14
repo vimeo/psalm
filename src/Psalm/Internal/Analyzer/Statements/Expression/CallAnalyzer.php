@@ -739,6 +739,7 @@ abstract class CallAnalyzer
                             'Assert notation is malformed',
                             new CodeLocation($statements_analyzer, $expr),
                         ),
+                        $statements_analyzer->getSuppressedIssues(),
                     );
                     continue;
                 }
@@ -753,6 +754,7 @@ abstract class CallAnalyzer
                             'Variable ' . $var_id . ' is not an argument so cannot be asserted',
                             new CodeLocation($statements_analyzer, $expr),
                         ),
+                        $statements_analyzer->getSuppressedIssues(),
                     );
                     continue;
                 }
@@ -767,6 +769,7 @@ abstract class CallAnalyzer
                             'Variable being asserted as argument ' . ($var_id+1) .  ' cannot be found in local scope',
                             new CodeLocation($statements_analyzer, $expr),
                         ),
+                        $statements_analyzer->getSuppressedIssues(),
                     );
                     continue;
                 }
@@ -783,6 +786,7 @@ abstract class CallAnalyzer
                     if (null !== $failedMessage) {
                         IssueBuffer::maybeAdd(
                             new InvalidDocblock($failedMessage, new CodeLocation($statements_analyzer, $expr)),
+                            $statements_analyzer->getSuppressedIssues(),
                         );
                         continue;
                     }
