@@ -1451,7 +1451,7 @@ final class AtomicPropertyFetchAnalyzer
                 $fq_class_name = $hook_interface->value;
             } elseif (!$is_enum_interface
                 && !$intersects_with_shape_property
-                && !self::hasMixinProperty($codebase, $lhs_type_part, $prop_name)
+                && self::findMixinWithProperty($codebase, $lhs_type_part, $prop_name) === null
             ) {
                 // isset() and ?? only test whether the property is there
                 if (!$inside_isset && IssueBuffer::accepts(
@@ -1530,10 +1530,13 @@ final class AtomicPropertyFetchAnalyzer
     }
 
     /**
-     * Whether a mixin of the class has the property, real or `@property`
+     * The mixin of the class that has the property, real or `@property`
      */
-    private static function hasMixinProperty(Codebase $codebase, TNamedObject $lhs_type_part, string $prop_name): bool
-    {
+    public static function findMixinWithProperty(
+        Codebase $codebase,
+        TNamedObject $lhs_type_part,
+        string $prop_name,
+    ): ?TNamedObject {
         return MixinLookup::findMember(
             $codebase,
             $codebase->classlike_storage_provider->get($lhs_type_part->value),
@@ -1543,7 +1546,7 @@ final class AtomicPropertyFetchAnalyzer
                 true,
             ) || (isset($mixin_storage->pseudo_property_get_types['$' . $prop_name])
                 && isset($mixin_storage->declaring_method_ids['__get'])),
-        ) !== null;
+        )['type'] ?? null;
     }
 
     private static function handleNonExistentProperty(
