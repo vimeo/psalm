@@ -106,7 +106,8 @@ final class OverlayCommand
 
             OverlayExitGuard::setPhase(OverlayFailure::WORKER_FAILED);
 
-            if (getenv(self::FRESH_ENV) === '1' || getenv(self::NO_FORK_ENV) === '1' || !self::canFork()) {
+            $fork = getenv(self::FRESH_ENV) !== '1' && getenv(self::NO_FORK_ENV) !== '1' && self::canFork();
+            if (!$fork) {
                 [$strategy, $files, $base_issues, $overlay_issues]
                     = $engine->runWithoutFork($request, getenv(self::FRESH_ENV) === '1');
                 $envelope = $engine->buildEnvelope($request, $files, $base_issues, $overlay_issues);
@@ -118,10 +119,10 @@ final class OverlayCommand
                 if ($envelope === null) {
                     throw $job->failure ?? new OverlayFailure(OverlayFailure::WORKER_FAILED, 'No answer');
                 }
+            }
 
-                if ($strategy === Strategy::VISIBILITY && getenv(Strategy::VERIFY_ENV) === '1') {
-                    self::verify($engine, $request, $envelope, $argv, $cwd);
-                }
+            if ($strategy === Strategy::VISIBILITY && getenv(Strategy::VERIFY_ENV) === '1') {
+                self::verify($engine, $request, $envelope, $argv, $cwd, $fork);
             }
         } catch (OverlayFailure $failure) {
             OverlayExitGuard::fail($failure->kind, $failure->getMessage());
@@ -463,6 +464,7 @@ final class OverlayCommand
      *
      * @param array{new_issues: list<IssueArray>, analyzed_files: list<string>, ...} $envelope
      * @param array<int, string> $argv
+     * @param bool $fork whether the passes run in forked processes, or in this one
      */
     private static function verify(
         Engine $engine,
@@ -470,14 +472,18 @@ final class OverlayCommand
         array $envelope,
         array $argv,
         string $cwd,
+        bool $fork,
     ): void {
-        $job = self::runJob(
-            $engine,
-            new Request($request->overlays, $request->whole_project, null, Strategy::SIGNATURE),
-            null,
-            $argv,
-            $cwd,
-        );
+        $signature_request = new Request($request->overlays, $request->whole_project, null, Strategy::SIGNATURE);
+
+        if ($fork) {
+            $expected_envelope = self::runJob($engine, $signature_request, null, $argv, $cwd)->envelope;
+        } else {
+            // the snapshot of the first answer is populated
+            $engine = $engine->rebuilt();
+            [, $files, $base_issues, $overlay_issues] = $engine->runWithoutFork($signature_request, false);
+            $expected_envelope = $engine->buildEnvelope($signature_request, $files, $base_issues, $overlay_issues);
+        }
 
         /** @param list<IssueArray> $issues */
         $describe = static fn(array $issues): array => array_map(
@@ -487,7 +493,7 @@ final class OverlayCommand
             $issues,
         );
 
-        $expected = $job->envelope !== null ? $describe($job->envelope['new_issues']) : ['(failed)'];
+        $expected = $expected_envelope !== null ? $describe($expected_envelope['new_issues']) : ['(failed)'];
         $actual = $describe($envelope['new_issues']);
         sort($expected);
         sort($actual);
@@ -497,7 +503,7 @@ final class OverlayCommand
             'visibility' => $actual,
             'signature' => $expected,
             'visibility_files' => count($envelope['analyzed_files']),
-            'signature_files' => $job->envelope !== null ? count($job->envelope['analyzed_files']) : null,
+            'signature_files' => $expected_envelope !== null ? count($expected_envelope['analyzed_files']) : null,
         ]) . PHP_EOL);
     }
 

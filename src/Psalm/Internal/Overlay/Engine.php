@@ -199,6 +199,23 @@ final class Engine
     }
 
     /**
+     * The engine on a new snapshot, for another request in this process: the passes of the last one populated it
+     */
+    public function rebuilt(): self
+    {
+        return new self(
+            $this->rebuildSnapshot([]),
+            $this->project_files,
+            $this->index,
+            $this->baseline,
+            $this->registry_files,
+            $this->not_checked,
+            $this->taint,
+            $this->rebootstrap,
+        );
+    }
+
+    /**
      * @param array<string, string> $overlays
      */
     private function rebuildSnapshot(array $overlays): ProjectAnalyzer

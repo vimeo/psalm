@@ -23,9 +23,11 @@ use function array_fill;
 use function array_keys;
 use function assert;
 use function count;
+use function dirname;
 use function explode;
 use function fclose;
 use function file_put_contents;
+use function function_exists;
 use function getenv;
 use function hash_file;
 use function implode;
@@ -53,6 +55,7 @@ use function time;
 use function touch;
 use function unlink;
 use function usleep;
+use function var_export;
 
 use const JSON_THROW_ON_ERROR;
 use const PHP_BINARY;
@@ -364,9 +367,12 @@ final class OverlayEndToEndTest extends TestCase
             'functions.php' => '<?php namespace App; function helper(int $i): int { return $i; }',
             'UseFn.php' => '<?php namespace App; final class UseFn { public function f(): int { return helper(1); } }',
         ]);
-        // relative, as `vendor/bin/psalm` is
-        $psalm = Path::makeRelative((string) realpath($this->psalm), (string) realpath($this->project));
-        $command = [PHP_BINARY, $psalm, '-c', 'cfg/psalm.xml', '--no-progress', '--threads=1'];
+        // a relative path, as `vendor/bin/psalm` is, to a script on the same drive as the project
+        mkdir($this->project . '/vendor/bin', 0777, true);
+        file_put_contents($this->project . '/vendor/bin/psalm', '<?php require_once '
+            . var_export(Path::join((string) realpath(dirname($this->psalm)), 'src/Psalm/Internal/Cli/Psalm.php'), true)
+            . '; \Psalm\Internal\Cli\Psalm::run($argv);');
+        $command = [PHP_BINARY, 'vendor/bin/psalm', '-c', 'cfg/psalm.xml', '--no-progress', '--threads=1'];
 
         $record = self::newProcess([...$command, '--record-references'], $this->project, self::agentEnvVarsToUnset());
         $record->run();
@@ -416,8 +422,18 @@ final class OverlayEndToEndTest extends TestCase
 
         $this->assertSame(255, $process->getExitCode());
         $this->assertSame('timeout', self::decodeError($process->getOutput()));
-        // the configuration and the scan alone take longer
-        $this->assertLessThan(0.25 + 0.5, $elapsed);
+        // the configuration and the scan alone take longer; without pcntl PHP's time limit counts whole seconds
+        $this->assertLessThan(self::hasWatchdog() ? 0.25 + 0.5 : 1.0 + 1.0, $elapsed);
+    }
+
+    /**
+     * Whether the deadline interrupts a run within milliseconds, see OverlayExitGuard
+     *
+     * @psalm-pure
+     */
+    private static function hasWatchdog(): bool
+    {
+        return function_exists('pcntl_fork') && function_exists('pcntl_async_signals') && function_exists('posix_kill');
     }
 
     public function testServerAnswersPipelinedRequestsLargerThanThePipes(): void
@@ -635,6 +651,10 @@ final class OverlayEndToEndTest extends TestCase
 
     public function testDeadlineStopsTheFreshProcess(): void
     {
+        if (!self::hasWatchdog() || getenv('PSALM_OVERLAY_NO_FORK') === '1') {
+            $this->markTestSkipped('No fresh process starts where Psalm does not fork: the passes run in the process');
+        }
+
         $this->writeSlowProject();
         $this->recordReferences();
 
