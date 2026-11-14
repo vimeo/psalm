@@ -10,5 +10,5 @@ namespace Psalm\Issue;
 final class WrongCaseFunction extends FunctionIssue
 {
     public const ERROR_LEVEL = 6;
-    public const SHORTCODE = 375;
+    public const SHORTCODE = 379;
 }
