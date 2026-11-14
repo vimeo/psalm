@@ -129,6 +129,41 @@ final class ClosureTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'propertyOfAVariableCapturedByReferenceMayChangeAfterTheClosureIsCreated' => [
+                'code' => '<?php
+                    final class Job {
+                        public string $state = "idle";
+                    }
+
+                    function run(): bool {
+                        $job = new Job();
+                        $job->state = "idle";
+
+                        $isRunning = function () use (&$job): bool {
+                            return $job->state === "running";
+                        };
+
+                        $job->state = "running";
+
+                        return $isRunning();
+                    }
+
+                    /** @param array<string, int> $data */
+                    function offset(array $data): int {
+                        if (isset($data["k"])) {
+                            $get = function () use (&$data): int {
+                                return $data["k"];
+                            };
+
+                            return $get();
+                        }
+
+                        return 0;
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
             'byRefCapturedIntIsNotItsCaptureTimeLiteral' => [
                 'code' => '<?php
                     function f(): void {

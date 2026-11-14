@@ -522,7 +522,11 @@ final class ClosureAnalyzer extends FunctionLikeAnalyzer
 
                 foreach ($context->vars_in_scope as $var_id => $type) {
                     if (preg_match('/^\$' . $use->var->name . '[\[\-]/', $var_id)) {
-                        $use_context->vars_in_scope[$var_id] = self::getCapturedType($type);
+                        // the enclosing scope can change what a variable captured by reference holds after the
+                        // closure is created, so can it its offsets and properties: their literals are widened too
+                        $use_context->vars_in_scope[$var_id] = $use->byRef
+                            ? self::widenLiteralsOfByRefCapture(self::getCapturedType($type))
+                            : self::getCapturedType($type);
                         $use_context->vars_possibly_in_scope[$var_id] = true;
                     }
                 }
