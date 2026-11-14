@@ -57,10 +57,8 @@ final class PropertyStorage implements HasAttributesInterface
      */
     public bool $has_docblock_type = false;
 
-    /**
-     * The property whose docblock type this property, redeclared without one, has as its type
-     */
-    public ?string $documenting_property_id = null;
+    /** Whether $type is the docblock type of the overridden property, this one having none */
+    public bool $inherited_type = false;
 
     /**
      * The type the property has from its own declaration, when $type is inherited

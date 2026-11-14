@@ -803,7 +803,7 @@ final class ClassAnalyzer extends ClassLikeAnalyzer
                     }
 
                     // without a docblock type of its own, the property has the one it overrides
-                    if ($property_storage->type === null || $property_storage->documenting_property_id !== null) {
+                    if ($property_storage->type === null || $property_storage->inherited_type) {
                         continue;
                     }
 
@@ -995,10 +995,9 @@ final class ClassAnalyzer extends ClassLikeAnalyzer
             }
 
             // an inherited docblock type is checked where it is written, and the native type here
-            $inherits_type = $property_storage->documenting_property_id !== null;
-
             $has_docblock_over_signature = $property_storage->signature_type
-                && ($inherits_type || $property_storage->type?->getId() !== $property_storage->signature_type->getId());
+                && ($property_storage->inherited_type
+                    || $property_storage->type?->getId() !== $property_storage->signature_type->getId());
 
             if ($property_type_location && (!$fleshed_out_type->isMixed() || $has_docblock_over_signature)) {
                 $stmt = array_filter(
@@ -1023,7 +1022,7 @@ final class ClassAnalyzer extends ClassLikeAnalyzer
                     }
                 }
 
-                if (!$inherits_type) {
+                if (!$property_storage->inherited_type) {
                     /** @psalm-suppress UnusedMethodCall This call actually has the side effect of creating issues */
                     $fleshed_out_type->check(
                         $statements_source,
@@ -1046,7 +1045,7 @@ final class ClassAnalyzer extends ClassLikeAnalyzer
                         $parent_fq_class_name,
                     );
 
-                    if (!$inherits_type && !UnionTypeComparator::isContainedBy(
+                    if (!$property_storage->inherited_type && !UnionTypeComparator::isContainedBy(
                         $codebase,
                         $fleshed_out_type,
                         $signature_type,

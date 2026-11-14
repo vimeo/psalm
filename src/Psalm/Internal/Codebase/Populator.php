@@ -1921,11 +1921,11 @@ final class Populator
                 }
             }
 
-            if ($property_storage->documenting_property_id !== null) {
+            if ($property_storage->inherited_type) {
                 // populated again
                 $property_storage->type = $property_storage->own_type;
                 $property_storage->own_type = null;
-                $property_storage->documenting_property_id = null;
+                $property_storage->inherited_type = false;
 
                 if ($promoted_param) {
                     $promoted_param->type = $property_storage->type;
@@ -1950,8 +1950,7 @@ final class Populator
 
             if ($documenting_property_storage === null
                 || $documenting_property_storage->type === null
-                || (!$documenting_property_storage->has_docblock_type
-                    && $documenting_property_storage->documenting_property_id === null)
+                || !($documenting_property_storage->has_docblock_type || $documenting_property_storage->inherited_type)
                 || !($property_storage->signature_type === null
                     ? $documenting_property_storage->signature_type === null
                     : $documenting_property_storage->signature_type !== null
@@ -1999,8 +1998,7 @@ final class Populator
 
             $property_storage->own_type = $property_storage->type;
             $property_storage->type = $type;
-            $property_storage->documenting_property_id = $documenting_property_storage->documenting_property_id
-                ?? $documenting_class . '::$' . $property_name;
+            $property_storage->inherited_type = true;
 
             if ($promoted_param) {
                 $promoted_param->type = $type;
