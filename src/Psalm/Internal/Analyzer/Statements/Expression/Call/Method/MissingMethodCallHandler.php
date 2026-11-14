@@ -31,18 +31,21 @@ use Psalm\Storage\MethodStorage;
 use Psalm\Type;
 use Psalm\Type\Atomic;
 use Psalm\Type\Atomic\TClosure;
+use Psalm\Type\Atomic\TNamedObject;
 use Psalm\Type\Union;
 
 use function array_map;
 use function array_merge;
 use function count;
-use function strtolower;
 
 /**
  * @internal
  */
 final class MissingMethodCallHandler
 {
+    /**
+     * @param ?TNamedObject $mixin the mixin, bound for the receiver, whose `@method` the call goes to
+     */
     public static function handleMagicMethod(
         StatementsAnalyzer $statements_analyzer,
         Codebase $codebase,
@@ -55,14 +58,14 @@ final class MissingMethodCallHandler
         AtomicMethodCallAnalysisResult $result,
         ?Atomic $lhs_type_part,
         ?string $lhs_var_id,
+        ?TNamedObject $mixin = null,
     ): ?AtomicCallContext {
         $fq_class_name = $method_id->fq_class_name;
         $method_name_lc = $method_id->method_name;
 
-        // the method id names the mixin whose `@method` the call goes to
-        $pseudo_method_class_storage = strtolower($fq_class_name) === strtolower($class_storage->name)
-            ? $class_storage
-            : $codebase->classlikes->getStorageFor($fq_class_name) ?? $class_storage;
+        $pseudo_method_class_storage = $mixin !== null
+            ? $codebase->classlike_storage_provider->get($mixin->value)
+            : $class_storage;
 
         if ($stmt->isFirstClassCallable()) {
             $found_method_and_class_storage = isset($pseudo_method_class_storage->pseudo_methods[$method_name_lc])
@@ -161,13 +164,16 @@ final class MissingMethodCallHandler
                 $pseudo_method_storage,
             );
 
+            // the templates of a mixin's `@method` are those of the mixin, `$this` and static stay the class
             $found_generic_params = ClassTemplateParamCollector::collect(
                 $codebase,
                 $defining_class_storage,
-                $class_storage,
+                $pseudo_method_class_storage,
                 $method_name_lc,
-                $lhs_type_part,
-                !$statements_analyzer->isStatic() && $method_id->fq_class_name === $context->self,
+                $mixin ?? $lhs_type_part,
+                $mixin === null
+                    && !$statements_analyzer->isStatic()
+                    && $method_id->fq_class_name === $context->self,
             );
 
             // the pseudo-method's own templates are the purity templates of its `_` params

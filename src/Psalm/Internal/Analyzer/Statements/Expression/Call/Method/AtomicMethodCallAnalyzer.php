@@ -368,6 +368,8 @@ final class AtomicMethodCallAnalyzer extends CallAnalyzer
         // the class whose @mixin the method is found through, as the call goes through its __call()
         $mixin_user_class = null;
         $mixin_method_id = null;
+        // the mixin whose `@method` is called
+        $pseudo_method_mixin = null;
 
         if (!$naive_method_exists) {
             // if the method doesn't exist we check for any method existence providers
@@ -424,8 +426,6 @@ final class AtomicMethodCallAnalyzer extends CallAnalyzer
                 );
 
                 if ($mixin !== null) {
-                    // for a `@method` of the mixin only the method id moves: the call goes through the __call() of
-                    // the class, with `$this` the class
                     $method_id = new MethodIdentifier($mixin[1]->name, $method_name_lc);
 
                     if ($mixin_method_exists) {
@@ -434,6 +434,9 @@ final class AtomicMethodCallAnalyzer extends CallAnalyzer
                         [$lhs_type_part, $class_storage] = $mixin;
                         $fq_class_name = $class_storage->name;
                         $naive_method_exists = true;
+                    } else {
+                        // the call goes through the __call() of the class, with `$this` the class
+                        $pseudo_method_mixin = $mixin[0];
                     }
                 }
             }
@@ -514,6 +517,7 @@ final class AtomicMethodCallAnalyzer extends CallAnalyzer
                     $result,
                     $lhs_type_part,
                     $lhs_var_id,
+                    $pseudo_method_mixin,
                 );
 
                 if ($new_call_context) {

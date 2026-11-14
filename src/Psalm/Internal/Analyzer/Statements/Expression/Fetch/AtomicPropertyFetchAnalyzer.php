@@ -345,6 +345,12 @@ final class AtomicPropertyFetchAnalyzer
 
                 if ($mixin !== null) {
                     $matched_mixin = true;
+
+                    // an interface has no __get() of its own: a `@property` of its mixin is read through the mixin's
+                    if ($class_storage->is_interface) {
+                        $get_method_id = new MethodIdentifier($mixin[1]->name, '__get');
+                    }
+
                     [$lhs_type_part, $class_storage] = $mixin;
                     $fq_class_name = $class_storage->name;
                     $property_id = $fq_class_name . '::$' . $prop_name;
@@ -1440,7 +1446,10 @@ final class AtomicPropertyFetchAnalyzer
             if ($hook_interface !== null) {
                 $lhs_type_part = $hook_interface;
                 $fq_class_name = $hook_interface->value;
-            } elseif (!$is_enum_interface && !$intersects_with_shape_property) {
+            } elseif (!$is_enum_interface
+                && !$intersects_with_shape_property
+                && !self::hasMixinProperty($codebase, $lhs_type_part, $prop_name)
+            ) {
                 // isset() and ?? only test whether the property is there
                 if (!$inside_isset && IssueBuffer::accepts(
                     new NoInterfaceProperties(
@@ -1515,6 +1524,22 @@ final class AtomicPropertyFetchAnalyzer
         }
 
         return null;
+    }
+
+    /**
+     * Whether a mixin of the class has the property, real or `@property`
+     */
+    private static function hasMixinProperty(Codebase $codebase, TNamedObject $lhs_type_part, string $prop_name): bool
+    {
+        return MixinLookup::findMember(
+            $codebase,
+            $codebase->classlike_storage_provider->get($lhs_type_part->value),
+            $lhs_type_part,
+            static fn(ClassLikeStorage $mixin_storage): bool => $codebase->propertyExists(
+                $mixin_storage->name . '::$' . $prop_name,
+                true,
+            ) || isset($mixin_storage->pseudo_property_get_types['$' . $prop_name]),
+        ) !== null;
     }
 
     private static function handleNonExistentProperty(

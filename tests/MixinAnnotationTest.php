@@ -741,6 +741,135 @@ final class MixinAnnotationTest extends TestCase
                 'ignored_issues' => [],
                 'php_version' => '8.0',
             ],
+            'firstMixinWinsForPseudoAndRealMethods' => [
+                'code' => '<?php
+                    /** @method int foo() */
+                    final class A
+                    {
+                        public function bar(): int
+                        {
+                            return 1;
+                        }
+                    }
+
+                    /** @method string foo() */
+                    final class B
+                    {
+                        public function bar(): string
+                        {
+                            return "";
+                        }
+                    }
+
+                    /**
+                     * @mixin A
+                     * @mixin B
+                     */
+                    final class Host
+                    {
+                        /** @param list<mixed> $args */
+                        public function __call(string $name, array $args): mixed
+                        {
+                            return null;
+                        }
+                    }
+
+                    $foo = (new Host())->foo();
+                    $bar = (new Host())->bar();',
+                'assertions' => [
+                    '$foo===' => 'int',
+                    '$bar===' => 'int',
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'propertyOfAMixinWithStaticIsBoundToTheClass' => [
+                'code' => '<?php
+                    /** @template T */
+                    final class Repository
+                    {
+                        /** @var T|null */
+                        public mixed $current = null;
+                    }
+
+                    /** @mixin Repository<static> */
+                    final class Host
+                    {
+                        public function __get(string $name): mixed
+                        {
+                            return null;
+                        }
+                    }
+
+                    $a = (new Host())->current;',
+                'assertions' => [
+                    '$a===' => 'Host|null',
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'pseudoPropertyOfAMixinOfAnInterface' => [
+                'code' => '<?php
+                    final class Bar
+                    {
+                        public function x(): int
+                        {
+                            return 1;
+                        }
+                    }
+
+                    /** @property Bar $not */
+                    final class Foo
+                    {
+                        public function __get(string $name): mixed
+                        {
+                            return new Bar();
+                        }
+                    }
+
+                    /** @mixin Foo */
+                    interface HasNot {}
+
+                    function not(HasNot $object): Bar
+                    {
+                        return $object->not;
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'classTemplateOfAPseudoMethodOfAGenericMixin' => [
+                'code' => '<?php
+                    /**
+                     * @template T
+                     * @method T get()
+                     */
+                    final class Box
+                    {
+                        /** @param list<mixed> $args */
+                        public function __call(string $name, array $args): mixed
+                        {
+                            return null;
+                        }
+                    }
+
+                    /** @mixin Box<int> */
+                    final class Holder
+                    {
+                        /** @param list<mixed> $args */
+                        public function __call(string $name, array $args): mixed
+                        {
+                            return null;
+                        }
+                    }
+
+                    $a = (new Holder())->get();',
+                'assertions' => [
+                    '$a===' => 'int',
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
             'nearestMixinWinsForAStaticMethodOfNestedMixins' => [
                 'code' => '<?php
                     final class Deep
