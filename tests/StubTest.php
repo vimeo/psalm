@@ -6,6 +6,7 @@ namespace Psalm\Tests;
 
 use Override;
 use PHPUnit\Framework\Attributes\DataProvider;
+use PHPUnit\Framework\Attributes\RequiresPhp;
 use PHPUnit\Framework\Attributes\RunInSeparateProcess;
 use Psalm\Config;
 use Psalm\Context;
@@ -1389,6 +1390,127 @@ final class StubTest extends DeferredAnalyzerTestCase
         );
 
         $this->analyzeFile($file_path, new Context());
+    }
+
+    #[RequiresPhp('>= 8.4.0')]
+    public function testStubOfBuiltinClassDeclaresPromotedProperty(): void
+    {
+        $this->project_analyzer = $this->getProjectAnalyzerWithConfig(
+            TestConfig::loadFromXML(
+                dirname(__DIR__),
+                '<?xml version="1.0"?>
+                <psalm
+                    errorLevel="1"
+                >
+                    <projectFiles>
+                        <directory name="src" />
+                    </projectFiles>
+
+                    <stubs>
+                        <file name="tests/fixtures/stubs/promoted_property_of_builtin_class.phpstub" />
+                    </stubs>
+                </psalm>',
+            ),
+        );
+        $this->project_analyzer->setPhpVersion('8.4', 'tests');
+
+        $file_path = (string) getcwd() . '/src/somefile.php';
+
+        $this->addFile(
+            $file_path,
+            '<?php
+                /** @return non-empty-string */
+                function constantName(ReflectionConstant $constant): string
+                {
+                    return $constant->name;
+                }',
+        );
+
+        $this->analyzeFile($file_path, new Context());
+    }
+
+    public function testStubRedeclaresPropertyOfAnotherStubWithPromotion(): void
+    {
+        $this->project_analyzer = $this->getProjectAnalyzerWithConfig(
+            TestConfig::loadFromXML(
+                dirname(__DIR__),
+                '<?xml version="1.0"?>
+                <psalm
+                    errorLevel="1"
+                >
+                    <projectFiles>
+                        <directory name="src" />
+                    </projectFiles>
+
+                    <stubs>
+                        <file name="tests/fixtures/stubs/promoted_property_of_stubbed_class.phpstub" />
+                    </stubs>
+                </psalm>',
+            ),
+        );
+        $this->project_analyzer->setPhpVersion('8.2', 'tests');
+
+        $file_path = (string) getcwd() . '/src/somefile.php';
+
+        $this->addFile(
+            $file_path,
+            '<?php
+                final class OrderNotFound extends Exception
+                {
+                    /** @return non-empty-string */
+                    public function reason(): string
+                    {
+                        return $this->message;
+                    }
+                }',
+        );
+
+        $this->analyzeFile($file_path, new Context());
+    }
+
+    public function testStubRedeclaresPropertyOfAnotherStubWithoutDuplicateProperty(): void
+    {
+        $this->project_analyzer = $this->getProjectAnalyzerWithConfig(
+            TestConfig::loadFromXML(
+                dirname(__DIR__),
+                '<?xml version="1.0"?>
+                <psalm
+                    errorLevel="1"
+                >
+                    <projectFiles>
+                        <directory name="src" />
+                    </projectFiles>
+
+                    <stubs>
+                        <file name="tests/fixtures/stubs/property_of_stubbed_class.phpstub" />
+                    </stubs>
+                </psalm>',
+            ),
+        );
+
+        $file_path = (string) getcwd() . '/src/somefile.php';
+
+        $this->addFile(
+            $file_path,
+            '<?php
+                final class OrderNotFound extends Exception
+                {
+                    /** @return non-empty-string */
+                    public function reason(): string
+                    {
+                        return $this->message;
+                    }
+                }',
+        );
+
+        $this->analyzeFile($file_path, new Context());
+
+        $stub_path = dirname(__DIR__) . DIRECTORY_SEPARATOR . 'tests' . DIRECTORY_SEPARATOR . 'fixtures'
+            . DIRECTORY_SEPARATOR . 'stubs' . DIRECTORY_SEPARATOR . 'property_of_stubbed_class.phpstub';
+        $this->assertSame(
+            [],
+            $this->project_analyzer->getCodebase()->file_storage_provider->get($stub_path)->scan_issues,
+        );
     }
 
     public function testStubFileWithPartialClassDefinitionWithMoreMethods(): void

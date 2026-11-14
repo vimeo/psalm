@@ -24,6 +24,48 @@ final class FunctionCallTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'existenceChecksOfALowercaseOrLiteralStringKeepTheNameType' => [
+                'code' => <<<'PHP'
+                    <?php
+                    /** @param non-empty-lowercase-string $function */
+                    function functionOf(string $function): void {
+                        if (function_exists($function)) {
+                            /** @psalm-check-type-exact $function = callable-string */
+                        }
+                    }
+
+                    /** @param lowercase-string $class */
+                    function classOf(string $class): void {
+                        if (class_exists($class)) {
+                            /** @psalm-check-type-exact $class = class-string */
+                        }
+                    }
+
+                    /** @param literal-string $name */
+                    function interfaceOf(string $name): void {
+                        if (interface_exists($name)) {
+                            /** @psalm-check-type-exact $name = interface-string */
+                        }
+                    }
+
+                    /** @param non-empty-lowercase-string $name */
+                    function callableOf(string $name): void {
+                        if (is_callable($name)) {
+                            /** @psalm-check-type-exact $name = callable-string */
+                        }
+                    }
+
+                    /** @param non-empty-literal-string $name */
+                    function literalCallableOf(string $name): void {
+                        if (is_callable($name)) {
+                            /** @psalm-check-type-exact $name = callable-string */
+                        }
+                    }
+                    PHP,
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
             'zeroIsANonEmptyLowercaseString' => [
                 'code' => <<<'PHP'
                     <?php
@@ -3248,6 +3290,75 @@ final class FunctionCallTest extends TestCase
                 'ignored_issues' => [],
                 'php_version' => '8.2',
             ],
+            'arrayIsListOfAShapeWithAGapInItsListKeys' => [
+                'code' => <<<'PHP'
+                    <?php
+                    /** @param array{0?: string, 2?: int} $gap */
+                    function gap(array $gap): void {
+                        if (array_is_list($gap)) {
+                            /** @psalm-check-type-exact $gap = list{0?: string} */
+                        }
+                    }
+
+                    /** @param array{0?: string, 1: int} $requiredLast */
+                    function requiredLast(array $requiredLast): void {
+                        if (array_is_list($requiredLast)) {
+                            /** @psalm-check-type-exact $requiredLast = list{string, int} */
+                        }
+                    }
+
+                    /** @param array{1?: int, 0: string} $outOfOrder */
+                    function outOfOrder(array $outOfOrder): void {
+                        if (array_is_list($outOfOrder)) {
+                            /** @psalm-check-type-exact $outOfOrder = list{0: string, 1?: int} */
+                        }
+                    }
+
+                    /** @param array{2?: bool, 0?: string, 1: int} $outOfOrderWithRequiredKey */
+                    function outOfOrderWithRequiredKey(array $outOfOrderWithRequiredKey): void {
+                        if (array_is_list($outOfOrderWithRequiredKey)) {
+                            /** @psalm-check-type-exact $outOfOrderWithRequiredKey = list{0: string, 1: int, 2?: bool} */
+                        }
+                    }
+                    PHP,
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
+            'arrayIsListOfASealedShapeWithOptionalKeys' => [
+                'code' => <<<'PHP'
+                    <?php
+                    /** @param array{a?: string} $onlyAString */
+                    function stringKey(array $onlyAString): void {
+                        if (array_is_list($onlyAString)) {
+                            /** @psalm-check-type-exact $onlyAString = array<never, never> */
+                        }
+                    }
+
+                    /** @param array{0?: string, 1?: int} $listKeys */
+                    function listKeys(array $listKeys): void {
+                        if (array_is_list($listKeys)) {
+                            /** @psalm-check-type-exact $listKeys = list{0?: string, 1?: int} */
+                        }
+                    }
+
+                    /** @param array{0?: string, a?: int} $mixedKeys */
+                    function mixedKeys(array $mixedKeys): void {
+                        if (array_is_list($mixedKeys)) {
+                            /** @psalm-check-type-exact $mixedKeys = list{0?: string} */
+                        }
+                    }
+
+                    /** @param array{0?: string, 1?: int} $listKeys */
+                    function nonEmpty(array $listKeys): void {
+                        assert(array_is_list($listKeys) && $listKeys !== []);
+                        /** @psalm-check-type-exact $listKeys = list{0: string, 1?: int} */
+                    }
+                    PHP,
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
         ];
     }
 
@@ -3430,7 +3541,6 @@ final class FunctionCallTest extends TestCase
                     $a = "hello";
                     fooFoo($a);',
                 'error_message' => 'MixedArgument',
-                'error_levels' => ['MixedAssignment'],
             ],
             'nullArgument' => [
                 'code' => '<?php
@@ -3541,11 +3651,6 @@ final class FunctionCallTest extends TestCase
 
                     function takes_int(int $i) {}',
                 'error_message' => 'InvalidScalarArgument',
-                'error_levels' => [
-                    'MixedAssignment',
-                    'MixedArrayAccess',
-                    'RedundantConditionGivenDocblockType',
-                ],
             ],
             'objectToStringReturnDoesNotMatchLowercaseStringParameter' => [
                 'code' => '<?php
@@ -3868,10 +3973,7 @@ final class FunctionCallTest extends TestCase
             ],
             'functionCallOnMixed' => [
                 'code' => '<?php
-                    /**
-                     * @var mixed $s
-                     * @psalm-suppress MixedAssignment
-                     */
+                    /** @var mixed $s */
                     $s = 1;
                     $s();',
                 'error_message' => 'MixedFunctionCall',
@@ -3934,7 +4036,6 @@ final class FunctionCallTest extends TestCase
                     function foo(int &$i) : void {}
 
                     $a = rand(0, 1) ? null : 5;
-                    /** @psalm-suppress MixedArgument */
                     foo((int) $a);',
                 'error_message' => 'InvalidPassByReference',
             ],
@@ -4189,6 +4290,17 @@ final class FunctionCallTest extends TestCase
                 'error_levels' => [],
                 'php_version' => '8.1',
             ],
+            'arrayIsListOfALiteralArrayOutOfOrderWithAnOptionalKey' => [
+                'code' => '<?php
+                    $list = [1 => 0, 0 => 1];
+                    if (rand(0, 1)) {
+                        $list[2] = 2;
+                    }
+                    assert(array_is_list($list));',
+                'error_message' => 'TypeDoesNotContainType',
+                'error_levels' => [],
+                'php_version' => '8.1',
+            ],
             'array_is_list_on_list_shape' => [
                 'code' => '<?php
                     /** @param list{string, int} $arr */
@@ -4410,6 +4522,22 @@ final class FunctionCallTest extends TestCase
                 'error_levels' => [],
                 'php_version' => '8.1',
             ],
+            'functionExistsOfANumericString' => [
+                'code' => <<<'PHP'
+                    <?php
+                    /** @param numeric-string $function */
+                    function check(string $function): bool {
+                        if (function_exists($function)) {
+                            return true;
+                        }
+
+                        return false;
+                    }
+                    PHP,
+                'error_message' => 'DocblockTypeContradiction',
+                'error_levels' => [],
+                'php_version' => '8.1',
+            ],
             'extractVarCheckInvalid' => [
                 'code' => '<?php
                     function takesInt(int $i): void {}
@@ -4442,6 +4570,30 @@ final class FunctionCallTest extends TestCase
                         return file_exists($path);
                     }',
                 'error_message' => 'ImpureFunctionCall',
+            ],
+            'arrayIsListOfAShapeWithARequiredKeyAfterAGapInItsListKeys' => [
+                'code' => <<<'PHP'
+                    <?php
+                    /** @param array{0?: string, 2: int} $a */
+                    function f(array $a): void {
+                        if (array_is_list($a)) {}
+                    }
+                    PHP,
+                'error_message' => 'TypeDoesNotContainType - src' . DIRECTORY_SEPARATOR . 'somefile.php:4:9 - Type array{0?: string, 2: int} for $a is never list',
+                'error_levels' => [],
+                'php_version' => '8.1',
+            ],
+            'arrayIsListOfAShapeWithARequiredStringKey' => [
+                'code' => <<<'PHP'
+                    <?php
+                    /** @param array{a: string} $a */
+                    function f(array $a): void {
+                        if (array_is_list($a)) {}
+                    }
+                    PHP,
+                'error_message' => 'TypeDoesNotContainType',
+                'error_levels' => [],
+                'php_version' => '8.1',
             ],
         ];
     }

@@ -18,9 +18,11 @@ use Psalm\Type\Atomic\TCallable;
 use Psalm\Type\Atomic\TCallableObject;
 use Psalm\Type\Atomic\TCallableString;
 use Psalm\Type\Atomic\TCapabilities;
+use Psalm\Type\Atomic\TClassString;
 use Psalm\Type\Atomic\TClassStringMap;
 use Psalm\Type\Atomic\TClosure;
 use Psalm\Type\Atomic\TConditional;
+use Psalm\Type\Atomic\TDependentGetClass;
 use Psalm\Type\Atomic\TEmptyMixed;
 use Psalm\Type\Atomic\TEnumCase;
 use Psalm\Type\Atomic\TGenericObject;
@@ -28,6 +30,7 @@ use Psalm\Type\Atomic\TIntersection;
 use Psalm\Type\Atomic\TIterable;
 use Psalm\Type\Atomic\TKeyOf;
 use Psalm\Type\Atomic\TKeyedArray;
+use Psalm\Type\Atomic\TLiteralClassString;
 use Psalm\Type\Atomic\TLiteralInt;
 use Psalm\Type\Atomic\TLiteralString;
 use Psalm\Type\Atomic\TMixed;
@@ -42,6 +45,7 @@ use Psalm\Type\Atomic\TScalar;
 use Psalm\Type\Atomic\TString;
 use Psalm\Type\Atomic\TTemplateKeyOf;
 use Psalm\Type\Atomic\TTemplateParam;
+use Psalm\Type\Atomic\TTemplateParamClass;
 use Psalm\Type\Atomic\TTemplateValueOf;
 use Psalm\Type\Atomic\TTypeVariable;
 use Psalm\Type\Atomic\TValueOf;
@@ -1104,6 +1108,40 @@ final class AtomicTypeComparator
             if ($only_defined_items) {
                 return true;
             }
+        }
+
+        // Equality is a fact about PHP values, not a policy controlled by the config.
+        // The strict policy emits InvalidStringClass at the comparison site instead.
+        if ($type1_part instanceof TLiteralClassString && $type2_part::class === TLiteralString::class) {
+            return $type1_part->value === $type2_part->value;
+        }
+
+        if ($type2_part instanceof TLiteralClassString && $type1_part::class === TLiteralString::class) {
+            return $type1_part->value === $type2_part->value;
+        }
+
+        if (($type1_part instanceof TClassString && !$type1_part instanceof TTemplateParamClass
+                || $type1_part instanceof TDependentGetClass)
+            && $type2_part::class === TLiteralString::class
+        ) {
+            return ClassLikeStringComparator::canLiteralNameBeClassString(
+                $codebase,
+                $type2_part,
+                $type1_part,
+                $allow_interface_equality,
+            );
+        }
+
+        if (($type2_part instanceof TClassString && !$type2_part instanceof TTemplateParamClass
+                || $type2_part instanceof TDependentGetClass)
+            && $type1_part::class === TLiteralString::class
+        ) {
+            return ClassLikeStringComparator::canLiteralNameBeClassString(
+                $codebase,
+                $type1_part,
+                $type2_part,
+                $allow_interface_equality,
+            );
         }
 
         $first_comparison_result = new TypeComparisonResult();
