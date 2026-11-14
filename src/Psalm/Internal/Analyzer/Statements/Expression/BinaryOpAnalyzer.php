@@ -382,6 +382,8 @@ final class BinaryOpAnalyzer
     /**
      * Report a class-name literal independently of the types' ability to compare equal.
      * That keeps type reconciliation correct in both configurations.
+     * Only a literal written at the comparison site is reported: a variable whose type merely
+     * contains a literal (e.g. class-string|'libXMLError') is not a string used instead of ::class.
      */
     private static function checkClassStringLiteralComparison(
         StatementsAnalyzer $statements_analyzer,
@@ -389,6 +391,10 @@ final class BinaryOpAnalyzer
         Union $literal_type,
         Union $class_type,
     ): void {
+        if (!$literal_expr instanceof PhpParser\Node\Scalar\String_) {
+            return;
+        }
+
         $codebase = $statements_analyzer->getCodebase();
 
         foreach ($literal_type->getAtomicTypes() as $literal) {

@@ -40,7 +40,10 @@ final class ClassStringLiteralConfigTest extends TestCase
         $this->analyzeFile('somefile.php', new Context());
     }
 
-    /** @return iterable<string, array{bool, string, string}> */
+    /**
+     * @return iterable<string, array{bool, string, string}>
+     * @psalm-pure
+     */
     public static function provideClassNameContexts(): iterable
     {
         $cases = [
@@ -78,7 +81,10 @@ final class ClassStringLiteralConfigTest extends TestCase
         $this->analyzeFile('somefile.php', new Context());
     }
 
-    /** @return iterable<string, array{bool, string}> */
+    /**
+     * @return iterable<string, array{bool, string}>
+     * @psalm-pure
+     */
     public static function provideLegitimateCode(): iterable
     {
         $cases = [
@@ -93,6 +99,11 @@ final class ClassStringLiteralConfigTest extends TestCase
             'classLiteralNew' => '$name = A::class; new $name();',
             'objectClassName' => 'function getName(A $a): string { return $a::class; }',
             'ordinaryStringComparison' => 'function eq(string $value): bool { return $value === "A"; }',
+            'variableContainingLiteralComparison' => '/** @param class-string $name */
+                function eq(string $name, bool $flag, string $other): bool {
+                    if ($flag) { $name = "A"; }
+                    return $other === $name;
+                }',
         ];
         foreach ($cases as $name => $code) {
             yield $name . '/false' => [false, $code];
@@ -112,12 +123,16 @@ final class ClassStringLiteralConfigTest extends TestCase
         $this->analyzeFile('somefile.php', new Context());
     }
 
-    /** @return iterable<string, array{string, string}> */
+    /**
+     * @return iterable<string, array{string, string}>
+     * @psalm-pure
+     */
     public static function provideInvalidClassLiterals(): iterable
     {
+        // A literal is fully known, so a name that cannot satisfy the bound is invalid, not a coercion.
         yield 'wrongBound' => [
             '/** @param class-string<A> $name */ function f(string $name): void {} f("B");',
-            'ArgumentTypeCoercion',
+            'InvalidArgument',
         ];
         yield 'unrelatedExactLiteral' => [
             '/** @param A::class $name */ function f(string $name): void {} f("B");',
@@ -125,12 +140,12 @@ final class ClassStringLiteralConfigTest extends TestCase
         ];
         yield 'unknownClass' => [
             '/** @param class-string $name */ function f(string $name): void {} f("DefinitelyMissing");',
-            'ArgumentTypeCoercion',
+            'InvalidArgument',
         ];
         yield 'notCallable' => [
             '/** @param class-string<callable-object> $name */
                 function f(string $name): void {} f("stdClass");',
-            'ArgumentTypeCoercion',
+            'InvalidArgument',
         ];
         yield 'invalidComparison' => [
             '/** @param class-string<callable-object> $name */
