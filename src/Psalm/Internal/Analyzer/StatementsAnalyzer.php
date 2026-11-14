@@ -543,14 +543,21 @@ final class StatementsAnalyzer extends SourceAnalyzer
         PhpParser\Node\Stmt\ClassLike $stmt,
         ?Context $global_context,
     ): void {
+        if ($stmt->name === null) {
+            return;
+        }
+
+        // the storage is keyed by the name in the namespace the class is declared in
+        $fq_class_name = Type::getFQCLNFromString($stmt->name->name, $statements_analyzer->getAliases());
+
         try {
-            if ($stmt instanceof PhpParser\Node\Stmt\Interface_ && $stmt->name !== null) {
-                (new InterfaceAnalyzer($stmt, $statements_analyzer->source, $stmt->name->name))->analyze();
+            if ($stmt instanceof PhpParser\Node\Stmt\Interface_) {
+                (new InterfaceAnalyzer($stmt, $statements_analyzer->source, $fq_class_name))->analyze();
             } elseif ($stmt instanceof PhpParser\Node\Stmt\Class_ || $stmt instanceof PhpParser\Node\Stmt\Enum_) {
                 $class_analyzer = new ClassAnalyzer(
                     $stmt,
                     $statements_analyzer->source,
-                    $stmt->name->name ?? null,
+                    $fq_class_name,
                 );
 
                 $class_analyzer->analyze(null, $global_context);
