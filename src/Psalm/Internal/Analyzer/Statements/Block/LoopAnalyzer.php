@@ -197,6 +197,8 @@ final class LoopAnalyzer
                 $inner_do_context = clone $continue_context;
 
                 foreach ($pre_conditions as $condition_offset => $pre_condition) {
+                    $vars_after_condition = [];
+
                     $always_assigned_before_loop_body_vars = [...self::applyPreConditionToLoopContext(
                         $statements_analyzer,
                         $pre_condition,
@@ -204,7 +206,10 @@ final class LoopAnalyzer
                         $continue_context,
                         $loop_parent_context,
                         $is_do,
+                        $vars_after_condition,
                     ), ...$always_assigned_before_loop_body_vars];
+
+                    self::applyVarsAfterCondition($inner_do_context, $vars_after_condition, $condition_offset > 0);
                 }
             }
 
@@ -420,6 +425,8 @@ final class LoopAnalyzer
                     $inner_do_context = clone $continue_context;
 
                     foreach ($pre_conditions as $condition_offset => $pre_condition) {
+                        $vars_after_condition = [];
+
                         self::applyPreConditionToLoopContext(
                             $statements_analyzer,
                             $pre_condition,
@@ -427,6 +434,13 @@ final class LoopAnalyzer
                             $continue_context,
                             $loop_parent_context,
                             $is_do,
+                            $vars_after_condition,
+                        );
+
+                        self::applyVarsAfterCondition(
+                            $inner_do_context,
+                            $vars_after_condition,
+                            $condition_offset > 0,
                         );
                     }
                 }
@@ -1020,7 +1034,34 @@ final class LoopAnalyzer
     }
 
     /**
+     * The variables a do-while condition changed belong to the context the loop is left with, with the type they
+     * were given. The operands of `&&` after the first are skipped when an earlier one is false, so their
+     * variables may keep the type they had at the end of the body.
+     *
+     * @param array<string, Union> $vars_after_condition
+     */
+    private static function applyVarsAfterCondition(
+        Context $inner_do_context,
+        array $vars_after_condition,
+        bool $may_be_skipped,
+    ): void {
+        foreach ($vars_after_condition as $var_id => $type) {
+            if (!$may_be_skipped) {
+                $inner_do_context->vars_in_scope[$var_id] = $type;
+            } elseif (isset($inner_do_context->vars_in_scope[$var_id])) {
+                $inner_do_context->vars_in_scope[$var_id] = Type::combineUnionTypes(
+                    $inner_do_context->vars_in_scope[$var_id],
+                    $type,
+                );
+            } else {
+                $inner_do_context->vars_in_scope[$var_id] = $type->setPossiblyUndefined(true);
+            }
+        }
+    }
+
+    /**
      * @param  list<Clause>  $pre_condition_clauses
+     * @param  array<string, Union> $vars_after_condition the variables the condition changes, for a do-while
      * @return list<string>
      */
     private static function applyPreConditionToLoopContext(
@@ -1030,7 +1071,9 @@ final class LoopAnalyzer
         Context $loop_context,
         Context $outer_context,
         bool $is_do,
+        array &$vars_after_condition = [],
     ): array {
+        $vars_before_condition = $loop_context->vars_in_scope;
         $pre_referenced_var_ids = $loop_context->cond_referenced_var_ids;
         $loop_context->cond_referenced_var_ids = [];
 
@@ -1045,6 +1088,15 @@ final class LoopAnalyzer
         }
 
         $loop_context->inside_conditional = $was_inside_conditional;
+
+        // the variables as the condition leaves them, before the truths of the condition narrow them
+        if ($is_do) {
+            foreach ($loop_context->vars_in_scope as $var_id => $type) {
+                if (!isset($vars_before_condition[$var_id]) || $vars_before_condition[$var_id] !== $type) {
+                    $vars_after_condition[$var_id] = $type;
+                }
+            }
+        }
 
         $new_referenced_var_ids = $loop_context->cond_referenced_var_ids;
         $loop_context->cond_referenced_var_ids = array_merge($pre_referenced_var_ids, $new_referenced_var_ids);

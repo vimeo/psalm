@@ -469,6 +469,88 @@ final class DoTest extends TestCase
                     '$result===' => 'null',
                 ],
             ],
+            'doWhileConditionAssignmentInAnOrOperandEndsAsFalsy' => [
+                'code' => '<?php
+                    function fetchError(): ?stdClass {
+                        return rand(0, 1) ? new stdClass() : null;
+                    }
+
+                    $try = 0;
+                    do {
+                        $try++;
+                    } while (($error = fetchError()) || $try < 3);
+
+                    $result = $error;',
+                'assertions' => [
+                    '$result===' => 'null',
+                ],
+            ],
+            'doWhileConditionAssignmentInInstanceofKeepsTheAssignedType' => [
+                'code' => '<?php
+                    function fetchError(): ?stdClass {
+                        return rand(0, 1) ? new stdClass() : null;
+                    }
+
+                    do {
+                        $x = 1;
+                    } while (($error = fetchError()) instanceof stdClass && rand(0, 1));
+
+                    $result = $error;',
+                'assertions' => [
+                    '$result===' => 'null|stdClass',
+                ],
+            ],
+            'doWhileConditionAssignmentInAFunctionCallKeepsTheAssignedType' => [
+                'code' => '<?php
+                    function fetchError(): ?stdClass {
+                        return rand(0, 1) ? new stdClass() : null;
+                    }
+
+                    $try = 0;
+                    do {
+                        $try++;
+                    } while (!is_null($error = fetchError()) && $try < 3);
+
+                    $result = $error;',
+                'assertions' => [
+                    '$result===' => 'null|stdClass',
+                ],
+            ],
+            'doWhileConditionAssignmentOfAVariableAssignedInTheBody' => [
+                'code' => '<?php
+                    function fetchError(): ?stdClass {
+                        return rand(0, 1) ? new stdClass() : null;
+                    }
+
+                    $error = 5;
+                    $try = 0;
+                    do {
+                        $error = 6;
+                        $try++;
+                    } while ($try < 3 && null !== ($error = fetchError()));
+
+                    $result = $error;',
+                'assertions' => [
+                    '$result===' => '6|null|stdClass',
+                ],
+            ],
+            'doWhileConditionAssignmentToAPropertyKeepsTheAssignedType' => [
+                'code' => '<?php
+                    function fetchError(): ?stdClass {
+                        return rand(0, 1) ? new stdClass() : null;
+                    }
+
+                    $o = new stdClass();
+                    $o->error = null;
+                    do {
+                        $x = 1;
+                    } while ((null !== $o->error = fetchError()) && rand(0, 1));
+
+                    $result = $o->error;',
+                'assertions' => [
+                    '$result===' => 'null|stdClass',
+                ],
+            ],
             'doWhileConditionOnVariableIncrementedAfterIt' => [
                 'code' => '<?php
                     $v = 0;
