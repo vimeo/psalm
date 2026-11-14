@@ -44,6 +44,7 @@ use function end;
 use function explode;
 use function in_array;
 use function is_string;
+use function preg_match;
 use function reset;
 use function spl_object_id;
 use function strpos;
@@ -129,6 +130,13 @@ final class ReflectorVisitor extends PhpParser\NodeVisitorAbstract implements Fi
                         new CodeLocation($this->file_scanner, $node, null, true),
                     );
                 }
+            } elseif (!$comment instanceof PhpParser\Comment\Doc
+                && preg_match('#^/\*[^*]#', $comment->getText())
+                && preg_match('/\*\s*@[a-z]/', $comment->getText())) {
+                $this->file_storage->docblock_issues[] = new InvalidDocblock(
+                    'PHP docblock with tags must start with 2 asterisks otherwise it is ignored',
+                    new CodeLocation($this->file_scanner, $node, null, true),
+                );
             }
         }
 
