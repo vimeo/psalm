@@ -1037,7 +1037,7 @@ final class ReturnTypeAnalyzer
                 return null;
             }
 
-            if (IssueBuffer::accepts(
+            IssueBuffer::maybeAdd(
                 new MismatchingDocblockReturnType(
                     'Docblock has incorrect return type \'' . $storage->return_type->getId() .
                         '\', should be \'' . $storage->signature_return_type->getId() . '\'',
@@ -1045,9 +1045,7 @@ final class ReturnTypeAnalyzer
                 ),
                 $storage->suppressed_issues,
                 true,
-            )) {
-                return false;
-            }
+            );
         }
 
         return null;
