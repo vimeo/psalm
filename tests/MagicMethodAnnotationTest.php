@@ -603,6 +603,23 @@ final class MagicMethodAnnotationTest extends TestCase
                     '$c===' => 'float',
                 ],
             ],
+            'magicMethodReturnTypeWithFourLiterals' => [
+                'code' => '<?php
+                    /**
+                     * @method getAfterParams(): (\'a\'|\'b\'|\'c\'|\'d\')
+                     * @method getIntsAfterParams(): (1|2|3|4)
+                     */
+                    final class Foo {
+                        public function __call(string $name, array $arguments) { return null; }
+                    }
+
+                    $a = (new Foo)->getAfterParams();
+                    $b = (new Foo)->getIntsAfterParams();',
+                'assertions' => [
+                    '$a===' => '\'a\'|\'b\'|\'c\'|\'d\'',
+                    '$b===' => '1|2|3|4',
+                ],
+            ],
             'trailingReturnTypes' => [
                 'code' => '<?php
                     class ParentClass {
@@ -912,6 +929,22 @@ final class MagicMethodAnnotationTest extends TestCase
                     '$b' => 'bool',
                     '$c' => 'bool',
                 ],
+            ],
+            'thisTypeInMethodParamIsNotTheParamName' => [
+                'code' => '<?php
+                    /**
+                     * @method void nullable(?$this $other)
+                     * @method void union(null|$this $other)
+                     * @method void closure(callable(): $this $callback)
+                     */
+                    final class Foo {
+                        public function __call(string $name, array $arguments) { return null; }
+
+                        public function test(): void {
+                            $this->nullable(null);
+                            $this->union(null);
+                        }
+                    }',
             ],
             'namespacedValidAnnotations' => [
                 'code' => '<?php
@@ -1335,8 +1368,12 @@ final class MagicMethodAnnotationTest extends TestCase
                 'code' => '<?php
                     namespace Foo;
 
+                    use DateTimeImmutable as Immutable;
+
                     /**
                      * @method string bar(\DateTimeInterface|\DateInterval|self $a, Cache|\Exception $e)
+                     * @method retAlias(): Immutable
+                     * @method retSelf(): self
                      */
                     class Cache {
                         public function __call(string $method, array $args) {
@@ -1344,7 +1381,12 @@ final class MagicMethodAnnotationTest extends TestCase
                         }
                     }
 
-                    (new Cache)->bar(new \DateTime(), new Cache());',
+                    (new Cache)->bar(new \DateTime(), new Cache());
+
+                    $a = (new Cache)->retAlias();
+                    $b = (new Cache)->retSelf();
+                    /** @psalm-check-type-exact $a = \DateTimeImmutable */
+                    /** @psalm-check-type-exact $b = \Foo\Cache */',
             ],
             'magicMethodInheritance' => [
                 'code' => '<?php
@@ -2354,6 +2396,107 @@ final class MagicMethodAnnotationTest extends TestCase
 
                     $child->setString("five");',
                 'error_message' => 'InvalidArgument',
+            ],
+            'magicMethodParamWithFourStringLiterals' => [
+                'code' => '<?php
+                    /**
+                     * @method four((\'a\'|\'b\'|\'c\'|\'d\') $mode)
+                     */
+                    final class Foo {
+                        public function __call(string $name, array $arguments) { return null; }
+                    }
+
+                    function test(Foo $foo): void {
+                        $foo->four(\'bogus\');
+                    }',
+                'error_message' => 'InvalidArgument - src' . DIRECTORY_SEPARATOR . 'somefile.php:10:36 - Argument 1 of four expects \'a\'|\'b\'|\'c\'|\'d\', but \'bogus\' provided',
+            ],
+            'magicMethodParamWithFourIntLiterals' => [
+                'code' => '<?php
+                    /**
+                     * @method fourInts((1|2|3|4) $n)
+                     */
+                    final class Foo {
+                        public function __call(string $name, array $arguments) { return null; }
+                    }
+
+                    function test(Foo $foo): void {
+                        $foo->fourInts(99);
+                    }',
+                'error_message' => 'InvalidArgument - src' . DIRECTORY_SEPARATOR . 'somefile.php:10:40 - Argument 1 of fourInts expects 1|2|3|4, but 99 provided',
+            ],
+            'magicMethodVariadicParamWithFourLiterals' => [
+                'code' => '<?php
+                    /**
+                     * @method many((\'a\'|\'b\'|\'c\'|\'d\') ...$modes)
+                     */
+                    final class Foo {
+                        public function __call(string $name, array $arguments) { return null; }
+                    }
+
+                    function test(Foo $foo): void {
+                        $foo->many(\'a\', \'bogus\');
+                    }',
+                'error_message' => 'Argument 2 of many expects \'a\'|\'b\'|\'c\'|\'d\', but \'bogus\' provided',
+            ],
+            'magicMethodParamTypeAliasWithFourLiterals' => [
+                'code' => '<?php
+                    namespace Ns;
+
+                    /**
+                     * @psalm-type Mode = \'a\'|\'b\'|\'c\'|\'d\'
+                     * @method four(Mode $mode)
+                     */
+                    final class Foo {
+                        public function __call(string $name, array $arguments) { return null; }
+                    }
+
+                    function test(Foo $foo): void {
+                        $foo->four(\'bogus\');
+                    }',
+                'error_message' => 'Argument 1 of four expects \'a\'|\'b\'|\'c\'|\'d\', but \'bogus\' provided',
+            ],
+            'magicMethodParamsWithFourLiteralsKeepOtherTypes' => [
+                'code' => '<?php
+                    namespace Other {
+                        final class Thing {}
+                    }
+
+                    namespace Ns {
+                        use Other\Thing as Alias;
+
+                        final class Bar {}
+
+                        /**
+                         * @method Bar foo(Bar $bar, Alias $alias, list<(1|2|3|4)> $ints, array<string, (\'a\'|\'b\'|\'c\'|\'d\')> $map, class-string<Bar> $class, ?Bar $null = null)
+                         */
+                        final class Foo {
+                            public function __call(string $name, array $arguments) { return null; }
+                        }
+
+                        function test(Foo $foo): void {
+                            $result = $foo->foo(new Bar, new Alias, [1, 99], [\'x\' => \'d\'], Bar::class);
+                            takesBar($result);
+                        }
+
+                        function takesBar(Bar $_bar): void {}
+                    }',
+                'error_message' => 'Argument 3 of foo expects list<1|2|3|4>, but list{1, 99} provided',
+            ],
+            'magicMethodParamWithQuotedLiterals' => [
+                'code' => '<?php
+                    /**
+                     * @method void foo("a\'b"|"c"|"d"|"e" $s)
+                     */
+                    final class Foo {
+                        public function __call(string $name, array $arguments) { return null; }
+                    }
+
+                    function test(Foo $foo): void {
+                        $foo->foo("a\'b");
+                        $foo->foo("bogus");
+                    }',
+                'error_message' => 'InvalidArgument - src' . DIRECTORY_SEPARATOR . 'somefile.php:11:35 - Argument 1 of foo expects \'a\'b\'|\'c\'|\'d\'|\'e\', but \'bogus\' provided',
             ],
             'unionAnnotationInvalidArg' => [
                 'code' => '<?php
