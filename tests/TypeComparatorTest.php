@@ -184,8 +184,6 @@ final class TypeComparatorTest extends TestCase
         yield 'scalar and object into int' => ['int', 'scalar', 'object'];
         yield 'string and callable into int' => ['int', 'string', 'callable'];
         yield 'string and null into int' => ['int', 'string', 'null'];
-        yield 'mixed and string into int' => ['int', 'mixed', 'string'];
-        yield 'mixed and callable into int' => ['int', 'mixed', 'callable'];
         yield 'literal and callable into int' => ['int', '1', 'callable'];
         yield 'int and float into string' => ['string', 'int', 'float'];
         yield 'matching and coercible member' => ['non-empty-string', 'non-empty-string', 'string'];

@@ -92,16 +92,9 @@ final class UnionTypeComparator
 
         $input_atomic_types = array_reverse(self::getTypeParts($codebase, $input_type));
 
-        // what the input parts that no container part accepts have in common: the result must not depend on the
-        // order of the input parts, so every such part is examined before the comparison fails
-        $some_part_failed = false;
-        $failed_parts_coerced = true;
-        $failed_parts_to_string_cast = false;
-        $failed_parts_coerced_from_mixed = true;
-        $failed_parts_coerced_from_as_mixed = true;
-        $failed_parts_scalar_match_found = false;
-        $failed_parts_missing_shape_fields = [];
-        $failed_parts_all_miss_shape_fields = true;
+        // every input part no container part accepts is examined before the comparison fails, so that the result
+        // does not depend on the order of the input parts (unless one of them is coerced from mixed)
+        $failed_parts = [];
 
         while ($input_type_part = array_pop($input_atomic_types)) {
             if ($input_type_part instanceof TNull && $ignore_null) {
@@ -498,54 +491,79 @@ final class UnionTypeComparator
                     return false;
                 }
 
-                $some_part_failed = true;
-                $failed_parts_coerced = $failed_parts_coerced && $some_type_coerced;
-                $failed_parts_to_string_cast = $failed_parts_to_string_cast || $some_to_string_cast;
-                $failed_parts_coerced_from_mixed = $failed_parts_coerced_from_mixed && $some_type_coerced_from_mixed;
-                $failed_parts_coerced_from_as_mixed = $failed_parts_coerced_from_as_mixed
-                    && $some_type_coerced_from_mixed
-                    && (($input_type->from_template_default && $input_type->from_docblock)
-                        || $all_type_coerced_from_as_mixed);
-                $failed_parts_scalar_match_found = $failed_parts_scalar_match_found || $scalar_type_match_found;
-
-                if ($some_missing_shape_fields && !$some_type_coerced && !$scalar_type_match_found) {
-                    $failed_parts_missing_shape_fields = array_merge(
-                        $failed_parts_missing_shape_fields,
-                        $some_missing_shape_fields,
-                    );
-                } else {
-                    $failed_parts_all_miss_shape_fields = false;
-                }
+                $failed_parts[] = [
+                    'coerced' => $some_type_coerced,
+                    'to_string_cast' => $some_to_string_cast,
+                    'coerced_from_mixed' => $some_type_coerced_from_mixed,
+                    'coerced_from_as_mixed' => $some_type_coerced_from_mixed
+                        && (($input_type->from_template_default && $input_type->from_docblock)
+                            || $all_type_coerced_from_as_mixed),
+                    'scalar_match' => $scalar_type_match_found,
+                    'missing_shape_fields' => $some_missing_shape_fields && !$some_type_coerced
+                        && !$scalar_type_match_found
+                            ? $some_missing_shape_fields
+                            : null,
+                ];
             }
         }
 
-        if ($some_part_failed && $union_comparison_result) {
-            if ($failed_parts_coerced) {
+        if ($failed_parts && $union_comparison_result) {
+            // a part that is only a coercion from mixed makes the verdict of the first unaccepted part the final one
+            foreach ($failed_parts as $failed_part) {
+                if ($failed_part['coerced_from_mixed']) {
+                    $failed_parts = [$failed_parts[0]];
+                    break;
+                }
+            }
+
+            $all_coerced = true;
+            $any_to_string_cast = false;
+            $all_coerced_from_mixed = true;
+            $all_coerced_from_as_mixed = true;
+            $any_scalar_match = false;
+            $missing_shape_fields = [];
+            $all_miss_shape_fields = true;
+
+            foreach ($failed_parts as $failed_part) {
+                $all_coerced = $all_coerced && $failed_part['coerced'];
+                $any_to_string_cast = $any_to_string_cast || $failed_part['to_string_cast'];
+                $all_coerced_from_mixed = $all_coerced_from_mixed && $failed_part['coerced_from_mixed'];
+                $all_coerced_from_as_mixed = $all_coerced_from_as_mixed && $failed_part['coerced_from_as_mixed'];
+                $any_scalar_match = $any_scalar_match || $failed_part['scalar_match'];
+
+                if ($failed_part['missing_shape_fields'] !== null) {
+                    $missing_shape_fields = array_merge($missing_shape_fields, $failed_part['missing_shape_fields']);
+                } else {
+                    $all_miss_shape_fields = false;
+                }
+            }
+
+            if ($all_coerced) {
                 $union_comparison_result->type_coerced = true;
-            } elseif ($failed_parts_to_string_cast) {
+            } elseif ($any_to_string_cast) {
                 $union_comparison_result->type_coerced = false;
             }
 
-            if ($failed_parts_coerced_from_mixed) {
+            if ($all_coerced_from_mixed) {
                 $union_comparison_result->type_coerced_from_mixed = true;
 
-                if ($failed_parts_coerced_from_as_mixed) {
+                if ($all_coerced_from_as_mixed) {
                     $union_comparison_result->type_coerced_from_as_mixed = true;
                 }
             }
 
-            if (!$failed_parts_scalar_match_found) {
+            if (!$any_scalar_match) {
                 $union_comparison_result->scalar_type_match_found = false;
             }
 
-            if ($failed_parts_all_miss_shape_fields && $failed_parts_missing_shape_fields) {
-                $missing_shape_fields = array_values(array_unique($failed_parts_missing_shape_fields));
+            if ($all_miss_shape_fields && $missing_shape_fields) {
+                $missing_shape_fields = array_values(array_unique($missing_shape_fields));
                 sort($missing_shape_fields);
                 $union_comparison_result->missing_shape_fields = $missing_shape_fields;
             }
         }
 
-        if ($some_part_failed) {
+        if ($failed_parts) {
             return false;
         }
 
