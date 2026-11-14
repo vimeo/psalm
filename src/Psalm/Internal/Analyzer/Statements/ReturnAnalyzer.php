@@ -164,7 +164,12 @@ final class ReturnAnalyzer
         if ($closure instanceof ClosureAnalyzer) {
             foreach ($context->captured_by_ref as $var_id => $_) {
                 if (isset($context->vars_in_scope[$var_id])) {
-                    $closure->captured_by_ref_types_at_return[$var_id][] = $context->vars_in_scope[$var_id];
+                    $closure->captured_by_ref_types_at_return[$var_id][] =
+                        $closure->getEnclosingTypeOfUnwrittenByRefCapture(
+                            $var_id,
+                            $context->vars_in_scope[$var_id],
+                            $stmt->getStartFilePos(),
+                        );
                 }
             }
         }

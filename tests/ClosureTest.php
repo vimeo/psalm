@@ -129,6 +129,113 @@ final class ClosureTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'propertyOfAVariableCapturedByReferenceMayChangeAfterTheClosureIsCreated' => [
+                'code' => '<?php
+                    final class Job {
+                        public string $state = "idle";
+                    }
+
+                    function run(): bool {
+                        $job = new Job();
+                        $job->state = "idle";
+
+                        $isRunning = function () use (&$job): bool {
+                            return $job->state === "running";
+                        };
+
+                        $job->state = "running";
+
+                        return $isRunning();
+                    }
+
+                    /** @param array<string, int> $data */
+                    function offset(array $data): int {
+                        if (isset($data["k"])) {
+                            $get = function () use (&$data): int {
+                                return $data["k"];
+                            };
+
+                            return $get();
+                        }
+
+                        return 0;
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
+            'byRefCapturedIntIsNotItsCaptureTimeLiteral' => [
+                'code' => '<?php
+                    function f(): void {
+                        $i = -1;
+                        $callback = function () use (&$i): void {
+                            switch ($i) {
+                                case 0:
+                                    echo "zero";
+                                    break;
+                                case 1:
+                                    echo "one";
+                                    break;
+                                default:
+                                    echo "other";
+                            }
+                        };
+                        ++$i;
+                        $callback();
+                    }',
+            ],
+            'byRefCapturedStringIsNotItsCaptureTimeLiteral' => [
+                'code' => '<?php
+                    function f(): void {
+                        $state = "idle";
+                        $callback = function () use (&$state): void {
+                            if ($state === "running") {
+                                echo "running";
+                            }
+                        };
+                        $state = "running";
+                        $callback();
+                    }',
+            ],
+            'byRefCapturedBoolIsNotItsCaptureTimeLiteral' => [
+                'code' => '<?php
+                    function f(): void {
+                        $done = false;
+                        $callback = function () use (&$done): void {
+                            if ($done) {
+                                echo "done";
+                            }
+                        };
+                        $done = true;
+                        $callback();
+                    }',
+            ],
+            'byRefCapturedFloatIsNotItsCaptureTimeLiteral' => [
+                'code' => '<?php
+                    function f(): void {
+                        $ratio = 1.5;
+                        $callback = function () use (&$ratio): void {
+                            if ($ratio === 2.5) {
+                                echo "changed";
+                            }
+                        };
+                        $ratio = 2.5;
+                        $callback();
+                    }',
+            ],
+            'byRefCapturedUnionOfLiteralsIsWidened' => [
+                'code' => '<?php
+                    function f(bool $c): void {
+                        $v = $c ? 1 : "a";
+                        $callback = function () use (&$v): void {
+                            if ($v === 2) {
+                                echo "two";
+                            }
+                        };
+                        $v = 2;
+                        $callback();
+                    }',
+            ],
             'methodCallableOfATraitMethodResolvesSelfAndParentOfTheParamsToTheUsingClass' => [
                 'code' => <<<'PHP'
                     <?php
@@ -195,6 +302,159 @@ final class ClosureTest extends TestCase
                     };',
                 'assertions' => [
                     '$count===' => '0|5|7',
+                ],
+            ],
+            'closureByRefWriteInABranchBeforeAReturnIsKept' => [
+                'code' => '<?php
+                    $i = 0;
+
+                    $f = function () use (&$i): int {
+                        if (rand(0, 1)) {
+                            $i++;
+                        }
+
+                        return 1;
+                    };',
+                'assertions' => [
+                    '$i===' => 'int',
+                ],
+            ],
+            'closureByRefWriteInALoopIsKept' => [
+                'code' => '<?php
+                    $i = 0;
+
+                    $f = function (array $xs) use (&$i): void {
+                        foreach ($xs as $_) {
+                            $i++;
+                        }
+                    };',
+                'assertions' => [
+                    '$i===' => 'int',
+                ],
+            ],
+            'closureByRefWriteInALoopBeforeAReturnIsKept' => [
+                'code' => '<?php
+                    $i = 0;
+
+                    $f = function (array $xs) use (&$i): int {
+                        foreach ($xs as $_) {
+                            $i++;
+                        }
+
+                        return 1;
+                    };',
+                'assertions' => [
+                    '$i===' => 'int',
+                ],
+            ],
+            'closureByRefWriteInABranchBeforeItsOwnReturnIsKept' => [
+                'code' => '<?php
+                    $i = 0;
+
+                    $f = function () use (&$i): int {
+                        if (rand(0, 1)) {
+                            if (rand(0, 1)) {
+                                $i++;
+                            }
+
+                            return 0;
+                        }
+
+                        return 1;
+                    };',
+                'assertions' => [
+                    '$i===' => 'int',
+                ],
+            ],
+            'closureByRefWriteInAFinallyIsKept' => [
+                'code' => '<?php
+                    $i = 0;
+
+                    $f = function () use (&$i): int {
+                        try {
+                            if (rand(0, 1)) {
+                                $i = 5;
+
+                                return 0;
+                            }
+                        } finally {
+                            echo "done";
+                        }
+
+                        return 1;
+                    };',
+                'assertions' => [
+                    '$i===' => 'int',
+                ],
+            ],
+            'closureByRefWriteThroughAVariableVariableIsKept' => [
+                'code' => '<?php
+                    $i = 0;
+
+                    $f = function (string $name) use (&$i): void {
+                        $$name = 5;
+                    };',
+                'assertions' => [
+                    '$i===' => 'int',
+                ],
+                'ignored_issues' => ['MixedAssignment'],
+            ],
+            'closureByRefWriteInANestedClosureIsKept' => [
+                'code' => '<?php
+                    $i = 0;
+
+                    $f = function () use (&$i): void {
+                        $g = function () use (&$i): void {
+                            $i++;
+                        };
+                    };',
+                'assertions' => [
+                    '$i===' => 'int',
+                ],
+            ],
+            'closureByRefWriteThroughAReferenceIsKept' => [
+                'code' => '<?php
+                    $i = 0;
+
+                    $f = function () use (&$i): void {
+                        $j = &$i;
+                        $j++;
+                    };',
+                'assertions' => [
+                    '$i===' => 'int',
+                ],
+            ],
+            'closureByRefWriteThroughAByRefArgumentInAConditionIsKept' => [
+                'code' => '<?php
+                    function inc(int &$x): bool {
+                        $x++;
+                        return true;
+                    }
+
+                    $i = 0;
+
+                    $f = function () use (&$i): void {
+                        if (inc($i)) {}
+                    };',
+                'assertions' => [
+                    '$i===' => 'int',
+                ],
+            ],
+            'closureByRefWriteOfAnIntToACapturedLiteralIsKept' => [
+                'code' => '<?php
+                    $count = 0;
+
+                    $f = static function (int $x) use (&$count): int {
+                        if ($x > 1) {
+                            $count = $x * 2;
+
+                            return 0;
+                        }
+
+                        return 1;
+                    };',
+                'assertions' => [
+                    '$count===' => 'int<0, max>',
                 ],
             ],
             'closureByRefVariableNotWrittenBeforeAReturnKeepsItsType' => [
@@ -346,9 +606,9 @@ final class ClosureTest extends TestCase
                 ',
                 'assertions' => [
                     '$testBefore===' => '123',
-                    '$testInsideBefore===' => "'test'|123|null",
+                    '$testInsideBefore===' => "'test'|int|null",
                     '$testInsideAfter===' => "'test'|null",
-                    '$test===' => "'test'|123",
+                    '$test===' => "'test'|int",
 
                     '$doNotContaminate===' => '123',
                 ],

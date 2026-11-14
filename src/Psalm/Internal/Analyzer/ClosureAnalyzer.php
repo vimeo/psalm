@@ -22,11 +22,23 @@ use Psalm\IssueBuffer;
 use Psalm\Storage\Capabilities;
 use Psalm\Storage\UnserializeMemoryUsageSuppressionTrait;
 use Psalm\Type;
+use Psalm\Type\Atomic\TBool;
+use Psalm\Type\Atomic\TFalse;
+use Psalm\Type\Atomic\TFloat;
 use Psalm\Type\Atomic\TGenericObject;
+use Psalm\Type\Atomic\TInt;
+use Psalm\Type\Atomic\TLiteralFloat;
+use Psalm\Type\Atomic\TLiteralInt;
+use Psalm\Type\Atomic\TLiteralString;
 use Psalm\Type\Atomic\TNamedObject;
+use Psalm\Type\Atomic\TString;
+use Psalm\Type\Atomic\TTrue;
 use Psalm\Type\Union;
 
+use function array_filter;
+use function count;
 use function in_array;
+use function is_array;
 use function is_string;
 use function preg_match;
 use function str_starts_with;
@@ -94,6 +106,159 @@ final class ClosureAnalyzer extends FunctionLikeAnalyzer
      * @var array<string, list<Union>>
      */
     public array $captured_by_ref_types_at_return = [];
+
+    /**
+     * The variables captured by reference whose literals the closure body sees widened: the widened type and the type
+     * in the enclosing scope.
+     *
+     * @var array<string, array{Union, Union}>
+     */
+    public array $captured_by_ref_unwidened_types = [];
+
+    /**
+     * For each variable of the body, every place it occurs at, as the ranges of the branches around it that always
+     * exit; false when the body can write variables without naming them.
+     *
+     * @var array<string, list<list<array{int, int}>>>|false|null
+     */
+    private array|false|null $variable_occurrences = null;
+
+    /**
+     * The type a variable captured by reference has after a path of the body (the one that leaves through the return
+     * at $return_pos, or through the end of the body): a path that no occurrence of the variable can reach leaves the
+     * enclosing scope's value, not the widened one the body sees.
+     */
+    public function getEnclosingTypeOfUnwrittenByRefCapture(string $var_id, Union $path_type, ?int $return_pos): Union
+    {
+        if (!isset($this->captured_by_ref_unwidened_types[$var_id])) {
+            return $path_type;
+        }
+
+        [$widened_type, $enclosing_type] = $this->captured_by_ref_unwidened_types[$var_id];
+
+        if ($path_type !== $widened_type) {
+            return $path_type;
+        }
+
+        if ($this->variable_occurrences === null) {
+            $occurrences = [];
+            $complete = self::collectVariableOccurrences($this->function->getStmts(), [], $occurrences);
+            $this->variable_occurrences = $complete ? $occurrences : false;
+        }
+
+        if ($this->variable_occurrences === false) {
+            return $path_type;
+        }
+
+        foreach ($this->variable_occurrences[$var_id] ?? [] as $exiting_ranges) {
+            $reaches_path = true;
+
+            foreach ($exiting_ranges as [$start, $end]) {
+                if ($return_pos === null || $return_pos < $start || $return_pos > $end) {
+                    $reaches_path = false;
+                    break;
+                }
+            }
+
+            if ($reaches_path) {
+                return $path_type;
+            }
+        }
+
+        return $enclosing_type;
+    }
+
+    /**
+     * @param array<PhpParser\Node> $nodes
+     * @param list<array{int, int}> $exiting_ranges
+     * @param array<string, list<list<array{int, int}>>> $occurrences
+     * @return bool false when the nodes can write variables without naming them
+     */
+    private static function collectVariableOccurrences(array $nodes, array $exiting_ranges, array &$occurrences): bool
+    {
+        foreach ($nodes as $node) {
+            if ($node instanceof PhpParser\Node\Expr\Variable) {
+                if (!is_string($node->name)) {
+                    return false;
+                }
+
+                $occurrences['$' . $node->name][] = $exiting_ranges;
+
+                continue;
+            }
+
+            if ($node instanceof PhpParser\Node\Expr\Eval_
+                || $node instanceof PhpParser\Node\Expr\Include_
+                // a finally block runs after a return of another branch: its writes reach that return
+                || ($node instanceof PhpParser\Node\Stmt\TryCatch && $node->finally !== null)
+                || ($node instanceof PhpParser\Node\Expr\FuncCall
+                    && $node->name instanceof PhpParser\Node\Name
+                    && in_array(strtolower($node->name->getLast()), ['extract', 'parse_str', 'mb_parse_str'], true))
+            ) {
+                return false;
+            }
+
+            if ($node instanceof PhpParser\Node\Stmt\If_) {
+                $branches = [$node->stmts];
+
+                foreach ($node->elseifs as $elseif) {
+                    if (!self::collectVariableOccurrences([$elseif->cond], $exiting_ranges, $occurrences)) {
+                        return false;
+                    }
+
+                    $branches[] = $elseif->stmts;
+                }
+
+                if ($node->else !== null) {
+                    $branches[] = $node->else->stmts;
+                }
+
+                if (!self::collectVariableOccurrences([$node->cond], $exiting_ranges, $occurrences)) {
+                    return false;
+                }
+
+                foreach ($branches as $branch_stmts) {
+                    $branch_ranges = $exiting_ranges;
+
+                    if ($branch_stmts !== []
+                        && ScopeAnalyzer::getControlActions($branch_stmts, null, []) === [ScopeAnalyzer::ACTION_END]
+                    ) {
+                        $branch_ranges[] = [
+                            $branch_stmts[0]->getStartFilePos(),
+                            $branch_stmts[count($branch_stmts) - 1]->getEndFilePos(),
+                        ];
+                    }
+
+                    if (!self::collectVariableOccurrences($branch_stmts, $branch_ranges, $occurrences)) {
+                        return false;
+                    }
+                }
+
+                continue;
+            }
+
+            foreach ($node->getSubNodeNames() as $name) {
+                /** @var mixed $sub_node */
+                $sub_node = $node->$name;
+
+                if ($sub_node instanceof PhpParser\Node) {
+                    $sub_node = [$sub_node];
+                } elseif (!is_array($sub_node)) {
+                    continue;
+                }
+
+                if (!self::collectVariableOccurrences(
+                    array_filter($sub_node, static fn($n): bool => $n instanceof PhpParser\Node),
+                    $exiting_ranges,
+                    $occurrences,
+                )) {
+                    return false;
+                }
+            }
+        }
+
+        return true;
+    }
 
     public function getRecursiveVarId(): ?string
     {
@@ -171,6 +336,33 @@ final class ClosureAnalyzer extends FunctionLikeAnalyzer
         }
 
         return $bound_atomic;
+    }
+
+    /**
+     * The enclosing scope can change a captured reference after the closure is created, so the value it held
+     * at that point says nothing about the value the closure sees.
+     *
+     * @psalm-pure
+     */
+    private static function widenLiteralsOfByRefCapture(Union $type): Union
+    {
+        $widened = [];
+
+        foreach ($type->getAtomicTypes() as $atomic) {
+            if ($atomic instanceof TLiteralInt) {
+                $atomic = new TInt();
+            } elseif ($atomic instanceof TLiteralFloat) {
+                $atomic = new TFloat();
+            } elseif ($atomic instanceof TLiteralString) {
+                $atomic = new TString();
+            } elseif ($atomic instanceof TTrue || $atomic instanceof TFalse) {
+                $atomic = new TBool();
+            }
+
+            $widened[$atomic->getKey()] = $atomic;
+        }
+
+        return $type->setTypes($widened);
     }
 
     /**
@@ -304,8 +496,17 @@ final class ClosureAnalyzer extends FunctionLikeAnalyzer
                     $was_by_ref[$use_var_id] = $context->hasVariable($use_var_id)
                         && $context->vars_in_scope[$use_var_id]->by_ref;
 
-                    $use_context->vars_in_scope[$use_var_id] =
-                        $use_context->vars_in_scope[$use_var_id]->setProperties(['by_ref' => true]);
+                    $captured_type = $use_context->vars_in_scope[$use_var_id];
+                    $use_context->vars_in_scope[$use_var_id] = self::widenLiteralsOfByRefCapture(
+                        $captured_type,
+                    )->setProperties(['by_ref' => true]);
+
+                    if ($use_context->vars_in_scope[$use_var_id]->getId() !== $captured_type->getId()) {
+                        $closure_analyzer->captured_by_ref_unwidened_types[$use_var_id] = [
+                            $use_context->vars_in_scope[$use_var_id],
+                            $captured_type,
+                        ];
+                    }
                     $use_context->references_to_external_scope[$use_var_id] = true;
 
                     if (isset($context->bound_globals[$use_var_id])) {
@@ -321,7 +522,11 @@ final class ClosureAnalyzer extends FunctionLikeAnalyzer
 
                 foreach ($context->vars_in_scope as $var_id => $type) {
                     if (preg_match('/^\$' . $use->var->name . '[\[\-]/', $var_id)) {
-                        $use_context->vars_in_scope[$var_id] = self::getCapturedType($type);
+                        // the enclosing scope can change what a variable captured by reference holds after the
+                        // closure is created, so can it its offsets and properties: their literals are widened too
+                        $use_context->vars_in_scope[$var_id] = $use->byRef
+                            ? self::widenLiteralsOfByRefCapture(self::getCapturedType($type))
+                            : self::getCapturedType($type);
                         $use_context->vars_possibly_in_scope[$var_id] = true;
                     }
                 }
