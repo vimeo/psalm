@@ -8,6 +8,8 @@ use Override;
 use Psalm\Tests\Traits\InvalidCodeAnalysisTestTrait;
 use Psalm\Tests\Traits\ValidCodeAnalysisTestTrait;
 
+use const DIRECTORY_SEPARATOR;
+
 final class NativeUnionsTest extends TestCase
 {
     use InvalidCodeAnalysisTestTrait;
@@ -79,6 +81,33 @@ final class NativeUnionsTest extends TestCase
     public static function providerInvalidCodeParse(): iterable
     {
         return [
+            'duplicateTypeInAParamUnion' => [
+                'code' => '<?php
+                    function bar(string|string $foo): void {
+                        echo $foo;
+                    }',
+                'error_message' => 'ParseError - src' . DIRECTORY_SEPARATOR . 'somefile.php:2:34 - Duplicate type string is redundant',
+                'error_levels' => [],
+                'php_version' => '8.0',
+            ],
+            'duplicateTypeInAReturnUnion' => [
+                'code' => '<?php
+                    function bar(): int|string|int {
+                        return 1;
+                    }',
+                'error_message' => 'ParseError - src' . DIRECTORY_SEPARATOR . 'somefile.php:2:37 - Duplicate type int is redundant',
+                'error_levels' => [],
+                'php_version' => '8.0',
+            ],
+            'duplicateClassInAPropertyUnion' => [
+                'code' => '<?php
+                    class A {
+                        public A|null|A $a = null;
+                    }',
+                'error_message' => 'ParseError - src' . DIRECTORY_SEPARATOR . 'somefile.php:3:32 - Duplicate type A is redundant',
+                'error_levels' => [],
+                'php_version' => '8.0',
+            ],
             'invalidNativeUnionArgument' => [
                 'code' => '<?php
                     function test(string|null $in): string|null {

@@ -15,6 +15,7 @@ use Psalm\CodeLocation;
 use Psalm\Codebase;
 use Psalm\Internal\Analyzer\ClassLikeAnalyzer;
 use Psalm\Issue\ParseError;
+use Psalm\IssueBuffer;
 use Psalm\Storage\ClassLikeStorage;
 use Psalm\Storage\FileStorage;
 use Psalm\Type;
@@ -66,6 +67,19 @@ final class TypeHintResolver
                     $aliases,
                     $analysis_php_version_id,
                 );
+
+                if ($type !== null) {
+                    foreach ($resolved_type->getAtomicTypes() as $resolved_key => $_) {
+                        if (isset($type->getAtomicTypes()[$resolved_key])) {
+                            IssueBuffer::maybeAdd(
+                                new ParseError(
+                                    'Duplicate type ' . $resolved_key . ' is redundant',
+                                    $code_location,
+                                ),
+                            );
+                        }
+                    }
+                }
 
                 $type = Type::combineUnionTypes($resolved_type, $type);
             }
