@@ -308,6 +308,11 @@ final class Codebase
 
     public bool $literal_array_key_check = false;
 
+    /**
+     * @var array<string, true>
+     */
+    private array $reportable_files = [];
+
     /** @internal */
     public int $taint_count = TaintKind::BUILTIN_TAINT_COUNT;
 
@@ -994,6 +999,32 @@ final class Codebase
     {
         $this->scanner->addFilesToDeepScan($files_to_analyze);
         $this->analyzer->addFilesToAnalyze($files_to_analyze);
+    }
+
+    /**
+     * Lets Psalm report issues in these files without scanning or analyzing them, e.g. in the template a plugin
+     * compiled the analyzed PHP from. An issue is checked in the process that raises it: files added in an
+     * AfterCodebasePopulated handler are reportable in every analysis worker, files added in a BeforeAddIssue
+     * handler only in the process that runs it.
+     *
+     * @api
+     * @param list<string> $file_paths absolute paths
+     * @psalm-capabilities read-props|write-this-props|write-refs
+     */
+    public function addReportableFiles(array $file_paths): void
+    {
+        foreach ($file_paths as $file_path) {
+            $this->reportable_files[$file_path] = true;
+        }
+    }
+
+    /**
+     * @internal
+     * @psalm-mutation-free
+     */
+    public function isReportableFile(string $file_path): bool
+    {
+        return isset($this->reportable_files[$file_path]);
     }
 
     /**
