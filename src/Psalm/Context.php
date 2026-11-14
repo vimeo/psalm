@@ -520,9 +520,13 @@ final class Context
         foreach ($start_context->vars_in_scope as $var_id => $old_type) {
             // this is only true if there was some sort of type negation
             if (in_array($var_id, $vars_to_update, true)) {
-                // a block that stays in the scope and forgot the variable (a call that may change what a memoized
-                // call or a property holds): nothing is known of it after the block but what it was before
-                if (!$has_leaving_statements && !$end_context->hasVariable($var_id)) {
+                // a block that stays in the scope and forgot the variable (a call that may change what a
+                // memoized call or a property holds, not an unset()): nothing is known of it after the block
+                // but what it was before
+                if (!$has_leaving_statements
+                    && !$end_context->hasVariable($var_id)
+                    && isset($end_context->vars_possibly_in_scope[$var_id])
+                ) {
                     continue;
                 }
 
@@ -1128,6 +1132,8 @@ final class Context
 
         foreach ($vars_to_remove as $var_id) {
             $this->remove($var_id, false);
+            // forgotten, not unset: Context::update() tells the two apart
+            $this->vars_possibly_in_scope[$var_id] = true;
         }
 
         $clauses_to_keep = [];

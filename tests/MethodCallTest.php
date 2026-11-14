@@ -205,6 +205,54 @@ final class MethodCallTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'propertyUnsetInABranchIsNotRestoredAfterIt' => [
+                'code' => '<?php
+                    final class Box {
+                        public ?int $v = null;
+                    }
+
+                    function unsetProp(Box $b): ?string {
+                        if ($b->v !== null) {
+                            unset($b->v);
+                        }
+
+                        return $b->v;
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'negatedMemoizedGetterIsNotNarrowedAfterABranchThatMutatesItsReceiver' => [
+                'code' => '<?php
+                    final class Quote {}
+
+                    final class Order {
+                        private int $counter = 0;
+
+                        /**
+                         * @return false|Quote
+                         * @psalm-mutation-free
+                         */
+                        public function quote() {
+                            return $this->counter > 0 ? new Quote() : false;
+                        }
+
+                        public function touch(): void {
+                            $this->counter++;
+                        }
+                    }
+
+                    $o = new Order();
+
+                    if (!$o->quote()) {
+                        $o->touch();
+                    }
+
+                    $q = $o->quote();',
+                'assertions' => ['$q===' => 'Quote|false'],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
             'memoizedGetterIsNotNarrowedAfterABranchThatMutatesItsReceiver' => [
                 'code' => '<?php
                     final class Quote {
@@ -2139,6 +2187,19 @@ final class MethodCallTest extends TestCase
     public static function providerInvalidCodeParse(): iterable
     {
         return [
+            'variableUnsetInABranchIsNotRestoredAfterIt' => [
+                'code' => '<?php
+                    function unsetThenReturn(?int $x): ?string {
+                        if ($x !== null) {
+                            unset($x);
+                        }
+
+                        return $x ?? null;
+                    }',
+                'error_message' => 'TypeDoesNotContainType',
+                'error_levels' => [],
+                'php_version' => '8.0',
+            ],
             'undefinedMethodOnATemplateBoundedByAnotherTemplate' => [
                 'code' => '<?php
                     interface Document {
