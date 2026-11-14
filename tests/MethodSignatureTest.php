@@ -729,6 +729,37 @@ final class MethodSignatureTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'parametersDocumentedByDifferentAncestorsAreInheritedEach' => [
+                'code' => '<?php
+                    interface Source {
+                        /**
+                         * @param list<string> $names
+                         */
+                        public function merge(array $names, array $counts): int;
+                    }
+
+                    abstract class Middle implements Source {
+                        /**
+                         * @param array<string, int> $counts
+                         */
+                        #[Override]
+                        public function merge(array $names, array $counts): int {
+                            return 0;
+                        }
+                    }
+
+                    final class Leaf extends Middle {
+                        #[Override]
+                        public function merge($names, $counts): int {
+                            /** @psalm-check-type-exact $names = list<string> */
+                            /** @psalm-check-type-exact $counts = array<string, int> */
+                            return count($names) + count($counts);
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => ['MoreSpecificImplementedParamType'],
+                'php_version' => '8.3',
+            ],
             'overrideOfAMethodDocumentedByTheInterfaceItImplements' => [
                 'code' => '<?php
                     interface I {
