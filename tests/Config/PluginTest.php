@@ -906,53 +906,6 @@ final class PluginTest extends DeferredAnalyzerTestCase
         $this->analyzeFile($file_path, new Context());
     }
 
-    public function testMethodAnExistenceProviderAddsToAMixinIsAMethodOfTheMixin(): void
-    {
-        require_once __DIR__ . '/Plugin/MethodPlugin.php';
-
-        $this->project_analyzer = $this->getProjectAnalyzerWithConfig(
-            TestConfig::loadFromXML(
-                dirname(__DIR__, 2) . DIRECTORY_SEPARATOR,
-                '<?xml version="1.0"?>
-                <psalm
-                    errorLevel="1"
-                >
-                    <projectFiles>
-                        <directory name="src" />
-                    </projectFiles>
-                    <plugins>
-                        <pluginClass class="Psalm\\Test\\Config\\Plugin\\MethodPlugin" />
-                    </plugins>
-                </psalm>',
-            ),
-        );
-
-        $this->project_analyzer->getCodebase()->config->initializePlugins($this->project_analyzer);
-
-        $file_path = (string) getcwd() . '/src/somefile.php';
-
-        $this->addFile(
-            $file_path,
-            '<?php
-                namespace Ns;
-
-                final class Foo {
-                    /** @psalm-mutation-free */
-                    public function __call(string $method_name, array $args) {}
-                }
-
-                /** @mixin Foo */
-                final class Host {}
-
-                $a = (new Host())->magicMethod("hello");',
-        );
-
-        $context = new Context();
-        $this->analyzeFile($file_path, $context);
-
-        $this->assertSame('string', $context->vars_in_scope['$a']->getId());
-    }
-
     public function testMethodParamsProviderReceivesTheLocationOfTheCall(): void
     {
         require_once __DIR__ . '/Plugin/MethodPlugin.php';

@@ -395,7 +395,7 @@ final class AtomicMethodCallAnalyzer extends CallAnalyzer
                     $method_name_lc,
                 ) === null
             ) {
-                [$mixin, $mixin_method_kind] = self::findMixinWithMethod(
+                [$mixin, $mixin_method_exists] = self::findMixinWithMethod(
                     $statements_analyzer,
                     $stmt,
                     $codebase,
@@ -407,22 +407,16 @@ final class AtomicMethodCallAnalyzer extends CallAnalyzer
                 );
 
                 if ($mixin !== null) {
-                    if ($mixin_method_kind === 'pseudo') {
-                        // the call goes through the __call() of the class, with `$this` the class
-                        $pseudo_method_mixin = $mixin;
-                    } else {
+                    if ($mixin_method_exists) {
                         $mixin_user_class = $fq_class_name;
                         ['type' => $lhs_type_part, 'storage' => $class_storage] = $mixin;
                         $fq_class_name = $class_storage->name;
                         $method_id = new MethodIdentifier($fq_class_name, $method_name_lc);
                         $mixin_method_id = $method_id;
-                        $naive_method_exists = $mixin_method_kind === 'real';
-
-                        // a method an existence provider adds is analysed as the call on the mixin
-                        if ($mixin_method_kind === 'provided') {
-                            $fake_method_exists = true;
-                            $naive_method_id = $method_id;
-                        }
+                        $naive_method_exists = true;
+                    } else {
+                        // the call goes through the __call() of the class, with `$this` the class
+                        $pseudo_method_mixin = $mixin;
                     }
                 }
             }
@@ -832,13 +826,14 @@ final class AtomicMethodCallAnalyzer extends CallAnalyzer
     }
 
     /**
-     * The mixin with the method, bound for the receiver, and whether the method is a real one, one an existence
-     * provider adds or a `@method`. A mixin's `@method` is only reached through the `__call()` of the class.
+     * The mixin with the method, bound for the receiver, and whether the method is a real one rather than a
+     * `@method`, which is only reached through the `__call()` of the class. Methods existence providers add to a
+     * mixin are not looked for: a provider forwarding the call back to the class would recurse.
      *
      * @param lowercase-string $method_name_lc
      * @return array{
      *     array{type: TNamedObject, storage: ClassLikeStorage, declared: TNamedObject|TTemplateParam}|null,
-     *     'real'|'provided'|'pseudo',
+     *     bool,
      * }
      */
     private static function findMixinWithMethod(
@@ -851,7 +846,7 @@ final class AtomicMethodCallAnalyzer extends CallAnalyzer
         string $method_name_lc,
         bool $self_call,
     ): array {
-        $kind = 'real';
+        $mixin_method_exists = false;
         $has_magic_call = isset($class_storage->declaring_method_ids['__call']);
 
         $mixin = MixinLookup::findMember(
@@ -865,9 +860,9 @@ final class AtomicMethodCallAnalyzer extends CallAnalyzer
                 $context,
                 $method_name_lc,
                 $has_magic_call,
-                &$kind,
+                &$mixin_method_exists,
             ): bool {
-                if ($codebase->methodExists(
+                $mixin_method_exists = $codebase->methodExists(
                     new MethodIdentifier($mixin_storage->name, $method_name_lc),
                     $context->calling_method_id,
                     $codebase->collect_locations
@@ -880,28 +875,15 @@ final class AtomicMethodCallAnalyzer extends CallAnalyzer
                     $statements_analyzer->getFilePath(),
                     false,
                     $context->insideUse(),
-                )) {
-                    $kind = 'real';
-                    return true;
-                }
+                );
 
-                if ($codebase->methods->existence_provider->doesMethodExist(
-                    $mixin_storage->name,
-                    $method_name_lc,
-                    $statements_analyzer,
-                ) === true) {
-                    $kind = 'provided';
-                    return true;
-                }
-
-                $kind = 'pseudo';
-
-                return $has_magic_call && isset($mixin_storage->pseudo_methods[$method_name_lc]);
+                return $mixin_method_exists
+                    || ($has_magic_call && isset($mixin_storage->pseudo_methods[$method_name_lc]));
             },
             $self_call,
         );
 
-        return [$mixin, $kind];
+        return [$mixin, $mixin_method_exists];
     }
 
     private static function handleCallableObject(
