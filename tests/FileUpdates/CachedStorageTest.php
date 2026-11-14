@@ -12,6 +12,7 @@ use Psalm\Internal\Provider\FileReferenceCacheProvider;
 use Psalm\Internal\Provider\FileStorageCacheProvider;
 use Psalm\Internal\Provider\ParserCacheProvider;
 use Psalm\Internal\Provider\Providers;
+use Psalm\IssueBuffer;
 use Psalm\Tests\Internal\Provider\ProjectCacheProvider;
 use Psalm\Tests\TestCase;
 use Psalm\Tests\TestConfig;
@@ -19,6 +20,7 @@ use Psalm\Tests\TestConfig;
 use function array_keys;
 use function getcwd;
 use function strpos;
+use function substr;
 
 use const DIRECTORY_SEPARATOR;
 
@@ -109,5 +111,73 @@ final class CachedStorageTest extends TestCase
         $codebase->reloadFiles($this->project_analyzer, array_keys($analyzable_files + $vendor_files));
 
         $codebase->analyzer->analyzeFiles($this->project_analyzer, 1, false);
+    }
+
+    public function testRenamedInterfaceMethodIsReportedOnTheImplementer(): void
+    {
+        $codebase = $this->project_analyzer->getCodebase();
+        $codebase->diff_methods = true;
+        $guard = (string) getcwd() . DIRECTORY_SEPARATOR . 'Guard.php';
+        $request_guard = (string) getcwd() . DIRECTORY_SEPARATOR . 'RequestGuard.php';
+
+        $this->file_provider->registerFile($guard, '<?php
+            namespace App;
+            interface Guard { public function guest(): bool; }');
+        $this->file_provider->registerFile($request_guard, '<?php
+            namespace App;
+            final class RequestGuard implements Guard { public function guest(): bool { return true; } }');
+
+        $codebase->addFilesToAnalyze([$guard => $guard, $request_guard => $request_guard]);
+        $codebase->scanFiles();
+        $codebase->analyzer->analyzeFiles($this->project_analyzer, 1, false);
+
+        $this->file_provider->registerFile($guard, '<?php
+            namespace App;
+            interface Guard { public function isGuest(): bool; }');
+
+        $codebase->reloadFiles($this->project_analyzer, [$guard]);
+        $codebase->addFilesToAnalyze([$request_guard => $request_guard]);
+
+        $codebase->config->throw_exception = false;
+        $codebase->analyzer->analyzeFiles($this->project_analyzer, 1, false, true);
+
+        $issue_types = [];
+        foreach (IssueBuffer::getIssuesDataForFile($request_guard) as $issue) {
+            $issue_types[] = $issue->type;
+        }
+
+        self::assertSame(['UnimplementedInterfaceMethod'], $issue_types);
+    }
+
+    public function testRescannedParentKeepsWhatItsChildrenWroteIntoIt(): void
+    {
+        $codebase = $this->project_analyzer->getCodebase();
+        $codebase->diff_methods = true;
+        $base = (string) getcwd() . DIRECTORY_SEPARATOR . 'Base.php';
+        $child = (string) getcwd() . DIRECTORY_SEPARATOR . 'Child.php';
+
+        $base_code = '<?php
+            namespace App;
+            abstract class Base { public function foo(): int { return 1; } }';
+
+        $this->file_provider->registerFile($base, $base_code);
+        $this->file_provider->registerFile($child, '<?php
+            namespace App;
+            final class Child extends Base { public function foo(): int { return 2; } }');
+
+        $codebase->addFilesToAnalyze([$base => $base, $child => $child]);
+        $codebase->scanFiles();
+        $codebase->analyzer->analyzeFiles($this->project_analyzer, 1, false);
+
+        // only a comment changes: nothing a fresh scan would not also produce
+        $this->file_provider->registerFile($base, '<?php // edited' . "\n" . substr($base_code, 6));
+        $codebase->reloadFiles($this->project_analyzer, [$base]);
+
+        $base_storage = $codebase->classlike_storage_provider->get('app\base');
+
+        self::assertTrue($base_storage->methods['foo']->overridden_downstream);
+        self::assertTrue($base_storage->methods['foo']->overridden_somewhere);
+        self::assertArrayHasKey('app\child', $base_storage->dependent_classlikes);
+        self::assertNotEmpty($codebase->file_storage_provider->get($base)->required_by_file_paths);
     }
 }

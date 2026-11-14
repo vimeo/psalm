@@ -1647,7 +1647,7 @@ final class Codebase
     }
 
     /**
-     * @psalm-capabilities read-props|write-this-props|write-props|write-refs
+     * @psalm-capabilities read-props|write-this-props|write-props|write-refs|read-globals|write-globals
      */
     public function invalidateInformationForFile(string $file_path): void
     {

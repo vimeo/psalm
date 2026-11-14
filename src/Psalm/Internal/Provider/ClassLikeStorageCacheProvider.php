@@ -68,6 +68,14 @@ final class ClassLikeStorageCacheProvider
     }
 
     /**
+     * @psalm-capabilities read-props|write-props|write-refs
+     */
+    public function forget(string $fq_classlike_name_lc, string $file_path): void
+    {
+        $this->cache->forgetItem($file_path."\0".$fq_classlike_name_lc);
+    }
+
+    /**
      * @param lowercase-string $fq_classlike_name_lc
      */
     public function getLatestFromCache(

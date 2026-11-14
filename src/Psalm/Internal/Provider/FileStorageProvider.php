@@ -52,11 +52,14 @@ final class FileStorageProvider
     }
 
     /**
-     * @psalm-external-mutation-free
+     * @psalm-capabilities read-props|write-props|write-refs|read-globals|write-globals
      */
     public function remove(string $file_path): void
     {
         unset(self::$storage[strtolower($file_path)]);
+
+        // the cached storage was populated in place, a rescan of the file must not get it back
+        $this->cache?->forget($file_path);
     }
 
     public function has(string $file_path, ?string $file_contents = null): bool

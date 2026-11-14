@@ -67,6 +67,8 @@ final class FileStorageCacheProvider
 
     /**
      * Makes the next writeToCache() of the file store its storage, even if the contents are the same.
+     *
+     * @psalm-capabilities read-props|write-props|write-refs
      */
     public function forget(string $file_path): void
     {
