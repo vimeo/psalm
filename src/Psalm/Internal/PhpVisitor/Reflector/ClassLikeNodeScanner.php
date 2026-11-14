@@ -2084,6 +2084,7 @@ final class ClassLikeNodeScanner
             $property_storage->signature_type = $signature_type;
             $property_storage->signature_type_location = $signature_type_location;
             $property_storage->type_location = $signature_type_location;
+            $property_storage->has_docblock_type = $doc_var_group_type !== null;
             $property_storage->location = new CodeLocation($this->file_scanner, $property->name);
             $property_storage->stmt_location = new CodeLocation($this->file_scanner, $stmt);
             $property_storage->has_default = (bool)$property->default;
@@ -2096,10 +2097,10 @@ final class ClassLikeNodeScanner
             if (count($property_storage->internal) === 0 && $var_comment && $var_comment->internal) {
                 $property_storage->internal = [NamespaceAnalyzer::getNameSpaceRoot($fq_classlike_name)];
             }
-            $property_storage->readonly = $storage->readonly
-                || $stmt->isReadonly()
+            $property_storage->native_readonly = $storage->readonly || $stmt->isReadonly();
+            $property_storage->readonly = $property_storage->native_readonly
                 || ($var_comment && $var_comment->readonly);
-            $property_storage->readonly_default = ($storage->readonly || $stmt->isReadonly())
+            $property_storage->readonly_default = $property_storage->native_readonly
                 && !$stmt->isStatic()
                 && $property->default !== null;
             $property_storage->allow_private_mutation = $var_comment ? $var_comment->allow_private_mutation : false;

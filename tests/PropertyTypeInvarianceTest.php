@@ -5,8 +5,16 @@ declare(strict_types=1);
 namespace Psalm\Tests;
 
 use Override;
+use Psalm\Context;
+use Psalm\Internal\Analyzer\IssueData;
+use Psalm\IssueBuffer;
 use Psalm\Tests\Traits\InvalidCodeAnalysisTestTrait;
 use Psalm\Tests\Traits\ValidCodeAnalysisTestTrait;
+
+use function array_map;
+use function sort;
+
+use const DIRECTORY_SEPARATOR;
 
 final class PropertyTypeInvarianceTest extends TestCase
 {
@@ -273,6 +281,351 @@ final class PropertyTypeInvarianceTest extends TestCase
                         protected $mightExist = "";
                     }',
             ],
+            'redeclaredPropertyWithoutDocblockTypeKeepsTheParentType' => [
+                'code' => '<?php
+                    class Mailer {
+                        /** @var non-empty-string */
+                        public string $from = "noreply@example.com";
+                    }
+
+                    final class AdminMailer extends Mailer {
+                        public string $from = "admin@example.com";
+                    }
+
+                    $from = (new AdminMailer())->from;',
+                'assertions' => [
+                    '$from===' => 'non-empty-string',
+                ],
+            ],
+            'redeclaredPropertyWithoutDocblockTypeHasTheInheritedType' => [
+                'code' => '<?php
+                    abstract class Model {}
+                    final class Post extends Model {}
+
+                    abstract class BaseResource {
+                        /** @var class-string<Model> */
+                        public static string $model = Model::class;
+
+                        /** @var class-string<Model> */
+                        public static $untyped_model = Model::class;
+
+                        /** @var list<non-empty-string> */
+                        public array $columns = [];
+
+                        /** @var non-empty-string */
+                        public $name = "a";
+
+                        /** @var class-string<Model>|null */
+                        public ?string $nullable = null;
+                    }
+
+                    final class PostResource extends BaseResource {
+                        public static string $model = Post::class;
+
+                        public static $untyped_model = Post::class;
+
+                        /** @inheritDoc */
+                        public array $columns = ["id"];
+
+                        public $name = "b";
+
+                        public ?string $nullable = Post::class;
+
+                        public function f(): void {
+                            $columns = $this->columns;
+                            /** @psalm-check-type-exact $columns = list<non-empty-string> */
+                            $name = $this->name;
+                            /** @psalm-check-type-exact $name = non-empty-string */
+                            $self = self::$model;
+                            /** @psalm-check-type-exact $self = class-string<Model> */
+                            $static = static::$model;
+                            /** @psalm-check-type-exact $static = class-string<Model> */
+                            $untyped_self = self::$untyped_model;
+                            /** @psalm-check-type-exact $untyped_self = class-string<Model> */
+                            $untyped_static = static::$untyped_model;
+                            /** @psalm-check-type-exact $untyped_static = class-string<Model> */
+                        }
+                    }
+
+                    class GrandParentClass {
+                        /** @var non-empty-string */
+                        public string $typed = "a";
+
+                        /**
+                         * @readonly
+                         * @var string
+                         */
+                        public $untyped = "a";
+                    }
+
+                    class ParentClass extends GrandParentClass {
+                        public string $typed = "b";
+
+                        /** @var non-empty-string */
+                        public $untyped = "b";
+                    }
+
+                    final class ChildClass extends ParentClass {
+                        public string $typed = "c";
+
+                        public $untyped = "c";
+                    }
+
+                    class OtherParentClass extends GrandParentClass {}
+
+                    final class OtherChildClass extends OtherParentClass {
+                        public string $typed = "c";
+                    }
+
+                    $model = PostResource::$model;
+                    $untyped_model = PostResource::$untyped_model;
+                    $columns = (new PostResource())->columns;
+                    $name = (new PostResource())->name;
+                    $nullable = (new PostResource())->nullable;
+                    $typed = (new ChildClass())->typed;
+                    $untyped = (new ChildClass())->untyped;
+                    $other_typed = (new OtherChildClass())->typed;',
+                'assertions' => [
+                    '$model===' => 'class-string<Model>',
+                    '$untyped_model===' => 'class-string<Model>',
+                    '$columns===' => 'list<non-empty-string>',
+                    '$name===' => 'non-empty-string',
+                    '$nullable===' => 'class-string<Model>|null',
+                    '$typed===' => 'non-empty-string',
+                    '$untyped===' => 'non-empty-string',
+                    '$other_typed===' => 'non-empty-string',
+                ],
+            ],
+            'inheritedPropertyTypeIsLocalizedToTheChild' => [
+                'code' => '<?php
+                    abstract class Model {}
+                    final class Post extends Model {}
+
+                    /** @template T of Model */
+                    abstract class Repository {
+                        /** @var class-string<T>|null */
+                        public ?string $class = null;
+
+                        /** @var list<T> */
+                        public array $items = [];
+                    }
+
+                    /** @extends Repository<Post> */
+                    final class PostRepository extends Repository {
+                        public ?string $class = Post::class;
+
+                        public array $items = [];
+                    }
+
+                    /**
+                     * @template U of Model
+                     * @extends Repository<U>
+                     */
+                    abstract class CachedRepository extends Repository {
+                        public array $items = [];
+
+                        /** @return list<U> */
+                        public function all(): array {
+                            return $this->items;
+                        }
+                    }
+
+                    /** @extends CachedRepository<Post> */
+                    final class CachedPostRepository extends CachedRepository {
+                        public array $items = [];
+                    }
+
+                    /** @param CachedRepository<Post> $repository */
+                    function f(CachedRepository $repository): void {
+                        $items = $repository->items;
+                        /** @psalm-check-type-exact $items = list<Post> */
+                    }
+
+                    $class = (new PostRepository())->class;
+                    $items = (new PostRepository())->items;
+                    $cached_items = (new CachedPostRepository())->items;',
+                'assertions' => [
+                    '$class===' => 'class-string<Post>|null',
+                    '$items===' => 'list<Post>',
+                    '$cached_items===' => 'list<Post>',
+                ],
+            ],
+            'inheritedPropertyTypeHasTheScopeOfTheParent' => [
+                'code' => '<?php
+                    /** @psalm-type Names = list<non-empty-string> */
+                    class ParentClass {
+                        const A = 1;
+                        const B = 2;
+
+                        /** @var self|null */
+                        public $next;
+
+                        /** @var self::A|self::B */
+                        public $constant = self::A;
+
+                        /** @var list<static> */
+                        public array $all = [];
+
+                        /** @var Names */
+                        public array $names = [];
+                    }
+
+                    /** @psalm-type Names = array<int, int> */
+                    final class ChildClass extends ParentClass {
+                        public $next;
+
+                        public $constant = 1;
+
+                        public array $all = [];
+
+                        public array $names = [];
+                    }
+
+                    $next = (new ChildClass())->next;
+                    $constant = (new ChildClass())->constant;
+                    $all = (new ChildClass())->all;
+                    $names = (new ChildClass())->names;',
+                'assertions' => [
+                    '$next===' => 'ParentClass|null',
+                    '$constant===' => '1|2',
+                    '$all===' => 'list<ChildClass&static>',
+                    '$names===' => 'list<non-empty-string>',
+                ],
+            ],
+            'promotedPropertyWithoutDocblockTypeHasTheInheritedType' => [
+                'code' => '<?php
+                    class ParentClass {
+                        /** @var non-empty-string */
+                        public string $name = "a";
+                    }
+
+                    final class ChildClass extends ParentClass {
+                        public function __construct(public string $name) {
+                            /** @psalm-check-type-exact $name = non-empty-string */
+                        }
+                    }
+
+                    $name = (new ChildClass("b"))->name;',
+                'assertions' => [
+                    '$name===' => 'non-empty-string',
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'propertyOfAParentTraitRedeclaredWithoutDocblockType' => [
+                'code' => '<?php
+                    trait T {
+                        /** @var non-empty-string */
+                        public string $name = "a";
+                    }
+
+                    class ParentClass {
+                        use T;
+                    }
+
+                    final class ChildClass extends ParentClass {
+                        public string $name = "b";
+                    }
+
+                    $name = (new ChildClass())->name;',
+                'assertions' => [
+                    '$name===' => 'non-empty-string',
+                ],
+            ],
+            'privatePropertyIsNotInherited' => [
+                'code' => '<?php
+                    class ParentClass {
+                        /** @var non-empty-string */
+                        private string $name = "a";
+                    }
+
+                    final class ChildClass extends ParentClass {
+                        public string $name = "";
+                    }
+
+                    $name = (new ChildClass())->name;',
+                'assertions' => [
+                    '$name===' => 'string',
+                ],
+            ],
+            'inheritedPropertyTypeHasTheParentOfTheParent' => [
+                'code' => '<?php
+                    class GrandParentClass {}
+
+                    class ParentClass extends GrandParentClass {
+                        /** @var parent|null */
+                        public $up;
+                    }
+
+                    final class ChildClass extends ParentClass {
+                        public $up;
+                    }
+
+                    $up = (new ChildClass())->up;',
+                'assertions' => [
+                    '$up===' => 'GrandParentClass|null',
+                ],
+            ],
+            'inheritedPropertyTypeOfATraitHasTheSelfOfTheTraitUser' => [
+                'code' => '<?php
+                    trait T {
+                        /** @var self|null */
+                        public $next;
+                    }
+
+                    class ParentClass {
+                        use T;
+                    }
+
+                    final class ChildClass extends ParentClass {
+                        public $next;
+                    }
+
+                    $next = (new ChildClass())->next;',
+                'assertions' => [
+                    '$next===' => 'ParentClass|null',
+                ],
+            ],
+            'inheritedClassStringOfATemplateUnion' => [
+                'code' => '<?php
+                    class AA {}
+                    class BB {}
+
+                    /** @template T of object */
+                    class ParentClass {
+                        /** @var class-string<T>|null */
+                        public ?string $item = null;
+                    }
+
+                    /** @extends ParentClass<AA|BB> */
+                    final class ChildClass extends ParentClass {
+                        public ?string $item = AA::class;
+                    }
+
+                    $item = (new ChildClass())->item;',
+                'assertions' => [
+                    '$item===' => 'class-string<AA>|class-string<BB>|null',
+                ],
+            ],
+            'promotedPropertyWithInheritedTypeIsCheckedWhereItIsWritten' => [
+                'code' => '<?php
+                    /** @psalm-suppress UndefinedDocblockClass */
+                    class ParentClass {
+                        /** @var list<Undefined> */
+                        public array $items = [];
+                    }
+
+                    final class ChildClass extends ParentClass {
+                        /**
+                         * @template T
+                         * @param T $t
+                         */
+                        public function __construct(public array $items, $t) {}
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
         ];
     }
 
@@ -408,6 +761,293 @@ final class PropertyTypeInvarianceTest extends TestCase
                     }',
                 'error_message' => 'NonInvariantDocblockPropertyType',
             ],
+            'redeclaredStubPropertyWithoutDocblockTypeHasTheInheritedType' => [
+                'code' => '<?php
+                    final class MyException extends Exception {
+                        protected $message = 42;
+                    }',
+                'error_message' => 'InvalidPropertyAssignmentValue',
+            ],
+            'untypedRedeclaredPropertyWithoutDefaultHasTheInheritedType' => [
+                'code' => '<?php
+                    class ParentClass {
+                        /** @var non-empty-string */
+                        public $name = "a";
+                    }
+
+                    final class ChildClass extends ParentClass {
+                        public $name;
+                    }',
+                'error_message' => 'MissingConstructor',
+            ],
+            'promotedPropertyWithoutDocblockTypeChecksTheArgument' => [
+                'code' => '<?php
+                    class ParentClass {
+                        /** @var non-empty-string */
+                        public string $name = "a";
+                    }
+
+                    final class ChildClass extends ParentClass {
+                        public function __construct(public string $name) {}
+                    }
+
+                    new ChildClass("");',
+                'error_message' => 'InvalidArgument - src' . DIRECTORY_SEPARATOR . 'somefile.php:11:36',
+                'error_levels' => [],
+                'php_version' => '8.0',
+            ],
+            'promotedPropertyWithOwnParamTypeIsInvariant' => [
+                'code' => '<?php
+                    class ParentClass {
+                        /** @var non-empty-string */
+                        public string $name = "a";
+                    }
+
+                    final class ChildClass extends ParentClass {
+                        /** @param non-empty-lowercase-string $name */
+                        public function __construct(public string $name) {}
+                    }',
+                'error_message' => 'NonInvariantDocblockPropertyType',
+                'error_levels' => [],
+                'php_version' => '8.0',
+            ],
+            'redeclaredPropertyWithoutDocblockTypeChecksItsNativeType' => [
+                'code' => '<?php
+                    /** @deprecated */
+                    final class Dep {}
+
+                    /** @psalm-suppress DeprecatedClass */
+                    class ParentClass {
+                        /** @var Dep|null */
+                        public ?Dep $dep = null;
+                    }
+
+                    final class ChildClass extends ParentClass {
+                        public ?Dep $dep = null;
+                    }',
+                'error_message' => 'DeprecatedClass - src' . DIRECTORY_SEPARATOR . 'somefile.php:12:32',
+            ],
+            'propertyOfATraitUsedByTheChildIsNotInherited' => [
+                'code' => '<?php
+                    class ParentClass {
+                        /** @var non-empty-string */
+                        public string $name = "a";
+                    }
+
+                    trait T {
+                        public string $name = "b";
+                    }
+
+                    final class ChildClass extends ParentClass {
+                        use T;
+                    }',
+                'error_message' => 'NonInvariantDocblockPropertyType',
+            ],
+            'propertyTypeComputedFromTemplatesIsNotInherited' => [
+                'code' => '<?php
+                    /** @template T */
+                    class ParentClass {
+                        /** @var (T is string ? list<string> : list<int>) */
+                        public array $items = [];
+                    }
+
+                    /** @extends ParentClass<string> */
+                    final class ChildClass extends ParentClass {
+                        public array $items = [];
+                    }',
+                'error_message' => 'NonInvariantDocblockPropertyType',
+            ],
+            'staticRedeclarationDoesNotInheritTheType' => [
+                'code' => '<?php
+                    class ParentClass {
+                        /** @var non-empty-string */
+                        public static string $name = "a";
+                    }
+
+                    final class ChildClass extends ParentClass {
+                        public string $name = "b";
+                    }',
+                'error_message' => 'NonInvariantDocblockPropertyType',
+            ],
+            'nonReadonlyRedeclarationDoesNotInheritTheType' => [
+                'code' => '<?php
+                    class ParentClass {
+                        /** @var non-empty-string */
+                        public readonly string $name;
+
+                        public function __construct() {
+                            $this->name = "a";
+                        }
+                    }
+
+                    final class ChildClass extends ParentClass {
+                        public string $name = "b";
+                    }',
+                'error_message' => 'NonInvariantDocblockPropertyType',
+                'error_levels' => [],
+                'php_version' => '8.1',
+            ],
+            'nullableTypedPropertyWithoutDefaultIsNotInitialized' => [
+                'code' => '<?php
+                    /** @template T of string */
+                    final class A {
+                        /** @var T|null */
+                        public ?string $name;
+                    }',
+                'error_message' => 'MissingConstructor',
+            ],
+            'nullableTypedPropertyWithInheritedTypeIsNotInitialized' => [
+                'code' => '<?php
+                    /** @template T of string */
+                    class ParentClass {
+                        /** @var T|null */
+                        public ?string $name = null;
+                    }
+
+                    /** @extends ParentClass<non-empty-string> */
+                    final class ChildClass extends ParentClass {
+                        public ?string $name;
+                    }',
+                'error_message' => 'MissingConstructor',
+            ],
+            'promotedPropertyWithInheritedTypeChecksItsNativeType' => [
+                'code' => '<?php
+                    /** @deprecated */
+                    final class Dep {}
+
+                    /** @psalm-suppress DeprecatedClass */
+                    class ParentClass {
+                        /** @var Dep|null */
+                        public ?Dep $dep = null;
+                    }
+
+                    final class ChildClass extends ParentClass {
+                        public function __construct(public ?Dep $dep) {}
+                    }',
+                'error_message' => 'DeprecatedClass - src' . DIRECTORY_SEPARATOR . 'somefile.php:12:53',
+                'error_levels' => [],
+                'php_version' => '8.0',
+            ],
         ];
+    }
+
+    public function testInheritedPropertyTypeIsCheckedOnDefaultsAndWrites(): void
+    {
+        $this->project_analyzer->getConfig()->throw_exception = false;
+        $this->project_analyzer->setPhpVersion('8.0', 'tests');
+
+        $file_path = self::$src_dir_path . 'somefile.php';
+
+        $this->addFile(
+            $file_path,
+            '<?php
+                class ParentClass {
+                    /** @var non-empty-string */
+                    public string $typed = "a";
+
+                    /** @var non-empty-string */
+                    public static string $static = "a";
+
+                    /** @var non-empty-string */
+                    public $untyped = "a";
+
+                    /** @var non-empty-string */
+                    public $promoted = "a";
+                }
+
+                final class ChildClass extends ParentClass {
+                    public string $typed = "";
+
+                    public static string $static = "";
+
+                    public $untyped = "";
+
+                    public function __construct(public $promoted = "") {}
+
+                    public function f(): void {
+                        $this->typed = "";
+                    }
+                }
+
+                (new ChildClass())->untyped = "";
+                ChildClass::$static = "";',
+        );
+
+        $this->analyzeFile($file_path, new Context());
+
+        $issues = array_map(
+            static fn(IssueData $issue): string => $issue->line_from . ':' . $issue->column_from . ' ' . $issue->type,
+            IssueBuffer::getIssuesDataForFile($file_path),
+        );
+        sort($issues);
+
+        self::assertSame(
+            [
+                '17:44 InvalidPropertyAssignmentValue',
+                '19:52 InvalidPropertyAssignmentValue',
+                '21:39 InvalidPropertyAssignmentValue',
+                '23:56 InvalidParamDefault',
+                '26:40 InvalidPropertyAssignmentValue',
+                '30:47 InvalidPropertyAssignmentValue',
+                '31:39 InvalidPropertyAssignmentValue',
+            ],
+            $issues,
+        );
+    }
+
+    public function testInheritedPropertyTypeIsPopulatedAgain(): void
+    {
+        $this->project_analyzer->setPhpVersion('8.0', 'tests');
+
+        $file_path = self::$src_dir_path . 'somefile.php';
+
+        $this->addFile(
+            $file_path,
+            '<?php
+                class ParentClass {
+                    /** @var non-empty-string */
+                    public $inferred = "a";
+
+                    /** @var non-empty-string */
+                    public string $promoted = "a";
+                }
+
+                final class ChildClass extends ParentClass {
+                    public $inferred;
+
+                    public function __construct(string $inferred, public string $promoted) {
+                        $this->inferred = $inferred;
+                    }
+                }',
+        );
+
+        $codebase = $this->project_analyzer->getCodebase();
+        $codebase->addFilesToAnalyze([$file_path => $file_path]);
+        $codebase->scanFiles();
+
+        $parent_storage = $codebase->classlike_storage_provider->get('parentclass');
+        $child_storage = $codebase->classlike_storage_provider->get('childclass');
+
+        $populate_child_again = static function () use ($codebase, $child_storage): array {
+            $child_storage->populated = false;
+            $codebase->classlike_storage_provider->makeNew('childclass');
+            $codebase->populator->populateCodebase();
+
+            return [
+                $child_storage->properties['inferred']->type?->getId(),
+                $child_storage->properties['promoted']->type?->getId(),
+                $child_storage->methods['__construct']->params[1]->type?->getId(),
+            ];
+        };
+
+        self::assertSame(['non-empty-string', 'non-empty-string', 'non-empty-string'], $populate_child_again());
+
+        // the parent's docblock types are gone: the child has its own types back
+        foreach ($parent_storage->properties as $property_storage) {
+            $property_storage->type = $property_storage->signature_type;
+            $property_storage->has_docblock_type = false;
+        }
+
+        self::assertSame(['string', 'string', 'string'], $populate_child_again());
     }
 }
