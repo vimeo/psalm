@@ -610,7 +610,7 @@ final class VariableFetchAnalyzer
     private static function getGlobalTypeInner(string $var_id, bool $files_full_path = false): Union
     {
         if ($var_id === '$argv') {
-            // only in CLI, null otherwise
+            // if "register_argc_argv = Off" null, except in CLI
             return new Union([
                 Type::getNonEmptyListAtomic(Type::getString()),
                 new TNull(),
@@ -624,7 +624,7 @@ final class VariableFetchAnalyzer
         }
 
         if ($var_id === '$argc') {
-            // only in CLI, null otherwise
+            // if "register_argc_argv = Off" null, except in CLI
             return new Union([
                 new TIntRange(1, null),
                 new TNull(),
@@ -690,6 +690,12 @@ final class VariableFetchAnalyzer
         if ($var_id === '$_SERVER' || $var_id === '$_ENV') {
             $string_helper = new Union([new TString()], ['possibly_undefined' => true]);
             $non_empty_string_helper = new Union([new TNonEmptyString()], ['possibly_undefined' => true]);
+            $non_empty_string_helper_always_defined = $var_id === '$_SERVER' ?
+                new Union(
+                    [
+                        new TNonEmptyString(),
+                    ],
+                ) : $non_empty_string_helper;
 
             $argv_helper = new Union([
                 Type::getNonEmptyListAtomic(Type::getString()),
@@ -711,17 +717,20 @@ final class VariableFetchAnalyzer
 
             $arr = [
                 // https://www.php.net/manual/en/reserved.variables.server.php
-                'PHP_SELF'             => $non_empty_string_helper,
+                'PHP_SELF'             => $non_empty_string_helper_always_defined,
                 'GATEWAY_INTERFACE'    => $non_empty_string_helper,
                 'SERVER_ADDR'          => $non_empty_string_helper,
                 'SERVER_NAME'          => $non_empty_string_helper,
                 'SERVER_SOFTWARE'      => $non_empty_string_helper,
                 'SERVER_PROTOCOL'      => $non_empty_string_helper,
                 'REQUEST_METHOD'       => $non_empty_string_helper,
+                // technically always defined, however inconsistency with filter_input
+                // https://github.com/php/php-src/issues/17543
                 'REQUEST_TIME'         => $request_time_helper,
                 'REQUEST_TIME_FLOAT'   => $request_time_float_helper,
                 'QUERY_STRING'         => $string_helper,
-                'DOCUMENT_ROOT'        => $non_empty_string_helper,
+                // empty string in PHP-CLI, will always be set in PHP
+                'DOCUMENT_ROOT'        => $var_id === '$_SERVER' ? new Union([new TString()]) : $string_helper,
                 'HTTP_ACCEPT'          => $non_empty_string_helper,
                 'HTTP_ACCEPT_CHARSET'  => $non_empty_string_helper,
                 'HTTP_ACCEPT_ENCODING' => $non_empty_string_helper,
@@ -736,12 +745,14 @@ final class VariableFetchAnalyzer
                 'REMOTE_PORT'          => $string_helper,
                 'REMOTE_USER'          => $non_empty_string_helper,
                 'REDIRECT_REMOTE_USER' => $non_empty_string_helper,
-                'SCRIPT_FILENAME'      => $non_empty_string_helper,
+                'SCRIPT_FILENAME'      => $non_empty_string_helper_always_defined,
                 'SERVER_ADMIN'         => $non_empty_string_helper,
                 'SERVER_PORT'          => $non_empty_string_helper,
                 'SERVER_SIGNATURE'     => $non_empty_string_helper,
+                // technically always defined too
+                // however there seem to be some Apache misconfigurations that make this undefined?
                 'PATH_TRANSLATED'      => $non_empty_string_helper,
-                'SCRIPT_NAME'          => $non_empty_string_helper,
+                'SCRIPT_NAME'          => $non_empty_string_helper_always_defined,
                 'REQUEST_URI'          => $non_empty_string_helper,
                 'PHP_AUTH_DIGEST'      => $non_empty_string_helper,
                 'PHP_AUTH_USER'        => $non_empty_string_helper,
