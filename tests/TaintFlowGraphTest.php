@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Psalm\Tests;
 
+use Psalm\CodeLocation;
 use Psalm\CodeLocation\Raw;
 use Psalm\Context;
 use Psalm\Internal\Analyzer\FileAnalyzer;
@@ -585,5 +586,45 @@ final class TaintFlowGraphTest extends TestCase
         $this->assertLessThan(400, $bytes_per_path);
         $this->assertSame(TaintKind::INPUT_HTML, $paths[0]->added_taints);
         $this->assertSame(10_000, $paths[9_999]->length);
+    }
+
+    /**
+     * A location is kept for the whole run, so a property table built while reading its compact state would stay
+     * with it (https://github.com/php/php-src/issues/10126).
+     */
+    public function testCompactStateLeavesNoPropertyTable(): void
+    {
+        $locations = [];
+        foreach (range(1, 10_000) as $_) {
+            $locations[] = CodeLocation::fromCompactState('/a/b.php', 'b.php', 10, 100, 120, []);
+        }
+
+        $before = memory_get_usage();
+        foreach ($locations as $location) {
+            /** @psalm-suppress UnusedMethodCall only the memory the call leaves behind is of interest */
+            $location->getCompactState();
+        }
+        $bytes_per_location = (memory_get_usage() - $before) / 10_000;
+
+        // ~1336 bytes a location with a property table, 0 without
+        $this->assertLessThan(100, $bytes_per_location);
+    }
+
+    public function testCompactStateReturnsTheStateItWasMadeFrom(): void
+    {
+        // Private, protected and public properties: their keys in (array) $this differ
+        $state = [
+            'end_line_number' => 12,
+            'text' => 'foo',
+            'docblock_start' => 90,
+            'docblock_line_number' => 8,
+        ];
+
+        $location = CodeLocation::fromCompactState('/a/b.php', 'b.php', 10, 100, 120, $state);
+        $this->assertSame($state, $location->getCompactState());
+
+        $state = ['class' => Raw::class] + $state;
+        $location = CodeLocation::fromCompactState('/a/b.php', 'b.php', 10, 100, 120, $state);
+        $this->assertSame($state, $location->getCompactState());
     }
 }

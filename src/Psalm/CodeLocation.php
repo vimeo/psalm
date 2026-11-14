@@ -17,7 +17,6 @@ use ReflectionClass;
 use UnexpectedValueException;
 
 use function explode;
-use function get_object_vars;
 use function max;
 use function mb_strcut;
 use function min;
@@ -202,8 +201,13 @@ class CodeLocation
 
         $state = static::class === self::class ? [] : ['class' => static::class];
 
-        /** @var scalar|null $value the previous location, the only object, is null */
-        foreach (get_object_vars($this) as $name => $value) {
+        // get_object_vars() would leave this location a property table, which it keeps (php/php-src#10126)
+        /** @var array<string, scalar|null> $properties the previous location, the only object, is null */
+        $properties = (array) $this;
+
+        foreach ($properties as $key => $value) {
+            $name = $key[0] === "\0" ? substr($key, (int) strpos($key, "\0", 1) + 1) : $key;
+
             $default = match ($name) {
                 'file_path', 'file_name', 'raw_line_number', 'raw_file_start', 'raw_file_end' => $value,
                 'file_start', 'preview_start' => $this->raw_file_start,

@@ -246,7 +246,7 @@ final class ClosureTest extends TestCase
                         return $total;
                     }',
                 'assertions' => [],
-                'ignored_issues' => ['MixedReturnStatement', 'MixedInferredReturnType'],
+                'ignored_issues' => ['MixedReturnStatement'],
             ],
             'closureCapturingTheVariableItIsAssignedToByReferenceInAnArgument' => [
                 'code' => '<?php
@@ -1148,7 +1148,7 @@ final class ClosureTest extends TestCase
                     '$make===' => 'Closure[impure]():SubItems',
                     '$result' => 'SubItems',
                 ],
-                'ignored_issues' => ['ClassMustBeFinal'],
+                'ignored_issues' => [],
                 'php_version' => '8.1',
             ],
             'FirstClassCallable:InstanceMethod:InheritedReturnTypeKeepsTheOwnParameters' => [
@@ -1835,7 +1835,7 @@ final class ClosureTest extends TestCase
                     '$find===' => 'Closure[impure](int):int',
                     '$fresh===' => 'Closure[impure]():Repository<int>&static',
                 ],
-                'ignored_issues' => ['MissingAbstractPureAnnotation'],
+                'ignored_issues' => [],
                 'php_version' => '8.1',
             ],
             'FirstClassCallable:InstanceMethod:PassedToTemplatedCallableParam' => [
@@ -2568,12 +2568,8 @@ final class ClosureTest extends TestCase
                      */
                     $foo = null;
 
-
                     $foo =
-                        /**
-                         * @param mixed $bar
-                         * @psalm-suppress MixedFunctionCall
-                         */
+                        /** @param mixed $bar */
                         function ($bar) use (&$foo): string
                         {
                             if (is_array($bar)) {
