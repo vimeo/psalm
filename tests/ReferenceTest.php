@@ -765,33 +765,29 @@ final class ReferenceTest extends TestCase
                     /** @param array<string, mixed> $data */
                     function set(array &$data, string $key, string $value, bool $nested): void {
                         $cursor = &$data;
-                        $nested ? $cursor = &$cursor[$key] : null;
-                        $cursor = $value;
+                        $nested ? [$cursor = &$cursor[$key], $cursor = $value] : null;
                     }',
                 'assertions' => [],
                 'ignored_issues' => [],
                 'php_version' => '8.0',
             ],
-            'referenceThatWasOneBeforeTheLoopIsReboundAndWrittenToAfterIt' => [
+            'referenceThatWasOneBeforeTheIfIsReboundAndWrittenToAfterItWithACompatibleType' => [
                 'code' => '<?php
-                    /**
-                     * @param array<string, mixed> $data
-                     * @param list<string> $path
-                     */
-                    function set(array &$data, array $path, string $value): void {
+                    /** @param array<string, mixed> $data */
+                    function set(array &$data, string $key, bool $nested): void {
                         $cursor = &$data;
 
-                        foreach ($path as $key) {
+                        if ($nested) {
                             $cursor = &$cursor[$key];
                         }
 
-                        $cursor = $value;
+                        $cursor = ["x" => 1];
                     }',
                 'assertions' => [],
                 'ignored_issues' => [],
                 'php_version' => '8.0',
             ],
-            'referenceThatWasOneBeforeTheIfIsReboundAndWrittenToAfterIt' => [
+            'referenceReboundAfterTheIfThatReboundItIsNoLongerBoundToTheVariableBefore' => [
                 'code' => '<?php
                     /** @param array<string, mixed> $data */
                     function set(array &$data, string $key, string $value, bool $nested): void {
@@ -801,7 +797,10 @@ final class ReferenceTest extends TestCase
                             $cursor = &$cursor[$key];
                         }
 
+                        $other = [];
+                        $cursor = &$other;
                         $cursor = $value;
+                        echo $other;
                     }',
                 'assertions' => [],
                 'ignored_issues' => [],
@@ -1051,6 +1050,53 @@ final class ReferenceTest extends TestCase
     public static function providerInvalidCodeParse(): iterable
     {
         return [
+            'referenceThatWasOneBeforeTheIfIsReboundAndWrittenToAfterIt' => [
+                'code' => '<?php
+                    /** @param array<string, mixed> $data */
+                    function set(array &$data, string $key, string $value, bool $nested): void {
+                        $cursor = &$data;
+
+                        if ($nested) {
+                            $cursor = &$cursor[$key];
+                        }
+
+                        $cursor = $value;
+                    }',
+                'error_message' => 'ReferenceConstraintViolation - src' . DIRECTORY_SEPARATOR . 'somefile.php:3:41 - '
+                    . 'Variable $data is limited to values of type array<string, mixed> because it is passed by '
+                    . 'reference, array<string, mixed>|string type found',
+            ],
+            'referenceThatWasOneBeforeTheLoopIsReboundAndWrittenToAfterIt' => [
+                'code' => '<?php
+                    /**
+                     * @param array<string, mixed> $data
+                     * @param list<string> $path
+                     */
+                    function set(array &$data, array $path, string $value): void {
+                        $cursor = &$data;
+
+                        foreach ($path as $key) {
+                            $cursor = &$cursor[$key];
+                        }
+
+                        $cursor = $value;
+                    }',
+                'error_message' => 'ReferenceConstraintViolation - src' . DIRECTORY_SEPARATOR . 'somefile.php:6:41 - '
+                    . 'Variable $data is limited to values of type array<string, mixed> because it is passed by '
+                    . 'reference, array<string, mixed>|string type found',
+            ],
+            'referenceThatWasOneBeforeATernaryIsReboundAndWrittenToAfterIt' => [
+                'code' => '<?php
+                    /** @param array<string, mixed> $data */
+                    function set(array &$data, string $key, string $value, bool $nested): void {
+                        $cursor = &$data;
+                        $nested ? $cursor = &$cursor[$key] : null;
+                        $cursor = $value;
+                    }',
+                'error_message' => 'ReferenceConstraintViolation - src' . DIRECTORY_SEPARATOR . 'somefile.php:3:41 - '
+                    . 'Variable $data is limited to values of type array<string, mixed> because it is passed by '
+                    . 'reference, array<string, mixed>|string type found',
+            ],
             'issueInTheKeyOfAnArrayItemPassedByReference' => [
                 'code' => '<?php
                     /**

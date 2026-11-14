@@ -44,6 +44,7 @@ use function preg_quote;
 use function preg_replace;
 use function serialize;
 use function str_contains;
+use function str_starts_with;
 use function strcspn;
 use function strpos;
 use function strrpos;
@@ -173,6 +174,14 @@ final class Context
      * @var array<string, CodeLocation>
      */
     public array $references_possibly_from_confusing_scope = [];
+
+    /**
+     * The variables a variable may still be bound to by reference: those it was bound to before a block that rebound
+     * one of them, where the block did not run. A write to the variable is combined into their types.
+     *
+     * @var array<string, array<string, true>>
+     */
+    public array $references_possibly_bound_to = [];
 
     /**
      * Whether or not we're inside the conditional of an if/where etc.
@@ -631,6 +640,8 @@ final class Context
 
             // references_to_external_scope is kept: where the block didn't run, the variable is still bound there
             unset($this->references_in_scope[$reference_id]);
+            $this->references_possibly_bound_to[$reference_id][$referenced_id] = true;
+            $this->references_possibly_bound_to[$referenced_id][$reference_id] = true;
 
             if (isset($this->vars_in_scope[$reference_id])) {
                 // the entry is a PHP reference to the one of the variable it was bound to
@@ -647,6 +658,53 @@ final class Context
                     new CodeLocation($statements_analyzer, $rebinding);
             }
         }
+    }
+
+    /**
+     * What is written to the variable may be written to the variables it is possibly still bound to: their types get
+     * it besides their own, and what was known of their offsets and properties is forgotten
+     *
+     * @psalm-capabilities read-props|write-this-props|write-refs
+     */
+    public function writeToReferencesPossiblyBound(string $var_id, Union $type, Codebase $codebase): void
+    {
+        foreach ($this->references_possibly_bound_to[$var_id] ?? [] as $target_id => $_) {
+            if (!isset($this->vars_in_scope[$target_id])) {
+                continue;
+            }
+
+            $this->vars_in_scope[$target_id] = Type::combineUnionTypes(
+                $this->vars_in_scope[$target_id],
+                $type,
+                $codebase,
+            );
+
+            foreach ($this->vars_in_scope as $descendant_id => $_type) {
+                if (str_starts_with($descendant_id, $target_id . '[')
+                    || str_starts_with($descendant_id, $target_id . '->')
+                ) {
+                    unset($this->vars_in_scope[$descendant_id]);
+                }
+            }
+        }
+    }
+
+    /**
+     * The variable is bound to something else or released: what it was possibly still bound to is no longer
+     *
+     * @psalm-capabilities read-props|write-this-props|write-refs
+     */
+    public function forgetReferencesPossiblyBound(string $var_id): void
+    {
+        foreach ($this->references_possibly_bound_to[$var_id] ?? [] as $target_id => $_) {
+            unset($this->references_possibly_bound_to[$target_id][$var_id]);
+
+            if (!$this->references_possibly_bound_to[$target_id]) {
+                unset($this->references_possibly_bound_to[$target_id]);
+            }
+        }
+
+        unset($this->references_possibly_bound_to[$var_id]);
     }
 
     /**
@@ -852,6 +910,7 @@ final class Context
         if (isset($this->references_in_scope[$remove_var_id])) {
             $this->decrementReferenceCount($remove_var_id);
         }
+        $this->forgetReferencesPossiblyBound($remove_var_id);
         unset(
             $this->vars_in_scope[$remove_var_id],
             $this->cond_referenced_var_ids[$remove_var_id],

@@ -159,6 +159,7 @@ final class GlobalAnalyzer
                 ?? $function_storage->global_types[$var_id]
                 ?? VariableFetchAnalyzer::getGlobalType($var_id, $codebase->analysis_php_version_id);
             $context->references_to_external_scope[$var_id] = true;
+            $context->forgetReferencesPossiblyBound($var_id);
 
             if (isset($context->references_in_scope[$var_id])) {
                 // Global shadows existing reference
