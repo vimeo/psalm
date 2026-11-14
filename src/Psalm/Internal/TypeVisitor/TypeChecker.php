@@ -39,6 +39,7 @@ use Psalm\Type\Atomic;
 use Psalm\Type\Atomic\TClassConstant;
 use Psalm\Type\Atomic\TGenericObject;
 use Psalm\Type\Atomic\TGlobalConstant;
+use Psalm\Type\Atomic\TIntMask;
 use Psalm\Type\Atomic\TIntersection;
 use Psalm\Type\Atomic\TKeyOf;
 use Psalm\Type\Atomic\TNamedObject;
@@ -157,6 +158,8 @@ final class TypeChecker extends TypeVisitor
             $this->checkScalarClassConstant($type);
         } elseif ($type instanceof TGlobalConstant) {
             $this->checkGlobalConstant($type);
+        } elseif ($type instanceof TIntMask) {
+            $this->checkIntMaskConstants($type);
         } elseif ($type instanceof TTemplateParam) {
             $this->checkTemplateParam($type);
         } elseif ($type instanceof TResource) {
@@ -570,6 +573,46 @@ final class TypeChecker extends TypeVisitor
         );
 
         $this->has_errors = true;
+    }
+
+    /**
+     * A constant of an `int-mask<...>` that is resolved with the codebase (see TypeParser) must be an int, as one
+     * that is resolved when the type is parsed
+     */
+    private function checkIntMaskConstants(TIntMask $atomic): void
+    {
+        $codebase = $this->source->getCodebase();
+
+        foreach ($atomic->values as $value) {
+            if (!$value instanceof TGlobalConstant) {
+                continue;
+            }
+
+            $const_types = ConstFetchAnalyzer::getGlobalConstTypesByWildcard($codebase, $value->const_name);
+
+            if ($const_types === [] && $value->fallback_const_name !== null) {
+                $const_types = ConstFetchAnalyzer::getGlobalConstTypesByWildcard(
+                    $codebase,
+                    $value->fallback_const_name,
+                );
+            }
+
+            foreach ($const_types as $const_type) {
+                if (!$const_type->isInt()) {
+                    $this->has_errors = true;
+
+                    IssueBuffer::maybeAdd(
+                        new InvalidDocblock(
+                            'int-mask types must all be integer values',
+                            $this->code_location,
+                        ),
+                        $this->suppressed_issues,
+                    );
+
+                    return;
+                }
+            }
+        }
     }
 
     private function checkGlobalConstant(TGlobalConstant $atomic): void

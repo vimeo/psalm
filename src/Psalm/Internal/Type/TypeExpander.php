@@ -457,6 +457,8 @@ final class TypeExpander
             $potential_ints = [];
 
             foreach ($return_type->values as $value_type) {
+                $is_global_constant = $value_type instanceof TGlobalConstant;
+
                 $new_value_type = self::expandAtomic(
                     $codebase,
                     $value_type,
@@ -474,8 +476,9 @@ final class TypeExpander
                 $new_value_type = reset($new_value_type);
 
                 if (!$new_value_type instanceof TLiteralInt) {
-                    // a global constant that is not defined stays in the type, for the checker to report it
-                    return $new_value_type instanceof TGlobalConstant ? [$return_type] : [new TInt()];
+                    // a global constant that is not defined or not an int stays in the type, for the checker to
+                    // report it
+                    return $is_global_constant && !$new_value_type instanceof TInt ? [$return_type] : [new TInt()];
                 }
 
                 $potential_ints[] = $new_value_type->value;
