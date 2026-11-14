@@ -1950,7 +1950,6 @@ final class ConditionalReturnTypeTest extends TestCase
                     '$finalResult===' => 'FinalColl<int>',
                     '$openResult===' => 'Coll<int>&static',
                 ],
-                'ignored_issues' => ['MixedArgumentTypeCoercion'],
             ],
             'untypedClosureParamOfCallableOfStaticOnTemplateReceiverKeepsTheTemplate' => [
                 'code' => '<?php
@@ -2012,11 +2011,14 @@ final class ConditionalReturnTypeTest extends TestCase
                     }',
                 'ignored_issues' => ['InvalidArgument'],
             ],
-            'untypedClosureParamOfCallableOfStaticInForwardingCallKeepsMastersHint' => [
+            'untypedClosureParamOfCallableOfStaticInForwardingCallIsTheCallersStatic' => [
                 'code' => '<?php
                     class Base {
                         /** @param callable(static): mixed $callback */
                         public function each(callable $callback): void {}
+
+                        /** @param callable(static): mixed $callback */
+                        public static function eachStatic(callable $callback): void {}
                     }
 
                     class Child extends Base {
@@ -2024,12 +2026,27 @@ final class ConditionalReturnTypeTest extends TestCase
 
                         public function run(): void {
                             parent::each(function ($item): void {
-                                /** @psalm-check-type-exact $item = Child&static */;
+                                /** @psalm-check-type-exact $item = Child&static */
+                                $item->onlyChild();
+                            });
+                            self::each(function ($item): void {
+                                /** @psalm-check-type-exact $item = Child&static */
+                                $item->onlyChild();
+                            });
+                            static::each(function ($item): void {
+                                /** @psalm-check-type-exact $item = Child&static */
+                                $item->onlyChild();
+                            });
+                            parent::eachStatic(function ($item): void {
+                                /** @psalm-check-type-exact $item = Child&static */
+                                $item->onlyChild();
+                            });
+                            static::eachStatic(function ($item): void {
+                                /** @psalm-check-type-exact $item = Child&static */
                                 $item->onlyChild();
                             });
                         }
                     }',
-                'ignored_issues' => ['InvalidArgument'],
             ],
             'paramConditionalOnStaticParamOfNamedStaticCallFromAnotherClass' => [
                 'code' => '<?php
@@ -2075,9 +2092,9 @@ final class ConditionalReturnTypeTest extends TestCase
                 'assertions' => [
                     '$tapped===' => 'IBox&HasName',
                 ],
-                'ignored_issues' => ['InvalidArgument', 'MissingClosureParamType'],
+                'ignored_issues' => ['MissingClosureParamType'],
             ],
-            'paramConditionalOnUntypedCallableOfStaticThroughMixinKeepsMastersResult' => [
+            'paramConditionalOnUntypedCallableOfStaticThroughMixinIsTheMixinUser' => [
                 'code' => '<?php
                     class MixTarget {
                         /**
@@ -2148,7 +2165,7 @@ final class ConditionalReturnTypeTest extends TestCase
                     }',
                 'ignored_issues' => ['InvalidArgument'],
             ],
-            'paramConditionalOnClosureOfSupertypeParamKeepsMastersResult' => [
+            'paramConditionalOnClosureOfSupertypeParam' => [
                 'code' => '<?php
                     final class Box {
                         /**
@@ -2167,10 +2184,9 @@ final class ConditionalReturnTypeTest extends TestCase
                     '$object===' => 'Box',
                     '$mixed===' => 'Box',
                 ],
-                'ignored_issues' => ['InvalidArgument'],
                 'php_version' => '8.0',
             ],
-            'paramConditionalOnClosureOfSupertypeParamInLoopKeepsMastersResult' => [
+            'paramConditionalOnClosureOfSupertypeParamInLoop' => [
                 'code' => '<?php
                     final class Box {
                         /**
@@ -2189,7 +2205,699 @@ final class ConditionalReturnTypeTest extends TestCase
                             /** @psalm-check-type-exact $tapped = Box */;
                         }
                     }',
-                'ignored_issues' => ['InvalidArgument'],
+            ],
+            'untypedClosureParamOfCallableOfStaticOnGenericReceiverIsTheReceiver' => [
+                'code' => '<?php
+                    class Model {}
+
+                    final class User extends Model {}
+
+                    /** @template TModel of Model */
+                    class Builder {
+                        /**
+                         * @param (Closure(static): mixed)|string $column
+                         * @return $this
+                         */
+                        public function where($column) {
+                            return $this;
+                        }
+                    }
+
+                    /** @param Builder<User> $query */
+                    function scope(Builder $query): void {
+                        $query->where(function ($sub): void {
+                            /** @psalm-check-type-exact $sub = Builder<User>&static */
+                            $sub->where("a");
+                        });
+                    }',
+            ],
+            'untypedClosureParamOfCallableOfGenericStaticInTrait' => [
+                'code' => '<?php
+                    /**
+                     * @template TKey of array-key
+                     * @template TValue
+                     */
+                    trait ChunksValues {
+                        /** @return static<int, static<TKey, TValue>> */
+                        public function chunkByValue() {
+                            return $this->chunkWhile(function ($value, $_key, $chunk): bool {
+                                /** @psalm-check-type-exact $chunk = Bag<int, mixed> */
+                                return $chunk->last() === $value;
+                            });
+                        }
+                    }
+
+                    /**
+                     * @template TKey of array-key
+                     * @template TValue
+                     */
+                    final class Bag {
+                        /** @use ChunksValues<TKey, TValue> */
+                        use ChunksValues;
+
+                        /**
+                         * @param callable(TValue, TKey, static<int, TValue>): bool $callback
+                         * @return static<int, static<TKey, TValue>>
+                         */
+                        public function chunkWhile(callable $callback) {
+                            throw new RuntimeException();
+                        }
+
+                        /** @return TValue|null */
+                        public function last() {
+                            throw new RuntimeException();
+                        }
+                    }',
+            ],
+            'untypedClosureParamOfCallableOfStaticInNamedCallOfInstanceMethodIsTheCallersStatic' => [
+                'code' => '<?php
+                    class Base {
+                        /** @param callable(static): mixed $callback */
+                        public function each(callable $callback): void {}
+                    }
+
+                    class Child extends Base {
+                        public function onlyChild(): void {}
+
+                        public function run(): void {
+                            Base::each(function ($item): void {
+                                /** @psalm-check-type-exact $item = Child&static */
+                                $item->onlyChild();
+                            });
+                        }
+                    }',
+            ],
+            'paramConditionalOnUntypedCallableOfStaticInParentCall' => [
+                'code' => '<?php
+                    class Base {
+                        /**
+                         * @param (callable(static): mixed)|null $callback
+                         * @return ($callback is null ? int : static)
+                         */
+                        public function tap(?callable $callback = null) {
+                            throw new RuntimeException();
+                        }
+                    }
+
+                    class Child extends Base {
+                        public function onlyChild(): void {}
+
+                        public function run(): void {
+                            $tapped = parent::tap(function ($item): void {
+                                /** @psalm-check-type-exact $item = Child&static */
+                                $item->onlyChild();
+                            });
+                            /** @psalm-check-type-exact $tapped = Child&static */
+                            $tapped->onlyChild();
+                        }
+                    }',
+            ],
+            'paramConditionalOnUntypedCallableOfStaticInNamedStaticCall' => [
+                'code' => '<?php
+                    class SC {
+                        /**
+                         * @param (callable(static): mixed)|null $callback
+                         * @return ($callback is null ? int : string)
+                         */
+                        public static function scmp(?callable $callback = null) {
+                            throw new RuntimeException();
+                        }
+
+                        public function onlySC(): void {}
+                    }
+
+                    $result = SC::scmp(function ($x): void {
+                        /** @psalm-check-type-exact $x = SC */
+                        $x->onlySC();
+                    });',
+                'assertions' => [
+                    '$result===' => 'string',
+                ],
+            ],
+            'paramConditionalOnUntypedCallableOfStaticInConstructor' => [
+                'code' => '<?php
+                    /** @template T */
+                    final class NGen {
+                        /**
+                         * @param (callable(static): mixed)|null $callback
+                         * @return ($callback is null ? NGen<int> : NGen<string>)
+                         */
+                        public function __construct(?callable $callback = null) {}
+
+                        public function onlyGen(): void {}
+                    }
+
+                    $gen = new NGen(function ($g): void {
+                        /** @psalm-check-type-exact $g = NGen */
+                        $g->onlyGen();
+                    });',
+                'assertions' => [
+                    '$gen===' => 'NGen<string>',
+                ],
+            ],
+            'staticReturnOfNamedCallOfInstanceMethodIsTheCallersStatic' => [
+                'code' => '<?php
+                    class RBase {
+                        /** @return static */
+                        public function me() {
+                            return $this;
+                        }
+                    }
+
+                    class RChild extends RBase {
+                        public function run(): void {
+                            $me = RBase::me();
+                            /** @psalm-check-type-exact $me = RChild&static */
+                            $me->run();
+                        }
+                    }',
+            ],
+            'classStringOfStaticReturnOfNamedCallOfInstanceMethodIsTheCallersStatic' => [
+                'code' => '<?php
+                    class RBase {
+                        /** @return class-string<static> */
+                        public function name(): string {
+                            return static::class;
+                        }
+                    }
+
+                    class RChild extends RBase {
+                        public function run(): void {
+                            $name = RBase::name();
+                            /** @psalm-check-type-exact $name = class-string<RChild&static> */
+                            echo $name;
+                        }
+                    }',
+            ],
+            'firstClassCallableOfNamedCallOfInstanceMethodReturnsTheCallersStatic' => [
+                'code' => '<?php
+                    class RBase {
+                        /** @return static */
+                        public function me() {
+                            return $this;
+                        }
+                    }
+
+                    class RChild extends RBase {
+                        public function run(): void {
+                            $me = RBase::me(...);
+                            $result = $me();
+                            /** @psalm-check-type-exact $result = RChild&static */
+                            $result->run();
+                        }
+                    }',
+                'php_version' => '8.1',
+            ],
+            'firstClassCallableOfMagicStaticMethodFromASubclass' => [
+                'code' => '<?php
+                    class Base {
+                        /** @param list<mixed> $args */
+                        public static function __callStatic(string $name, array $args): mixed {
+                            return null;
+                        }
+                    }
+
+                    class Child extends Base {
+                        public function run(): void {
+                            $magic = Base::magic(...);
+                            /** @psalm-check-type $magic = Closure */
+                            $magic();
+                        }
+                    }',
+                'php_version' => '8.1',
+            ],
+            'staticParamOfConstructorOfNonFinalClass' => [
+                'code' => '<?php
+                    class Node {
+                        /** @param static|null $parent */
+                        public function __construct(?self $parent = null) {}
+                    }
+
+                    $root = new Node();
+                    $child = new Node($root);',
+                'assertions' => [
+                    '$child===' => 'Node',
+                ],
+            ],
+            'staticParamOfConstructorThroughNewSelfAndNewParent' => [
+                'code' => '<?php
+                    class NStatic {
+                        /** @param static|null $other */
+                        public function __construct(?self $other = null) {}
+
+                        public function fresh(NStatic $other): void {
+                            $copy = new self($other);
+                            /** @psalm-check-type-exact $copy = NStatic */
+                            echo 1;
+                        }
+                    }
+
+                    class NChild extends NStatic {
+                        public function up(NStatic $other): void {
+                            $copy = new parent($other);
+                            /** @psalm-check-type-exact $copy = NStatic */
+                            echo 1;
+                        }
+                    }
+
+                    trait MakesSelf {
+                        public function make(): void {
+                            $copy = new self($this);
+                        }
+                    }
+
+                    class TUser {
+                        use MakesSelf;
+
+                        /** @param static|null $other */
+                        public function __construct(?self $other = null) {}
+                    }
+
+                    class TUser2 {
+                        use MakesSelf;
+
+                        /** @param static|null $other */
+                        public function __construct(?self $other = null) {}
+                    }',
+            ],
+            'untypedClosureParamOfCallableOfStaticOnThisOfTemplateClassKeepsItsTemplate' => [
+                'code' => '<?php
+                    class Model {}
+
+                    /** @template T of Model */
+                    class Coll {
+                        /** @param callable(static): mixed $callback */
+                        public function each(callable $callback): void {}
+
+                        /** @return T */
+                        public function first() {
+                            throw new RuntimeException();
+                        }
+
+                        public function run(): void {
+                            $this->each(function ($item): void {
+                                $first = $item->first();
+                                /** @psalm-check-type-exact $first = T */
+                                echo 1;
+                            });
+                        }
+                    }',
+            ],
+            'untypedClosureParamOfCallableOfStaticInTraitUsedByTwoClassesHasNoIssue' => [
+                'code' => '<?php
+                    trait Filters {
+                        public function run(): void {
+                            $this->where(function ($query): void {
+                                $query->extra();
+                            });
+                        }
+                    }
+
+                    final class EloquentBuilder {
+                        use Filters;
+
+                        /**
+                         * @param (Closure(static): mixed)|string $column
+                         * @return $this
+                         */
+                        public function where($column) {
+                            return $this;
+                        }
+
+                        public function extra(): void {}
+                    }
+
+                    final class QueryBuilder {
+                        use Filters;
+
+                        /**
+                         * @param (Closure(static): mixed)|string $column
+                         * @return $this
+                         */
+                        public function where($column) {
+                            return $this;
+                        }
+
+                        public function extra(): void {}
+                    }',
+            ],
+            'untypedClosureParamOfCallableOfStaticOnUnionReceiver' => [
+                'code' => '<?php
+                    class Model {}
+
+                    /** @template TModel of Model */
+                    class EloquentBuilder {
+                        /**
+                         * @param (Closure(static): mixed)|string $column
+                         * @return $this
+                         */
+                        public function where($column) {
+                            return $this;
+                        }
+                    }
+
+                    class QueryBuilder {
+                        /**
+                         * @param Closure|string $column
+                         * @return $this
+                         */
+                        public function where($column) {
+                            return $this;
+                        }
+                    }
+
+                    /** @param EloquentBuilder<Model>|QueryBuilder $query */
+                    function scope($query): void {
+                        $query->where(function ($q): void {
+                            $q->where("a");
+                        });
+                    }',
+            ],
+            'typedClosureParamOfCallableOfStaticOnThisIsTheLateStaticClass' => [
+                'code' => '<?php
+                    class Base {
+                        /** @param callable(static): mixed $callback */
+                        public function each(callable $callback): void {}
+
+                        public function run(): void {
+                            $this->each(function (Base $item): static {
+                                /** @psalm-check-type-exact $item = Base&static */
+                                return $item;
+                            });
+                        }
+                    }',
+            ],
+            'untypedClosureParamOfCallableOfStaticOnEnumCaseIsTheEnum' => [
+                'code' => '<?php
+                    enum Suit {
+                        case Hearts;
+                        case Spades;
+
+                        /** @param static $other */
+                        public function same($other): bool {
+                            return $this === $other;
+                        }
+
+                        /** @param callable(static): bool $callback */
+                        public function check(callable $callback): bool {
+                            throw new RuntimeException();
+                        }
+
+                        /**
+                         * @param static|null $other
+                         * @return ($other is null ? int : string)
+                         */
+                        public function cmp($other = null) {
+                            throw new RuntimeException();
+                        }
+                    }
+
+                    $same = Suit::Hearts->same(Suit::Spades);
+                    $r = Suit::Hearts->cmp(Suit::Spades);
+                    $checked = Suit::Hearts->check(function ($suit): bool {
+                        /** @psalm-check-type-exact $suit = Suit */
+                        return $suit === Suit::Spades;
+                    });
+                    $typed = Suit::Hearts->check(function (Suit $s): bool {
+                        /** @psalm-check-type-exact $s = Suit */
+                        return $s === Suit::Spades;
+                    });',
+                'assertions' => [
+                    '$same===' => 'bool',
+                    '$r===' => 'string',
+                ],
+                'php_version' => '8.1',
+            ],
+            'untypedClosureParamOfCallableOfStaticIntersectionIsTheReceiverClass' => [
+                'code' => '<?php
+                    class Foo {
+                        /** @param callable(static&Countable): mixed $callback */
+                        public function each(callable $callback): void {}
+                    }
+
+                    class Child extends Foo {
+                        public function onlyChild(): int {
+                            return 1;
+                        }
+                    }
+
+                    function run(Child $child): void {
+                        $child->each(function ($x): void {
+                            /** @psalm-check-type-exact $x = Countable&Child&static */
+                            $x->onlyChild();
+                        });
+                    }',
+            ],
+            'untypedClosureParamOfCallableOfStaticIntersectionOnThisOfGenericSubclass' => [
+                'code' => '<?php
+                    /** @template T */
+                    class Coll {
+                        /** @param callable(static&Countable): mixed $callback */
+                        public function each(callable $callback): void {}
+                    }
+
+                    /** @extends Coll<int> */
+                    abstract class IntColl extends Coll implements Countable {
+                        public function run(): void {
+                            $this->each(function ($x): void {
+                                /** @psalm-check-type-exact $x = IntColl&static&Countable */
+                                $x->run();
+                            });
+                        }
+                    }',
+            ],
+            'untypedClosureParamOfCallableOfStaticIntersectionWithGenericIsTheReceiverClass' => [
+                'code' => '<?php
+                    /** @template T */
+                    interface G {}
+
+                    class Foo {
+                        /** @param callable(static&G<int>): mixed $callback */
+                        public function gen(callable $callback): void {}
+                    }
+
+                    class Child extends Foo {
+                        public function onlyChild(): void {}
+                    }
+
+                    function run(Child $child): void {
+                        $child->gen(function ($x): void {
+                            /** @psalm-check-type-exact $x = G<int>&Child&static */
+                            $x->onlyChild();
+                        });
+                    }',
+            ],
+            'untypedClosureParamOfCallableOfStaticInForwardingCallFromStaticMethodIsTheCallersStatic' => [
+                'code' => '<?php
+                    class Base {
+                        /** @param callable(static): mixed $callback */
+                        public static function each(callable $callback): void {}
+                    }
+
+                    class Child extends Base {
+                        public function onlyChild(): void {}
+
+                        public static function run(): void {
+                            parent::each(function ($item): void {
+                                /** @psalm-check-type-exact $item = Child&static */
+                                $item->onlyChild();
+                            });
+                            static::each(function ($item): void {
+                                /** @psalm-check-type-exact $item = Child&static */
+                                $item->onlyChild();
+                            });
+                        }
+                    }
+
+                    final class FinalChild extends Base {
+                        public function onlyFinalChild(): void {}
+
+                        public static function run(): void {
+                            self::each(function ($item): void {
+                                /** @psalm-check-type-exact $item = FinalChild */
+                                $item->onlyFinalChild();
+                            });
+                        }
+                    }',
+            ],
+            'typedClosureParamsOnUnionReceiverWithAHintFromOneAtom' => [
+                'code' => '<?php
+                    class ZA {
+                        /** @param Closure(static): mixed $callback */
+                        public function where(Closure $callback): void {}
+                    }
+
+                    class ZB {
+                        public function where(Closure $callback): void {}
+                    }
+
+                    /** @param ZA|ZB $query */
+                    function scope($query): void {
+                        $query->where(function (ZA $q): void {
+                            /** @psalm-check-type-exact $q = ZA */
+                            echo 1;
+                        });
+                        $query->where(function (object $_q): void {});
+                    }',
+            ],
+            'typedClosureParamOfCallableOfStaticOnRefinedReceiverIsTheClass' => [
+                'code' => '<?php
+                    final class Box {
+                        /** @param Closure(static): mixed $callback */
+                        public function visit(Closure $callback): void {}
+
+                        public function __get(string $_name): string {
+                            return "";
+                        }
+                    }
+
+                    /** @param Box&object{value: string} $box */
+                    function demo(Box $box): void {
+                        $box->visit(function (Box $item): void {
+                            /** @psalm-check-type-exact $item = Box */
+                            echo 1;
+                        });
+                    }',
+            ],
+            'closureParamOfCallableOfGenericStaticOnSubclassBindingTheTemplatesIsThatClass' => [
+                'code' => '<?php
+                    /** @template T */
+                    class Bag {
+                        /** @param Closure(static<int>): void $callback */
+                        public function each(Closure $callback): void {}
+                    }
+
+                    /** @extends Bag<int> */
+                    final class IntBag extends Bag {}
+
+                    (new IntBag())->each(function ($bag): void {
+                        /** @psalm-check-type-exact $bag = IntBag */
+                        echo 1;
+                    });
+                    (new IntBag())->each(function (IntBag $bag): void {
+                        /** @psalm-check-type-exact $bag = IntBag */
+                        echo 1;
+                    });',
+            ],
+            'untypedClosureParamOfCallableOfGenericStaticKeepsArgsCompletedByTemplateDefaults' => [
+                'code' => '<?php
+                    /**
+                     * @template A
+                     * @template B = string
+                     */
+                    final class Box {
+                        /** @param Closure(static<int>): void $callback */
+                        public static function each(Closure $callback): void {}
+                    }
+
+                    Box::each(function ($box): void {
+                        /** @psalm-check-type-exact $box = Box<int, string> */
+                        echo 1;
+                    });',
+            ],
+            'typedClosureParamOfCallableOfStaticOnUnionReceiverKeepsItsDeclaredType' => [
+                'code' => '<?php
+                    abstract class Node {
+                        /** @param callable(static): mixed $callback */
+                        public function visit(callable $callback): void {}
+                    }
+
+                    class Leaf extends Node {
+                        public function value(): int {
+                            return 1;
+                        }
+                    }
+
+                    class Branch extends Node {}
+
+                    function walk(Leaf|Branch $node): void {
+                        $node->visit(function (Node $x): void {
+                            /** @psalm-check-type-exact $x = Node */
+                            if ($x instanceof Leaf) {
+                                echo $x->value();
+                            }
+                        });
+                    }',
+                'php_version' => '8.0',
+            ],
+            'staticConstantReturnIsTheConstantOfTheCallsStatic' => [
+                'code' => '<?php
+                    class Base {
+                        /** @var non-empty-string */
+                        public const TYPE = "base";
+
+                        /** @return static::TYPE */
+                        public function type(): string {
+                            throw new RuntimeException();
+                        }
+                    }
+
+                    class Child extends Base {
+                        public const TYPE = "child";
+
+                        public function run(): void {
+                            $parent = parent::type();
+                            /** @psalm-check-type-exact $parent = "child" */
+                            echo $parent;
+                        }
+                    }
+
+                    function type(Child $child): string {
+                        $type = $child->type();
+                        /** @psalm-check-type-exact $type = "child" */
+                        return $type;
+                    }',
+            ],
+            'typedClosureParamOfCallableOfStaticOrOtherMarksOnlyTheStaticAtom' => [
+                'code' => '<?php
+                    class Other {}
+
+                    class Base {
+                        /** @param callable(static|Other): void $callback */
+                        public function each(callable $callback): void {}
+
+                        public function run(): void {
+                            $this->each(function (Base|Other $value): void {
+                                /** @psalm-check-type-exact $value = Base&static|Other */
+                                echo get_class($value);
+                            });
+                        }
+                    }',
+                'php_version' => '8.0',
+            ],
+            'typedClosureParamOfCallableOfListOfStaticKeepsTheList' => [
+                'code' => '<?php
+                    class Box {
+                        /** @param callable(list<static>): void $callback */
+                        public function visit(callable $callback): void {}
+
+                        public function name(): string {
+                            return "box";
+                        }
+
+                        public function run(): void {
+                            $this->visit(function (array $items): void {
+                                /** @psalm-check-type-exact $items = list<Box&static> */
+                                foreach ($items as $item) {
+                                    echo $item->name();
+                                }
+                            });
+                        }
+                    }',
+            ],
+            'typedClosureParamOfCallableOfClassOrStaticKeepsTheClass' => [
+                'code' => '<?php
+                    class Base {
+                        /** @param callable(Base|static): mixed $callback */
+                        public function each(callable $callback): void {}
+
+                        public function run(): void {
+                            $this->each(function (Base $value): void {
+                                /** @psalm-check-type-exact $value = Base */
+                                echo get_class($value);
+                            });
+                        }
+                    }',
             ],
             'conditionalTrueBranchTemplateTakesTheBoundOfItsCondition' => [
                 'code' => '<?php
@@ -2476,7 +3184,81 @@ final class ConditionalReturnTypeTest extends TestCase
                         }
                     }',
                 'error_message' => 'Method QueryBuilder::extra does not exist',
-                'error_levels' => ['InvalidArgument'],
+            ],
+            'staticParamOfCallOnAnotherInstanceIsNotTheCallersStatic' => [
+                'code' => '<?php
+                    class Base {
+                        /**
+                         * @param static|null $other
+                         * @return ($other is null ? int : string)
+                         */
+                        public function cmp($other = null) {
+                            throw new RuntimeException();
+                        }
+
+                        public function run(Child $child): void {
+                            $child->cmp($this);
+                        }
+                    }
+
+                    class Child extends Base {}',
+                'error_message' => 'Argument 1 of Child::cmp expects Child&static|null, but parent type Base&static provided',
+            ],
+            'typedClosureParamOfCallableOfStaticOnResultOfStaticReturnKeepsItsDeclaredType' => [
+                'code' => '<?php
+                    class Base {
+                        /** @return static */
+                        public function me() {
+                            return $this;
+                        }
+
+                        /** @param callable(static): mixed $callback */
+                        public function each(callable $callback): void {}
+
+                        public function run(Base $other): void {
+                            $other->me()->each(function (Base $x): static {
+                                return $x;
+                            });
+                        }
+                    }',
+                'error_message' => 'LessSpecificReturnStatement',
+            ],
+            'untypedClosureParamOnUnionReceiverReusesTheHintOfAnotherAtom' => [
+                'code' => '<?php
+                    class ZA {
+                        /** @param Closure(static): mixed $c */
+                        public function where(Closure $c): void {}
+
+                        public function onlyA(): void {}
+                    }
+
+                    class ZB {
+                        public function where(Closure $c): void {}
+                    }
+
+                    final class ZUser {
+                        /** @param ZA|ZB $x */
+                        public function plain($x): void {
+                            $x->where(function ($q): void {
+                                $q->onlyA();
+                            });
+                        }
+                    }',
+                'error_message' => 'Method ZB::onlyA does not exist',
+            ],
+            'typedClosureParamOfCallableOfClassOrStaticIsNotTheLateStaticClass' => [
+                'code' => '<?php
+                    class Base {
+                        /** @param callable(Base|static): mixed $callback */
+                        public function each(callable $callback): void {}
+
+                        public function run(): void {
+                            $this->each(function (Base $value): static {
+                                return $value;
+                            });
+                        }
+                    }',
+                'error_message' => 'LessSpecificReturnStatement',
             ],
             'conditionalElseBranchTemplateKeepsItsBound' => [
                 'code' => '<?php

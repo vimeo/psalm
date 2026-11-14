@@ -9,7 +9,6 @@ use Psalm\Codebase;
 use Psalm\Internal\Type\Comparator\TypeComparisonResult;
 use Psalm\Internal\Type\Comparator\UnionTypeComparator;
 use Psalm\Internal\TypeVisitor\ConditionalSubjectReplacer;
-use Psalm\Internal\TypeVisitor\ContainsStaticVisitor;
 use Psalm\Type;
 use Psalm\Type\Atomic;
 use Psalm\Type\Atomic\TArray;
@@ -685,8 +684,7 @@ final class TemplateInferredTypeReplacer
     /**
      * A param conditional with `static` of the call in its constraint and condition, before the bounds, which may hold
      * the `static` of the caller, are put in them: only when its template is bound by arguments alone (fallbacks and
-     * defaults have no argument offset), as they were checked against the params with that `static`. A bound holding
-     * the declared `static` (a closure param narrowed by an unexpanded hint) is compared with them as declared.
+     * defaults have no argument offset), as they were checked against the params with that `static`.
      *
      * @psalm-capabilities read-props
      */
@@ -703,10 +701,7 @@ final class TemplateInferredTypeReplacer
         }
 
         foreach ($bounds as $bound) {
-            $static_visitor = new ContainsStaticVisitor(true);
-            $static_visitor->traverse($bound->type);
-
-            if ($bound->arg_offset === null || $static_visitor->matches()) {
+            if ($bound->arg_offset === null) {
                 return $conditional;
             }
         }

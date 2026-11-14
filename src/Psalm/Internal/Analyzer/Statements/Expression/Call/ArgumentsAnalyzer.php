@@ -37,6 +37,8 @@ use Psalm\Internal\Type\TemplateInferredTypeReplacer;
 use Psalm\Internal\Type\TemplateResult;
 use Psalm\Internal\Type\TemplateStandinTypeReplacer;
 use Psalm\Internal\Type\TypeExpander;
+use Psalm\Internal\TypeVisitor\DeclaredStaticIntersectionMarker;
+use Psalm\Internal\TypeVisitor\DeclaredStaticReplacer;
 use Psalm\Internal\TypeVisitor\TypeVariableResolver;
 use Psalm\Issue\InvalidNamedArgument;
 use Psalm\Issue\InvalidPassByReference;
@@ -49,6 +51,7 @@ use Psalm\Node\VirtualArg;
 use Psalm\Storage\ClassLikeStorage;
 use Psalm\Storage\FunctionLikeParameter;
 use Psalm\Storage\FunctionLikeStorage;
+use Psalm\Storage\FunctionStorage;
 use Psalm\Storage\MethodStorage;
 use Psalm\Type;
 use Psalm\Type\Atomic\TArray;
@@ -65,6 +68,7 @@ use UnexpectedValueException;
 
 use function array_all;
 use function array_any;
+use function array_filter;
 use function array_keys;
 use function array_map;
 use function array_reduce;
@@ -246,6 +250,7 @@ final class ArgumentsAnalyzer
             }
 
             $high_order_template_result = null;
+            $closure_pass_params = null;
             $high_order_callable_info = $param
                 ? HighOrderFunctionArgHandler::getCallableArgInfo($context, $arg->value, $statements_analyzer, $param)
                 : null;
@@ -262,7 +267,7 @@ final class ArgumentsAnalyzer
                 && $param
                 && !$arg->value->getDocComment()
             ) {
-                self::handleClosureArg(
+                $closure_pass_params = self::handleClosureArg(
                     $statements_analyzer,
                     $args,
                     $method_id,
@@ -313,15 +318,42 @@ final class ArgumentsAnalyzer
             $was_inside_isset = $context->inside_isset;
             $context->inside_isset = false;
 
-            if (ExpressionAnalyzer::analyze(
-                $statements_analyzer,
-                $arg->value,
-                $context,
-                false,
-                null,
-                null,
-                $high_order_template_result,
-            ) === false) {
+            // the types a hint resolved with `static` of this call gives the closure's params hold for this analysis
+            // of the closure only: its storage is shared with the other passes over it
+            $pass_closure_storage = null;
+            $closure_params = [];
+            if ($closure_pass_params !== null) {
+                [$pass_closure_storage, $pass_types] = $closure_pass_params;
+                $closure_params = $pass_closure_storage->params;
+                $pass_params = [];
+                foreach ($closure_params as $pass_offset => $closure_param) {
+                    if (isset($pass_types[$pass_offset])) {
+                        $closure_param = clone $closure_param;
+                        $closure_param->type = $pass_types[$pass_offset];
+                        $closure_param->type_inferred = true;
+                    }
+                    $pass_params[] = $closure_param;
+                }
+                self::setClosureParams($pass_closure_storage, $pass_params);
+            }
+
+            try {
+                $arg_analyzed = ExpressionAnalyzer::analyze(
+                    $statements_analyzer,
+                    $arg->value,
+                    $context,
+                    false,
+                    null,
+                    null,
+                    $high_order_template_result,
+                );
+            } finally {
+                if ($pass_closure_storage !== null) {
+                    self::setClosureParams($pass_closure_storage, $closure_params);
+                }
+            }
+
+            if ($arg_analyzed === false) {
                 $context->inside_isset = $was_inside_isset;
                 $context->inside_call = $was_inside_call;
 
@@ -585,6 +617,8 @@ final class ArgumentsAnalyzer
 
     /**
      * @param   array<int, PhpParser\Node\Arg>  $args
+     * @return  array{FunctionStorage, non-empty-array<int, Union>}|null the closure's storage and the types its
+     *                                                                  params take for this analysis of the closure
      */
     private static function handleClosureArg(
         StatementsAnalyzer $statements_analyzer,
@@ -595,17 +629,14 @@ final class ArgumentsAnalyzer
         int $argument_offset,
         PhpParser\Node\Arg $arg,
         FunctionLikeParameter $param,
-    ): void {
+    ): ?array {
         if (!$param->type) {
-            return;
+            return null;
         }
 
         $codebase = $statements_analyzer->getCodebase();
 
         $static_class_type = $template_result->static_class_type;
-        $expand_static = static fn(Union $type): Union => $static_class_type !== null
-            ? TypeExpander::expandStatic($codebase, $type, $static_class_type, $template_result->static_class_is_final)
-            : $type;
 
         if (($argument_offset === 1 && in_array($method_id, self::ARRAY_FILTERLIKE, true) && count($args) === 2)
             || ($argument_offset === 0 && $method_id === 'array_map' && count($args) >= 2)
@@ -704,24 +735,56 @@ final class ArgumentsAnalyzer
             );
         };
 
-        // an untyped param takes the declared types with `static` of the call, as the argument is checked against
-        // them, before the bounds, which may hold the `static` of the caller, are put in them; a typed param is
-        // narrowed to the hint, so it keeps the `static` it is declared with, the caller's
-        $untyped_bounds = $new_bounds;
-        foreach ($template_result->template_types as $k => $template_map) {
-            foreach ($template_map as $kk => $template_type) {
-                if (($new_bounds[$k][$kk] ?? null) === $template_type) {
-                    $untyped_bounds[$k][$kk] = $expand_static($template_type);
-                }
-            }
+        if ($static_class_type !== null) {
+            (new DeclaredStaticIntersectionMarker())->traverse($replaced_type);
         }
 
-        $untyped_type = $expand_static($replaced_type);
-        $untyped_replaced_type = $untyped_type === $replaced_type && $untyped_bounds === $new_bounds
-            ? null
-            : $replace($untyped_type, $untyped_bounds);
+        // the declared `static` is the call's only after the bounds, which may hold the late static types of the
+        // caller, are put in the type: neither they nor the receiver's own type arguments are replaced
         $replaced_type = $replace($replaced_type, $new_bounds);
-        $untyped_replaced_type ??= $replaced_type;
+
+        // a template of the method itself (a param conditional's) is bound by a static call only after its arguments:
+        // its constraint is the hint, as the template types give it for an instance call. Static calls and `new` do not
+        // put the method's templates in TemplateResult before the arguments: that would bring the instance path's
+        // template-constraint bugs (#11368, #13511) to them (true positives such as `Str::contains` lost)
+        if ($static_class_type !== null
+            && !$template_result->template_types
+            && $method_id !== null
+            && MethodIdentifier::isValidMethodIdReference($method_id)
+            && $replaced_type->hasTemplate()
+        ) {
+            $called_method_id = MethodIdentifier::fromMethodIdReference($method_id);
+            $defining_function = 'fn-' . strtolower(
+                (string) ($codebase->methods->getDeclaringMethodId($called_method_id) ?? $called_method_id),
+            );
+            $hint_atomics = [];
+
+            foreach ($replaced_type->getAtomicTypes() as $hint_atomic) {
+                if ($hint_atomic instanceof TTemplateParam && $hint_atomic->defining_class === $defining_function) {
+                    $hint_atomics = [...$hint_atomics, ...array_values($hint_atomic->as->getAtomicTypes())];
+                } else {
+                    $hint_atomics[] = $hint_atomic;
+                }
+            }
+
+            $replaced_type = new Union($hint_atomics);
+        }
+
+        $untyped_replaced_type = $replaced_type;
+
+        if ($static_class_type !== null) {
+            (new DeclaredStaticReplacer($codebase, $static_class_type, $template_result->static_class_is_final))
+                ->traverse($untyped_replaced_type);
+        }
+
+        // the caller's own late static type, not resolved yet: a receiver `$this` or `new static`, or a forwarding
+        // call. The result of a call returning `static` is resolved, on `$this` as on another instance
+        $callers_static = !$template_result->static_class_is_final
+            && $static_class_type instanceof TNamedObject
+            && $static_class_type->is_static
+            && !$static_class_type->is_static_resolved
+                ? $static_class_type
+                : null;
 
         $closure_id = strtolower($statements_analyzer->getFilePath())
             . ':' . $arg->value->getLine()
@@ -734,8 +797,10 @@ final class ArgumentsAnalyzer
                 $closure_id,
             );
         } catch (UnexpectedValueException) {
-            return;
+            return null;
         }
+
+        $pass_types = [];
 
         foreach ($closure_storage->params as $closure_param_offset => $param_storage) {
             $param_type_inferred = $param_storage->type_inferred;
@@ -750,85 +815,54 @@ final class ArgumentsAnalyzer
             }
 
             if (!$has_different_docblock_type) {
-                // a param declared with a type keeps master's hint also once it was narrowed by an earlier pass (type
-                // inferred), as the closure's storage is shared by every class using a trait it is in
-                $hint_type = $param_storage->signature_type !== null ? $replaced_type : $untyped_replaced_type;
+                $newly_inferred_type = self::inferClosureParamType(
+                    $codebase,
+                    $replaced_type,
+                    $closure_param_offset,
+                    $param_storage->type && !$param_type_inferred ? $param_storage->type : null,
+                );
 
-                foreach ($hint_type->getAtomicTypes() as $replaced_type_part) {
-                    if ($replaced_type_part instanceof TCallable
-                        || $replaced_type_part instanceof TClosure
-                    ) {
-                        if (isset($replaced_type_part->params[$closure_param_offset]->type)) {
-                            $replaced_param_type = $replaced_type_part->params[$closure_param_offset]->type;
+                if ($untyped_replaced_type !== $replaced_type) {
+                    $pass_type = $param_storage->signature_type === null
+                        ? self::inferClosureParamType($codebase, $untyped_replaced_type, $closure_param_offset, null)
+                        : self::getTypedClosureParamPassType(
+                            $codebase,
+                            $replaced_type,
+                            $untyped_replaced_type,
+                            $closure_param_offset,
+                            $param_storage->signature_type,
+                            $callers_static,
+                        );
 
-                            // A class template inferred at a construction site is
-                            // carried as a type variable (e.g. `` `_0 ``). When it
-                            // reaches an untyped closure parameter, resolve it to
-                            // the shape inferred at the construction site: the
-                            // closure body is a separate function-like where the
-                            // bare variable would otherwise be treated as neither
-                            // array nor object.
-                            //
-                            // A variable minted for an empty construction stands
-                            // for `never` so far; a parameter typed by the closure
-                            // itself keeps that type rather than being reported as
-                            // paradoxical for a collection nothing has filled yet,
-                            // so such a variable is left live for a typed parameter
-                            // (the containment below then records a bound on it and
-                            // keeps the declared type).
-                            $type_variable_resolver = new TypeVariableResolver(
-                                $codebase,
-                                false,
-                                $param_storage->type !== null && !$param_type_inferred,
-                            );
-                            $type_variable_resolver->traverse($replaced_param_type);
+                    if ($pass_type) {
+                        $pass_types[$closure_param_offset] = $pass_type;
+                    }
+                }
 
-                            if ($replaced_param_type->hasTemplate()) {
-                                $replaced_param_type = TypeExpander::expandUnion(
-                                    $codebase,
-                                    $replaced_param_type,
-                                    null,
-                                    null,
-                                    null,
-                                    true,
-                                    false,
-                                    false,
-                                    true,
-                                    true,
-                                );
-                            }
+                // this call gives the param no hint: a typed param keeps its declared type; an untyped one reads the
+                // hint an earlier pass over the closure left (another atomic of a union receiver, another class using
+                // the trait) with `static` of this call, not with the class the closure is written in. A heuristic: a
+                // bare `Closure` param says nothing of what the closure gets, and the usual case is a builder pair or
+                // trait users whose methods all pass `$this` to it
+                if (!$newly_inferred_type
+                    && !isset($pass_types[$closure_param_offset])
+                    && $static_class_type !== null
+                    && $param_type_inferred
+                    && $param_storage->type
+                ) {
+                    $pass_type = $param_storage->signature_type;
 
-                            if ($param_storage->type && !$param_type_inferred) {
-                                $param_comparison_result = new TypeComparisonResult();
+                    if ($pass_type === null) {
+                        $pass_type = $param_storage->type;
+                        (new DeclaredStaticReplacer(
+                            $codebase,
+                            $static_class_type,
+                            $template_result->static_class_is_final,
+                        ))->traverse($pass_type);
+                    }
 
-                                $type_match_found = UnionTypeComparator::isContainedBy(
-                                    $codebase,
-                                    $replaced_param_type,
-                                    $param_storage->type,
-                                    false,
-                                    false,
-                                    $param_comparison_result,
-                                );
-
-                                if (!$type_match_found) {
-                                    continue;
-                                }
-
-                                if ($param_comparison_result->type_variable_lower_bounds
-                                    || $param_comparison_result->type_variable_upper_bounds
-                                ) {
-                                    // a containment that recorded type-variable bounds is
-                                    // provisional, not definitive: keep the declared type
-                                    continue;
-                                }
-                            }
-
-                            $newly_inferred_type = Type::combineUnionTypes(
-                                $newly_inferred_type,
-                                $replaced_param_type,
-                                $codebase,
-                            );
-                        }
+                    if ($pass_type !== $param_storage->type) {
+                        $pass_types[$closure_param_offset] = $pass_type;
                     }
                 }
             }
@@ -851,6 +885,204 @@ final class ArgumentsAnalyzer
                 );
             }
         }
+
+        return $pass_types ? [$closure_storage, $pass_types] : null;
+    }
+
+    /**
+     * Puts $params in the closure's storage in place of the params of the same names, keeping their lookup values
+     *
+     * @param list<FunctionLikeParameter> $params
+     */
+    private static function setClosureParams(FunctionStorage $closure_storage, array $params): void
+    {
+        $param_lookup = $closure_storage->param_lookup;
+        $closure_storage->setParams([]);
+
+        foreach ($params as $param) {
+            $closure_storage->addParam($param, $param_lookup[$param->name] ?? true);
+        }
+    }
+
+    /**
+     * The type a param declared with $declared_type takes for this analysis of the closure, null for the one the
+     * closure's storage gives it. A hint holding the declared `static` gives it master's narrowing: the class of the
+     * call differs per pass (another atomic of a union receiver, another class using a trait, another loop pass)
+     * while the closure is one. Only when the call's `static` is the caller's own ($callers_static) the atoms that
+     * come from the declared `static` are that late static type: resolved where master's narrowing has them, else
+     * the atoms of the declared type that hold the class, marked static. For another receiver a narrowing to a bare
+     * `static`, which the closure would read as its own class, keeps the declared type.
+     */
+    private static function getTypedClosureParamPassType(
+        Codebase $codebase,
+        Union $declared_hint_type,
+        Union $resolved_hint_type,
+        int $closure_param_offset,
+        Union $declared_type,
+        ?TNamedObject $callers_static,
+    ): ?Union {
+        $resolved_param_type = self::inferClosureParamType($codebase, $resolved_hint_type, $closure_param_offset, null);
+
+        if ($resolved_param_type === null) {
+            return null;
+        }
+
+        $declared_param_type = self::inferClosureParamType($codebase, $declared_hint_type, $closure_param_offset, null);
+
+        if ($declared_param_type !== null && $declared_param_type->getId() === $resolved_param_type->getId()) {
+            // the hint of this param holds no declared `static`
+            return self::inferClosureParamType($codebase, $resolved_hint_type, $closure_param_offset, $declared_type);
+        }
+
+        $narrowed_type = self::inferClosureParamType(
+            $codebase,
+            $declared_hint_type,
+            $closure_param_offset,
+            $declared_type,
+        );
+
+        if ($callers_static === null) {
+            if ($narrowed_type === null) {
+                return null;
+            }
+
+            foreach ($narrowed_type->getAtomicTypes() as $narrowed_atomic) {
+                if ($narrowed_atomic instanceof TNamedObject
+                    && in_array(strtolower($narrowed_atomic->value), ['static', '$this'], true)
+                ) {
+                    return $declared_type;
+                }
+            }
+
+            return null;
+        }
+
+        if ($narrowed_type !== null) {
+            (new DeclaredStaticReplacer($codebase, $callers_static, false))->traverse($narrowed_type);
+
+            return $narrowed_type;
+        }
+
+        $callers_static_class = new Union([$callers_static]);
+        $non_static_arms = [];
+
+        foreach ($declared_param_type?->getAtomicTypes() ?? [] as $hint_arm) {
+            if (!$hint_arm instanceof TNamedObject
+                || !in_array(strtolower($hint_arm->value), ['static', '$this'], true)
+            ) {
+                $non_static_arms[] = new Union([$hint_arm]);
+            }
+        }
+
+        $marked = false;
+        $declared_atomics = [];
+
+        foreach ($declared_type->getAtomicTypes() as $declared_atomic) {
+            // an atom a non-static arm of the hint also gives keeps master's value, unmarked
+            if ($declared_atomic instanceof TNamedObject
+                && UnionTypeComparator::isContainedBy($codebase, $callers_static_class, new Union([$declared_atomic]))
+                && !array_filter(
+                    $non_static_arms,
+                    static fn(Union $arm): bool => UnionTypeComparator::isContainedBy(
+                        $codebase,
+                        $arm,
+                        new Union([$declared_atomic]),
+                    ),
+                )
+            ) {
+                $declared_atomic = $declared_atomic->setIsStatic(true, true);
+                $marked = true;
+            }
+
+            $declared_atomics[] = $declared_atomic;
+        }
+
+        return $marked ? $declared_type->setTypes($declared_atomics) : null;
+    }
+
+    /**
+     * The type the hint of a callable param gives the param at $closure_param_offset of a closure passed to it; with
+     * $declared_type, only when that type holds it
+     */
+    private static function inferClosureParamType(
+        Codebase $codebase,
+        Union $hint_type,
+        int $closure_param_offset,
+        ?Union $declared_type,
+    ): ?Union {
+        $inferred_type = null;
+
+        foreach ($hint_type->getAtomicTypes() as $replaced_type_part) {
+            if (!$replaced_type_part instanceof TCallable && !$replaced_type_part instanceof TClosure) {
+                continue;
+            }
+
+            if (!isset($replaced_type_part->params[$closure_param_offset]->type)) {
+                continue;
+            }
+
+            $replaced_param_type = $replaced_type_part->params[$closure_param_offset]->type;
+
+            // A class template inferred at a construction site is
+            // carried as a type variable (e.g. `` `_0 ``). When it
+            // reaches an untyped closure parameter, resolve it to
+            // the shape inferred at the construction site: the
+            // closure body is a separate function-like where the
+            // bare variable would otherwise be treated as neither
+            // array nor object.
+            //
+            // A variable minted for an empty construction stands
+            // for `never` so far; a parameter typed by the closure
+            // itself keeps that type rather than being reported as
+            // paradoxical for a collection nothing has filled yet,
+            // so such a variable is left live for a typed parameter
+            // (the containment below then records a bound on it and
+            // keeps the declared type).
+            $type_variable_resolver = new TypeVariableResolver($codebase, false, $declared_type !== null);
+            $type_variable_resolver->traverse($replaced_param_type);
+
+            if ($replaced_param_type->hasTemplate()) {
+                $replaced_param_type = TypeExpander::expandUnion(
+                    $codebase,
+                    $replaced_param_type,
+                    null,
+                    null,
+                    null,
+                    true,
+                    false,
+                    false,
+                    true,
+                    true,
+                );
+            }
+
+            if ($declared_type) {
+                $param_comparison_result = new TypeComparisonResult();
+
+                if (!UnionTypeComparator::isContainedBy(
+                    $codebase,
+                    $replaced_param_type,
+                    $declared_type,
+                    false,
+                    false,
+                    $param_comparison_result,
+                )) {
+                    continue;
+                }
+
+                if ($param_comparison_result->type_variable_lower_bounds
+                    || $param_comparison_result->type_variable_upper_bounds
+                ) {
+                    // a containment that recorded type-variable bounds is
+                    // provisional, not definitive: keep the declared type
+                    continue;
+                }
+            }
+
+            $inferred_type = Type::combineUnionTypes($inferred_type, $replaced_param_type, $codebase);
+        }
+
+        return $inferred_type;
     }
 
     /**
@@ -1028,7 +1260,6 @@ final class ArgumentsAnalyzer
         TemplateResult $template_result,
         CodeLocation $code_location,
         Context $context,
-        bool $static_is_called_class = false,
     ): ?bool {
         $in_call_map = $method_id ? InternalCallMapHandler::inCallMap((string) $method_id) : false;
 
@@ -1073,7 +1304,12 @@ final class ArgumentsAnalyzer
 
         $calling_class_storage = $class_storage;
 
-        $static_fq_class_name = $fq_class_name;
+        // `static` of the call as the call analyzer knows it before the arguments (the provisional result below has
+        // none for a call without templates), else the class the method is called on
+        $static_class_type = $template_result->static_class_type ?? $fq_class_name;
+        $static_class_is_final = $template_result->static_class_type !== null
+            && $template_result->static_class_is_final;
+
         $self_fq_class_name = $fq_class_name;
 
         if ($method_id instanceof MethodIdentifier) {
@@ -1186,7 +1422,7 @@ final class ArgumentsAnalyzer
                             $cased_method_id,
                             $method_id instanceof MethodIdentifier ? $method_id : null,
                             $self_fq_class_name,
-                            $static_fq_class_name,
+                            $static_class_type,
                             $code_location,
                             $function_storage,
                             $function_params[$i],
@@ -1202,7 +1438,7 @@ final class ArgumentsAnalyzer
                             $template_result,
                             $specialize_taint,
                             $in_call_map,
-                            $static_is_called_class,
+                            $static_class_is_final,
                         );
                     }
                 }
@@ -1432,7 +1668,7 @@ final class ArgumentsAnalyzer
                     $cased_method_id,
                     $method_id instanceof MethodIdentifier ? $method_id : null,
                     $self_fq_class_name,
-                    $static_fq_class_name,
+                    $static_class_type,
                     $code_location,
                     $function_storage,
                     $function_param,
@@ -1446,7 +1682,7 @@ final class ArgumentsAnalyzer
                     $template_result,
                     $specialize_taint,
                     $in_call_map,
-                    $static_is_called_class,
+                    $static_class_is_final,
                 ) === false) {
                     return false;
                 }
@@ -2379,6 +2615,7 @@ final class ArgumentsAnalyzer
             $calling_class_storage,
             $function_storage->template_types ?: [],
             $class_generic_params,
+            $template_result,
         );
 
         if (!$template_types) {

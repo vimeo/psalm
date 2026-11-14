@@ -1079,7 +1079,6 @@
       <code><![CDATA[!$context->self]]></code>
       <code><![CDATA[$context->self]]></code>
       <code><![CDATA[$context->self]]></code>
-      <code><![CDATA[$context->self]]></code>
       <code><![CDATA[$found_generic_params]]></code>
       <code><![CDATA[$found_generic_params]]></code>
       <code><![CDATA[$self_class_storage->template_extended_params]]></code>
@@ -2514,7 +2513,6 @@
       <code><![CDATA[$container_class_storage->template_types]]></code>
       <code><![CDATA[$params]]></code>
       <code><![CDATA[$parent_class]]></code>
-      <code><![CDATA[$self_class]]></code>
       <code><![CDATA[$self_class]]></code>
       <code><![CDATA[$self_class]]></code>
       <code><![CDATA[$self_class]]></code>

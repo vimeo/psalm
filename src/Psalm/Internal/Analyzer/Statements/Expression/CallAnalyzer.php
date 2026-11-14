@@ -38,7 +38,6 @@ use Psalm\IssueBuffer;
 use Psalm\Node\Expr\BinaryOp\VirtualIdentical;
 use Psalm\Node\Expr\VirtualConstFetch;
 use Psalm\Node\VirtualName;
-use Psalm\StatementsSource;
 use Psalm\Storage\Assertion\Falsy;
 use Psalm\Storage\Assertion\IsIdentical;
 use Psalm\Storage\Assertion\IsType;
@@ -296,19 +295,6 @@ abstract class CallAnalyzer
     }
 
     /**
-     * Whether $source is code of a trait: it is analyzed once for each class using the trait, which share its closures
-     * (and the param types the hints of closure arguments write in them)
-     */
-    public static function isInTrait(StatementsSource $source): bool
-    {
-        while (!$source instanceof ClassLikeAnalyzer && ($parent_source = $source->getSource()) !== $source) {
-            $source = $parent_source;
-        }
-
-        return $source instanceof TraitAnalyzer;
-    }
-
-    /**
      * @param  list<PhpParser\Node\Arg>   $args
      */
     public static function checkMethodArgs(
@@ -318,7 +304,6 @@ abstract class CallAnalyzer
         Context $context,
         CodeLocation $code_location,
         StatementsAnalyzer $statements_analyzer,
-        bool $static_is_called_class = false,
     ): bool {
         $codebase = $statements_analyzer->getCodebase();
 
@@ -407,7 +392,6 @@ abstract class CallAnalyzer
             $template_result,
             $code_location,
             $context,
-            $static_is_called_class,
         ) === false) {
             return false;
         }
@@ -431,6 +415,7 @@ abstract class CallAnalyzer
      * @return array<string, array<string, Union>>
      * @param array<string, non-empty-array<string, Union>> $existing_template_types
      * @param array<string, array<string, Union>> $class_template_params
+     * @param ?TemplateResult $call_template_result the call's, whose `static` the constraints are expanded with
      */
     public static function getTemplateTypesForCall(
         Codebase $codebase,
@@ -439,6 +424,7 @@ abstract class CallAnalyzer
         ?ClassLikeStorage $calling_class_storage,
         array $existing_template_types = [],
         array $class_template_params = [],
+        ?TemplateResult $call_template_result = null,
     ): array {
         $template_types = $existing_template_types;
 
@@ -484,17 +470,25 @@ abstract class CallAnalyzer
             }
         }
 
+        $static_class_type = $calling_class_storage->name ?? null;
+        $static_class_is_final = $calling_class_storage->final ?? false;
+
+        if ($call_template_result !== null && $call_template_result->static_class_type !== null) {
+            $static_class_type = $call_template_result->static_class_type;
+            $static_class_is_final = $call_template_result->static_class_is_final;
+        }
+
         foreach ($template_types as $key => $type_map) {
             foreach ($type_map as $class => $type) {
                 $template_types[$key][$class] = TypeExpander::expandUnion(
                     $codebase,
                     $type,
                     $appearing_class_name,
-                    $calling_class_storage->name ?? null,
+                    $static_class_type,
                     null,
                     true,
                     false,
-                    $calling_class_storage->final ?? false,
+                    $static_class_is_final,
                 );
             }
         }
