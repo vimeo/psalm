@@ -412,7 +412,11 @@ final class AtomicMethodCallAnalyzer extends CallAnalyzer
                         $statements_analyzer,
                         $fq_class_name,
                     );
-            } elseif ($class_storage->mixin_declaring_fqcln
+            }
+
+            // a templated mixin without the method falls back to the named ones
+            if ($method_id === $method_id_before_mixins
+                && $class_storage->mixin_declaring_fqcln
                 && $class_storage->namedMixins
             ) {
                 [$lhs_type_part, $class_storage, $naive_method_exists, $method_id, $fq_class_name]
@@ -978,7 +982,9 @@ final class AtomicMethodCallAnalyzer extends CallAnalyzer
                     continue;
                 }
 
-                $mixin_declaring_class_storage = $codebase->classlike_storage_provider->get($mixin_declaring_fqcln);
+                $mixin_declaring_class_storage = $codebase->classlike_storage_provider->get(
+                    $class_storage->getNamedMixinDeclaringClass($mixin),
+                );
 
                 $mixin_class_template_params = ClassTemplateParamCollector::collect(
                     $codebase,

@@ -28,7 +28,6 @@ use function count;
 use function define;
 use function dirname;
 use function extension_loaded;
-use function fgets;
 use function file_exists;
 use function file_get_contents;
 use function file_put_contents;
@@ -49,6 +48,7 @@ use function realpath;
 use function str_ends_with;
 use function str_starts_with;
 use function strcspn;
+use function stream_get_contents;
 use function stream_get_meta_data;
 use function stream_isatty;
 use function stream_set_blocking;
@@ -73,6 +73,8 @@ use const STDOUT;
  */
 final class CliUtils
 {
+    private static ?string $stdin_contents = null;
+
     /** @return list<ClassLoader> */
     public static function requireAutoloaders(
         string $current_dir,
@@ -443,7 +445,7 @@ final class CliUtils
                 continue;
             }
 
-            if ($input_path[0] === '-' && $input_path[2] === '=') {
+            if (strlen($input_path) > 2 && $input_path[0] === '-' && $input_path[2] === '=') {
                 continue;
             }
 
@@ -454,9 +456,10 @@ final class CliUtils
     }
 
     /**
+     * @param bool $read_stdin whether `-` reads the paths from STDIN, which consumes it
      * @return list<string>|null
      */
-    public static function getPathsToCheck(string|array|false|null $f_paths): ?array
+    public static function getPathsToCheck(string|array|false|null $f_paths, bool $read_stdin = true): ?array
     {
         $paths_to_check = [];
 
@@ -496,18 +499,18 @@ final class CliUtils
                 break;
             }
 
-            if ($input_path[0] === '-' && strlen($input_path) === 2) {
+            if (str_starts_with($input_path, '-') && strlen($input_path) === 2) {
                 if ($input_path[1] === 'c' || $input_path[1] === 'f' || $input_path[1] === 'r') {
                     ++$i;
                 }
                 continue;
             }
 
-            if ($input_path[0] === '-' && $input_path[2] === '=') {
+            if (strlen($input_path) > 2 && $input_path[0] === '-' && $input_path[2] === '=') {
                 continue;
             }
 
-            if ($input_path[0] === '-' && $input_path[1] !== '-' && strlen($input_path) > 2) {
+            if (strlen($input_path) > 2 && $input_path[0] === '-' && $input_path[1] !== '-') {
                 // a group of short options like -mh, or -cpsalm.xml with the value attached;
                 // the value of the option that ends a group follows it, as in `-mc psalm.xml`
                 if (strcspn($input_path, 'cfr', 1) + 1 === strlen($input_path) - 1) {
@@ -539,7 +542,8 @@ final class CliUtils
         }
 
         if ($filtered_input_paths === ['-']) {
-            $stdin_paths = self::getPathsToCheckFromStdin();
+            // the Config must not consume STDIN: it loads before Psalm decides to restart, and again after it
+            $stdin_paths = $read_stdin ? self::getPathsToCheckFromStdin() : [];
 
             if ($stdin_paths !== null) {
                 $filtered_input_paths = $stdin_paths;
@@ -579,6 +583,10 @@ final class CliUtils
     /**
      * Reads a whitespace-separated list of paths to analyse from STDIN (used with `psalm -`).
      *
+     * `-` is an explicit request to read STDIN, so this waits for it to end. STDIN can be read only once, so the
+     * result is kept for the later calls of this process. Only the process that analyses reads it: the one that
+     * Psalm restarts into inherits STDIN, so the one that restarts must leave it unread.
+     *
      * The paths are supplied by the (trusted) user invoking the CLI, so the input taint that
      * the STDIN stream carries is escaped here.
      *
@@ -587,32 +595,28 @@ final class CliUtils
      */
     private static function getPathsToCheckFromStdin(): ?array
     {
-        $meta = stream_get_meta_data(STDIN);
-        stream_set_blocking(STDIN, false);
+        if (self::$stdin_contents === null) {
+            $meta = stream_get_meta_data(STDIN);
+            stream_set_blocking(STDIN, true);
 
-        try {
-            $stdin = fgets(STDIN);
-
-            if ($stdin === false) {
-                return null;
+            try {
+                self::$stdin_contents = trim((string) stream_get_contents(STDIN));
+            } finally {
+                stream_set_blocking(STDIN, $meta['blocked']);
             }
-
-            $stdin = trim($stdin);
-
-            if ($stdin === '') {
-                return null;
-            }
-
-            $paths = preg_split('/\s+/', $stdin);
-
-            if ($paths === false) {
-                throw new RuntimeException('Invalid paths: ' . preg_last_error_msg());
-            }
-
-            return $paths;
-        } finally {
-            stream_set_blocking(STDIN, $meta['blocked']);
         }
+
+        if (self::$stdin_contents === '') {
+            return null;
+        }
+
+        $paths = preg_split('/\s+/', self::$stdin_contents);
+
+        if ($paths === false) {
+            throw new RuntimeException('Invalid paths: ' . preg_last_error_msg());
+        }
+
+        return $paths;
     }
 
 

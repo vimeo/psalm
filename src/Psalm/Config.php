@@ -1395,7 +1395,8 @@ final class Config
         // Hack for Symfonys own argv resolution.
         // @see https://github.com/vimeo/psalm/issues/10465
         if (self::$add_command_line_paths && basename($argv[0] ?? '') !== 'psalm-plugin') {
-            $paths_to_check = CliUtils::getPathsToCheck(null);
+            // reading STDIN here would consume it before Psalm restarts, so the paths of `psalm -` are left out
+            $paths_to_check = CliUtils::getPathsToCheck(null, false);
         }
 
         if ($paths_to_check !== null) {
