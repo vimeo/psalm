@@ -1340,11 +1340,18 @@ final class AssignmentAnalyzer
 
             // Remove old reference parent node so previously referenced variable usage doesn't count as reference usage
             $old_type = $context->vars_in_scope[$lhs_var_id];
-            foreach ($old_type->parent_nodes as $old_parent_node_id => $_) {
+            $old_parent_nodes = $old_type->parent_nodes;
+            foreach ($old_parent_nodes as $old_parent_node_id => $_) {
                 if (str_starts_with($old_parent_node_id, "$lhs_var_id from ")) {
-                    unset($old_type->parent_nodes[$old_parent_node_id]);
+                    unset($old_parent_nodes[$old_parent_node_id]);
                 }
             }
+
+            // still a reference to the variable it was bound to, which keeps the new type
+            $context->vars_in_scope[$lhs_var_id] = $old_type->setParentNodes(
+                $old_parent_nodes,
+                $old_type->propagate_parent_nodes,
+            );
         }
         // When assigning an existing reference as a reference it removes the
         // old reference, so it's no longer potentially from a confusing scope.

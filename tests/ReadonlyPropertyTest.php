@@ -289,6 +289,22 @@ final class ReadonlyPropertyTest extends TestCase
                 'error_levels' => [],
                 'php_version' => '8.1',
             ],
+            'unsetOfAnItemOfAReadonlyPropertyAfterAFetch' => [
+                'code' => '<?php
+                    final class C {
+                        /** @param array<string, int> $items */
+                        public function __construct(public readonly array $items) {}
+                    }
+
+                    function f(C $c): void {
+                        foreach ($c->items as $key => $_) {
+                            unset($c->items[$key]);
+                        }
+                    }',
+                'error_message' => 'InaccessibleProperty',
+                'error_levels' => [],
+                'php_version' => '8.1',
+            ],
             'unsetOfAPrivateSetPropertyAfterANarrowing' => [
                 'code' => '<?php
                     final class P {
