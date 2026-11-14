@@ -89,6 +89,7 @@ use function preg_match;
 use function preg_quote;
 use function str_contains;
 use function str_ends_with;
+use function str_replace;
 use function str_split;
 use function str_starts_with;
 use function strlen;
@@ -505,7 +506,7 @@ class Reconciler
                         }
 
                         if (!isset($new_types[$new_key])
-                            && preg_match('/' . preg_quote($key, '/') . '[\]\[\-]/', $new_key)
+                            && self::dependsOnNarrowedVar($new_key, $key)
                             && $is_real
                         ) {
                             // Fix any references to the type before removing it.
@@ -696,6 +697,20 @@ class Reconciler
         }
 
         return $new_types;
+    }
+
+    /**
+     * Whether what is known about $var_id may be stale after $narrowed_var_id has been narrowed. It is not when
+     * $narrowed_var_id is only used as an index of $var_id: narrowing does not change the value of the index.
+     *
+     * @psalm-pure
+     */
+    public static function dependsOnNarrowedVar(string $var_id, string $narrowed_var_id): bool
+    {
+        return (bool) preg_match(
+            '/' . preg_quote($narrowed_var_id, '/') . '[\]\[\-]/',
+            str_replace('[' . $narrowed_var_id . ']', '[]', $var_id),
+        );
     }
 
     /**
