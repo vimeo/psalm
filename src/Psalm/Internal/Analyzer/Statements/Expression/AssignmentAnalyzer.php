@@ -102,7 +102,9 @@ use Psalm\Type\TaintKind;
 use Psalm\Type\Union;
 use UnexpectedValueException;
 
+use function array_filter;
 use function array_map;
+use function array_values;
 use function assert;
 use function count;
 use function is_int;
@@ -115,6 +117,7 @@ use function strncasecmp;
 use function strpos;
 use function strtolower;
 use function substr;
+use function usort;
 
 /**
  * @internal
@@ -197,7 +200,6 @@ final class AssignmentAnalyzer
 
     /**
      * @param  PhpParser\Node\Expr|null $assign_value  This has to be null to support list destructuring
-     * @psalm-suppress ComplexMethod dispatches on every kind of assignment target
      */
     public static function analyze(
         StatementsAnalyzer $statements_analyzer,
@@ -208,6 +210,137 @@ final class AssignmentAnalyzer
         ?PhpParser\Comment\Doc $doc_comment,
         array $not_ignored_docblock_var_ids = [],
         ?PhpParser\Node\Expr $assign_expr = null,
+    ): ?Union {
+        // the keys of an array item are evaluated before the value, so a variable a key assigns is set in the value
+        $keys = $assign_value !== null && $assign_var instanceof PhpParser\Node\Expr\ArrayDimFetch
+            ? self::getKeysEvaluatedFirst($assign_var)
+            : [];
+
+        if (!$keys) {
+            return self::analyzeAfterTheKeys(
+                $statements_analyzer,
+                $assign_var,
+                $assign_value,
+                $assign_value_type,
+                $context,
+                $doc_comment,
+                $not_ignored_docblock_var_ids,
+                $assign_expr,
+            );
+        }
+
+        $was_in_assignment = $context->inside_assignment;
+        $context->inside_assignment = true;
+
+        // the annotations of the statement hold in its keys too
+        $var_comments = [];
+        $comment_type = null;
+        $comment_type_location = null;
+        $removed_taints = 0;
+
+        self::analyzeDocComment(
+            $statements_analyzer,
+            $statements_analyzer->getCodebase(),
+            $context,
+            $assign_var,
+            ExpressionIdentifier::getVarId($assign_var, $statements_analyzer->getFQCLN(), $statements_analyzer),
+            $assign_value_type,
+            $doc_comment,
+            $var_comments,
+            $comment_type,
+            $comment_type_location,
+            $not_ignored_docblock_var_ids,
+            $removed_taints,
+        );
+
+        // as ArrayAssignmentAnalyzer analyses them
+        $was_inside_general_use = $context->inside_general_use;
+        $context->inside_general_use = true;
+
+        foreach ($keys as $key) {
+            if (ExpressionAnalyzer::analyze($statements_analyzer, $key, $context) === false) {
+                $context->inside_assignment = $was_in_assignment;
+                $context->inside_general_use = $was_inside_general_use;
+
+                return null;
+            }
+        }
+
+        $context->inside_assignment = $was_in_assignment;
+        $context->inside_general_use = $was_inside_general_use;
+
+        $statements_analyzer->node_data->markEvaluated($keys);
+
+        try {
+            return self::analyzeAfterTheKeys(
+                $statements_analyzer,
+                $assign_var,
+                $assign_value,
+                $assign_value_type,
+                $context,
+                $doc_comment,
+                $not_ignored_docblock_var_ids,
+                $assign_expr,
+                [$var_comments, $comment_type, $comment_type_location, $removed_taints],
+            );
+        } finally {
+            $statements_analyzer->node_data->unmarkEvaluated($keys);
+        }
+    }
+
+    /**
+     * The keys (and what the root array is fetched from) of an array item that PHP evaluates before the value, in
+     * source order, when one of them assigns something. A variable key is only read when the item is written.
+     *
+     * @return list<PhpParser\Node\Expr>
+     */
+    private static function getKeysEvaluatedFirst(PhpParser\Node\Expr\ArrayDimFetch $assign_var): array
+    {
+        $keys = array_values(array_filter(
+            ArrayAssignmentAnalyzer::getOperands($assign_var),
+            static fn(PhpParser\Node\Expr $operand): bool => !$operand instanceof PhpParser\Node\Expr\Variable
+                || !is_string($operand->name),
+        ));
+
+        $assignment = (new PhpParser\NodeFinder())->findFirst(
+            $keys,
+            static fn(PhpParser\Node $node): bool => $node instanceof PhpParser\Node\Expr\Assign
+                || $node instanceof PhpParser\Node\Expr\AssignOp
+                || $node instanceof PhpParser\Node\Expr\AssignRef
+                || $node instanceof PhpParser\Node\Expr\PreInc
+                || $node instanceof PhpParser\Node\Expr\PostInc
+                || $node instanceof PhpParser\Node\Expr\PreDec
+                || $node instanceof PhpParser\Node\Expr\PostDec,
+        );
+
+        if ($assignment === null) {
+            return [];
+        }
+
+        usort(
+            $keys,
+            static fn(PhpParser\Node\Expr $a, PhpParser\Node\Expr $b): int
+                => (int) $a->getAttribute('startFilePos') <=> (int) $b->getAttribute('startFilePos'),
+        );
+
+        return $keys;
+    }
+
+    /**
+     * @param array{list<VarDocblockComment>, ?Union, ?DocblockTypeLocation, int}|null $doc_comment_analysis
+     *     what analyzeDocComment() found, when it was analysed before the keys
+     * @psalm-suppress ComplexMethod dispatches on every kind of assignment target
+     */
+    private static function analyzeAfterTheKeys(
+        StatementsAnalyzer $statements_analyzer,
+        PhpParser\Node\Expr $assign_var,
+        ?PhpParser\Node\Expr $assign_value,
+        ?Union $assign_value_type,
+        Context $context,
+        ?PhpParser\Comment\Doc $doc_comment,
+        array $not_ignored_docblock_var_ids,
+        ?PhpParser\Node\Expr $assign_expr,
+        ?array $doc_comment_analysis = null,
     ): ?Union {
         $var_id = ExpressionIdentifier::getVarId(
             $assign_var,
@@ -246,20 +379,24 @@ final class AssignmentAnalyzer
 
         $removed_taints = 0;
 
-        self::analyzeDocComment(
-            $statements_analyzer,
-            $codebase,
-            $context,
-            $assign_var,
-            $var_id,
-            $assign_value_type,
-            $doc_comment,
-            $var_comments,
-            $comment_type,
-            $comment_type_location,
-            $not_ignored_docblock_var_ids,
-            $removed_taints,
-        );
+        if ($doc_comment_analysis !== null) {
+            [$var_comments, $comment_type, $comment_type_location, $removed_taints] = $doc_comment_analysis;
+        } else {
+            self::analyzeDocComment(
+                $statements_analyzer,
+                $codebase,
+                $context,
+                $assign_var,
+                $var_id,
+                $assign_value_type,
+                $doc_comment,
+                $var_comments,
+                $comment_type,
+                $comment_type_location,
+                $not_ignored_docblock_var_ids,
+                $removed_taints,
+            );
+        }
 
         if ($extended_var_id) {
             unset($context->cond_referenced_var_ids[$extended_var_id]);
