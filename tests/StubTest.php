@@ -39,8 +39,6 @@ use const DIRECTORY_SEPARATOR;
 
 final class StubTest extends DeferredAnalyzerTestCase
 {
-    private ?string $native_function_stub = null;
-
     #[Override]
     public static function setUpBeforeClass(): void
     {
@@ -51,17 +49,6 @@ final class StubTest extends DeferredAnalyzerTestCase
         $argv = [];
 
         new TestConfig();
-    }
-
-    #[Override]
-    public function tearDown(): void
-    {
-        if ($this->native_function_stub !== null) {
-            unlink($this->native_function_stub);
-            $this->native_function_stub = null;
-        }
-
-        parent::tearDown();
     }
 
     private function getProjectAnalyzerWithConfig(Config $config): ProjectAnalyzer
@@ -334,12 +321,7 @@ final class StubTest extends DeferredAnalyzerTestCase
 
     public function testFunctionExistsOfANativeFunctionStubbedInAPhpFileGuardsItsVersion(): void
     {
-        $this->project_analyzer = $this->getProjectAnalyzerWithNativeFunctionStub();
-
-        $file_path = (string) getcwd() . '/src/somefile.php';
-
-        $this->addFile(
-            $file_path,
+        $this->analyzeWithNativeFunctionStub(
             '<?php
                 function a(): ?object {
                     if (function_exists("fdiv")) {
@@ -349,8 +331,6 @@ final class StubTest extends DeferredAnalyzerTestCase
                     return null;
                 }',
         );
-
-        $this->analyzeFile($file_path, new Context());
     }
 
     public function testNativeFunctionStubbedInAPhpFileIsUndefinedBelowItsVersion(): void
@@ -358,50 +338,54 @@ final class StubTest extends DeferredAnalyzerTestCase
         $this->expectException(CodeException::class);
         $this->expectExceptionMessage('UndefinedFunction');
 
-        $this->project_analyzer = $this->getProjectAnalyzerWithNativeFunctionStub();
-
-        $file_path = (string) getcwd() . '/src/somefile.php';
-
-        $this->addFile(
-            $file_path,
+        $this->analyzeWithNativeFunctionStub(
             '<?php
                 echo fdiv(1.0, 2.0);',
         );
-
-        $this->analyzeFile($file_path, new Context());
     }
 
     /**
-     * A `.php` stub of a native function: written at run time, since PHP cannot lint a file that redeclares it.
+     * Analyses the code with a `.php` stub of a native function, written at run time since PHP cannot lint
+     * a file that redeclares it.
      */
-    private function getProjectAnalyzerWithNativeFunctionStub(): ProjectAnalyzer
+    private function analyzeWithNativeFunctionStub(string $code): void
     {
-        $stub_path = (string) tempnam(sys_get_temp_dir(), 'psalm_native_function_stub');
-        $this->native_function_stub = $stub_path . '.php';
-        rename($stub_path, $this->native_function_stub);
+        $temp_path = (string) tempnam(sys_get_temp_dir(), 'psalm_native_function_stub');
+        $stub_path = $temp_path . '.php';
+        rename($temp_path, $stub_path);
         file_put_contents(
-            $this->native_function_stub,
+            $stub_path,
             '<?php
                 function fdiv(float $num1, float $num2): float {}',
         );
 
-        return $this->getProjectAnalyzerWithConfig(
-            TestConfig::loadFromXML(
-                dirname(__DIR__),
-                '<?xml version="1.0"?>
-                <psalm
-                    errorLevel="1"
-                >
-                    <projectFiles>
-                        <directory name="src" />
-                    </projectFiles>
+        try {
+            $this->project_analyzer = $this->getProjectAnalyzerWithConfig(
+                TestConfig::loadFromXML(
+                    dirname(__DIR__),
+                    '<?xml version="1.0"?>
+                    <psalm
+                        errorLevel="1"
+                    >
+                        <projectFiles>
+                            <directory name="src" />
+                        </projectFiles>
 
-                    <stubs>
-                        <file name="' . $this->native_function_stub . '" />
-                    </stubs>
-                </psalm>',
-            ),
-        );
+                        <stubs>
+                            <file name="' . $stub_path . '" />
+                        </stubs>
+                    </psalm>',
+                ),
+            );
+
+            $file_path = (string) getcwd() . '/src/somefile.php';
+
+            $this->addFile($file_path, $code);
+
+            $this->analyzeFile($file_path, new Context());
+        } finally {
+            unlink($stub_path);
+        }
     }
 
     public function testStubFileClass(): void
