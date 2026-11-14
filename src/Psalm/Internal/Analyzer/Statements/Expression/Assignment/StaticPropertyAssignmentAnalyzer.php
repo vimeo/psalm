@@ -30,7 +30,6 @@ use Psalm\Type;
 use Psalm\Type\Atomic\TNamedObject;
 use Psalm\Type\Union;
 
-use function in_array;
 use function strcspn;
 use function strpos;
 use function strtolower;
@@ -373,23 +372,42 @@ final class StaticPropertyAssignmentAnalyzer
                 continue;
             }
 
-            if (self::mayBeTheSameClass($codebase, $assigned_class, $other_class)) {
+            if (self::mayBeTheSameClass($codebase, $context, $assigned_class, $other_class)) {
                 $context->remove($other_id);
             }
         }
     }
 
-    private static function mayBeTheSameClass(Codebase $codebase, string $first, string $second): bool
-    {
-        $relative = ['self', 'static', 'parent'];
+    private static function mayBeTheSameClass(
+        Codebase $codebase,
+        Context $context,
+        string $first,
+        string $second,
+    ): bool {
+        $first = self::resolveRelativeClass($context, $first);
+        $second = self::resolveRelativeClass($context, $second);
 
-        if (in_array(strtolower($first), $relative, true) || in_array(strtolower($second), $relative, true)) {
+        if ($first === null || $second === null) {
             return true;
         }
 
+        // `static` may be a descendant of the class the code is in, but a class it shares the property with is
+        // still an ancestor or a descendant of that class
         return strtolower($first) === strtolower($second)
             || ($codebase->classOrInterfaceExists($first)
                 && $codebase->classOrInterfaceExists($second)
                 && ($codebase->classExtends($first, $second) || $codebase->classExtends($second, $first)));
+    }
+
+    /**
+     * @return ?string null when the class that `self`, `static` or `parent` stands for is unknown
+     */
+    private static function resolveRelativeClass(Context $context, string $class): ?string
+    {
+        return match (strtolower($class)) {
+            'self', 'static' => $context->self,
+            'parent' => $context->parent,
+            default => $class,
+        };
     }
 }
