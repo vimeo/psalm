@@ -37,8 +37,12 @@ use Psalm\Storage\Assertion\HasArrayKey;
 use Psalm\Storage\Assertion\HasIntOrStringArrayAccess;
 use Psalm\Storage\Assertion\HasStringArrayAccess;
 use Psalm\Storage\Assertion\IsEqualIsset;
+use Psalm\Storage\Assertion\IsGreaterThan;
+use Psalm\Storage\Assertion\IsGreaterThanOrEqualTo;
 use Psalm\Storage\Assertion\IsIdentical;
 use Psalm\Storage\Assertion\IsIsset;
+use Psalm\Storage\Assertion\IsLessThan;
+use Psalm\Storage\Assertion\IsLessThanOrEqualTo;
 use Psalm\Storage\Assertion\IsNotIsset;
 use Psalm\Storage\Assertion\IsNotLooselyEqual;
 use Psalm\Storage\Assertion\NestedAssertions;
@@ -281,14 +285,12 @@ class Reconciler
                     ) {
                         $data = $new_type_part_part->assertions;
 
-                        if ($new_type_part_part instanceof NotNestedAssertions) {
-                            $nested_negated = !$negated;
-                            // the negation is in the assertions now: what they are reconciled for is unchanged
+                        // the polarity is in the assertion (a negated formula holds NotNestedAssertions for the
+                        // NestedAssertions of the condition); $negated only words the issues
+                        $nested_negated = $new_type_part_part instanceof NotNestedAssertions;
+
+                        if ($nested_negated) {
                             $data = self::negateNestedAssertions($data);
-                            $data_negated = $negated;
-                        } else {
-                            $nested_negated = $negated;
-                            $data_negated = $negated;
                         }
 
                         [$existing_types, $_] = self::reconcileKeyedTypes(
@@ -302,7 +304,7 @@ class Reconciler
                             $template_type_map,
                             $inside_loop,
                             $code_location,
-                            $data_negated,
+                            $negated,
                         );
 
                         $new_type_part_part = $nested_negated ? new Falsy() : new Truthy();
@@ -857,6 +859,10 @@ class Reconciler
                 return $existing_keys[$key] ?? Type::getIntRange(1, null);
             }
 
+            if ($key === Context::PHP_SAPI_VAR_ID) {
+                return $existing_keys[$key] ?? Type::getString();
+            }
+
             if (!isset($existing_keys[$key_parts[0]]) && str_contains($key, '::') && !str_contains($key, '$')) {
                 return self::getClassConstantTypeOfKey($codebase, $key, $statements_analyzer);
             }
@@ -1317,11 +1323,17 @@ class Reconciler
             $assertion_string = substr($assertion_string, 1);
         }
 
-        $operator = substr($assertion_string, 0, 1);
-        if ($operator === '>') {
-            $assertion_string = '>= '.substr($assertion_string, 1);
-        } elseif ($operator === '<') {
-            $assertion_string = '<= '.substr($assertion_string, 1);
+        // what the comparison says, as it is written: `!>5` is the assertion of `<= 5`
+        if ($assertion instanceof IsLessThan) {
+            $assertion_string = '< ' . $assertion->value;
+        } elseif ($assertion instanceof IsGreaterThan) {
+            $assertion_string = '> ' . $assertion->value;
+        } elseif ($assertion instanceof IsLessThanOrEqualTo) {
+            $assertion_string = '<= ' . $assertion->value;
+            $not = false;
+        } elseif ($assertion instanceof IsGreaterThanOrEqualTo) {
+            $assertion_string = '>= ' . $assertion->value;
+            $not = false;
         }
 
         if ($negated) {
@@ -1409,7 +1421,7 @@ class Reconciler
                             . ' for ' . $key
                             . ' is ' . ($not
                                 ? 'always ' . $assertion_string . ', so its negation can never be true'
-                                : 'never ' . $assertion),
+                                : 'never ' . $assertion_string),
                         $code_location,
                         $old_var_type_string . ' ' . $assertion,
                     );
@@ -1649,7 +1661,13 @@ class Reconciler
                             // do nothing
                         } else {
                             $properties = $base_atomic_type->properties;
-                            $properties[$array_key_offset] = $result_type;
+
+                            // only one of the keys the offset can be holds what the assertion says, and which one is
+                            // not known: the items it may be keep the types they have
+                            if (count($array_key_offsets) === 1 || !isset($properties[$array_key_offset])) {
+                                $properties[$array_key_offset] = $result_type;
+                            }
+
                             if ($base_atomic_type->is_list
                             && (($int_array_key_offset = ArrayAnalyzer::getLiteralArrayKeyInt($array_key_offset))
                                     === false

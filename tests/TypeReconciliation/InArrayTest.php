@@ -421,7 +421,6 @@ final class InArrayTest extends TestCase
                         throw new \Exception();
                     }',
                 'error_message' => 'DocblockTypeContradiction - src' . DIRECTORY_SEPARATOR . 'somefile.php:8:29 - Operand of type false is always falsy',
-                'error_levels' => ['RedundantConditionGivenDocblockType'],
             ],
             'inArrayDetectType' => [
                 'code' => '<?php

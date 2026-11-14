@@ -156,6 +156,7 @@ final class IfAnalyzer
         $assigned_var_ids = $if_context->assigned_var_ids;
         $possibly_assigned_var_ids = $if_context->possibly_assigned_var_ids;
         $if_context->assigned_var_ids = [];
+        $if_context->fully_assigned_var_ids = [];
         $if_context->possibly_assigned_var_ids = [];
 
         if ($statements_analyzer->analyze(
@@ -486,6 +487,7 @@ final class IfAnalyzer
         }
 
         $if_scope->possibly_assigned_var_ids += $possibly_assigned_var_ids;
+        $if_scope->reassigned_var_ids += $if_context->fully_assigned_var_ids;
 
         if ($if_scope->redefined_vars === null) {
             $if_scope->redefined_vars = $redefined_vars;

@@ -397,6 +397,191 @@ final class MagicMethodAnnotationTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'magicMethodOverloadsAreChosenByTheTypeOfTheArgument' => [
+                'code' => '<?php
+                    interface Query {}
+                    final class LimitedQuery implements Query {}
+                    final class UnlimitedQuery implements Query {}
+
+                    final class PagedResult {
+                        public function getPageCount(): int {
+                            return 1;
+                        }
+                    }
+
+                    final class PlainResult {
+                        public function getAllRecords(): array {
+                            return [];
+                        }
+                    }
+
+                    /**
+                     * @method PagedResult search(LimitedQuery $q)
+                     * @method PlainResult search(UnlimitedQuery $q)
+                     */
+                    final class Searcher {
+                        public function __call(string $name, array $args): object {
+                            return new PlainResult();
+                        }
+                    }
+
+                    $searcher = new Searcher();
+
+                    $paged = $searcher->search(new LimitedQuery());
+                    $plain = $searcher->search(new UnlimitedQuery());',
+                'assertions' => [
+                    '$paged===' => 'PagedResult',
+                    '$plain===' => 'PlainResult',
+                ],
+            ],
+            'magicMethodOverloadsAreChosenByTheNumberOfArguments' => [
+                'code' => '<?php
+                    /**
+                     * @method int pick(string $a)
+                     * @method string pick(int $a, int $b)
+                     * @method float pick(int $a, int $b, int $c, int ...$more)
+                     */
+                    final class Many {
+                        public function __call(string $name, array $args): mixed {
+                            return null;
+                        }
+                    }
+
+                    $many = new Many();
+
+                    $one = $many->pick("a");
+                    $two = $many->pick(1, 2);
+                    $many_args = $many->pick(1, 2, 3, 4, 5);',
+                'assertions' => [
+                    '$one===' => 'int',
+                    '$two===' => 'string',
+                    '$many_args===' => 'float',
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
+            'staticMagicMethodOverloadsAreChosenByTheTypeOfTheArgument' => [
+                'code' => '<?php
+                    /**
+                     * @method static int load(string $id)
+                     * @method static string load(int $id)
+                     */
+                    final class Repository {
+                        public static function __callStatic(string $name, array $args): mixed {
+                            return null;
+                        }
+                    }
+
+                    $byName = Repository::load("a");
+                    $byId = Repository::load(1);',
+                'assertions' => [
+                    '$byName===' => 'int',
+                    '$byId===' => 'string',
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
+            'psalmMethodOverloadsReplaceTheMethodsOfTheSameName' => [
+                'code' => '<?php
+                    /**
+                     * @method bool pick(float $a)
+                     * @psalm-method int pick(string $a)
+                     * @psalm-method string pick(int $a)
+                     */
+                    final class Many {
+                        public function __call(string $name, array $args): mixed {
+                            return null;
+                        }
+                    }
+
+                    $many = new Many();
+
+                    $byString = $many->pick("a");
+                    $byInt = $many->pick(1);',
+                'assertions' => [
+                    '$byString===' => 'int',
+                    '$byInt===' => 'string',
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
+            'magicMethodOverloadsAreChosenByTheNamesOfTheArguments' => [
+                'code' => '<?php
+                    /**
+                     * @method int pick(string $name)
+                     * @method string pick(int $id)
+                     */
+                    final class Many {
+                        public function __call(string $name, array $args): mixed {
+                            return null;
+                        }
+                    }
+
+                    $many = new Many();
+
+                    $byName = $many->pick(name: "a");
+                    $byId = $many->pick(id: 5);',
+                'assertions' => [
+                    '$byName===' => 'int',
+                    '$byId===' => 'string',
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
+            'magicMethodOverloadWithAVariadicTypesTheNamesNoParameterHas' => [
+                'code' => '<?php
+                    /**
+                     * @method int pick(int ...$values)
+                     * @method string pick(string $name)
+                     */
+                    final class Many {
+                        public function __call(string $name, array $args): mixed {
+                            return null;
+                        }
+                    }
+
+                    $many = new Many();
+
+                    $byName = $many->pick(name: "hello");
+                    $byValues = $many->pick(first: 1, second: 2);',
+                'assertions' => [
+                    '$byName===' => 'string',
+                    '$byValues===' => 'int',
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
+            'magicMethodOverloadDoesNotLoseTheNarrowingOfAnArgument' => [
+                'code' => '<?php
+                    final class Foo {
+                        public function bar(): int {
+                            return 1;
+                        }
+                    }
+
+                    /**
+                     * @method int pick(string $a)
+                     * @method string pick(int $a)
+                     */
+                    final class Many {
+                        public function __call(string $name, array $args): mixed {
+                            return null;
+                        }
+                    }
+
+                    function check(Many $many, mixed $x): int {
+                        if ($x instanceof Foo) {
+                            $many->pick($x->bar());
+
+                            return $x->bar();
+                        }
+
+                        return 0;
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
             'methodNamedLikeATypeKeyword' => [
                 'code' => '<?php
                     /**
@@ -1882,6 +2067,49 @@ final class MagicMethodAnnotationTest extends TestCase
     public static function providerInvalidCodeParse(): iterable
     {
         return [
+            'magicMethodOverloadReportsAMethodOfAnotherResult' => [
+                'code' => '<?php
+                    final class PagedResult {
+                        public function getPageCount(): int {
+                            return 1;
+                        }
+                    }
+
+                    final class PlainResult {
+                        public function getAllRecords(): array {
+                            return [];
+                        }
+                    }
+
+                    /**
+                     * @method PagedResult search(int $page)
+                     * @method PlainResult search(string $query)
+                     */
+                    final class Searcher {
+                        public function __call(string $name, array $args): object {
+                            return new PlainResult();
+                        }
+                    }
+
+                    (new Searcher())->search(1)->getAllRecords();',
+                'error_message' => 'UndefinedMethod - src' . DIRECTORY_SEPARATOR . 'somefile.php:24:50 - '
+                    . 'Method PagedResult::getAllRecords does not exist',
+            ],
+            'magicMethodOverloadWithoutAMatchingOneReportsTheLastDeclared' => [
+                'code' => '<?php
+                    /**
+                     * @method int pick(string $a)
+                     * @method string pick(int $a)
+                     */
+                    final class Many {
+                        public function __call(string $name, array $args): mixed {
+                            return null;
+                        }
+                    }
+
+                    (new Many())->pick(1.5);',
+                'error_message' => 'InvalidArgument - src' . DIRECTORY_SEPARATOR . 'somefile.php:12:40',
+            ],
             'invalidMagicMethodKeepsItsNameInTheMessage' => [
                 'code' => '<?php
                     /**

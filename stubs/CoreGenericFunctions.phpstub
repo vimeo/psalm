@@ -300,6 +300,15 @@ function rsort(array &$array, int $flags = SORT_REGULAR): bool
 }
 
 /**
+ * @template TValue
+ *
+ * @param array<TValue> $array
+ * @param callable(mixed, TValue): mixed $callback
+ * @param mixed $initial
+ */
+function array_reduce(array $array, callable $callback, mixed $initial = null): mixed {}
+
+/**
  * @psalm-template T
  * @psalm-template TArray as array<T>
  *

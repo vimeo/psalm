@@ -31,6 +31,7 @@ use Psalm\Internal\Type\TemplateBound;
 use Psalm\Internal\Type\TemplateInferredTypeReplacer;
 use Psalm\Internal\Type\TemplateResult;
 use Psalm\Internal\Type\TypeExpander;
+use Psalm\IssueBuffer;
 use Psalm\Plugin\EventHandler\Event\AddRemoveTaintsEvent;
 use Psalm\Plugin\EventHandler\Event\AfterFunctionCallAnalysisEvent;
 use Psalm\Storage\FunctionLikeParameter;
@@ -234,22 +235,30 @@ final class FunctionCallReturnTypeFetcher
                         $return_type = $return_type->setByRef($function_storage->returns_by_ref);
                         $stmt_type = $return_type;
 
-                        // only check the type locally if it's defined externally
+                        // only check the type locally if it's defined externally, reporting its issues at one call
                         if ($return_type_location &&
                             !$is_stubbed && // makes lookups or array_* functions quicker
                             !$config->isInProjectDirs($return_type_location->file_path)
                         ) {
-                            /** @psalm-suppress UnusedMethodCall Actually generates issues */
-                            $return_type->check(
-                                $statements_analyzer,
-                                new CodeLocation($statements_analyzer->getSource(), $stmt),
-                                $statements_analyzer->getSuppressedIssues(),
-                                $context->phantom_classes,
-                                true,
-                                false,
-                                false,
-                                $context,
+                            $issue_group = IssueBuffer::setIssueGroup(
+                                $return_type_location->file_path . ':' . $return_type_location->raw_file_start,
                             );
+
+                            try {
+                                /** @psalm-suppress UnusedMethodCall Actually generates issues */
+                                $return_type->check(
+                                    $statements_analyzer,
+                                    new CodeLocation($statements_analyzer->getSource(), $stmt),
+                                    $statements_analyzer->getSuppressedIssues(),
+                                    $context->phantom_classes,
+                                    true,
+                                    false,
+                                    false,
+                                    $context,
+                                );
+                            } finally {
+                                IssueBuffer::setIssueGroup($issue_group);
+                            }
                         }
                     }
                 } catch (InvalidArgumentException) {

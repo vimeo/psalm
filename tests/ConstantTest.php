@@ -1181,6 +1181,26 @@ final class ConstantTest extends TestCase
                     A::foo(2);
                     A::foo(3);',
             ],
+            'constantDeclaredWithClassConstantWildcardTypeAcceptsItsValues' => [
+                'code' => '<?php
+                    class Foo
+                    {
+                        public const BAR_A = "a";
+                        public const BAR_B = "b";
+
+                        /** @var self::BAR_* */
+                        public const ONE = self::BAR_A;
+
+                        /** @var array<self::BAR_*, self::BAR_*> */
+                        public const BARS = [
+                            self::BAR_A => self::BAR_A,
+                            self::BAR_B => self::BAR_B,
+                        ];
+
+                        /** @var Foo::BAR_* */
+                        public const OTHER = "b";
+                    }',
+            ],
             'tooLongArrayInvalidConstantAssignmentValueFalsePositiveWithArray' => [
                 'code' => '<?php
                     class TestInvalidConstantAssignmentValueFalsePositiveWithArray {
@@ -2657,6 +2677,24 @@ final class ConstantTest extends TestCase
 
                     Child::ternary();',
             ],
+            'finalConstantFetchedOnNarrowedInstance' => [
+                'code' => '<?php
+                    class Clazz {
+                        /** @var string */
+                        final public const NAME = "string";
+
+                        public function test(object $c): int {
+                            if (!$c instanceof Clazz) {
+                                return 0;
+                            }
+
+                            return strlen($c::NAME);
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
         ];
     }
 
@@ -2667,6 +2705,18 @@ final class ConstantTest extends TestCase
     public static function providerInvalidCodeParse(): iterable
     {
         return [
+            'constantDeclaredWithClassConstantWildcardTypeRejectsOtherValues' => [
+                'code' => '<?php
+                    class Foo
+                    {
+                        public const BAR_A = "a";
+                        public const BAR_B = "b";
+
+                        /** @var self::BAR_* */
+                        public const ONE = "c";
+                    }',
+                'error_message' => 'InvalidConstantAssignmentValue',
+            ],
             'classConstantFromANegativeShiftIsNever' => [
                 'code' => '<?php
                     enum Color: int
@@ -3391,6 +3441,23 @@ final class ConstantTest extends TestCase
                         }
                     }',
                 'error_message' => 'PossiblyNullArgument - src' . DIRECTORY_SEPARATOR . 'somefile.php:11:35',
+            ],
+            'nonFinalConstantFetchedOnNarrowedInstanceIsMixed' => [
+                'code' => '<?php
+                    class Clazz {
+                        public const NAME = "string";
+
+                        public function test(object $c): int {
+                            if (!$c instanceof Clazz) {
+                                return 0;
+                            }
+
+                            return strlen($c::NAME);
+                        }
+                    }',
+                'error_message' => 'MixedArgument',
+                'error_levels' => ['MissingClassConstType'],
+                'php_version' => '8.1',
             ],
         ];
     }

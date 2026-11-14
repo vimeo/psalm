@@ -154,6 +154,78 @@ final class ConditionalTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'notIterableDropsTheObjectsThatAreTraversable' => [
+                'code' => '<?php
+                    function f(Throwable $e): void {
+                        if (rand(0, 1)) {
+                            /** @var Throwable&Traversable $e */
+                            $e = $e;
+                        }
+
+                        if (!is_iterable($e)) {
+                            /** @psalm-check-type-exact $e = Throwable */
+                        }
+                    }
+
+                    function g(Countable|Traversable $c): void {
+                        if (!is_iterable($c)) {
+                            /** @psalm-check-type-exact $c = Countable */
+                        }
+                    }
+
+                    function h(object $o): void {
+                        if (!is_iterable($o)) {
+                            /** @psalm-check-type-exact $o = object */
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
+            'notIterableOfOtherTypesKeepsTheTraversableObjectsOfOtherTypes' => [
+                'code' => '<?php
+                    /** @psalm-assert-if-true iterable<int, string> $x */
+                    function isStringIterable(mixed $x): bool {
+                        return is_iterable($x);
+                    }
+
+                    /** @param Traversable<int, int>|int $v */
+                    function f($v): void {
+                        if (!isStringIterable($v)) {
+                            /** @psalm-check-type-exact $v = Traversable<int, int>|int */
+                        }
+                    }
+
+                    /** @param Generator<int, string>|int $v */
+                    function g($v): void {
+                        if (!isStringIterable($v)) {
+                            /** @psalm-check-type-exact $v = int */
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
+            'identicalKeyedArraysWithAnOptionalKeyOfOverlappingTypes' => [
+                'code' => '<?php
+                    /** @param array{a?: int|string} $x */
+                    function f(array $x, string|bool $s): bool {
+                        return $x === ["a" => $s];
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'identicalKeyedArraysWithAFallbackOfOverlappingTypes' => [
+                'code' => '<?php
+                    /** @param array{a: int|string, ...<string, mixed>} $x */
+                    function f(array $x, string|bool $s): bool {
+                        return $x === ["a" => $s];
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
             'mixedStaysMixedAfterAStackedTernaryOnItsType' => [
                 'code' => '<?php
                     /** @var mixed $a */
@@ -4397,6 +4469,436 @@ final class ConditionalTest extends TestCase
                         }
                     }',
             ],
+            'sideEffectInTheOrConditionRunsOnceInTheElse' => [
+                'code' => '<?php
+                    /** @return list<string> */
+                    function getData(): array {
+                        return [];
+                    }
+
+                    function plain(): void {
+                        $i = 0;
+
+                        if ($i++ > 5 || !($d = getData())) {
+                            echo 1;
+                        } else {
+                            /** @psalm-check-type-exact $i = 1 */;
+                            echo count($d);
+                        }
+                    }
+
+                    function chained(bool $flag): void {
+                        $i = 0;
+
+                        if ($flag) {
+                            echo 0;
+                        } elseif ($i++ > 5 || !($d = getData())) {
+                            echo 1;
+                        } else {
+                            /** @psalm-check-type-exact $i = 1 */;
+                            echo count($d);
+                        }
+                    }
+
+                    /** @psalm-return 1 */
+                    function ternary(): int {
+                        $i = 0;
+
+                        return $i++ > 5 || !($d = getData()) ? 1 : $i;
+                    }',
+                'assertions' => [],
+                'ignored_issues' => ['RiskyTruthyFalsyComparison'],
+                'php_version' => '8.0',
+            ],
+            'elseifElseKnowsVarAssignedInOrCondition' => [
+                'code' => '<?php
+                    /** @return string[] */
+                    function getData(): array { return []; }
+                    function check(): bool { return true; }
+                    if (check() || !($data = getData())) {
+                        $r = 1;
+                    } elseif (check()) {
+                        $r = $data;
+                    } else {
+                        $r = $data;
+                    }',
+                'assertions' => [
+                    '$r===' => '1|non-empty-array<array-key, string>',
+                ],
+            ],
+            'elseifWithoutElseKnowsVarAssignedInOrCondition' => [
+                'code' => '<?php
+                    /** @return string[] */
+                    function getData(): array { return []; }
+                    function check(): bool { return true; }
+                    $r = 1;
+                    if (check() || !($data = getData())) {
+                        $r = 2;
+                    } elseif (check()) {
+                        $r = $data;
+                    }',
+                'assertions' => [
+                    '$r===' => '1|2|non-empty-array<array-key, string>',
+                ],
+            ],
+            'ifElseKnowsVarAssignedInOrCondition' => [
+                'code' => '<?php
+                    /** @return string[] */
+                    function getData(): array { return []; }
+                    function check(): bool { return true; }
+                    if (check() || !($data = getData())) {
+                        $r = 1;
+                    } else {
+                        $r = $data;
+                    }',
+                'assertions' => [
+                    '$r===' => '1|non-empty-array<array-key, string>',
+                ],
+            ],
+            'ternaryElseKnowsVarAssignedInNonNegatedOrCondition' => [
+                'code' => '<?php
+                    function getN(): ?int { return null; }
+                    function check(): bool { return true; }
+                    $r = (check() || ($d = getN())) ? 1 : $d;',
+                'assertions' => [
+                    '$r===' => '0|1|null',
+                ],
+                'ignored_issues' => ['RiskyTruthyFalsyComparison'],
+            ],
+            'ternaryElseKnowsPropertyAssignedInOrCondition' => [
+                'code' => '<?php
+                    /** @return string[] */
+                    function getData(): array { return []; }
+                    function check(): bool { return true; }
+                    final class Holder { public mixed $p = null; }
+                    function run(Holder $o): void {
+                        $r = (check() || !($o->p = getData())) ? 1 : $o->p;
+                        /** @psalm-check-type-exact $r = 1|non-empty-array<array-key, string> */;
+                    }',
+            ],
+            'elseifOwnElseKnowsVarAssignedInOrCondition' => [
+                'code' => '<?php
+                    /** @return string[] */
+                    function getData(): array { return []; }
+                    function check(): bool { return true; }
+                    function run(bool $x): void {
+                        if ($x) {
+                            $r = 1;
+                        } elseif (check() || !($d = getData())) {
+                            $r = 2;
+                        } else {
+                            $r = $d;
+                        }
+                        /** @psalm-check-type-exact $r = 1|2|non-empty-array<array-key, string> */;
+                    }',
+            ],
+            'elseifOwnElseKnowsVarAssignedInNonNegatedOrCondition' => [
+                'code' => '<?php
+                    function getN(): ?int { return null; }
+                    function check(): bool { return true; }
+                    function run(bool $x): void {
+                        $r = 0;
+                        if ($x) {
+                            $r = 1;
+                        } elseif (check() || ($d = getN())) {
+                            $r = 2;
+                        } else {
+                            $r = $d;
+                        }
+                        /** @psalm-check-type-exact $r = 0|1|2|null */;
+                    }',
+                'assertions' => [],
+                'ignored_issues' => ['RiskyTruthyFalsyComparison'],
+            ],
+            'elseifOwnElseKnowsPropertyAssignedInOrCondition' => [
+                'code' => '<?php
+                    /** @return string[] */
+                    function getData(): array { return []; }
+                    function check(): bool { return true; }
+                    final class Holder { public mixed $p = null; }
+                    function run(Holder $o, bool $x): void {
+                        if ($x) {
+                            $r = 1;
+                        } elseif (check() || !($o->p = getData())) {
+                            $r = 2;
+                        } else {
+                            $r = $o->p;
+                        }
+                        /** @psalm-check-type-exact $r = 1|2|non-empty-array<array-key, string> */;
+                    }',
+            ],
+            'ternaryElseKnowsVarAssignedInLongOrCondition' => [
+                'code' => '<?php
+                    /** @return string[] */
+                    function getData(): array { return []; }
+                    function check(): bool { return true; }
+                    $r = (check() || check() || !($data = getData())) ? 1 : $data;',
+                'assertions' => [
+                    '$r===' => '1|non-empty-array<array-key, string>',
+                ],
+            ],
+            'ternaryElseKnowsVarAssignedInLogicalOrCondition' => [
+                'code' => '<?php
+                    /** @return string[] */
+                    function getData(): array { return []; }
+                    function check(): bool { return true; }
+                    $r = (check() or !($data = getData())) ? 1 : $data;',
+                'assertions' => [
+                    '$r===' => '1|non-empty-array<array-key, string>',
+                ],
+            ],
+            'ternaryElseKnowsVarAssignedInOrCondition' => [
+                'code' => '<?php
+                    /** @return string[] */
+                    function getData(): array { return []; }
+                    function check(): bool { return true; }
+                    $r = (check() || !($data = getData())) ? 1 : $data;',
+                'assertions' => [
+                    '$r===' => '1|non-empty-array<array-key, string>',
+                ],
+            ],
+            'sideEffectOfTheRightSideOfAnOrRunsOnceInTheElse' => [
+                'code' => '<?php
+                    function plain(bool $flag): void {
+                        $i = 0;
+
+                        if ($flag || ($i = $i + 1) > rand()) {
+                            echo 1;
+                        } else {
+                            /** @psalm-check-type-exact $i = 1 */;
+                        }
+                    }
+
+                    /** @psalm-return 1 */
+                    function ternary(bool $flag): int {
+                        $i = 0;
+
+                        return $flag || ($i = $i + 1) > rand() ? 1 : $i;
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+            ],
+            'orWhoseRightSideReassignsWhatTheLeftOneTestedInATernaryElse' => [
+                'code' => '<?php
+                    function viaTernary(?string $s): string {
+                        return $s === null || ($s = trim($s)) === "" ? "default" : $s;
+                    }
+
+                    /** @var string $value */
+                    $value = "5";
+                    $result = !ctype_digit($value) || ($value = intval($value)) < 1 ? 0 : $value;',
+                'assertions' => ['$result' => 'int<0, max>'],
+                'ignored_issues' => [],
+            ],
+            'orWhoseRightSideReassignsWhatTheLeftOneTestedInAnElseBranch' => [
+                'code' => '<?php
+                    function early(?string $s): string {
+                        if ($s === null || ($s = trim($s)) === "") {
+                            return "";
+                        } else {
+                            return $s;
+                        }
+                    }
+
+                    function falling(string $value): int {
+                        if (!ctype_digit($value) || ($value = intval($value)) < 1) {
+                            echo "bad";
+                        } else {
+                            return $value;
+                        }
+
+                        return 0;
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+            ],
+            'andWhoseRightSideReassignsWhatTheLeftOneTestedKeepsTheAssignedType' => [
+                'code' => '<?php
+                    function decode(string $body): string {
+                        if (!str_ends_with($body, "}") && false === $body = base64_decode($body, true)) {
+                            return "";
+                        }
+
+                        return stripslashes($body);
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'orWhoseLeftSideIsTrueKeepsWhatItTestedInTheIfBranch' => [
+                'code' => '<?php
+                    function narrow(int|string|null $x): void {
+                        if ($x === null || ($x = (rand() ? 0 : "a")) === 0) {
+                            /** @psalm-check-type-exact $x = 0|null */;
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'orWhoseLeftSideIsAConjunctionAndRightSideReassignsAVariableDoesNotParadoxicallyNarrow' => [
+                'code' => '<?php
+                    function fetch(): ?int {
+                        return rand(0, 1) ? 1 : null;
+                    }
+
+                    function check(?int $x, int $y): void {
+                        if (($x === null && $y === 1) || ($x = fetch())) {
+                            return;
+                        }
+
+                        if ($y === 1) {
+                            echo "reachable";
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => ['RiskyTruthyFalsyComparison'],
+            ],
+            'orWhoseRightSideHasAClosureThatAssignsTheVariableKeepsWhatTheLeftOneTested' => [
+                'code' => '<?php
+                    function call(callable $c): bool {
+                        return $c() > 0;
+                    }
+
+                    function arrow(?int $x): int {
+                        if ($x === null || call(fn() => $x = 1)) {
+                            throw new Exception();
+                        }
+
+                        return $x;
+                    }
+
+                    function closure(?int $x): int {
+                        if ($x === null || call(function () { $x = 1; return $x; })) {
+                            throw new Exception();
+                        }
+
+                        return $x;
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'orWhoseRightSideReassignsWhatTheLeftOneTestedTheSameWayKeepsTruthiness' => [
+                'code' => '<?php
+                    class A {}
+
+                    function getA(): ?A {
+                        return rand(0, 1) ? new A() : null;
+                    }
+
+                    /** @var A|null $handler */
+                    $handler = rand(0, 1) ? new A() : null;
+
+                    if ($handler || $handler = getA()) {
+                        $result = $handler;
+                    } else {
+                        $result = new A();
+                    }',
+                'assertions' => [
+                    '$result' => 'A',
+                ],
+            ],
+            'orWhoseRightSideAssignsAnotherVariableKeepsWhatTheLeftOneTested' => [
+                'code' => '<?php
+                    /** @var string|null $s */
+                    $s = null;
+
+                    if ($s === null || ($n = strlen($s)) > 5) {
+                        throw new Exception();
+                    }',
+                'assertions' => [
+                    '$s' => 'string',
+                    '$n' => 'int<0, 5>',
+                ],
+            ],
+            'orWhoseRightSideReassignsAnArrayTheLeftOneTestedAKeyOfKeepsTheAssignedType' => [
+                'code' => '<?php
+                    /** @var array{k?: int} $arr */
+                    $arr = [];
+
+                    if (!isset($arr["k"]) || count($arr = ["z" => "q"]) > 1) {
+                        throw new Exception();
+                    }',
+                'assertions' => [
+                    '$arr' => 'array{z: string}',
+                ],
+            ],
+            'logicalOrWhoseRightSideReassignsWhatTheLeftOneTestedKeepsTheAssignedType' => [
+                'code' => '<?php
+                    /** @var string $value */
+                    $value = "5";
+
+                    if (!ctype_digit($value) or ($value = intval($value)) < 1) {
+                        throw new Exception();
+                    }',
+                'assertions' => [
+                    '$value' => 'int<1, max>',
+                ],
+            ],
+            'orWhoseRightSideReassignsWhatTheLeftOneTestedKeepsTheAssignedType' => [
+                'code' => '<?php
+                    /** @var string $value */
+                    $value = "5";
+
+                    if (!ctype_digit($value) || ($value = intval($value)) < 1) {
+                        throw new Exception();
+                    }',
+                'assertions' => [
+                    '$value' => 'int<1, max>',
+                ],
+            ],
+            'variableAssignedByAnOperandOfFiveOredOnesIsDefinedWhereTheyAreFalse' => [
+                'code' => '<?php
+                    /** @return int|false */
+                    function strPos2() {
+                        return rand(0, 1) ? 1 : false;
+                    }
+
+                    if (rand(0, 1)
+                        || false === ($ns = strPos2())
+                        || rand(0, 1)
+                        || rand(0, 1)
+                        || rand(0, 1)
+                    ) {
+                        throw new Exception();
+                    }',
+                'assertions' => [
+                    '$ns===' => 'int',
+                ],
+            ],
+            'mixedAssignmentInTheRightSideOfAnOrInALoopIsNotReportedWhenTheElseNarrowsIt' => [
+                'code' => '<?php
+                    /** @param list<array<mixed>> $calls */
+                    function f(array $calls): void {
+                        foreach ($calls as $arguments) {
+                            if (rand(0, 1) || !is_string($name = $arguments[0] ?? null)) {
+                                continue;
+                            }
+
+                            echo $name;
+                        }
+                    }',
+            ],
+            'orWhoseBothSidesAssignTheSameVariableKeepsWhatTheLeftOneTested' => [
+                'code' => '<?php
+                    class A {}
+
+                    function getA(): ?A {
+                        return rand(0, 1) ? new A() : null;
+                    }
+
+                    $a = null;
+
+                    if (($a = getA()) || ($a = getA())) {
+                        $b = $a;
+                    } else {
+                        $b = new A();
+                    }',
+                'assertions' => [
+                    '$b' => 'A',
+                ],
+            ],
         ];
     }
 
@@ -4407,6 +4909,31 @@ final class ConditionalTest extends TestCase
     public static function providerInvalidCodeParse(): iterable
     {
         return [
+            'notIterableOfATraversableObjectIsImpossible' => [
+                'code' => '<?php
+                    function f(ArrayObject $a): void {
+                        if (!is_iterable($a)) {
+                            echo "never";
+                        }
+                    }',
+                'error_message' => 'TypeDoesNotContainType',
+                'error_levels' => [],
+                'php_version' => '8.1',
+            ],
+            'mixedAssignmentInTheRightSideOfAnOrInALoopIsReportedWhenTheElseDoesNotNarrowIt' => [
+                'code' => '<?php
+                    /** @param list<array<mixed>> $calls */
+                    function f(array $calls): void {
+                        foreach ($calls as $arguments) {
+                            if (rand(0, 1) || null === ($name = $arguments[0] ?? null)) {
+                                continue;
+                            }
+
+                            echo 1;
+                        }
+                    }',
+                'error_message' => 'MixedAssignment - src' . DIRECTORY_SEPARATOR . 'somefile.php:5:57',
+            ],
             'negatedInstanceofOfAnEnumOfItself' => [
                 'code' => '<?php
                     enum Code: int {
@@ -4422,26 +4949,6 @@ final class ConditionalTest extends TestCase
                 'error_message' => 'TypeDoesNotContainType - src' . DIRECTORY_SEPARATOR . 'somefile.php:8:30 - Type Code for $code',
                 'error_levels' => [],
                 'php_version' => '8.1',
-            ],
-            'identicalKeyedArraysWithAnOptionalKeyOfOverlappingTypesAreAKnownLimit' => [
-                'code' => '<?php
-                    /** @param array{a?: int|string} $x */
-                    function f(array $x, string|bool $s): bool {
-                        return $x === ["a" => $s];
-                    }',
-                'error_message' => 'TypeDoesNotContainType',
-                'error_levels' => [],
-                'php_version' => '8.0',
-            ],
-            'identicalKeyedArraysWithAFallbackOfOverlappingTypesAreAKnownLimit' => [
-                'code' => '<?php
-                    /** @param array{a: int|string, ...<string, mixed>} $x */
-                    function f(array $x, string|bool $s): bool {
-                        return $x === ["a" => $s];
-                    }',
-                'error_message' => 'TypeDoesNotContainType',
-                'error_levels' => [],
-                'php_version' => '8.0',
             ],
             'identicalKeyedArraysOfDisjointTypes' => [
                 'code' => '<?php
@@ -5040,6 +5547,45 @@ final class ConditionalTest extends TestCase
                         echo $i;
                     }',
                 'error_message' => 'TypeDoesNotContainType',
+            ],
+            'ternaryElseOfAndDoesNotKnowVarAssignedInCondition' => [
+                'code' => '<?php
+                    function getData(): ?array { return null; }
+                    function check(): bool { return true; }
+                    $r = (check() && ($data = getData()) !== null) ? 1 : $data;',
+                'error_message' => 'UndefinedGlobalVariable',
+            ],
+            'orWhoseLeftSideIsAConjunctionAndRightSideReassignsAVariableKeepsTheLeftNullable' => [
+                'code' => '<?php
+                    function fetch(): ?int {
+                        return rand(0, 1) ? 1 : null;
+                    }
+
+                    function check(?int $a, ?int $b): int {
+                        if (($b === null && $a === null) || ($a = fetch()) !== null) {
+                            return 0;
+                        }
+
+                        return $b;
+                    }',
+                'error_message' => 'NullableReturnStatement',
+            ],
+            'orWhoseRightSideHasAClosureThatAssignsTheVariableByReference' => [
+                'code' => '<?php
+                    function call(callable $c): bool {
+                        return $c() > 0;
+                    }
+
+                    function check(?int $x): int {
+                        if ($x === null || call(function () use (&$x) { $x = null; return 1; })) {
+                            throw new Exception();
+                        }
+
+                        return $x;
+                    }',
+                'error_message' => 'NullableReturnStatement',
+                'error_levels' => [],
+                'php_version' => '8.0',
             ],
         ];
     }

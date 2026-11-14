@@ -204,7 +204,12 @@ Setting this to `false` means that function calls will cause Psalm to forget wha
   allowStringToStandInForClass="[bool]"
 >
 ```
-When `true`, strings can be used as classes, meaning `$some_string::someMethod()` is allowed. If `false`, only class constant strings (of the form `Foo\Bar::class`) can stand in for classes, otherwise an `InvalidStringClass` issue is emitted. Defaults to `false`.
+When `true`, string literals naming existing, compatible classes are accepted in `class-string`
+arguments and return values, dynamic class expressions, and comparisons against class strings.
+When `false`, prefer `Foo\Bar::class` to a literal class name. Class expressions and
+comparisons emit `InvalidStringClass`; type-checked class-string arguments and returns
+emit the usual type diagnostics. Ordinary strings outside class-name contexts are unaffected.
+Defaults to `false`.
 
 #### disableSuppressAll
 
