@@ -111,6 +111,7 @@ use function reset;
 use function spl_object_id;
 use function str_contains;
 use function str_starts_with;
+use function strncasecmp;
 use function strpos;
 use function strtolower;
 use function substr;
@@ -1453,6 +1454,14 @@ final class AssignmentAnalyzer
                 $statements_analyzer,
             );
 
+            // `static::$p` is a variable of its own, but the property it names is declared for the class the code is in
+            if ($property_id !== null
+                && strncasecmp($property_id, 'static::$', 9) === 0
+                && ($self_class = $context->self ?? $statements_analyzer->getFQCLN()) !== null
+            ) {
+                $property_id = $self_class . substr($property_id, 6);
+            }
+
             if ($property_id !== null
                 && $codebase->propertyExists($property_id, false)
             ) {
@@ -1541,6 +1550,10 @@ final class AssignmentAnalyzer
 
             if (!$by_ref_type->hasMixed() && $constrain_type) {
                 $context->byref_constraints[$var_id] = new ReferenceConstraint($by_ref_type);
+            }
+
+            if ($stmt instanceof PhpParser\Node\Expr\StaticPropertyFetch) {
+                StaticPropertyAssignmentAnalyzer::forgetAliasesOfStaticProperty($codebase, $context, $var_id);
             }
 
             if (!$context->hasVariable($var_id)) {
