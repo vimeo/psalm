@@ -1800,7 +1800,6 @@ final class ArrayAccessTest extends TestCase
                     $a = [];
                     echo $a[0];',
                 'error_message' => 'MixedArrayAccess',
-                'error_levels' => ['MixedAssignment'],
             ],
             'mixedArrayOffset' => [
                 'code' => '<?php
@@ -1808,7 +1807,6 @@ final class ArrayAccessTest extends TestCase
                     $a = 5;
                     echo [1, 2, 3, 4][$a];',
                 'error_message' => 'MixedArrayOffset',
-                'error_levels' => ['MixedAssignment'],
             ],
             'nullArrayAccess' => [
                 'code' => '<?php
@@ -1957,7 +1955,6 @@ final class ArrayAccessTest extends TestCase
             ],
             'recogniseBadVar' => [
                 'code' => '<?php
-                    /** @psalm-suppress MixedAssignment */
                     $array = $_GET["foo"] ?? [];
 
                     $array[$a] = "b";',

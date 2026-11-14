@@ -6406,7 +6406,6 @@ final class ClassTemplateTest extends TestCase
                      * @template T
                      * @param T $p
                      * @return Generic<T>
-                     * @psalm-suppress InvalidReturnType
                      */
                     function violate($p) {}',
                 'error_message' => 'InvalidTemplateParam',
@@ -6700,21 +6699,10 @@ final class ClassTemplateTest extends TestCase
                      */
                     class ArrayCollection
                     {
-                        /**
-                         * An array containing the entries of this collection.
-                         *
-                         * @psalm-var array<TKey,T>
-                         * @var array
-                         */
+                        /** @var array<TKey,T> */
                         private $elements = [];
 
-                        /**
-                         * Initializes a new ArrayCollection.
-                         *
-                         * @param array $elements
-                         *
-                         * @psalm-param array<TKey,T> $elements
-                         */
+                        /** @param array<TKey,T> $elements */
                         public function __construct(array $elements = [])
                         {
                             $this->elements = $elements;

@@ -2755,7 +2755,6 @@ final class UnusedCodeTest extends TestCase
                     }
                     PHP,
                 'error_message' => 'UnusedVariable - src' . DIRECTORY_SEPARATOR . 'somefile.php:9:5',
-                'error_levels' => ['MixedAssignment'],
             ],
             'undefinedVariableAfterAVariableVariableIsStillReported' => [
                 'code' => <<<'PHP'
@@ -2770,7 +2769,6 @@ final class UnusedCodeTest extends TestCase
                     }
                     PHP,
                 'error_message' => 'UndefinedVariable',
-                'error_levels' => ['MixedAssignment'],
             ],
             'postIncrementAsArrayKeyIsAnUnusedAssignment' => [
                 'code' => '<?php
@@ -3157,7 +3155,6 @@ final class UnusedCodeTest extends TestCase
                     $a = new A();
                     $a->foo = "bar";',
                 'error_message' => 'PossiblyUnusedProperty',
-                'error_levels' => ['UnusedVariable'],
             ],
             'possiblyUnusedPropertyWithArrayWrittenNeverRead' => [
                 'code' => '<?php
@@ -3169,7 +3166,6 @@ final class UnusedCodeTest extends TestCase
                     $a = new A();
                     $a->foo[] = "bar";',
                 'error_message' => 'PossiblyUnusedProperty',
-                'error_levels' => ['UnusedVariable'],
             ],
             'unusedProperty' => [
                 'code' => '<?php
@@ -3912,7 +3908,6 @@ final class UnusedCodeTest extends TestCase
 
                     new Test(true, false);',
                 'error_message' => 'PossiblyUnusedProperty',
-                'error_levels' => ['UnusedVariable'],
             ],
             'assignmentBeforeAnUncaughtThrowInATryFinallyIsNotSeenAfterTheTry' => [
                 'code' => '<?php
