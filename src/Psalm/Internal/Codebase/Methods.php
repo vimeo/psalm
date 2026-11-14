@@ -33,24 +33,34 @@ use Psalm\Storage\FunctionLikeParameter;
 use Psalm\Storage\MethodStorage;
 use Psalm\Type;
 use Psalm\Type\Atomic;
+use Psalm\Type\Atomic\TArray;
+use Psalm\Type\Atomic\TBool;
 use Psalm\Type\Atomic\TCallable;
+use Psalm\Type\Atomic\TClosedResource;
 use Psalm\Type\Atomic\TClosure;
 use Psalm\Type\Atomic\TEnumCase;
+use Psalm\Type\Atomic\TFloat;
+use Psalm\Type\Atomic\TInt;
 use Psalm\Type\Atomic\TKeyedArray;
 use Psalm\Type\Atomic\TNamedObject;
 use Psalm\Type\Atomic\TNull;
+use Psalm\Type\Atomic\TObject;
+use Psalm\Type\Atomic\TResource;
 use Psalm\Type\Atomic\TString;
 use Psalm\Type\Atomic\TTemplateParam;
 use Psalm\Type\Atomic\TTemplateValueOf;
 use Psalm\Type\Atomic\TValueOf;
+use Psalm\Type\Atomic\TVoid;
 use Psalm\Type\Union;
 use UnexpectedValueException;
 
+use function array_intersect_key;
 use function array_pop;
 use function assert;
 use function count;
 use function explode;
 use function in_array;
+use function ksort;
 use function reset;
 use function strtolower;
 
@@ -827,15 +837,90 @@ final class Methods
             return null;
         }
 
-        foreach ($class_storage->overridden_method_ids[$appearing_method_name] as $overridden_method_id) {
+        $_conflicting_return_types = [];
+
+        return $this->getInheritedReturnType(
+            $codebase,
+            $class_storage,
+            $appearing_method_name,
+            $source_analyzer !== null,
+            false,
+            $self_class,
+            $_conflicting_return_types,
+        );
+    }
+
+    /**
+     * The return type a method without its own inherits from the methods it overrides: their
+     * intersection or, when they provably have none, their union, with $conflicting_return_types
+     * set to the inherited types by method id. Null when they may have one Psalm can't express.
+     *
+     * @param lowercase-string $method_name
+     * @param array<string, Union> $conflicting_return_types
+     * @param-out array<string, Union> $conflicting_return_types
+     */
+    public function getInheritedReturnType(
+        Codebase $codebase,
+        ClassLikeStorage $class_storage,
+        string $method_name,
+        bool $intersect,
+        bool $docblock_only,
+        ?string &$self_class,
+        array &$conflicting_return_types,
+    ): ?Union {
+        $overridden_method_ids = $class_storage->overridden_method_ids[$method_name] ?? [];
+
+        $found_generic_params = null;
+        $generic_params_collected = false;
+        $candidate_type = null;
+        $inherited_method_ids = [];
+        $inherited_return_types = [];
+        $meet_failed = false;
+
+        foreach ($overridden_method_ids as $overridden_method_id) {
             $overridden_storage = $this->getStorage($overridden_method_id);
 
-            if ($overridden_storage->return_type) {
+            if ($overridden_storage->return_type
+                && (!$docblock_only || $overridden_storage->has_docblock_return_type)
+                && !$this->isRedeclaredByOverriddenMethod($overridden_method_id, $overridden_method_ids)
+            ) {
+                $overridden_return_type = $overridden_storage->return_type;
+
+                if ($class_storage->template_extended_params !== null) {
+                    if (!$generic_params_collected) {
+                        $found_generic_params = ClassTemplateParamCollector::collect(
+                            $codebase,
+                            $class_storage,
+                            $class_storage,
+                            $method_name,
+                            null,
+                            true,
+                        );
+                        $generic_params_collected = true;
+                    }
+
+                    if ($found_generic_params !== null) {
+                        $overridden_return_type = TemplateInferredTypeReplacer::replace(
+                            $overridden_return_type,
+                            new TemplateResult([], $found_generic_params),
+                            $codebase,
+                        );
+                    }
+                }
+
+                $inherited_method_ids[] = $overridden_method_id;
+                $inherited_return_types[] = $overridden_return_type;
+
+                if ($meet_failed) {
+                    continue;
+                }
+
                 if ($overridden_storage->return_type->isNull()
                     && !$overridden_storage->signature_return_type?->isNull()
                 ) {
                     if ($candidate_type && !$candidate_type->isVoid()) {
-                        return null;
+                        $meet_failed = true;
+                        continue;
                     }
 
                     $candidate_type = Type::getVoid();
@@ -847,11 +932,9 @@ final class Methods
                 $overridden_class_storage =
                     $this->classlike_storage_provider->get($fq_overridden_class);
 
-                $overridden_return_type = $overridden_storage->return_type;
-
                 $self_class = $overridden_class_storage->name;
 
-                if ($candidate_type && $source_analyzer && !$candidate_type->isMixed()) {
+                if ($candidate_type && $intersect && !$candidate_type->isMixed()) {
                     $candidate_to_overridden_result = new TypeComparisonResult();
                     $old_contained_by_new = UnionTypeComparator::isContainedBy(
                         $codebase,
@@ -898,7 +981,8 @@ final class Methods
                             continue;
                         }
 
-                        return null;
+                        $meet_failed = true;
+                        continue;
                     }
 
                     if ($old_contained_by_new) {
@@ -910,7 +994,100 @@ final class Methods
             }
         }
 
+        if ($meet_failed && $inherited_return_types !== []) {
+            if (!self::haveDisjointValues($inherited_return_types)) {
+                return null;
+            }
+
+            foreach ($inherited_method_ids as $i => $inherited_method_id) {
+                $conflicting_return_types[$this->getCasedMethodId($inherited_method_id)]
+                    = $inherited_return_types[$i];
+            }
+
+            ksort($conflicting_return_types);
+
+            return Type::combineUnionTypeArray($inherited_return_types, $codebase);
+        }
+
         return $candidate_type;
+    }
+
+    /**
+     * Whether no value can be of all the types, because no kind of value (int, string, object...)
+     * is held by one of the atomic types of each of them
+     *
+     * @param list<Union> $types
+     * @psalm-pure
+     */
+    private static function haveDisjointValues(array $types): bool
+    {
+        $common_kinds = null;
+
+        foreach ($types as $type) {
+            $kinds = [];
+
+            foreach ($type->getAtomicTypes() as $atomic_type) {
+                $kind = self::getValueKind($atomic_type);
+
+                if ($kind === null) {
+                    return false;
+                }
+
+                $kinds[$kind] = true;
+            }
+
+            $common_kinds = $common_kinds === null ? $kinds : array_intersect_key($common_kinds, $kinds);
+        }
+
+        return $common_kinds === [];
+    }
+
+    /**
+     * The kind of the values of a type, values of different kinds being different; null when the
+     * type has values of several kinds or Psalm doesn't know them
+     *
+     * @psalm-pure
+     */
+    private static function getValueKind(Atomic $type): ?string
+    {
+        return match (true) {
+            $type instanceof TInt => 'int',
+            $type instanceof TFloat => 'float',
+            $type instanceof TString => 'string',
+            $type instanceof TBool => 'bool',
+            $type instanceof TNull,
+            $type instanceof TVoid => 'null',
+            $type instanceof TArray,
+            $type instanceof TKeyedArray => 'array',
+            $type instanceof TNamedObject,
+            $type instanceof TObject => 'object',
+            $type instanceof TResource,
+            $type instanceof TClosedResource => 'resource',
+            default => null,
+        };
+    }
+
+    /**
+     * Whether another of the overridden methods overrides the method and declares a return type
+     *
+     * @param array<string, MethodIdentifier> $overridden_method_ids
+     * @psalm-capabilities read-props
+     */
+    private function isRedeclaredByOverriddenMethod(
+        MethodIdentifier $method_id,
+        array $overridden_method_ids,
+    ): bool {
+        foreach ($overridden_method_ids as $other_method_id) {
+            if ($other_method_id !== $method_id
+                && $this->getStorage($other_method_id)->return_type
+                && isset($this->classlike_storage_provider->get($other_method_id->fq_class_name)
+                    ->overridden_method_ids[$method_id->method_name][$method_id->fq_class_name])
+            ) {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     /**

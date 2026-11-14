@@ -508,6 +508,168 @@ final class InterfaceTest extends TestCase
                       }
                     }',
             ],
+            'inheritMultipleInterfacesWithConflictingDocblocksReturnsTheirUnion' => [
+                'code' => '<?php
+                    final class Foo {}
+                    interface I1 {
+                        /** @return string */
+                        public function foo();
+                    }
+                    interface I2 {
+                        /** @return Foo|int */
+                        public function foo();
+                    }
+                    final class A implements I1, I2 {
+                        public function foo() {
+                            return "hello";
+                        }
+                    }
+
+                    $a = (new A())->foo();',
+                'assertions' => [
+                    '$a===' => 'Foo|int|string',
+                ],
+                'ignored_issues' => ['ImplementedReturnTypeMismatch'],
+            ],
+            'suppressConflictingInheritedDocblocksOnMethod' => [
+                'code' => '<?php
+                    interface I1 {
+                        /** @return string */
+                        public function foo();
+                    }
+                    interface I2 {
+                        /** @return int */
+                        public function foo();
+                    }
+                    final class A implements I1, I2 {
+                        /** @psalm-suppress ImplementedReturnTypeMismatch */
+                        public function foo() {
+                            return "hello";
+                        }
+                    }',
+            ],
+            'suppressConflictingInheritedDocblocksOnClass' => [
+                'code' => '<?php
+                    interface I1 {
+                        /** @return string */
+                        public function foo();
+                    }
+                    interface I2 {
+                        /** @return int */
+                        public function foo();
+                    }
+                    /** @psalm-suppress ImplementedReturnTypeMismatch */
+                    final class A implements I1, I2 {
+                        public function foo() {
+                            return "hello";
+                        }
+                    }',
+            ],
+            'inheritMultipleInterfacesWithOverlappingDocblocks' => [
+                'code' => '<?php
+                    interface I1 {
+                        /** @return string|int */
+                        public function foo();
+                    }
+                    interface I2 {
+                        /** @return string|bool */
+                        public function foo();
+                    }
+                    final class A implements I1, I2 {
+                        public function foo() {
+                            return "hello";
+                        }
+                    }
+
+                    $a = (new A())->foo();',
+                'assertions' => [
+                    '$a===' => 'string',
+                ],
+            ],
+            'inheritTemplatedInterfaceDocblockAgreeingWithAnother' => [
+                'code' => '<?php
+                    /** @template T */
+                    interface I1 {
+                        /** @return T */
+                        public function foo();
+                    }
+                    interface I2 {
+                        /** @return string */
+                        public function foo();
+                    }
+                    /** @implements I1<string> */
+                    final class A implements I1, I2 {
+                        public function foo() {
+                            return "hello";
+                        }
+                    }
+
+                    $a = (new A())->foo();',
+                'assertions' => [
+                    '$a===' => 'string',
+                ],
+            ],
+            'inheritNarrowerDocblockOfExtendingInterface' => [
+                'code' => '<?php
+                    interface I1 {
+                        /** @return string|int */
+                        public function foo();
+                    }
+                    interface I2 extends I1 {
+                        /** @return string */
+                        public function foo();
+                    }
+                    final class A implements I1, I2 {
+                        public function foo() {
+                            return "hello";
+                        }
+                    }
+
+                    $a = (new A())->foo();',
+                'assertions' => [
+                    '$a===' => 'string',
+                ],
+            ],
+            'inheritInterfacesWithDocblocksOverlappingOnlyInEmptyArray' => [
+                'code' => '<?php
+                    interface I1 {
+                        /** @return array<int, string> */
+                        public function foo();
+                    }
+                    interface I2 {
+                        /** @return array<int, int> */
+                        public function foo();
+                    }
+                    final class A implements I1, I2 {
+                        public function foo() {
+                            return [];
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => ['MissingReturnType'],
+            ],
+            'inheritInterfacesWithDocblocksOverlappingOnlyInEmptyArrayAndAnotherType' => [
+                'code' => '<?php
+                    interface I1 {
+                        /** @return list<string>|int */
+                        public function foo();
+                    }
+                    interface I2 {
+                        /** @return list<int>|int */
+                        public function foo();
+                    }
+                    interface I3 {
+                        /** @return list<bool> */
+                        public function foo();
+                    }
+                    final class A implements I1, I2, I3 {
+                        public function foo() {
+                            return [];
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => ['MissingReturnType'],
+            ],
             'interfaceReturnType' => [
                 'code' => '<?php
                     interface A {
@@ -1764,7 +1926,145 @@ final class InterfaceTest extends TestCase
                             return "hello";
                         }
                     }',
-                'error_message' => 'InvalidReturnType',
+                'error_message' => 'ImplementedReturnTypeMismatch - src' . DIRECTORY_SEPARATOR . 'somefile.php:11:25 - '
+                    . 'The inherited return types \'string\' for I1::foo and \'int\' for I2::foo cannot be satisfied '
+                    . 'together by A::foo',
+            ],
+            'inheritMultipleInterfacesWithConflictingDocblocksInEitherOrder' => [
+                'code' => '<?php
+                    interface I1 {
+                        /** @return string */
+                        public function foo();
+                    }
+                    interface I2 {
+                        /** @return int */
+                        public function foo();
+                    }
+                    class A implements I2, I1 {
+                        public function foo() {
+                            return "hello";
+                        }
+                    }',
+                'error_message' => 'The inherited return types \'string\' for I1::foo and \'int\' for I2::foo cannot be '
+                    . 'satisfied together by A::foo',
+            ],
+            'inheritConflictingDocblocksFromParentClassAndInterface' => [
+                'code' => '<?php
+                    interface I {
+                        /** @return int */
+                        public function foo();
+                    }
+                    abstract class P {
+                        /** @return string */
+                        abstract public function foo();
+                    }
+                    final class A extends P implements I {
+                        public function foo() {
+                            return "hello";
+                        }
+                    }',
+                'error_message' => 'The inherited return types \'int\' for I::foo and \'string\' for P::foo cannot be '
+                    . 'satisfied together by A::foo',
+            ],
+            'inheritConflictingDocblocksThroughInterfaceHierarchy' => [
+                'code' => '<?php
+                    interface I1 {
+                        /** @return string */
+                        public function foo();
+                    }
+                    interface I2 {
+                        /** @return int */
+                        public function foo();
+                    }
+                    interface I3 extends I1, I2 {}
+                    final class A implements I3 {
+                        public function foo() {
+                            return "hello";
+                        }
+                    }',
+                'error_message' => 'The inherited return types \'string\' for I1::foo and \'int\' for I2::foo cannot be '
+                    . 'satisfied together by A::foo',
+            ],
+            'inheritConflictingDocblocksInTraitMethod' => [
+                'code' => '<?php
+                    interface I1 {
+                        /** @return string */
+                        public function foo();
+                    }
+                    interface I2 {
+                        /** @return int */
+                        public function foo();
+                    }
+                    trait T {
+                        public function foo() {
+                            return "hello";
+                        }
+                    }
+                    final class A implements I1, I2 {
+                        use T;
+                    }',
+                'error_message' => 'The inherited return types \'string\' for I1::foo and \'int\' for I2::foo cannot be '
+                    . 'satisfied together by A::foo',
+            ],
+            'inheritConflictingTemplatedDocblocks' => [
+                'code' => '<?php
+                    /** @template T */
+                    interface I1 {
+                        /** @return T */
+                        public function foo();
+                    }
+                    interface I2 {
+                        /** @return string */
+                        public function foo();
+                    }
+                    /** @implements I1<int> */
+                    final class A implements I1, I2 {
+                        public function foo() {
+                            return "hello";
+                        }
+                    }',
+                'error_message' => 'The inherited return types \'int\' for I1::foo and \'string\' for I2::foo cannot be '
+                    . 'satisfied together by A::foo',
+            ],
+            'inheritConflictingNullDocblock' => [
+                'code' => '<?php
+                    interface I1 {
+                        /** @return null */
+                        public function foo();
+                    }
+                    interface I2 {
+                        /** @return string */
+                        public function foo();
+                    }
+                    final class A implements I1, I2 {
+                        public function foo() {
+                            return "hello";
+                        }
+                    }',
+                'error_message' => 'The inherited return types \'null\' for I1::foo and \'string\' for I2::foo cannot be '
+                    . 'satisfied together by A::foo',
+            ],
+            'inheritConflictingDocblocksFromThreeInterfaces' => [
+                'code' => '<?php
+                    interface I1 {
+                        /** @return int|string */
+                        public function foo();
+                    }
+                    interface I2 {
+                        /** @return string|bool */
+                        public function foo();
+                    }
+                    interface I3 {
+                        /** @return int|bool */
+                        public function foo();
+                    }
+                    final class A implements I1, I2, I3 {
+                        public function foo() {
+                            return 1;
+                        }
+                    }',
+                'error_message' => 'The inherited return types \'int|string\' for I1::foo, \'bool|string\' for I2::foo and '
+                    . '\'bool|int\' for I3::foo cannot be satisfied together by A::foo',
             ],
             'interfaceInstantiation' => [
                 'code' => '<?php
@@ -1865,5 +2165,132 @@ final class InterfaceTest extends TestCase
                 'error_message' => 'UndefinedInterfaceMethod - src' . DIRECTORY_SEPARATOR . 'somefile.php:13:31',
             ],
         ];
+    }
+
+    public function testConflictingInheritedReturnTypesAreReportedOnceOnTheMethod(): void
+    {
+        $this->assertSame(
+            [
+                'ImplementedReturnTypeMismatch 16: The inherited return type \'string\' for I1::foo is different to '
+                    . 'the implemented return type for I3::foo \'bool\'',
+                'ImplementedReturnTypeMismatch 11: The inherited return types \'string\' for I1::foo and \'int\' for '
+                    . 'I2::foo cannot be satisfied together by A::foo',
+            ],
+            $this->getIssues(
+                '<?php
+                interface I1 {
+                    /** @return string */
+                    public function foo();
+                }
+                interface I2 {
+                    /** @return int */
+                    public function foo();
+                }
+                final class A implements I1, I2 {
+                    public function foo() {
+                        return "hello";
+                    }
+                }
+                interface I3 extends I1 {
+                    /** @return bool */
+                    public function foo();
+                }
+                final class B implements I3 {
+                    public function foo() {
+                        return true;
+                    }
+                }',
+            ),
+        );
+    }
+
+    public function testConflictingInheritedReturnTypesDoNotDependOnTheOrderOfTheInterfaces(): void
+    {
+        $this->assertSame(
+            [
+                'Trace 27: $a: Bar|Foo|int',
+                'Trace 29: $b: Bar|Foo|int',
+                'ImplementedReturnTypeMismatch 17: The inherited return types \'Foo\' for I1::foo, \'Bar\' for I2::foo '
+                    . 'and \'int\' for I3::foo cannot be satisfied together by A::foo',
+                'ImplementedReturnTypeMismatch 22: The inherited return types \'Foo\' for I1::foo, \'Bar\' for I2::foo '
+                    . 'and \'int\' for I3::foo cannot be satisfied together by B::foo',
+            ],
+            $this->getIssues(
+                '<?php
+                final class Foo {}
+                final class Bar {}
+                interface I1 {
+                    /** @return Foo */
+                    public function foo();
+                }
+                interface I2 {
+                    /** @return Bar */
+                    public function foo();
+                }
+                interface I3 {
+                    /** @return int */
+                    public function foo();
+                }
+                final class A implements I1, I2, I3 {
+                    public function foo() {
+                        return 1;
+                    }
+                }
+                final class B implements I1, I3, I2 {
+                    public function foo() {
+                        return 1;
+                    }
+                }
+                $a = (new A())->foo();
+                /** @psalm-trace $a */;
+                $b = (new B())->foo();
+                /** @psalm-trace $b */;',
+            ),
+        );
+    }
+
+    public function testConflictingNativeInheritedReturnTypesAreOnlyReportedAsSignatureMismatches(): void
+    {
+        $this->assertSame(
+            [
+                'MethodSignatureMismatch 8: Method A::foo with return type \'mixed\' is different to return type '
+                    . '\'string\' of inherited method I1::foo',
+                'MethodSignatureMismatch 8: Method A::foo with return type \'mixed\' is different to return type '
+                    . '\'int\' of inherited method I2::foo',
+            ],
+            $this->getIssues(
+                '<?php
+                interface I1 {
+                    public function foo(): string;
+                }
+                interface I2 {
+                    public function foo(): int;
+                }
+                final class A implements I1, I2 {
+                    public function foo() {
+                        return "hello";
+                    }
+                }',
+            ),
+        );
+    }
+
+    /**
+     * @return list<string>
+     */
+    private function getIssues(string $code): array
+    {
+        $this->project_analyzer->getConfig()->throw_exception = false;
+        $file_path = self::$src_dir_path . 'somefile.php';
+
+        $this->addFile($file_path, $code);
+        $this->analyzeFile($file_path, new Context());
+
+        $issues = [];
+        foreach (IssueBuffer::getIssuesDataForFile($file_path) as $issue) {
+            $issues[] = $issue->type . ' ' . $issue->line_from . ': ' . $issue->message;
+        }
+
+        return $issues;
     }
 }
