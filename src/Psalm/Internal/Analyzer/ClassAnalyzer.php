@@ -22,10 +22,12 @@ use Psalm\Internal\Analyzer\FunctionLike\ReturnTypeAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\Call\ClassTemplateParamCollector;
 use Psalm\Internal\Analyzer\Statements\Expression\ClassConstAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\Fetch\AtomicPropertyFetchAnalyzer;
+use Psalm\Internal\Codebase\CliOutput;
 use Psalm\Internal\FileManipulation\FileManipulationBuffer;
 use Psalm\Internal\FileManipulation\PropertyDocblockManipulator;
 use Psalm\Internal\MethodIdentifier;
 use Psalm\Internal\Provider\NodeDataProvider;
+use Psalm\Internal\Type\Comparator\GenericTypeComparator;
 use Psalm\Internal\Type\Comparator\TypeComparisonResult;
 use Psalm\Internal\Type\Comparator\UnionTypeComparator;
 use Psalm\Internal\Type\TemplateDefaults;
@@ -82,6 +84,7 @@ use Psalm\Storage\FunctionLikeParameter;
 use Psalm\Storage\MethodStorage;
 use Psalm\Storage\PropertyStorage;
 use Psalm\Type;
+use Psalm\Type\Atomic;
 use Psalm\Type\Atomic\TGenericObject;
 use Psalm\Type\Atomic\TLiteralInt;
 use Psalm\Type\Atomic\TLiteralString;
@@ -96,8 +99,8 @@ use UnexpectedValueException;
 use function array_filter;
 use function array_keys;
 use function array_map;
-use function array_merge;
 use function array_pop;
+use function array_shift;
 use function array_values;
 use function assert;
 use function count;
@@ -116,10 +119,18 @@ use function substr;
  */
 final class ClassAnalyzer extends ClassLikeAnalyzer
 {
+    /** @var array<string, true> */
+    private static array $anonymous_classes_in_analysis = [];
+    /** Set on the call of the constructor that stands for it when the initialization of properties is checked */
+    public const FAKE_CONSTRUCTOR_CALL_ATTRIBUTE = 'fake_constructor_call';
+
     /**
      * @var array<string, Union>
      */
     public array $inferred_property_types = [];
+
+    /** @var array<string, true>|null */
+    private ?array $properties_only_read_under_isset = null;
 
     /**
      * @param PhpParser\Node\Stmt\Class_|PhpParser\Node\Stmt\Enum_ $class
@@ -169,6 +180,30 @@ final class ClassAnalyzer extends ClassLikeAnalyzer
     public function analyze(
         ?Context $class_context = null,
         ?Context $global_context = null,
+    ): void {
+        // an anonymous class using a trait whose method creates it again is analysed while it already is
+        if (!$this->class instanceof PhpParser\Node\Stmt\Class_ || $this->class->name !== null) {
+            $this->analyzeClass($class_context, $global_context);
+
+            return;
+        }
+
+        if (isset(self::$anonymous_classes_in_analysis[$this->fq_class_name])) {
+            return;
+        }
+
+        self::$anonymous_classes_in_analysis[$this->fq_class_name] = true;
+
+        try {
+            $this->analyzeClass($class_context, $global_context);
+        } finally {
+            unset(self::$anonymous_classes_in_analysis[$this->fq_class_name]);
+        }
+    }
+
+    private function analyzeClass(
+        ?Context $class_context,
+        ?Context $global_context,
     ): void {
         $class = $this->class;
 
@@ -335,10 +370,10 @@ final class ClassAnalyzer extends ClassLikeAnalyzer
             }
         }
 
-        if (($storage->templatedMixins || $storage->namedMixins)
-            && $storage->mixin_declaring_fqcln === $storage->name) {
-            /** @var non-empty-array<int, TTemplateParam|TNamedObject> $mixins */
-            $mixins = array_merge($storage->templatedMixins, $storage->namedMixins);
+        // the inherited mixins are checked where they are declared
+        $mixins = $storage->getOwnMixins();
+
+        if ($mixins) {
             $union = new Union($mixins);
 
             $static_self = new TNamedObject($storage->name, true);
@@ -573,6 +608,11 @@ final class ClassAnalyzer extends ClassLikeAnalyzer
         $statements_analyzer = new StatementsAnalyzer($this, new NodeDataProvider(), true);
         $statements_analyzer->analyze($member_stmts, $class_context, $global_context);
 
+        CliOutput::checkCliOnlyInstancesClass(
+            $storage,
+            $storage->suppressed_issues + $this->getSuppressedIssues(),
+        );
+
         ClassConstAnalyzer::analyze($storage, $this->getCodebase());
 
         $config = Config::getInstance();
@@ -647,8 +687,7 @@ final class ClassAnalyzer extends ClassLikeAnalyzer
             }
         }
 
-        $pseudo_methods = $storage->pseudo_methods + $storage->pseudo_static_methods;
-        MethodComparator::comparePseudoMethods($pseudo_methods, $this->fq_class_name, $codebase, $storage);
+        MethodComparator::comparePseudoMethods($codebase, $storage);
 
         $event = new AfterClassLikeAnalysisEvent(
             $class,
@@ -977,7 +1016,10 @@ final class ClassAnalyzer extends ClassLikeAnalyzer
                 );
             }
 
-            if ($property_type_location && !$fleshed_out_type->isMixed()) {
+            $has_docblock_over_signature = $property_storage->signature_type
+                && $property_storage->type?->getId() !== $property_storage->signature_type->getId();
+
+            if ($property_type_location && (!$fleshed_out_type->isMixed() || $has_docblock_over_signature)) {
                 $stmt = array_filter(
                     $stmts,
                     static fn($stmt): bool => $stmt instanceof PhpParser\Node\Stmt\Property
@@ -1040,6 +1082,26 @@ final class ClassAnalyzer extends ClassLikeAnalyzer
                             ),
                         );
                     }
+
+                    if ($property_storage->signature_type_location && $has_docblock_over_signature) {
+                        // only the classes: the docblock type replaces the native one everywhere else
+                        $signature_classes = array_filter(
+                            $property_storage->signature_type->getAtomicTypes(),
+                            static fn(Atomic $atomic): bool => $atomic instanceof TNamedObject
+                                && !self::isReservedClassName($atomic->value),
+                        );
+
+                        if ($signature_classes) {
+                            /** @psalm-suppress UnusedMethodCall This call has the side effect of creating issues */
+                            (new Union($signature_classes))->check(
+                                $statements_source,
+                                $property_storage->signature_type_location,
+                                $storage->suppressed_issues + $statements_source->getSuppressedIssues() + $suppressed,
+                                [],
+                                false,
+                            );
+                        }
+                    }
                 }
             }
 
@@ -1047,6 +1109,9 @@ final class ClassAnalyzer extends ClassLikeAnalyzer
                 $property_id = $fq_class_name . '::$' . $property_name;
 
                 $class_context->vars_in_scope[$property_id] = $fleshed_out_type;
+                // `static::$p` is what the property is declared as for this class too, not for the trait that
+                // declares it
+                $class_context->vars_in_scope['static::$' . $property_name] = $fleshed_out_type;
             } else {
                 $class_context->vars_in_scope['$this->' . $property_name] = $fleshed_out_type;
             }
@@ -1069,6 +1134,49 @@ final class ClassAnalyzer extends ClassLikeAnalyzer
                 $class_context->vars_in_scope['$this->' . $property_name] = $fleshed_out_type;
             }
         }
+    }
+
+    /**
+     * @return array<string, true>
+     */
+    private function getPropertiesOnlyReadUnderIsset(): array
+    {
+        if ($this->properties_only_read_under_isset !== null) {
+            return $this->properties_only_read_under_isset;
+        }
+
+        $codebase = $this->getCodebase();
+        $stmts = $this->class->stmts;
+        $traits_to_read = array_keys(
+            $codebase->classlike_storage_provider->get($this->fq_class_name)->used_traits,
+        );
+        $read_traits = [];
+
+        // what the methods of the traits do with the property counts too
+        while ($trait_name = array_shift($traits_to_read)) {
+            // a trait may be used through a class_alias() name
+            $trait_name = strtolower($codebase->classlikes->getUnAliasedName($trait_name));
+
+            if (isset($read_traits[$trait_name])) {
+                continue;
+            }
+
+            $read_traits[$trait_name] = true;
+
+            try {
+                $trait_node = $codebase->classlikes->getTraitNode($trait_name);
+            } catch (UnexpectedValueException) {
+                continue;
+            }
+
+            $stmts = [...$stmts, ...$trait_node->stmts];
+            $traits_to_read = [
+                ...$traits_to_read,
+                ...array_keys($codebase->classlike_storage_provider->get($trait_name)->used_traits),
+            ];
+        }
+
+        return $this->properties_only_read_under_isset = IssetGuardedProperties::find($stmts);
     }
 
     private function checkPropertyInitialization(
@@ -1275,6 +1383,7 @@ final class ClassAnalyzer extends ClassLikeAnalyzer
 
                 $fake_call_attributes = $fake_constructor_attributes
                     + [
+                        self::FAKE_CONSTRUCTOR_CALL_ATTRIBUTE => true,
                         'comments' => [new PhpParser\Comment\Doc(
                             '/** @psalm-suppress InaccessibleMethod */',
                             $class->extends->getLine(),
@@ -1304,25 +1413,8 @@ final class ClassAnalyzer extends ClassLikeAnalyzer
                     $fake_constructor_attributes,
                 );
 
-                $codebase->analyzer->disableMixedCounts();
-
-                $was_collecting_initializations = $class_context->collect_initializations;
-
-                $class_context->collect_initializations = true;
-                $class_context->collect_nonprivate_initializations = !$uninitialized_private_properties;
-
-                $constructor_analyzer = $this->analyzeClassMethod(
-                    $fake_stmt,
-                    $storage,
-                    $this,
-                    $class_context,
-                    $global_context,
-                    true,
-                );
-
-                $class_context->collect_initializations = $was_collecting_initializations;
-
-                $codebase->analyzer->enableMixedCounts();
+                // analysed below, where the properties it initialises are collected
+                $constructor_analyzer = new MethodAnalyzer($fake_stmt, $this);
             }
         }
 
@@ -1353,15 +1445,19 @@ final class ClassAnalyzer extends ClassLikeAnalyzer
                     $fq_class_name,
                     $template_params,
                     false,
-                    !$storage->final,
+                    true,
                 );
             } else {
-                $this_atomic_object_type = new TNamedObject($fq_class_name, !$storage->final);
+                $this_atomic_object_type = new TNamedObject($fq_class_name, true);
             }
 
             $method_context->vars_in_scope['$this'] = new Union([$this_atomic_object_type]);
             $method_context->vars_possibly_in_scope['$this'] = true;
             $method_context->calling_method_id = strtolower($fq_class_name) . '::__construct';
+
+            $method_context->constructor_exits = new ConstructorExits(
+                $constructor_analyzer->getFunctionLikeStorage(),
+            );
 
             $constructor_analyzer->analyze(
                 $method_context,
@@ -1377,6 +1473,34 @@ final class ClassAnalyzer extends ClassLikeAnalyzer
                     $end_type = new Union([new TVoid()], ['initialized' => false]);
                 } else {
                     $end_type = $method_context->vars_in_scope['$this->' . $property_name];
+                }
+
+                // the property has to be initialised wherever the constructor returns, and at its end if reachable
+                $exit_types = [];
+
+                // a private property that the class only reads where isset() holds may be left uninitialised on
+                // purpose, so only the end of the constructor decides
+                if ($property_storage->visibility !== ClassLikeAnalyzer::VISIBILITY_PRIVATE
+                    || !isset($this->getPropertiesOnlyReadUnderIsset()[$property_name])
+                ) {
+                    foreach ($method_context->constructor_exits->states as $exit_state) {
+                        $exit_types[] = $exit_state['$this->' . $property_name]
+                            ?? new Union([new TVoid()], ['initialized' => false]);
+                    }
+                }
+
+                if ($exit_types !== []) {
+                    if (!$method_context->has_returned) {
+                        $exit_types[] = $end_type;
+                    }
+
+                    foreach ($exit_types as $exit_type) {
+                        $end_type = $exit_type;
+
+                        if (!$exit_type->initialized) {
+                            break;
+                        }
+                    }
                 }
 
                 $constructor_class_property_storage = $property_storage;
@@ -1541,7 +1665,13 @@ final class ClassAnalyzer extends ClassLikeAnalyzer
                 $extension_requirement = $codebase->classlikes->getUnAliasedName(
                     $trait_storage->extension_requirement,
                 );
-                $extensionRequirementMet = in_array($extension_requirement, $storage->parent_classes);
+                $extensionRequirementMet = in_array($extension_requirement, $storage->parent_classes)
+                    && self::requirementTypeArgumentsAreMet(
+                        $codebase,
+                        $storage,
+                        $trait_storage,
+                        $trait_storage->extension_requirement_type,
+                    );
 
                 if (!$extensionRequirementMet) {
                     IssueBuffer::maybeAdd(
@@ -1555,9 +1685,15 @@ final class ClassAnalyzer extends ClassLikeAnalyzer
                 }
             }
 
-            foreach ($trait_storage->implementation_requirements as $implementation_requirement) {
-                $implementation_requirement = $codebase->classlikes->getUnAliasedName($implementation_requirement);
-                $implementationRequirementMet = in_array($implementation_requirement, $storage->class_implements);
+            foreach ($trait_storage->implementation_requirements as $declared_requirement) {
+                $implementation_requirement = $codebase->classlikes->getUnAliasedName($declared_requirement);
+                $implementationRequirementMet = in_array($implementation_requirement, $storage->class_implements)
+                    && self::requirementTypeArgumentsAreMet(
+                        $codebase,
+                        $storage,
+                        $trait_storage,
+                        $trait_storage->implementation_requirement_types[$declared_requirement] ?? null,
+                    );
 
                 if (!$implementationRequirementMet) {
                     IssueBuffer::maybeAdd(
@@ -1577,6 +1713,7 @@ final class ClassAnalyzer extends ClassLikeAnalyzer
                         $storage->name . ' is marked ' . Capabilities::toClassAnnotation($storage->capabilities)
                             . ' but ' . $fq_trait_name . ' is not',
                         new CodeLocation($previous_trait_analyzer ?? $this, $trait_name),
+                        $fq_trait_name,
                     ),
                     $storage->suppressed_issues + $this->getSuppressedIssues(),
                 );
@@ -1789,7 +1926,6 @@ final class ClassAnalyzer extends ClassLikeAnalyzer
         SourceAnalyzer $source,
         Context $class_context,
         ?Context $global_context = null,
-        bool $is_fake = false,
     ): ?MethodAnalyzer {
         $config = Config::getInstance();
 
@@ -1891,7 +2027,6 @@ final class ClassAnalyzer extends ClassLikeAnalyzer
             && $method_already_analyzed
             && !$class_context->collect_initializations
             && !$class_context->collect_mutations
-            && !$is_fake
         ) {
             $project_analyzer->progress->debug(
                 'Skipping analysis of pre-analyzed method ' . $analyzed_method_id . "\n",
@@ -1954,7 +2089,6 @@ final class ClassAnalyzer extends ClassLikeAnalyzer
         if (!$method_already_analyzed
             && !$class_context->collect_initializations
             && !$class_context->collect_mutations
-            && !$is_fake
         ) {
             $codebase->analyzer->setAnalyzedMethod($included_file_path, $trait_safe_method_id);
         }
@@ -2303,6 +2437,7 @@ final class ClassAnalyzer extends ClassLikeAnalyzer
                             . Capabilities::toClassAnnotation($interface_storage->capabilities) . ', but '
                         . $fq_class_name . ' is not',
                         $code_location,
+                        $fq_interface_name,
                     ),
                     $storage->suppressed_issues + $this->getSuppressedIssues(),
                 );
@@ -2547,6 +2682,7 @@ final class ClassAnalyzer extends ClassLikeAnalyzer
                             . Capabilities::toClassAnnotation($parent_class_storage->capabilities) . ', but '
                         . $fq_class_name . ' is not',
                         $code_location,
+                        $parent_fq_class_name,
                     ),
                     $storage->suppressed_issues + $this->getSuppressedIssues(),
                 );
@@ -2557,6 +2693,7 @@ final class ClassAnalyzer extends ClassLikeAnalyzer
                             . Capabilities::toClassAnnotation($storage->capabilities) . ', but parent class '
                         . $parent_fq_class_name . ' is not',
                         $code_location,
+                        $parent_fq_class_name,
                     ),
                     $storage->suppressed_issues + $this->getSuppressedIssues(),
                 );
@@ -2569,6 +2706,7 @@ final class ClassAnalyzer extends ClassLikeAnalyzer
                         $parent_fq_class_name . ' is marked with @psalm-taint-specialize, but '
                             . $fq_class_name . ' is not',
                         $code_location,
+                        $parent_fq_class_name,
                     ),
                     $storage->suppressed_issues + $this->getSuppressedIssues(),
                 );
@@ -2658,5 +2796,63 @@ final class ClassAnalyzer extends ClassLikeAnalyzer
                 }
             }
         }
+    }
+
+    /**
+     * The type arguments a trait gives the class its `@psalm-require-extends` or `@psalm-require-implements` names must
+     * be the ones the class gives it, once the templates of the trait are bound by the `@use` of the class
+     */
+    private static function requirementTypeArgumentsAreMet(
+        Codebase $codebase,
+        ClassLikeStorage $storage,
+        ClassLikeStorage $trait_storage,
+        ?TGenericObject $required,
+    ): bool {
+        if ($required === null) {
+            return true;
+        }
+
+        $required_name = $codebase->classlikes->getUnAliasedName($required->value);
+        $required_storage = $codebase->classlike_storage_provider->get($required_name);
+        $given_params = $storage->template_extended_params[$required_storage->name] ?? null;
+
+        if ($given_params === null || $required_storage->template_types === null) {
+            return true;
+        }
+
+        $lower_bounds = [];
+
+        foreach ($storage->template_extended_params[$trait_storage->name] ?? [] as $template_name => $bound) {
+            $lower_bounds[$template_name][$trait_storage->name] = $bound;
+        }
+
+        $template_result = new TemplateResult([], $lower_bounds);
+
+        $expected_params = [];
+        $actual_params = [];
+
+        foreach (array_keys($required_storage->template_types) as $offset => $template_name) {
+            if (!isset($required->type_params[$offset], $given_params[$template_name])) {
+                return true;
+            }
+
+            $expected_params[] = TemplateInferredTypeReplacer::replace(
+                $required->type_params[$offset],
+                $template_result,
+                $codebase,
+            );
+            $actual_params[] = $given_params[$template_name];
+        }
+
+        if ($expected_params === [] || $actual_params === []) {
+            return true;
+        }
+
+        // as the arguments of a type are compared: by the variance the required class declares for each
+        return GenericTypeComparator::isContainedBy(
+            $codebase,
+            new TGenericObject($required_storage->name, $actual_params),
+            new TGenericObject($required_storage->name, $expected_params),
+        );
     }
 }

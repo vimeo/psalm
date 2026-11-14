@@ -51,6 +51,7 @@ use Psalm\StatementsSource;
 use Psalm\Storage\FunctionLikeStorage;
 use Psalm\Storage\MethodStorage;
 use Psalm\Type;
+use Psalm\Type\Atomic\TGenericObject;
 use Psalm\Type\Atomic\TNamedObject;
 use Psalm\Type\Atomic\TNull;
 use Psalm\Type\Union;
@@ -220,6 +221,30 @@ final class ReturnTypeAnalyzer
         }
 
         if ($return_type
+            && $function_like_storage?->has_yield
+            && $inferred_return_type_parts !== []
+            && $function_returns_implicitly
+            && ($generator_return_type = self::getGeneratorReturnType($return_type))
+            && !$generator_return_type->isVoid()
+            && !$generator_return_type->isNever()
+            && !$generator_return_type->isNullable()
+            && !$generator_return_type->hasMixed()
+        ) {
+            if (IssueBuffer::accepts(
+                new InvalidReturnType(
+                    'Not all code paths of ' . $cased_method_id . ' end in a return statement, the generator '
+                        . 'return type ' . $generator_return_type->getId() . ' expected',
+                    $return_type_location,
+                ),
+                $suppressed_issues,
+            )) {
+                return false;
+            }
+
+            return null;
+        }
+
+        if ($return_type
             && $return_type->isNever()
             && !$inferred_yield_types
             && !$function_always_exits
@@ -265,12 +290,6 @@ final class ReturnTypeAnalyzer
         if (count($inferred_return_type_parts_with_never) > 1
             && !$function_always_exits
             && $inferred_return_type_parts_with_never !== $inferred_return_type_parts) {
-
-            /**
-             * see https://github.com/vimeo/psalm/issues/9045
-             *
-             * @psalm-suppress InvalidArgument
-             */
             $inferred_return_type_with_never = Type::combineUnionTypeArray(
                 $inferred_return_type_parts_with_never,
                 $codebase,
@@ -541,7 +560,9 @@ final class ReturnTypeAnalyzer
                 }
             }
 
+            // never is a subtype of void: a void function that never ends (an infinite loop, an exit) is correct
             if (!$declared_return_type->isNever()
+                && !$declared_return_type->isVoid()
                 && $function_always_exits
                 // a generator function returns its Generator even if its body never ends
                 && !$function_like_storage?->has_yield
@@ -891,6 +912,7 @@ final class ReturnTypeAnalyzer
                 $parent_class,
             );
 
+            /** @psalm-suppress UnusedMethodCall Actually generates issues */
             self::checkTypeAsReturned(
                 $fleshed_out_return_type,
                 $function_like_analyzer,
@@ -1096,6 +1118,7 @@ final class ReturnTypeAnalyzer
      * TypeChecker)
      *
      * @param array<string> $suppressed_issues
+     * @psalm-pure
      */
     private static function checkTypeAsReturned(
         Union $type,
@@ -1121,11 +1144,29 @@ final class ReturnTypeAnalyzer
             $function_like_analyzer instanceof MethodAnalyzer,
         );
 
-        $checker->traverseArray($type->getAtomicTypes());
+        return $checker->check($type);
+    }
 
-        /** @psalm-suppress InaccessibleProperty Does not affect anything else */
-        $type->checked = true;
+    /**
+     * The type `Generator<TKey, TValue, TSend, TReturn>` says the generator returns
+     *
+     * @psalm-pure
+     */
+    private static function getGeneratorReturnType(Union $return_type): ?Union
+    {
+        if (!$return_type->isSingle()) {
+            return null;
+        }
 
-        return !$checker->hasErrors();
+        $atomic = $return_type->getSingleAtomic();
+
+        if ($atomic instanceof TGenericObject
+            && strtolower($atomic->value) === 'generator'
+            && count($atomic->type_params) === 4
+        ) {
+            return $atomic->type_params[3];
+        }
+
+        return null;
     }
 }

@@ -9,6 +9,7 @@ use Psalm\Config;
 use Psalm\Context;
 use Psalm\FileSource;
 use Psalm\Internal\Analyzer\ClassLikeAnalyzer;
+use Psalm\Internal\Analyzer\Statements\Expression\Fetch\ConstFetchAnalyzer;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
 
 use function count;
@@ -36,6 +37,20 @@ final class ExpressionIdentifier
             return Context::PHP_VERSION_ID_VAR_ID;
         }
 
+        if (($stmt instanceof PhpParser\Node\Expr\ConstFetch && $stmt->name->getParts() === ['PHP_SAPI'])
+            || ($stmt instanceof PhpParser\Node\Expr\FuncCall
+                && $stmt->name instanceof PhpParser\Node\Name
+                && strtolower($stmt->name->toString()) === 'php_sapi_name'
+                && !$stmt->isFirstClassCallable()
+                && !$stmt->getArgs())
+        ) {
+            return Context::PHP_SAPI_VAR_ID;
+        }
+
+        if ($stmt instanceof PhpParser\Node\Expr\ConstFetch && $source instanceof StatementsAnalyzer) {
+            return ConstFetchAnalyzer::getUndeclaredConstVarId($stmt, $source);
+        }
+
         if ($stmt instanceof PhpParser\Node\Expr\StaticPropertyFetch
             && $stmt->name instanceof PhpParser\Node\Identifier
             && $stmt->class instanceof PhpParser\Node\Name
@@ -43,7 +58,8 @@ final class ExpressionIdentifier
             if (count($stmt->class->getParts()) === 1
                 && in_array(strtolower($stmt->class->getFirst()), ['self', 'static', 'parent'], true)
             ) {
-                if (!$this_class_name) {
+                // `static` may be a subclass redeclaring the property: it is not the property of `self`
+                if (!$this_class_name || strtolower($stmt->class->getFirst()) === 'static') {
                     $fq_class_name = $stmt->class->getFirst();
                 } else {
                     $fq_class_name = $this_class_name;
@@ -139,6 +155,8 @@ final class ExpressionIdentifier
                     if ($object_id && $stmt->dim->name instanceof PhpParser\Node\Identifier) {
                         $offset = $object_id . '->' . $stmt->dim->name;
                     }
+                } elseif ($stmt->dim instanceof PhpParser\Node\Expr\StaticPropertyFetch) {
+                    $offset = self::getExtendedVarId($stmt->dim, $this_class_name, $source);
                 } elseif ($stmt->dim instanceof PhpParser\Node\Expr\ClassConstFetch
                     && $stmt->dim->name instanceof PhpParser\Node\Identifier
                     && $stmt->dim->class instanceof PhpParser\Node\Name
@@ -206,7 +224,12 @@ final class ExpressionIdentifier
             $resolved_name = $stmt->class->getAttribute('resolvedName');
 
             if ($resolved_name) {
-                if (($resolved_name === 'self' || $resolved_name === 'static') && $this_class_name) {
+                if ($resolved_name === 'static') {
+                    // the constant of the called class, which may differ from the one of `self`
+                    return 'static::' . $stmt->name->name;
+                }
+
+                if ($resolved_name === 'self' && $this_class_name) {
                     $resolved_name = $this_class_name;
                 }
 

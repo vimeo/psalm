@@ -193,11 +193,17 @@ final class DataFlowNode implements Stringable
         string $cased_method_id,
         int $argument_offset,
         bool $specialized_calls = false,
+        ?string $variadic_argument_name = null,
+        bool $any_following = false,
     ): self {
         $label = ($specialized_calls ? 'specialized ' : '') . 'dispatch of ' . $cased_method_id
             . '#' . ($argument_offset + 1);
+        // the names of arguments are case-sensitive
+        $arguments = $variadic_argument_name !== null
+            ? ' (' . $variadic_argument_name . ':)'
+            : ($any_following ? ' (...)' : '');
 
-        return self::make(strtolower($label), $label, null);
+        return self::make(strtolower($label) . $arguments, $label . $arguments, null);
     }
 
     /**
@@ -978,6 +984,23 @@ final class DataFlowNode implements Stringable
     public static function getForVariableUseDestination(string $id, array $path_types = []): self
     {
         return new self($id, null, null, $id, null, 0, null, $path_types);
+    }
+
+    /**
+     * Rebuilds a node of the graph from what NodeTable keeps of it, with the location it had, so its location is
+     * still the one its id has (see the class invariant).
+     *
+     * @psalm-pure
+     */
+    public static function fromRow(
+        string $id,
+        ?string $unspecialized_id,
+        ?string $specialization_key,
+        string $label,
+        ?CodeLocation $code_location,
+        int $taints,
+    ): self {
+        return new self($id, $unspecialized_id, $specialization_key, $label, $code_location, $taints);
     }
 
     /**

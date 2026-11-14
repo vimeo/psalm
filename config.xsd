@@ -47,8 +47,10 @@
         <xs:attribute name="checkForThrowsInGlobalScope" type="xs:boolean" default="false" />
         <xs:attribute name="ensureArrayIntOffsetsExist" type="xs:boolean" default="false" />
         <xs:attribute name="ensureArrayStringOffsetsExist" type="xs:boolean" default="false" />
+        <xs:attribute name="strictOptionalCallableParams" type="xs:boolean" default="false" />
         <xs:attribute name="ensureOverrideAttribute" type="xs:boolean" default="true" />
         <xs:attribute name="suggestPurityAnnotations" type="xs:boolean" default="false" />
+        <xs:attribute name="assumeGettersMutationFree" type="xs:boolean" default="true" />
         <xs:attribute name="findUnusedCode" type="xs:boolean" default="true" />
         <xs:attribute name="disallowLiteralKeysOnUnshapedArrays" type="xs:boolean" default="false" />
         <xs:attribute name="allFunctionsGlobal" type="xs:boolean" default="false" />
@@ -251,9 +253,12 @@
             <xs:element name="AmbiguousConstantInheritance" type="ClassConstantIssueHandlerType" minOccurs="0" />
             <xs:element name="ArgumentTypeCoercion" type="ArgumentIssueHandlerType" minOccurs="0" />
             <xs:element name="AssignmentToVoid" type="IssueHandlerType" minOccurs="0" />
+            <xs:element name="CallableByReferenceMismatch" type="ArgumentIssueHandlerType" minOccurs="0" />
             <xs:element name="CheckType" type="IssueHandlerType" minOccurs="0" />
             <xs:element name="CircularReference" type="IssueHandlerType" minOccurs="0" />
             <xs:element name="ClassMustBeFinal" type="IssueHandlerType" minOccurs="0" />
+            <xs:element name="CliOnlyCall" type="IssueHandlerType" minOccurs="0" />
+            <xs:element name="CliOnlyInstancesUnguarded" type="IssueHandlerType" minOccurs="0" />
             <xs:element name="ComplexFunction" type="IssueHandlerType" minOccurs="0" />
             <xs:element name="ComplexMethod" type="IssueHandlerType" minOccurs="0" />
             <xs:element name="ConfigIssue" type="IssueHandlerType" minOccurs="0" />
@@ -284,6 +289,7 @@
             <xs:element name="FalsableReturnStatement" type="IssueHandlerType" minOccurs="0" />
             <xs:element name="FalseOperand" type="IssueHandlerType" minOccurs="0" />
             <xs:element name="ForbiddenCode" type="IssueHandlerType" minOccurs="0" />
+            <xs:element name="HiddenGeneratorReturn" type="IssueHandlerType" minOccurs="0" />
             <xs:element name="IfThisIsMismatch" type="IssueHandlerType" minOccurs="0" />
             <xs:element name="ImplementationRequirementViolation" type="IssueHandlerType" minOccurs="0" />
             <xs:element name="ImplementedParamTypeMismatch" type="IssueHandlerType" minOccurs="0" />
@@ -401,8 +407,8 @@
             <xs:element name="MixedStringOffsetAssignment" type="IssueHandlerType" minOccurs="0" />
             <xs:element name="MoreSpecificImplementedParamType" type="IssueHandlerType" minOccurs="0" />
             <xs:element name="MoreSpecificReturnType" type="IssueHandlerType" minOccurs="0" />
-            <xs:element name="ImmutableDependency" type="PropertyIssueHandlerType" minOccurs="0" />
-            <xs:element name="MutableDependency" type="PropertyIssueHandlerType" minOccurs="0" />
+            <xs:element name="ImmutableDependency" type="ClassIssueHandlerType" minOccurs="0" />
+            <xs:element name="MutableDependency" type="ClassIssueHandlerType" minOccurs="0" />
             <xs:element name="NamedArgumentNotAllowed" type="ArgumentIssueHandlerType" minOccurs="0" />
             <xs:element name="NoEnumProperties" type="ClassIssueHandlerType" minOccurs="0" />
             <xs:element name="NoInterfaceProperties" type="ClassIssueHandlerType" minOccurs="0" />
@@ -429,6 +435,7 @@
             <xs:element name="ParadoxicalCondition" type="IssueHandlerType" minOccurs="0" />
             <xs:element name="ParamNameMismatch" type="IssueHandlerType" minOccurs="0" />
             <xs:element name="ParentNotFound" type="IssueHandlerType" minOccurs="0" />
+            <xs:element name="ParseError" type="IssueHandlerType" minOccurs="0" />
             <xs:element name="PluginIssue" type="PluginIssueHandlerType" minOccurs="0" />
             <xs:element name="PossibleRawObjectIteration" type="IssueHandlerType" minOccurs="0" />
             <xs:element name="PossiblyFalseArgument" type="ArgumentIssueHandlerType" minOccurs="0" />
@@ -813,6 +820,7 @@
         <xs:restriction base="xs:string">
             <xs:enumeration value="amqp"/>
             <xs:enumeration value="apcu"/>
+            <xs:enumeration value="curl"/>
             <xs:enumeration value="decimal"/>
             <xs:enumeration value="dom"/>
             <xs:enumeration value="ds"/>
@@ -821,9 +829,12 @@
             <xs:enumeration value="gmp"/>
             <xs:enumeration value="ibm_db2"/>
             <xs:enumeration value="imagick"/>
+            <xs:enumeration value="intl"/>
+            <xs:enumeration value="ldap"/>
             <xs:enumeration value="memcached"/>
             <xs:enumeration value="mongodb"/>
             <xs:enumeration value="mysqli"/>
+            <xs:enumeration value="openssl"/>
             <xs:enumeration value="pdo"/>
             <xs:enumeration value="random"/>
             <xs:enumeration value="rdkafka"/>
@@ -831,6 +842,7 @@
             <xs:enumeration value="simplexml"/>
             <xs:enumeration value="soap"/>
             <xs:enumeration value="xdebug"/>
+            <xs:enumeration value="zip"/>
             <xs:enumeration value="zstd"/>
         </xs:restriction>
     </xs:simpleType>

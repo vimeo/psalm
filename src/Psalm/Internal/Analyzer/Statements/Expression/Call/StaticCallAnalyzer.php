@@ -10,6 +10,7 @@ use Psalm\Context;
 use Psalm\Internal\Analyzer\ClassLikeAnalyzer;
 use Psalm\Internal\Analyzer\ClassLikeNameOptions;
 use Psalm\Internal\Analyzer\InheritedMethodTaints;
+use Psalm\Internal\Analyzer\Statements\Expression\Call\Method\MethodCallPurityAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\Call\Method\MethodCallReturnTypeFetcher;
 use Psalm\Internal\Analyzer\Statements\Expression\Call\StaticMethod\AtomicStaticCallAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\CallAnalyzer;
@@ -50,6 +51,7 @@ final class StaticCallAnalyzer extends CallAnalyzer
         ?TemplateResult $template_result = null,
     ): bool {
         NullsafeChainState::reset($stmt);
+        MethodCallPurityAnalyzer::resetReturnsThis($stmt);
 
         $method_id = null;
 
@@ -213,6 +215,15 @@ final class StaticCallAnalyzer extends CallAnalyzer
                 }
 
                 if ($context->isPhantomClass($fq_class_name)) {
+                    ArgumentsAnalyzer::analyze(
+                        $statements_analyzer,
+                        $stmt->isFirstClassCallable() ? [] : $stmt->getArgs(),
+                        null,
+                        null,
+                        true,
+                        $context,
+                    );
+
                     return true;
                 }
 
@@ -245,6 +256,19 @@ final class StaticCallAnalyzer extends CallAnalyzer
                 }
 
                 if (!$does_class_exist) {
+                    // PHP resolves the class first: the arguments of a call of a class that is missing are never
+                    // evaluated, but where the classes aren't checked the call may well run
+                    if (!$context->check_classes) {
+                        ArgumentsAnalyzer::analyze(
+                            $statements_analyzer,
+                            $stmt->isFirstClassCallable() ? [] : $stmt->getArgs(),
+                            null,
+                            null,
+                            true,
+                            $context,
+                        );
+                    }
+
                     return $does_class_exist !== false;
                 }
             }
@@ -428,7 +452,7 @@ final class StaticCallAnalyzer extends CallAnalyzer
             $removed_taints = $codebase->config->eventDispatcher->dispatchRemoveTaints($event);
         }
 
-        if ($conditionally_removed_taints) {
+        if ($conditionally_removed_taints || $added_taints !== 0 || $removed_taints !== 0) {
             // a node of this call's own: what it removes depends on its arguments, and $method_source may be
             // shared with the other calls, the last call deciding for all
             $assignment_node = DataFlowNode::getForAssignment($method_id . '-escaped', $node_location);

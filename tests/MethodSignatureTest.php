@@ -8,11 +8,15 @@ use Override;
 use PHPUnit\Framework\Attributes\DataProvider;
 use Psalm\Context;
 use Psalm\Exception\CodeException;
+use Psalm\Internal\Analyzer\IssueData;
 use Psalm\Internal\Analyzer\MethodComparator;
 use Psalm\Internal\Codebase\InternalCallMapHandler;
+use Psalm\IssueBuffer;
 use Psalm\Tests\Traits\InvalidCodeAnalysisTestTrait;
 use Psalm\Tests\Traits\InvalidCodeAnalysisWithIssuesTestTrait;
 use Psalm\Tests\Traits\ValidCodeAnalysisTestTrait;
+
+use function array_map;
 
 use const DIRECTORY_SEPARATOR;
 
@@ -393,6 +397,291 @@ final class MethodSignatureTest extends TestCase
         $this->analyzeFile('somefile.php', new Context());
     }
 
+    public function testOverrideOfAMethodInheritingADocblockBroaderThanItsNativeParamIsComparedWithTheNativeOne(): void
+    {
+        $this->testConfig->throw_exception = false;
+        $file_path = self::$src_dir_path . 'somefile.php';
+        $this->addFile(
+            $file_path,
+            '<?php
+                interface I {
+                    /**
+                     * @param object $record
+                     */
+                    public function preSaveRevision(stdClass $record): void;
+                }
+
+                class Base implements I {
+                    /**
+                     * {@inheritdoc}
+                     */
+                    public function preSaveRevision(stdClass $record): void {}
+                }
+
+                class Node extends Base {
+                    public function preSaveRevision(stdClass $record): void {}
+                }',
+        );
+
+        $this->analyzeFile($file_path, new Context(), false);
+
+        // Node matches the native param of Base, which is what it overrides: only the docblock of the interface
+        // is broader than the native param, and it is reported where the interface is implemented
+        self::assertSame(
+            [
+                "Parameter \$record has wrong type 'object', should be 'stdClass'",
+                "Argument 1 of Base::preSaveRevision has the more specific type 'stdClass', expecting 'object' as"
+                    . ' defined by I::preSaveRevision',
+                "Argument 1 of Node::preSaveRevision has the more specific type 'stdClass', expecting 'object' as"
+                    . ' defined by I::preSaveRevision',
+            ],
+            array_map(
+                static fn(IssueData $issue): string => $issue->message,
+                IssueBuffer::getIssuesDataForFile($file_path),
+            ),
+        );
+    }
+
+    /**
+     * @param list<string> $expected_issues
+     */
+    #[DataProvider('providerInheritedPseudoMethodMismatch')]
+    public function testInheritedPseudoMethodMismatchIsReportedOnlyWhereItIsIntroduced(
+        string $code,
+        array $expected_issues,
+        ?string $parents_code = null,
+    ): void {
+        $this->testConfig->throw_exception = false;
+        $file_path = self::$src_dir_path . 'somefile.php';
+
+        if ($parents_code !== null) {
+            $this->addFile(self::$src_dir_path . 'parents.php', $parents_code);
+        }
+
+        $this->addFile($file_path, $code);
+
+        $this->analyzeFile($file_path, new Context(), false);
+
+        self::assertSame(
+            $expected_issues,
+            array_map(
+                static fn(IssueData $issue): string => $issue->type . ': ' . $issue->message,
+                IssueBuffer::getIssuesDataForFile($file_path),
+            ),
+        );
+    }
+
+    /**
+     * @return iterable<string, array{0: string, 1: list<string>, 2?: string}>
+     * @psalm-pure
+     */
+    public static function providerInheritedPseudoMethodMismatch(): iterable
+    {
+        $makeable = '<?php
+            trait Makeable {
+                /**
+                 * @param mixed ...$arguments
+                 * @return static
+                 */
+                public static function make(...$arguments) {
+                    throw new LogicException();
+                }
+            }
+            abstract class Element { use Makeable; }
+            /**
+             * @method static static make(string $name, string|null $attribute = null)
+             */
+            abstract class Field extends Element {}
+            /**
+             * @method static static make(string $name, string|null $attribute = null)
+             */
+            class Heading extends Field {}';
+
+        return [
+            'chainOfClassesRedeclaringTheMethod' => [
+                $makeable . '
+                    final class DangerHeading extends Heading {}',
+                [
+                    'MoreSpecificImplementedParamType: Argument 1 of Field::make has the more specific type'
+                        . " 'string', expecting 'mixed' as defined by Makeable::make",
+                    'MethodSignatureMismatch: Method Field::make has more required parameters than parent method'
+                        . ' Makeable::make',
+                    'MoreSpecificImplementedParamType: Argument 1 of Heading::make has the more specific type'
+                        . " 'string', expecting 'mixed' as defined by Makeable::make",
+                    'MethodSignatureMismatch: Method Heading::make has more required parameters than parent method'
+                        . ' Makeable::make',
+                ],
+            ],
+            'parentsOutsideTheAnalyzedFile' => [
+                '<?php
+                    final class DangerHeading extends Heading {}',
+                [],
+                $makeable,
+            ],
+            'methodOfATraitMeetingAMethodOfTheParent' => [
+                '<?php
+                    /**
+                     * @method static void create(string $a, string $b)
+                     */
+                    trait Creates {}
+                    class Factory { public static function create(): void {} }
+                    class UsesTrait extends Factory { use Creates; }
+                    class InheritsTrait extends UsesTrait {}',
+                [
+                    'MethodSignatureMismatch: Method UsesTrait::create has more required parameters than parent'
+                        . ' method Factory::create',
+                ],
+            ],
+            'interfaceAddedBySubclass' => [
+                '<?php
+                    interface Contract { public function run(int $a): void; }
+                    /**
+                     * @method void run(string $a, string $b)
+                     */
+                    class Dispatcher { public function __call(string $n, array $a) { return null; } }
+                    abstract class AddsContract extends Dispatcher implements Contract {}
+                    abstract class InheritsContract extends AddsContract {}',
+                [
+                    "ImplementedParamTypeMismatch: Argument 1 of AddsContract::run has wrong type 'string',"
+                        . " expecting 'int' as defined by Contract::run",
+                    'MethodSignatureMismatch: Method AddsContract::run has more required parameters than parent'
+                        . ' method Contract::run',
+                ],
+            ],
+            'chainOfInterfaces' => [
+                '<?php
+                    interface Base { public function go(): void; }
+                    /**
+                     * @method void go(string $a, string $b)
+                     */
+                    interface Child extends Base {}
+                    interface GrandChild extends Child {}',
+                [
+                    'MethodSignatureMismatch: Method Child::go has more required parameters than parent method'
+                        . ' Base::go',
+                ],
+            ],
+            'interfaceWithSeveralParents' => [
+                '<?php
+                    interface Base { public function go(): void; }
+                    interface Other {}
+                    /**
+                     * @method void go(string $a, string $b)
+                     */
+                    interface Mid extends Base {}
+                    interface Leaf extends Other, Mid {}',
+                [
+                    'MethodSignatureMismatch: Method Mid::go has more required parameters than parent method'
+                        . ' Base::go',
+                ],
+            ],
+            'parentWithARealMethodAndAPseudoOne' => [
+                '<?php
+                    /**
+                     * @method void foo(string $a, string $b)
+                     */
+                    class A { public function foo(): void {} }
+                    class B extends A {}
+                    class C extends B {}',
+                [
+                    'MethodSignatureMismatch: Method A::foo has more required parameters than parent method A::foo',
+                ],
+            ],
+            'parentWithAMethodOfATrait' => [
+                '<?php
+                    trait T { public function foo(int $x): void {} }
+                    /**
+                     * @method void foo(string $x)
+                     */
+                    abstract class P { use T; }
+                    abstract class C extends P {}
+                    abstract class D extends C {}',
+                [
+                    "ImplementedParamTypeMismatch: Argument 1 of P::foo has wrong type 'string', expecting 'int'"
+                        . ' as defined by T::foo',
+                ],
+            ],
+            'parentWithAStaticMethodOfATrait' => [
+                '<?php
+                    trait T { public static function foo(int $x): void {} }
+                    /**
+                     * @method static void foo(string $x)
+                     */
+                    abstract class P { use T; }
+                    abstract class C extends P {}
+                    abstract class D extends C {}',
+                [
+                    "ImplementedParamTypeMismatch: Argument 1 of P::foo has wrong type 'string', expecting 'int'"
+                        . ' as defined by T::foo',
+                ],
+            ],
+            'grandparentWithAMethodOfATrait' => [
+                '<?php
+                    trait T { public function foo(int $x): void {} }
+                    abstract class G { use T; }
+                    /**
+                     * @method void foo(string $x)
+                     */
+                    abstract class P extends G {}
+                    abstract class C extends P {}',
+                [
+                    "ImplementedParamTypeMismatch: Argument 1 of P::foo has wrong type 'string', expecting 'int'"
+                        . ' as defined by T::foo',
+                ],
+            ],
+            'parentWithAMethodOfATraitMadeProtected' => [
+                '<?php
+                    trait T { public function foo(int $x): void {} }
+                    /**
+                     * @method void foo(string $x)
+                     */
+                    abstract class P { use T { foo as protected; } }
+                    abstract class C extends P {}',
+                [],
+            ],
+            'staticMethodNextToAnInheritedInstanceOne' => [
+                '<?php
+                    class G { public function foo(): void {} }
+                    /**
+                     * @method void foo()
+                     */
+                    class P extends G {}
+                    /**
+                     * @method static void foo(string $a, string $b)
+                     */
+                    class C extends P {}',
+                [
+                    'MethodSignatureMismatch: Method C::foo has more required parameters than parent method'
+                        . ' G::foo',
+                ],
+            ],
+        ];
+    }
+
+    public function testPseudoMethodOfAnInterfaceWithAnUndefinedParentIsNotCompared(): void
+    {
+        $this->testConfig->throw_exception = false;
+        $file_path = self::$src_dir_path . 'somefile.php';
+        $this->addFile(
+            $file_path,
+            '<?php
+                /**
+                 * @method void foo(string $a)
+                 */
+                interface J extends MissingInterface {}',
+        );
+
+        $this->analyzeFile($file_path, new Context(), false);
+
+        self::assertSame(
+            ['UndefinedClass: Class, interface or enum named MissingInterface does not exist'],
+            array_map(
+                static fn(IssueData $issue): string => $issue->type . ': ' . $issue->message,
+                IssueBuffer::getIssuesDataForFile($file_path),
+            ),
+        );
+    }
+
     /**
      * @psalm-pure
      */
@@ -400,6 +689,71 @@ final class MethodSignatureTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'overrideOfAMethodDocumentedByTheInterfaceItImplements' => [
+                'code' => '<?php
+                    interface I {
+                        /**
+                         * @param Closure $c
+                         * @psalm-param Closure():string $c
+                         */
+                        public function foo(Closure $c): void;
+                    }
+
+                    class A implements I {
+                        public function foo(Closure $c): void {}
+                    }
+
+                    class B extends A {
+                        /**
+                         * @param Closure $c
+                         * @psalm-param Closure():string $c
+                         */
+                        public function foo(Closure $c): void {}
+                    }',
+            ],
+            'overrideOfAMethodDocumentedByTheInterfaceKeepsTheParamOfItsParent' => [
+                'code' => '<?php
+                    interface I {
+                        /**
+                         * @no-named-arguments
+                         * @param Closure $c
+                         * @psalm-param Closure():string $c
+                         */
+                        public function foo(Closure $c, array &$a): void;
+                    }
+
+                    class A implements I {
+                        public function foo(Closure $d, array &$a): void {}
+                    }
+
+                    class B extends A {
+                        /**
+                         * @param Closure $d
+                         * @psalm-param Closure():string $d
+                         */
+                        public function foo(Closure $d, array &$a): void {}
+                    }',
+            ],
+            'variadicParameterTakesTheOmittedParameters' => [
+                'code' => '<?php
+                    interface I {
+                        public function a(int $x, int $y): void;
+                        public function b(int $x = 1): void;
+                    }
+
+                    final class V implements I {
+                        public function a(int ...$x): void {}
+                        public function b(int ...$x): void {}
+                    }
+
+                    abstract class P {
+                        abstract public function a(int $x, int $y): void;
+                    }
+
+                    final class Q extends P {
+                        public function a(int ...$x): void {}
+                    }',
+            ],
             'abstractConstructorCompatibleChild' => [
                 'code' => '<?php
                     abstract class A {
@@ -1449,6 +1803,118 @@ final class MethodSignatureTest extends TestCase
     public static function providerInvalidCodeParse(): iterable
     {
         return [
+            'overrideOfAMethodDocumentedByTheInterfaceWithAMoreSpecificParam' => [
+                'code' => '<?php
+                    interface I {
+                        /**
+                         * @param Closure $c
+                         * @psalm-param Closure():string $c
+                         */
+                        public function foo(Closure $c): void;
+                    }
+
+                    class A implements I {
+                        public function foo(Closure $c): void {}
+                    }
+
+                    class B extends A {
+                        /**
+                         * @param Closure $c
+                         * @psalm-param Closure():non-empty-string $c
+                         */
+                        public function foo(Closure $c): void {}
+                    }',
+                'error_message' => 'MoreSpecificImplementedParamType',
+            ],
+            'variadicParameterOfAnotherTypeThanTheOmittedParameter' => [
+                'code' => '<?php
+                    interface I {
+                        public function f(int $x, string $y): void;
+                    }
+
+                    final class C implements I {
+                        public function f(int ...$x): void {}
+                    }',
+                'error_message' => 'MethodSignatureMismatch',
+            ],
+            'variadicParameterIsNotPassedByReferenceLikeTheOmittedParameter' => [
+                'code' => '<?php
+                    interface I {
+                        public function f(int $x, int &$y): void;
+                    }
+
+                    final class C implements I {
+                        public function f(int ...$x): void {}
+                    }',
+                'error_message' => 'MethodSignatureMismatch',
+            ],
+            'variadicParameterPassedByReferenceWhereTheOmittedParameterIsNot' => [
+                'code' => '<?php
+                    interface I {
+                        public function f(int $x, int $y): void;
+                    }
+
+                    final class C implements I {
+                        public function f(int &...$x): void {}
+                    }',
+                'error_message' => 'MethodSignatureMismatch',
+            ],
+            'fewerArgumentsThanTheOptionalOnesOfAnInterface' => [
+                'code' => '<?php
+                    interface I {
+                        public function fooFoo(int $a, int $b = 1): void;
+                    }
+
+                    final class A implements I {
+                        public function fooFoo(int $a): void {}
+                    }',
+                'error_message' => 'Method A::fooFoo has fewer parameters than parent method I::fooFoo',
+            ],
+            'fewerArgumentsThanTheOptionalOnesOfAnAbstractTraitMethod' => [
+                'code' => '<?php
+                    trait T {
+                        abstract public function fooFoo(int $a, int $b = 1): void;
+                    }
+
+                    final class A {
+                        use T;
+
+                        public function fooFoo(int $a): void {}
+                    }',
+                'error_message' => 'Method A::fooFoo has fewer parameters than parent method T::fooFoo',
+            ],
+            'returnTypeMessageOfAMethodWithOneKeepsItsType' => [
+                'code' => '<?php
+                    abstract class A {
+                        abstract public function run(): string;
+                    }
+
+                    class B extends A {
+                        public function run(): int {
+                            return 1;
+                        }
+                    }',
+                'error_message' => "MethodSignatureMismatch - src" . DIRECTORY_SEPARATOR . "somefile.php:7:25 - Method B::run"
+                    . " with return type 'int' is different to return type 'string' of inherited method A::run",
+                'error_levels' => [],
+                'php_version' => '8.1',
+            ],
+            'returnTypeMessageOfAMethodWithoutOneIsMixed' => [
+                'code' => '<?php
+                    abstract class A {
+                        abstract public function run(): array|false;
+                    }
+
+                    class B extends A {
+                        public function run() {
+                            return false;
+                        }
+                    }',
+                'error_message' => "MethodSignatureMismatch - src" . DIRECTORY_SEPARATOR . "somefile.php:7:25 - Method B::run"
+                    . " with return type 'mixed' is different to return type",
+                'error_levels' => [],
+                'php_version' => '8.1',
+            ],
             'staticReturnOfAnInheritedMethodDoesNotSatisfyAnUnrelatedInterface' => [
                 'code' => '<?php
                     interface OtherInterface {

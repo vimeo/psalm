@@ -57,6 +57,7 @@ use Psalm\Internal\Provider\StatementsProvider;
 use Psalm\Internal\Scanner\UnresolvedConstantComponent;
 use Psalm\Internal\Type\Comparator\UnionTypeComparator;
 use Psalm\Internal\TypeVisitor\TypeScanner;
+use Psalm\Issue\CodeIssue;
 use Psalm\Issue\InvalidDocblock;
 use Psalm\Progress\Progress;
 use Psalm\Progress\VoidProgress;
@@ -225,6 +226,14 @@ final class Codebase
     public bool $infer_types_from_usage = false;
 
     public bool $alter_code = false;
+
+    /**
+     * The issue types Psalter was asked to fix (see shouldFixIssue())
+     *
+     * @internal
+     * @var array<string, bool>
+     */
+    public array $issues_to_fix = [];
 
     public bool $diff_methods = false;
 
@@ -867,6 +876,7 @@ final class Codebase
         $this->file_reference_provider->loadReferenceCache(false);
 
         FunctionLikeAnalyzer::clearCache();
+        $project_analyzer->clearStatementsForMutations();
 
         if ($force || !$this->statements_provider->parser_cache_provider) {
             $diff_files = $candidate_files;
@@ -956,6 +966,24 @@ final class Codebase
     {
         $this->collect_references = true;
         $this->find_unused_variables = true;
+    }
+
+    /**
+     * Whether Psalter was asked to fix $issue (`--issues=...`, `all` included) and neither $suppressed_issues nor the
+     * config's issue handlers suppress it: a plugin that declares its type with PluginFixableIssuesInterface adds its
+     * file replacements for it only then.
+     *
+     * @api
+     * @param array<array-key, string> $suppressed_issues
+     */
+    public function shouldFixIssue(CodeIssue $issue, array $suppressed_issues): bool
+    {
+        $issue_type = $issue::getIssueType();
+
+        return $this->alter_code
+            && isset($this->issues_to_fix[$issue_type])
+            && !$this->config->suppressesIssueType($suppressed_issues, $issue_type)
+            && $this->config->getReportingLevelForIssue($issue) !== Config::REPORT_SUPPRESS;
     }
 
     /**

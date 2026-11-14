@@ -47,6 +47,7 @@ use function array_merge;
 use function array_search;
 use function array_shift;
 use function array_splice;
+use function array_values;
 use function count;
 use function in_array;
 use function key;
@@ -123,6 +124,9 @@ final class Populator
         }
 
         foreach ($this->classlike_storage_provider->getNew() as $class_storage) {
+            // `+=` on the typed property would copy the whole array on every merge
+            $dependents = $class_storage->dependent_classlikes;
+
             foreach ($class_storage->dependent_classlikes as $dependent_classlike_lc => $_) {
                 try {
                     $dependee_storage = $this->classlike_storage_provider->get($dependent_classlike_lc);
@@ -130,8 +134,10 @@ final class Populator
                     continue;
                 }
 
-                $class_storage->dependent_classlikes += $dependee_storage->dependent_classlikes;
+                $dependents += $dependee_storage->dependent_classlikes;
             }
+
+            $class_storage->dependent_classlikes = $dependents;
         }
 
         $this->progress->debug('FileStorage is populated' . "\n");
@@ -540,8 +546,28 @@ final class Populator
 
         $dependent_classlikes[$fq_classlike_name_lc] = true;
 
+        // a storage populated again still holds the `@method`s and mixins it inherited the last time
+        self::removeInheritedPseudoMethods($storage);
+        self::removeInheritedMixins($storage);
+
+        $trait_storages = [];
+
         foreach ($storage->used_traits as $used_trait_lc => $_) {
-            $this->populateDataFromTrait($storage, $storage_provider, $dependent_classlikes, $used_trait_lc);
+            $trait_storage = $this->populateDataFromTrait(
+                $storage,
+                $storage_provider,
+                $dependent_classlikes,
+                $used_trait_lc,
+            );
+
+            if ($trait_storage !== null) {
+                $trait_storages[] = $trait_storage;
+            }
+        }
+
+        // once every trait is in, so that a method of one trait wins over a `@method` of another
+        foreach ($trait_storages as $trait_storage) {
+            $this->inheritPseudoMethods($storage, $trait_storage);
         }
 
         if ($storage->parent_classes) {
@@ -562,13 +588,38 @@ final class Populator
             $storage->methods['__construct'] = $storage->methods[$fq_classlike_name_lc];
         }
 
+        $parent_interface_storages = [];
+
         foreach ($storage->direct_interface_parents as $parent_interface_lc => $_) {
-            $this->populateInterfaceDataFromParentInterface(
+            $parent_interface_storage = $this->populateInterfaceDataFromParentInterface(
                 $storage,
                 $storage_provider,
                 $dependent_classlikes,
                 $parent_interface_lc,
             );
+
+            if ($parent_interface_storage !== null) {
+                $parent_interface_storages[] = $parent_interface_storage;
+            }
+        }
+
+        // once every parent is in, so that a method the interface declares or gets from one of them wins over the
+        // `@method` of another, which doesn't have that method
+        foreach ($parent_interface_storages as $parent_interface_storage) {
+            foreach ($parent_interface_storage->pseudo_methods as $method_name => $pseudo_method) {
+                if (isset($storage->declaring_method_ids[$method_name])
+                    && !isset($parent_interface_storage->declaring_method_ids[$method_name])
+                ) {
+                    continue;
+                }
+
+                $storage->pseudo_methods[$method_name] ??= $pseudo_method;
+
+                if (isset($parent_interface_storage->declaring_pseudo_method_ids[$method_name])) {
+                    $storage->declaring_pseudo_method_ids[$method_name]
+                        ??= $parent_interface_storage->declaring_pseudo_method_ids[$method_name];
+                }
+            }
         }
 
         foreach ($storage->direct_class_interfaces as $implemented_interface_lc => $_) {
@@ -776,7 +827,26 @@ final class Populator
 
         $storage->documenting_method_ids = [];
 
-        foreach ($storage->methods as $method_name => $method_storage) {
+        // the storage of a method a class takes from a trait is shared by every class using the trait, so what is
+        // inherited by one class's method is recorded on the class only
+        $method_storages = $storage->methods;
+
+        foreach ($storage->declaring_method_ids as $method_name => $trait_method_id) {
+            if (isset($storage->methods[$method_name]) || !isset($storage->overridden_method_ids[$method_name])) {
+                continue;
+            }
+
+            $trait_storage = $storage_provider->get($trait_method_id->fq_class_name);
+
+            if ($trait_storage->is_trait && isset($trait_storage->methods[$trait_method_id->method_name])) {
+                $method_storages[$method_name] = $trait_storage->methods[$trait_method_id->method_name];
+            }
+        }
+
+        foreach ($method_storages as $method_name => $method_storage) {
+            $is_own_method = isset($storage->methods[$method_name]);
+            $inherited_return_type = $is_own_method ? $method_storage->inherited_return_type : false;
+
             if (isset($storage->overridden_method_ids[$method_name])) {
                 $overridden_method_ids = $storage->overridden_method_ids[$method_name];
 
@@ -816,21 +886,21 @@ final class Populator
                             || $declaring_method_storage->has_docblock_return_type)
                         && !$method_storage->has_docblock_param_types
                         && !$method_storage->has_docblock_return_type
-                        && $method_storage->inherited_return_type !== null
+                        && $inherited_return_type !== null
                     ) {
                         if (!isset($storage->documenting_method_ids[$method_name])
                             || (string) $storage->documenting_method_ids[$method_name]
                                 === (string) $declaring_method_id
                         ) {
                             $storage->documenting_method_ids[$method_name] = $declaring_method_id;
-                            $method_storage->inherited_return_type = true;
+                            $inherited_return_type = true;
                         } else {
                             if (in_array(
                                 $storage->documenting_method_ids[$method_name]->fq_class_name,
                                 $declaring_class_storage->parent_interfaces,
                             )) {
                                 $storage->documenting_method_ids[$method_name] = $declaring_method_id;
-                                $method_storage->inherited_return_type = true;
+                                $inherited_return_type = true;
                             } else {
                                 $documenting_class_storage = $declaring_class_storages
                                     [$storage->documenting_method_ids[$method_name]->fq_class_name];
@@ -841,10 +911,14 @@ final class Populator
                                 ) && $documenting_class_storage->is_interface
                                 ) {
                                     unset($storage->documenting_method_ids[$method_name]);
-                                    $method_storage->inherited_return_type = null;
+                                    $inherited_return_type = null;
                                 }
                             }
                         }
+                    }
+
+                    if (!$is_own_method) {
+                        continue;
                     }
 
                     // tell the declaring class it's overridden downstream
@@ -862,6 +936,10 @@ final class Populator
                         $method_storage->throws += $declaring_method_storage->throws;
                     }
                 }
+
+                if ($is_own_method) {
+                    $method_storage->inherited_return_type = $inherited_return_type;
+                }
             }
         }
     }
@@ -871,7 +949,7 @@ final class Populator
         ClassLikeStorageProvider $storage_provider,
         array $dependent_classlikes,
         string $used_trait_lc,
-    ): void {
+    ): ?ClassLikeStorage {
         try {
             $used_trait_lc = strtolower(
                 $this->classlikes->getUnAliasedName(
@@ -880,25 +958,61 @@ final class Populator
             );
             $trait_storage = $storage_provider->get($used_trait_lc);
         } catch (InvalidArgumentException) {
-            return;
+            return null;
         }
 
         $this->populateClassLikeStorage($trait_storage, $dependent_classlikes);
 
+        // a constructor of a trait wins over the one of the parent, which the empty one would hide
+        if (isset($trait_storage->methods['__construct'])) {
+            self::removeEmptyConstructor($storage);
+        }
+
         $this->inheritConstantsFromTrait($storage, $trait_storage);
         $this->inheritMethodsFromParent($storage, $trait_storage);
         $this->inheritPropertiesFromParent($storage, $trait_storage);
+
+        // the visibility a trait gives to the methods it uses from another one, unless the class changes it again,
+        // declares the method itself or uses the one of another trait for it
+        $trait_name_lc = strtolower($trait_storage->name);
+
+        foreach ($trait_storage->trait_visibility_map as $method_name_lc => $visibility) {
+            if (isset($storage->methods[$method_name_lc])
+                || isset($storage->trait_excluded_methods[$method_name_lc][$trait_name_lc])
+            ) {
+                continue;
+            }
+
+            $storage->trait_visibility_map[$method_name_lc] ??= $visibility;
+        }
 
         $this->extendTemplateParams($storage, $trait_storage, false);
 
         $storage->pseudo_property_get_types += $trait_storage->pseudo_property_get_types;
         $storage->pseudo_property_set_types += $trait_storage->pseudo_property_set_types;
 
-        $storage->pseudo_static_methods += $trait_storage->pseudo_static_methods;
-        $storage->declaring_pseudo_static_method_ids += $trait_storage->declaring_pseudo_static_method_ids;
+        return $trait_storage;
+    }
 
-        $storage->pseudo_methods += $trait_storage->pseudo_methods;
-        $storage->declaring_pseudo_method_ids += $trait_storage->declaring_pseudo_method_ids;
+    /**
+     * The empty constructor of a `@psalm-consistent-constructor` class that declares none stands for the lack of it
+     */
+    private static function removeEmptyConstructor(ClassLikeStorage $storage): void
+    {
+        if (!$storage->user_defined
+            || !isset($storage->methods['__construct'])
+            || $storage->methods['__construct']->location !== null
+        ) {
+            return;
+        }
+
+        unset(
+            $storage->methods['__construct'],
+            $storage->declaring_method_ids['__construct'],
+            $storage->inheritable_method_ids['__construct'],
+            $storage->appearing_method_ids['__construct'],
+            $storage->overridden_method_ids['__construct'],
+        );
     }
 
     /**
@@ -965,6 +1079,12 @@ final class Populator
 
         $this->extendTemplateParams($storage, $parent_storage, true);
 
+        // the empty constructor of a `@psalm-consistent-constructor` class without one stands for the lack of
+        // it: where the parent has a constructor, that is the one the class has
+        if (isset($parent_storage->declaring_method_ids['__construct'])) {
+            self::removeEmptyConstructor($storage);
+        }
+
         $this->inheritMethodsFromParent($storage, $parent_storage);
         $this->inheritPropertiesFromParent($storage, $parent_storage);
 
@@ -996,58 +1116,150 @@ final class Populator
             $storage->preserve_constructor_signature = true;
         }
 
-        if (($parent_storage->namedMixins || $parent_storage->templatedMixins)
-            && (!$storage->namedMixins || !$storage->templatedMixins)) {
-            $storage->mixin_declaring_fqcln = $parent_storage->mixin_declaring_fqcln;
+        $own_named_mixins = [];
 
-            if (!$storage->namedMixins) {
-                $storage->namedMixins = $parent_storage->namedMixins;
-            }
+        foreach ($storage->namedMixins as $mixin) {
+            $own_named_mixins[strtolower($this->classlikes->getUnAliasedName($mixin->value))] = true;
+        }
 
-            if (!$storage->templatedMixins) {
-                $storage->templatedMixins = $parent_storage->templatedMixins;
+        $inherited_named_mixins = [];
+
+        foreach ($parent_storage->namedMixins as $mixin) {
+            if (!isset($own_named_mixins[strtolower($this->classlikes->getUnAliasedName($mixin->value))])) {
+                $inherited_named_mixins[] = $mixin;
+                $storage->inheritedNamedMixinDeclaringClasses[strtolower($mixin->value)]
+                    = $parent_storage->getNamedMixinDeclaringClass($mixin);
             }
         }
+
+        $storage->namedMixins = [...$inherited_named_mixins, ...$storage->namedMixins];
+        $storage->templatedMixins = [...$parent_storage->templatedMixins, ...$storage->templatedMixins];
+        $storage->mixin_declaring_fqcln ??= $parent_storage->mixin_declaring_fqcln;
 
         $storage->pseudo_property_get_types += $parent_storage->pseudo_property_get_types;
         $storage->pseudo_property_set_types += $parent_storage->pseudo_property_set_types;
 
         $parent_storage->dependent_classlikes[strtolower($storage->name)] = true;
 
-        foreach ($parent_storage->pseudo_static_methods as $method_name => $pseudo_method) {
-            if (!isset($storage->methods[$method_name])) {
-                $storage->pseudo_static_methods[$method_name] = $pseudo_method;
-            }
-        }
-        foreach ($parent_storage->pseudo_methods as $method_name => $pseudo_method) {
-            if (!isset($storage->methods[$method_name])) {
-                $storage->pseudo_methods[$method_name] = $pseudo_method;
-            }
-        }
-        foreach ($parent_storage->declaring_pseudo_method_ids as $method_name => $pseudo_method_id) {
-            if (!isset($storage->methods[$method_name])) {
-                $storage->declaring_pseudo_method_ids[$method_name] = $pseudo_method_id;
-            };
-        }
-        foreach ($parent_storage->declaring_pseudo_static_method_ids as $method_name => $pseudo_method_id) {
-            if (!isset($storage->methods[$method_name])) {
-                $storage->declaring_pseudo_static_method_ids[$method_name] = $pseudo_method_id;
-            }
-        }
+        $this->inheritPseudoMethods($storage, $parent_storage);
 
         $parent_storage->has_children = true;
     }
 
     /**
+     * A public method that appears in the class, being declared there or in a used trait, and a `@method` the class
+     * already has, win over the `@method` of a used trait or parent class. A call of a method that isn't public goes
+     * through `__call` or `__callStatic` from outside the class, so the `@method` still describes it.
+     */
+    private function inheritPseudoMethods(ClassLikeStorage $storage, ClassLikeStorage $parent_storage): void
+    {
+        $fq_class_name_lc = strtolower($storage->name);
+
+        foreach ($parent_storage->pseudo_methods as $method_name => $pseudo_method) {
+            if (!$this->hasPublicMethodAppearingInClass($storage, $fq_class_name_lc, $method_name)) {
+                $storage->pseudo_methods[$method_name] ??= $pseudo_method;
+
+                if (isset($parent_storage->declaring_pseudo_method_ids[$method_name])) {
+                    $storage->declaring_pseudo_method_ids[$method_name]
+                        ??= $parent_storage->declaring_pseudo_method_ids[$method_name];
+                }
+            }
+        }
+
+        foreach ($parent_storage->pseudo_static_methods as $method_name => $pseudo_method) {
+            if (!$this->hasPublicMethodAppearingInClass($storage, $fq_class_name_lc, $method_name)) {
+                $storage->pseudo_static_methods[$method_name] ??= $pseudo_method;
+
+                if (isset($parent_storage->declaring_pseudo_static_method_ids[$method_name])) {
+                    $storage->declaring_pseudo_static_method_ids[$method_name]
+                        ??= $parent_storage->declaring_pseudo_static_method_ids[$method_name];
+                }
+            }
+        }
+    }
+
+    /**
+     * @param lowercase-string $fq_class_name_lc
+     * @psalm-capabilities read-props
+     */
+    private function hasPublicMethodAppearingInClass(
+        ClassLikeStorage $storage,
+        string $fq_class_name_lc,
+        string $method_name,
+    ): bool {
+        $appearing_method_id = $storage->appearing_method_ids[$method_name] ?? null;
+        $declaring_method_id = $storage->declaring_method_ids[$method_name] ?? null;
+
+        if ($appearing_method_id === null
+            || $declaring_method_id === null
+            || strtolower($appearing_method_id->fq_class_name) !== $fq_class_name_lc
+        ) {
+            return false;
+        }
+
+        // the visibility a `use` adaptation gives to a trait method, as in MethodVisibilityAnalyzer
+        $visibility = $storage->trait_visibility_map[$method_name]
+            ?? ($this->classlike_storage_provider->get($declaring_method_id->fq_class_name)
+                ->methods[$declaring_method_id->method_name] ?? null)?->visibility;
+
+        return $visibility === ClassLikeAnalyzer::VISIBILITY_PUBLIC;
+    }
+
+    private static function removeInheritedPseudoMethods(ClassLikeStorage $storage): void
+    {
+        $fq_class_name_lc = strtolower($storage->name);
+
+        foreach ($storage->declaring_pseudo_method_ids as $method_name => $method_id) {
+            if (strtolower($method_id->fq_class_name) !== $fq_class_name_lc) {
+                unset($storage->pseudo_methods[$method_name], $storage->declaring_pseudo_method_ids[$method_name]);
+            }
+        }
+
+        foreach ($storage->declaring_pseudo_static_method_ids as $method_name => $method_id) {
+            if (strtolower($method_id->fq_class_name) !== $fq_class_name_lc) {
+                unset(
+                    $storage->pseudo_static_methods[$method_name],
+                    $storage->declaring_pseudo_static_method_ids[$method_name],
+                );
+            }
+        }
+    }
+
+    private static function removeInheritedMixins(ClassLikeStorage $storage): void
+    {
+        $fq_class_name_lc = strtolower($storage->name);
+
+        foreach ($storage->namedMixins as $i => $mixin) {
+            if (isset($storage->inheritedNamedMixinDeclaringClasses[strtolower($mixin->value)])) {
+                unset($storage->namedMixins[$i]);
+            }
+        }
+
+        foreach ($storage->templatedMixins as $i => $mixin) {
+            if (strtolower($mixin->defining_class) !== $fq_class_name_lc) {
+                unset($storage->templatedMixins[$i]);
+            }
+        }
+
+        $storage->namedMixins = array_values($storage->namedMixins);
+        $storage->templatedMixins = array_values($storage->templatedMixins);
+        $storage->inheritedNamedMixinDeclaringClasses = [];
+
+        if ($storage->mixin_declaring_fqcln !== $storage->name) {
+            $storage->mixin_declaring_fqcln = null;
+        }
+    }
+
+    /**
      * Second populate pass: resolve transitive `@mixin` chains.
      *
-     * `namedMixins` holds only the mixins a class declares or inherits from its parent, and the analyzers look
+     * `namedMixins` holds the mixins a class declares and inherits from its parents, and the analyzers look
      * members up a single hop deep. This records every named mixin reachable through a mixin's own `@mixin`
      * chain (depth >= 2) in `transitiveNamedMixins`, so a member of a mixin-of-a-mixin resolves on the host.
      *
      * It runs once every class is populated, so each mixin target's `namedMixins` already contains those
-     * inherited from its parent class. `namedMixins` itself is never modified, which keeps the result
-     * independent of population order and leaves declaration-site checks on the declared mixins only.
+     * inherited from its parent classes. `namedMixins` itself is never modified, which keeps the result
+     * independent of population order.
      */
     private function populateTransitiveMixins(): void
     {
@@ -1263,7 +1475,7 @@ final class Populator
         ClassLikeStorageProvider $storage_provider,
         array $dependent_classlikes,
         string $parent_interface_lc,
-    ): void {
+    ): ?ClassLikeStorage {
         try {
             $parent_interface_lc = strtolower(
                 $this->classlikes->getUnAliasedName(
@@ -1275,15 +1487,13 @@ final class Populator
             $this->progress->debug('Populator could not find dependency (' . __LINE__ . ")\n");
 
             $storage->invalid_dependencies[$parent_interface_lc] = true;
-            return;
+            return null;
         }
 
         $this->populateInterfaceData($storage, $parent_interface_storage, $storage_provider, $dependent_classlikes);
 
         $this->inheritMethodsFromParent($storage, $parent_interface_storage);
-
-        $storage->pseudo_methods += $parent_interface_storage->pseudo_methods;
-        $storage->declaring_pseudo_method_ids += $parent_interface_storage->declaring_pseudo_method_ids;
+        $this->inheritPropertiesFromParent($storage, $parent_interface_storage);
 
         $storage->parent_interfaces = [...$parent_interface_storage->parent_interfaces, ...$storage->parent_interfaces];
 
@@ -1299,6 +1509,8 @@ final class Populator
             $storage->properties['value'] = new PropertyStorage();
             $storage->properties['value']->type = new Union([new TInt(), new TString()]);
         }
+
+        return $parent_interface_storage;
     }
 
     private function populateDataFromImplementedInterface(
@@ -1688,6 +1900,25 @@ final class Populator
         }
     }
 
+    /**
+     * A property imported from a trait is declared by the trait, not by the class using it
+     *
+     * @psalm-capabilities read-props
+     */
+    private function isPrivateProperty(ClassLikeStorage $storage, string $property_name): bool
+    {
+        $declaring_class = $storage->declaring_property_ids[$property_name] ?? null;
+
+        $declaring_storage = $declaring_class !== null
+            && strtolower($declaring_class) !== strtolower($storage->name)
+            && $this->classlike_storage_provider->has($declaring_class)
+                ? $this->classlike_storage_provider->get($declaring_class)
+                : $storage;
+
+        return isset($declaring_storage->properties[$property_name])
+            && $declaring_storage->properties[$property_name]->visibility === ClassLikeAnalyzer::VISIBILITY_PRIVATE;
+    }
+
     private function inheritPropertiesFromParent(
         ClassLikeStorage $storage,
         ClassLikeStorage $parent_storage,
@@ -1702,10 +1933,7 @@ final class Populator
                 continue;
             }
 
-            if (!$parent_storage->is_trait
-                && isset($parent_storage->properties[$property_name])
-                && $parent_storage->properties[$property_name]->visibility === ClassLikeAnalyzer::VISIBILITY_PRIVATE
-            ) {
+            if (!$parent_storage->is_trait && $this->isPrivateProperty($parent_storage, $property_name)) {
                 continue;
             }
 
@@ -1721,10 +1949,7 @@ final class Populator
                 continue;
             }
 
-            if (!$parent_storage->is_trait
-                && isset($parent_storage->properties[$property_name])
-                && $parent_storage->properties[$property_name]->visibility === ClassLikeAnalyzer::VISIBILITY_PRIVATE
-            ) {
+            if (!$parent_storage->is_trait && $this->isPrivateProperty($parent_storage, $property_name)) {
                 continue;
             }
 
@@ -1733,10 +1958,7 @@ final class Populator
 
         // register where they're declared
         foreach ($parent_storage->inheritable_property_ids as $property_name => $inheritable_property_id) {
-            if (!$parent_storage->is_trait
-                && isset($parent_storage->properties[$property_name])
-                && $parent_storage->properties[$property_name]->visibility === ClassLikeAnalyzer::VISIBILITY_PRIVATE
-            ) {
+            if (!$parent_storage->is_trait && $this->isPrivateProperty($parent_storage, $property_name)) {
                 continue;
             }
 

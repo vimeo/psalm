@@ -8,13 +8,29 @@ use Override;
 use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\TestCase;
 use Psalm\Internal\CliUtils;
+use Psalm\Tests\EndToEnd\PsalmRunnerTrait;
 
+use function array_keys;
+use function chdir;
+use function file_put_contents;
+use function getcwd;
+use function getenv;
+use function mkdir;
+use function putenv;
 use function realpath;
+use function rmdir;
+use function stream_isatty;
+use function sys_get_temp_dir;
+use function tempnam;
+use function unlink;
 
 use const DIRECTORY_SEPARATOR;
+use const STDOUT;
 
 final class CliUtilsTest extends TestCase
 {
+    use PsalmRunnerTrait;
+
     /**
      * @var list<string>
      */
@@ -117,6 +133,31 @@ final class CliUtilsTest extends TestCase
             ],
         ];
 
+        yield 'withTheValueOfAnOptionAfterASpace' => [
+            null,
+            [$psalm, '--output-format', 'compact', '--threads', '4'],
+        ];
+
+        yield 'withTheValuesOfRefactorOptionsAfterASpace' => [
+            null,
+            [$psalm, '--move', 'Ns\A::foo', '--into', 'Ns\B', '--rename', 'Ns\A::bar', '--to', 'Ns\A::baz'],
+        ];
+
+        yield 'withTheValuesOfRefactorOptionsAfterAnEqualsSign' => [
+            null,
+            [$psalm, '--move=Ns\A::foo', '--into=Ns\B'],
+        ];
+
+        yield 'withTheValueOfAnOptionAfterASpaceAndPaths' => [
+            [$dummyProjectDir . DIRECTORY_SEPARATOR . 'Bar.php'],
+            [$psalm, '--memory-limit', '2G', $dummyProjectDir . DIRECTORY_SEPARATOR . 'Bar.php', '--report', 'x.json'],
+        ];
+
+        yield 'withPathAfterAnOptionWithAnOptionalValue' => [
+            [$dummyProjectDir . DIRECTORY_SEPARATOR . 'Bar.php'],
+            [$psalm, '--show-snippet=false', $dummyProjectDir . DIRECTORY_SEPARATOR . 'Bar.php'],
+        ];
+
         yield 'withFpathToCurrentDir' => [
             [$currentDir],
             [$psalm, '-f', '.'],
@@ -141,5 +182,173 @@ final class CliUtilsTest extends TestCase
         $argv = $_input;
         $result = CliUtils::getPathsToCheck($fpaths);
         self::assertEquals($expected, $result);
+    }
+
+    public function testUseColorWithoutAnyEnvironmentHintFollowsTheTtyRule(): void
+    {
+        $this->withEnv([], static function (): void {
+            self::assertTrue(CliUtils::useColor([], false));
+            self::assertSame(stream_isatty(STDOUT), CliUtils::useColor([], true));
+        });
+    }
+
+    public function testMonochromeFlagBeatsForceColor(): void
+    {
+        $this->withEnv(['FORCE_COLOR' => '1'], static function (): void {
+            self::assertFalse(CliUtils::useColor(['m' => false], false));
+            self::assertFalse(CliUtils::useColor(['m' => false], true));
+        });
+    }
+
+    public function testForceColorBeatsEveryAutomaticOptOut(): void
+    {
+        $this->withEnv(
+            ['FORCE_COLOR' => '1', 'NO_COLOR' => '1', 'AI_AGENT' => '1', 'TERM' => 'dumb'],
+            static function (): void {
+                self::assertTrue(CliUtils::useColor([], false));
+                self::assertTrue(CliUtils::useColor([], true));
+            },
+        );
+    }
+
+    public function testEmptyForceColorIsIgnored(): void
+    {
+        $this->withEnv(['FORCE_COLOR' => '', 'NO_COLOR' => '1'], static function (): void {
+            self::assertFalse(CliUtils::useColor([], false));
+        });
+    }
+
+    public function testNoColorDisablesColor(): void
+    {
+        $this->withEnv(['NO_COLOR' => '1'], static function (): void {
+            self::assertFalse(CliUtils::useColor([], false));
+        });
+        $this->withEnv(['NO_COLOR' => ''], static function (): void {
+            self::assertTrue(CliUtils::useColor([], false));
+        });
+    }
+
+    public function testAiAgentDisablesColor(): void
+    {
+        $this->withEnv(['AI_AGENT' => '1'], static function (): void {
+            self::assertFalse(CliUtils::useColor([], false));
+        });
+    }
+
+    public function testDumbTerminalDisablesColor(): void
+    {
+        $this->withEnv(['TERM' => 'dumb'], static function (): void {
+            self::assertFalse(CliUtils::useColor([], false));
+            self::assertFalse(CliUtils::useColor([], true));
+        });
+    }
+
+    public function testWithEnvRestoresTheInheritedEnvironment(): void
+    {
+        $original = getenv('FORCE_COLOR');
+        putenv('FORCE_COLOR=inherited-value');
+
+        try {
+            $this->withEnv(['FORCE_COLOR' => '1'], static function (): void {
+                self::assertSame('1', getenv('FORCE_COLOR'));
+            });
+
+            self::assertSame('inherited-value', getenv('FORCE_COLOR'));
+        } finally {
+            putenv($original === false ? 'FORCE_COLOR' : 'FORCE_COLOR=' . $original);
+        }
+    }
+
+    /**
+     * @param list<string> $args
+     * @param array<string, false|list<false|string>|string> $expected_options
+     */
+    #[DataProvider('provideOptionsAndPaths')]
+    public function testOptionsAndPathsAreSeparatedTheSameWayByTheParserAndThePathExtraction(
+        array $args,
+        array $expected_options,
+    ): void {
+        global $argv;
+        $argv = ['psalter', ...$args];
+
+        self::assertSame(
+            $expected_options,
+            CliUtils::getOptions($args, ['c:', 'm', 'h', 'f:', 'r:'], ['issues:', 'no-cache']),
+        );
+        self::assertSame(
+            [(string)realpath(__DIR__ . '/../fixtures/DummyProject/Bar.php')],
+            CliUtils::getPathsToCheck(false),
+        );
+    }
+
+    /** @return iterable<string, array{list<string>, array<string, false|list<false|string>|string>}> */
+    public static function provideOptionsAndPaths(): iterable
+    {
+        $bar = (string)realpath(__DIR__ . '/../fixtures/DummyProject/Bar.php');
+
+        yield 'a group of flags' => [['-mh', $bar], ['m' => false, 'h' => false]];
+        yield 'a value attached to an option' => [['-cx', $bar], ['c' => 'x']];
+        yield 'a value after an equals sign' => [['-c=x', $bar], ['c' => 'x']];
+        yield 'a group that ends with an option that takes a value' => [
+            ['-mc', 'x', $bar],
+            ['m' => false, 'c' => 'x'],
+        ];
+        yield 'options after the path' => [
+            [$bar, '--issues', 'x', '--no-cache'],
+            ['issues' => 'x', 'no-cache' => false],
+        ];
+    }
+
+    public function testEverythingAfterTheTerminatorIsAPath(): void
+    {
+        $dir = (string)tempnam(sys_get_temp_dir(), 'CliUtilsTest_');
+        unlink($dir);
+        mkdir($dir);
+        $file = $dir . DIRECTORY_SEPARATOR . '--target.php';
+        file_put_contents($file, "<?php\n");
+        $cwd = (string)getcwd();
+
+        try {
+            chdir($dir);
+
+            global $argv;
+            $argv = ['psalter', '--issues=MissingReturnType', '--', '--target.php'];
+
+            self::assertSame([(string)realpath($file)], CliUtils::getPathsToCheck(false));
+        } finally {
+            chdir($cwd);
+            unlink($file);
+            rmdir($dir);
+        }
+    }
+
+    /**
+     * Runs $test with a clean color/agent environment plus $env, then restores the previous one.
+     *
+     * @param array<string, string> $env
+     * @param callable(): void $test
+     */
+    private function withEnv(array $env, callable $test): void
+    {
+        $names = array_keys(self::agentEnvVarsToUnset());
+        $names[] = 'TERM';
+
+        $saved = [];
+        foreach ($names as $name) {
+            $saved[$name] = getenv($name);
+            putenv($name);
+        }
+
+        try {
+            foreach ($env as $name => $value) {
+                putenv($name . '=' . $value);
+            }
+
+            $test();
+        } finally {
+            foreach ($saved as $name => $value) {
+                putenv($value === false ? $name : $name . '=' . $value);
+            }
+        }
     }
 }

@@ -37,6 +37,89 @@ final class CapabilitiesTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'parentCallOfATraitMethodReturnsThisInEveryClassUsingTheTrait' => [
+                'code' => <<<'PHP'
+                    <?php
+                    class FirstBase {
+                        /** @return $this */
+                        public function f(): static {
+                            return $this;
+                        }
+                    }
+
+                    class SecondBase {
+                        /** @return $this */
+                        public function f(): static {
+                            return $this;
+                        }
+                    }
+
+                    class ThirdBase {
+                        /** @return $this */
+                        public function f(): static {
+                            return $this;
+                        }
+                    }
+
+                    trait ForwardsToParent {
+                        /** @return $this */
+                        public function f(): static {
+                            return parent::f();
+                        }
+                    }
+
+                    final class First extends FirstBase {
+                        use ForwardsToParent;
+                    }
+
+                    final class Second extends SecondBase {
+                        use ForwardsToParent;
+                    }
+
+                    final class Third extends ThirdBase {
+                        use ForwardsToParent;
+                    }
+                    PHP,
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
+            'parentSelfAndStaticCallsOfMethodReturningThisReturnThis' => [
+                'code' => <<<'PHP'
+                    <?php
+                    class Base {
+                        /** @return $this */
+                        public function f(): static {
+                            return $this;
+                        }
+                    }
+
+                    final class Child extends Base {
+                        #[Override]
+                        public function f(): static {
+                            return parent::f();
+                        }
+
+                        /** @return $this */
+                        public function viaSelf(): static {
+                            return self::f();
+                        }
+
+                        /** @return $this */
+                        public function viaStatic(): static {
+                            return static::f();
+                        }
+
+                        /** @return $this */
+                        public function chained(): static {
+                            return parent::f()->f();
+                        }
+                    }
+                    PHP,
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
             'staticReturnOfASubclassOfAPurityTemplatedClassIsTheCalledClass' => [
                 'code' => '<?php
                     /**
@@ -2880,6 +2963,50 @@ final class CapabilitiesTest extends TestCase
     public static function providerInvalidCodeParse(): iterable
     {
         return [
+            'impureToStringCalledImplicitlyByAnArgument' => [
+                'code' => '<?php
+                    final class Imp {
+                        private int $n = 0;
+
+                        public function __toString(): string {
+                            $this->n++;
+
+                            return (string) $this->n;
+                        }
+                    }
+
+                    /** @psalm-pure */
+                    function takesString(string $s): string {
+                        return $s;
+                    }
+
+                    /** @psalm-pure */
+                    function f(Imp $o): string {
+                        return takesString($o);
+                    }',
+                'error_message' => 'ImpureMethodCall',
+                'error_levels' => ['ImplicitToStringCast'],
+            ],
+            'staticCallOfMethodNotReturningThisIsNotThis' => [
+                'code' => <<<'PHP'
+                    <?php
+                    class Base {
+                        public function copy(): static {
+                            return clone $this;
+                        }
+                    }
+
+                    final class Child extends Base {
+                        /** @return $this */
+                        public function f(): static {
+                            return parent::copy();
+                        }
+                    }
+                    PHP,
+                'error_message' => 'InvalidReturnStatement',
+                'error_levels' => [],
+                'php_version' => '8.1',
+            ],
             'itemOfAnArrayObjectPassedByReferenceWritesIt' => [
                 'code' => '<?php
                     /**
@@ -4982,6 +5109,23 @@ final class CapabilitiesTest extends TestCase
                         return $a;
                     }',
                 'error_message' => 'ImpureMethodCall - src' . DIRECTORY_SEPARATOR . 'somefile.php:8:25 - The context is pure but destroying the old value of $a (Guard::__destruct) requires',
+            ],
+            'rebindingAReferenceRunsTheOldValuesDestructor' => [
+                'code' => '<?php
+                    final class Guard {
+                        public function __destruct() { echo "released"; }
+                    }
+
+                    /** @psalm-pure */
+                    function &borrowText(string &$value): string {
+                        return $value;
+                    }
+
+                    /** @psalm-pure */
+                    function rebind(Guard $guard, string $value): void {
+                        $guard = &borrowText($value);
+                    }',
+                'error_message' => 'destroying the old value of $guard (Guard::__destruct) requires',
             ],
             'aVariableReassignedInALoopRunsTheDestructorOfThePreviousValue' => [
                 'code' => '<?php
