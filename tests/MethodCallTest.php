@@ -272,6 +272,123 @@ final class MethodCallTest extends TestCase
                 'ignored_issues' => ['RedundantCondition', 'TypeDoesNotContainNull'],
                 'php_version' => '8.0',
             ],
+            'propertyUnsetInABranchIsNotRestoredAfterIt' => [
+                'code' => '<?php
+                    final class Box {
+                        public ?int $v = null;
+                    }
+
+                    function unsetProp(Box $b): ?string {
+                        if ($b->v !== null) {
+                            unset($b->v);
+                        }
+
+                        return $b->v;
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'negatedMemoizedGetterIsNotNarrowedAfterABranchThatMutatesItsReceiver' => [
+                'code' => '<?php
+                    final class Quote {}
+
+                    final class Order {
+                        private int $counter = 0;
+
+                        /**
+                         * @return false|Quote
+                         * @psalm-mutation-free
+                         */
+                        public function quote() {
+                            return $this->counter > 0 ? new Quote() : false;
+                        }
+
+                        public function touch(): void {
+                            $this->counter++;
+                        }
+                    }
+
+                    $o = new Order();
+
+                    if (!$o->quote()) {
+                        $o->touch();
+                    }
+
+                    $q = $o->quote();',
+                'assertions' => ['$q===' => 'Quote|false'],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'memoizedGetterIsNotNarrowedAfterABranchThatMutatesItsReceiver' => [
+                'code' => '<?php
+                    final class Quote {
+                        public function amount(): int {
+                            return 1;
+                        }
+                    }
+
+                    final class Order {
+                        private int $counter = 0;
+
+                        /**
+                         * @return false|Quote
+                         * @psalm-mutation-free
+                         */
+                        public function quote() {
+                            return $this->counter > 0 ? new Quote() : false;
+                        }
+
+                        public function touch(): void {
+                            $this->counter++;
+                        }
+                    }
+
+                    function f(Order $o): int {
+                        $total = 0;
+
+                        if ($o->quote() instanceof Quote) {
+                            $total += $o->quote()->amount();
+                            $o->touch();
+                        }
+
+                        if ($o->quote() && $o->quote()->amount() > 0) {
+                            $total++;
+                        }
+
+                        return $total;
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'propertyIsNotNarrowedAfterABranchThatCallsAMethodChangingIt' => [
+                'code' => '<?php
+                    final class Quote {
+                        public function amount(): int {
+                            return 1;
+                        }
+                    }
+
+                    final class Holder {
+                        public ?Quote $quote = null;
+
+                        public function reset(): void {
+                            $this->quote = null;
+                        }
+                    }
+
+                    function g(Holder $h): int {
+                        if ($h->quote instanceof Quote) {
+                            $h->reset();
+                        }
+
+                        return $h->quote !== null ? $h->quote->amount() : 0;
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
             'methodCallOnATemplateBoundedByAnotherTemplate' => [
                 'code' => '<?php
                     interface Document {
@@ -396,7 +513,7 @@ final class MethodCallTest extends TestCase
                         $result = $query->where("x", Holder::$count);
                     }',
                 'assertions' => [],
-                'ignored_issues' => ['MixedMethodCall', 'MixedAssignment', 'UnusedVariable'],
+                'ignored_issues' => ['MixedMethodCall', 'MixedAssignment'],
             ],
             'privateConstructorOfAParentWithCallStaticStillInitializesTheProperties' => [
                 'code' => '<?php
@@ -415,7 +532,6 @@ final class MethodCallTest extends TestCase
 
                     final class Child extends Base {}',
                 'assertions' => [],
-                'ignored_issues' => ['ClassMustBeFinal'],
             ],
             'inaccessibleStaticMethodForwardedToCallStaticHasItsReturnType' => [
                 'code' => '<?php
@@ -450,7 +566,6 @@ final class MethodCallTest extends TestCase
 
                     $made = Child::make();',
                 'assertions' => ['$made===' => 'Base'],
-                'ignored_issues' => ['ClassMustBeFinal'],
             ],
             'inaccessibleStaticMethodForwardedToAnInheritedCallStaticResolvesStaticToTheCalledClass' => [
                 'code' => '<?php
@@ -472,7 +587,6 @@ final class MethodCallTest extends TestCase
 
                     $made = Child::make();',
                 'assertions' => ['$made===' => 'Child&static'],
-                'ignored_issues' => ['ClassMustBeFinal'],
             ],
             'staticCallOfInaccessibleMethodGoesToCallStatic' => [
                 'code' => <<<'PHP'
@@ -611,7 +725,6 @@ final class MethodCallTest extends TestCase
                         use Chain;
                     }',
                 'assertions' => [],
-                'ignored_issues' => ['MissingOverrideAttribute'],
             ],
             'selfStaticAndParentCallsKeepTheTypeArgumentsOfAStaticReturnType' => [
                 'code' => '<?php
@@ -651,7 +764,6 @@ final class MethodCallTest extends TestCase
                         }
                     }',
                 'assertions' => [],
-                'ignored_issues' => ['ClassMustBeFinal'],
             ],
             'parentSelfAndStaticCallsReturnTheStaticTypeOfTheCallingClass' => [
                 'code' => '<?php
@@ -692,7 +804,6 @@ final class MethodCallTest extends TestCase
                         }
                     }',
                 'assertions' => [],
-                'ignored_issues' => ['MissingOverrideAttribute'],
             ],
             'mysqliGetWarningsMayReturnFalse' => [
                 'code' => <<<'PHP'
@@ -2156,6 +2267,19 @@ final class MethodCallTest extends TestCase
                 'error_levels' => [],
                 'php_version' => '8.0',
             ],
+            'variableUnsetInABranchIsNotRestoredAfterIt' => [
+                'code' => '<?php
+                    function unsetThenReturn(?int $x): ?string {
+                        if ($x !== null) {
+                            unset($x);
+                        }
+
+                        return $x ?? null;
+                    }',
+                'error_message' => 'TypeDoesNotContainType',
+                'error_levels' => [],
+                'php_version' => '8.0',
+            ],
             'undefinedMethodOnATemplateBoundedByAnotherTemplate' => [
                 'code' => '<?php
                     interface Document {
@@ -2299,10 +2423,6 @@ final class MethodCallTest extends TestCase
 
                     $a->barBar();',
                 'error_message' => 'MixedMethodCall',
-                'error_levels' => [
-                    'MissingPropertyType',
-                    'MixedAssignment',
-                ],
             ],
             'invalidMethodCall' => [
                 'code' => '<?php
@@ -2368,7 +2488,7 @@ final class MethodCallTest extends TestCase
                         }
                     }',
                 'error_message' => 'LessSpecificReturnStatement',
-                'error_levels' => ['MixedReturnStatement', 'MixedMethodCall'],
+                'error_levels' => ['MixedMethodCall'],
             ],
             'undefinedVariableStaticCall' => [
                 'code' => '<?php

@@ -732,6 +732,39 @@ final class PropertyTypeTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'declaredPropertyOfAStdClassSubclassKeepsItsTypeAndAnUndeclaredOneStaysDynamic' => [
+                'code' => '<?php
+                    final class Item extends stdClass {
+                        /** @var list<string> */
+                        public array $tags = [];
+
+                        public int $count = 0;
+
+                        public ?string $note = null;
+                    }
+
+                    function write(Item $item): void {
+                        $item->tags = ["a"];
+                        $item->count = 2;
+                        $item->extra = "x";
+                    }
+
+                    function read(Item $item): void {
+                        $tags = $item->tags;
+                        $count = $item->count;
+                        $note = $item->note;
+                        $extra = $item->extra;
+
+                        /** @psalm-check-type-exact $tags = list<string> */
+                        /** @psalm-check-type-exact $count = int */
+                        /** @psalm-check-type-exact $note = null|string */
+                        /** @psalm-check-type-exact $extra = mixed */
+                        echo count($tags), $count, $note;
+                    }',
+                'assertions' => [],
+                'ignored_issues' => ['MixedAssignment'],
+                'php_version' => '8.1',
+            ],
             'staticOfTheCallerIsNotTheStaticPropertyOfAnotherClassOfTheSameName' => [
                 'code' => '<?php
                     final class Other {
@@ -4298,6 +4331,39 @@ final class PropertyTypeTest extends TestCase
     public static function providerInvalidCodeParse(): iterable
     {
         return [
+            'declaredPropertyOfAStdClassSubclassRejectsAWrongValue' => [
+                'code' => '<?php
+                    final class Item extends stdClass {
+                        public int $count = 0;
+                    }
+
+                    $item = new Item();
+                    $item->count = "three";',
+                'error_message' => 'InvalidPropertyAssignmentValue',
+            ],
+            'declaredPropertyOfAStdClassSubclassHasItsTypeWhenRead' => [
+                'code' => '<?php
+                    final class Item extends stdClass {
+                        public string $label = "";
+                    }
+
+                    function takesInt(int $n): int {
+                        return $n;
+                    }
+
+                    $item = new Item();
+                    takesInt($item->label);',
+                'error_message' => 'InvalidScalarArgument',
+            ],
+            'promotedPropertyRedeclaresPropertyOfTheSameClass' => [
+                'code' => '<?php
+                    final class Order {
+                        public int $id;
+
+                        public function __construct(public int $id) {}
+                    }',
+                'error_message' => 'ParseError - src' . DIRECTORY_SEPARATOR . 'somefile.php:5:64 - Promoted property id clashes',
+            ],
             'staticPropertyOfATraitIsSharedWithTheSubclassesOfTheUsingClass' => [
                 'code' => '<?php
                     trait Holder {
@@ -4450,7 +4516,7 @@ final class PropertyTypeTest extends TestCase
                         }
                     }',
                 'error_message' => 'PropertyNotSetInConstructor - src' . DIRECTORY_SEPARATOR . 'somefile.php:7:40 - Property Response::$canary',
-                'error_levels' => ['RedundantPropertyInitializationCheck', 'RedundantCondition'],
+                'error_levels' => ['RedundantPropertyInitializationCheck'],
             ],
             'propertyNotInitializedByAnInterfaceStaticMethodCalledInTheConstructor' => [
                 'code' => '<?php
@@ -4896,10 +4962,6 @@ final class PropertyTypeTest extends TestCase
 
                     echo $a->foo;',
                 'error_message' => 'MixedPropertyFetch',
-                'error_levels' => [
-                    'MissingPropertyType',
-                    'MixedAssignment',
-                ],
             ],
             'mixedPropertyAssignment' => [
                 'code' => '<?php
@@ -4913,10 +4975,6 @@ final class PropertyTypeTest extends TestCase
 
                     $a->foo = "hello";',
                 'error_message' => 'MixedPropertyAssignment',
-                'error_levels' => [
-                    'MissingPropertyType',
-                    'MixedAssignment',
-                ],
             ],
             'possiblyNullablePropertyAssignment' => [
                 'code' => '<?php
@@ -5073,7 +5131,6 @@ final class PropertyTypeTest extends TestCase
                         }
                     }',
                 'error_message' => 'PropertyNotSetInConstructor',
-                'error_levels' => ['RedundantPropertyInitializationCheck'],
             ],
             'propertyReadUnconditionallyInATraitIsReportedAtAReturnOfConstructor' => [
                 'code' => '<?php
@@ -5105,7 +5162,6 @@ final class PropertyTypeTest extends TestCase
                         }
                     }',
                 'error_message' => 'PropertyNotSetInConstructor',
-                'error_levels' => ['RedundantPropertyInitializationCheck'],
             ],
             'propertyReadUnconditionallyInATraitUsedByAnAliasIsReportedAtAReturnOfConstructor' => [
                 'code' => '<?php
@@ -5138,7 +5194,6 @@ final class PropertyTypeTest extends TestCase
                         }
                     }',
                 'error_message' => 'PropertyNotSetInConstructor',
-                'error_levels' => ['RedundantPropertyInitializationCheck'],
             ],
             'propertyReadAsAnArgumentOfACoalesceOperandIsReportedAtAReturnOfConstructor' => [
                 'code' => '<?php
@@ -5172,7 +5227,7 @@ final class PropertyTypeTest extends TestCase
                         }
                     }',
                 'error_message' => 'PropertyNotSetInConstructor',
-                'error_levels' => ['RedundantPropertyInitializationCheck', 'RedundantConditionGivenDocblockType', 'DocblockTypeContradiction', 'RedundantCondition', 'TypeDoesNotContainNull'],
+                'error_levels' => ['RedundantCondition', 'TypeDoesNotContainNull'],
             ],
             'propertyReadAsTheIndexOfAnIssetIsReportedAtAReturnOfConstructor' => [
                 'code' => '<?php
@@ -5199,7 +5254,6 @@ final class PropertyTypeTest extends TestCase
                         }
                     }',
                 'error_message' => 'PropertyNotSetInConstructor',
-                'error_levels' => ['RedundantPropertyInitializationCheck'],
             ],
             'notSetBeforeReturnOfConstructor' => [
                 'code' => '<?php
@@ -5594,7 +5648,7 @@ final class PropertyTypeTest extends TestCase
                         }
                     }',
                 'error_message' => 'UninitializedProperty',
-                'error_levels' => ['MixedArgument', 'MissingPropertyType'],
+                'error_levels' => ['MixedArgument'],
             ],
             'uninitializedObjectProperty' => [
                 'code' => '<?php
@@ -5902,7 +5956,7 @@ final class PropertyTypeTest extends TestCase
                         /** @var array */
                         public string $s = [];
                     }',
-                'error_message' => 'MismatchingDocblockPropertyType - src' . DIRECTORY_SEPARATOR . 'somefile.php:3:34 - Parameter A::$s has wrong type',
+                'error_message' => 'MismatchingDocblockPropertyType - src' . DIRECTORY_SEPARATOR . 'somefile.php:3:34 - Property A::$s has wrong type',
             ],
             'overwritePropertyType' => [
                 'code' => '<?php
@@ -5911,6 +5965,15 @@ final class PropertyTypeTest extends TestCase
                         public string $s = [];
                     }',
                 'error_message' => 'MismatchingDocblockPropertyType',
+            ],
+            'mismatchingDocblockPropertyTypeShowsExactType' => [
+                'code' => '<?php
+                    class A {
+                        /** @var numeric-string */
+                        public int $s;
+                    }',
+                'error_message' => 'MismatchingDocblockPropertyType - src' . DIRECTORY_SEPARATOR . 'somefile.php:3:34'
+                    . ' - Property A::$s has wrong type \'numeric-string\', should be \'int',
             ],
             'possiblyNullOnFunctionCallNotCoalesced' => [
                 'code' => '<?php
