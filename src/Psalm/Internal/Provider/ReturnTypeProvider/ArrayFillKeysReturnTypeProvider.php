@@ -45,8 +45,8 @@ final class ArrayFillKeysReturnTypeProvider implements FunctionReturnTypeProvide
             return Type::getNever();
         }
 
-        $first_arg_type = isset($call_args[0]) ? $statements_source->node_data->getType($call_args[0]->value) : null;
-        $second_arg_type = isset($call_args[1]) ? $statements_source->node_data->getType($call_args[1]->value) : null;
+        $first_arg_type = $statements_source->node_data->getType($call_args[0]->value);
+        $second_arg_type = $statements_source->node_data->getType($call_args[1]->value);
 
         if ($first_arg_type
             && $first_arg_type->isArray()
