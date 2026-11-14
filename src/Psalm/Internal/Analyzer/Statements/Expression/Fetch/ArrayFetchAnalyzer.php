@@ -361,14 +361,17 @@ final class ArrayFetchAnalyzer
             }
 
             if ($context->inside_isset && !$stmt_type->hasMixed()) {
-                // the key of a sealed shape is there, unlike one of an array of unknown keys
-                if (!$stmt_type->possibly_undefined
-                    && $stmt_var_type->isSingle()
-                    && ($var_atomic = $stmt_var_type->getSingleAtomic()) instanceof TKeyedArray
-                    && $var_atomic->fallback_params === null
-                ) {
-                    $stmt->setAttribute(self::TYPE_WITHOUT_ISSET_NULL_ATTRIBUTE, $stmt_type);
-                }
+                // the key of a sealed shape is there, unlike one of an array of unknown keys; set on every pass,
+                // so that a type that changed doesn't keep the one of an earlier pass
+                $stmt->setAttribute(
+                    self::TYPE_WITHOUT_ISSET_NULL_ATTRIBUTE,
+                    !$stmt_type->possibly_undefined
+                        && $stmt_var_type->isSingle()
+                        && ($var_atomic = $stmt_var_type->getSingleAtomic()) instanceof TKeyedArray
+                        && $var_atomic->fallback_params === null
+                        ? $stmt_type
+                        : null,
+                );
 
                 $stmt_type = Type::combineUnionTypes($stmt_type, Type::getNull());
             }

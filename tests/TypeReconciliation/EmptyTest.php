@@ -757,6 +757,24 @@ final class EmptyTest extends TestCase
                     }',
                 'error_message' => 'RiskyTruthyFalsyComparison',
             ],
+            'emptyOnShapeKeyOfAnArrayThatChangesInALoopIsRisky' => [
+                'code' => '<?php
+                    /**
+                     * @param array<string, string> $other
+                     */
+                    function f(string $s, array $other): void {
+                        $a = ["foo" => $s];
+
+                        foreach ([1, 2] as $_) {
+                            if (empty($a["foo"])) {
+                                echo "empty";
+                            }
+
+                            $a = $other;
+                        }
+                    }',
+                'error_message' => 'RiskyTruthyFalsyComparison',
+            ],
             'emptyOnKeyOfUnsealedArrayIsRisky' => [
                 'code' => '<?php
                     /** @param array<string, string> $arg */
