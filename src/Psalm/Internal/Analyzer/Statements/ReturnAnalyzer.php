@@ -427,6 +427,19 @@ final class ReturnAnalyzer
                     }
                 } else {
                     $declared_return_type = $storage->return_type;
+
+                    // a docblock type that the signature rules out has been reported where the function is
+                    // checked; what the body returns is checked against what PHP enforces
+                    if ($declared_return_type
+                        && $storage->signature_return_type
+                        && !UnionTypeComparator::canBeContainedBy(
+                            $codebase,
+                            $declared_return_type,
+                            $storage->signature_return_type,
+                        )
+                    ) {
+                        $declared_return_type = $storage->signature_return_type;
+                    }
                 }
 
                 if ($declared_return_type && !$declared_return_type->hasMixed()) {

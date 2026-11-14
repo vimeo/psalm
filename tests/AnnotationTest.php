@@ -8,11 +8,13 @@ use Override;
 use Psalm\Config;
 use Psalm\Context;
 use Psalm\Exception\CodeException;
+use Psalm\Internal\Analyzer\IssueData;
 use Psalm\IssueBuffer;
 use Psalm\Tests\Traits\InvalidCodeAnalysisTestTrait;
 use Psalm\Tests\Traits\ValidCodeAnalysisTestTrait;
 
 use function array_column;
+use function array_map;
 
 use const DIRECTORY_SEPARATOR;
 
@@ -147,6 +149,46 @@ final class AnnotationTest extends TestCase
         self::assertSame(
             ['MismatchingDocblockReturnType', 'UndefinedVariable', 'MixedArgument'],
             array_column(IssueBuffer::getIssuesDataForFile($file_path), 'type'),
+        );
+    }
+
+    public function testReturnOfAFunctionWithAMismatchingDocblockIsCheckedAgainstTheSignature(): void
+    {
+        $this->project_analyzer->getConfig()->throw_exception = false;
+
+        $file_path = self::$src_dir_path . 'somefile.php';
+
+        $this->addFile(
+            $file_path,
+            '<?php
+                /** @return int */
+                function matches(): string {
+                    return "a";
+                }
+
+                /** @return int */
+                function differs(): string {
+                    return 5;
+                }',
+        );
+
+        $this->analyzeFile($file_path, new Context());
+
+        self::assertSame(
+            [
+                ['MismatchingDocblockReturnType', 2],
+                ['InvalidReturnType', 2],
+                ['MismatchingDocblockReturnType', 7],
+                ['InvalidReturnStatement', 9],
+            ],
+            array_map(
+                static fn(IssueData $issue): array => [$issue->type, $issue->line_from],
+                IssueBuffer::getIssuesDataForFile($file_path),
+            ),
+        );
+        self::assertStringContainsString(
+            "does not match the declared return type 'string'",
+            IssueBuffer::getIssuesDataForFile($file_path)[3]->message,
         );
     }
 
