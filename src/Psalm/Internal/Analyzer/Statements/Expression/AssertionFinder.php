@@ -894,6 +894,12 @@ final class AssertionFinder
             // says nothing about the type of the constant, but puts it into the clause, so that
             // `!defined('X') || !is_string(X)` narrows X where it is false
             $if_types[$expr->getArgs()[0]->value->value] = [[new Any()]];
+        } elseif ($expr->name instanceof PhpParser\Node\Name
+            && strtolower($expr->name->getFirst()) === 'defined'
+            && isset($expr->getArgs()[0])
+            && $expr->getArgs()[0]->value instanceof PhpParser\Node\Scalar\String_
+        ) {
+            // no variable is asserted, only the PHP version guard below
         } else {
             return self::processCustomAssertion($expr, $this_class_name, $source);
         }
@@ -907,8 +913,8 @@ final class AssertionFinder
     }
 
     /**
-     * A `function_exists()`, `class_exists()`, `interface_exists()`, `enum_exists()` or
-     * `method_exists()` check of a native symbol newer than the analysed PHP version: where it
+     * A `function_exists()`, `class_exists()`, `interface_exists()`, `enum_exists()`, `method_exists()` or
+     * `defined()` check of a native symbol newer than the analysed PHP version: where it
      * holds, PHP_VERSION_ID is at least the version that introduced the symbol, so the symbol
      * can be used there (see Codebase::getGuardedPhpVersionId()).
      */
@@ -948,6 +954,15 @@ final class AssertionFinder
                     }
                 }
             }
+        } elseif ($function_name === 'defined'
+            && isset($args[0])
+            && $args[0]->value instanceof PhpParser\Node\Scalar\String_
+        ) {
+            $since_php_version_id = ConstFetchAnalyzer::getStubSincePhpVersionId(
+                $source,
+                ltrim($args[0]->value->value, '\\'),
+                null,
+            );
         } elseif (in_array($function_name, ['class_exists', 'interface_exists', 'enum_exists'], true)) {
             $guarded_class = isset($args[0]) ? self::getLiteralClassName($args[0]->value) : null;
 

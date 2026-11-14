@@ -10,6 +10,7 @@ use Psalm\CodeLocation;
 use Psalm\Codebase;
 use Psalm\Context;
 use Psalm\Internal\Analyzer\ClassLikeAnalyzer;
+use Psalm\Internal\Analyzer\FunctionLikeAnalyzer;
 use Psalm\Internal\Analyzer\NamespaceAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\SimpleTypeInferer;
 use Psalm\Internal\Analyzer\Statements\ExpressionAnalyzer;
@@ -34,6 +35,7 @@ use function in_array;
 use function preg_match;
 use function preg_quote;
 use function str_contains;
+use function str_ends_with;
 use function str_replace;
 use function strtolower;
 
@@ -104,6 +106,16 @@ final class ConstFetchAnalyzer
                     $fq_const_name = $const_name;
                 } else {
                     $fq_const_name = Type::getFQCLNFromString($const_name, $statements_analyzer->getAliases());
+                }
+
+                if ($const_type !== null) {
+                    self::reportConstUnavailableForPhpVersion(
+                        $statements_analyzer,
+                        $const_name,
+                        $fq_const_name,
+                        $context,
+                        $stmt,
+                    );
                 }
 
                 $codebase->analyzer->addNodeReference(
@@ -280,6 +292,12 @@ final class ConstFetchAnalyzer
         $types = [];
 
         foreach ($codebase->file_storage_provider->getAll() as $file_storage) {
+            // the constants of a stub are read from the global registrations below, which hold the declaration
+            // that won, not one a project polyfill superseded
+            if (str_ends_with($file_storage->file_path, '.phpstub')) {
+                continue;
+            }
+
             foreach ($file_storage->constants as $const_name => $const_type) {
                 if (preg_match($regex, $const_name) === 1) {
                     $types[$const_name] = isset($file_storage->unresolved_constants[$const_name])
@@ -293,7 +311,10 @@ final class ConstFetchAnalyzer
         }
 
         foreach ($codebase->getAllStubbedConstants() as $const_name => $const_type) {
-            if (!isset($types[$const_name]) && preg_match($regex, $const_name) === 1) {
+            if (!isset($types[$const_name])
+                && preg_match($regex, $const_name) === 1
+                && !self::isStubConstantNewerThanAnalysedVersion($codebase, $const_name)
+            ) {
                 $unresolved = $codebase->getUnresolvedGlobalConstant($const_name);
 
                 $types[$const_name] = $unresolved !== null
@@ -303,13 +324,26 @@ final class ConstFetchAnalyzer
         }
 
         foreach ($codebase->config->getPredefinedConstants() as $const_name => $_) {
-            if (!isset($types[$const_name]) && preg_match($regex, $const_name) === 1) {
+            if (!isset($types[$const_name])
+                && preg_match($regex, $const_name) === 1
+                && !self::isStubConstantNewerThanAnalysedVersion($codebase, $const_name)
+            ) {
                 $types[$const_name] = self::getGlobalConstType($codebase, $const_name, $const_name)
                     ?? Type::getMixed();
             }
         }
 
         return $types;
+    }
+
+    /**
+     * @psalm-capabilities read-props
+     */
+    private static function isStubConstantNewerThanAnalysedVersion(Codebase $codebase, string $const_name): bool
+    {
+        $since_php_version_id = $codebase->getStubbedConstantSincePhpVersionId($const_name);
+
+        return $since_php_version_id !== null && $since_php_version_id > $codebase->analysis_php_version_id;
     }
 
     public static function getConstType(
@@ -388,6 +422,89 @@ final class ConstFetchAnalyzer
 
         return self::getGlobalConstType($codebase, $fq_const_name, $const_name)
             ?? self::getGlobalConstType($codebase, $const_name, $const_name);
+    }
+
+    /**
+     * The PHP version a fetched constant was introduced in, when it resolves to a stub tagged `@since`.
+     * Null when no such stub exists or a constant of the project (namespace, context or file scope) takes its place.
+     */
+    public static function getStubSincePhpVersionId(
+        StatementsAnalyzer $statements_analyzer,
+        string $fq_const_name,
+        ?Context $context,
+    ): ?int {
+        $codebase = $statements_analyzer->getCodebase();
+
+        $const_name_parts = explode('\\', $fq_const_name);
+        $const_name = array_pop($const_name_parts);
+
+        $since_php_version_id = $codebase->getStubbedConstantType($fq_const_name) !== null
+            ? $codebase->getStubbedConstantSincePhpVersionId($fq_const_name)
+            : $codebase->getStubbedConstantSincePhpVersionId($const_name);
+
+        if ($since_php_version_id === null
+            || isset(NamespaceAnalyzer::getConstantsForNamespace(
+                implode('\\', $const_name_parts),
+                ReflectionProperty::IS_PUBLIC,
+            )[$const_name])
+            || ($context && $context->hasVariable($fq_const_name))
+        ) {
+            return null;
+        }
+
+        $file_storage = $codebase->file_storage_provider->get($statements_analyzer->getRootFilePath());
+
+        // Without a context (when scraping the assertions of a condition) a constant defined in the enclosing
+        // function (see ExpressionScanner::scan) is only known from its scanned declarations
+        $source = $statements_analyzer->getSource();
+        $defined_constants = $context === null && $source instanceof FunctionLikeAnalyzer
+            ? $source->getFunctionLikeStorage($statements_analyzer)->defined_constants
+            : [];
+
+        foreach ([$const_name, $fq_const_name] as $name) {
+            if (isset($file_storage->declaring_constants[$name])
+                || isset($defined_constants[$name])
+                || $codebase->getUnresolvedGlobalConstant($name)
+            ) {
+                return null;
+            }
+        }
+
+        return $since_php_version_id;
+    }
+
+    /**
+     * Reports a constant that a stub introduced in a PHP version newer than the one the code runs on, unless
+     * a project constant or a version guard covers it.
+     */
+    public static function reportConstUnavailableForPhpVersion(
+        StatementsAnalyzer $statements_analyzer,
+        string $const_name,
+        string $fq_const_name,
+        Context $context,
+        PhpParser\Node $location_node,
+    ): void {
+        if (!$context->check_consts) {
+            return;
+        }
+
+        $codebase = $statements_analyzer->getCodebase();
+        $since_php_version_id = self::getStubSincePhpVersionId($statements_analyzer, $fq_const_name, $context);
+
+        if ($since_php_version_id === null
+            || ($codebase->getGuardedPhpVersionId($context) ?? $codebase->analysis_php_version_id)
+                >= $since_php_version_id
+        ) {
+            return;
+        }
+
+        IssueBuffer::maybeAdd(
+            new UndefinedConstant(
+                'Const ' . $const_name . ' ' . $codebase->getUnavailableSymbolMessageSuffix($since_php_version_id),
+                new CodeLocation($statements_analyzer->getSource(), $location_node),
+            ),
+            $statements_analyzer->getSuppressedIssues(),
+        );
     }
 
     /**

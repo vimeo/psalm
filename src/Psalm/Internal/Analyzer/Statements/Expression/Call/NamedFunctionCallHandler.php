@@ -535,6 +535,13 @@ final class NamedFunctionCallHandler
                     );
 
                     if ($const_type) {
+                        ConstFetchAnalyzer::reportConstUnavailableForPhpVersion(
+                            $statements_analyzer,
+                            $fq_const_name,
+                            $fq_const_name,
+                            $context,
+                            $real_stmt,
+                        );
                         $statements_analyzer->node_data->setType($real_stmt, $const_type);
                     }
                 }
