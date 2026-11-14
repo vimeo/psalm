@@ -24,7 +24,6 @@ use Psalm\Report;
 use Psalm\Report\ReportOptions;
 
 use function array_key_exists;
-use function array_map;
 use function array_slice;
 use function chdir;
 use function end;
@@ -33,14 +32,11 @@ use function fwrite;
 use function gc_collect_cycles;
 use function gc_disable;
 use function getcwd;
-use function getopt;
-use function implode;
 use function in_array;
 use function is_array;
 use function is_string;
 use function microtime;
 use function preg_last_error_msg;
-use function preg_replace;
 use function preg_split;
 use function realpath;
 use function str_starts_with;
@@ -86,37 +82,10 @@ final class Refactor
         $valid_long_options = self::LONG_OPTIONS;
 
         // get options from command line
-        $options = CliUtils::chosenByOperator(getopt(implode('', $valid_short_options), $valid_long_options));
-        if ($options === false) {
-            fwrite(STDERR, 'Failed to parse cli options' . PHP_EOL);
-            exit(1);
-        }
+        $options = CliUtils::getOptions($args, $valid_short_options, $valid_long_options);
 
-        array_map(
-            static function (string $arg) use ($valid_long_options): void {
-                if (str_starts_with($arg, '--') && $arg !== '--') {
-                    $arg_name = (string) preg_replace('/=.*$/', '', substr($arg, 2), 1);
-
-                    if ($arg_name === 'refactor') {
-                        // valid option for psalm, ignored by psalter
-                        return;
-                    }
-
-                    if (!in_array($arg_name, $valid_long_options)
-                        && !in_array($arg_name . ':', $valid_long_options)
-                        && !in_array($arg_name . '::', $valid_long_options)
-                    ) {
-                        fwrite(
-                            STDERR,
-                            'Unrecognised argument "--' . $arg_name . '"' . PHP_EOL
-                            . 'Type --help to see a list of supported arguments'. PHP_EOL,
-                        );
-                        exit(1);
-                    }
-                }
-            },
-            $args,
-        );
+        // --refactor is an option of psalm, which forwards the call to psalm-refactor
+        CliUtils::rejectUnrecognisedOptions($args, $valid_short_options, $valid_long_options, ['--refactor']);
 
         if (array_key_exists('help', $options)) {
             $options['h'] = false;
