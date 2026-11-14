@@ -520,6 +520,16 @@ final class Context
         foreach ($start_context->vars_in_scope as $var_id => $old_type) {
             // this is only true if there was some sort of type negation
             if (in_array($var_id, $vars_to_update, true)) {
+                // a block that stays in the scope and forgot the variable (a call that may change what a
+                // memoized call or a property holds, not an unset()): nothing is known of it after the block
+                // but what it was before
+                if (!$has_leaving_statements
+                    && !$end_context->hasVariable($var_id)
+                    && isset($end_context->vars_possibly_in_scope[$var_id])
+                ) {
+                    continue;
+                }
+
                 // if we're leaving, we're effectively deleting the possibility of the if types
                 $new_type = !$has_leaving_statements && $end_context->hasVariable($var_id)
                     ? $end_context->vars_in_scope[$var_id]
@@ -1091,10 +1101,12 @@ final class Context
      * pure or read-globals function, leaves every refinement in place.
      *
      * @param CapabilitySet $callee_capabilities
+     * @param array<string, true> $preserved_methods Memoized results that cannot be affected by this call
      */
     public function removeMutableObjectVars(
         bool $methods_only = false,
         int $callee_capabilities = Capabilities::ALL,
+        array $preserved_methods = [],
     ): void {
         $forget_properties
             = ($callee_capabilities & (Capabilities::WRITE_PROPS | Capabilities::WRITE_THIS_PROPS)) !== 0;
@@ -1107,7 +1119,8 @@ final class Context
         $vars_to_remove = [];
 
         foreach ($this->vars_in_scope as $var_id => $type) {
-            if ($type->has_mutations
+            if (!isset($preserved_methods[$var_id])
+                && $type->has_mutations
                 && (($forget_properties && str_contains($var_id, '->'))
                     || ($forget_statics && (str_contains($var_id, '::') || self::isInSuperGlobal($var_id))))
                 && (!$methods_only || strpos($var_id, '()'))
@@ -1122,6 +1135,8 @@ final class Context
 
         foreach ($vars_to_remove as $var_id) {
             $this->remove($var_id, false);
+            // forgotten, not unset: Context::update() tells the two apart
+            $this->vars_possibly_in_scope[$var_id] = true;
         }
 
         $clauses_to_keep = [];
@@ -1130,7 +1145,8 @@ final class Context
             $abandon_clause = false;
 
             foreach ($clause->possibilities as $key => $_) {
-                if ((($forget_properties && str_contains($key, '->'))
+                if (!isset($preserved_methods[$key])
+                    && (($forget_properties && str_contains($key, '->'))
                         || ($forget_statics && (str_contains($key, '::') || self::isInSuperGlobal($key))))
                     && (!$methods_only || strpos($key, '()'))
                 ) {

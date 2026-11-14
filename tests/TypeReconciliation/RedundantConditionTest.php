@@ -23,6 +23,75 @@ final class RedundantConditionTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'notNullAfterAnIssetOfAnArrayAccessOffsetOrAMagicPropertyIsNotRedundant' => [
+                'code' => '<?php
+                    /** @implements ArrayAccess<string, mixed> */
+                    final class Bundle implements ArrayAccess {
+                        public function offsetExists(mixed $offset): bool {
+                            return true;
+                        }
+
+                        public function offsetGet(mixed $offset): mixed {
+                            return null;
+                        }
+
+                        public function offsetSet(mixed $offset, mixed $value): void {}
+
+                        public function offsetUnset(mixed $offset): void {}
+                    }
+
+                    final class Magic {
+                        public function __isset(string $name): bool {
+                            return true;
+                        }
+
+                        public function __get(string $name): mixed {
+                            return null;
+                        }
+                    }
+
+                    function fromBundle(Bundle $bundle): string {
+                        if (isset($bundle["key"]) && $bundle["key"] !== null) {
+                            return "set";
+                        }
+
+                        return "unset";
+                    }
+
+                    function fromMagic(Magic $magic): string {
+                        if (isset($magic->name) && $magic->name !== null) {
+                            return "set";
+                        }
+
+                        return "unset";
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
+            'notNullBeforeAnIssetOfTheSameVariableIsNotRedundant' => [
+                'code' => '<?php
+                    final class Item {
+                        public function name(): string {
+                            return "i";
+                        }
+                    }
+
+                    function pick(bool $first): string {
+                        if ($first) {
+                            $item = new Item();
+                        }
+
+                        if ($item !== null && isset($item)) {
+                            return $item->name();
+                        }
+
+                        return "";
+                    }',
+                'assertions' => [],
+                'ignored_issues' => ['MixedReturnStatement', 'MixedMethodCall', 'PossiblyUndefinedVariable'],
+                'php_version' => '8.1',
+            ],
             'ctypeCheckOfNumericStringExpressionIsNotRedundant' => [
                 'code' => <<<'PHP'
                     <?php
@@ -1353,6 +1422,29 @@ final class RedundantConditionTest extends TestCase
     public static function providerInvalidCodeParse(): iterable
     {
         return [
+            'notNullAfterAnIssetOfAConditionallyDefinedVariableIsRedundant' => [
+                'code' => '<?php
+                    final class Item {
+                        public function name(): string {
+                            return "i";
+                        }
+                    }
+
+                    function pick(bool $first): string {
+                        if ($first) {
+                            $item = new Item();
+                        }
+
+                        if (isset($item) && $item !== null) {
+                            return $item->name();
+                        }
+
+                        return "";
+                    }',
+                'error_message' => 'RedundantCondition - src' . DIRECTORY_SEPARATOR . 'somefile.php:13:29',
+                'error_levels' => ['MixedReturnStatement', 'MixedMethodCall'],
+                'php_version' => '8.1',
+            ],
             'inequalityWithAnEmptyArrayOfANonEmptyArrayIsRedundant' => [
                 'code' => '<?php
                     $a = [1, 2];
