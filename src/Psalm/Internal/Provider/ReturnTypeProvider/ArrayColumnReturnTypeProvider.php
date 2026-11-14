@@ -284,7 +284,7 @@ final class ArrayColumnReturnTypeProvider implements FunctionReturnTypeProviderI
 
     /**
      * The parts of the index column type that array_column() throws a TypeError for: arrays, and objects that
-     * can't be cast to a string
+     * aren't cast to a string
      *
      * @return list<Atomic>
      */
@@ -295,7 +295,7 @@ final class ArrayColumnReturnTypeProvider implements FunctionReturnTypeProviderI
         foreach ($key_type->getAtomicTypes() as $atomic_type) {
             if ($atomic_type instanceof TArray
                 || $atomic_type instanceof TKeyedArray
-                || ($atomic_type instanceof TNamedObject && !self::isStringable($codebase, $atomic_type))
+                || ($atomic_type instanceof TNamedObject && !self::isCastToAString($codebase, $atomic_type))
             ) {
                 $invalid[] = $atomic_type;
             }
@@ -304,16 +304,21 @@ final class ArrayColumnReturnTypeProvider implements FunctionReturnTypeProviderI
         return $invalid;
     }
 
-    private static function isStringable(Codebase $codebase, TNamedObject $object): bool
+    /**
+     * Before PHP 8, an object with a __toString() in the index column is cast to a string; since then it is a
+     * TypeError, like any other object
+     */
+    private static function isCastToAString(Codebase $codebase, TNamedObject $object): bool
     {
-        return $codebase->classOrInterfaceExists($object->value)
+        return $codebase->analysis_php_version_id < 8_00_00
+            && $codebase->classOrInterfaceExists($object->value)
             && $codebase->methodExists(new MethodIdentifier($object->value, '__tostring'));
     }
 
     /**
-     * The type of the key array_column() sets for a value: null, bools, floats and objects with a __toString() are
-     * cast to the array key they stand for. What can't be a key is left out (see getTypesThatCannotBeKeys()),
-     * and a type that is nothing but that is an array key.
+     * The type of the key array_column() sets for a value: null, bools, floats and, before PHP 8, objects with a
+     * __toString() are cast to the array key they stand for. What can't be a key is left out (see
+     * getTypesThatCannotBeKeys()), and a type that is nothing but that is an array key.
      */
     private static function castToArrayKey(Codebase $codebase, Union $key_type): Union
     {
@@ -337,7 +342,7 @@ final class ArrayColumnReturnTypeProvider implements FunctionReturnTypeProviderI
                 || $atomic_type instanceof TTemplateParam
             ) {
                 $atomic_types[] = $atomic_type;
-            } elseif ($atomic_type instanceof TNamedObject && self::isStringable($codebase, $atomic_type)) {
+            } elseif ($atomic_type instanceof TNamedObject && self::isCastToAString($codebase, $atomic_type)) {
                 $atomic_types[] = new TString();
             } elseif ($atomic_type instanceof TArray
                 || $atomic_type instanceof TKeyedArray

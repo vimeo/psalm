@@ -4368,6 +4368,19 @@ final class ArrayFunctionCallTest extends TestCase
                 'error_levels' => [],
                 'php_version' => '8.0',
             ],
+            'arrayColumnIndexColumnOfAStringableObjectIsNotAnArrayKeySincePhp8' => [
+                'code' => '<?php
+                    final class S {
+                        public function __toString(): string {
+                            return "k";
+                        }
+                    }
+
+                    $result = array_column([[new S, 1]], 1, 0);',
+                'error_message' => 'InvalidArgument - src' . DIRECTORY_SEPARATOR . 'somefile.php:8:31 - The index column has the type S',
+                'error_levels' => [],
+                'php_version' => '8.0',
+            ],
             'arrayColumnIndexColumnOfAnArrayIsNotAnArrayKey' => [
                 'code' => '<?php
                     $result = array_column([[[], 1]], 1, 0);',
