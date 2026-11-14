@@ -22,6 +22,7 @@ use Psalm\IssueBuffer;
 use Psalm\Storage\Capabilities;
 use Psalm\Storage\UnserializeMemoryUsageSuppressionTrait;
 use Psalm\Type;
+use Psalm\Type\Atomic\TGenericObject;
 use Psalm\Type\Atomic\TNamedObject;
 use Psalm\Type\Union;
 
@@ -224,7 +225,16 @@ final class ClosureAnalyzer extends FunctionLikeAnalyzer
                 /** @psalm-suppress PossiblyUndefinedStringArrayOffset */
                 $use_context->vars_in_scope['$this'] = $context->vars_in_scope['$this'];
             } elseif ($context->self) {
-                $this_atomic = new TNamedObject($context->self, true);
+                $outer_this_atomic = isset($context->vars_in_scope['$this'])
+                    && $context->vars_in_scope['$this']->isSingle()
+                    ? $context->vars_in_scope['$this']->getSingleAtomic()
+                    : null;
+
+                // keep the template params of the class, so that its methods take the closure's TNode for theirs
+                $this_atomic = $outer_this_atomic instanceof TGenericObject
+                    && strtolower($outer_this_atomic->value) === strtolower($context->self)
+                    ? $outer_this_atomic
+                    : new TNamedObject($context->self, true);
 
                 $use_context->vars_in_scope['$this'] = new Union([$this_atomic]);
             }

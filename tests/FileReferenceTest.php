@@ -333,6 +333,29 @@ final class FileReferenceTest extends TestCase
         self::assertSame(['/b.php', '/c.php'], $provider->getFilesReferencingFile($file_path));
     }
 
+    public function testFileOfAClassInheritsFromTheClassesItsMixinLookupReaches(): void
+    {
+        $codebase = $this->project_analyzer->getCodebase();
+        $deep_path = self::$src_dir_path . 'deep.php';
+        $mid_path = self::$src_dir_path . 'mid.php';
+        $host_path = self::$src_dir_path . 'host.php';
+        $this->file_provider->registerFile($deep_path, '<?php final class Deep {}');
+        $this->file_provider->registerFile($mid_path, '<?php /** @mixin Deep */ final class Mid {}');
+        $this->file_provider->registerFile(
+            $host_path,
+            '<?php /** @mixin Mid */ trait ForwardsCalls {} abstract class Base { use ForwardsCalls; } final class Host extends Base {}',
+        );
+        $codebase->addFilesToAnalyze([$deep_path => $deep_path, $mid_path => $mid_path, $host_path => $host_path]);
+        $codebase->scanFiles();
+
+        $provider = $codebase->file_reference_provider;
+        $provider->updateReferenceCache($codebase, [$deep_path => true, $mid_path => true]);
+
+        // a change to the mixin of the mixin of a trait of the parent class reaches the file of the class
+        self::assertEqualsCanonicalizing([$mid_path, $host_path], $provider->getFilesInheritingFromFile($deep_path));
+        self::assertSame([$host_path], $provider->getFilesInheritingFromFile($mid_path));
+    }
+
     private function scanFileWithReferenceCache(FileReferenceCacheProvider $cache): string
     {
         $this->file_provider = new FakeFileProvider();
@@ -390,6 +413,36 @@ final class FileReferenceTest extends TestCase
                     (new A())->foo();',
                 'A::foo',
                 ['7:32:foo'],
+            ],
+            'getMethodLocationWithUsedReturnValue' => [
+                '<?php
+                    final class A {
+                        public function foo(): ?string {
+                            return null;
+                        }
+                    }
+
+                    function f(A $a): string {
+                        return $a->foo() ?? "";
+                    }
+
+                    function g(A $a): void {
+                        $a->foo();
+                    }',
+                'A::foo',
+                ['9:36:foo', '13:29:foo'],
+            ],
+            'getInterfaceMethodLocationWithUsedReturnValue' => [
+                '<?php
+                    interface I {
+                        public function foo(): string;
+                    }
+
+                    function f(I $i): string {
+                        return $i->foo();
+                    }',
+                'I::foo',
+                ['7:36:foo'],
             ],
             'getPropertyLocation' => [
                 '<?php

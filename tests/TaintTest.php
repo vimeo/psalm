@@ -89,6 +89,75 @@ final class TaintTest extends TestCase
     }
 
     /**
+     * Taint must travel from a by-reference call through its local alias to the sink.
+     */
+    public function testReturnedReferenceAssignmentToVariablePreservesTaint(): void
+    {
+        $code = <<<'PHP'
+            <?php
+            final class ReferenceSource {
+                public static string $value = '';
+            }
+
+            /** @psalm-taint-source html */
+            function &getReferenceSource(): string {
+                return ReferenceSource::$value;
+            }
+
+            $reference = &getReferenceSource();
+            echo $reference;
+            PHP;
+
+        $this->expectException(CodeException::class);
+        $this->expectExceptionMessageMatches('/\bTaintedHtml\b/');
+
+        $file_path = self::$src_dir_path . 'somefile.php';
+        $this->project_analyzer->setPhpVersion('8.0', 'tests');
+        $this->addFile($file_path, $code);
+        $this->project_analyzer->trackTaintedInputs();
+
+        foreach (self::IGNORE as $issue_name) {
+            Config::getInstance()->setCustomErrorLevel($issue_name, Config::REPORT_SUPPRESS);
+        }
+
+        $this->analyzeFile($file_path, new Context(), false);
+    }
+
+    /**
+     * A reference assignment used as an expression must retain the taint of the returned value.
+     */
+    public function testReturnedReferenceAssignmentExpressionPreservesTaint(): void
+    {
+        $code = <<<'PHP'
+            <?php
+            final class TaintedReference {
+                public static string $value = '';
+            }
+
+            /** @psalm-taint-source html */
+            function &referenceSource(): string {
+                return TaintedReference::$value;
+            }
+
+            echo ($value = &referenceSource());
+            PHP;
+
+        $this->expectException(CodeException::class);
+        $this->expectExceptionMessageMatches('/\bTaintedHtml\b/');
+
+        $file_path = self::$src_dir_path . 'somefile.php';
+        $this->project_analyzer->setPhpVersion('8.0', 'tests');
+        $this->addFile($file_path, $code);
+        $this->project_analyzer->trackTaintedInputs();
+
+        foreach (self::IGNORE as $issue_name) {
+            Config::getInstance()->setCustomErrorLevel($issue_name, Config::REPORT_SUPPRESS);
+        }
+
+        $this->analyzeFile($file_path, new Context(), false);
+    }
+
+    /**
      * A taint flow longer than the old hard-coded resolution depth of 40 hops is
      * now detected: resolution runs to a fixed point rather than stopping at an
      * arbitrary nesting level.
@@ -5567,6 +5636,40 @@ final class TaintTest extends TestCase
                         use Imports;
                     }',
             ],
+            'codeRequiringACliOnlyInstancePrintsToATerminal' => [
+                'code' => '<?php
+                    /** @psalm-cli-only-instances */
+                    final class Request {
+                        public function __construct() {
+                            if (PHP_SAPI !== "cli") {
+                                throw new LogicException("Run it from the command line");
+                            }
+                        }
+
+                        public function __wakeup(): void {
+                            if (PHP_SAPI !== "cli") {
+                                throw new LogicException("Run it from the command line");
+                            }
+                        }
+
+                        public function run(): void {
+                            echo (string) $_GET["file"];
+                        }
+                    }
+
+                    function import(Request $request): void {
+                        $file = (string) $_GET["file"];
+                        echo $file;
+                        printf("%s", $file);
+                        array_map(function (string $line): void {
+                            echo $line;
+                        }, [$file]);
+                    }
+
+                    $print = function (Request $request): void {
+                        echo (string) $_GET["file"];
+                    };',
+            ],
             'sapiCheckedCodePrintsToATerminal' => [
                 'code' => '<?php
                     function import(): void {
@@ -5583,6 +5686,66 @@ final class TaintTest extends TestCase
                         exit(1);
                     }
 
+                    echo (string) $_GET["file"];',
+            ],
+            'codeGuardedByAnAssertionOfTheSapiPrintsToATerminal' => [
+                'code' => '<?php
+                    /** @psalm-assert "cli" PHP_SAPI */
+                    function requireCli(): void {
+                        if (PHP_SAPI !== "cli") {
+                            throw new LogicException("Run it from the command line");
+                        }
+                    }
+
+                    /** @psalm-assert-if-true "cli" php_sapi_name() */
+                    function isCli(): bool {
+                        return php_sapi_name() === "cli";
+                    }
+
+                    /** @psalm-assert-if-false "cli" PHP_SAPI */
+                    function isWeb(): bool {
+                        return PHP_SAPI !== "cli";
+                    }
+
+                    final class Sapi {
+                        /** @psalm-assert "cli" PHP_SAPI */
+                        public static function requireCli(): void {
+                            requireCli();
+                        }
+
+                        /** @psalm-assert-if-true "cli" PHP_SAPI */
+                        public function isCli(): bool {
+                            return isCli();
+                        }
+                    }
+
+                    function a(): void {
+                        requireCli();
+                        echo (string) $_GET["file"];
+                        array_map(function (string $line): void {
+                            echo $line;
+                        }, [(string) $_GET["file"]]);
+                    }
+
+                    function b(): void {
+                        if (isCli()) {
+                            echo (string) $_GET["file"];
+                        }
+                    }
+
+                    function c(): void {
+                        if (!isWeb()) {
+                            echo (string) $_GET["file"];
+                        }
+                    }
+
+                    function d(Sapi $sapi): void {
+                        if ($sapi->isCli()) {
+                            echo (string) $_GET["file"];
+                        }
+                    }
+
+                    Sapi::requireCli();
                     echo (string) $_GET["file"];',
             ],
             'specializedCallsStayApartThroughADespecializedHelper' => [
@@ -5943,9 +6106,7 @@ final class TaintTest extends TestCase
                 'code' => '<?php // --taint-analysis
                     /** @param mixed $m */
                     function f($m): void {
-                        /** @psalm-suppress MixedArrayAccess */
                         preg_match("/(.*)/", (string) $_GET["x"], $m["k"]);
-                        /** @psalm-suppress MixedArrayAccess, MixedArgument */
                         echo $m["k"][1];
                     }',
                 'error_message' => 'TaintedHtml',
@@ -5969,6 +6130,28 @@ final class TaintTest extends TestCase
                     if (is_string($s)) {
                         fill($s);
                         output();
+                    }',
+                'error_message' => 'TaintedHtml',
+            ],
+            'taintAStaticPropertyOfStaticPassedByReference' => [
+                'code' => '<?php // --taint-analysis
+                    class Box {
+                        /** @var list<string> */
+                        protected static array $matches = [];
+
+                        public static function fill(string $s): void {
+                            preg_match("/(.*)/", $s, static::$matches);
+                        }
+
+                        public static function output(): void {
+                            echo static::$matches[0];
+                        }
+                    }
+
+                    $s = $_GET["q"];
+                    if (is_string($s)) {
+                        Box::fill($s);
+                        Box::output();
                     }',
                 'error_message' => 'TaintedHtml',
             ],
@@ -8659,6 +8842,51 @@ final class TaintTest extends TestCase
                     echo (string) $_GET["file"];',
                 'error_message' => 'TaintedHtml',
             ],
+            'codeOutsideTheBranchOfAnAssertionOfTheSapiPrintsToAResponse' => [
+                'code' => '<?php
+                    /** @psalm-assert-if-true "cli" PHP_SAPI */
+                    function isCli(): bool {
+                        return PHP_SAPI === "cli";
+                    }
+
+                    if (isCli()) {
+                        echo "Importing";
+                    }
+
+                    echo (string) $_GET["file"];',
+                'error_message' => 'TaintedHtml',
+            ],
+            'codeAfterAnAssertionOfAnotherSapiPrintsToAResponse' => [
+                'code' => '<?php
+                    final class Sapi {
+                        /** @psalm-assert "cli-server" PHP_SAPI */
+                        public static function requireBuiltinWebServer(): void {
+                            if (PHP_SAPI !== "cli-server") {
+                                throw new LogicException("Run it in the builtin web server");
+                            }
+                        }
+                    }
+
+                    Sapi::requireBuiltinWebServer();
+                    echo (string) $_GET["file"];',
+                'error_message' => 'TaintedHtml',
+            ],
+            'codeWhereAnAssertionOfTheSapiIfFalseFailsPrintsToAResponse' => [
+                'code' => '<?php
+                    final class Sapi {
+                        /** @psalm-assert-if-false "cli" PHP_SAPI */
+                        public function isWeb(): bool {
+                            return PHP_SAPI !== "cli";
+                        }
+                    }
+
+                    function show(Sapi $sapi): void {
+                        if ($sapi->isWeb()) {
+                            echo (string) $_GET["file"];
+                        }
+                    }',
+                'error_message' => 'TaintedHtml',
+            ],
             'traitMethodOfAClassThatIsNotCliOnlyPrintsToAResponse' => [
                 'code' => '<?php
                     trait Imports {
@@ -8692,6 +8920,50 @@ final class TaintTest extends TestCase
 
                     final class ImportController {
                         use Imports;
+                    }',
+                'error_message' => 'TaintedHtml',
+            ],
+            'codeTakingANullableCliOnlyInstancePrintsToAResponse' => [
+                'code' => '<?php
+                    /** @psalm-cli-only-instances */
+                    final class Request {
+                        public function __construct() {
+                            if (PHP_SAPI !== "cli") {
+                                throw new LogicException("Run it from the command line");
+                            }
+                        }
+
+                        public function __wakeup(): void {
+                            if (PHP_SAPI !== "cli") {
+                                throw new LogicException("Run it from the command line");
+                            }
+                        }
+                    }
+
+                    function import(?Request $request): void {
+                        echo (string) $_GET["file"];
+                    }',
+                'error_message' => 'TaintedHtml',
+            ],
+            'staticMethodOfAClassWithCliOnlyInstancesPrintsToAResponse' => [
+                'code' => '<?php
+                    /** @psalm-cli-only-instances */
+                    final class Request {
+                        public function __construct() {
+                            if (PHP_SAPI !== "cli") {
+                                throw new LogicException("Run it from the command line");
+                            }
+                        }
+
+                        public function __wakeup(): void {
+                            if (PHP_SAPI !== "cli") {
+                                throw new LogicException("Run it from the command line");
+                            }
+                        }
+
+                        public static function show(): void {
+                            echo (string) $_GET["file"];
+                        }
                     }',
                 'error_message' => 'TaintedHtml',
             ],
@@ -11883,19 +12155,16 @@ final class TaintTest extends TestCase
             ],
             'taintedHtmlWrittenToAPhpOutputStream' => [
                 'code' => '<?php
-                    /** @psalm-suppress PossiblyFalseArgument */
                     fwrite(fopen("php://output", "w"), (string) $_GET["x"]);',
                 'error_message' => 'TaintedHtml',
             ],
             'taintedHtmlWrittenToAPhpStdoutStream' => [
                 'code' => '<?php
-                    /** @psalm-suppress PossiblyFalseArgument */
                     fwrite(fopen("php://stdout", "w"), (string) $_GET["x"]);',
                 'error_message' => 'TaintedHtml',
             ],
             'taintedTextWithQuotesWrittenToAPhpOutputStream' => [
                 'code' => '<?php
-                    /** @psalm-suppress PossiblyFalseArgument */
                     fwrite(fopen("php://output", "w"), strip_tags((string) $_GET["x"]));',
                 'error_message' => 'TaintedTextWithQuotes',
             ],
@@ -12900,10 +13169,6 @@ final class TaintTest extends TestCase
             ],
             'taintOverMixed' => [
                 'code' => '<?php
-                    /**
-                     * @psalm-suppress MixedAssignment
-                     * @psalm-suppress MixedArgument
-                     */
                     function foo() : void {
                         $a = $_GET["bad"];
                         echo $a;
@@ -12913,7 +13178,6 @@ final class TaintTest extends TestCase
             'taintStrConversion' => [
                 'code' => '<?php
                     function foo() : void {
-                        /** @psalm-suppress PossiblyInvalidCast */
                         $a = strtoupper(strtolower((string) $_GET["bad"]));
                         echo $a;
                     }',
@@ -13706,13 +13970,11 @@ final class TaintTest extends TestCase
             ],
             'taintThroughArrayMapUntypedClosureOverMixedArray' => [
                 'code' => '<?php
-                    /** @psalm-suppress MissingClosureParamType, MissingClosureReturnType */
                     echo implode(",", array_map(fn($s) => $s, $_GET["a"]));',
                 'error_message' => 'TaintedHtml',
             ],
             'taintThroughArrayMapUntypedClosureIntoItsElements' => [
                 'code' => '<?php
-                    /** @psalm-suppress MissingClosureParamType, MissingClosureReturnType */
                     foreach (array_map(fn($s) => $s, $_GET["a"]) as $value) {
                         echo (string) $value;
                     }',
@@ -13905,10 +14167,8 @@ final class TaintTest extends TestCase
             'taintExit' => [
                 'code' => '<?php
                     if (rand(0, 1)) {
-                        /** @psalm-suppress PossiblyInvalidArgument */
                         exit($_GET[\'a\']);
                     } else {
-                        /** @psalm-suppress PossiblyInvalidArgument */
                         die($_GET[\'b\']);
                     }',
                 'error_message' => 'TaintedHtml',
@@ -14118,7 +14378,6 @@ final class TaintTest extends TestCase
                         echo $b[0];
                     }
 
-                    /** @psalm-suppress MixedArgumentTypeCoercion */
                     spread($_GET["a"]);',
                 'error_message' => 'TaintedHtml',
             ],
@@ -14626,10 +14885,8 @@ final class TaintTest extends TestCase
                         }
                     }
 
-                    /** @psalm-suppress InvalidReturnType */
                     function stub(): Unsafe { }
 
-                    /** @psalm-suppress MixedArgument */
                     echo stub()->isUnsafe();',
                 'error_message' => 'TaintedHtml',
             ],
@@ -14766,7 +15023,6 @@ final class TaintTest extends TestCase
             ],
             'taintPopen' => [
                 'code' => '<?php
-                    /** @psalm-suppress PossiblyInvalidCast */
                     $cb = popen($_POST[\'x\'], \'r\');',
                 'error_message' => 'TaintedShell',
             ],
@@ -15633,7 +15889,6 @@ final class TaintTest extends TestCase
                  * We arbitrarily chose system() to test this.
                  */
                 'code' => '<?php
-                    /** @psalm-suppress PossiblyInvalidArgument */
                     system(urlencode($_GET["bad"]));
                 ',
                 'error_message' => 'TaintedShell',
