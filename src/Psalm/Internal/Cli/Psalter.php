@@ -33,6 +33,7 @@ use function array_key_exists;
 use function array_map;
 use function array_shift;
 use function array_slice;
+use function array_values;
 use function assert;
 use function chdir;
 use function count;
@@ -44,8 +45,6 @@ use function fwrite;
 use function gc_collect_cycles;
 use function gc_disable;
 use function getcwd;
-use function getenv;
-use function getopt;
 use function implode;
 use function in_array;
 use function is_array;
@@ -54,9 +53,9 @@ use function is_string;
 use function microtime;
 use function pathinfo;
 use function preg_last_error_msg;
-use function preg_replace;
 use function preg_split;
 use function realpath;
+use function rtrim;
 use function str_contains;
 use function str_starts_with;
 use function strtolower;
@@ -69,7 +68,6 @@ use const FILTER_VALIDATE_BOOLEAN;
 use const PATHINFO_EXTENSION;
 use const PHP_EOL;
 use const STDERR;
-use const STDOUT;
 
 // phpcs:disable PSR1.Files.SideEffects
 
@@ -87,7 +85,7 @@ final class Psalter
     private const SHORT_OPTIONS =  ['f:', 'm', 'h', 'r:', 'c:'];
 
     public const LONG_OPTIONS = [
-        'help', 'debug', 'debug-by-line', 'debug-emitted-issues', 'config:', 'file:', 'root:',
+        'help', 'debug', 'debug-by-line', 'debug-emitted-issues', 'config:', 'file:', 'root:', 'monochrome',
         'plugin:', 'issues:', 'list-supported-issues', 'php-version:', 'dry-run', 'no-diff', 'safe-types',
         'find-unused-code', 'threads:', 'scan-threads:', 'codeowner:',
         'allow-backwards-incompatible-changes:',
@@ -110,13 +108,10 @@ final class Psalter
         $args = array_slice($argv, 1);
 
         // get options from command line
-        $options = CliUtils::chosenByOperator(getopt(implode('', self::SHORT_OPTIONS), self::LONG_OPTIONS));
-        if ($options === false) {
-            fwrite(STDERR, 'Failed to parse cli options' . PHP_EOL);
-            exit(1);
-        }
+        $options = CliUtils::getOptions($args, self::SHORT_OPTIONS, self::LONG_OPTIONS);
 
-        self::validateCliArguments($args);
+        // --alter is an option of psalm, which forwards the call to psalter
+        CliUtils::rejectUnrecognisedOptions($args, self::SHORT_OPTIONS, self::LONG_OPTIONS, ['--alter']);
 
         CliUtils::setMemoryLimit($options);
 
@@ -144,8 +139,10 @@ final class Psalter
 
                 -m, --monochrome
                     Enable monochrome output.
-                    Auto-enabled when NO_COLOR is set to a non-empty value or
-                    when an AI coding agent is driving the shell.
+                    Auto-enabled when NO_COLOR is set to a non-empty value, when
+                    TERM=dumb, when stdout is not a terminal, or when an AI coding
+                    agent is driving the shell.
+                    FORCE_COLOR set to a non-empty value forces colors on instead.
 
                 --no-progress
                     Disable the progress indicator.
@@ -159,7 +156,7 @@ final class Psalter
                     Executes a plugin, an alternative to using the Psalm config
 
                 --dry-run
-                    Does not write the changes
+                    Does not write the changes, and exits with code 2 if there are any.
 
                 --no-diff
                     Does not print the diff, only the list of changed files
@@ -180,8 +177,15 @@ final class Psalter
                 --find-unused-code
                     Include unused code as a candidate for removal
 
-                --threads=INT
-                    If greater than one, Psalm will run analysis on multiple threads, speeding things up.
+                --threads=INT|auto
+                    If greater than one, Psalm will run the scan and analysis on multiple threads,
+                    speeding things up.
+                    `auto` (the default) uses the threads setting of the config, or else one thread per CPU core.
+
+                --scan-threads=INT|auto
+                    If greater than one, Psalm will run the scan on multiple threads, speeding things up
+                    (if specified, takes priority over the --threads flag).
+                    `auto` (the default) uses the scanThreads setting of the config, or else one thread per CPU core.
 
                 --codeowner=[codeowner]
                     You can specify a GitHub code ownership group, and only that owner's code will be updated.
@@ -317,11 +321,7 @@ final class Psalter
         }
 
         $stdout_report_options = new ReportOptions();
-        $stdout_report_options->use_color = !array_key_exists('m', $options)
-            && !CliUtils::noColorRequested()
-            && !CliUtils::runningUnderAiAgent()
-            && CliUtils::streamIsInteractive(STDOUT)
-            && getenv('TERM') !== 'dumb';
+        $stdout_report_options->use_color = CliUtils::useColor($options, true);
         $stdout_report_options->in_ci = $in_ci;
 
         $project_analyzer = new ProjectAnalyzer(
@@ -367,13 +367,13 @@ final class Psalter
         CliUtils::initPhpVersion($options, $config, $project_analyzer);
 
         if (isset($options['codeowner'])) {
-            $codeowner_files = self::loadCodeowners($providers);
+            $codeowner_files = self::loadCodeowners($providers, $current_dir);
 
             $desired_codeowners = is_array($options['codeowner']) ? $options['codeowner'] : [$options['codeowner']];
 
             $files_for_codeowners = self::loadCodeownersFiles($desired_codeowners, $codeowner_files);
             $paths_to_check = is_array($paths_to_check) ?
-                [...$paths_to_check, ...$files_for_codeowners] :
+                self::keepFilesWithinPaths($files_for_codeowners, $paths_to_check) :
                 $files_for_codeowners;
         }
 
@@ -426,7 +426,7 @@ final class Psalter
 
         /** @var string $plugin_path */
         foreach ($plugins as $plugin_path) {
-            Config::getInstance()->addPluginPath($current_dir . $plugin_path);
+            Config::getInstance()->addPluginPath($plugin_path);
         }
 
         $find_unused_code = array_key_exists('find-unused-code', $options);
@@ -497,36 +497,6 @@ final class Psalter
         IssueBuffer::finish($project_analyzer, false, $start_time);
     }
 
-    /** @param array<int,string> $args */
-    private static function validateCliArguments(array $args): void
-    {
-        array_map(
-            static function (string $arg): void {
-                if (str_starts_with($arg, '--') && $arg !== '--') {
-                    $arg_name = (string) preg_replace('/=.*$/', '', substr($arg, 2), 1);
-
-                    if ($arg_name === 'alter') {
-                        // valid option for psalm, ignored by psalter
-                        return;
-                    }
-
-                    if (!in_array($arg_name, self::LONG_OPTIONS)
-                        && !in_array($arg_name . ':', self::LONG_OPTIONS)
-                        && !in_array($arg_name . '::', self::LONG_OPTIONS)
-                    ) {
-                        fwrite(
-                            STDERR,
-                            'Unrecognised argument "--' . $arg_name . '"' . PHP_EOL
-                            . 'Type --help to see a list of supported arguments'. PHP_EOL,
-                        );
-                        exit(1);
-                    }
-                }
-            },
-            $args,
-        );
-    }
-
     /**
      * @param array<string, false|list<mixed>|string> $options
      * @param-out array<string, false|list<mixed>|string> $options
@@ -549,17 +519,21 @@ final class Psalter
         if (isset($options['root'])) {
             $options['r'] = $options['root'];
         }
+
+        if (isset($options['file'])) {
+            $options['f'] = $options['file'];
+        }
     }
 
     /** @return array<string, array<int, string>> */
-    private static function loadCodeowners(Providers $providers): array
+    private static function loadCodeowners(Providers $providers, string $root_dir): array
     {
-        if (file_exists('CODEOWNERS')) {
-            $codeowners_file_path = (string) realpath('CODEOWNERS');
-        } elseif (file_exists('.github/CODEOWNERS')) {
-            $codeowners_file_path = (string) realpath('.github/CODEOWNERS');
-        } elseif (file_exists('docs/CODEOWNERS')) {
-            $codeowners_file_path = (string) realpath('docs/CODEOWNERS');
+        if (file_exists($root_dir . '/CODEOWNERS')) {
+            $codeowners_file_path = (string) realpath($root_dir . '/CODEOWNERS');
+        } elseif (file_exists($root_dir . '/.github/CODEOWNERS')) {
+            $codeowners_file_path = (string) realpath($root_dir . '/.github/CODEOWNERS');
+        } elseif (file_exists($root_dir . '/docs/CODEOWNERS')) {
+            $codeowners_file_path = (string) realpath($root_dir . '/docs/CODEOWNERS');
         } else {
             fwrite(STDERR, 'Cannot use --codeowner without a CODEOWNERS file' . PHP_EOL);
             exit(1);
@@ -593,7 +567,9 @@ final class Psalter
         $codeowner_files = [];
 
         foreach ($codeowner_lines as [$path, $owners]) {
-            if (!file_exists($path)) {
+            $path = realpath($root_dir . DIRECTORY_SEPARATOR . $path);
+
+            if ($path === false) {
                 continue;
             }
 
@@ -655,5 +631,37 @@ final class Psalter
         }
 
         return $paths_to_check;
+    }
+
+    /**
+     * The files owned by the requested codeowners that lie inside the explicitly requested paths
+     *
+     * @param list<string> $owned_files
+     * @param list<string> $paths
+     * @return list<string>
+     */
+    private static function keepFilesWithinPaths(array $owned_files, array $paths): array
+    {
+        $files = array_values(array_filter(
+            $owned_files,
+            static function (string $owned_file) use ($paths): bool {
+                foreach ($paths as $path) {
+                    $directory_prefix = rtrim($path, '/\\') . DIRECTORY_SEPARATOR;
+
+                    if ($owned_file === $path || str_starts_with($owned_file, $directory_prefix)) {
+                        return true;
+                    }
+                }
+
+                return false;
+            },
+        ));
+
+        if (!$files) {
+            fwrite(STDERR, 'No PHP file in the given paths is owned by the requested --codeowner' . PHP_EOL);
+            exit(1);
+        }
+
+        return $files;
     }
 }

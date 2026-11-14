@@ -717,6 +717,88 @@ final class CapabilitiesTest extends TestCase
                         }
                     }',
             ],
+            'writesToAnotherObjectKeepDirectGettersNarrowedLikeProperties' => [
+                'code' => <<<'PHP'
+                    <?php
+                    final class Other {
+                        private int $n = 0;
+                        public function touch(): int { return ++$this->n; }
+                    }
+                    final class Owner {
+                        public ?Other $child = null;
+                        /** @psalm-mutation-free */
+                        public function getChild(): ?Other { return $this->child; }
+                    }
+                    function viaProperty(Owner $o, Other $x): void {
+                        if ($o->child !== null) {
+                            $x->touch();
+                            $o->child->touch();
+                        }
+                    }
+                    function viaGetter(Owner $o, Other $x): void {
+                        if ($o->getChild() !== null) {
+                            $x->touch();
+                            $o->getChild()->touch();
+                        }
+                    }
+                    final class Holder {
+                        public function __construct(public Owner $owner) {}
+                    }
+                    function nestedOwner(Holder $h, Other $x): void {
+                        if ($h->owner->getChild() !== null) {
+                            $x->touch();
+                            $h->owner->getChild()->touch();
+                        }
+                    }
+
+                    class Entity {
+                        protected ?Other $other = null;
+                        private int $total = 0;
+                        private ?string $label = null;
+                        /** @psalm-mutation-free */
+                        public function getOther(): ?Other { return $this->other; }
+                        public function add(int $amount, ?string $label = null): void {
+                            if ($amount < 0) {
+                                throw new InvalidArgumentException('negative');
+                            }
+                            $this->total += $amount;
+                            $this->label = $label ?? $this->label;
+                        }
+                    }
+                    function guardedSetterOfNonFinalClasses(Entity $a, Entity $b): void {
+                        if ($a->getOther() !== null) {
+                            $b->add(1);
+                            $a->getOther()->touch();
+                        }
+                    }
+
+                    final class Tx {
+                        /** @psalm-mutation-free */
+                        public function getNumber(): int { return 1; }
+                        /** @psalm-mutation-free */
+                        public function getUuid(): string { return 'x'; }
+                    }
+                    final class Result {
+                        private ?Tx $tx = null;
+                        /** @psalm-mutation-free */
+                        public function getTx(): ?Tx { return $this->tx; }
+                    }
+                    final class Response {
+                        private int $number = 0;
+                        private string $uuid = '';
+                        public function setNumber(int $n): void { $this->number = $n; }
+                        public function setUuid(string $u): void { $this->uuid = $u; }
+                    }
+                    function second(Result $result, Response $response): void {
+                        if ($result->getTx() !== null) {
+                            $response->setNumber($result->getTx()->getNumber());
+                            $response->setUuid($result->getTx()->getUuid());
+                        }
+                    }
+                    PHP,
+                'assertions' => [],
+                'ignored_issues' => [],
+            ],
             'mutatingAnotherObjectKeepsWhatPureClassMethodsReturned' => [
                 'code' => '<?php
                     /** @psalm-pure */
@@ -3029,6 +3111,486 @@ final class CapabilitiesTest extends TestCase
                     }',
                 'error_message' => 'ImpureMethodCall - src' . DIRECTORY_SEPARATOR . 'somefile.php:7:48 - The context is read-props but method ArrayObject::offsetSet requires write-props',
             ],
+            'freshReceiverMustForgetMemoizedGetterAfterIncrement' => [
+                'code' => <<<'PHP'
+                    <?php
+                    final class Counter {
+                        private int $n = 0;
+                        /** @psalm-mutation-free */
+                        public function get(): int { return $this->n; }
+                        /** @psalm-capabilities read-props|write-this-props */
+                        public function inc(): void { ++$this->n; }
+                    }
+                    /** @return 0 */
+                    function afterIncrement(): int {
+                        $c = new Counter();
+                        if ($c->get() !== 0) {
+                            return 0;
+                        }
+                        $c->inc();
+                        return $c->get();
+                    }
+                    PHP,
+                'error_message' => 'LessSpecificReturnStatement',
+            ],
+            'unsetScalarPropertyCanDispatchToMagicSetter' => [
+                'code' => <<<'PHP'
+                    <?php
+                    final class Child {}
+                    final class Owner {
+                        public ?Child $child = null;
+                        /** @psalm-mutation-free */
+                        public function getChild(): ?Child { return $this->child; }
+                    }
+                    final class Mutator {
+                        private int $n = 0;
+                        public function __construct(private Owner $owner) {}
+                        public function forgetN(): void { unset($this->n); }
+                        public function __set(string $name, mixed $value): void {
+                            $this->owner->child = null;
+                        }
+                        public function setN(int $n): void { $this->n = $n; }
+                    }
+                    function afterMagicSet(Owner $owner, Mutator $m): Child {
+                        $m->forgetN();
+                        if ($owner->getChild() === null) {
+                            return new Child();
+                        }
+                        $m->setN(1);
+                        return $owner->getChild();
+                    }
+                    PHP,
+                'error_message' => 'NullableReturnStatement',
+            ],
+            'magicOwnerGetterMayReadMutatedState' => [
+                'code' => <<<'PHP'
+                    <?php
+                    final class Child {}
+                    final class Counter {
+                        public int $n = 0;
+                        public function inc(): int { return ++$this->n; }
+                    }
+                    final class Owner {
+                        public ?Child $child = null;
+                        public function __construct(private Counter $counter) {
+                            unset($this->child);
+                        }
+                        /** @psalm-mutation-free */
+                        public function getChild(): ?Child { return $this->child; }
+                        /** @psalm-mutation-free */
+                        public function __get(string $name): ?Child {
+                            return $this->counter->n === 0 ? new Child() : null;
+                        }
+                    }
+                    function afterIncrement(Owner $owner, Counter $counter): Child {
+                        if ($owner->getChild() === null) {
+                            return new Child();
+                        }
+                        $counter->inc();
+                        return $owner->getChild();
+                    }
+                    PHP,
+                'error_message' => 'NullableReturnStatement',
+            ],
+            'inheritedSetterCanDispatchToSubclassPropertyHook' => [
+                'code' => <<<'PHP'
+                    <?php
+                    final class Child {}
+                    final class Owner {
+                        public ?Child $child = null;
+                        /** @psalm-mutation-free */
+                        public function getChild(): ?Child { return $this->child; }
+                    }
+                    class BaseMutator {
+                        public int $n = 0;
+                        public function setN(int $n): void { $this->n = $n; }
+                    }
+                    final class Mutator extends BaseMutator {
+                        public function __construct(public Owner $owner) {}
+                        public int $n {
+                            set(int $value) { $this->owner->child = null; }
+                        }
+                    }
+                    function afterInheritedSet(Owner $owner, Mutator $m): Child {
+                        if ($owner->getChild() === null) {
+                            return new Child();
+                        }
+                        $m->setN(1);
+                        return $owner->getChild();
+                    }
+                    PHP,
+                'error_message' => 'NullableReturnStatement',
+                'error_levels' => [],
+                'php_version' => '8.4',
+            ],
+            'differentFinalClassesCanShareScalarPropertyByReference' => [
+                'code' => '<?php
+                    final class A {
+                        public ?string $value = "x";
+                        /** @psalm-mutation-free */
+                        public function getValue(): ?string { return $this->value; }
+                    }
+                    final class B {
+                        public ?string $value = "x";
+                        public function clear(): void { $this->value = null; }
+                    }
+                    function getAfterClear(A $a, B $b): string {
+                        if ($a->getValue() === null) {
+                            return "";
+                        }
+                        // Even different final classes may share a scalar reference:
+                        // $b->value =& $a->value;
+                        $b->clear();
+                        return $a->getValue();
+                    }',
+                'error_message' => 'NullableReturnStatement',
+            ],
+            'scalarGettersOfUnrelatedClassesCanAliasByReference' => [
+                'code' => '<?php
+                    final class A {
+                        public string $value = "x";
+                        /** @psalm-mutation-free */
+                        public function getValue(): string { return $this->value; }
+                    }
+                    final class B {
+                        public string $value = "x";
+                        public function setValue(string $v): void { $this->value = $v; }
+                    }
+                    /** @return "x" */
+                    function afterSet(A $a, B $b): string {
+                        if ($a->getValue() !== "x") {
+                            return "x";
+                        }
+                        // Both properties can be linked with $b->value =& $a->value.
+                        $b->setValue("y");
+                        return $a->getValue();
+                    }',
+                'error_message' => 'LessSpecificReturnStatement',
+            ],
+            'sameReceiverStillInvalidatesObjectGetter' => [
+                'code' => '<?php
+                    final class Box {
+                        private ?stdClass $child = null;
+                        /** @psalm-mutation-free */
+                        public function getChild(): ?stdClass { return $this->child; }
+                        public function clear(): void { $this->child = null; }
+                    }
+                    function afterClear(Box $a, Box $b): stdClass {
+                        if ($a->getChild() === null) {
+                            return new stdClass();
+                        }
+                        $b->clear();
+                        return $a->getChild();
+                    }',
+                'error_message' => 'NullableReturnStatement',
+            ],
+            'mutatorCallingAnotherMethodMustNotKeepGetter' => [
+                'code' => '<?php
+                    final class Child {}
+                    final class Owner {
+                        public ?Child $child = null;
+                        /** @psalm-mutation-free */
+                        public function getChild(): ?Child { return $this->child; }
+                        public function clear(): void { $this->child = null; }
+                    }
+                    final class Other {
+                        private int $n = 0;
+                        public function __construct(private Owner $owner) {}
+                        public function touch(): void {
+                            ++$this->n;
+                            $this->owner->clear();
+                        }
+                    }
+                    function afterTouch(Owner $owner, Other $other): Child {
+                        if ($owner->getChild() === null) {
+                            return new Child();
+                        }
+                        $other->touch();
+                        return $owner->getChild();
+                    }',
+                'error_message' => 'NullableReturnStatement',
+            ],
+            'getterReadingMoreThanItsPropertyMustBeForgotten' => [
+                'code' => '<?php
+                    final class Child {}
+                    final class Counter {
+                        public int $n = 0;
+                        public function inc(): void { ++$this->n; }
+                    }
+                    final class Owner {
+                        public ?Child $child = null;
+                        public function __construct(private Counter $counter) {}
+                        /** @psalm-mutation-free */
+                        public function getChild(): ?Child { return $this->counter->n === 0 ? $this->child : null; }
+                    }
+                    function afterIncrement(Owner $owner, Counter $counter): Child {
+                        if ($owner->getChild() === null) {
+                            return new Child();
+                        }
+                        $counter->inc();
+                        return $owner->getChild();
+                    }',
+                'error_message' => 'NullableReturnStatement',
+            ],
+            'getterOnWhatTheReceiverHoldsMustBeForgotten' => [
+                'code' => '<?php
+                    final class Child {}
+                    final class Owner {
+                        public ?Child $child = null;
+                        /** @psalm-mutation-free */
+                        public function getChild(): ?Child { return $this->child; }
+                    }
+                    final class Holder {
+                        public Owner $owner;
+                        public function __construct() { $this->owner = new Owner(); }
+                        public function replace(Owner $owner): void { $this->owner = $owner; }
+                    }
+                    function afterReplace(Holder $h, Owner $empty): Child {
+                        if ($h->owner->getChild() === null) {
+                            return new Child();
+                        }
+                        $h->replace($empty);
+                        return $h->owner->getChild();
+                    }',
+                'error_message' => 'NullableReturnStatement',
+            ],
+            'mutatorWritingByReferenceMustNotKeepGetter' => [
+                'code' => '<?php
+                    final class Child {}
+                    final class Owner {
+                        public ?Child $child = null;
+                        /** @psalm-mutation-free */
+                        public function getChild(): ?Child { return $this->child; }
+                    }
+                    final class Other {
+                        private int $n = 0;
+                        public function take(?Child &$slot): void {
+                            ++$this->n;
+                            $slot = null;
+                        }
+                    }
+                    function afterTake(Owner $owner, Other $other): Child {
+                        if ($owner->getChild() === null) {
+                            return new Child();
+                        }
+                        $other->take($owner->child);
+                        return $owner->getChild();
+                    }',
+                'error_message' => 'NullableReturnStatement',
+            ],
+            'mutatorCallingAnImpureClosureOfItsPurityTemplateMustNotKeepGetter' => [
+                'code' => '<?php
+                    final class Child {}
+                    final class Owner {
+                        public ?Child $child = null;
+                        /** @psalm-mutation-free */
+                        public function getChild(): ?Child { return $this->child; }
+                    }
+                    final class Runner {
+                        private int $runs = 0;
+                        /**
+                         * @psalm-capabilities read-props|write-this-props
+                         * @psalm-purity-template P
+                         * @param Closure[P](): void $f
+                         * @psalm-purity-from-template P
+                         */
+                        public function run(Closure $f): void {
+                            ++$this->runs;
+                            $f();
+                        }
+                    }
+                    function afterRun(Owner $owner, Runner $runner): Child {
+                        if ($owner->getChild() === null) {
+                            return new Child();
+                        }
+                        $runner->run(function () use ($owner): void {
+                            $owner->child = null;
+                        });
+                        return $owner->getChild();
+                    }',
+                'error_message' => 'NullableReturnStatement',
+            ],
+            'overriddenMutatorMustNotKeepGetter' => [
+                'code' => '<?php
+                    final class Child {}
+                    final class Owner {
+                        public ?Child $child = null;
+                        /** @psalm-mutation-free */
+                        public function getChild(): ?Child { return $this->child; }
+                    }
+                    class Counter {
+                        private int $n = 0;
+                        public function touch(): void { ++$this->n; }
+                    }
+                    final class ClearingCounter extends Counter {
+                        public function __construct(private Owner $owner) {}
+                        public function touch(): void { $this->owner->child = null; }
+                    }
+                    function afterTouch(Owner $owner, Counter $counter): Child {
+                        if ($owner->getChild() === null) {
+                            return new Child();
+                        }
+                        $counter->touch();
+                        return $owner->getChild();
+                    }',
+                'error_message' => 'NullableReturnStatement',
+            ],
+            'mutatorWritingThroughAnotherMethodMustNotKeepGetterOfAnAlias' => [
+                'code' => '<?php
+                    final class Box {
+                        private int $n = 0;
+                        private ?stdClass $child = null;
+                        /** @psalm-mutation-free */
+                        public function getChild(): ?stdClass { return $this->child; }
+                        /** @psalm-capabilities read-props|write-this-props */
+                        public function touch(): void {
+                            ++$this->n;
+                            $this->clearChild();
+                        }
+                        /** @psalm-capabilities read-props|write-this-props */
+                        private function clearChild(): void { $this->child = null; }
+                    }
+                    function afterTouch(Box $a, Box $b): stdClass {
+                        if ($a->getChild() === null) {
+                            return new stdClass();
+                        }
+                        $b->touch();
+                        return $a->getChild();
+                    }',
+                'error_message' => 'NullableReturnStatement',
+            ],
+            'differentlyNamedPropertiesOfCompatibleTypesCanShareAReference' => [
+                'code' => '<?php
+                    final class A {
+                        public ?string $value = "x";
+                        /** @psalm-mutation-free */
+                        public function getValue(): ?string { return $this->value; }
+                    }
+                    final class B {
+                        public ?string $slot = "x";
+                        public function clear(): void { $this->slot = null; }
+                    }
+                    function getAfterClear(A $a, B $b): string {
+                        if ($a->getValue() === null) {
+                            return "";
+                        }
+                        // $b->slot =& $a->value;
+                        $b->clear();
+                        return $a->getValue();
+                    }',
+                'error_message' => 'NullableReturnStatement',
+            ],
+            'overriddenGetterMustBeForgotten' => [
+                'code' => '<?php
+                    final class Child {}
+                    final class Counter {
+                        public int $n = 0;
+                        public function inc(): void { ++$this->n; }
+                    }
+                    class Owner {
+                        public ?Child $child = null;
+                        /** @psalm-mutation-free */
+                        public function getChild(): ?Child { return $this->child; }
+                    }
+                    final class CountingOwner extends Owner {
+                        public function __construct(private Counter $counter) {}
+                        /** @psalm-mutation-free */
+                        public function getChild(): ?Child { return $this->counter->n === 0 ? $this->child : null; }
+                    }
+                    function afterIncrement(Owner $owner, Counter $counter): Child {
+                        if ($owner->getChild() === null) {
+                            return new Child();
+                        }
+                        $counter->inc();
+                        return $owner->getChild();
+                    }',
+                'error_message' => 'NullableReturnStatement',
+            ],
+            'inheritedGetterOfAPropertyRedeclaredWithAHookMustBeForgotten' => [
+                'code' => '<?php
+                    final class Child {}
+                    final class Counter {
+                        public int $n = 0;
+                        public function inc(): void { ++$this->n; }
+                    }
+                    class Owner {
+                        public ?Child $child = null;
+                        /** @psalm-mutation-free */
+                        public function getChild(): ?Child { return $this->child; }
+                    }
+                    final class HookedOwner extends Owner {
+                        public function __construct(private Counter $counter) {}
+                        public ?Child $child = null {
+                            get => $this->counter->n === 0 ? $this->child : null;
+                        }
+                    }
+                    function afterIncrement(HookedOwner $owner, Counter $counter): Child {
+                        if ($owner->getChild() === null) {
+                            return new Child();
+                        }
+                        $counter->inc();
+                        return $owner->getChild();
+                    }',
+                'error_message' => 'NullableReturnStatement',
+                'error_levels' => [],
+                'php_version' => '8.4',
+            ],
+            'exceptionConstructedAndCaughtByTheMutatorMustNotKeepGetter' => [
+                'code' => '<?php
+                    final class Child {}
+                    final class Owner {
+                        public ?Child $child = null;
+                        /** @psalm-mutation-free */
+                        public function getChild(): ?Child { return $this->child; }
+                    }
+                    final class ResetException extends Exception {
+                        public function __construct(Owner $owner) {
+                            $owner->child = null;
+                            parent::__construct();
+                        }
+                    }
+                    final class Other {
+                        private int $n = 0;
+                        public function touch(Owner $owner): void {
+                            ++$this->n;
+                            try {
+                                throw new ResetException($owner);
+                            } catch (ResetException $e) {}
+                        }
+                    }
+                    function afterTouch(Owner $owner, Other $other): Child {
+                        if ($owner->getChild() === null) {
+                            return new Child();
+                        }
+                        $other->touch($owner);
+                        return $owner->getChild();
+                    }',
+                'error_message' => 'NullableReturnStatement',
+            ],
+            'mutatorWithExternalEffectsMustNotKeepGetter' => [
+                'code' => '<?php
+                    final class Child {}
+                    final class Owner {
+                        public ?Child $child = null;
+                        /** @psalm-mutation-free */
+                        public function getChild(): ?Child { return $this->child; }
+                    }
+                    final class Other {
+                        private int $n = 0;
+                        public function touch(Owner $owner): void {
+                            ++$this->n;
+                            $owner->child = null;
+                        }
+                    }
+                    function afterTouch(Owner $owner, Other $other): Child {
+                        if ($owner->getChild() === null) {
+                            return new Child();
+                        }
+                        $other->touch($owner);
+                        return $owner->getChild();
+                    }',
+                'error_message' => 'NullableReturnStatement',
+            ],
             'itemOfAnArrayObjectPassedByReferenceForgetsMemoizedResultsOfItsMethods' => [
                 'code' => '<?php
                     /**
@@ -4491,7 +5053,6 @@ final class CapabilitiesTest extends TestCase
 
                     /**
                      * @psalm-pure
-                     * @psalm-suppress UndefinedMagicPropertyFetch, UndefinedThisPropertyFetch
                      */
                     function get(Magic $m): int {
                         return $m->foo;
@@ -6526,6 +7087,37 @@ final class CapabilitiesTest extends TestCase
                     }
                     Magic::noop();
                     return $a->x;
+                }',
+        );
+
+        $this->analyzeFile('somefile.php', new Context());
+    }
+
+    public function testWithoutRememberedPropertiesAWriteToAnotherObjectForgetsDirectGetters(): void
+    {
+        $this->expectException(CodeException::class);
+        $this->expectExceptionMessage('NullableReturnStatement');
+        Config::getInstance()->remember_property_assignments_after_call = false;
+
+        $this->addFile(
+            'somefile.php',
+            '<?php
+                final class Child {}
+                final class Owner {
+                    public ?Child $child = null;
+                    /** @psalm-mutation-free */
+                    public function getChild(): ?Child { return $this->child; }
+                }
+                final class Other {
+                    private int $n = 0;
+                    public function touch(): void { ++$this->n; }
+                }
+                function afterTouch(Owner $owner, Other $other): Child {
+                    if ($owner->getChild() === null) {
+                        return new Child();
+                    }
+                    $other->touch();
+                    return $owner->getChild();
                 }',
         );
 

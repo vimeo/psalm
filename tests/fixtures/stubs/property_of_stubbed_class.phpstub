@@ -1,0 +1,7 @@
+<?php
+
+class Exception implements Throwable
+{
+    /** @var non-empty-string */
+    protected $message = 'Unknown error';
+}

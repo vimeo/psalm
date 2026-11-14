@@ -99,7 +99,6 @@ use UnexpectedValueException;
 use function array_filter;
 use function array_keys;
 use function array_map;
-use function array_merge;
 use function array_pop;
 use function array_shift;
 use function array_values;
@@ -371,34 +370,12 @@ final class ClassAnalyzer extends ClassLikeAnalyzer
             }
         }
 
-        if (($storage->templatedMixins || $storage->namedMixins)
-            && $storage->mixin_declaring_fqcln === $storage->name) {
-            /** @var non-empty-array<int, TTemplateParam|TNamedObject> $mixins */
-            $mixins = array_merge($storage->templatedMixins, $storage->namedMixins);
-            $union = new Union($mixins);
-
-            $static_self = new TNamedObject($storage->name, true);
-
-            $union = TypeExpander::expandUnion(
-                $codebase,
-                $union,
-                $storage->name,
-                $static_self,
-                null,
-            );
-
-            /** @psalm-suppress UnusedMethodCall This call actually has the side effect of creating issues */
-            $union->check(
-                $this,
-                new CodeLocation(
-                    $this,
-                    $class->name ?: $class,
-                    null,
-                    true,
-                ),
-                $this->getSuppressedIssues(),
-            );
-        }
+        self::checkMixins(
+            $this,
+            $storage,
+            new CodeLocation($this, $class->name ?: $class, null, true),
+            $this->getSuppressedIssues(),
+        );
 
         if ($storage->template_extended_params) {
             foreach ($storage->template_extended_params as $type_map) {
@@ -825,8 +802,8 @@ final class ClassAnalyzer extends ClassLikeAnalyzer
                         );
                     }
 
-                    if ($property_storage->type === null) {
-                        // Property type not set, no need to check for docblock invariance
+                    // without a docblock type of its own, the property has the one it overrides
+                    if ($property_storage->type === null || $property_storage->inherited_type) {
                         continue;
                     }
 
@@ -942,7 +919,9 @@ final class ClassAnalyzer extends ClassLikeAnalyzer
                                 $storage->declaring_method_ids['__construct']->fq_class_name,
                             ) === strtolower($fq_class_name)))
                     && !$property_storage->has_default
-                    && !($property_type->isNullable() && $property_type->from_docblock)
+                    && !($property_storage->signature_type === null
+                        && $property_type->isNullable()
+                        && $property_type->from_docblock)
                 ) {
                     $property_type = $property_type->setProperties([
                         'initialized' => false,
@@ -1017,8 +996,10 @@ final class ClassAnalyzer extends ClassLikeAnalyzer
                 );
             }
 
+            // an inherited docblock type is checked where it is written, and the native type here
             $has_docblock_over_signature = $property_storage->signature_type
-                && $property_storage->type?->getId() !== $property_storage->signature_type->getId();
+                && ($property_storage->inherited_type
+                    || $property_storage->type?->getId() !== $property_storage->signature_type->getId());
 
             if ($property_type_location && (!$fleshed_out_type->isMixed() || $has_docblock_over_signature)) {
                 $stmt = array_filter(
@@ -1043,14 +1024,16 @@ final class ClassAnalyzer extends ClassLikeAnalyzer
                     }
                 }
 
-                /** @psalm-suppress UnusedMethodCall This call actually has the side effect of creating issues */
-                $fleshed_out_type->check(
-                    $statements_source,
-                    $property_type_location,
-                    $storage->suppressed_issues + $statements_source->getSuppressedIssues() + $suppressed,
-                    [],
-                    false,
-                );
+                if (!$property_storage->inherited_type) {
+                    /** @psalm-suppress UnusedMethodCall This call actually has the side effect of creating issues */
+                    $fleshed_out_type->check(
+                        $statements_source,
+                        $property_type_location,
+                        $storage->suppressed_issues + $statements_source->getSuppressedIssues() + $suppressed,
+                        [],
+                        false,
+                    );
+                }
 
                 if ($property_storage->signature_type) {
                     $union_comparison_result = new TypeComparisonResult();
@@ -1064,7 +1047,7 @@ final class ClassAnalyzer extends ClassLikeAnalyzer
                         $parent_fq_class_name,
                     );
 
-                    if (!UnionTypeComparator::isContainedBy(
+                    if (!$property_storage->inherited_type && !UnionTypeComparator::isContainedBy(
                         $codebase,
                         $fleshed_out_type,
                         $signature_type,
@@ -1075,9 +1058,9 @@ final class ClassAnalyzer extends ClassLikeAnalyzer
                     ) {
                         IssueBuffer::maybeAdd(
                             new MismatchingDocblockPropertyType(
-                                'Parameter '
+                                'Property '
                                     . $property_class_name . '::$' . $property_name
-                                    . ' has wrong type \'' . $fleshed_out_type .
+                                    . ' has wrong type \'' . $fleshed_out_type->getId() .
                                     '\', should be \'' . $signature_type->getId() . '\'',
                                 $property_type_location,
                             ),
@@ -1262,7 +1245,12 @@ final class ClassAnalyzer extends ClassLikeAnalyzer
                 continue;
             }
 
-            if ($property->type && $property->type->from_docblock && $property->type->isNullable()) {
+            // an untyped property is null until it is assigned
+            if ($property->signature_type === null
+                && $property->type
+                && $property->type->from_docblock
+                && $property->type->isNullable()
+            ) {
                 continue;
             }
 
