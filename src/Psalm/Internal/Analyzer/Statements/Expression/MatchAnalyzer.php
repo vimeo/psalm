@@ -13,6 +13,7 @@ use Psalm\Internal\Analyzer\Statements\ExpressionAnalyzer;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\Issue\UnhandledMatchCondition;
 use Psalm\IssueBuffer;
+use Psalm\Node\Expr\BinaryOp\VirtualBooleanOr;
 use Psalm\Node\Expr\BinaryOp\VirtualIdentical;
 use Psalm\Node\Expr\VirtualArray;
 use Psalm\Node\Expr\VirtualConstFetch;
@@ -34,10 +35,12 @@ use Psalm\Type\Reconciler;
 use UnexpectedValueException;
 
 use function array_any;
+use function array_filter;
 use function array_map;
 use function array_merge;
 use function array_reverse;
 use function array_shift;
+use function array_values;
 use function count;
 use function in_array;
 use function spl_object_id;
@@ -77,6 +80,9 @@ final class MatchAnalyzer
         );
 
         $match_condition = $stmt->cond;
+
+        $is_match_true = $stmt->cond instanceof PhpParser\Node\Expr\ConstFetch
+            && $stmt->cond->name->toString() === 'true';
 
         if (!$switch_var_id) {
             if ($stmt->cond instanceof PhpParser\Node\Expr\FuncCall
@@ -119,9 +125,7 @@ final class MatchAnalyzer
                 && $stmt->cond->name->toString() === 'class'
             ) {
                 // do nothing
-            } elseif ($stmt->cond instanceof PhpParser\Node\Expr\ConstFetch
-                && $stmt->cond->name->toString() === 'true'
-            ) {
+            } elseif ($is_match_true) {
                 // do nothing
             } else {
                 $switch_var_id = '$__tmp_switch__' . (int) $stmt->cond->getAttribute('startFilePos');
@@ -144,6 +148,12 @@ final class MatchAnalyzer
         foreach ($arms as $arm) {
             if ($arm->conds === null) {
                 $last_arm = $arm;
+                continue;
+            }
+
+            // analysed once per condition, the body would see only that condition's narrowing
+            if ($is_match_true) {
+                $flattened_arms[] = $arm;
                 continue;
             }
 
@@ -182,7 +192,12 @@ final class MatchAnalyzer
             $ternary = $last_arm->body;
         } else {
             $ternary = new VirtualTernary(
-                self::convertCondsToConditional($last_arm->conds, $match_condition, $last_arm->getAttributes()),
+                self::convertCondsToConditional(
+                    $last_arm->conds,
+                    $match_condition,
+                    $last_arm->getAttributes(),
+                    $is_match_true,
+                ),
                 $last_arm->body,
                 new VirtualThrow(
                     new VirtualNew(
@@ -204,7 +219,7 @@ final class MatchAnalyzer
             }
 
             $ternary = new VirtualTernary(
-                self::convertCondsToConditional($arm->conds, $match_condition, $arm->getAttributes()),
+                self::convertCondsToConditional($arm->conds, $match_condition, $arm->getAttributes(), $is_match_true),
                 $arm->body,
                 $ternary,
                 $arm->getAttributes(),
@@ -251,24 +266,56 @@ final class MatchAnalyzer
                 $all_conds = array_merge($arm->conds, $all_conds);
             }
 
-            $all_match_condition = self::convertCondsToConditional(
-                $all_conds,
-                $match_condition,
-                $match_condition->getAttributes(),
-            );
+            // an array of more values than the config allows is not a shape, and `in_array()` over it
+            // says nothing of the values left out by its negation
+            $all_match_condition_is_a_chain = count($all_conds) > $codebase->config->max_shaped_array_size;
 
-            // each arm's comparison was checked already
-            $was_int_mask_comparison_suppressed = in_array('IntMaskComparison', $suppressed_issues, true);
+            if ($all_match_condition_is_a_chain) {
+                $all_match_condition = null;
 
-            if (!$was_int_mask_comparison_suppressed) {
-                $statements_analyzer->addSuppressedIssues(['IntMaskComparison']);
+                foreach ($all_conds as $all_cond) {
+                    $cond_identical = new VirtualIdentical(
+                        $match_condition,
+                        $all_cond,
+                        $match_condition->getAttributes(),
+                    );
+
+                    $all_match_condition = $all_match_condition
+                        ? new VirtualBooleanOr(
+                            $all_match_condition,
+                            $cond_identical,
+                            $match_condition->getAttributes(),
+                        )
+                        : $cond_identical;
+                }
+            } else {
+                $all_match_condition = self::convertCondsToConditional(
+                    $all_conds,
+                    $match_condition,
+                    $match_condition->getAttributes(),
+                    false,
+                );
             }
+
+            // each arm's comparison was checked already: checking every value against the subject again only repeats it
+            $suppressed_by_the_analysis = $all_match_condition_is_a_chain
+                ? [
+                    'IntMaskComparison',
+                    'RedundantCondition',
+                    'RedundantConditionGivenDocblockType',
+                    'TypeDoesNotContainType',
+                    'DocblockTypeContradiction',
+                ]
+                : ['IntMaskComparison'];
+
+            $analysis_suppressions = array_values(array_filter(
+                $suppressed_by_the_analysis,
+                static fn(string $issue_type): bool => !in_array($issue_type, $suppressed_issues, true),
+            ));
+
+            $statements_analyzer->addSuppressedIssues($analysis_suppressions);
 
             ExpressionAnalyzer::analyze($statements_analyzer, $all_match_condition, $context);
-
-            if (!$was_int_mask_comparison_suppressed) {
-                $statements_analyzer->removeSuppressedIssues(['IntMaskComparison']);
-            }
 
             $clauses = FormulaGenerator::getFormula(
                 spl_object_id($all_match_condition),
@@ -280,6 +327,8 @@ final class MatchAnalyzer
                 false,
                 false,
             );
+
+            $statements_analyzer->removeSuppressedIssues($analysis_suppressions);
 
             $reconcilable_types = Algebra::getTruthsFromFormula(
                 Algebra::negateFormula($clauses),
@@ -379,7 +428,24 @@ final class MatchAnalyzer
         array $conds,
         PhpParser\Node\Expr $match_condition,
         array $attributes,
+        bool $is_match_true,
     ): PhpParser\Node\Expr {
+        // in_array() narrows only its needle, and the needle of `match (true)` is a constant: its conditions narrow
+        // only in an `||` chain, where each keeps its own location and clause key
+        if ($is_match_true) {
+            $conditional = null;
+
+            foreach ($conds as $cond) {
+                $cond_identical = new VirtualIdentical($match_condition, $cond, $cond->getAttributes());
+
+                $conditional = $conditional
+                    ? new VirtualBooleanOr($conditional, $cond_identical, $attributes)
+                    : $cond_identical;
+            }
+
+            return $conditional;
+        }
+
         if (count($conds) === 1) {
             return new VirtualIdentical(
                 $match_condition,

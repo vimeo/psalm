@@ -935,5 +935,62 @@ final class CacheTest extends TestCase
                 ],
             ],
         ];
+
+        // the issue of a type declared outside the project is reported at the earliest call, and at the next one
+        // from the cache once that call is gone
+        yield 'externalReturnTypeIssueMovesToTheNextCallFromTheCache' => [
+            [
+                [
+                    'files' => [
+                        'vendor/Library.php' => <<<'PHP'
+                            <?php
+                            final class Library {
+                                /** @return Unknown */
+                                public static function make() { throw new RuntimeException(); }
+                            }
+                            PHP,
+                        'src/A.php' => <<<'PHP'
+                            <?php
+                            require_once __DIR__ . '/../vendor/Library.php';
+                            function a(): void {
+                                Library::make();
+                            }
+                            PHP,
+                        'src/B.php' => <<<'PHP'
+                            <?php
+                            require_once __DIR__ . '/../vendor/Library.php';
+                            function b(): void {
+                                Library::make();
+                            }
+                            PHP,
+                    ],
+                    'issues' => [
+                        'vendor/Library.php' => [
+                            'UndefinedDocblockClass: Docblock-defined class, interface or enum named Unknown does not exist',
+                        ],
+                        'src/A.php' => [
+                            'UndefinedDocblockClass: Docblock-defined class, interface or enum named Unknown does not exist',
+                        ],
+                    ],
+                ],
+                [
+                    'files' => [
+                        'src/A.php' => <<<'PHP'
+                            <?php
+                            function a(): void {
+                            }
+                            PHP,
+                    ],
+                    'issues' => [
+                        'vendor/Library.php' => [
+                            'UndefinedDocblockClass: Docblock-defined class, interface or enum named Unknown does not exist',
+                        ],
+                        'src/B.php' => [
+                            'UndefinedDocblockClass: Docblock-defined class, interface or enum named Unknown does not exist',
+                        ],
+                    ],
+                ],
+            ],
+        ];
     }
 }

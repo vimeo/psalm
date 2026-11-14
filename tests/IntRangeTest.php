@@ -1146,6 +1146,58 @@ final class IntRangeTest extends TestCase
     public static function providerInvalidCodeParse(): iterable
     {
         return [
+            'comparisonBelowTheRangeNamesLessThan' => [
+                'code' => '<?php
+                    /**
+                     * @param int<0, 100> $p
+                     */
+                    function scope(int $p): void {
+                        if ($p < 0) {}
+                    }',
+                'error_message' => 'never < 0',
+            ],
+            'comparisonAboveTheRangeNamesGreaterThan' => [
+                'code' => '<?php
+                    /**
+                     * @param int<0, 100> $p
+                     */
+                    function scope(int $p): void {
+                        if ($p > 100) {}
+                    }',
+                'error_message' => 'never > 100',
+            ],
+            'comparisonAtMostBelowTheRangeNamesLessThanOrEqualTo' => [
+                'code' => '<?php
+                    /**
+                     * @param int<0, 100> $p
+                     */
+                    function scope(int $p): void {
+                        if ($p <= -1) {}
+                    }',
+                'error_message' => 'never <= -1',
+            ],
+            'comparisonAtLeastAboveTheRangeNamesGreaterThanOrEqualTo' => [
+                'code' => '<?php
+                    /**
+                     * @param int<0, 100> $p
+                     */
+                    function scope(int $p): void {
+                        if ($p >= 101) {}
+                    }',
+                'error_message' => 'never >= 101',
+            ],
+            'comparisonAtMostBelowAnInferredRangeNamesLessThanOrEqualTo' => [
+                'code' => '<?php
+                    $p = rand(0, 100);
+                    if ($p <= -1) {}',
+                'error_message' => 'TypeDoesNotContainType - src' . DIRECTORY_SEPARATOR . 'somefile.php:3:25 - Type int<0, 100> for $p is never <= -1',
+            ],
+            'comparisonAtLeastAboveAnInferredRangeNamesGreaterThanOrEqualTo' => [
+                'code' => '<?php
+                    $p = rand(0, 100);
+                    if ($p >= 101) {}',
+                'error_message' => 'TypeDoesNotContainType - src' . DIRECTORY_SEPARATOR . 'somefile.php:3:25 - Type int<0, 100> for $p is never >= 101',
+            ],
             'greaterThanPhpIntMaxIsImpossibleForInt' => [
                 'code' => '<?php
                     function f(int $value): void {
@@ -1153,7 +1205,7 @@ final class IntRangeTest extends TestCase
                             echo $value;
                         }
                     }',
-                'error_message' => 'TypeDoesNotContainType - src' . DIRECTORY_SEPARATOR . 'somefile.php:3:29 - Type int for $value is never >9223372036854775807',
+                'error_message' => 'TypeDoesNotContainType - src' . DIRECTORY_SEPARATOR . 'somefile.php:3:29 - Type int for $value is never > 9223372036854775807',
             ],
             'greaterThanPhpIntMaxIsImpossibleForIntRangeAndLiteral' => [
                 'code' => '<?php
@@ -1163,7 +1215,7 @@ final class IntRangeTest extends TestCase
                             echo $value;
                         }
                     }',
-                'error_message' => 'DocblockTypeContradiction - src' . DIRECTORY_SEPARATOR . 'somefile.php:4:29 - Docblock-defined type int<1, 7> for $value is never >= 9223372036854775807',
+                'error_message' => 'DocblockTypeContradiction - src' . DIRECTORY_SEPARATOR . 'somefile.php:4:29 - Docblock-defined type int<1, 7> for $value is never > 9223372036854775807',
             ],
             'lessThanPhpIntMinIsImpossibleForInt' => [
                 'code' => '<?php
@@ -1172,7 +1224,7 @@ final class IntRangeTest extends TestCase
                             echo $value;
                         }
                     }',
-                'error_message' => 'TypeDoesNotContainType - src' . DIRECTORY_SEPARATOR . 'somefile.php:3:29 - Type int for $value is never <-9223372036854775808',
+                'error_message' => 'TypeDoesNotContainType - src' . DIRECTORY_SEPARATOR . 'somefile.php:3:29 - Type int for $value is never < -9223372036854775808',
             ],
             'lessThanPhpIntMinIsImpossibleForIntRangeAndLiteral' => [
                 'code' => '<?php
@@ -1182,7 +1234,7 @@ final class IntRangeTest extends TestCase
                             echo $value;
                         }
                     }',
-                'error_message' => 'DocblockTypeContradiction - src' . DIRECTORY_SEPARATOR . 'somefile.php:4:29 - Docblock-defined type int<-5, 7> for $value is never <= -9223372036854775808',
+                'error_message' => 'DocblockTypeContradiction - src' . DIRECTORY_SEPARATOR . 'somefile.php:4:29 - Docblock-defined type int<-5, 7> for $value is never < -9223372036854775808',
             ],
             'notGreaterThanPhpIntMaxIsRedundantForInt' => [
                 'code' => '<?php
@@ -1193,7 +1245,7 @@ final class IntRangeTest extends TestCase
                             echo $value;
                         }
                     }',
-                'error_message' => 'RedundantCondition - src' . DIRECTORY_SEPARATOR . 'somefile.php:5:35 - Type int<min, -1> for $value is never >= 9223372036854775807',
+                'error_message' => 'RedundantCondition - src' . DIRECTORY_SEPARATOR . 'somefile.php:5:35 - Type int<min, -1> for $value is always <= 9223372036854775807',
             ],
             'intRangeNotContained' => [
                 'code' => '<?php

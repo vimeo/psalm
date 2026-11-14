@@ -324,7 +324,8 @@ final class ArrayAssignmentAnalyzer
             || $root_array_expr instanceof PhpParser\Node\Expr\StaticCall
             || $root_array_expr instanceof PhpParser\Node\Expr\FuncCall
         ) {
-            if ($root_type->hasArray()) {
+            // a function returning by reference returns the array itself
+            if ($root_type->hasArray() && !$root_type->by_ref) {
                 IssueBuffer::maybeAdd(
                     new InvalidArrayAssignment(
                         'Assigning to the output of a function has no effect',
