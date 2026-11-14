@@ -357,7 +357,6 @@ final class ClassLikeStringTest extends TestCase
                         return $builder->build(MessageImpl::class);
                     }',
                 'assertions' => [],
-                'ignored_issues' => ['MissingOverrideAttribute'],
             ],
             'isAKeepsTheTemplateOfAClassString' => [
                 'code' => '<?php
@@ -1328,6 +1327,34 @@ final class ClassLikeStringTest extends TestCase
                     $r = test(A::class);',
                 'assertions' => [
                     '$r' => 'class-string<A>',
+                ],
+            ],
+            'classStringOfAClassTemplateWithAUnionBound' => [
+                'code' => '<?php
+                    final class A {}
+                    final class B {}
+
+                    /** @template T of object */
+                    final class Box {
+                        /** @var class-string<T> */
+                        private string $c;
+
+                        /** @param class-string<T> $c */
+                        public function __construct(string $c) {
+                            $this->c = $c;
+                        }
+
+                        /** @return class-string<T> */
+                        public function get(): string {
+                            return $this->c;
+                        }
+                    }
+
+                    /** @var Box<A|B> $box */
+                    $box = new Box(A::class);
+                    $c = $box->get();',
+                'assertions' => [
+                    '$c===' => 'class-string<A>|class-string<B>',
                 ],
             ],
         ];

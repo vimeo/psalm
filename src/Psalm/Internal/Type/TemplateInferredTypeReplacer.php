@@ -98,11 +98,15 @@ final class TemplateInferredTypeReplacer
                     }
                 }
             } elseif ($atomic_type instanceof TTemplateParamClass) {
-                $class_template_type = self::replaceTemplateParamClass($codebase, $atomic_type, $inferred_lower_bounds);
+                $class_template_types = self::replaceTemplateParamClass(
+                    $codebase,
+                    $atomic_type,
+                    $inferred_lower_bounds,
+                );
 
-                if ($class_template_type) {
+                if ($class_template_types) {
                     $should_set = false;
-                    $new_types[] = $class_template_type;
+                    $new_types = [...$new_types, ...$class_template_types];
                 }
             } elseif ($atomic_type instanceof TTemplateIndexedAccess) {
                 $should_set = false;
@@ -394,15 +398,16 @@ final class TemplateInferredTypeReplacer
 
     /**
      * @param array<string, array<string, non-empty-list<TemplateBound>>> $inferred_lower_bounds
+     * @return list<TClassString|TTemplateParamClass>
      * @psalm-external-mutation-free
      */
     private static function replaceTemplateParamClass(
         ?Codebase $codebase,
         TTemplateParamClass $atomic_type,
         array $inferred_lower_bounds,
-    ): TClassString|TTemplateParamClass|null {
+    ): array {
         if (!isset($inferred_lower_bounds[$atomic_type->param_name][$atomic_type->defining_class])) {
-            return null;
+            return [];
         }
 
         $template_type = TemplateStandinTypeReplacer::getMostSpecificTypeFromBounds(
@@ -410,22 +415,22 @@ final class TemplateInferredTypeReplacer
             $codebase,
         );
 
-        $class_template_type = null;
+        $class_template_types = [];
 
         foreach ($template_type->getAtomicTypes() as $template_type_part) {
             if ($template_type_part instanceof TMixed
                 || $template_type_part instanceof TObject
             ) {
-                $class_template_type = new TClassString();
+                $class_template_types[] = new TClassString();
             } elseif ($template_type_part instanceof TNamedObject) {
-                $class_template_type = new TClassString(
+                $class_template_types[] = new TClassString(
                     $template_type_part->value,
                     $template_type_part,
                 );
             } elseif ($template_type_part instanceof TTemplateParam) {
                 $first_atomic_type = $template_type_part->as->getSingleAtomic();
 
-                $class_template_type = new TTemplateParamClass(
+                $class_template_types[] = new TTemplateParamClass(
                     $template_type_part->param_name,
                     $template_type_part->as->getId(),
                     $first_atomic_type instanceof TNamedObject ? $first_atomic_type : null,
@@ -434,7 +439,7 @@ final class TemplateInferredTypeReplacer
             }
         }
 
-        return $class_template_type;
+        return $class_template_types;
     }
 
     /**

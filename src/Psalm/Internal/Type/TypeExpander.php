@@ -392,7 +392,12 @@ final class TypeExpander
                 return [$return_type];
             }
 
-            $class_storage = $codebase->classlike_storage_provider->get($declaring_fq_classlike_name);
+            $class_storage = $codebase->classlikes->getStorageFor($declaring_fq_classlike_name);
+
+            // a class that exists but is not scanned yet
+            if ($class_storage === null) {
+                return [$return_type];
+            }
 
             $type_alias_name = $return_type->alias_name;
 
@@ -1409,9 +1414,9 @@ final class TypeExpander
             ) {
                 if ($throw_on_unresolvable_constant) {
                     throw new UnresolvableConstantException($type_param->fq_classlike_name, $type_param->const_name);
-                } else {
-                    return [$return_type];
                 }
+
+                return [$return_type];
             }
 
             $type_atomics = array_merge(

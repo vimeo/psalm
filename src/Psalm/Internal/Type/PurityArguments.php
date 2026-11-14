@@ -155,4 +155,16 @@ final class PurityArguments
             ? $bound->setProperties(['had_template' => true, 'from_template_default' => true])
             : $bound->setProperties(['from_template_default' => true]);
     }
+
+    /**
+     * Whether a template argument is one {@see self::getOmittedArgument()} gives. An argument `new`
+     * inferred is marked as well, but is an omitted argument only where it says as little (`mixed`).
+     *
+     * @psalm-pure
+     */
+    public static function isOmittedArgument(Union $argument): bool
+    {
+        return $argument->had_template
+            && ($argument->isMixed() || Capabilities::isPurityType($argument));
+    }
 }
