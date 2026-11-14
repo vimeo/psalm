@@ -290,70 +290,47 @@ final class PropertyTypeInvarianceTest extends TestCase
                         /** @var class-string<Model> */
                         public static string $model = Model::class;
 
+                        /** @var class-string<Model> */
+                        public static $untyped_model = Model::class;
+
                         /** @var list<non-empty-string> */
                         public array $columns = [];
+
+                        /** @var non-empty-string */
+                        public $name = "a";
+
+                        /** @var class-string<Model>|null */
+                        public ?string $nullable = null;
                     }
 
                     final class PostResource extends BaseResource {
                         public static string $model = Post::class;
 
+                        public static $untyped_model = Post::class;
+
                         /** @inheritDoc */
                         public array $columns = ["id"];
+
+                        public $name = "b";
+
+                        public ?string $nullable = Post::class;
 
                         public function f(): void {
                             $columns = $this->columns;
                             /** @psalm-check-type-exact $columns = list<non-empty-string> */
-                            $self = self::$model;
-                            /** @psalm-check-type-exact $self = class-string<Model> */
-                            $static = static::$model;
-                            /** @psalm-check-type-exact $static = class-string<Model> */
-                        }
-                    }
-
-                    $model = PostResource::$model;
-                    $columns = (new PostResource())->columns;',
-                'assertions' => [
-                    '$model===' => 'class-string<Model>',
-                    '$columns===' => 'list<non-empty-string>',
-                ],
-            ],
-            'untypedRedeclaredPropertyWithoutDocblockTypeHasTheInheritedType' => [
-                'code' => '<?php
-                    abstract class Model {}
-                    final class Post extends Model {}
-
-                    abstract class BaseResource {
-                        /** @var class-string<Model> */
-                        public static $model = Model::class;
-
-                        /** @var non-empty-string */
-                        public $name = "a";
-                    }
-
-                    final class PostResource extends BaseResource {
-                        public static $model = Post::class;
-
-                        public $name = "b";
-
-                        public function f(): void {
                             $name = $this->name;
                             /** @psalm-check-type-exact $name = non-empty-string */
                             $self = self::$model;
                             /** @psalm-check-type-exact $self = class-string<Model> */
                             $static = static::$model;
                             /** @psalm-check-type-exact $static = class-string<Model> */
+                            $untyped_self = self::$untyped_model;
+                            /** @psalm-check-type-exact $untyped_self = class-string<Model> */
+                            $untyped_static = static::$untyped_model;
+                            /** @psalm-check-type-exact $untyped_static = class-string<Model> */
                         }
                     }
 
-                    $model = PostResource::$model;
-                    $name = (new PostResource())->name;',
-                'assertions' => [
-                    '$model===' => 'class-string<Model>',
-                    '$name===' => 'non-empty-string',
-                ],
-            ],
-            'redeclaredPropertyWithoutDocblockTypeHasTheNearestInheritedType' => [
-                'code' => '<?php
                     class GrandParentClass {
                         /** @var non-empty-string */
                         public string $typed = "a";
@@ -384,10 +361,20 @@ final class PropertyTypeInvarianceTest extends TestCase
                         public string $typed = "c";
                     }
 
+                    $model = PostResource::$model;
+                    $untyped_model = PostResource::$untyped_model;
+                    $columns = (new PostResource())->columns;
+                    $name = (new PostResource())->name;
+                    $nullable = (new PostResource())->nullable;
                     $typed = (new ChildClass())->typed;
                     $untyped = (new ChildClass())->untyped;
                     $other_typed = (new OtherChildClass())->typed;',
                 'assertions' => [
+                    '$model===' => 'class-string<Model>',
+                    '$untyped_model===' => 'class-string<Model>',
+                    '$columns===' => 'list<non-empty-string>',
+                    '$name===' => 'non-empty-string',
+                    '$nullable===' => 'class-string<Model>|null',
                     '$typed===' => 'non-empty-string',
                     '$untyped===' => 'non-empty-string',
                     '$other_typed===' => 'non-empty-string',
@@ -447,8 +434,9 @@ final class PropertyTypeInvarianceTest extends TestCase
                     '$cached_items===' => 'list<Post>',
                 ],
             ],
-            'inheritedPropertyTypeHasTheSelfOfTheParent' => [
+            'inheritedPropertyTypeHasTheScopeOfTheParent' => [
                 'code' => '<?php
+                    /** @psalm-type Names = list<non-empty-string> */
                     class ParentClass {
                         const A = 1;
                         const B = 2;
@@ -461,42 +449,31 @@ final class PropertyTypeInvarianceTest extends TestCase
 
                         /** @var list<static> */
                         public array $all = [];
+
+                        /** @var Names */
+                        public array $names = [];
                     }
 
+                    /** @psalm-type Names = array<int, int> */
                     final class ChildClass extends ParentClass {
                         public $next;
 
                         public $constant = 1;
 
                         public array $all = [];
+
+                        public array $names = [];
                     }
 
                     $next = (new ChildClass())->next;
                     $constant = (new ChildClass())->constant;
-                    $all = (new ChildClass())->all;',
+                    $all = (new ChildClass())->all;
+                    $names = (new ChildClass())->names;',
                 'assertions' => [
                     '$next===' => 'ParentClass|null',
                     '$constant===' => '1|2',
                     '$all===' => 'list<ChildClass&static>',
-                ],
-            ],
-            'nullableRedeclaredPropertyWithoutDocblockTypeHasTheInheritedType' => [
-                'code' => '<?php
-                    abstract class Model {}
-                    final class Post extends Model {}
-
-                    class ParentClass {
-                        /** @var class-string<Model>|null */
-                        public ?string $class = null;
-                    }
-
-                    final class ChildClass extends ParentClass {
-                        public ?string $class = Post::class;
-                    }
-
-                    $class = (new ChildClass())->class;',
-                'assertions' => [
-                    '$class===' => 'class-string<Model>|null',
+                    '$names===' => 'list<non-empty-string>',
                 ],
             ],
             'promotedPropertyWithoutDocblockTypeHasTheInheritedType' => [
@@ -537,24 +514,6 @@ final class PropertyTypeInvarianceTest extends TestCase
                     $name = (new ChildClass())->name;',
                 'assertions' => [
                     '$name===' => 'non-empty-string',
-                ],
-            ],
-            'inheritedPropertyTypeHasTheTypeAliasOfTheParent' => [
-                'code' => '<?php
-                    /** @psalm-type Names = list<non-empty-string> */
-                    class ParentClass {
-                        /** @var Names */
-                        public array $names = [];
-                    }
-
-                    /** @psalm-type Names = array<int, int> */
-                    final class ChildClass extends ParentClass {
-                        public array $names = [];
-                    }
-
-                    $names = (new ChildClass())->names;',
-                'assertions' => [
-                    '$names===' => 'list<non-empty-string>',
                 ],
             ],
             'propertyTypeComputedFromTemplatesIsNotInherited' => [
