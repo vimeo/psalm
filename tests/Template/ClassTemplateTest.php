@@ -6110,6 +6110,72 @@ final class ClassTemplateTest extends TestCase
                     '$r===' => 'string',
                 ],
             ],
+            'staticOfAClassUsingATraitIsTheReceiverOfTheCall' => [
+                'code' => '<?php
+                    /**
+                     * @template TKey of array-key
+                     * @template TValue
+                     */
+                    class Coll {}
+
+                    /** @template TCollection of Coll */
+                    trait HasColl {
+                        /**
+                         * @param array<array-key, mixed> $models
+                         * @return TCollection
+                         */
+                        public function newCollection(array $models = []) { throw new Exception(); }
+                    }
+
+                    class Model {
+                        /** @use HasColl<Coll<array-key, static & self>> */
+                        use HasColl;
+                    }
+
+                    /** @template TModel of Model */
+                    class Builder {
+                        /** @return TModel */
+                        public function newModelInstance() { throw new Exception(); }
+
+                        /** @return Coll<array-key, TModel> */
+                        public function hydrate() {
+                            $instance = $this->newModelInstance();
+
+                            return $instance->newCollection([]);
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'staticReturnOfAMethodCalledOnATemplateParamReceiver' => [
+                'code' => '<?php
+                    /** @template U */
+                    class Box {
+                        /** @param U $u */
+                        public function __construct(public mixed $u) {}
+
+                        /**
+                         * @param list<U> $l
+                         * @return static
+                         */
+                        public function with(array $l): static { return $this; }
+                    }
+
+                    /**
+                     * @template T of Box<int>
+                     * @param T $t
+                     * @return T
+                     */
+                    function f(Box $t): Box {
+                        $t = $t->with([1]);
+
+                        return $t;
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
             'templateNestedInACovariantGenericParamAcceptsASubtype' => [
                 'code' => '<?php
                     /**
@@ -7488,6 +7554,46 @@ final class ClassTemplateTest extends TestCase
                     $map = new Map();
                     f($map, 5);',
                 'error_message' => 'InvalidArgument',
+            ],
+            'staticOfTheCallerStaysInATemplateBoundThroughAReturnType' => [
+                'code' => '<?php
+                    /** @template T of object */
+                    class Box {
+                        /** @param T $o */
+                        public function __construct(private object $o) {}
+
+                        /** @return T */
+                        public function get(): object { return $this->o; }
+                    }
+
+                    class C {
+                        public function f(): void {
+                            $b = new Box($this);
+                            $x = $b->get();
+                            /** @psalm-trace $x */;
+                        }
+                    }',
+                'error_message' => 'Trace - src' . DIRECTORY_SEPARATOR . 'somefile.php:15:51 - $x: C&static',
+            ],
+            'staticOfTheCallerStaysInAClassStringTemplateBoundThroughAReturnType' => [
+                'code' => '<?php
+                    /** @template T of object */
+                    class Box {
+                        /** @param T $o */
+                        public function __construct(private object $o) {}
+
+                        /** @return class-string<T> */
+                        public function name(): string { return get_class($this->o); }
+                    }
+
+                    class C {
+                        public function f(): void {
+                            $b = new Box($this);
+                            $n = $b->name();
+                            /** @psalm-trace $n */;
+                        }
+                    }',
+                'error_message' => 'Trace - src' . DIRECTORY_SEPARATOR . 'somefile.php:15:51 - $n: class-string<C&static',
             ],
             'templateNestedInAnInvariantGenericParamConflictsWithAnEarlierArgument' => [
                 'code' => '<?php

@@ -31,6 +31,7 @@ use Psalm\Internal\Type\TemplateInferredTypeReplacer;
 use Psalm\Internal\Type\TemplateResult;
 use Psalm\Internal\Type\TypeExpander;
 use Psalm\Internal\Type\TypeVariableTracker;
+use Psalm\Internal\TypeVisitor\StaticResolver;
 use Psalm\IssueBuffer;
 use Psalm\Plugin\EventHandler\Event\AddRemoveTaintsEvent;
 use Psalm\Storage\MethodStorage;
@@ -1184,9 +1185,26 @@ final class MethodCallReturnTypeFetcher
                 null,
             );
 
+            // the `static` of what a template is bound to is the caller's: it is not resolved to the receiver's
+            $bounds_result = clone $template_result;
+            $bounds_result->lower_bounds = [];
+
+            foreach ($template_result->lower_bounds as $template_name => $type_map) {
+                foreach ($type_map as $defining_class => $bounds) {
+                    foreach ($bounds as $bound) {
+                        $bound_type = $bound->type;
+                        (new StaticResolver($codebase, $method_id->fq_class_name))->traverse($bound_type);
+
+                        $resolved_bound = clone $bound;
+                        $resolved_bound->type = $bound_type;
+                        $bounds_result->lower_bounds[$template_name][$defining_class][] = $resolved_bound;
+                    }
+                }
+            }
+
             $return_type_candidate = TemplateInferredTypeReplacer::replace(
                 $return_type_candidate,
-                $template_result,
+                $bounds_result,
                 $codebase,
             );
         }
