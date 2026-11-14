@@ -5,6 +5,8 @@ declare(strict_types=1);
 namespace Psalm;
 
 use InvalidArgumentException;
+use PhpParser;
+use PhpParser\NodeFinder;
 use Psalm\Internal\Analyzer\ConstructorExits;
 use Psalm\Internal\Analyzer\Statements\Expression\Assignment\InstancePropertyAssignmentAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\Fetch\VariableFetchAnalyzer;
@@ -34,6 +36,7 @@ use function assert;
 use function count;
 use function in_array;
 use function is_int;
+use function is_string;
 use function preg_match;
 use function preg_quote;
 use function preg_replace;
@@ -580,6 +583,65 @@ final class Context
         }
         $this->references_possibly_from_confusing_scope +=
             $confusing_scope_context->references_possibly_from_confusing_scope;
+    }
+
+    /**
+     * A reference that a block which goes on after it bound to another variable (or released) is no longer known to
+     * be the variable it was bound to before the block: what is written to it after the block must not be written
+     * to that variable, and writing to it is reported as the reuse of a reference from a confusing scope.
+     *
+     * @param array<PhpParser\Node\Stmt> $block_stmts
+     */
+    public function detachReferencesReboundIn(
+        Context $block_context,
+        StatementsAnalyzer $statements_analyzer,
+        array $block_stmts,
+    ): void {
+        foreach ($this->references_in_scope as $reference_id => $referenced_id) {
+            if (($block_context->references_in_scope[$reference_id] ?? null) === $referenced_id) {
+                continue;
+            }
+
+            if (isset($this->referenced_counts[$referenced_id])) {
+                $this->decrementReferenceCount($reference_id);
+            }
+
+            unset($this->references_in_scope[$reference_id]);
+
+            if (isset($this->vars_in_scope[$reference_id])) {
+                // the entry is a PHP reference to the one of the variable it was bound to
+                $type = $this->vars_in_scope[$reference_id];
+                unset($this->vars_in_scope[$reference_id]);
+                $this->vars_in_scope[$reference_id] = $type;
+            }
+
+            $reference_location = $statements_analyzer->getFirstAppearance($reference_id)
+                ?? self::getReferenceAssignmentLocation($statements_analyzer, $block_stmts, $reference_id);
+
+            if ($reference_location !== null) {
+                $this->references_possibly_from_confusing_scope[$reference_id] ??= $reference_location;
+            }
+        }
+    }
+
+    /**
+     * Where the statements bind the variable as a reference (`$var = &...`)
+     *
+     * @param array<PhpParser\Node\Stmt> $stmts
+     */
+    private static function getReferenceAssignmentLocation(
+        StatementsAnalyzer $statements_analyzer,
+        array $stmts,
+        string $var_id,
+    ): ?CodeLocation {
+        $assignment = (new NodeFinder())->findFirst(
+            $stmts,
+            static fn(PhpParser\Node $node): bool => $node instanceof PhpParser\Node\Expr\AssignRef
+                && $node->var instanceof PhpParser\Node\Expr\Variable
+                && '$' . (is_string($node->var->name) ? $node->var->name : '') === $var_id,
+        );
+
+        return $assignment !== null ? new CodeLocation($statements_analyzer, $assignment) : null;
     }
 
     /**

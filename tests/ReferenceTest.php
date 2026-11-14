@@ -635,6 +635,52 @@ final class ReferenceTest extends TestCase
                     }
                 ',
             ],
+            'referenceReboundToANestedItemInALoopDoesNotWriteToTheArrayItWasBoundTo' => [
+                'code' => '<?php
+                    /**
+                     * @param array<mixed> $data
+                     * @param array<mixed> $path
+                     * @psalm-suppress MixedAssignment, MixedArgument, PossiblyInvalidArgument, MixedArrayOffset
+                     */
+                    function setPath(array &$data, array $path, string $value): void {
+                        $cursor = &$data;
+                        $last = array_key_last($path);
+                        foreach ($path as $k => $key) {
+                            if ($last === $k) {
+                                if (array_key_exists($key, $cursor) && !is_string($cursor[$key])) {
+                                    throw new RuntimeException("not a string");
+                                } else {
+                                    $cursor[$key] = $value;
+                                }
+                            } else {
+                                if (!array_key_exists($key, $cursor)) {
+                                    $cursor[$key] = [];
+                                } elseif (!is_array($cursor[$key])) {
+                                    throw new RuntimeException("not an array");
+                                }
+                            }
+                            $cursor = &$cursor[$key];
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'referenceReboundToAnItemInAnIfDoesNotWriteToTheArrayItWasBoundTo' => [
+                'code' => '<?php
+                    /** @param array<string, mixed> $data */
+                    function set(array &$data, string $key, string $value, bool $nested): void {
+                        $cursor = &$data;
+
+                        if ($nested) {
+                            $cursor = &$cursor[$key];
+                            $cursor = $value;
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
             'dynamicArrayOffsetReferenceCanBeConditionallySet' => [
                 'code' => <<<'PHP'
                     <?php
@@ -1003,6 +1049,37 @@ final class ReferenceTest extends TestCase
 
                     $var = "foo";
                 ',
+                'error_message' => 'ReferenceReusedFromConfusingScope',
+            ],
+            'referenceReboundInALoopIsReusedAfterIt' => [
+                'code' => '<?php
+                    /**
+                     * @param array<string, mixed> $data
+                     * @param list<string> $path
+                     */
+                    function set(array &$data, array $path, string $value): void {
+                        $cursor = &$data;
+
+                        foreach ($path as $key) {
+                            $cursor = &$cursor[$key];
+                        }
+
+                        $cursor = $value;
+                    }',
+                'error_message' => 'ReferenceReusedFromConfusingScope',
+            ],
+            'referenceReboundInAnIfIsReusedAfterIt' => [
+                'code' => '<?php
+                    /** @param array<string, mixed> $data */
+                    function set(array &$data, string $key, string $value, bool $nested): void {
+                        $cursor = &$data;
+
+                        if ($nested) {
+                            $cursor = &$cursor[$key];
+                        }
+
+                        $cursor = $value;
+                    }',
                 'error_message' => 'ReferenceReusedFromConfusingScope',
             ],
             'referenceReuseDeclaredInElseif' => [
