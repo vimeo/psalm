@@ -1615,7 +1615,6 @@ final class IssetTest extends TestCase
 
                     function foo() : void {
                         $arr = returnPossiblyFalseArray();
-                        /** @psalm-suppress PossiblyInvalidArrayAccess */
                         if (!isset($arr["b"])) {}
                         echo $arr["b"];
                     }',

@@ -3497,7 +3497,6 @@ final class FunctionCallTest extends TestCase
                     $a = "hello";
                     fooFoo($a);',
                 'error_message' => 'MixedArgument',
-                'error_levels' => ['MixedAssignment'],
             ],
             'nullArgument' => [
                 'code' => '<?php
@@ -3608,11 +3607,6 @@ final class FunctionCallTest extends TestCase
 
                     function takes_int(int $i) {}',
                 'error_message' => 'InvalidScalarArgument',
-                'error_levels' => [
-                    'MixedAssignment',
-                    'MixedArrayAccess',
-                    'RedundantConditionGivenDocblockType',
-                ],
             ],
             'objectToStringReturnDoesNotMatchLowercaseStringParameter' => [
                 'code' => '<?php
@@ -3935,10 +3929,7 @@ final class FunctionCallTest extends TestCase
             ],
             'functionCallOnMixed' => [
                 'code' => '<?php
-                    /**
-                     * @var mixed $s
-                     * @psalm-suppress MixedAssignment
-                     */
+                    /** @var mixed $s */
                     $s = 1;
                     $s();',
                 'error_message' => 'MixedFunctionCall',
@@ -4001,7 +3992,6 @@ final class FunctionCallTest extends TestCase
                     function foo(int &$i) : void {}
 
                     $a = rand(0, 1) ? null : 5;
-                    /** @psalm-suppress MixedArgument */
                     foo((int) $a);',
                 'error_message' => 'InvalidPassByReference',
             ],
