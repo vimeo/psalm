@@ -129,6 +129,38 @@ final class ClosureTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'useOfAVariableDefinedInATryBindsItToNullWhenUndefined' => [
+                'code' => '<?php
+                    function f(): int {
+                        try {
+                            $y = rand(0, 1);
+                            throw new Exception();
+                        } catch (Exception $e) {
+                        }
+
+                        $f = function () use ($y): int {
+                            return (int) $y;
+                        };
+
+                        return $f();
+                    }',
+                'assertions' => [],
+                'ignored_issues' => ['PossiblyUndefinedVariable'],
+            ],
+            'useByReferenceOfAPossiblyUndefinedVariableDefinesIt' => [
+                'code' => '<?php
+                    function f(): ?int {
+                        if (rand(0, 1)) {
+                            $y = 1;
+                        }
+
+                        $f = function () use (&$y): ?int {
+                            return $y;
+                        };
+
+                        return $f();
+                    }',
+            ],
             'methodCallableOfATraitMethodResolvesSelfAndParentOfTheParamsToTheUsingClass' => [
                 'code' => <<<'PHP'
                     <?php
@@ -2477,6 +2509,43 @@ final class ClosureTest extends TestCase
     public static function providerInvalidCodeParse(): iterable
     {
         return [
+            'useOfAVariableDefinedByAPreviousIterationIsPossiblyUndefinedAtTheUse' => [
+                'code' => '<?php
+                    function f(array $xs): void {
+                        foreach ($xs as $_) {
+                            $f = function () use ($a): ?string {
+                                return $a;
+                            };
+                            echo (string) $f();
+                            $a = "s";
+                        }
+                    }',
+                'error_message' => 'PossiblyUndefinedVariable - src' . DIRECTORY_SEPARATOR . 'somefile.php:4:51',
+            ],
+            'arrowFunctionReadingAVariableDefinedInAnIfIsPossiblyUndefined' => [
+                'code' => '<?php
+                    function f(): ?int {
+                        if (rand(0, 1)) {
+                            $y = 1;
+                        }
+
+                        $f = fn(): ?int => $y;
+
+                        return $f();
+                    }',
+                'error_message' => 'PossiblyUndefinedVariable - src' . DIRECTORY_SEPARATOR . 'somefile.php:7:44',
+            ],
+            'arrowFunctionReadingAVariableDefinedByAPreviousIterationIsPossiblyUndefined' => [
+                'code' => '<?php
+                    function f(array $xs): void {
+                        foreach ($xs as $_) {
+                            $f = fn(): ?string => $a;
+                            echo (string) $f();
+                            $a = "s";
+                        }
+                    }',
+                'error_message' => 'PossiblyUndefinedVariable - src' . DIRECTORY_SEPARATOR . 'somefile.php:4:51',
+            ],
             'FirstClassCallable:InstanceMethod:InheritedReturnTypeKeepsTheOwnParameterType' => [
                 'code' => '<?php
                     interface Fmt {
