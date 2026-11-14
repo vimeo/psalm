@@ -3698,12 +3698,6 @@
       <code><![CDATA[strpos($error_message, 'ArrayOffset')]]></code>
     </RiskyTruthyFalsyComparison>
   </file>
-  <file src="tests/EndToEnd/PsalmEndToEndTest.php">
-    <RiskyTruthyFalsyComparison>
-      <code><![CDATA[$level]]></code>
-      <code><![CDATA[$php_version]]></code>
-    </RiskyTruthyFalsyComparison>
-  </file>
   <file src="tests/FileManipulation/FileManipulationTestCase.php">
     <RiskyTruthyFalsyComparison>
       <code><![CDATA[strpos(static::class, 'Unnecessary')]]></code>
