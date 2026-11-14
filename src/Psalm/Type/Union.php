@@ -8,6 +8,7 @@ use Override;
 use Psalm\Internal\DataFlow\DataFlowNode;
 use Psalm\Internal\TypeVisitor\FromDocblockSetter;
 use Psalm\Storage\ImmutableNonCloneableTrait;
+use Psalm\Storage\UnserializeMemoryUsageSuppressionTrait;
 use Psalm\Type\Atomic\TClassString;
 use Psalm\Type\Atomic\TLiteralFloat;
 use Psalm\Type\Atomic\TLiteralInt;
@@ -49,6 +50,7 @@ final class Union implements TypeNode
 {
     use ImmutableNonCloneableTrait;
     use UnionTrait;
+    use UnserializeMemoryUsageSuppressionTrait;
 
     /**
      * @psalm-readonly
@@ -212,55 +214,6 @@ final class Union implements TypeNode
     public bool $propagate_parent_nodes = false;
 
     public bool $different = false;
-
-    private const PROPERTY_KEYS_FOR_UNSERIALIZE = [
-        "\0" . self::class . "\0" . 'types' => 'types',
-        'from_docblock' => 'from_docblock',
-        'from_calculation' => 'from_calculation',
-        'int_mask_bits' => 'int_mask_bits',
-        'from_property' => 'from_property',
-        'from_static_property' => 'from_static_property',
-        'from_global_state' => 'from_global_state',
-        'initialized' => 'initialized',
-        'initialized_class' => 'initialized_class',
-        'checked' => 'checked',
-        'failed_reconciliation' => 'failed_reconciliation',
-        'ignore_nullable_issues' => 'ignore_nullable_issues',
-        'ignore_falsable_issues' => 'ignore_falsable_issues',
-        'ignore_isset' => 'ignore_isset',
-        'possibly_undefined' => 'possibly_undefined',
-        'possibly_undefined_from_try' => 'possibly_undefined_from_try',
-        'explicit_never' => 'explicit_never',
-        'had_template' => 'had_template',
-        'from_template_default' => 'from_template_default',
-        "\0" . self::class . "\0" . 'literal_string_types' => 'literal_string_types',
-        "\0" . self::class . "\0" . 'typed_class_strings' => 'typed_class_strings',
-        "\0" . self::class . "\0" . 'literal_int_types' => 'literal_int_types',
-        "\0" . self::class . "\0" . 'literal_float_types' => 'literal_float_types',
-        'by_ref' => 'by_ref',
-        'reference_free' => 'reference_free',
-        'closure_state' => 'closure_state',
-        'allow_mutations' => 'allow_mutations',
-        'has_mutations' => 'has_mutations',
-        "\0" . self::class . "\0" . 'id' => 'id',
-        "\0" . self::class . "\0" . 'exact_id' => 'exact_id',
-        'parent_nodes' => 'parent_nodes',
-        'propagate_parent_nodes' => 'propagate_parent_nodes',
-        'different' => 'different',
-    ];
-
-    /**
-     * Suppresses memory usage when unserializing objects.
-     *
-     * @see \Psalm\Storage\UnserializeMemoryUsageSuppressionTrait
-     */
-    public function __unserialize(array $properties): void
-    {
-        foreach (self::PROPERTY_KEYS_FOR_UNSERIALIZE as $key => $property_name) {
-            /** @psalm-suppress PossiblyUndefinedStringArrayOffset */
-            $this->$property_name = $properties[$key];
-        }
-    }
 
     /**
      * @param TProperties $properties

@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Psalm\Internal\Type\TypeAlias;
 
 use Psalm\Internal\Type\TypeAlias;
+use Psalm\Storage\UnserializeMemoryUsageSuppressionTrait;
 use Psalm\Type\Atomic;
 
 /**
@@ -13,6 +14,8 @@ use Psalm\Type\Atomic;
  */
 final class ClassTypeAlias implements TypeAlias
 {
+    use UnserializeMemoryUsageSuppressionTrait;
+
     /**
      * @param list<Atomic> $replacement_atomic_types
      * @psalm-mutation-free

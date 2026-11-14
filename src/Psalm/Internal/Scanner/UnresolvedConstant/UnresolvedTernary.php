@@ -6,6 +6,7 @@ namespace Psalm\Internal\Scanner\UnresolvedConstant;
 
 use Psalm\Internal\Scanner\UnresolvedConstantComponent;
 use Psalm\Storage\ImmutableNonCloneableTrait;
+use Psalm\Storage\UnserializeMemoryUsageSuppressionTrait;
 
 /**
  * @internal
@@ -14,6 +15,7 @@ use Psalm\Storage\ImmutableNonCloneableTrait;
 final class UnresolvedTernary extends UnresolvedConstantComponent
 {
     use ImmutableNonCloneableTrait;
+    use UnserializeMemoryUsageSuppressionTrait;
 
     /**
      * @psalm-mutation-free
