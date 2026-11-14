@@ -53,6 +53,7 @@ use Psalm\Type\Atomic\TClosure;
 use Psalm\Type\Atomic\TDependentGetClass;
 use Psalm\Type\Atomic\TGenericObject;
 use Psalm\Type\Atomic\TLiteralClassString;
+use Psalm\Type\Atomic\TLiteralString;
 use Psalm\Type\Atomic\TMixed;
 use Psalm\Type\Atomic\TNamedObject;
 use Psalm\Type\Atomic\TNull;
@@ -68,6 +69,7 @@ use function array_values;
 use function assert;
 use function count;
 use function in_array;
+use function ltrim;
 use function strtolower;
 
 /**
@@ -88,6 +90,17 @@ final class AtomicStaticCallAnalyzer
         bool &$args_analyzed,
         ?TemplateResult $inferred_template_result = null,
     ): void {
+        // A literal class name is not just an opaque string when the option allows it.
+        // Analyze the actual target so method existence, visibility and arguments are checked.
+        if ($lhs_type_part::class === TLiteralString::class
+            && $statements_analyzer->getCodebase()->config->allow_string_standin_for_class
+        ) {
+            $class_name = ltrim($lhs_type_part->value, '\\');
+            if ($statements_analyzer->getCodebase()->classlike_storage_provider->has($class_name)) {
+                $lhs_type_part = new TLiteralClassString($class_name);
+            }
+        }
+
         $intersection_types = [];
 
         if ($lhs_type_part instanceof TNamedObject) {
@@ -485,7 +498,7 @@ final class AtomicStaticCallAnalyzer
                         }
 
                         $mixin_declaring_class_storage = $codebase->classlike_storage_provider->get(
-                            $class_storage->mixin_declaring_fqcln,
+                            $class_storage->getNamedMixinDeclaringClass($tGenericMixin),
                         );
 
                         $new_mixin_candidate_type = AtomicPropertyFetchAnalyzer::localizePropertyType(
