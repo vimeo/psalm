@@ -43,6 +43,7 @@ use Psalm\Storage\Assertion\IsIdentical;
 use Psalm\Storage\Assertion\IsIsset;
 use Psalm\Storage\Assertion\IsLessThan;
 use Psalm\Storage\Assertion\IsLessThanOrEqualTo;
+use Psalm\Storage\Assertion\IsNotIdentical;
 use Psalm\Storage\Assertion\IsNotIsset;
 use Psalm\Storage\Assertion\IsNotLooselyEqual;
 use Psalm\Storage\Assertion\NestedAssertions;
@@ -267,7 +268,7 @@ class Reconciler
 
             $failed_reconciliation = self::RECONCILIATION_OK;
 
-            foreach ($new_type_parts as $offset => $new_type_part_parts) {
+            foreach (self::orderExclusionOfEmptyStringFirst($new_type_parts) as $offset => $new_type_part_parts) {
                 $orred_type = null;
                 $report_location = $code_location
                     && isset($referenced_var_ids[$key])
@@ -567,6 +568,36 @@ class Reconciler
         }
 
         return [$existing_types, $existing_references];
+    }
+
+    /**
+     * `'0' !== $s` leaves `string` as it is, so it is only worth something after `'' !== $s` has made the string
+     * non-empty: the assertions of a variable that exclude `''` are applied first, whatever order they were written in
+     *
+     * @param array<array-key, array<int, Assertion>> $new_type_parts
+     * @return array<array-key, array<int, Assertion>>
+     * @psalm-pure
+     */
+    private static function orderExclusionOfEmptyStringFirst(array $new_type_parts): array
+    {
+        $excluding_empty_string = [];
+        $others = [];
+
+        foreach ($new_type_parts as $offset => $new_type_part_parts) {
+            $assertion = $new_type_part_parts[0] ?? null;
+
+            if (count($new_type_part_parts) === 1
+                && ($assertion instanceof IsNotIdentical || $assertion instanceof IsNotLooselyEqual)
+                && $assertion->type instanceof TLiteralString
+                && $assertion->type->value === ''
+            ) {
+                $excluding_empty_string[$offset] = $new_type_part_parts;
+            } else {
+                $others[$offset] = $new_type_part_parts;
+            }
+        }
+
+        return $excluding_empty_string + $others;
     }
 
     /**
