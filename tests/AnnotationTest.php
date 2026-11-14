@@ -1986,6 +1986,33 @@ final class AnnotationTest extends TestCase
 
                     echo strlen($title);',
             ],
+            'suppressDocblockInFrontOfAnArgument' => [
+                'code' => '<?php
+                    /**
+                     * @psalm-mutation-free
+                     */
+                    function describe(): void {
+                        throw new RuntimeException(
+                            /** @psalm-suppress ImpureFunctionCall the last error is part of the message */
+                            sprintf("code: %d", preg_last_error()),
+                        );
+                    }',
+            ],
+            'suppressDocblockInFrontOfAnArgumentCoversTheCheckOfTheArgument' => [
+                'code' => <<<'PHP'
+                    <?php
+                    function take(int $i, string $s): void {
+                        echo $i, $s;
+                    }
+
+                    function f(mixed $m): void {
+                        take(/** @psalm-suppress MixedArgument */ $m, 'a');
+                    }
+                    PHP,
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
             'keyOfAndValueOfOfImportedTypeAlias' => [
                 'code' => '<?php
                     /**
@@ -2026,6 +2053,21 @@ final class AnnotationTest extends TestCase
     public static function providerInvalidCodeParse(): iterable
     {
         return [
+            'suppressDocblockInFrontOfAnArgumentDoesNotCoverTheNextArgumentCheck' => [
+                'code' => <<<'PHP'
+                    <?php
+                    function take(int $i, int $j): void {
+                        echo $i, $j;
+                    }
+
+                    function f(mixed $m, mixed $n): void {
+                        take(/** @psalm-suppress MixedArgument */ $m, $n);
+                    }
+                    PHP,
+                'error_message' => 'MixedArgument - src' . DIRECTORY_SEPARATOR . 'somefile.php:7:51 - Argument 2 of take cannot be mixed',
+                'error_levels' => [],
+                'php_version' => '8.1',
+            ],
             'removedSelfAccessingCallableWithParamsIsInvalid' => [
                 'code' => <<<'PHP'
                     <?php
@@ -2901,6 +2943,31 @@ final class AnnotationTest extends TestCase
                     /** @var string $title */
                     global $title;',
                 'error_message' => 'InvalidGlobal',
+            ],
+            'suppressDocblockInFrontOfAnArgumentOnlyCoversThatArgument' => [
+                'code' => '<?php
+                    /**
+                     * @psalm-mutation-free
+                     */
+                    function describe(): void {
+                        echo sprintf(
+                            "%d %d",
+                            /** @psalm-suppress ImpureFunctionCall */
+                            preg_last_error(),
+                            preg_last_error(),
+                        );
+                    }',
+                'error_message' => 'ImpureFunctionCall - src' . DIRECTORY_SEPARATOR . 'somefile.php:10:29',
+            ],
+            'unusedSuppressDocblockInFrontOfAnArgument' => [
+                'code' => '<?php
+                    function describe(): void {
+                        echo strlen(
+                            /** @psalm-suppress ImpureFunctionCall */
+                            "text",
+                        );
+                    }',
+                'error_message' => 'UnusedPsalmSuppress',
             ],
             'keyOfImportedTypeAliasOfANonArrayIsInvalid' => [
                 'code' => '<?php

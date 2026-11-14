@@ -124,6 +124,15 @@ final class ArgumentsAnalyzer
             ? $function_params[count($function_params) - 1]
             : null;
 
+        foreach ($args as $arg) {
+            // PhpParser attaches the docblock in front of an argument to the argument, the expression is analysed
+            $arg_docblock = $arg->getDocComment();
+
+            if ($arg_docblock !== null) {
+                $arg->value->setAttribute(ExpressionAnalyzer::ARGUMENT_DOCBLOCK_ATTRIBUTE, $arg_docblock);
+            }
+        }
+
         // if this modifies the array type based on further args
         if (in_array($method_id, ['array_push', 'array_unshift'], true)
             && $function_params
@@ -1426,8 +1435,14 @@ final class ArgumentsAnalyzer
 
             $arg_value_type = $statements_analyzer->node_data->getType($arg->value);
 
+            // the docblock in front of the argument also covers what the check of the argument reports
+            $argument_suppressed_issues = ExpressionAnalyzer::addDocblockSuppressions(
+                $statements_analyzer,
+                $arg->value,
+            );
+
             foreach ($arg_function_params[$argument_offset] as $i => $function_param) {
-                if (ArgumentAnalyzer::checkArgumentMatches(
+                $argument_matches = ArgumentAnalyzer::checkArgumentMatches(
                     $statements_analyzer,
                     $cased_method_id,
                     $method_id instanceof MethodIdentifier ? $method_id : null,
@@ -1447,10 +1462,16 @@ final class ArgumentsAnalyzer
                     $specialize_taint,
                     $in_call_map,
                     $static_is_called_class,
-                ) === false) {
+                );
+
+                if ($argument_matches === false) {
+                    $statements_analyzer->removeSuppressedIssues($argument_suppressed_issues);
+
                     return false;
                 }
             }
+
+            $statements_analyzer->removeSuppressedIssues($argument_suppressed_issues);
         }
 
         if ($statements_analyzer->taint_flow_graph
