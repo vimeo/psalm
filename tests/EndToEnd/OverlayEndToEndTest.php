@@ -23,8 +23,10 @@ use function array_fill;
 use function array_keys;
 use function assert;
 use function count;
+use function defined;
 use function dirname;
 use function explode;
+use function extension_loaded;
 use function fclose;
 use function file_put_contents;
 use function function_exists;
@@ -181,6 +183,7 @@ final class OverlayEndToEndTest extends TestCase
 
     public function testServerAnswersLikeTheCommand(): void
     {
+        $this->skipWithoutServer();
         $this->writeFiles(['A.php' => self::A, 'B.php' => self::B]);
         $this->recordReferences();
         $overlay = ['src/A.php' => str_replace('public function', 'private function', self::A)];
@@ -271,6 +274,31 @@ final class OverlayEndToEndTest extends TestCase
             } catch (OverlayException $e) {
                 $this->assertSame('unsupported', $e->kind);
             }
+        } finally {
+            $session->close();
+        }
+    }
+
+    public function testServerWithoutForkAnswersUnsupportedAndTheSessionRunsTheCommand(): void
+    {
+        $this->writeFiles(['A.php' => self::A, 'B.php' => self::B]);
+        $this->recordReferences();
+        $overlay = ['src/A.php' => str_replace('public function', 'private function', self::A)];
+        [, $expected] = $this->overlay($overlay);
+        // a PHP that cannot fork, as on Windows
+        $command = [PHP_BINARY, '-d', 'disable_functions=pcntl_fork', $this->psalm];
+
+        [$server, $input] = $this->startServer([...$command, '--overlay-server']);
+        $initialized = $this->ask($server, $input, ['id' => 1, 'method' => 'initialize', 'params' => ['protocol' => 1]]);
+        $this->assertSame('unsupported', $initialized['error']['data']['kind'] ?? null);
+        $this->stopServer($server, $input);
+
+        $session = OverlaySession::open(new OverlayOptions($this->project, command: $command));
+        try {
+            $this->assertSame(
+                $expected,
+                json_decode(json_encode($session->analyze($overlay), JSON_THROW_ON_ERROR), true, 512, JSON_THROW_ON_ERROR),
+            );
         } finally {
             $session->close();
         }
@@ -399,11 +427,13 @@ final class OverlayEndToEndTest extends TestCase
         );
 
         // relative paths name the same files on every transport
-        [$server, $input] = $this->startServer([...$command, '--overlay-server']);
-        $this->ask($server, $input, ['id' => 1, 'method' => 'initialize', 'params' => ['protocol' => 1]]);
-        $answer = $this->ask($server, $input, ['id' => 2, 'method' => 'analyze', 'params' => $params]);
-        $this->assertSame($envelope, $answer['result'] ?? $answer);
-        $this->stopServer($server, $input);
+        if (self::serverRuns()) {
+            [$server, $input] = $this->startServer([...$command, '--overlay-server']);
+            $this->ask($server, $input, ['id' => 1, 'method' => 'initialize', 'params' => ['protocol' => 1]]);
+            $answer = $this->ask($server, $input, ['id' => 2, 'method' => 'analyze', 'params' => $params]);
+            $this->assertSame($envelope, $answer['result'] ?? $answer);
+            $this->stopServer($server, $input);
+        }
     }
 
     public function testDeadlineCountsFromTheStart(): void
@@ -436,8 +466,31 @@ final class OverlayEndToEndTest extends TestCase
         return function_exists('pcntl_fork') && function_exists('pcntl_async_signals') && function_exists('posix_kill');
     }
 
+    /**
+     * Where it cannot fork, `--overlay-server` answers every request with `unsupported`, see
+     * testServerWithoutForkAnswersUnsupportedAndTheSessionRunsTheCommand()
+     */
+    private function skipWithoutServer(): void
+    {
+        if (!self::serverRuns()) {
+            $this->markTestSkipped('--overlay-server needs pcntl and posix (Linux or macOS)');
+        }
+    }
+
+    /**
+     * @psalm-pure
+     */
+    private static function serverRuns(): bool
+    {
+        return !defined('PHP_WINDOWS_VERSION_MAJOR')
+            && extension_loaded('pcntl')
+            && extension_loaded('posix')
+            && function_exists('pcntl_fork');
+    }
+
     public function testServerAnswersPipelinedRequestsLargerThanThePipes(): void
     {
+        $this->skipWithoutServer();
         $methods = '';
         for ($i = 0; $i < 300; $i++) {
             $methods .= "    public function m$i(): int { return $i; }\n";
@@ -471,6 +524,7 @@ final class OverlayEndToEndTest extends TestCase
 
     public function testServerAnswersWithTheConfigErrorOfTheSnapshot(): void
     {
+        $this->skipWithoutServer();
         $this->writeFiles(['A.php' => self::A]);
         file_put_contents($this->project . '/psalm.xml', '<?xml version="1.0"?><psalm><notAnOption /></psalm>');
 
@@ -502,6 +556,7 @@ final class OverlayEndToEndTest extends TestCase
 
     public function testServerDeadlineCountsWhileTheSnapshotStarts(): void
     {
+        $this->skipWithoutServer();
         $this->writeSlowProject();
         $this->recordReferences();
 
@@ -519,6 +574,7 @@ final class OverlayEndToEndTest extends TestCase
 
     public function testServerDeadlineCountsWhileTheRequestWaits(): void
     {
+        $this->skipWithoutServer();
         $this->writeSlowProject();
         $this->recordReferences();
 
@@ -544,6 +600,7 @@ final class OverlayEndToEndTest extends TestCase
 
     public function testServerAnswersAReusedIdWithItsOwnAnswer(): void
     {
+        $this->skipWithoutServer();
         $this->writeSlowProject();
         $this->recordReferences();
 
@@ -566,6 +623,7 @@ final class OverlayEndToEndTest extends TestCase
 
     public function testServerCancellationStopsTheFreshProcess(): void
     {
+        $this->skipWithoutServer();
         $this->writeSlowProject();
         $this->recordReferences();
 
