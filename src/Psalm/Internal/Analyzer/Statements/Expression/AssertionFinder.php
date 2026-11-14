@@ -946,6 +946,13 @@ final class AssertionFinder
                             ?? InternalCallMapHandler::getIntroducingPhpVersionId($guarded_function_id);
                     } catch (UnexpectedValueException) {
                     }
+
+                    // a polyfill defines it on older versions too
+                    if ($since_php_version_id > $codebase->analysis_php_version_id
+                        && $codebase->functions->isDeclaredInCode($guarded_function_id)
+                    ) {
+                        $since_php_version_id = null;
+                    }
                 }
             }
         } elseif (in_array($function_name, ['class_exists', 'interface_exists', 'enum_exists'], true)) {

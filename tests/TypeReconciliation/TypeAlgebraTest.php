@@ -126,6 +126,36 @@ final class TypeAlgebraTest extends TestCase
                 'ignored_issues' => [],
                 'php_version' => '8.1',
             ],
+            'aContradictionOfAConditionDoesNotNarrowTheOtherConjunctsInTheElse' => [
+                'code' => '<?php
+                    function f(?int $a, bool $b): void {
+                        /** @psalm-suppress TypeDoesNotContainType */
+                        if ($a === null && $a !== null && $b) {
+                            echo "unreachable";
+                        } else {
+                            /** @psalm-check-type-exact $b = bool */
+                            echo var_export($b, true);
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
+            'aContradictionAfterTheOtherConjunctsDoesNotNarrowThemInTheElse' => [
+                'code' => '<?php
+                    function f(?int $a, bool $b): void {
+                        /** @psalm-suppress TypeDoesNotContainNull */
+                        if ($b && $a !== null && $a === null) {
+                            echo "unreachable";
+                        } elseif ($a === null) {
+                            /** @psalm-check-type-exact $b = bool */
+                            echo var_export($b, true);
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
             'aClauseThatIsNotReconcilableIsNotAParentOfAResolvent' => [
                 'code' => '<?php
                     function f(?int $a, ?int $x, ?int $y, string $s, string $t): void {
@@ -2089,6 +2119,17 @@ final class TypeAlgebraTest extends TestCase
     public static function providerInvalidCodeParse(): iterable
     {
         return [
+            'aConditionThatContradictsItselfIsReported' => [
+                'code' => '<?php
+                    function f(?int $a, bool $b): void {
+                        if ($a === null && $a !== null && $b) {
+                            echo "unreachable";
+                        }
+                    }',
+                'error_message' => 'TypeDoesNotContainType',
+                'error_levels' => [],
+                'php_version' => '8.1',
+            ],
             'instanceofStoredInVariableIsForgottenWhenTheVariableIsReassigned' => [
                 'code' => '<?php
                     interface Foo {}
