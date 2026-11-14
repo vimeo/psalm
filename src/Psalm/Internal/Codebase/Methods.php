@@ -405,7 +405,11 @@ final class Methods
                     ? [[$documenting_method_id], $overridden_method_ids]
                     : [$overridden_method_ids];
 
+                $is_from_documenting_method = false;
+
                 foreach ($candidate_lists as $candidate_ids) {
+                    $is_from_documenting_method = $documenting_method_id && $candidate_ids === [$documenting_method_id];
+
                     foreach ($candidate_ids as $method_id) {
                         $overridden_param = $this->getStorage($method_id)->params[$i] ?? null;
 
@@ -423,7 +427,7 @@ final class Methods
                 }
 
                 // an ancestor of another method documenting the parameter is overridden by that one's docblock
-                foreach ($documenting_params as $fq_class_name => [$method_id]) {
+                foreach ($documenting_params as $fq_class_name => $_) {
                     foreach ($documenting_params as $other_fq_class_name => $_) {
                         if ($other_fq_class_name !== $fq_class_name
                             && $this->isAncestorOf($fq_class_name, $other_fq_class_name)
@@ -469,7 +473,9 @@ final class Methods
                 }
 
                 // a type the native type of the override doesn't contain is not the type of the override's parameter
+                // (the documenting method's types are applied as they always were)
                 if ($source
+                    && !$is_from_documenting_method
                     && $param->signature_type
                     && !$inherited_type->hasTemplate()
                     && !UnionTypeComparator::isContainedBy(
