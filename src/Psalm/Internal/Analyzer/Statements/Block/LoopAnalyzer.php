@@ -710,6 +710,8 @@ final class LoopAnalyzer
 
             $defined_here = [];
 
+            $is_only_left_by_the_condition = !in_array(ScopeAnalyzer::ACTION_BREAK, $loop_scope->final_actions, true);
+
             foreach ($evaluated_conditions as $evaluated_condition) {
                 self::setVarsAssignedInCondition(
                     $statements_analyzer,
@@ -718,6 +720,7 @@ final class LoopAnalyzer
                     $inner_loop_context,
                     $loop_scope->exit_truths,
                     $defined_here,
+                    $is_only_left_by_the_condition,
                 );
             }
         }
@@ -748,6 +751,8 @@ final class LoopAnalyzer
      * @param array<string, list<list<Assertion>>> $exit_truths
      * @param array<string, true> $defined_here the variables an earlier assignment of the conditions defined: a later
      *                                           one overrides them
+     * @param bool $is_only_left_by_the_condition whether no break leaves the loop: a variable that existed before
+     *                                            the loop then holds what the condition assigned as well
      */
     private static function setVarsAssignedInCondition(
         StatementsAnalyzer $statements_analyzer,
@@ -756,6 +761,7 @@ final class LoopAnalyzer
         Context $inner_loop_context,
         array $exit_truths,
         array &$defined_here,
+        bool $is_only_left_by_the_condition,
     ): void {
         if ($expr instanceof PhpParser\Node\Expr\Assign) {
             // the value is evaluated before it is assigned
@@ -766,6 +772,7 @@ final class LoopAnalyzer
                 $inner_loop_context,
                 $exit_truths,
                 $defined_here,
+                $is_only_left_by_the_condition,
             );
 
             if ($expr->var instanceof PhpParser\Node\Expr\Variable && is_string($expr->var->name)) {
@@ -773,7 +780,17 @@ final class LoopAnalyzer
                 $assigned_type = $statements_analyzer->node_data->getType($expr->expr);
 
                 if ($assigned_type
-                    && (!isset($context->vars_in_scope[$var_id]) || isset($defined_here[$var_id]))
+                    && !$is_only_left_by_the_condition
+                    && isset($context->vars_in_scope[$var_id])
+                    && !isset($defined_here[$var_id])
+                    && isset($inner_loop_context->vars_in_scope[$var_id])
+                ) {
+                    // a break leaves the loop too: the variable holds what the break or the condition left
+                    $context->vars_in_scope[$var_id] = Type::combineUnionTypes(
+                        $context->vars_in_scope[$var_id],
+                        $assigned_type->setParentNodes($inner_loop_context->vars_in_scope[$var_id]->parent_nodes),
+                    );
+                } elseif ($assigned_type
                     && isset($inner_loop_context->vars_in_scope[$var_id])
                 ) {
                     // the loop was left because the condition is false: that is true of what was assigned
@@ -803,7 +820,7 @@ final class LoopAnalyzer
                     $defined_here[$var_id] = true;
                 }
             }
-        } elseif ($expr instanceof PhpParser\Node\Expr\BooleanNot) {
+        } elseif ($expr instanceof PhpParser\Node\Expr\BooleanNot || $expr instanceof PhpParser\Node\Expr\Cast) {
             self::setVarsAssignedInCondition(
                 $statements_analyzer,
                 $expr->expr,
@@ -811,6 +828,7 @@ final class LoopAnalyzer
                 $inner_loop_context,
                 $exit_truths,
                 $defined_here,
+                $is_only_left_by_the_condition,
             );
         } elseif ($expr instanceof PhpParser\Node\Expr\BinaryOp) {
             self::setVarsAssignedInCondition(
@@ -820,6 +838,7 @@ final class LoopAnalyzer
                 $inner_loop_context,
                 $exit_truths,
                 $defined_here,
+                $is_only_left_by_the_condition,
             );
 
             // the right operand of a short-circuiting operator may not be evaluated
@@ -836,6 +855,7 @@ final class LoopAnalyzer
                     $inner_loop_context,
                     $exit_truths,
                     $defined_here,
+                    $is_only_left_by_the_condition,
                 );
             }
         }
