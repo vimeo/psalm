@@ -257,6 +257,7 @@ final class ArrayMergeReturnTypeProvider implements FunctionReturnTypeProviderIn
 
                         $all_keyed_arrays = false;
                         $all_nonempty_lists = false;
+                        $arg_has_unknown_length = true;
 
                         if (!$unpacked_type_part->type_params[0]->isInt()) {
                             $all_int_offsets = false;

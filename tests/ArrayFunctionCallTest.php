@@ -134,6 +134,30 @@ final class ArrayFunctionCallTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'arrayMergeAfterAnArrayOfAnyLengthPutsTheNextElementsInTheRest' => [
+                'code' => <<<'PHP'
+                    <?php
+                    /**
+                     * @param array<int, string> $generic
+                     * @param list<string> $list
+                     * @param non-empty-array<int, string> $non_empty
+                     */
+                    function f(array $generic, array $list, array $non_empty): void {
+                        $after_generic = array_merge($generic, ['x']);
+                        $after_list = array_merge($list, ['x'], ['y']);
+                        $after_non_empty = array_merge($non_empty, ['x']);
+                        $known = array_merge(['a'], ['x']);
+
+                        /** @psalm-check-type-exact $after_generic = non-empty-list<string> */
+                        /** @psalm-check-type-exact $after_list = non-empty-list<string> */
+                        /** @psalm-check-type-exact $after_non_empty = non-empty-list<string> */
+                        /** @psalm-check-type-exact $known = list{'a', 'x'} */
+                    }
+                    PHP,
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
             'arrayPopAndShiftOfAnArrayElementMakeItPossiblyEmpty' => [
                 'code' => '<?php
                     /**
