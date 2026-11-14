@@ -539,6 +539,42 @@ final class PropertyTypeInvarianceTest extends TestCase
                     '$name===' => 'non-empty-string',
                 ],
             ],
+            'inheritedPropertyTypeHasTheTypeAliasOfTheParent' => [
+                'code' => '<?php
+                    /** @psalm-type Names = list<non-empty-string> */
+                    class ParentClass {
+                        /** @var Names */
+                        public array $names = [];
+                    }
+
+                    /** @psalm-type Names = array<int, int> */
+                    final class ChildClass extends ParentClass {
+                        public array $names = [];
+                    }
+
+                    $names = (new ChildClass())->names;',
+                'assertions' => [
+                    '$names===' => 'list<non-empty-string>',
+                ],
+            ],
+            'propertyOfAnImplementedInterface' => [
+                'code' => '<?php
+                    interface HasName {
+                        /** @var non-empty-string */
+                        public string $name { get; }
+                    }
+
+                    final class Named implements HasName {
+                        public string $name = "a";
+                    }
+
+                    $name = (new Named())->name;',
+                'assertions' => [
+                    '$name===' => 'string',
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.4',
+            ],
         ];
     }
 
@@ -739,6 +775,22 @@ final class PropertyTypeInvarianceTest extends TestCase
                         public ?Dep $dep = null;
                     }',
                 'error_message' => 'DeprecatedClass - src' . DIRECTORY_SEPARATOR . 'somefile.php:12:32',
+            ],
+            'propertyOfATraitUsedByTheChildIsNotInherited' => [
+                'code' => '<?php
+                    class ParentClass {
+                        /** @var non-empty-string */
+                        public string $name = "a";
+                    }
+
+                    trait T {
+                        public string $name = "b";
+                    }
+
+                    final class ChildClass extends ParentClass {
+                        use T;
+                    }',
+                'error_message' => 'NonInvariantDocblockPropertyType',
             ],
         ];
     }
