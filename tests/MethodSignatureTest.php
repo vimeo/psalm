@@ -864,6 +864,48 @@ final class MethodSignatureTest extends TestCase
                 'ignored_issues' => [],
                 'php_version' => '8.3',
             ],
+            'inheritedParamTypeThatTheNativeTypeDoesNotContainIsNotApplied' => [
+                'code' => '<?php
+                    class P {
+                        /** @param string $x */
+                        public function g($x, int $y): void {}
+                    }
+
+                    final class Q extends P {
+                        /** @param positive-int $y */
+                        #[\Override]
+                        public function g(int $x, int $y): void {
+                            /** @psalm-check-type-exact $x = int */;
+                            /** @psalm-check-type-exact $y = positive-int */;
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => ['ImplementedParamTypeMismatch', 'MoreSpecificImplementedParamType'],
+                'php_version' => '8.3',
+            ],
+            'unrelatedInterfacesDocumentingAParameterAlikeGiveTheOverrideTheirType' => [
+                'code' => '<?php
+                    interface A {
+                        /** @param int $x */
+                        public function f($x): void;
+                    }
+
+                    interface B {
+                        /** @param int $x */
+                        public function f($x): void;
+                    }
+
+                    final class C implements A, B {
+                        /** @return void */
+                        #[\Override]
+                        public function f($x): void {
+                            /** @psalm-check-type-exact $x = int */;
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.3',
+            ],
             'variadicParameterTakesTheOmittedParameters' => [
                 'code' => '<?php
                     interface I {
@@ -1933,6 +1975,47 @@ final class MethodSignatureTest extends TestCase
     public static function providerInvalidCodeParse(): iterable
     {
         return [
+            'unrelatedInterfacesDocumentingAParameterDifferentlyGiveAnUndocumentedOverrideNoType' => [
+                'code' => '<?php
+                    interface A {
+                        /** @param int $x */
+                        public function f($x): void;
+                    }
+
+                    interface B {
+                        /** @param string $x */
+                        public function f($x): void;
+                    }
+
+                    final class C implements A, B {
+                        #[\Override]
+                        public function f($x): void {}
+                    }',
+                'error_message' => 'MissingParamType - src' . DIRECTORY_SEPARATOR . 'somefile.php:14:43',
+                'error_levels' => [],
+                'php_version' => '8.3',
+            ],
+            'unrelatedInterfacesDocumentingAParameterDifferentlyGiveAnOverrideDocumentingItsReturnNoType' => [
+                'code' => '<?php
+                    interface A {
+                        /** @param int $x */
+                        public function f($x): void;
+                    }
+
+                    interface B {
+                        /** @param string $x */
+                        public function f($x): void;
+                    }
+
+                    final class C implements A, B {
+                        /** @return void */
+                        #[\Override]
+                        public function f($x): void {}
+                    }',
+                'error_message' => 'MissingParamType - src' . DIRECTORY_SEPARATOR . 'somefile.php:15:43',
+                'error_levels' => [],
+                'php_version' => '8.3',
+            ],
             'overrideOfAMethodDocumentedByTheInterfaceWithAMoreSpecificParam' => [
                 'code' => '<?php
                     interface I {

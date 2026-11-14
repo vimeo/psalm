@@ -46,7 +46,6 @@ use Psalm\Type\Atomic\TValueOf;
 use Psalm\Type\Union;
 use UnexpectedValueException;
 
-use function array_filter;
 use function array_pop;
 use function assert;
 use function count;
@@ -388,57 +387,104 @@ final class Methods
                 $appearing_method_name,
             );
 
-            if (!$storage->has_docblock_param_types
-                && isset($class_storage->documenting_method_ids[$appearing_method_name])
-            ) {
-                // the method that documents the whole signature of the others comes first
-                $documenting_method_id = $class_storage->documenting_method_ids[$appearing_method_name];
+            // the method that documents the whole signature of the others, as the Populator chose it
+            $documenting_method_id = !$storage->has_docblock_param_types
+                ? $class_storage->documenting_method_ids[$appearing_method_name] ?? null
+                : null;
 
-                $overridden_method_ids = [
-                    $documenting_method_id,
-                    ...array_filter(
-                        $overridden_method_ids,
-                        static fn(MethodIdentifier $id): bool => (string) $id !== (string) $documenting_method_id,
-                    ),
-                ];
-            }
+            foreach ($params as $i => $param) {
+                if ($param->has_docblock_type) {
+                    continue;
+                }
 
-            foreach ($overridden_method_ids as $overridden_method_id) {
-                $overridden_storage = $this->getStorage($overridden_method_id);
+                /** @var array<string, array{MethodIdentifier, FunctionLikeParameter}> $documenting_params */
+                $documenting_params = [];
 
-                $overriding_fq_class_name = $overridden_method_id->fq_class_name;
+                // the documenting method if it documents the parameter, else every overridden method that does
+                $candidate_lists = $documenting_method_id
+                    ? [[$documenting_method_id], $overridden_method_ids]
+                    : [$overridden_method_ids];
 
-                foreach ($params as $i => $param) {
-                    if (!$param->has_docblock_type
-                        && isset($overridden_storage->params[$i]->type)
-                        && $overridden_storage->params[$i]->has_docblock_type
-                    ) {
-                        $params[$i] = clone $param;
-                        /** @var Union $params[$i]->type */
-                        $params[$i]->type = $overridden_storage->params[$i]->type;
+                foreach ($candidate_lists as $candidate_ids) {
+                    foreach ($candidate_ids as $method_id) {
+                        $overridden_param = $this->getStorage($method_id)->params[$i] ?? null;
 
-                        if ($source) {
-                            $overridden_class_storage = $this->classlike_storage_provider->get(
-                                $overriding_fq_class_name,
-                            );
-                            $params[$i]->type = self::localizeType(
-                                $source->getCodebase(),
-                                $params[$i]->type,
-                                $appearing_fq_class_name,
-                                $overridden_class_storage->name,
-                            );
-                        }
-
-                        if ($params[$i]->signature_type
-                            && $params[$i]->signature_type->isNullable()
+                        if ($overridden_param !== null
+                            && $overridden_param->type
+                            && $overridden_param->has_docblock_type
                         ) {
-                            $params[$i]->type = $params[$i]->type->getBuilder()->addType(new TNull)->freeze();
+                            $documenting_params[$method_id->fq_class_name] = [$method_id, $overridden_param];
                         }
+                    }
 
-                        $params[$i]->type_location = $overridden_storage->params[$i]->type_location;
-                        $params[$i]->has_docblock_type = true;
+                    if ($documenting_params) {
+                        break;
                     }
                 }
+
+                // an ancestor of another method documenting the parameter is overridden by that one's docblock
+                foreach ($documenting_params as $fq_class_name => [$method_id]) {
+                    foreach ($documenting_params as $other_fq_class_name => $_) {
+                        if ($other_fq_class_name !== $fq_class_name
+                            && $this->isAncestorOf($fq_class_name, $other_fq_class_name)
+                        ) {
+                            unset($documenting_params[$fq_class_name]);
+                            break;
+                        }
+                    }
+                }
+
+                $inherited_type = null;
+                $type_location = null;
+
+                foreach ($documenting_params as [$method_id, $overridden_param]) {
+                    $type = $overridden_param->type;
+                    assert($type !== null);
+
+                    if ($source) {
+                        $type = self::localizeType(
+                            $source->getCodebase(),
+                            $type,
+                            $appearing_fq_class_name,
+                            $this->classlike_storage_provider->get($method_id->fq_class_name)->name,
+                        );
+                    }
+
+                    // unrelated ancestors that disagree give no type
+                    if ($inherited_type !== null && $inherited_type->getId() !== $type->getId()) {
+                        $inherited_type = null;
+                        break;
+                    }
+
+                    $inherited_type = $type;
+                    $type_location = $overridden_param->type_location;
+                }
+
+                if ($inherited_type === null) {
+                    continue;
+                }
+
+                if ($param->signature_type && $param->signature_type->isNullable()) {
+                    $inherited_type = $inherited_type->getBuilder()->addType(new TNull)->freeze();
+                }
+
+                // a type the native type of the override doesn't contain is not the type of the override's parameter
+                if ($source
+                    && $param->signature_type
+                    && !$inherited_type->hasTemplate()
+                    && !UnionTypeComparator::isContainedBy(
+                        $source->getCodebase(),
+                        $inherited_type,
+                        $param->signature_type,
+                    )
+                ) {
+                    continue;
+                }
+
+                $params[$i] = clone $param;
+                $params[$i]->type = $inherited_type;
+                $params[$i]->type_location = $type_location;
+                $params[$i]->has_docblock_type = true;
             }
 
             return $params;
@@ -1212,6 +1258,21 @@ final class Methods
         }
 
         return $method_ids;
+    }
+
+    /**
+     * Whether the first class or interface is a parent or an interface of the second
+     *
+     * @psalm-mutation-free
+     */
+    private function isAncestorOf(string $ancestor_fq_class_name, string $fq_class_name): bool
+    {
+        $ancestor_fq_class_name_lc = strtolower($ancestor_fq_class_name);
+        $class_storage = $this->classlike_storage_provider->get($fq_class_name);
+
+        return isset($class_storage->parent_classes[$ancestor_fq_class_name_lc])
+            || isset($class_storage->parent_interfaces[$ancestor_fq_class_name_lc])
+            || isset($class_storage->class_implements[$ancestor_fq_class_name_lc]);
     }
 
     /**
