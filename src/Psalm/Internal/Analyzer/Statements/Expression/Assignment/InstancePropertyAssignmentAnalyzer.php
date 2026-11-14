@@ -1396,14 +1396,18 @@ final class InstancePropertyAssignmentAnalyzer
 
         $set_method_id = new MethodIdentifier($fq_class_name, '__set');
 
-        $has_pseudo_property_without_magic_setter = self::hasPseudoPropertyWithoutMagicSetter(
-            $codebase,
-            $class_exists,
-            $fq_class_name,
-            $prop_name,
-        );
+        $property_exists = $codebase->propertyExists($property_id, false, $statements_analyzer, $context);
 
-        if ((!$codebase->propertyExists($property_id, false, $statements_analyzer, $context)
+        // a property that exists but isn't visible has no `__set` to fall back to
+        $has_pseudo_property_without_magic_setter = !$property_exists
+            && self::hasPseudoPropertyWithoutMagicSetter(
+                $codebase,
+                $class_exists,
+                $fq_class_name,
+                $prop_name,
+            );
+
+        if ((!$property_exists
                 || ($lhs_var_id !== '$this'
                     && $fq_class_name !== $context->self
                     && ClassLikeAnalyzer::checkPropertyVisibility(
