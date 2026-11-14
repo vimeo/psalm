@@ -7405,7 +7405,7 @@ final class ClassTemplateTest extends TestCase
                             $ints->add("x");
                         }
                     }',
-                'error_message' => 'InvalidArgument',
+                'error_message' => 'InvalidArgument - src' . DIRECTORY_SEPARATOR . 'somefile.php:10:40 - Argument 1 of ArrayList::add expects int, but \'x\' provided',
                 'error_levels' => [],
                 'php_version' => '8.0',
             ],
