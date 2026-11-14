@@ -3232,6 +3232,37 @@ final class FunctionCallTest extends TestCase
                 'ignored_issues' => [],
                 'php_version' => '8.2',
             ],
+            'filterVarEmptyStringNullOnlyForAnEmptyInput' => [
+                'code' => <<<'PHP'
+                    <?php
+                    /**
+                     * @param string $s
+                     * @param non-empty-string $non_empty
+                     */
+                    function filter(string $s, string $non_empty, bool $flag): void {
+                        $stripped = filter_var($s, FILTER_DEFAULT, FILTER_FLAG_EMPTY_STRING_NULL | FILTER_FLAG_STRIP_LOW);
+                        $stripped_non_empty = filter_var(
+                            $non_empty,
+                            FILTER_DEFAULT,
+                            FILTER_FLAG_EMPTY_STRING_NULL | FILTER_FLAG_STRIP_LOW,
+                        );
+                        $literal = filter_var('abc', FILTER_DEFAULT, FILTER_FLAG_EMPTY_STRING_NULL);
+                        $false = filter_var(false, FILTER_DEFAULT, FILTER_FLAG_EMPTY_STRING_NULL);
+                        $bool = filter_var($flag, FILTER_DEFAULT, FILTER_FLAG_EMPTY_STRING_NULL);
+                        $unsafe_raw = filter_var($s, FILTER_UNSAFE_RAW, FILTER_FLAG_EMPTY_STRING_NULL);
+
+                        /** @psalm-check-type-exact $stripped = string|null */
+                        /** @psalm-check-type-exact $stripped_non_empty = string */
+                        /** @psalm-check-type-exact $literal = 'abc' */
+                        /** @psalm-check-type-exact $false = null */
+                        /** @psalm-check-type-exact $bool = '1'|null */
+                        /** @psalm-check-type-exact $unsafe_raw = non-empty-string|null */
+                    }
+                    PHP,
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
             'filterVarEmptyStringNullOfTheDefaultFilter' => [
                 'code' => <<<'PHP'
                     <?php
@@ -3263,6 +3294,17 @@ final class FunctionCallTest extends TestCase
     public static function providerInvalidCodeParse(): iterable
     {
         return [
+            'filterVarEmptyStringNullIsRedundantForAFilterWithoutIt' => [
+                'code' => <<<'PHP'
+                    <?php
+                    function filter(string $s): void {
+                        filter_var($s, FILTER_VALIDATE_INT, FILTER_FLAG_EMPTY_STRING_NULL);
+                    }
+                    PHP,
+                'error_message' => 'RedundantFlag',
+                'error_levels' => [],
+                'php_version' => '8.1',
+            ],
             'streamSelectDoesNotTakeAContextBeforePhp86' => [
                 'code' => '<?php
                     $read = [STDIN];
