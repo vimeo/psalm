@@ -29,6 +29,32 @@ final class UnusedVariableTest extends TestCase
     public static function providerValidCodeParse(): array
     {
         return [
+            'incrementInTheKeyOfAnArrayItemIsReadByTheValue' => [
+                'code' => '<?php
+                    function f(): array {
+                        $i = 0;
+                        $a = [];
+                        $a[$i++] = $i;
+
+                        return $a;
+                    }',
+            ],
+            'incrementInTheKeyOfAnArrayItemIsReadByTheNextIteration' => [
+                'code' => '<?php
+                    function fill(int $start, int $count): array {
+                        $result = [];
+                        if ($start < 0) {
+                            $result[$start] = "x";
+                            $start = 0;
+                            $count--;
+                        }
+                        while ($count > 0) {
+                            $result[$start++] = "x";
+                            $count--;
+                        }
+                        return $result;
+                    }',
+            ],
             'assignmentUsedAfterBreakTwoFromSwitchInInfiniteWhile' => [
                 'code' => '<?php
                     final class Step {

@@ -126,6 +126,28 @@ final class ArrayAssignmentTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'keyOfAnArrayItemIsEvaluatedBeforeTheValue' => [
+                'code' => '<?php
+                    $i = 0;
+                    $a = [];
+                    $a[$i++] = $i;
+
+                    $b = [];
+                    $b[$k = "x"][$k . "y"] = $k;',
+                'assertions' => [
+                    '$a===' => 'array{0: 1}',
+                    '$b===' => "array{x: array{xy: 'x'}}",
+                ],
+            ],
+            'variableAssignedInTheKeyOfAnArrayItemIsDefinedInTheValue' => [
+                'code' => '<?php
+                    function roots(object $node): array {
+                        $roots = [];
+                        $roots[spl_object_id($root = $node)] = $root;
+
+                        return $roots;
+                    }',
+            ],
             'assignToTheItemOfAnArrayAFunctionReturnsByReference' => [
                 'code' => '<?php
                     function &ensureArray(array &$what): array {

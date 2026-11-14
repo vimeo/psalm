@@ -102,7 +102,9 @@ use Psalm\Type\TaintKind;
 use Psalm\Type\Union;
 use UnexpectedValueException;
 
+use function array_filter;
 use function array_map;
+use function array_values;
 use function assert;
 use function count;
 use function is_int;
@@ -115,6 +117,7 @@ use function strncasecmp;
 use function strpos;
 use function strtolower;
 use function substr;
+use function usort;
 
 /**
  * @internal
@@ -197,7 +200,6 @@ final class AssignmentAnalyzer
 
     /**
      * @param  PhpParser\Node\Expr|null $assign_value  This has to be null to support list destructuring
-     * @psalm-suppress ComplexMethod dispatches on every kind of assignment target
      */
     public static function analyze(
         StatementsAnalyzer $statements_analyzer,
@@ -208,6 +210,105 @@ final class AssignmentAnalyzer
         ?PhpParser\Comment\Doc $doc_comment,
         array $not_ignored_docblock_var_ids = [],
         ?PhpParser\Node\Expr $assign_expr = null,
+    ): ?Union {
+        // the keys of an array item are evaluated before the value, so a variable a key assigns is set in the value
+        $keys_assigning = $assign_value !== null && $assign_var instanceof PhpParser\Node\Expr\ArrayDimFetch
+            ? self::getOperandsAssigning($assign_var)
+            : [];
+
+        if (!$keys_assigning) {
+            return self::analyzeAfterTheKeys(
+                $statements_analyzer,
+                $assign_var,
+                $assign_value,
+                $assign_value_type,
+                $context,
+                $doc_comment,
+                $not_ignored_docblock_var_ids,
+                $assign_expr,
+            );
+        }
+
+        // as ArrayAssignmentAnalyzer analyses them
+        $was_in_assignment = $context->inside_assignment;
+        $was_inside_general_use = $context->inside_general_use;
+        $context->inside_assignment = true;
+        $context->inside_general_use = true;
+
+        foreach ($keys_assigning as $key) {
+            if (ExpressionAnalyzer::analyze($statements_analyzer, $key, $context) === false) {
+                $context->inside_assignment = $was_in_assignment;
+                $context->inside_general_use = $was_inside_general_use;
+
+                return null;
+            }
+        }
+
+        $context->inside_assignment = $was_in_assignment;
+        $context->inside_general_use = $was_inside_general_use;
+
+        $statements_analyzer->node_data->markEvaluated($keys_assigning);
+
+        try {
+            return self::analyzeAfterTheKeys(
+                $statements_analyzer,
+                $assign_var,
+                $assign_value,
+                $assign_value_type,
+                $context,
+                $doc_comment,
+                $not_ignored_docblock_var_ids,
+                $assign_expr,
+            );
+        } finally {
+            $statements_analyzer->node_data->unmarkEvaluated($keys_assigning);
+        }
+    }
+
+    /**
+     * The keys (and what the root array is fetched from) of an array item that assign something, in source order
+     *
+     * @return list<PhpParser\Node\Expr>
+     */
+    private static function getOperandsAssigning(PhpParser\Node\Expr\ArrayDimFetch $assign_var): array
+    {
+        $node_finder = new PhpParser\NodeFinder();
+
+        $operands = array_values(array_filter(
+            ArrayAssignmentAnalyzer::getOperands($assign_var),
+            static fn(PhpParser\Node\Expr $operand): bool => $node_finder->findFirst(
+                $operand,
+                static fn(PhpParser\Node $node): bool => $node instanceof PhpParser\Node\Expr\Assign
+                    || $node instanceof PhpParser\Node\Expr\AssignOp
+                    || $node instanceof PhpParser\Node\Expr\AssignRef
+                    || $node instanceof PhpParser\Node\Expr\PreInc
+                    || $node instanceof PhpParser\Node\Expr\PostInc
+                    || $node instanceof PhpParser\Node\Expr\PreDec
+                    || $node instanceof PhpParser\Node\Expr\PostDec,
+            ) !== null,
+        ));
+
+        usort(
+            $operands,
+            static fn(PhpParser\Node\Expr $a, PhpParser\Node\Expr $b): int
+                => (int) $a->getAttribute('startFilePos') <=> (int) $b->getAttribute('startFilePos'),
+        );
+
+        return $operands;
+    }
+
+    /**
+     * @psalm-suppress ComplexMethod dispatches on every kind of assignment target
+     */
+    private static function analyzeAfterTheKeys(
+        StatementsAnalyzer $statements_analyzer,
+        PhpParser\Node\Expr $assign_var,
+        ?PhpParser\Node\Expr $assign_value,
+        ?Union $assign_value_type,
+        Context $context,
+        ?PhpParser\Comment\Doc $doc_comment,
+        array $not_ignored_docblock_var_ids,
+        ?PhpParser\Node\Expr $assign_expr,
     ): ?Union {
         $var_id = ExpressionIdentifier::getVarId(
             $assign_var,
