@@ -515,7 +515,7 @@ final class ReturnTypeTest extends TestCase
                         }
                     }',
                 'assertions' => [],
-                'ignored_issues' => ['MissingThrowsDocblock'],
+                'ignored_issues' => [],
                 'php_version' => '8.1',
             ],
             'intFunctionWithAnEmptyInfiniteLoop' => [
@@ -2294,7 +2294,6 @@ final class ReturnTypeTest extends TestCase
                         return $s->n;
                     }',
                 'assertions' => [],
-                'ignored_issues' => ['MissingThrowsDocblock'],
             ],
             'finalClassOverridesAGenericStaticReturnType' => [
                 'code' => <<<'PHP'

@@ -4507,7 +4507,6 @@ final class ArrayFunctionCallTest extends TestCase
                         1
                     );',
                 'error_message' => 'InvalidArgument',
-                'error_levels' => ['MixedTypeCoercion'],
             ],
             'arrayReduceInvalidItemType' => [
                 'code' => '<?php
