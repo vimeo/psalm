@@ -20,6 +20,56 @@ final class PropertiesOfTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'propertiesOfAClassWithoutProperties' => [
+                'code' => '<?php
+                    class Open {
+                        public function __construct() {}
+                    }
+
+                    final class Sealed {
+                        public function __construct() {}
+                    }
+
+                    final class Untyped {
+                        public $a = 1;
+                    }
+
+                    /**
+                     * @param properties-of<Open> $open
+                     * @param properties-of<Sealed> $sealed
+                     */
+                    function f(array $open, array $sealed): void {
+                        echo count($open) + count($sealed);
+                    }
+
+                    /**
+                     * @psalm-suppress InvalidReturnType
+                     * @return properties-of<Open>
+                     */
+                    function open() {}
+
+                    /**
+                     * @psalm-suppress InvalidReturnType
+                     * @return properties-of<Sealed>
+                     */
+                    function sealed() {}
+
+                    /**
+                     * @psalm-suppress InvalidReturnType
+                     * @return properties-of<Untyped>
+                     */
+                    function untyped() {}
+
+                    $open = open();
+                    $sealed = sealed();
+                    $untyped = untyped();',
+                'assertions' => [
+                    '$open===' => 'array<string, mixed>',
+                    '$sealed===' => 'array<never, never>',
+                    '$untyped===' => 'properties-of<Untyped>',
+                ],
+                'ignored_issues' => ['MissingPropertyType'],
+            ],
             'propertiesOfAClassWithTraitProperties' => [
                 'code' => '<?php
                     trait Inner {
@@ -363,7 +413,7 @@ final class PropertiesOfTest extends TestCase
             ],
             'propertiesOfPicksNoStatic' => [
                 'code' => '<?php
-                    class A {
+                    final class A {
                         /** @var mixed */
                         public static $foo;
                     }
