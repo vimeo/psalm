@@ -118,68 +118,12 @@ final class NamedFunctionCallHandler
             return;
         }
 
-        if ($function_id === 'class_exists') {
-            if ($first_arg) {
-                if ($first_arg->value instanceof PhpParser\Node\Scalar\String_) {
-                    if (!$codebase->classlikes->classExists($first_arg->value->value, null, $context)) {
-                        $context->phantom_classes[strtolower($first_arg->value->value)] = true;
-                    }
-                } elseif ($first_arg->value instanceof PhpParser\Node\Expr\ClassConstFetch
-                    && $first_arg->value->class instanceof PhpParser\Node\Name
-                    && $first_arg->value->name instanceof PhpParser\Node\Identifier
-                    && $first_arg->value->name->name === 'class'
-                ) {
-                    $resolved_name = (string) $first_arg->value->class->getAttribute('resolvedName');
-
-                    if (!$codebase->classlikes->classExists($resolved_name, null, $context)) {
-                        $context->phantom_classes[strtolower($resolved_name)] = true;
-                    }
-                }
-            }
-
-            return;
-        }
-
-        if ($function_id === 'interface_exists') {
-            if ($first_arg) {
-                if ($first_arg->value instanceof PhpParser\Node\Scalar\String_) {
-                    if (!$codebase->classlikes->interfaceExists($first_arg->value->value, null, $context)) {
-                        $context->phantom_classes[strtolower($first_arg->value->value)] = true;
-                    }
-                } elseif ($first_arg->value instanceof PhpParser\Node\Expr\ClassConstFetch
-                    && $first_arg->value->class instanceof PhpParser\Node\Name
-                    && $first_arg->value->name instanceof PhpParser\Node\Identifier
-                    && $first_arg->value->name->name === 'class'
-                ) {
-                    $resolved_name = (string) $first_arg->value->class->getAttribute('resolvedName');
-
-                    if (!$codebase->classlikes->interfaceExists($resolved_name, null, $context)) {
-                        $context->phantom_classes[strtolower($resolved_name)] = true;
-                    }
-                }
-            }
-
-            return;
-        }
-
-        if ($function_id === 'enum_exists') {
-            if ($first_arg) {
-                if ($first_arg->value instanceof PhpParser\Node\Scalar\String_) {
-                    if (!$codebase->classlikes->enumExists($first_arg->value->value, null, $context)) {
-                        $context->phantom_classes[strtolower($first_arg->value->value)] = true;
-                    }
-                } elseif ($first_arg->value instanceof PhpParser\Node\Expr\ClassConstFetch
-                    && $first_arg->value->class instanceof PhpParser\Node\Name
-                    && $first_arg->value->name instanceof PhpParser\Node\Identifier
-                    && $first_arg->value->name->name === 'class'
-                ) {
-                    $resolved_name = (string) $first_arg->value->class->getAttribute('resolvedName');
-
-                    if (!$codebase->classlikes->enumExists($resolved_name, null, $context)) {
-                        $context->phantom_classes[strtolower($resolved_name)] = true;
-                    }
-                }
-            }
+        if ($function_id === 'class_alias'
+            || $function_id === 'class_exists'
+            || $function_id === 'interface_exists'
+            || $function_id === 'enum_exists'
+        ) {
+            self::handleClassLikeDeclarationCheck($codebase, $stmt, $function_id, $context);
 
             return;
         }
@@ -818,5 +762,74 @@ final class NamedFunctionCallHandler
                 ]),
             );
         }
+    }
+
+    /**
+     * A class_alias() declares its alias, a class_exists(), interface_exists() or enum_exists() of a missing class
+     * makes it a phantom class
+     *
+     * @param 'class_alias'|'class_exists'|'interface_exists'|'enum_exists' $function_id
+     */
+    private static function handleClassLikeDeclarationCheck(
+        Codebase $codebase,
+        PhpParser\Node\Expr\FuncCall $stmt,
+        string $function_id,
+        Context $context,
+    ): void {
+        $class_name = self::getClassNameOfArgument($stmt->getArgs()[0] ?? null);
+
+        if ($class_name === null) {
+            return;
+        }
+
+        if ($function_id === 'class_alias') {
+            // the alias is declared from here on, whatever was checked about it before, unless the class it aliases
+            // may not exist: then class_alias() fails
+            $alias_arg = $stmt->getArgs()[1] ?? null;
+
+            if (($codebase->classlikes->classOrInterfaceOrEnumExists($class_name, null, $context)
+                    || $codebase->classlikes->traitExists($class_name, null, $context))
+                && $alias_arg
+                && $alias_arg->value instanceof PhpParser\Node\Scalar\String_
+            ) {
+                $context->phantom_classes[strtolower(ltrim($alias_arg->value->value, '\\'))] = true;
+            }
+
+            return;
+        }
+
+        $exists = match ($function_id) {
+            'class_exists' => $codebase->classlikes->classExists($class_name, null, $context),
+            'interface_exists' => $codebase->classlikes->interfaceExists($class_name, null, $context),
+            'enum_exists' => $codebase->classlikes->enumExists($class_name, null, $context),
+        };
+
+        if (!$exists) {
+            $context->addPhantomClass(strtolower($class_name));
+        }
+    }
+
+    /**
+     * The class an argument names: a string literal, or `Foo::class`
+     */
+    private static function getClassNameOfArgument(?PhpParser\Node\Arg $arg): ?string
+    {
+        if ($arg === null) {
+            return null;
+        }
+
+        if ($arg->value instanceof PhpParser\Node\Scalar\String_) {
+            return ltrim($arg->value->value, '\\');
+        }
+
+        if ($arg->value instanceof PhpParser\Node\Expr\ClassConstFetch
+            && $arg->value->class instanceof PhpParser\Node\Name
+            && $arg->value->name instanceof PhpParser\Node\Identifier
+            && $arg->value->name->name === 'class'
+        ) {
+            return (string) $arg->value->class->getAttribute('resolvedName');
+        }
+
+        return null;
     }
 }

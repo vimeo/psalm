@@ -13,6 +13,7 @@ use Psalm\Tests\Traits\ValidCodeAnalysisTestTrait;
 
 use function array_filter;
 use function array_values;
+use function implode;
 
 use const DIRECTORY_SEPARATOR;
 
@@ -53,6 +54,50 @@ final class ClassTest extends TestCase
         self::assertCount(2, $issues);
         self::assertSame(3, $issues[0]->line_from);
         self::assertContains($issues[1]->line_from, [10, 11]);
+    }
+
+    public function testClassExistsInAnArgumentOfANegatedCallChecksTheClassWhereItIsUsed(): void
+    {
+        $this->testConfig->throw_exception = false;
+        $file_path = self::$src_dir_path . 'somefile.php';
+
+        $this->addFile(
+            $file_path,
+            '<?php
+                namespace App;
+
+                use Vendor\\Validation\\MessageIdValidation;
+                use Vendor\\Validation\\RfcValidation;
+                use Vendor\\Validator;
+
+                final class Address {
+                    private static Validator $validator;
+
+                    private static function check(string $address): bool {
+                        if (!self::$validator->isValid(
+                            $address,
+                            class_exists(MessageIdValidation::class) ? new MessageIdValidation() : new RfcValidation(),
+                        )) {
+                            return false;
+                        }
+
+                        return true;
+                    }
+                }',
+        );
+        $this->analyzeFile($file_path, new Context());
+
+        $undefined_classes = [];
+
+        foreach (IssueBuffer::getIssuesDataForFile($file_path) as $issue) {
+            if ($issue->type === 'UndefinedClass') {
+                $undefined_classes[] = $issue->message;
+            }
+        }
+
+        // the class that class_exists() checks is not undefined where it is used, although the call is negated
+        $this->assertCount(3, $undefined_classes);
+        $this->assertStringNotContainsString('MessageIdValidation', implode(' ', $undefined_classes));
     }
 
     /**
@@ -918,6 +963,126 @@ final class ClassTest extends TestCase
                         }
                     }',
             ],
+            'classOfANegatedClassExistsIsDefinedInTheElseOfATernary' => [
+                'code' => '<?php
+                    function build(): ?object {
+                        return !class_exists("DynamicClass")
+                            ? null
+                            : new DynamicClass();
+                    }
+
+                    function buildMatch(): ?object {
+                        return match (true) {
+                            !class_exists("OtherDynamicClass") => null,
+                            default => new OtherDynamicClass(),
+                        };
+                    }',
+                'assertions' => [],
+                'ignored_issues' => ['MixedReturnStatement'],
+                'php_version' => '8.0',
+            ],
+            'classOfANegatedClassExistsIsDefinedOnTheRightOfAnOr' => [
+                'code' => '<?php
+                    function check(): bool {
+                        return !class_exists("DynamicClass") || (new DynamicClass())->ok();
+                    }',
+                'assertions' => [],
+                'ignored_issues' => ['MixedMethodCall', 'MixedReturnStatement'],
+            ],
+            'classDeclaredByTheFirstStatementOfANegatedClassExistsBlock' => [
+                'code' => '<?php
+                    class Real {
+                        public static function run(): void {}
+                    }
+
+                    if (!class_exists("Polyfill")) {
+                        class_alias(Real::class, "Polyfill");
+                        Polyfill::run();
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+            ],
+            'interfaceDeclaredByAClassAliasInANegatedInterfaceExistsBlock' => [
+                'code' => '<?php
+                    interface Real {
+                        public static function run(): void;
+                    }
+
+                    if (!interface_exists("Polyfill")) {
+                        class_alias("Real", "Polyfill");
+                        /** @param Polyfill $p */
+                        function f($p): void {
+                            $p::run();
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+            ],
+            'classNameOfAClassThatANegatedClassExistsFoundMissing' => [
+                'code' => '<?php
+                    function install(): void {
+                        if (!class_exists(Missing::class)) {
+                            throw new LogicException(sprintf("Run: composer require %s", Missing::class));
+                        }
+
+                        Missing::run();
+                    }
+
+                    function install2(): void {
+                        if (!class_exists("Missing2")) {
+                            return;
+                        }
+
+                        Missing2::run();
+                    }
+
+                    function install3(): void {
+                        if (!class_exists(Missing3::class)) {
+                            echo Missing3::class;
+                        } else {
+                            Missing3::run();
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+            ],
+            'classOfANegatedClassExistsInAnElseifExistsInItsElse' => [
+                'code' => '<?php
+                    function f(bool $c): void {
+                        if ($c) {
+                            echo 1;
+                        } elseif (!class_exists(Optional::class)) {
+                            echo 2;
+                        } else {
+                            new Optional();
+                        }
+                    }',
+            ],
+            'classExistsInAnArgumentOfANegatedCall' => [
+                'code' => '<?php
+                    final class Validator {
+                        /**
+                         * @param mixed $validation
+                         */
+                        public function isValid(string $email, $validation): bool {
+                            return $email !== "" && $validation !== null;
+                        }
+                    }
+
+                    function checkMethod(Validator $validator, string $email, object $fallback): void {
+                        if (!$validator->isValid($email, class_exists(MessageIDValidation::class) ? new MessageIDValidation() : $fallback)) {
+                            throw new LogicException();
+                        }
+                    }
+
+                    function checkFunction(): void {
+                        if (!is_object(class_exists(OtherValidation::class) ? new OtherValidation() : null)) {
+                            throw new LogicException();
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+            ],
             'noErrorsAfterClassExists' => [
                 'code' => '<?php
                     if (class_exists(A::class)) {
@@ -1441,6 +1606,74 @@ final class ClassTest extends TestCase
     public static function providerInvalidCodeParse(): iterable
     {
         return [
+            'classOfANegatedClassExistsInAnElseifIsUndefinedInItsBody' => [
+                'code' => '<?php
+                    function f(bool $c): void {
+                        if ($c) {
+                            echo 1;
+                        } elseif (!class_exists(Optional::class)) {
+                            new Optional();
+                        }
+                    }',
+                'error_message' => 'UndefinedClass - src' . DIRECTORY_SEPARATOR . 'somefile.php:6:33 - Class, interface or enum named Optional does not exist',
+            ],
+            'classOfANegatedClassExistsIsUndefinedAfterAnUnrelatedNestedIf' => [
+                'code' => '<?php
+                    function f(bool $flag): void {
+                        if (!class_exists("DynamicClass")) {
+                            if ($flag) {
+                                echo "unrelated";
+                            }
+
+                            new DynamicClass();
+                        }
+                    }',
+                'error_message' => 'UndefinedClass',
+            ],
+            'classOfANegatedClassExistsIsUndefinedInTheIfOfATernary' => [
+                'code' => '<?php
+                    function f(): ?object {
+                        return !class_exists("DynamicClass") ? new DynamicClass() : null;
+                    }',
+                'error_message' => 'UndefinedClass',
+            ],
+            'aliasOfAMissingClassIsUndefined' => [
+                'code' => '<?php
+                    class_alias("MissingSource", "Alias", false);
+                    Alias::run();',
+                'error_message' => 'UndefinedClass - src' . DIRECTORY_SEPARATOR . 'somefile.php:3:21 - Class, interface or enum named Alias does not exist',
+            ],
+            'aliasOfAMissingClassInANegatedClassExistsBlockIsUndefined' => [
+                'code' => '<?php
+                    if (!class_exists("Polyfill")) {
+                        class_alias(MissingSource::class, "Polyfill");
+                        Polyfill::run();
+                    }',
+                'error_message' => 'UndefinedClass - src' . DIRECTORY_SEPARATOR . 'somefile.php:3:37 - Class, interface or enum named MissingSource does not exist',
+            ],
+            'staticCallOnTheClassOfANegatedClassExistsAfterOtherStatements' => [
+                'code' => '<?php
+                    if (!class_exists("Polyfill")) {
+                        $loaded = false;
+                        Polyfill::run();
+                    }',
+                'error_message' => 'UndefinedClass',
+                'error_levels' => ['UnusedVariable'],
+            ],
+            'staticCallOnTheClassOfANegatedClassExists' => [
+                'code' => '<?php
+                    if (!class_exists(Really::class)) {
+                        Really::something();
+                    }',
+                'error_message' => 'UndefinedClass - src' . DIRECTORY_SEPARATOR . 'somefile.php:3:25',
+            ],
+            'staticCallOnTheInterfaceOfANegatedInterfaceExists' => [
+                'code' => '<?php
+                    if (!interface_exists("Really")) {
+                        Really::something();
+                    }',
+                'error_message' => 'UndefinedClass - src' . DIRECTORY_SEPARATOR . 'somefile.php:3:25',
+            ],
             'newStaticOfAClassImplementingAnInterfaceWithoutAConstructor' => [
                 'code' => '<?php
                     interface Marker {}
