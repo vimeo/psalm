@@ -103,13 +103,14 @@ final class ClassLikeStorage implements HasAttributesInterface
     public array $declaredMixins = [];
 
     /**
-     * @deprecated Psalm no longer fills it: the mixins of a mixin are looked up along with it
+     * @deprecated Always empty, removed in psalm-plugin-api 0.5.0: the mixins of a mixin are looked up along with it
      * @var list<TNamedObject>
      */
     public array $transitiveNamedMixins = [];
 
     /**
-     * @deprecated Psalm no longer sets or uses it: each mixin is bound in the context of the class declaring it
+     * @deprecated Never set or read, removed in psalm-plugin-api 0.5.0: each mixin is bound in the context of the
+     *     class declaring it
      */
     public ?string $mixin_declaring_fqcln = null;
 
@@ -680,7 +681,7 @@ final class ClassLikeStorage implements HasAttributesInterface
     }
 
     /**
-     * @deprecated Psalm no longer uses it, see getMixins()
+     * @deprecated Removed in psalm-plugin-api 0.5.0: use getMixins() for the mixins the class declares
      * @return list<TNamedObject>
      * @psalm-mutation-free
      */
