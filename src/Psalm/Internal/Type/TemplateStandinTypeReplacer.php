@@ -503,7 +503,20 @@ final class TemplateStandinTypeReplacer
 
             // not where another alternative stays in the union: what it holds is not given by the inferred template
             if ($was_single && $replaced_atomic_type !== $atomic_type && !$template_result->readonly) {
-                $had_template = true;
+                if ($replace && $depth > 0) {
+                    // a type param of a generic is compared invariantly with what the argument inferred
+                    $inferred_type = TemplateInferredTypeReplacer::replace(
+                        new Union([$atomic_type]),
+                        $template_result,
+                        $codebase,
+                    );
+
+                    if ($inferred_type->isSingle()) {
+                        $replaced_atomic_type = $inferred_type->getSingleAtomic();
+                    }
+                } else {
+                    $had_template = true;
+                }
             }
 
             $atomic_types[] = $replaced_atomic_type;

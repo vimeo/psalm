@@ -6092,6 +6092,37 @@ final class ClassTemplateTest extends TestCase
                     '$r===' => 'string',
                 ],
             ],
+            'templateNestedInACovariantGenericParamAcceptsASubtype' => [
+                'code' => '<?php
+                    /**
+                     * @template K
+                     * @template-covariant V
+                     */
+                    class Map {}
+
+                    /** @template T */
+                    class A {}
+
+                    /**
+                     * @template T
+                     * @extends A<T>
+                     */
+                    class ChildA extends A {}
+
+                    /**
+                     * @template T
+                     * @param Map<int, A<T>> $m
+                     * @return T
+                     */
+                    function f(Map $m) { throw new Exception(); }
+
+                    /** @var Map<int, ChildA<string>> $map */
+                    $map = new Map();
+                    $r = f($map);',
+                'assertions' => [
+                    '$r===' => 'string',
+                ],
+            ],
         ];
     }
 
@@ -7341,6 +7372,58 @@ final class ClassTemplateTest extends TestCase
                     $map = new Map();
                     f($map, 5);',
                 'error_message' => 'InvalidArgument',
+            ],
+            'templateNestedInAnInvariantGenericParamConflictsWithAnEarlierArgument' => [
+                'code' => '<?php
+                    /**
+                     * @template K
+                     * @template V
+                     */
+                    class Map {}
+
+                    /** @template T */
+                    class A {}
+
+                    /**
+                     * @template T
+                     * @param T $x
+                     * @param Map<int, A<T>> $m
+                     */
+                    function f($x, Map $m): void {}
+
+                    /** @var Map<int, A<string>> $map */
+                    $map = new Map();
+                    f(5, $map);',
+                'error_message' => 'InvalidArgument',
+            ],
+            'subtypeOfATemplatedClassInAnInvariantGenericParamIsInvalid' => [
+                'code' => '<?php
+                    /**
+                     * @template K
+                     * @template V
+                     */
+                    class Map {}
+
+                    /** @template T */
+                    class A {}
+
+                    /**
+                     * @template T
+                     * @extends A<T>
+                     */
+                    class ChildA extends A {}
+
+                    /**
+                     * @template T
+                     * @param Map<int, A<T>> $m
+                     * @return T
+                     */
+                    function f(Map $m) { throw new Exception(); }
+
+                    /** @var Map<int, ChildA<string>> $map */
+                    $map = new Map();
+                    f($map);',
+                'error_message' => 'InvalidArgument - src' . DIRECTORY_SEPARATOR . 'somefile.php:26:23 - Argument 1 of f expects Map<int, A<string>>, but Map<int, ChildA<string>> provided',
             ],
         ];
     }
