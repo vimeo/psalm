@@ -90,6 +90,7 @@ use function count;
 use function explode;
 use function in_array;
 use function is_int;
+use function ksort;
 use function min;
 use function strlen;
 use function strpos;
@@ -2456,6 +2457,80 @@ final class SimpleAssertionReconciler extends Reconciler
     }
 
     /**
+     * The values of a sealed array shape that are lists, or null if none is: a list has the keys 0 to n - 1, so a key
+     * after a gap is absent (`array{0?: string, 2?: int, a?: int}` is `[]` or a list of one string), and a key before
+     * a set one is set (`array{0?: string, 1: int}` is `list{string, int}`)
+     *
+     * @return TKeyedArray|TArray|null the empty array when `[]` is the only one
+     * @psalm-pure
+     */
+    private static function getListOfSealedShape(TKeyedArray $shape, bool $non_empty): TKeyedArray|TArray|null
+    {
+        if ($shape->fallback_params !== null || $shape->is_list) {
+            return null;
+        }
+
+        $properties = [];
+        $last_required_key = $non_empty ? 0 : -1;
+
+        $int_properties = [];
+        $previous_required_key = -1;
+
+        foreach ($shape->properties as $key => $property) {
+            if (is_int($key)) {
+                if (!$property->possibly_undefined) {
+                    // keys that are always set keep their order: `[1 => 0, 0 => 1]` is not a list
+                    if ($key < $previous_required_key) {
+                        return null;
+                    }
+
+                    $previous_required_key = $key;
+                }
+
+                $int_properties[$key] = $property;
+            } elseif (!$property->possibly_undefined) {
+                return null;
+            }
+        }
+
+        // `array{1?: int, 0: string}` is a list too: an optional key may be set after the others, so the keys count
+        // in numeric order. A key that is not the next one of a list has to be absent
+        ksort($int_properties);
+
+        foreach ($int_properties as $key => $property) {
+            if ($key !== count($properties)) {
+                if (!$property->possibly_undefined) {
+                    return null;
+                }
+
+                continue;
+            }
+
+            $properties[$key] = $property;
+
+            if (!$property->possibly_undefined) {
+                $last_required_key = $key;
+            }
+        }
+
+        if ($last_required_key >= count($properties)) {
+            return null;
+        }
+
+        if ($properties === []) {
+            return Type::getEmptyArrayAtomic();
+        }
+
+        foreach ($properties as $key => $property) {
+            if ($key < $last_required_key) {
+                $properties[$key] = $property->setPossiblyUndefined(false);
+            }
+        }
+
+        return TKeyedArray::make($properties, null, null, true);
+    }
+
+    /**
      * @psalm-pure
      */
     private static function getKeyedArrayAsList(TKeyedArray $keyed_array): TKeyedArray|TArray
@@ -2519,6 +2594,11 @@ final class SimpleAssertionReconciler extends Reconciler
                 } else {
                     $array_types[] = $type;
                 }
+            } elseif ($type instanceof TKeyedArray
+                && ($list_of_shape = self::getListOfSealedShape($type, $is_non_empty)) !== null
+            ) {
+                $array_types[] = $list_of_shape;
+                $redundant = false;
             } elseif ($type instanceof TArray
                 || ($type instanceof TKeyedArray && $type->fallback_params !== null)
             ) {

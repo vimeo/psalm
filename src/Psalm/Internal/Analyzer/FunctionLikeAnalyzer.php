@@ -1912,8 +1912,8 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
 
                     IssueBuffer::maybeAdd(
                         new MismatchingDocblockParamType(
-                            'Parameter ' . $function_param_id . ' has wrong type \'' . $param_type .
-                                '\', should be \'' . $signature_type . '\'',
+                            'Parameter ' . $function_param_id . ' has wrong type \'' . $param_type->getId() .
+                                '\', should be \'' . $signature_type->getId() . '\'',
                             $function_param->type_location,
                         ),
                         $storage->suppressed_issues,
