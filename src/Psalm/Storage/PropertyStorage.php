@@ -82,6 +82,9 @@ final class PropertyStorage implements HasAttributesInterface
 
     public bool $readonly = false;
 
+    /** Declared readonly, or in a readonly class */
+    public bool $native_readonly = false;
+
     /** Natively readonly with a declared default: from PHP 8.6 the default is its initialising assignment */
     public bool $readonly_default = false;
 

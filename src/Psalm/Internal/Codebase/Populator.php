@@ -1951,6 +1951,8 @@ final class Populator
             if ($documenting_property_storage === null
                 || $documenting_property_storage->type === null
                 || !($documenting_property_storage->has_docblock_type || $documenting_property_storage->inherited_type)
+                || $property_storage->is_static !== $documenting_property_storage->is_static
+                || $property_storage->native_readonly !== $documenting_property_storage->native_readonly
                 || !($property_storage->signature_type === null
                     ? $documenting_property_storage->signature_type === null
                     : $documenting_property_storage->signature_type !== null
