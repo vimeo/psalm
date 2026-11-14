@@ -2058,6 +2058,44 @@ final class ForeachTest extends TestCase
                 'ignored_issues' => [],
                 'php_version' => '8.0',
             ],
+            'mixedIteratedByForeachIsNonEmptyInTheBodyAndMixedAfterIt' => [
+                'code' => '<?php
+                    function getMixed(): mixed {
+                        return [];
+                    }
+
+                    $m = getMixed();
+                    $in_body = null;
+                    foreach ($m as $_val) {
+                        $in_body = $m;
+                    }
+
+                    $after = $m;',
+                'assertions' => [
+                    '$in_body===' => 'non-empty-mixed',
+                    '$after===' => 'mixed',
+                ],
+                'ignored_issues' => ['MixedAssignment', 'MixedArgument', 'PossiblyNullIterator', 'PossiblyInvalidIterator', 'MixedAssignment'],
+                'php_version' => '8.0',
+            ],
+            'propertyOfMixedTypeIteratedByForeachIsMixedAfterIt' => [
+                'code' => '<?php
+                    final class Holder {
+                        public mixed $items = null;
+
+                        public function check(): void {
+                            foreach ($this->items as $_item) {
+                            }
+
+                            if (empty($this->items)) {
+                                echo 1;
+                            }
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
             'mixedIteratedByForeachMayStillBeEmptyAfterIt' => [
                 'code' => '<?php
                     function check(mixed $vals): void {
