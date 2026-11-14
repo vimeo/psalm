@@ -14,15 +14,21 @@ use Psalm\Exception\UnpreparedAnalysisException;
 use Psalm\Internal\Analyzer\FileAnalyzer;
 use Psalm\Internal\Analyzer\Statements\ExpressionAnalyzer;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
+use Psalm\Internal\Codebase\CliOutput;
 use Psalm\Internal\DataFlow\DataFlowNode;
 use Psalm\Internal\Provider\NodeDataProvider;
+use Psalm\Internal\Type\Comparator\UnionTypeComparator;
 use Psalm\Issue\MissingFile;
 use Psalm\Issue\UnresolvableInclude;
 use Psalm\IssueBuffer;
 use Psalm\Plugin\EventHandler\Event\AddRemoveTaintsEvent;
+use Psalm\Type\Atomic;
+use Psalm\Type\Atomic\TNamedObject;
 use Psalm\Type\TaintKind;
+use Psalm\Type\Union;
 use Symfony\Component\Filesystem\Path;
 
+use function array_map;
 use function constant;
 use function defined;
 use function dirname;
@@ -163,6 +169,10 @@ final class IncludeAnalyzer
                 if ($config->ignore_include_side_effects) {
                     return true;
                 }
+
+                // the included code runs in the process of the code including it
+                $cli_only = CliOutput::isInCliOnlyCode($statements_analyzer, $context);
+
                 if ($statements_analyzer->hasParentFilePath($path_to_file)
                     || !$codebase->file_storage_provider->has($path_to_file)
                     || (
@@ -177,6 +187,8 @@ final class IncludeAnalyzer
                                     PhpParser\Node\Expr\Include_::TYPE_INCLUDE_ONCE,
                                     PhpParser\Node\Expr\Include_::TYPE_REQUIRE_ONCE,
                                 ])
+                                // its top-level code analyzed as command-line code may run outside of it from here
+                                && ($cli_only || !$current_file_analyzer->isRequiredOnlyFromCliOnlyCode($path_to_file))
                             )
                         )
                     )
@@ -187,7 +199,7 @@ final class IncludeAnalyzer
                     return true;
                 }
 
-                $current_file_analyzer->addRequiredFilePath($path_to_file);
+                $current_file_analyzer->addRequiredFilePath($path_to_file, $cli_only);
 
                 $file_name = $config->shortenFileName($path_to_file);
 
@@ -207,22 +219,44 @@ final class IncludeAnalyzer
                     $current_file_analyzer->getRootFileName(),
                 );
 
+                $include_file_analyzer->cli_only = $cli_only;
+
                 $include_file_analyzer->addParentFilePath($current_file_analyzer->getFilePath());
                 $include_file_analyzer->addRequiredFilePath($current_file_analyzer->getFilePath());
 
-                foreach ($current_file_analyzer->getRequiredFilePaths() as $required_file_path) {
-                    $include_file_analyzer->addRequiredFilePath($required_file_path);
+                foreach ($current_file_analyzer->getRequiredFilePaths() as $required_file_path => $from_cli_only_code) {
+                    $include_file_analyzer->addRequiredFilePath($required_file_path, $from_cli_only_code);
                 }
 
                 foreach ($current_file_analyzer->getParentFilePaths() as $parent_file_path) {
                     $include_file_analyzer->addParentFilePath($parent_file_path);
                 }
 
+                $this_type = $context->vars_in_scope['$this'] ?? null;
+
                 try {
                     $include_file_analyzer->analyze(
                         $context,
                         $global_context,
                     );
+
+                    // the included code can't make `$this` another object: what it checks about it narrows the type
+                    // (`$this instanceof Child`), anything else is not what `$this` is
+                    if ($this_type !== null
+                        && isset($context->vars_in_scope['$this'])
+                        && !UnionTypeComparator::isContainedBy(
+                            $codebase,
+                            $context->vars_in_scope['$this'],
+                            new Union(array_map(
+                                static fn(Atomic $atomic): Atomic => $atomic instanceof TNamedObject
+                                    ? $atomic->setIsStatic(false)
+                                    : $atomic,
+                                $this_type->getAtomicTypes(),
+                            )),
+                        )
+                    ) {
+                        $context->vars_in_scope['$this'] = $this_type;
+                    }
                 } catch (UnpreparedAnalysisException) {
                     if ($config->skip_checks_on_unresolvable_includes) {
                         $context->check_classes = false;
@@ -239,8 +273,8 @@ final class IncludeAnalyzer
 
                 $context->has_returned = false;
 
-                foreach ($include_file_analyzer->getRequiredFilePaths() as $required_file_path) {
-                    $current_file_analyzer->addRequiredFilePath($required_file_path);
+                foreach ($include_file_analyzer->getRequiredFilePaths() as $required_file_path => $from_cli_only_code) {
+                    $current_file_analyzer->addRequiredFilePath($required_file_path, $from_cli_only_code);
                 }
 
                 $include_file_analyzer->clearSourceBeforeDestruction();
@@ -252,7 +286,8 @@ final class IncludeAnalyzer
                 return true;
             }
 
-            $var_id = ExpressionIdentifier::getExtendedVarId($stmt->expr, null);
+            $var_id = ExpressionIdentifier::getExtendedVarId($stmt->expr, null)
+                ?? self::getConstantPhantomFileId($stmt->expr);
             if ($var_id && isset($context->phantom_files[$var_id])) {
                 return true;
             }
@@ -267,7 +302,8 @@ final class IncludeAnalyzer
                 $source->getSuppressedIssues(),
             );
         } else {
-            $var_id = ExpressionIdentifier::getExtendedVarId($stmt->expr, null);
+            $var_id = ExpressionIdentifier::getExtendedVarId($stmt->expr, null)
+                ?? self::getConstantPhantomFileId($stmt->expr);
 
             if (!$var_id || !isset($context->phantom_files[$var_id])) {
                 $source = $statements_analyzer->getSource();
@@ -404,7 +440,8 @@ final class IncludeAnalyzer
             $const_name = implode('', $stmt->name->getParts());
 
             if (defined($const_name)) {
-                $constant_value = constant($const_name);
+                // silenced, as reading a deprecated constant (ASSERT_ACTIVE) emits E_DEPRECATED
+                $constant_value = @constant($const_name);
 
                 if (is_string($constant_value)) {
                     return $constant_value;
@@ -484,5 +521,17 @@ final class IncludeAnalyzer
         }
 
         return $path_to_file;
+    }
+
+    /**
+     * The id under which a file named by a constant that file_exists() or is_file() checked is remembered
+     *
+     * @psalm-capabilities read-props
+     */
+    public static function getConstantPhantomFileId(PhpParser\Node\Expr $expr): ?string
+    {
+        return $expr instanceof PhpParser\Node\Expr\ConstFetch
+            ? 'const ' . $expr->name->toString()
+            : null;
     }
 }

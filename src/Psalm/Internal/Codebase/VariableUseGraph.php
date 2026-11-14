@@ -11,6 +11,7 @@ use Psalm\Internal\DataFlow\Path;
 
 use function abs;
 use function count;
+use function str_starts_with;
 
 /**
  * @internal
@@ -84,6 +85,24 @@ final class VariableUseGraph extends DataFlowGraph
 
         $this->backward_edges[$to_id][$from_id] = true;
         $this->forward_edges[$from_id][$to_id] = new Path($path_type, $length);
+    }
+
+    /**
+     * Whether the value assigned at $assignment_node is stored into an element of an array, which may itself be
+     * unused: `$array['key'] = $value;`. Removing the assignment would leave that store without its value.
+     *
+     * @psalm-capabilities read-props
+     */
+    public function isStoredIntoArrayElement(DataFlowNode $assignment_node): bool
+    {
+        foreach ($this->forward_edges[$assignment_node->id] ?? [] as $to_id => $path) {
+            // the array literal of `$y = [$x]` is a node of its own, the array of `$array[] = $x` a variable
+            if (str_starts_with($path->type, 'arrayvalue-assignment') && str_starts_with($to_id, '$')) {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     /**

@@ -7,22 +7,30 @@ namespace Psalm\Tests;
 use Override;
 use PHPUnit\Framework\Attributes\DataProvider;
 use Psalm\Config;
+use Psalm\Internal\Analyzer\IssueData;
 use Psalm\Internal\Analyzer\ProjectAnalyzer;
 use Psalm\Internal\IncludeCollector;
+use Psalm\Internal\LanguageServer\ClientConfiguration;
+use Psalm\Internal\LanguageServer\LanguageServer;
+use Psalm\Internal\LanguageServer\PathMapper;
+use Psalm\Internal\LanguageServer\Progress;
 use Psalm\Internal\Provider\ClassLikeStorageCacheProvider;
 use Psalm\Internal\Provider\FileReferenceCacheProvider;
 use Psalm\Internal\Provider\FileStorageCacheProvider;
 use Psalm\Internal\Provider\ParserCacheProvider;
 use Psalm\Internal\Provider\Providers;
+use Psalm\Internal\RuntimeCaches;
 use Psalm\IssueBuffer;
 use Psalm\Plugin\EventHandler\AfterCodebasePopulatedInterface;
 use Psalm\Plugin\EventHandler\Event\AfterCodebasePopulatedEvent;
 use Psalm\Report;
 use Psalm\Report\ReportOptions;
 use Psalm\Tests\Internal\Provider\ProjectCacheProvider;
+use Psalm\Tests\LanguageServer\MockProtocolStream;
 use Psalm\Tests\Progress\EchoProgress;
 use Psalm\Tests\TestConfig;
 
+use function array_map;
 use function get_class;
 use function getcwd;
 use function microtime;
@@ -35,7 +43,11 @@ use const DIRECTORY_SEPARATOR;
 
 final class ProjectCheckerTest extends DeferredAnalyzerTestCase
 {
+    private const AUTOLOAD_FILE_CLASS = 'Psalm\Tests\fixtures\ScanHookAndAutoloadFiles\ReachableFromAutoloadFile';
+
     protected ProjectAnalyzer $project_analyzer;
+
+    private static ?IncludeCollector $autoload_file_collector = null;
 
     #[Override]
     public static function setUpBeforeClass(): void
@@ -54,14 +66,7 @@ final class ProjectCheckerTest extends DeferredAnalyzerTestCase
         $config->setIncludeCollector(new IncludeCollector());
         $ret = new ProjectAnalyzer(
             $config,
-            new Providers(
-                $this->file_provider,
-                new ParserCacheProvider($config, '', false),
-                new FileStorageCacheProvider($config, '', false),
-                new ClassLikeStorageCacheProvider($config, '', false),
-                new FileReferenceCacheProvider($config, '', false),
-                new ProjectCacheProvider(),
-            ),
+            $this->getInMemoryProviders($config),
             new ReportOptions(),
         );
         if ($init_files) {
@@ -69,6 +74,174 @@ final class ProjectCheckerTest extends DeferredAnalyzerTestCase
             $ret->initExtraFiles();
         }
         return $ret;
+    }
+
+    /**
+     * The include collector of a run whose Composer autoloader required a file that is the only reference
+     * to a class. A file required again is no new include, so every test shares the first collector.
+     */
+    private static function getIncludeCollectorWithAutoloadFile(): IncludeCollector
+    {
+        if (self::$autoload_file_collector === null) {
+            self::$autoload_file_collector = new IncludeCollector();
+            self::$autoload_file_collector->runAndCollect(static function (): void {
+                require __DIR__ . '/fixtures/ScanHookAndAutoloadFiles/autoload_file.php';
+            });
+        }
+
+        return self::$autoload_file_collector;
+    }
+
+    private static function getConfigWithScanHookPlugin(): Config
+    {
+        $config = Config::loadFromXML(
+            (string) getcwd(),
+            '<?xml version="1.0"?>
+            <psalm>
+                <projectFiles>
+                    <directory name="tests/fixtures/DummyProject" />
+                </projectFiles>
+                <plugins>
+                    <pluginClass class="Psalm\Tests\fixtures\ScanHookAndAutoloadFiles\ScanHookPlugin" />
+                </plugins>
+            </psalm>',
+        );
+        $config->setIncludeCollector(self::getIncludeCollectorWithAutoloadFile());
+
+        return $config;
+    }
+
+    private function getProjectAnalyzerWithScanHookPlugin(?Providers $providers = null): ProjectAnalyzer
+    {
+        $config = self::getConfigWithScanHookPlugin();
+        $project_analyzer = new ProjectAnalyzer(
+            $config,
+            $providers ?? $this->getInMemoryProviders($config),
+            new ReportOptions(),
+        );
+        $project_analyzer->initProjectFiles();
+        $project_analyzer->initExtraFiles();
+
+        return $project_analyzer;
+    }
+
+    private function getInMemoryProviders(Config $config): Providers
+    {
+        return new Providers(
+            $this->file_provider,
+            new ParserCacheProvider($config, '', false),
+            new FileStorageCacheProvider($config, '', false),
+            new ClassLikeStorageCacheProvider($config, '', false),
+            new FileReferenceCacheProvider($config, '', false),
+            new ProjectCacheProvider(),
+        );
+    }
+
+    /**
+     * @psalm-capabilities read-props
+     */
+    private static function isSeenByScanHook(ProjectAnalyzer $project_analyzer, string $fq_class_name): bool
+    {
+        return isset(
+            $project_analyzer->getCodebase()->classlike_storage_provider->get($fq_class_name)
+                ->custom_metadata['seen_by_scan_hook'],
+        );
+    }
+
+    #[DataProvider('autoloadFileEntryPointProvider')]
+    public function testScanHooksSeeClassesReachableOnlyFromAutoloadFiles(string $entry_point): void
+    {
+        $this->project_analyzer = $this->getProjectAnalyzerWithScanHookPlugin();
+
+        ob_start();
+        match ($entry_point) {
+            'check' => $this->project_analyzer->check('tests/fixtures/DummyProject'),
+            'checkPaths' => $this->project_analyzer->checkPaths([
+                (string) realpath((string) getcwd() . '/tests/fixtures/DummyProject'),
+            ]),
+            'serverMode' => $this->project_analyzer->serverMode(new LanguageServer(
+                new MockProtocolStream(),
+                new MockProtocolStream(),
+                $this->project_analyzer,
+                $this->project_analyzer->getCodebase(),
+                new ClientConfiguration(),
+                new Progress(),
+                new PathMapper((string) getcwd(), (string) getcwd()),
+            )),
+        };
+        ob_end_clean();
+
+        $this->assertTrue(self::isSeenByScanHook($this->project_analyzer, self::AUTOLOAD_FILE_CLASS));
+    }
+
+    /**
+     * @return iterable<string, array{string}>
+     * @psalm-pure
+     */
+    public static function autoloadFileEntryPointProvider(): iterable
+    {
+        yield 'check' => ['check'];
+        yield 'checkPaths' => ['checkPaths'];
+        yield 'serverMode' => ['serverMode'];
+    }
+
+    public function testFullRunDoesNotDependOnWhichRunWroteTheCache(): void
+    {
+        $shared_providers = $this->getInMemoryProviders(self::getConfigWithScanHookPlugin());
+
+        ob_start();
+        $this->getProjectAnalyzerWithScanHookPlugin($shared_providers)->checkPaths([
+            (string) realpath((string) getcwd() . '/tests/fixtures/DummyProject'),
+        ]);
+
+        // each run starts like a new process, with only the cache kept
+        RuntimeCaches::clearAll();
+        $project_analyzer = $this->getProjectAnalyzerWithScanHookPlugin($shared_providers);
+        $project_analyzer->check('tests/fixtures/DummyProject');
+        $with_cache_of_paths_run = self::isSeenByScanHook($project_analyzer, self::AUTOLOAD_FILE_CLASS);
+
+        RuntimeCaches::clearAll();
+        $project_analyzer = $this->getProjectAnalyzerWithScanHookPlugin();
+        $project_analyzer->check('tests/fixtures/DummyProject');
+        $with_new_cache = self::isSeenByScanHook($project_analyzer, self::AUTOLOAD_FILE_CLASS);
+        ob_end_clean();
+
+        $this->assertSame(
+            ['with the cache of a run with paths' => true, 'with a new cache' => true],
+            ['with the cache of a run with paths' => $with_cache_of_paths_run, 'with a new cache' => $with_new_cache],
+        );
+    }
+
+    public function testDiffRunInitializesPlugins(): void
+    {
+        $providers = $this->getInMemoryProviders(self::getConfigWithScanHookPlugin());
+
+        $this->project_analyzer = $this->getProjectAnalyzerWithScanHookPlugin($providers);
+        ob_start();
+        $this->project_analyzer->check('tests/fixtures/DummyProject', true);
+        IssueBuffer::finish($this->project_analyzer, true, microtime(true));
+        ob_end_clean();
+
+        $this->file_provider->registerFile(
+            (string) realpath((string) getcwd() . '/tests/fixtures/DummyProject/Bat.php'),
+            '<?php
+
+namespace Vimeo\Test\DummyProject;
+
+final class Bat
+{
+}
+',
+        );
+
+        RuntimeCaches::clearAll();
+        $this->project_analyzer = $this->getProjectAnalyzerWithScanHookPlugin($providers);
+        ob_start();
+        $this->project_analyzer->check('tests/fixtures/DummyProject', true);
+        ob_end_clean();
+
+        $this->assertTrue($this->project_analyzer->getCodebase()->diff_run);
+        $this->assertTrue(self::isSeenByScanHook($this->project_analyzer, 'Vimeo\Test\DummyProject\Bat'));
     }
 
     public function testCheckFileReportsIssueWithoutInitialisedProjectFiles(): void
@@ -154,6 +327,99 @@ function checkDirRegression(): int
         $this->project_analyzer->checkDir($dir_path);
 
         $this->assertGreaterThan(0, IssueBuffer::getErrorCount());
+    }
+
+    public function testCanReportIssuesWithoutCheckMethod(): void
+    {
+        // A tool that embeds Psalm and drives the analysis itself never calls a check method,
+        // so nothing narrows the reportable files to the ones being checked.
+        $this->project_analyzer = $this->getProjectAnalyzerWithConfig(
+            Config::loadFromXML(
+                (string)getcwd(),
+                '<?xml version="1.0"?>
+                <psalm>
+                    <projectFiles>
+                        <directory name="tests/fixtures/DummyProject" />
+                    </projectFiles>
+                </psalm>',
+            ),
+            false,
+        );
+
+        $project_dir = (string) getcwd()
+            . DIRECTORY_SEPARATOR . 'tests'
+            . DIRECTORY_SEPARATOR . 'fixtures'
+            . DIRECTORY_SEPARATOR . 'DummyProject';
+
+        $this->assertTrue($this->project_analyzer->canReportIssues($project_dir . DIRECTORY_SEPARATOR . 'Bar.php'));
+        $this->assertFalse($this->project_analyzer->canReportIssues((string) getcwd() . DIRECTORY_SEPARATOR . 'psalm'));
+    }
+
+    public function testIssuesInAnAnalyzedFileOutsideTheProjectAreReportedOnceItIsReportable(): void
+    {
+        $this->project_analyzer = $this->getProjectAnalyzerWithConfig(
+            Config::loadFromXML(
+                (string)getcwd(),
+                '<?xml version="1.0"?>
+                <psalm>
+                    <projectFiles>
+                        <directory name="tests/fixtures/DummyProject" />
+                    </projectFiles>
+                </psalm>',
+            ),
+        );
+        $this->project_analyzer->setPhpVersion('8.1', 'tests');
+
+        // a plugin compiles a template to PHP outside the project and has it analyzed
+        $compiled_view = (string) getcwd() . DIRECTORY_SEPARATOR . 'tests' . DIRECTORY_SEPARATOR . 'CompiledView.php';
+        $this->file_provider->registerFile($compiled_view, '<?php
+            function orderTotal(): int {
+                return "total";
+            }');
+
+        $codebase = $this->project_analyzer->getCodebase();
+        $codebase->addFilesToAnalyze([$compiled_view => $compiled_view]);
+        $codebase->addReportableFiles([$compiled_view]);
+
+        $this->project_analyzer->check('tests/fixtures/DummyProject');
+
+        $this->assertSame(
+            ['InvalidReturnStatement', 'InvalidReturnType'],
+            array_map(
+                static fn(IssueData $issue): string => $issue->type,
+                IssueBuffer::getIssuesDataForFile($compiled_view),
+            ),
+        );
+    }
+
+    public function testReportableFileIsNotAnalyzed(): void
+    {
+        $this->project_analyzer = $this->getProjectAnalyzerWithConfig(
+            Config::loadFromXML(
+                (string)getcwd(),
+                '<?xml version="1.0"?>
+                <psalm>
+                    <projectFiles>
+                        <directory name="tests/fixtures/DummyProject" />
+                    </projectFiles>
+                </psalm>',
+            ),
+        );
+        $this->project_analyzer->setPhpVersion('8.1', 'tests');
+
+        // a template: issues are reported in it, but it is not PHP to analyze
+        $template = (string) getcwd() . DIRECTORY_SEPARATOR . 'tests' . DIRECTORY_SEPARATOR . 'order.blade.php';
+        $this->file_provider->registerFile($template, '<?php
+            function orderTotal(): int {
+                return "total";
+            }');
+
+        $this->project_analyzer->getCodebase()->addReportableFiles([$template]);
+
+        $this->project_analyzer->check('tests/fixtures/DummyProject');
+
+        $this->assertTrue($this->project_analyzer->canReportIssues($template));
+        $this->assertSame([], IssueBuffer::getIssuesDataForFile($template));
     }
 
     public function testCheck(): void

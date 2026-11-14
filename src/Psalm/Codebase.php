@@ -38,6 +38,7 @@ use Psalm\Internal\Codebase\CodeUseGraph;
 use Psalm\Internal\Codebase\Functions;
 use Psalm\Internal\Codebase\InternalCallMapHandler;
 use Psalm\Internal\Codebase\Methods;
+use Psalm\Internal\Codebase\MixinLookup;
 use Psalm\Internal\Codebase\Populator;
 use Psalm\Internal\Codebase\Properties;
 use Psalm\Internal\Codebase\Reflection;
@@ -307,6 +308,11 @@ final class Codebase
     public bool $track_unused_suppressions = false;
 
     public bool $literal_array_key_check = false;
+
+    /**
+     * @var array<string, true>
+     */
+    private array $reportable_files = [];
 
     /** @internal */
     public int $taint_count = TaintKind::BUILTIN_TAINT_COUNT;
@@ -876,6 +882,7 @@ final class Codebase
         $this->file_reference_provider->loadReferenceCache(false);
 
         FunctionLikeAnalyzer::clearCache();
+        $project_analyzer->clearStatementsForMutations();
 
         if ($force || !$this->statements_provider->parser_cache_provider) {
             $diff_files = $candidate_files;
@@ -993,6 +1000,32 @@ final class Codebase
     {
         $this->scanner->addFilesToDeepScan($files_to_analyze);
         $this->analyzer->addFilesToAnalyze($files_to_analyze);
+    }
+
+    /**
+     * Lets Psalm report issues in these files without scanning or analyzing them, e.g. in the template a plugin
+     * compiled the analyzed PHP from. An issue is checked in the process that raises it: files added in an
+     * AfterCodebasePopulated handler are reportable in every analysis worker, files added in a BeforeAddIssue
+     * handler only in the process that runs it.
+     *
+     * @api
+     * @param list<string> $file_paths absolute paths
+     * @psalm-capabilities read-props|write-this-props|write-refs
+     */
+    public function addReportableFiles(array $file_paths): void
+    {
+        foreach ($file_paths as $file_path) {
+            $this->reportable_files[$file_path] = true;
+        }
+    }
+
+    /**
+     * @internal
+     * @psalm-mutation-free
+     */
+    public function isReportableFile(string $file_path): bool
+    {
+        return isset($this->reportable_files[$file_path]);
     }
 
     /**
@@ -2464,18 +2497,46 @@ final class Codebase
                     }
 
                     if ($gap === '->') {
-                        foreach ($class_storage->namedMixins as $mixin) {
-                            if (in_array($mixin->value, $ignore_fq_class_names)) {
-                                continue;
+                        // members of the mixins of the class, its traits and parent classes, in lookup order; a member
+                        // already listed is not added again
+                        $ignore_fq_class_names = [$type_string, ...$ignore_fq_class_names];
+                        $member_keys = [];
+
+                        foreach ($completion_items as $completion_item) {
+                            $member_keys[$completion_item->kind . ' ' . $completion_item->label] = true;
+                        }
+
+                        foreach (MixinLookup::getScopes(
+                            $this->classlike_storage_provider,
+                            $this->classlikes,
+                            $class_storage,
+                        ) as $scope) {
+                            foreach ($scope->getMixins() as $mixin) {
+                                if (!$mixin instanceof TNamedObject
+                                    || in_array($mixin->value, $ignore_fq_class_names)
+                                ) {
+                                    continue;
+                                }
+
+                                $ignore_fq_class_names[] = $mixin->value;
+
+                                $mixin_completion_items = $this->getCompletionItemsForClassishThing(
+                                    $mixin->value,
+                                    $gap,
+                                    $snippets_supported,
+                                    [ClassLikeAnalyzer::VISIBILITY_PUBLIC],
+                                    $ignore_fq_class_names,
+                                );
+
+                                foreach ($mixin_completion_items as $completion_item) {
+                                    $member_key = $completion_item->kind . ' ' . $completion_item->label;
+
+                                    if (!isset($member_keys[$member_key])) {
+                                        $member_keys[$member_key] = true;
+                                        $completion_items[] = $completion_item;
+                                    }
+                                }
                             }
-                            $mixin_completion_items = $this->getCompletionItemsForClassishThing(
-                                $mixin->value,
-                                $gap,
-                                $snippets_supported,
-                                [ClassLikeAnalyzer::VISIBILITY_PUBLIC],
-                                [$type_string, ...$ignore_fq_class_names],
-                            );
-                            $completion_items = [...$completion_items, ...$mixin_completion_items];
                         }
                     }
                 } catch (Exception $e) {

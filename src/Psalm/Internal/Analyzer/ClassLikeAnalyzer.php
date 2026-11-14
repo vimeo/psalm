@@ -11,6 +11,7 @@ use Psalm\Aliases;
 use Psalm\CodeLocation;
 use Psalm\Codebase;
 use Psalm\Context;
+use Psalm\Internal\Codebase\MixinLookup;
 use Psalm\Internal\FileManipulation\FileManipulationBuffer;
 use Psalm\Internal\MethodIdentifier;
 use Psalm\Internal\Provider\NodeDataProvider;
@@ -20,6 +21,8 @@ use Psalm\Internal\Type\TemplateDefaults;
 use Psalm\Internal\Type\TemplateResult;
 use Psalm\Internal\Type\TemplateStandinTypeReplacer;
 use Psalm\Internal\Type\TypeExpander;
+use Psalm\Internal\TypeVisitor\ContainsClassLikeVisitor;
+use Psalm\Internal\TypeVisitor\ContainsStaticVisitor;
 use Psalm\Issue\InaccessibleProperty;
 use Psalm\Issue\InvalidClass;
 use Psalm\Issue\InvalidTemplateParam;
@@ -37,6 +40,7 @@ use Psalm\Storage\Capabilities;
 use Psalm\Storage\ClassLikeStorage;
 use Psalm\Storage\PropertyStorage;
 use Psalm\Type;
+use Psalm\Type\Atomic\TNamedObject;
 use Psalm\Type\Atomic\TTemplateParam;
 use Psalm\Type\Union;
 use UnexpectedValueException;
@@ -192,6 +196,9 @@ abstract class ClassLikeAnalyzer extends SourceAnalyzer
             new MethodIdentifier($context->self ?: $this->fq_class_name, strtolower($method_name)),
         );
         $actual_method_name = $called_method_id !== null ? $called_method_id->method_name : $method_name;
+
+        // what the caller established about its own variables says nothing about the method's
+        $context->clauses = [];
 
         foreach ($this->class->stmts as $stmt) {
             if ($stmt instanceof PhpParser\Node\Stmt\ClassMethod &&
@@ -855,6 +862,86 @@ abstract class ClassLikeAnalyzer extends SourceAnalyzer
             $storage->name,
             $suppressed_issues,
         );
+    }
+
+    /**
+     * Reports the `@mixin`s of the class-like naming undefined classes or with invalid type arguments. A trait's
+     * mixins referring to `self` or `static` are checked for each class using the trait, where they mean that class.
+     *
+     * @param array<string> $suppressed_issues
+     */
+    protected static function checkMixins(
+        StatementsSource $source,
+        ClassLikeStorage $storage,
+        CodeLocation $code_location,
+        array $suppressed_issues,
+    ): void {
+        $codebase = $source->getCodebase();
+        $mixins = [];
+
+        foreach ($storage->getMixins() as $mixin) {
+            if (!$storage->is_trait || !self::refersToTheClassUsingTheTrait($mixin, $storage)) {
+                $mixins[] = $mixin;
+            }
+        }
+
+        if (!$storage->is_trait && !$storage->is_interface) {
+            $scopes = MixinLookup::getScopes($codebase->classlike_storage_provider, $codebase->classlikes, $storage);
+
+            foreach ($scopes as $scope) {
+                if ($scope === $storage) {
+                    continue;
+                }
+
+                // the traits of the class come first, then its parent class
+                if (!$scope->is_trait) {
+                    break;
+                }
+
+                foreach ($scope->getMixins() as $mixin) {
+                    if (self::refersToTheClassUsingTheTrait($mixin, $scope)) {
+                        $mixins[] = $mixin->replaceClassLike($scope->name, $storage->name);
+                    }
+                }
+            }
+        }
+
+        if (!$mixins) {
+            return;
+        }
+
+        $union = TypeExpander::expandUnion(
+            $codebase,
+            new Union($mixins),
+            $storage->name,
+            new TNamedObject($storage->name, true),
+            $storage->parent_class,
+        );
+
+        /** @psalm-suppress UnusedMethodCall This call actually has the side effect of creating issues */
+        $union->check($source, $code_location, $suppressed_issues);
+    }
+
+    /**
+     * A trait's `self` is resolved to the trait itself when its docblock is scanned.
+     *
+     * @psalm-capabilities read-props
+     */
+    private static function refersToTheClassUsingTheTrait(
+        TNamedObject|TTemplateParam $mixin,
+        ClassLikeStorage $trait_storage,
+    ): bool {
+        $static_visitor = new ContainsStaticVisitor();
+        $static_visitor->traverse($mixin);
+
+        if ($static_visitor->matches()) {
+            return true;
+        }
+
+        $self_visitor = new ContainsClassLikeVisitor(strtolower($trait_storage->name));
+        $self_visitor->traverse($mixin);
+
+        return $self_visitor->matches();
     }
 
     protected function checkTemplateParams(
