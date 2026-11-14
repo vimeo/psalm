@@ -1178,8 +1178,11 @@ final class ClassLikeNodeScanner
                 $property_storage = $classlike_storage->properties[$property_name] ??= new PropertyStorage();
 
                 // Stubs are curated by hand and win over the map, like they do over the CallMap.
-                // The map still corrects real sources (e.g. vendored php-parser nodes).
-                $property_type = $classlike_storage->stubbed ? $property_storage->type : null;
+                // The map still corrects real sources (e.g. vendored php-parser nodes) and types merely
+                // inferred from the constructor, which have no type location.
+                $is_declared_by_stub = $classlike_storage->stubbed
+                    && ($property_storage->type_location !== null || $property_storage->is_promoted);
+                $property_type = $is_declared_by_stub ? $property_storage->type : null;
 
                 if ($property_type === null) {
                     $property_type = Type::parseString($public_mapped_property);

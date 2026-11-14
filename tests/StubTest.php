@@ -1489,6 +1489,43 @@ final class StubTest extends DeferredAnalyzerTestCase
         $this->analyzeFile($file_path, new Context());
     }
 
+    public function testPropertyTypeInferredFromStubConstructorDoesNotWinOverPropertyMap(): void
+    {
+        $this->setUpWithStubFile('tests/fixtures/stubs/constructor_inferred_property_of_mapped_class.phpstub', '8.4');
+
+        $file_path = (string) getcwd() . '/src/somefile.php';
+
+        $this->addFile(
+            $file_path,
+            '<?php
+                function tokenPos(PhpToken $t): int
+                {
+                    return $t->pos;
+                }',
+        );
+
+        $this->analyzeFile($file_path, new Context());
+    }
+
+    public function testStubPromotedPropertyWithOnlyVarDocblockWinsOverPropertyMap(): void
+    {
+        $this->setUpWithStubFile('tests/fixtures/stubs/promoted_var_property_of_mapped_class.phpstub', '8.4');
+
+        $file_path = (string) getcwd() . '/src/somefile.php';
+
+        $this->addFile(
+            $file_path,
+            '<?php
+                /** @return non-empty-string */
+                function tokenText(PhpToken $t): string
+                {
+                    return $t->text;
+                }',
+        );
+
+        $this->analyzeFile($file_path, new Context());
+    }
+
     public function testStubPropertyNativeTypeWinsOverPropertyMap(): void
     {
         $this->expectException(CodeException::class);
