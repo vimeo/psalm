@@ -604,6 +604,7 @@ final class Context
         array $block_nodes,
     ): void {
         $rebindings = [];
+        $was_reference = [];
 
         foreach ($this->references_in_scope as $reference_id => $referenced_id) {
             foreach ([$reference_id, $referenced_id] as $var_id) {
@@ -613,6 +614,8 @@ final class Context
                     && ($rebinding = self::findReferenceRebinding($block_nodes, $var_id)) !== null
                 ) {
                     $rebindings[$var_id] = $rebinding;
+                    $was_reference[$var_id] = isset($this->references_in_scope[$var_id])
+                        || isset($this->references_to_external_scope[$var_id]);
                 }
             }
         }
@@ -638,9 +641,11 @@ final class Context
         }
 
         foreach ($rebindings as $var_id => $rebinding) {
-            $this->references_possibly_from_confusing_scope[$var_id] ??=
-                $statements_analyzer->getFirstAppearance($var_id)
-                ?? new CodeLocation($statements_analyzer, $rebinding);
+            // a variable that was a reference before the block is used as one after it
+            if (!$was_reference[$var_id]) {
+                $this->references_possibly_from_confusing_scope[$var_id] ??=
+                    new CodeLocation($statements_analyzer, $rebinding);
+            }
         }
     }
 

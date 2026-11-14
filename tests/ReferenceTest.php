@@ -704,6 +704,109 @@ final class ReferenceTest extends TestCase
                 'ignored_issues' => ['MixedArrayAccess'],
                 'php_version' => '8.0',
             ],
+            'referenceThatWasOneBeforeTheLoopIsReboundAndUsedInTheLoop' => [
+                'code' => '<?php
+                    /** @param list<string> $chunks */
+                    function encode(array $chunks, int $max): string {
+                        $lines = [];
+                        $lNo = 0;
+                        $lines[$lNo] = "";
+                        $currentLine = &$lines[$lNo++];
+                        $lineLen = 0;
+                        foreach ($chunks as $enc) {
+                            if ($lineLen + strlen($enc) >= $max) {
+                                $lines[$lNo] = "";
+                                $currentLine = &$lines[$lNo++];
+                                $lineLen = 0;
+                            }
+                            $currentLine .= $enc;
+                            $lineLen += strlen($enc);
+                        }
+                        return implode("=\r\n", $lines);
+                    }',
+                'assertions' => [],
+                'ignored_issues' => ['UnsupportedReferenceUsage'],
+                'php_version' => '8.0',
+            ],
+            'referenceThatWasOneBeforeTheIfIsReboundToTheSameTargetInBothBranches' => [
+                'code' => '<?php
+                    /** @param array<string, int> $a */
+                    function both(array &$a, bool $c): void {
+                        $r = &$a["x"];
+                        if ($c) {
+                            $r = &$a["y"];
+                        } else {
+                            $r = &$a["y"];
+                        }
+                        $r = 5;
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'referenceReboundToAnItemInATryDoesNotWriteToTheArrayItWasBoundTo' => [
+                'code' => '<?php
+                    /** @param array<string, mixed> $data */
+                    function set(array &$data, string $key, string $value): void {
+                        $cursor = &$data;
+
+                        try {
+                            $cursor = &$cursor[$key];
+                            $cursor = $value;
+                        } catch (Exception $e) {
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'referenceReboundToAnItemInATernaryDoesNotWriteToTheArrayItWasBoundTo' => [
+                'code' => '<?php
+                    /** @param array<string, mixed> $data */
+                    function set(array &$data, string $key, string $value, bool $nested): void {
+                        $cursor = &$data;
+                        $nested ? $cursor = &$cursor[$key] : null;
+                        $cursor = $value;
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'referenceThatWasOneBeforeTheLoopIsReboundAndWrittenToAfterIt' => [
+                'code' => '<?php
+                    /**
+                     * @param array<string, mixed> $data
+                     * @param list<string> $path
+                     */
+                    function set(array &$data, array $path, string $value): void {
+                        $cursor = &$data;
+
+                        foreach ($path as $key) {
+                            $cursor = &$cursor[$key];
+                        }
+
+                        $cursor = $value;
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'referenceThatWasOneBeforeTheIfIsReboundAndWrittenToAfterIt' => [
+                'code' => '<?php
+                    /** @param array<string, mixed> $data */
+                    function set(array &$data, string $key, string $value, bool $nested): void {
+                        $cursor = &$data;
+
+                        if ($nested) {
+                            $cursor = &$cursor[$key];
+                        }
+
+                        $cursor = $value;
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
             'referenceReboundToAnItemInAnIfDoesNotWriteToTheArrayItWasBoundTo' => [
                 'code' => '<?php
                     /** @param array<string, mixed> $data */
@@ -1136,37 +1239,6 @@ final class ReferenceTest extends TestCase
 
                     $var = "foo";
                 ',
-                'error_message' => 'ReferenceReusedFromConfusingScope',
-            ],
-            'referenceReboundInALoopIsReusedAfterIt' => [
-                'code' => '<?php
-                    /**
-                     * @param array<string, mixed> $data
-                     * @param list<string> $path
-                     */
-                    function set(array &$data, array $path, string $value): void {
-                        $cursor = &$data;
-
-                        foreach ($path as $key) {
-                            $cursor = &$cursor[$key];
-                        }
-
-                        $cursor = $value;
-                    }',
-                'error_message' => 'ReferenceReusedFromConfusingScope',
-            ],
-            'referenceReboundInAnIfIsReusedAfterIt' => [
-                'code' => '<?php
-                    /** @param array<string, mixed> $data */
-                    function set(array &$data, string $key, string $value, bool $nested): void {
-                        $cursor = &$data;
-
-                        if ($nested) {
-                            $cursor = &$cursor[$key];
-                        }
-
-                        $cursor = $value;
-                    }',
                 'error_message' => 'ReferenceReusedFromConfusingScope',
             ],
             'referenceReuseDeclaredInElseif' => [
