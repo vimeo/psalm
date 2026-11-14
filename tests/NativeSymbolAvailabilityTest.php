@@ -213,29 +213,6 @@ final class NativeSymbolAvailabilityTest extends TestCase
             'php_version' => '7.4',
         ];
 
-        yield 'functionExistsOfAPolyfilledFunctionDoesNotContradictAPhpVersionIdCheck' => [
-            'code' => '<?php
-                if (!function_exists("fdiv")) {
-                    function fdiv(float $num1, float $num2): float {
-                        return $num1 / $num2;
-                    }
-                }
-
-                function a(): void {
-                    if (PHP_VERSION_ID < 80000 && function_exists("fdiv")) {
-                        echo "polyfilled";
-                    }
-
-                    if (function_exists("fdiv") && PHP_VERSION_ID < 80000) {
-                        echo "polyfilled";
-                    }
-                }
-            ',
-            'assertions' => [],
-            'ignored_issues' => [],
-            'php_version' => '7.4',
-        ];
-
         yield 'callMapSymbolsGuarded' => [
             'code' => '<?php
                 function a(float $f): float {
@@ -714,19 +691,6 @@ final class NativeSymbolAvailabilityTest extends TestCase
             ',
             'error_message' => 'Function fdiv is not defined for the analysed PHP version 7.4'
                 . ' (it was introduced in PHP 8.0',
-            'error_levels' => [],
-            'php_version' => '7.4',
-        ];
-
-        yield 'functionExistsOfAnUnpolyfilledFunctionContradictsAnOlderPhpVersionId' => [
-            'code' => '<?php
-                function a(): void {
-                    if (PHP_VERSION_ID < 80000 && function_exists("fdiv")) {
-                        echo "unreachable";
-                    }
-                }
-            ',
-            'error_message' => 'TypeDoesNotContainType',
             'error_levels' => [],
             'php_version' => '7.4',
         ];

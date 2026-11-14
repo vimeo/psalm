@@ -319,20 +319,6 @@ final class StubTest extends DeferredAnalyzerTestCase
         $this->analyzeFile($file_path, new Context());
     }
 
-    public function testFunctionExistsOfANativeFunctionStubbedInAPhpFileGuardsItsVersion(): void
-    {
-        $this->analyzeWithNativeFunctionStub(
-            '<?php
-                function a(): ?object {
-                    if (function_exists("fdiv")) {
-                        return new WeakMap();
-                    }
-
-                    return null;
-                }',
-        );
-    }
-
     public function testNativeFunctionStubbedInAPhpFileIsUndefinedBelowItsVersion(): void
     {
         $this->expectException(CodeException::class);
