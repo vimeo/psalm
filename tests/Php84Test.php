@@ -31,7 +31,7 @@ final class Php84Test extends TestCase
                 'assertions' => [
                     '$realInstance' => 'Foo',
                 ],
-                'ignored_issues' => ['UnusedVariable'],
+                'ignored_issues' => [],
                 'php_version' => '8.4',
             ],
             'markLazyObjectAsInitialized' => [
@@ -43,7 +43,7 @@ final class Php84Test extends TestCase
                 'assertions' => [
                     '$lazyProxyReturned' => 'Foo',
                 ],
-                'ignored_issues' => ['UnusedVariable'],
+                'ignored_issues' => [],
                 'php_version' => '8.4',
             ],
             'newLazyGhost' => [
@@ -54,7 +54,7 @@ final class Php84Test extends TestCase
                 'assertions' => [
                     '$lazyGhost' => 'Foo',
                 ],
-                'ignored_issues' => ['UnusedVariable'],
+                'ignored_issues' => [],
                 'php_version' => '8.4',
             ],
             'newLazyProxy' => [
@@ -65,7 +65,7 @@ final class Php84Test extends TestCase
                 'assertions' => [
                     '$lazyProxy' => 'Foo',
                 ],
-                'ignored_issues' => ['UnusedVariable'],
+                'ignored_issues' => [],
                 'php_version' => '8.4',
             ],
             'propertyHook' => [

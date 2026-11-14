@@ -7,6 +7,7 @@ namespace Psalm\Tests;
 use Override;
 use PHPUnit\Framework\Attributes\DataProvider;
 use Psalm\Config;
+use Psalm\Internal\Analyzer\IssueData;
 use Psalm\Internal\Analyzer\ProjectAnalyzer;
 use Psalm\Internal\IncludeCollector;
 use Psalm\Internal\LanguageServer\ClientConfiguration;
@@ -29,6 +30,7 @@ use Psalm\Tests\LanguageServer\MockProtocolStream;
 use Psalm\Tests\Progress\EchoProgress;
 use Psalm\Tests\TestConfig;
 
+use function array_map;
 use function get_class;
 use function getcwd;
 use function microtime;
@@ -325,6 +327,141 @@ function checkDirRegression(): int
         $this->project_analyzer->checkDir($dir_path);
 
         $this->assertGreaterThan(0, IssueBuffer::getErrorCount());
+    }
+
+    public function testCanReportIssuesWithoutCheckMethod(): void
+    {
+        // A tool that embeds Psalm and drives the analysis itself never calls a check method,
+        // so nothing narrows the reportable files to the ones being checked.
+        $this->project_analyzer = $this->getProjectAnalyzerWithConfig(
+            Config::loadFromXML(
+                (string)getcwd(),
+                '<?xml version="1.0"?>
+                <psalm>
+                    <projectFiles>
+                        <directory name="tests/fixtures/DummyProject" />
+                    </projectFiles>
+                </psalm>',
+            ),
+            false,
+        );
+
+        $project_dir = (string) getcwd()
+            . DIRECTORY_SEPARATOR . 'tests'
+            . DIRECTORY_SEPARATOR . 'fixtures'
+            . DIRECTORY_SEPARATOR . 'DummyProject';
+
+        $this->assertTrue($this->project_analyzer->canReportIssues($project_dir . DIRECTORY_SEPARATOR . 'Bar.php'));
+        $this->assertFalse($this->project_analyzer->canReportIssues((string) getcwd() . DIRECTORY_SEPARATOR . 'psalm'));
+    }
+
+    public function testReportableFilesWithoutCheckMethod(): void
+    {
+        $this->project_analyzer = $this->getProjectAnalyzerWithConfig(
+            Config::loadFromXML(
+                (string)getcwd(),
+                '<?xml version="1.0"?>
+                <psalm>
+                    <projectFiles>
+                        <directory name="tests/fixtures/DummyProject" />
+                        <ignoreFiles>
+                            <directory name="tests/fixtures/stubs" />
+                        </ignoreFiles>
+                    </projectFiles>
+                </psalm>',
+            ),
+            false,
+        );
+        $config = $this->project_analyzer->getConfig();
+        $codebase = $this->project_analyzer->getCodebase();
+
+        $tests_dir = (string) getcwd() . DIRECTORY_SEPARATOR . 'tests' . DIRECTORY_SEPARATOR;
+        $order = $tests_dir . 'order.blade.php';
+        $invoice = $tests_dir . 'invoice.blade.php';
+        $ignored = $tests_dir . 'fixtures' . DIRECTORY_SEPARATOR . 'stubs' . DIRECTORY_SEPARATOR . 'cart.blade.php';
+
+        $codebase->addReportableFiles([$order]);
+        $codebase->addReportableFiles([$invoice, $ignored]);
+
+        $this->assertTrue($this->project_analyzer->canReportIssues($order));
+        $this->assertTrue($this->project_analyzer->canReportIssues($invoice));
+        $this->assertFalse($this->project_analyzer->canReportIssues($tests_dir . 'receipt.blade.php'));
+        $this->assertFalse($config->reportIssueInFile('InvalidReturnType', $ignored));
+    }
+
+    public function testIssuesInAnAnalyzedFileOutsideTheProjectAreReportedOnceItIsReportable(): void
+    {
+        $this->project_analyzer = $this->getProjectAnalyzerWithConfig(
+            Config::loadFromXML(
+                (string)getcwd(),
+                '<?xml version="1.0"?>
+                <psalm>
+                    <projectFiles>
+                        <directory name="tests/fixtures/DummyProject" />
+                    </projectFiles>
+                </psalm>',
+            ),
+        );
+        $this->project_analyzer->setPhpVersion('8.1', 'tests');
+
+        // a plugin compiles templates to PHP outside the project and has them analyzed
+        $tests_dir = (string) getcwd() . DIRECTORY_SEPARATOR . 'tests' . DIRECTORY_SEPARATOR;
+        $compiled_view = $tests_dir . 'CompiledView.php';
+        $other_compiled_view = $tests_dir . 'OtherCompiledView.php';
+        $this->file_provider->registerFile($compiled_view, '<?php
+            function orderTotal(): int {
+                return "total";
+            }');
+        $this->file_provider->registerFile($other_compiled_view, '<?php
+            function invoiceTotal(): int {
+                return "total";
+            }');
+
+        $codebase = $this->project_analyzer->getCodebase();
+        $codebase->addFilesToAnalyze([$compiled_view => $compiled_view, $other_compiled_view => $other_compiled_view]);
+        $codebase->addReportableFiles([$compiled_view]);
+
+        $this->project_analyzer->check('tests/fixtures/DummyProject');
+
+        $this->assertSame(
+            ['InvalidReturnStatement', 'InvalidReturnType'],
+            array_map(
+                static fn(IssueData $issue): string => $issue->type,
+                IssueBuffer::getIssuesDataForFile($compiled_view),
+            ),
+        );
+        $this->assertSame([], IssueBuffer::getIssuesDataForFile($other_compiled_view));
+    }
+
+    public function testReportableFileIsNotAnalyzed(): void
+    {
+        $this->project_analyzer = $this->getProjectAnalyzerWithConfig(
+            Config::loadFromXML(
+                (string)getcwd(),
+                '<?xml version="1.0"?>
+                <psalm>
+                    <projectFiles>
+                        <directory name="tests/fixtures/DummyProject" />
+                    </projectFiles>
+                </psalm>',
+            ),
+        );
+        $this->project_analyzer->setPhpVersion('8.1', 'tests');
+
+        // a template: issues are reported in it, but it is not PHP to analyze
+        $template = (string) getcwd() . DIRECTORY_SEPARATOR . 'tests' . DIRECTORY_SEPARATOR . 'order.blade.php';
+        $this->file_provider->registerFile($template, '<?php
+            function orderTotal(): int {
+                return "total";
+            }');
+
+        $this->project_analyzer->getCodebase()->addReportableFiles([$template]);
+
+        $this->project_analyzer->check('tests/fixtures/DummyProject');
+
+        $this->assertTrue($this->project_analyzer->canReportIssues($template));
+        $this->assertFalse($this->project_analyzer->getCodebase()->file_storage_provider->has($template));
+        $this->assertSame([], IssueBuffer::getIssuesDataForFile($template));
     }
 
     public function testCheck(): void
