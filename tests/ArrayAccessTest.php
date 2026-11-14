@@ -877,6 +877,27 @@ final class ArrayAccessTest extends TestCase
                 'ignored_issues' => [],
                 'php_version' => '8.1',
             ],
+            'destructureArrayAccessExpandsOffsetGetType' => [
+                'code' => '<?php
+                    /** @implements ArrayAccess<int, int> */
+                    final class Bag implements ArrayAccess {
+                        const VALUE = 1;
+                        public function offsetExists(mixed $offset): bool { return true; }
+                        /** @return self::VALUE */
+                        public function offsetGet(mixed $offset): int { return self::VALUE; }
+                        public function offsetSet(mixed $offset, mixed $value): void {}
+                        public function offsetUnset(mixed $offset): void {}
+                    }
+
+                    [$x] = new Bag();
+                    $y = (new Bag())->offsetGet(0);',
+                'assertions' => [
+                    '$x===' => '1',
+                    '$y===' => '1',
+                ],
+                'ignored_issues' => ['MissingOverrideAttribute'],
+                'php_version' => '8.0',
+            ],
             'allowEmptyList' => [
                 'code' => '<?php
                     function test(): void {

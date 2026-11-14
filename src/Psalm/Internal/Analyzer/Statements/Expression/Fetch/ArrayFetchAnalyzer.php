@@ -2527,22 +2527,33 @@ final class ArrayFetchAnalyzer
             $statements_analyzer,
         ) ?? Type::getMixed();
 
+        $class_storage = $codebase->classlike_storage_provider->get($type->value);
         $class_template_params = ClassTemplateParamCollector::collect(
             $codebase,
             $codebase->methods->getClassLikeStorageForMethod($get_method_id),
-            $codebase->classlike_storage_provider->get($type->value),
+            $class_storage,
             'offsetget',
             $type,
         );
 
-        if ($class_template_params === null) {
-            return $return_type;
+        if ($class_template_params !== null) {
+            $return_type = TemplateInferredTypeReplacer::replace(
+                $return_type,
+                new TemplateResult([], $class_template_params),
+                $codebase,
+            );
         }
 
-        return TemplateInferredTypeReplacer::replace(
-            $return_type,
-            new TemplateResult([], $class_template_params),
+        return TypeExpander::expandUnion(
             $codebase,
+            $return_type,
+            $self_class,
+            $type,
+            $class_storage->parent_class,
+            true,
+            false,
+            $class_storage->final,
+            true,
         );
     }
 
