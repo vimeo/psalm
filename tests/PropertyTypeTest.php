@@ -4025,6 +4025,204 @@ final class PropertyTypeTest extends TestCase
                 'ignored_issues' => [],
                 'php_version' => '8.4',
             ],
+            'nullsafeFetchOfANonNullablePropertyChecksTheReceiver' => [
+                'code' => '<?php
+                    final class T {}
+
+                    final class U {
+                        public function __construct(public T $valueType) {}
+                    }
+
+                    final class N {
+                        public ?U $unsealed = null;
+                    }
+
+                    function truthy(N $n): bool {
+                        if ($n->unsealed?->valueType) {
+                            return get_class($n->unsealed->valueType) === T::class;
+                        }
+
+                        return false;
+                    }
+
+                    function notNull(N $n): bool {
+                        if ($n->unsealed?->valueType !== null) {
+                            return get_class($n->unsealed->valueType) === T::class;
+                        }
+
+                        return false;
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'nullsafeFetchOfANonNullablePropertyOfATemplateReceiverChecksTheReceiver' => [
+                'code' => '<?php
+                    final class U {
+                        public string $s = "";
+                    }
+
+                    /**
+                     * @template T of U
+                     * @param T|null $u
+                     */
+                    function check($u): bool {
+                        if ($u?->s !== null) {
+                            return strlen($u->s) > 0;
+                        }
+
+                        return false;
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'nullsafeChainNotNullNarrowsEveryReceiver' => [
+                'code' => '<?php
+                    final class B {
+                        public ?string $value = null;
+                    }
+
+                    final class A {
+                        public ?B $b = null;
+                    }
+
+                    final class Root {
+                        public ?A $a = null;
+                    }
+
+                    function t(Root $r): void {
+                        if ($r->a?->b?->value !== null) {
+                            echo strlen($r->a->b->value);
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'nullsafeChainIdenticalToNullNarrowsEveryReceiverOutsideTheCheck' => [
+                'code' => '<?php
+                    final class B {
+                        public ?string $value = null;
+                    }
+
+                    final class A {
+                        public ?B $b = null;
+                    }
+
+                    final class Root {
+                        public ?A $a = null;
+                    }
+
+                    function afterReturn(Root $r): void {
+                        if ($r->a?->b?->value === null) {
+                            return;
+                        }
+
+                        echo strlen($r->a->b->value);
+                    }
+
+                    function inElse(Root $r): void {
+                        if ($r->a?->b?->value === null) {
+                            echo 1;
+                        } else {
+                            echo strlen($r->a->b->value);
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'nullsafeFetchOfANonNullablePropertyIdenticalToNullChecksTheReceiver' => [
+                'code' => '<?php
+                    final class T {}
+
+                    final class U {
+                        public function __construct(public T $valueType) {}
+                    }
+
+                    final class N {
+                        public ?U $unsealed = null;
+                    }
+
+                    function identical(N $n): bool {
+                        if ($n->unsealed?->valueType === null) {
+                            return false;
+                        }
+
+                        return get_class($n->unsealed->valueType) === T::class;
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'nullsafePropertyNotNullNarrowsTheReceiver' => [
+                'code' => '<?php
+                    final class B { public ?string $value = null; }
+                    final class A { public ?B $b = null; }
+                    /** @var A $a */
+                    $a = $_GET["a"];
+                    if ($a->b?->value !== null) {
+                        $x = $a->b->value;
+                    } else {
+                        $x = "";
+                    }',
+                'assertions' => [
+                    '$x===' => 'string',
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'nullsafePropertyNotNullNarrowsTheNullsafeFetch' => [
+                'code' => '<?php
+                    final class B { public ?string $value = null; }
+                    final class A { public ?B $b = null; }
+                    /** @var A $a */
+                    $a = $_GET["a"];
+                    if ($a->b?->value !== null) {
+                        $x = $a->b?->value;
+                    } else {
+                        $x = "";
+                    }',
+                'assertions' => [
+                    '$x===' => 'string',
+                ],
+                'ignored_issues' => ['TypeDoesNotContainNull', 'RedundantCondition'],
+                'php_version' => '8.0',
+            ],
+            'nullsafePropertyTruthyNarrowsTheReceiver' => [
+                'code' => '<?php
+                    final class B { public ?string $value = null; }
+                    final class A { public ?B $b = null; }
+                    /** @var A $a */
+                    $a = $_GET["a"];
+                    if ($a->b?->value) {
+                        $x = $a->b;
+                    } else {
+                        $x = new B();
+                    }',
+                'assertions' => [
+                    '$x===' => 'B',
+                ],
+                'ignored_issues' => ['RiskyTruthyFalsyComparison'],
+                'php_version' => '8.0',
+            ],
+            'nullsafePropertyStaysNullableOutsideTheCheck' => [
+                'code' => '<?php
+                    final class B { public ?string $value = null; }
+                    final class A { public ?B $b = null; }
+                    /** @var A $a */
+                    $a = $_GET["a"];
+                    if ($a->b?->value !== null) {
+                        echo "set";
+                    }
+                    $x = $a->b?->value;',
+                'assertions' => [
+                    '$x===' => 'null|string',
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
             'inheritedConstructorCallingAMethodReturningStaticInAFinalChild' => [
                 'code' => '<?php
                     abstract class Base
@@ -5858,6 +6056,66 @@ final class PropertyTypeTest extends TestCase
                     }
                 PHP,
                 'error_message' => 'MissingConstructor',
+            ],
+            'nullsafePropertyIdenticalToNullDoesNotNarrowTheReceiverInTheBranch' => [
+                'code' => '<?php
+                    final class B {
+                        public ?string $value = null;
+                        public function m(): int { return 1; }
+                    }
+
+                    final class A {
+                        public ?B $b = null;
+                    }
+
+                    function t(A $a): void {
+                        if ($a->b?->value === null) {
+                            echo $a->b->value;
+                        }
+                    }',
+                'error_message' => 'PossiblyNullPropertyFetch',
+                'error_levels' => [],
+                'php_version' => '8.0',
+            ],
+            'nullsafePropertyLooselyEqualToNullDoesNotNarrowTheReceiverInTheBranch' => [
+                'code' => '<?php
+                    final class B {
+                        public ?string $value = null;
+                        public function m(): int { return 1; }
+                    }
+
+                    final class A {
+                        public ?B $b = null;
+                    }
+
+                    function t(A $a): void {
+                        if ($a->b?->value == null) {
+                            echo $a->b->value;
+                        }
+                    }',
+                'error_message' => 'PossiblyNullPropertyFetch',
+                'error_levels' => [],
+                'php_version' => '8.0',
+            ],
+            'nullsafePropertyNotIssetDoesNotNarrowTheReceiverInTheBranch' => [
+                'code' => '<?php
+                    final class B {
+                        public ?string $value = null;
+                        public function m(): int { return 1; }
+                    }
+
+                    final class A {
+                        public ?B $b = null;
+                    }
+
+                    function t(A $a): void {
+                        if (!isset($a->b?->value)) {
+                            echo $a->b->value;
+                        }
+                    }',
+                'error_message' => 'PossiblyNullPropertyFetch',
+                'error_levels' => [],
+                'php_version' => '8.0',
             ],
             'notSetWhenTheChildOverridesTheMethodOfAParentClass' => [
                 'code' => '<?php

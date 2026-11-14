@@ -223,6 +223,12 @@ final class AssertionFinder
             ) {
                 return [$if_types];
             }
+        } elseif ($conditional instanceof PhpParser\Node\Expr\NullsafePropertyFetch) {
+            $if_types = self::getNullsafeAssertions($conditional, new Truthy(), $this_class_name, $source);
+
+            if ($if_types) {
+                return [$if_types];
+            }
         }
 
         if ($conditional instanceof PhpParser\Node\Expr\BooleanNot) {
@@ -2195,6 +2201,124 @@ final class AssertionFinder
     }
 
     /**
+     * What a non-null (or truthy) `$a?->b?->value` says: the fetch is that way, and so is every receiver of the chain
+     * (`$a?->b` and `$a`). A null one says nothing about the receivers, so no assertion is made for it.
+     *
+     * @return array<string, non-empty-list<non-empty-list<Assertion>>>
+     */
+    private static function getNullsafeAssertions(
+        PhpParser\Node\Expr\NullsafePropertyFetch $expr,
+        Assertion $assertion,
+        ?string $this_class_name,
+        FileSource $source,
+    ): array {
+        $if_types = [];
+
+        $property_id = self::getNullsafeChainVarId($expr, $this_class_name, $source);
+
+        // a property that can't be null (or falsy) says nothing: it is the receiver that was checked
+        $property_type = self::getNullsafePropertyType($expr, $source);
+
+        if ($property_id !== null
+            && ($property_type === null
+                || ($assertion instanceof Truthy ? !$property_type->isAlwaysTruthy() : $property_type->isNullable()))
+        ) {
+            $if_types[$property_id] = [[$assertion]];
+        }
+
+        $receiver = $expr;
+
+        while ($receiver instanceof PhpParser\Node\Expr\NullsafePropertyFetch) {
+            $receiver = $receiver->var;
+            $receiver_id = self::getNullsafeChainVarId($receiver, $this_class_name, $source);
+
+            if ($receiver_id !== null) {
+                $if_types[$receiver_id] = [[new IsNotType(new TNull())]];
+            }
+        }
+
+        return $if_types;
+    }
+
+    /**
+     * The declared type of the property a nullsafe fetch reads, or null when it isn't known for every class the
+     * receiver may be
+     */
+    public static function getNullsafePropertyType(
+        PhpParser\Node\Expr\NullsafePropertyFetch $expr,
+        FileSource $source,
+    ): ?Union {
+        if (!$source instanceof StatementsAnalyzer || !$expr->name instanceof PhpParser\Node\Identifier) {
+            return null;
+        }
+
+        $receiver_type = $source->getNodeTypeProvider()->getType($expr->var);
+
+        if ($receiver_type === null) {
+            return null;
+        }
+
+        $codebase = $source->getCodebase();
+        $property_types = [];
+
+        $receiver_atomic_types = [];
+
+        foreach ($receiver_type->getAtomicTypes() as $atomic_type) {
+            // a template stands for the types it is bounded by
+            $receiver_atomic_types = [
+                ...$receiver_atomic_types,
+                ...($atomic_type instanceof TTemplateParam ? $atomic_type->as->getAtomicTypes() : [$atomic_type]),
+            ];
+        }
+
+        foreach ($receiver_atomic_types as $atomic_type) {
+            if ($atomic_type instanceof TNull) {
+                continue;
+            }
+
+            if (!$atomic_type instanceof TNamedObject || !$codebase->classExists($atomic_type->value)) {
+                return null;
+            }
+
+            $storage = $codebase->classlike_storage_provider->get($atomic_type->value);
+            $declaring_class = $storage->declaring_property_ids[$expr->name->name] ?? null;
+            $property_type = $declaring_class === null
+                ? null
+                : $codebase->classlike_storage_provider->get($declaring_class)->properties[$expr->name->name]->type
+                    ?? null;
+
+            if ($property_type === null || $property_type->hasMixed() || $property_type->hasTemplate()) {
+                return null;
+            }
+
+            $property_types[] = $property_type;
+        }
+
+        return $property_types === [] ? null : Type::combineUnionTypeArray($property_types, $codebase);
+    }
+
+    /**
+     * The id of a chain of properties, `$a?->b` counting as `$a->b`
+     */
+    private static function getNullsafeChainVarId(
+        PhpParser\Node\Expr $expr,
+        ?string $this_class_name,
+        FileSource $source,
+    ): ?string {
+        if (!$expr instanceof PhpParser\Node\Expr\NullsafePropertyFetch) {
+            return ExpressionIdentifier::getExtendedVarId($expr, $this_class_name, $source);
+        }
+
+        if (!$expr->name instanceof PhpParser\Node\Identifier) {
+            return null;
+        }
+
+        $object_id = self::getNullsafeChainVarId($expr->var, $this_class_name, $source);
+
+        return $object_id === null ? null : $object_id . '->' . $expr->name->name;
+    }
+
+    /**
      * @param PhpParser\Node\Expr\BinaryOp\NotIdentical|PhpParser\Node\Expr\BinaryOp\NotEqual $conditional
      * @return list<non-empty-array<string, non-empty-list<non-empty-list<Assertion>>>>
      */
@@ -2231,6 +2355,15 @@ final class AssertionFinder
             } else {
                 $if_types[$var_name] = [[new Truthy()]];
             }
+        } elseif ($base_conditional instanceof PhpParser\Node\Expr\NullsafePropertyFetch) {
+            $if_types = self::getNullsafeAssertions(
+                $base_conditional,
+                $conditional instanceof PhpParser\Node\Expr\BinaryOp\NotIdentical
+                    ? new IsNotType(new TNull())
+                    : new Truthy(),
+                $this_class_name,
+                $source,
+            );
         }
 
         if ($codebase
