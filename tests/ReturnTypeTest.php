@@ -1550,7 +1550,7 @@ final class ReturnTypeTest extends TestCase
                     $obj = (object)returnsInt();
                 ',
                 'assertions' => [
-                    '$obj' => 'object{scalar:int}',
+                    '$obj' => 'object{scalar:int}&stdClass',
                 ],
             ],
             'infersObjectShapeOfCastArray' => [
@@ -1565,7 +1565,7 @@ final class ReturnTypeTest extends TestCase
                     $obj = (object)returnsArray();
                 ',
                 'assertions' => [
-                    '$obj' => 'object{a:int}',
+                    '$obj' => 'object{a:int}&stdClass',
                 ],
             ],
             'mixedAssignmentWithUnderscore' => [
@@ -2339,6 +2339,118 @@ final class ReturnTypeTest extends TestCase
                     }',
                 'assertions' => [],
             ],
+            'objectCastOfAShapedArrayKeepsItsProperties' => [
+                'code' => '<?php
+                    /**
+                     * @return object{a: int}
+                     */
+                    function test(): object {
+                        return (object) ["a" => 1];
+                    }',
+            ],
+            'objectCastOfAShapedArrayOrAScalarIsAStdClass' => [
+                'code' => '<?php
+                    /** @var array{a: int}|int $values */
+                    $values = 1;
+                    $object = (object) $values;',
+                'assertions' => [
+                    '$object' => 'stdClass',
+                ],
+            ],
+            'objectCastOfAShapedArrayOrNullIsAStdClass' => [
+                'code' => '<?php
+                    /** @var array{a: int}|null $values */
+                    $values = null;
+                    $object = (object) $values;',
+                'assertions' => [
+                    '$object===' => 'stdClass',
+                ],
+            ],
+            'objectCastOfAShapedArrayIsAnArgumentOfItsClassAndOfObject' => [
+                'code' => '<?php
+                    function takesStdClass(stdClass $o): void {}
+                    function takesObject(object $o): void {}
+                    /** @param object{a: int} $o */
+                    function takesShape($o): void {}
+                    /**
+                     * @template T of object
+                     * @param T $o
+                     * @return T
+                     */
+                    function identity($o) {
+                        return $o;
+                    }
+
+                    $o = (object) ["a" => 1];
+                    takesStdClass($o);
+                    takesObject($o);
+                    takesShape($o);
+                    $same = identity($o);',
+                'assertions' => [
+                    '$same===' => 'object{a:1}&stdClass',
+                ],
+            ],
+            'objectCastOfAnUnshapedArrayIsAStdClass' => [
+                'code' => '<?php
+                    /** @param array<string, mixed> $values */
+                    function f(array $values): stdClass {
+                        return (object) $values;
+                    }
+
+                    function g(array $values): stdClass {
+                        return (object) $values;
+                    }
+
+                    /** @param list<int> $values */
+                    function h(array $values): stdClass {
+                        return (object) $values;
+                    }
+
+                    function i(?array $values): stdClass {
+                        return (object) $values;
+                    }
+
+                    function j(): stdClass {
+                        return (object) [];
+                    }
+
+                    function k(): stdClass {
+                        return (object) null;
+                    }',
+            ],
+            'objectCastOfAnArrayOrAnObjectIsAnObject' => [
+                'code' => '<?php
+                    /** @param array<string, int>|object $value */
+                    function f($value): void {
+                        $object = (object) $value;
+                    }
+
+                    /** @var mixed $mixed */
+                    $mixed = 1;
+                    $object = (object) $mixed;',
+                'assertions' => [
+                    '$object===' => 'object',
+                ],
+            ],
+            'objectCastOfAnInlineArrayInAnArrayFilterCallback' => [
+                'code' => '<?php
+                    $e = array_filter([(object) ["a" => 1], null], fn($i) => $i);',
+                'assertions' => [
+                    '$e===' => 'array<int<0, 1>, object{a:1}&stdClass>',
+                ],
+            ],
+            'objectCastOfAScalarIsAStdClass' => [
+                'code' => '<?php
+                    function fromInt(): stdClass {
+                        return (object) 1;
+                    }',
+            ],
+            'objectCastOfAShapedArrayIsAStdClass' => [
+                'code' => '<?php
+                    function test(): stdClass {
+                        return (object) ["string" => "string"];
+                    }',
+            ],
             'finalClassOverridesAGenericStaticReturnType' => [
                 'code' => <<<'PHP'
                     <?php
@@ -2415,6 +2527,13 @@ final class ReturnTypeTest extends TestCase
     public static function providerInvalidCodeParse(): iterable
     {
         return [
+            'objectCastOfAnArrayIsNotAnotherClass' => [
+                'code' => '<?php
+                    function takesArrayObject(ArrayObject $o): void {}
+
+                    takesArrayObject((object) ["a" => 1]);',
+                'error_message' => 'ArgumentTypeCoercion',
+            ],
             'switchWithADefaultInTheMiddleThatFallsThroughIntoACaseThatDoesNotEnd' => [
                 'code' => '<?php
                     function classify(int $x): int {

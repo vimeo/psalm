@@ -402,7 +402,7 @@ final class ArrayFunctionCallTest extends TestCase
                         }
                     );',
                 'assertions' => [
-                    '$e' => 'array<int<0, 1>, object>',
+                    '$e' => 'array<int<0, 1>, stdClass>',
                 ],
             ],
             'arrayFilterStringCallable' => [
