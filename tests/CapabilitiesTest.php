@@ -4491,7 +4491,6 @@ final class CapabilitiesTest extends TestCase
 
                     /**
                      * @psalm-pure
-                     * @psalm-suppress UndefinedMagicPropertyFetch, UndefinedThisPropertyFetch
                      */
                     function get(Magic $m): int {
                         return $m->foo;
@@ -5109,6 +5108,23 @@ final class CapabilitiesTest extends TestCase
                         return $a;
                     }',
                 'error_message' => 'ImpureMethodCall - src' . DIRECTORY_SEPARATOR . 'somefile.php:8:25 - The context is pure but destroying the old value of $a (Guard::__destruct) requires',
+            ],
+            'rebindingAReferenceRunsTheOldValuesDestructor' => [
+                'code' => '<?php
+                    final class Guard {
+                        public function __destruct() { echo "released"; }
+                    }
+
+                    /** @psalm-pure */
+                    function &borrowText(string &$value): string {
+                        return $value;
+                    }
+
+                    /** @psalm-pure */
+                    function rebind(Guard $guard, string $value): void {
+                        $guard = &borrowText($value);
+                    }',
+                'error_message' => 'destroying the old value of $guard (Guard::__destruct) requires',
             ],
             'aVariableReassignedInALoopRunsTheDestructorOfThePreviousValue' => [
                 'code' => '<?php

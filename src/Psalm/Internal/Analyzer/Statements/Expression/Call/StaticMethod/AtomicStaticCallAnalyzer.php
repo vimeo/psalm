@@ -21,6 +21,7 @@ use Psalm\Internal\Analyzer\Statements\Expression\Call\ClassTemplateParamCollect
 use Psalm\Internal\Analyzer\Statements\Expression\Call\Method\MethodCallPurityAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\Call\Method\MethodCallReturnTypeFetcher;
 use Psalm\Internal\Analyzer\Statements\Expression\Call\Method\MethodVisibilityAnalyzer;
+use Psalm\Internal\Analyzer\Statements\Expression\Call\Method\MissingMethodCallHandler;
 use Psalm\Internal\Analyzer\Statements\Expression\Call\MethodCallAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\Call\NewAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\Call\StaticCallAnalyzer;
@@ -52,6 +53,7 @@ use Psalm\Type\Atomic\TClosure;
 use Psalm\Type\Atomic\TDependentGetClass;
 use Psalm\Type\Atomic\TGenericObject;
 use Psalm\Type\Atomic\TLiteralClassString;
+use Psalm\Type\Atomic\TLiteralString;
 use Psalm\Type\Atomic\TMixed;
 use Psalm\Type\Atomic\TNamedObject;
 use Psalm\Type\Atomic\TNull;
@@ -62,10 +64,12 @@ use Psalm\Type\Atomic\TTemplateParam;
 use Psalm\Type\Union;
 
 use function array_filter;
+use function array_reverse;
 use function array_values;
 use function assert;
 use function count;
 use function in_array;
+use function ltrim;
 use function strtolower;
 
 /**
@@ -86,6 +90,17 @@ final class AtomicStaticCallAnalyzer
         bool &$args_analyzed,
         ?TemplateResult $inferred_template_result = null,
     ): void {
+        // A literal class name is not just an opaque string when the option allows it.
+        // Analyze the actual target so method existence, visibility and arguments are checked.
+        if ($lhs_type_part::class === TLiteralString::class
+            && $statements_analyzer->getCodebase()->config->allow_string_standin_for_class
+        ) {
+            $class_name = ltrim($lhs_type_part->value, '\\');
+            if ($statements_analyzer->getCodebase()->classlike_storage_provider->has($class_name)) {
+                $lhs_type_part = new TLiteralClassString($class_name);
+            }
+        }
+
         $intersection_types = [];
 
         if ($lhs_type_part instanceof TNamedObject) {
@@ -283,6 +298,7 @@ final class AtomicStaticCallAnalyzer
                                 $codebase,
                                 $declaring_method_id,
                                 $codebase->methods->getStorage($declaring_method_id),
+                                $statements_analyzer,
                             );
                             $self_fq_class_name = $stmt->class instanceof PhpParser\Node\Name
                                 && $stmt->class->getParts() === ['parent']
@@ -436,7 +452,8 @@ final class AtomicStaticCallAnalyzer
             && $class_storage->mixin_declaring_fqcln
             && $class_storage->namedMixins
         ) {
-            foreach ($class_storage->getNamedMixinsForLookup() as $mixin) {
+            // the first mixin with the method is the one called, so the nearest comes first
+            foreach (array_reverse($class_storage->getNamedMixinsForLookup()) as $mixin) {
                 $new_method_id = new MethodIdentifier(
                     $mixin->value,
                     $method_name_lc,
@@ -461,10 +478,8 @@ final class AtomicStaticCallAnalyzer
                         $mixin_candidates[] = $mixin_candidate;
                     }
 
-                    // Forward to the declared mixins only: each resolves its own transitive chain.
-                    foreach ($class_storage->namedMixins as $mixin_candidate) {
-                        $mixin_candidates[] = $mixin_candidate;
-                    }
+                    // Forward to the declared mixin that has the method: it resolves its own transitive chain.
+                    $mixin_candidates[] = $mixin;
 
                     $mixin_candidates_no_generic = array_filter(
                         $mixin_candidates,
@@ -483,7 +498,7 @@ final class AtomicStaticCallAnalyzer
                         }
 
                         $mixin_declaring_class_storage = $codebase->classlike_storage_provider->get(
-                            $class_storage->mixin_declaring_fqcln,
+                            $class_storage->getNamedMixinDeclaringClass($tGenericMixin),
                         );
 
                         $new_mixin_candidate_type = AtomicPropertyFetchAnalyzer::localizePropertyType(
@@ -1068,14 +1083,23 @@ final class AtomicStaticCallAnalyzer
         Context $context,
         ?int $magic_method_capabilities,
     ): ?bool {
+        $codebase = $statements_analyzer->getCodebase();
+
+        $pseudo_method_storage = MissingMethodCallHandler::selectOverload(
+            $statements_analyzer,
+            $codebase,
+            $args,
+            $context,
+            $class_storage->pseudo_static_method_overloads[$method_id->method_name] ?? null,
+            $pseudo_method_storage,
+        );
+
         if (!$context->isSuppressingExceptions($statements_analyzer)) {
             $context->mergeFunctionExceptions(
                 $pseudo_method_storage,
                 new CodeLocation($statements_analyzer, $stmt),
             );
         }
-
-        $codebase = $statements_analyzer->getCodebase();
 
         $declaring_method_id = $class_storage->declaring_pseudo_static_method_ids[$method_id->method_name] ?? null;
         $declaring_class_storage = $declaring_method_id
