@@ -240,8 +240,21 @@ final class ArrayColumnReturnTypeProvider implements FunctionReturnTypeProviderI
                 $codebase = $statements_source->getCodebase();
                 $invalid_key_types = self::getTypesThatCannotBeKeys($codebase, $key_column_type);
 
-                if ($invalid_key_types !== []) {
-                    $all_invalid = count($invalid_key_types) === count($key_column_type->getAtomicTypes());
+                // array_column() skips the rows without the value column before it reads their index
+                if ($value_column_name_is_null) {
+                    $rows_may_be_skipped = false;
+                    $rows_are_all_skipped = false;
+                } elseif (null !== $value_column_name && isset($row_shape->properties[$value_column_name])) {
+                    $rows_may_be_skipped = $row_shape->properties[$value_column_name]->possibly_undefined;
+                    $rows_are_all_skipped = false;
+                } else {
+                    $rows_may_be_skipped = true;
+                    $rows_are_all_skipped = null !== $value_column_name && $row_shape->fallback_params === null;
+                }
+
+                if ($invalid_key_types !== [] && !$rows_are_all_skipped) {
+                    $all_invalid = !$rows_may_be_skipped
+                        && count($invalid_key_types) === count($key_column_type->getAtomicTypes());
 
                     IssueBuffer::maybeAdd(
                         $all_invalid

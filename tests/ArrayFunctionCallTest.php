@@ -8,10 +8,14 @@ use Override;
 use Psalm\Config;
 use Psalm\Context;
 use Psalm\Exception\CodeException;
+use Psalm\Internal\Analyzer\IssueData;
+use Psalm\IssueBuffer;
 use Psalm\Tests\Traits\InvalidCodeAnalysisTestTrait;
 use Psalm\Tests\Traits\ValidCodeAnalysisTestTrait;
 
+use function array_map;
 use function function_exists;
+use function sort;
 
 use const DIRECTORY_SEPARATOR;
 use const PHP_VERSION_ID;
@@ -91,6 +95,36 @@ final class ArrayFunctionCallTest extends TestCase
         );
 
         $this->analyzeFile('somefile.php', new Context());
+    }
+
+    public function testArrayColumnIndexColumnOfAStringableObjectReportsEveryIssueSincePhp8(): void
+    {
+        $this->project_analyzer->getConfig()->throw_exception = false;
+        $this->project_analyzer->setPhpVersion('8.0', 'tests');
+
+        $file_path = self::$src_dir_path . 'somefile.php';
+
+        $this->addFile(
+            $file_path,
+            '<?php
+                final class S {
+                    public function __toString(): string {
+                        return "k";
+                    }
+                }
+
+                $result = array_column([[new S, 1]], 1, 0);',
+        );
+
+        $this->analyzeFile($file_path, new Context());
+
+        $issues = array_map(
+            static fn(IssueData $issue): string => $issue->type . ' ' . $issue->line_from . ':' . $issue->column_from,
+            IssueBuffer::getIssuesDataForFile($file_path),
+        );
+        sort($issues);
+
+        self::assertSame(['InvalidArgument 8:27', 'NoValue 8:17'], $issues);
     }
 
     /**
@@ -2383,6 +2417,31 @@ final class ArrayFunctionCallTest extends TestCase
                     '$p' => 'list<int>',
                 ],
             ],
+            'arrayColumnIndexColumnOfASkippedRowIsNotRead' => [
+                'code' => '<?php
+                    /**
+                     * @param list<array{0: stdClass}> $rows
+                     * @return array<array-key, mixed>
+                     */
+                    function f(array $rows): array {
+                        return array_column($rows, 1, 0);
+                    }
+
+                    final class S {
+                        public function __toString(): string {
+                            return "k";
+                        }
+                    }
+
+                    $literal = array_column([[new stdClass]], 1, 0);
+                    $stringable = array_column([[new S]], 1, 0);
+                    $after = 1;',
+                'assertions' => [
+                    '$after===' => '1',
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
             'arrayColumnKeyIsCastToAnArrayKey' => [
                 'code' => '<?php
                     $null = array_column([[null, 1]], 1, 0);
@@ -4378,6 +4437,43 @@ final class ArrayFunctionCallTest extends TestCase
 
                     $result = array_column([[new S, 1]], 1, 0);',
                 'error_message' => 'InvalidArgument - src' . DIRECTORY_SEPARATOR . 'somefile.php:8:31 - The index column has the type S',
+                'error_levels' => [],
+                'php_version' => '8.0',
+            ],
+            'arrayColumnIndexColumnOfAnObjectIsNotAnArrayKeyWithANullValueColumn' => [
+                'code' => '<?php
+                    $result = array_column([[new stdClass]], null, 0);',
+                'error_message' => 'InvalidArgument - src' . DIRECTORY_SEPARATOR . 'somefile.php:2:31 - The index column has the type stdClass, which cannot',
+                'error_levels' => [],
+                'php_version' => '8.0',
+            ],
+            'arrayColumnIndexColumnOfARowThatMayBeSkippedMayBeAnObject' => [
+                'code' => '<?php
+                    /** @param list<array{0: stdClass, 1?: int}> $rows */
+                    function f(array $rows): void {
+                        array_column($rows, 1, 0);
+                    }',
+                'error_message' => 'PossiblyInvalidArgument',
+                'error_levels' => [],
+                'php_version' => '8.0',
+            ],
+            'arrayColumnIndexColumnOfAnUnsealedRowMayBeAnObject' => [
+                'code' => '<?php
+                    /** @param list<array{0: stdClass, ...}> $rows */
+                    function f(array $rows): void {
+                        array_column($rows, 1, 0);
+                    }',
+                'error_message' => 'PossiblyInvalidArgument',
+                'error_levels' => [],
+                'php_version' => '8.0',
+            ],
+            'arrayColumnIndexColumnMayBeAnObjectWithAnUnknownValueColumn' => [
+                'code' => '<?php
+                    /** @param list<array{0: stdClass, 1: int}> $rows */
+                    function f(array $rows, int $column): void {
+                        array_column($rows, $column, 0);
+                    }',
+                'error_message' => 'PossiblyInvalidArgument',
                 'error_levels' => [],
                 'php_version' => '8.0',
             ],
