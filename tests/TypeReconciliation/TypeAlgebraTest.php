@@ -433,6 +433,68 @@ final class TypeAlgebraTest extends TestCase
                     }',
                 'assertions' => [],
             ],
+            'orOperandOfAVariableAssignedInTheOrIsNotParadoxical' => [
+                'code' => '<?php
+                    function h(): string {
+                        return rand(0, 1) ? "a" : "b";
+                    }
+
+                    function pick(string $m, bool $flag): int {
+                        if ($m !== "a") {
+                            if ($flag || ($m = h()) === "a") {
+                                return 1;
+                            }
+                        }
+
+                        return 0;
+                    }',
+                'assertions' => [],
+            ],
+            'orOperandAfterAnOperandAssigningItsVariableIsNotParadoxical' => [
+                'code' => '<?php
+                    function h(): string {
+                        return rand(0, 1) ? "a" : "b";
+                    }
+
+                    function pick(string $m, bool $flag): int {
+                        if ($m !== "a") {
+                            if ($flag && ($m = h()) !== "" || $m === "a") {
+                                return 1;
+                            }
+                        }
+
+                        return 0;
+                    }',
+                'assertions' => [],
+            ],
+            'orOperandOfAnIncrementedVariableIsNotParadoxical' => [
+                'code' => '<?php
+                    function pick(int $i, bool $flag): int {
+                        if ($i !== 0) {
+                            if ($flag || ++$i === 0) {
+                                return 1;
+                            }
+                        }
+
+                        return 0;
+                    }',
+                'assertions' => [],
+            ],
+            'ternaryOrOperandOfAVariableAssignedInTheOrIsNotParadoxical' => [
+                'code' => '<?php
+                    function h(): string {
+                        return rand(0, 1) ? "a" : "b";
+                    }
+
+                    function pick(string $m, bool $flag): string {
+                        if ($m !== "a") {
+                            return $flag || ($m = h()) === "a" ? $m : "";
+                        }
+
+                        return "";
+                    }',
+                'assertions' => [],
+            ],
             'twoVarLogicSimple' => [
                 'code' => '<?php
                     function foo(?string $a, ?string $b): string {
@@ -1994,6 +2056,23 @@ final class TypeAlgebraTest extends TestCase
                         return 0;
                     }',
                 'error_message' => 'ParadoxicalCondition - src' . DIRECTORY_SEPARATOR . 'somefile.php:9:52',
+            ],
+            'deadOperandNextToAnAssignmentOfAnotherVariableIsParadoxical' => [
+                'code' => '<?php
+                    function h(): string {
+                        return rand(0, 1) ? "a" : "b";
+                    }
+
+                    function pick(string $m, bool $flag): string {
+                        if ($m !== "a") {
+                            if ($flag || ($n = h()) === "b" || $m === "a") {
+                                return $n ?? "";
+                            }
+                        }
+
+                        return "";
+                    }',
+                'error_message' => 'ParadoxicalCondition - src' . DIRECTORY_SEPARATOR . 'somefile.php:8:64',
             ],
             'conditionOfOnlyValuesAnEarlierConditionExcludedIsParadoxical' => [
                 'code' => '<?php
