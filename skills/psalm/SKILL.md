@@ -99,4 +99,5 @@ for the inferred type with `@psalm-check-type` before editing: [references/debug
 - A class, function or extension Psalm doesn't know (`UndefinedClass` for code that exists, `mixed` from an
   extension): code Psalm should know but not check goes in `<extraFiles>`; stubs, plugins and `ext-*` in
   [references/config.md](references/config.md).
-- Psalm looks wrong: [references/bug-report.md](references/bug-report.md).
+- Psalm looks wrong: [references/bug-report.md](references/bug-report.md). Its `scripts/sandbox.php` uploads
+  a file to https://psalm.dev: run it only after the user agrees.

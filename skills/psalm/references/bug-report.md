@@ -14,14 +14,16 @@ Most surprising results come from the setup. Rule these out first:
 Reduce the case to one self-contained file that defines everything it uses: no framework, no Composer
 packages. Check after every step that the result is still the one you are reducing.
 
+`scripts/sandbox.php` uploads the file to https://psalm.dev, a third-party service. Show the user the file
+and run the sandbox only once they agree; it takes the reduced repro only, never code of the project.
+
 ```bash
 php scripts/sandbox.php repro.php            # issues and inferred types from psalm.dev
 php scripts/sandbox.php repro.php --php=8.3  # PHP version of the sandbox
 ```
 
 The sandbox runs the latest development version of Psalm. If it doesn't show the problem, it may already be
-fixed: compare with `vendor/bin/psalm --version`. It sends the file to psalm.dev, so it is for the reduced
-repro only, never for code of the project.
+fixed: compare with `vendor/bin/psalm --version`.
 
 Locally, the same file in a scratch directory:
 

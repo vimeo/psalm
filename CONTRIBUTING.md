@@ -14,3 +14,5 @@ You can create an issue [here](https://github.com/vimeo/psalm/issues/new), but b
 ## Contributing code and documentation
 
 Have a look at the [contributing documentation](docs/contributing/index.md) which is [mirrored on Psalm’s website](https://psalm.dev/docs/contributing).
+
+When you change a CLI option, an issue type or its documentation, or what a `psalm.xml` option does, update the agent skill in [`skills/psalm`](skills/psalm) as well.
