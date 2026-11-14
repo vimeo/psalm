@@ -70,9 +70,7 @@ final class YieldFromAnalyzer
                         && isset($atomic_type->type_params[3])
                     ) {
                         $yield_from_type = StarProjection::read($atomic_type->type_params[3], Type::getMixed());
-                    } elseif ($atomic_type instanceof TArray) {
-                        $yield_from_type = Type::getNull();
-                    } elseif ($atomic_type instanceof TKeyedArray) {
+                    } elseif ($atomic_type instanceof TArray || $atomic_type instanceof TKeyedArray) {
                         $yield_from_type = Type::getNull();
                     }
                 } else {

@@ -499,14 +499,16 @@ final class FunctionDocblockManipulator
 
 
         if ($this->new_phpdoc_return_type && $this->new_phpdoc_return_type !== $old_phpdoc_return_type) {
-            $modified_docblock = true;
             if ($this->new_phpdoc_return_type !== $this->new_php_return_type || $this->return_type_description) {
                 //only add the type if it's different than signature or if there's a description
+                $modified_docblock = true;
                 $parsed_docblock->tags['return'] = [
                     $this->new_phpdoc_return_type
                     . ($this->return_type_description ? (' ' . $this->return_type_description) : ''),
                 ];
-            } else {
+            } elseif (isset($parsed_docblock->tags['return'])) {
+                // a docblock without a @return to remove is left as written
+                $modified_docblock = true;
                 unset($parsed_docblock->tags['return']);
             }
         }

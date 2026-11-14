@@ -5,14 +5,51 @@ declare(strict_types=1);
 namespace Psalm\Tests\TypeReconciliation;
 
 use Override;
+use Psalm\Context;
+use Psalm\IssueBuffer;
 use Psalm\Tests\TestCase;
 use Psalm\Tests\Traits\InvalidCodeAnalysisTestTrait;
 use Psalm\Tests\Traits\ValidCodeAnalysisTestTrait;
+
+use function array_column;
+
+use const DIRECTORY_SEPARATOR;
 
 final class TypeAlgebraTest extends TestCase
 {
     use InvalidCodeAnalysisTestTrait;
     use ValidCodeAnalysisTestTrait;
+
+    public function testOffsetOfAPropertyAssignedInTheIfIsKnownAfterIt(): void
+    {
+        $this->testConfig->throw_exception = false;
+        $file_path = self::$src_dir_path . 'somefile.php';
+        $this->addFile(
+            $file_path,
+            '<?php
+                final class Channels {
+                    /** @var array<string, object> */
+                    protected array $channels = [];
+
+                    /** @param mixed $channel */
+                    public function get($channel): object {
+                        if (!isset($this->channels[$channel])) {
+                            $this->channels[$channel] = new stdClass();
+                        }
+
+                        return $this->channels[$channel];
+                    }
+                }',
+        );
+
+        $this->analyzeFile($file_path, new Context(), false);
+
+        // the offset is mixed where it is tested and assigned, not again where it is read after the if
+        self::assertSame(
+            ['MixedArrayOffset', 'MixedArrayOffset', 'MixedPropertyTypeCoercion'],
+            array_column(IssueBuffer::getIssuesDataForFile($file_path), 'type'),
+        );
+    }
 
     /**
      * @psalm-pure
@@ -21,6 +58,139 @@ final class TypeAlgebraTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'aFunctionExistsCheckOfANewerNativeFunctionDoesNotNarrowThePhpVersion' => [
+                'code' => '<?php
+                    function f(): void {
+                        if (function_exists("array_first")) {
+                            if (PHP_VERSION_ID < 8_05_00) {
+                                echo "polyfill";
+                            }
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.4',
+            ],
+            'twoClausesThatAreNotReconcilableAreBothKeptOfOneCondition' => [
+                'code' => '<?php
+                    function f(?string $a, ?string $b, string $haystack): void {
+                        if (($a === null || !str_contains($haystack, $a))
+                            && ($b === null || !str_contains($haystack, $b))
+                        ) {
+                            echo "if";
+                        } else {
+                            /** @psalm-check-type-exact $b = null|string */
+                            echo get_debug_type($b);
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
+            'simplifyingThreeClausesDoesNotMakeAUnitClauseOfAReducedOne' => [
+                'code' => '<?php
+                    function f(mixed $a, mixed $x, mixed $y): void {
+                        if ((is_int($a) || is_int($x) || is_int($y))
+                            && (!is_int($a) || is_int($x) || is_int($y))
+                            && (is_int($a) || !is_int($x) || is_int($y))
+                        ) {
+                            /** @psalm-check-type-exact $y = mixed */
+                            echo get_debug_type($y);
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
+            'aClauseIsNotTheResolventOfTwoClausesThatClashOnTwoVariables' => [
+                'code' => '<?php
+                    function f(mixed $a, mixed $b, mixed $x, mixed $y): void {
+                        if ((is_int($a) || is_int($b) || is_int($x))
+                            && (!is_int($a) || !is_int($b) || is_int($y))
+                            && (is_int($x) || is_int($y))
+                        ) {
+                            echo "if";
+                        } elseif (is_int($a)) {
+                            /** @psalm-check-type-exact $b = mixed */
+                            echo get_debug_type($b);
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
+            'twoClausesAreNotRedundantBecauseOfEachOther' => [
+                'code' => '<?php
+                    function f(?int $p, ?int $u, ?int $v): void {
+                        if (($v !== null || $p !== null)
+                            && ($v === null || $u !== null)
+                            && ($p !== null || $u !== null)
+                            && ($u === null || $v !== null)
+                        ) {
+                            echo "if";
+                        } else {
+                            if ($u === null) {
+                                /** @psalm-check-type-exact $v = int|null */
+                                echo get_debug_type($v);
+                            }
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
+            'aClauseThatIsNotReconcilableIsNotAParentOfAResolvent' => [
+                'code' => '<?php
+                    function f(?int $a, ?int $x, ?int $y, string $s, string $t): void {
+                        if (($a !== null || $x !== null || !($s === $t))
+                            && ($a === null || $y !== null)
+                            && ($x !== null || $y !== null)
+                        ) {
+                            echo "if";
+                        } else {
+                            /** @psalm-check-type-exact $a = int|null */
+                            echo get_debug_type($a);
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
+            'twoClausesAreNotRedundantBecauseOfEachOtherWhenTheLaterOneIsReduced' => [
+                'code' => '<?php
+                    function f(?int $p, ?int $u, ?int $v): void {
+                        if (($u === null || $v !== null)
+                            && ($v === null || $u !== null)
+                            && ($p !== null || $u !== null)
+                            && ($v !== null || $p !== null)
+                        ) {
+                            echo "if";
+                        } elseif ($u === null) {
+                            /** @psalm-check-type-exact $v = int|null */
+                            echo get_debug_type($v);
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
+            'aClauseThatIsNotReconcilableIsNotTheLaterParentOfAResolvent' => [
+                'code' => '<?php
+                    function f(?int $a, ?int $x, ?int $y, string $s, string $t): void {
+                        if (($a === null || $y !== null)
+                            && ($a !== null || $x !== null || !($s === $t))
+                            && ($x !== null || $y !== null)
+                        ) {
+                            echo "if";
+                        } else {
+                            /** @psalm-check-type-exact $a = int|null */
+                            echo get_debug_type($a);
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
             'coalesceAssignmentInConditionNarrowsTheVariable' => [
                 'code' => <<<'PHP'
                     <?php
@@ -219,6 +389,51 @@ final class TypeAlgebraTest extends TestCase
                 'ignored_issues' => ['RiskyTruthyFalsyComparison'],
                 'php_version' => '8.1',
             ],
+            'nullsafeCallComparedToBoolLiteralDoesNotNarrowReceiver' => [
+                'code' => <<<'PHP'
+                    <?php
+                    final class Box
+                    {
+                        public function check(): bool { return (bool) rand(0, 1); }
+                        public function other(): bool { return (bool) rand(0, 1); }
+                    }
+                    function identicalFalse(?Box $box): void {
+                        if ($box?->check() === false) {
+                            /** @psalm-check-type-exact $box = Box|null */;
+                        } else {
+                            /** @psalm-check-type-exact $box = Box|null */;
+                        }
+                    }
+                    function identicalFalseLiteralOnLeft(?Box $box): void {
+                        if (false === $box?->check()) {
+                            /** @psalm-check-type-exact $box = Box|null */;
+                        }
+                    }
+                    function identicalTrue(?Box $box): void {
+                        if ($box?->check() === true) {
+                            /** @psalm-check-type-exact $box = Box */;
+                        } else {
+                            /** @psalm-check-type-exact $box = Box|null */;
+                        }
+                    }
+                    function notIdenticalFalse(?Box $box): void {
+                        if ($box?->check() !== false) {
+                            /** @psalm-check-type-exact $box = Box|null */;
+                        } else {
+                            /** @psalm-check-type-exact $box = Box */;
+                        }
+                    }
+                    function notIdenticalTrue(?Box $box): void {
+                        if ($box?->check() !== true) {
+                            /** @psalm-check-type-exact $box = Box|null */;
+                        } else {
+                            /** @psalm-check-type-exact $box = Box */;
+                        }
+                    }
+                    PHP,
+                'assertions' => [],
+                'php_version' => '8.1',
+            ],
             'boolVarIdenticalToFalseNarrowsItsConjuncts' => [
                 'code' => <<<'PHP'
                     <?php
@@ -375,6 +590,86 @@ final class TypeAlgebraTest extends TestCase
                         }
 
                         return 3;
+                    }',
+                'assertions' => [],
+            ],
+            'orOfAnExcludedValueAndAPossibleOneOfTheSameVariableIsNotReported' => [
+                'code' => '<?php
+                    final class Model {
+                        public const A = "MODEL_A";
+                        public const B = "MODEL_B";
+                    }
+
+                    function pick(string $m, bool $flag): int {
+                        if ($m !== Model::A) {
+                            if ($flag || $m === Model::B) {
+                                return 1;
+                            }
+                        }
+
+                        return 0;
+                    }',
+                'assertions' => [],
+            ],
+            'orOperandOfAVariableAssignedInTheOrIsNotParadoxical' => [
+                'code' => '<?php
+                    function h(): string {
+                        return rand(0, 1) ? "a" : "b";
+                    }
+
+                    function pick(string $m, bool $flag): int {
+                        if ($m !== "a") {
+                            if ($flag || ($m = h()) === "a") {
+                                return 1;
+                            }
+                        }
+
+                        return 0;
+                    }',
+                'assertions' => [],
+            ],
+            'orOperandAfterAnOperandAssigningItsVariableIsNotParadoxical' => [
+                'code' => '<?php
+                    function h(): string {
+                        return rand(0, 1) ? "a" : "b";
+                    }
+
+                    function pick(string $m, bool $flag): int {
+                        if ($m !== "a") {
+                            if ($flag && ($m = h()) !== "" || $m === "a") {
+                                return 1;
+                            }
+                        }
+
+                        return 0;
+                    }',
+                'assertions' => [],
+            ],
+            'orOperandOfAnIncrementedVariableIsNotParadoxical' => [
+                'code' => '<?php
+                    function pick(int $i, bool $flag): int {
+                        if ($i !== 0) {
+                            if ($flag || ++$i === 0) {
+                                return 1;
+                            }
+                        }
+
+                        return 0;
+                    }',
+                'assertions' => [],
+            ],
+            'ternaryOrOperandOfAVariableAssignedInTheOrIsNotParadoxical' => [
+                'code' => '<?php
+                    function h(): string {
+                        return rand(0, 1) ? "a" : "b";
+                    }
+
+                    function pick(string $m, bool $flag): string {
+                        if ($m !== "a") {
+                            return $flag || ($m = h()) === "a" ? $m : "";
+                        }
+
+                        return "";
                     }',
                 'assertions' => [],
             ],
@@ -1705,6 +2000,98 @@ final class TypeAlgebraTest extends TestCase
                         return A::$x->y;
                     }',
             ],
+            'offsetKnownFromTheConditionIsForgottenWhenTheArrayIsReassignedAndThenAnOffsetIsWritten' => [
+                'code' => '<?php
+                    $a = ["test" => rand(0, 1) ? null : "x"];
+
+                    if ($a["test"] === null) {
+                        $a = ["test" => ""];
+                        $a["other"] = 1;
+                    }
+
+                    $var = $a["test"];',
+                'assertions' => [
+                    '$var===' => "''|'x'",
+                ],
+            ],
+            'offsetKnownFromTheConditionIsForgottenWhenTheArrayIsReassignedAndThenUnioned' => [
+                'code' => '<?php
+                    $a = ["test" => rand(0, 1) ? null : "x"];
+
+                    if ($a["test"] === null) {
+                        $a = ["test" => ""];
+                        $a += ["other" => 1];
+                    }
+
+                    $var = $a["test"];',
+                'assertions' => [
+                    '$var===' => "''|'x'",
+                ],
+            ],
+            'offsetKnownFromTheConditionIsKeptWhenTheArrayIsOnlyUnioned' => [
+                'code' => '<?php
+                    $a = ["test" => rand(0, 1) ? null : "x"];
+
+                    if ($a["test"] === null) {
+                        $a += ["other" => 1];
+                    }
+
+                    $var = $a["test"];',
+                'assertions' => [
+                    '$var===' => "'x'|null",
+                ],
+            ],
+            'offsetKnownBeforeAnArrayUnionAssignmentIsKeptAfterTheIf' => [
+                'code' => '<?php
+                    /** @param mixed $extra */
+                    function widget(bool $a, bool $b, $extra): string {
+                        $variables = ["style" => "s", "uri" => "public://x"];
+                        $key = $variables["uri"] . ".dims";
+
+                        if ($a) {
+                            $variables["width"] = 1;
+                        } elseif ($b) {
+                            $variables += $extra;
+                        } else {
+                            $variables["width"] = null;
+                        }
+
+                        $uri = $variables["uri"];
+                        /** @psalm-check-type-exact $uri = "public://x" */
+
+                        return $uri . $key;
+                    }',
+                'assertions' => [],
+                'ignored_issues' => ['MixedAssignment', 'MixedOperand'],
+                'php_version' => '8.0',
+            ],
+            'offsetKnownFromTheConditionIsForgottenWhenTheArrayIsReassigned' => [
+                'code' => '<?php
+                    $dummy = ["test" => ""];
+                    $a = ["test" => rand(0, 1) ? null : "x"];
+
+                    if ($a["test"] === null) {
+                        $a = $dummy;
+                    }
+
+                    $var = $a["test"];',
+                'assertions' => [
+                    '$var===' => "''|'x'",
+                ],
+            ],
+            'offsetKnownFromTheConditionIsKeptWhenTheArrayIsNotReassigned' => [
+                'code' => '<?php
+                    $a = ["test" => rand(0, 1) ? null : "x"];
+
+                    if ($a["test"] === null) {
+                        $a["other"] = 1;
+                    }
+
+                    $var = $a["test"];',
+                'assertions' => [
+                    '$var===' => "'x'|null",
+                ],
+            ],
         ];
     }
 
@@ -1794,6 +2181,111 @@ final class TypeAlgebraTest extends TestCase
                 'error_levels' => [],
                 'php_version' => '8.1',
             ],
+            'deadOperandOnTheRightOfAnOrIsParadoxical' => [
+                'code' => '<?php
+                    final class Model {
+                        public const A = "MODEL_A";
+                        public const B = "MODEL_B";
+                    }
+
+                    function pick(string $m, bool $flag): int {
+                        if ($m !== Model::A && $m !== Model::B) {
+                            if ($flag || $m === Model::A) {
+                                return 1;
+                            }
+                        }
+
+                        return 0;
+                    }',
+                'error_message' => 'ParadoxicalCondition - src' . DIRECTORY_SEPARATOR . 'somefile.php:9:42',
+            ],
+            'deadOperandOnTheLeftOfAnOrIsParadoxical' => [
+                'code' => '<?php
+                    final class Model {
+                        public const A = "MODEL_A";
+                        public const B = "MODEL_B";
+                    }
+
+                    function pick(string $m, bool $flag): int {
+                        if ($m !== Model::A && $m !== Model::B) {
+                            if ($m === Model::A || $flag) {
+                                return 1;
+                            }
+                        }
+
+                        return 0;
+                    }',
+                'error_message' => 'ParadoxicalCondition - src' . DIRECTORY_SEPARATOR . 'somefile.php:9:33',
+            ],
+            'deadOperandInAChainOfOrsIsParadoxical' => [
+                'code' => '<?php
+                    final class Model {
+                        public const A = "MODEL_A";
+                        public const B = "MODEL_B";
+                    }
+
+                    function pick(string $m, bool $flag, bool $other): int {
+                        if ($m !== Model::A && $m !== Model::B) {
+                            if ($flag || $other || $m === Model::B) {
+                                return 1;
+                            }
+                        }
+
+                        return 0;
+                    }',
+                'error_message' => 'ParadoxicalCondition - src' . DIRECTORY_SEPARATOR . 'somefile.php:9:52',
+            ],
+            'deadOperandNextToAnAssignmentOfAnotherVariableIsParadoxical' => [
+                'code' => '<?php
+                    function h(): string {
+                        return rand(0, 1) ? "a" : "b";
+                    }
+
+                    function pick(string $m, bool $flag): string {
+                        if ($m !== "a") {
+                            if ($flag || ($n = h()) === "b" || $m === "a") {
+                                return $n ?? "";
+                            }
+                        }
+
+                        return "";
+                    }',
+                'error_message' => 'ParadoxicalCondition - src' . DIRECTORY_SEPARATOR . 'somefile.php:8:64',
+            ],
+            'deadOperandBeforeAnOperandAssigningItsVariableIsParadoxical' => [
+                'code' => '<?php
+                    function h(): string {
+                        return rand(0, 1) ? "a" : "b";
+                    }
+
+                    function pick(string $m, bool $flag): int {
+                        if ($m !== "a") {
+                            if ($flag || $m === "a" || ($m = h()) === "b") {
+                                return 1;
+                            }
+                        }
+
+                        return 0;
+                    }',
+                'error_message' => 'ParadoxicalCondition - src' . DIRECTORY_SEPARATOR . 'somefile.php:8:42',
+            ],
+            'deadOperandNextToAnArrowFunctionAssigningItsVariableIsParadoxical' => [
+                'code' => '<?php
+                    function accepts(callable $c): bool {
+                        return (bool) $c();
+                    }
+
+                    function pick(string $m, bool $flag): int {
+                        if ($m !== "a") {
+                            if ($flag || accepts(static fn(): string => $m = "a") || $m === "a") {
+                                return 1;
+                            }
+                        }
+
+                        return 0;
+                    }',
+                'error_message' => 'ParadoxicalCondition - src' . DIRECTORY_SEPARATOR . 'somefile.php:8:86',
+            ],
             'conditionOfOnlyValuesAnEarlierConditionExcludedIsParadoxical' => [
                 'code' => '<?php
                     function test(string $value): int {
@@ -1877,7 +2369,6 @@ final class TypeAlgebraTest extends TestCase
                         return $a;
                     }',
                 'error_message' => 'NullableReturnStatement',
-                'error_levels' => ['RiskyTruthyFalsyComparison'],
             ],
             'invertedTwoVarLogicNotNestedWithElseif' => [
                 'code' => '<?php
