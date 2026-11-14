@@ -11,11 +11,18 @@ Most surprising results come from the setup. Rule these out first:
 
 ## Minimal repro
 
-Reduce the case to one self-contained file that defines everything it uses: no framework, no Composer
-packages. Check after every step that the result is still the one you are reducing.
+The repro leaves the machine: the sandbox uploads it to psalm.dev, a third-party service, and the bug
+report makes it public. Write it as a stand-in for the project's code, never an excerpt of it:
 
-`scripts/sandbox.php` uploads the file to https://psalm.dev, a third-party service. Show the user the file
-and run the sandbox only once they agree; it takes the reduced repro only, never code of the project.
+- **Self-contained:** one file that defines everything it uses, with no framework and no Composer packages.
+- **Minimal:** only the code the bug needs; cut each line whose removal keeps the result.
+- **Anonymized:** the project's classes, methods, properties, variables and values renamed to neutral ones
+  (`Foo`, `bar()`, `$a`, `'x'`); no paths, URLs, credentials or business terms. Names Psalm treats specially
+  stay: PHP's own classes and functions, magic methods, attributes.
+
+Check after every step that the result is still the one you are reducing.
+
+Show the user the finished file, tell them it goes to psalm.dev, and run the sandbox only once they agree:
 
 ```bash
 php scripts/sandbox.php repro.php            # issues and inferred types from psalm.dev

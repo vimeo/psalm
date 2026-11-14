@@ -6,7 +6,7 @@ const USAGE = <<<'TXT'
 Usage: php sandbox.php FILE.php [--php=8.3] [--types] [--settings=JSON]
 
 Checks one self-contained file on https://psalm.dev (the latest development version of Psalm) and prints
-the issues. The file leaves the machine: use it for a reduced repro only, once the user agrees.
+the issues. The file leaves the machine: use it for a minimal, anonymized repro only, once the user agrees.
 
   --php=X.Y        PHP version of the analysis (default: the sandbox's)
   --types          also print the type Psalm inferred for each expression
