@@ -167,16 +167,6 @@ final class FunctionLikeNodeScanner
         ) {
             if ($stmt instanceof PhpParser\Node\Stmt\ClassMethod
                 && $storage instanceof MethodStorage
-                && $classlike_storage !== null
-            ) {
-                $storage->only_direct_scalar_property_writes = self::hasOnlyDirectScalarPropertyWrites(
-                    $stmt,
-                    $classlike_storage,
-                );
-            }
-
-            if ($stmt instanceof PhpParser\Node\Stmt\ClassMethod
-                && $storage instanceof MethodStorage
                 && $classlike_storage
                 && !$classlike_storage->isMutationFree()
                 && $stmt->stmts
@@ -713,83 +703,6 @@ final class FunctionLikeNodeScanner
         }
 
         return $storage;
-    }
-
-    /**
-     * Only simple writes to native scalar properties of `$this` can be proven
-     * independent of a direct getter of a native object property on another class.
-     * This intentionally excludes nested mutations, calls, hooks and references.
-     *
-     * @psalm-capabilities read-props
-     */
-    private static function hasOnlyDirectScalarPropertyWrites(
-        PhpParser\Node\Stmt\ClassMethod $stmt,
-        ClassLikeStorage $class_storage,
-    ): bool {
-        if ($stmt->stmts === null || $stmt->stmts === []) {
-            return false;
-        }
-
-        $scalar_params = [];
-        foreach ($stmt->params as $param) {
-            if ($param->byRef
-                || $param->variadic
-                || $param->default !== null
-                || !$param->var instanceof PhpParser\Node\Expr\Variable
-                || !is_string($param->var->name)
-                || !$param->type instanceof PhpParser\Node\Identifier
-                || !in_array(strtolower($param->type->name), ['int', 'string', 'float', 'bool'], true)
-            ) {
-                return false;
-            }
-            $scalar_params[$param->var->name] = true;
-        }
-
-        foreach ($stmt->stmts as $statement) {
-            $expr = $statement instanceof PhpParser\Node\Stmt\Expression
-                ? $statement->expr
-                : ($statement instanceof PhpParser\Node\Stmt\Return_ ? $statement->expr : null);
-
-            if ($expr instanceof PhpParser\Node\Expr\Assign) {
-                $target = $expr->var;
-                if (!$expr->expr instanceof PhpParser\Node\Expr\Variable
-                    || !is_string($expr->expr->name)
-                    || !isset($scalar_params[$expr->expr->name])
-                ) {
-                    return false;
-                }
-                $increment = false;
-            } elseif ($expr instanceof PhpParser\Node\Expr\PreInc
-                || $expr instanceof PhpParser\Node\Expr\PreDec
-                || $expr instanceof PhpParser\Node\Expr\PostInc
-                || $expr instanceof PhpParser\Node\Expr\PostDec
-            ) {
-                $target = $expr->var;
-                $increment = true;
-            } else {
-                return false;
-            }
-
-            if (!$target instanceof PhpParser\Node\Expr\PropertyFetch
-                || !$target->var instanceof PhpParser\Node\Expr\Variable
-                || $target->var->name !== 'this'
-                || !$target->name instanceof PhpParser\Node\Identifier
-            ) {
-                return false;
-            }
-
-            $property = $class_storage->properties[$target->name->name] ?? null;
-            if ($property === null
-                || $property->hook_get !== null
-                || $property->hook_set !== null
-                || !in_array($property->signature_type?->getId(), ['int', 'string', 'float', 'bool'], true)
-                || ($increment && $property->signature_type?->getId() !== 'int')
-            ) {
-                return false;
-            }
-        }
-
-        return true;
     }
 
     /**

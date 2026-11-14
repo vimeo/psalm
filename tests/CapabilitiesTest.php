@@ -717,7 +717,7 @@ final class CapabilitiesTest extends TestCase
                         }
                     }',
             ],
-            'unrelatedScalarWritesKeepObjectPropertyGettersNarrowed' => [
+            'writesToAnotherObjectKeepDirectGettersNarrowedLikeProperties' => [
                 'code' => <<<'PHP'
                     <?php
                     final class Other {
@@ -729,10 +729,46 @@ final class CapabilitiesTest extends TestCase
                         /** @psalm-mutation-free */
                         public function getChild(): ?Other { return $this->child; }
                     }
-                    function original(Owner $o, Other $x): void {
+                    function viaProperty(Owner $o, Other $x): void {
+                        if ($o->child !== null) {
+                            $x->touch();
+                            $o->child->touch();
+                        }
+                    }
+                    function viaGetter(Owner $o, Other $x): void {
                         if ($o->getChild() !== null) {
                             $x->touch();
                             $o->getChild()->touch();
+                        }
+                    }
+                    final class Holder {
+                        public function __construct(public Owner $owner) {}
+                    }
+                    function nestedOwner(Holder $h, Other $x): void {
+                        if ($h->owner->getChild() !== null) {
+                            $x->touch();
+                            $h->owner->getChild()->touch();
+                        }
+                    }
+
+                    class Entity {
+                        protected ?Other $other = null;
+                        private int $total = 0;
+                        private ?string $label = null;
+                        /** @psalm-mutation-free */
+                        public function getOther(): ?Other { return $this->other; }
+                        public function add(int $amount, ?string $label = null): void {
+                            if ($amount < 0) {
+                                throw new InvalidArgumentException('negative');
+                            }
+                            $this->total += $amount;
+                            $this->label = $label ?? $this->label;
+                        }
+                    }
+                    function guardedSetterOfNonFinalClasses(Entity $a, Entity $b): void {
+                        if ($a->getOther() !== null) {
+                            $b->add(1);
+                            $a->getOther()->touch();
                         }
                     }
 
@@ -3244,6 +3280,76 @@ final class CapabilitiesTest extends TestCase
                         }
                         $b->clear();
                         return $a->getChild();
+                    }',
+                'error_message' => 'NullableReturnStatement',
+            ],
+            'mutatorCallingAnotherMethodMustNotKeepGetter' => [
+                'code' => '<?php
+                    final class Child {}
+                    final class Owner {
+                        public ?Child $child = null;
+                        /** @psalm-mutation-free */
+                        public function getChild(): ?Child { return $this->child; }
+                        public function clear(): void { $this->child = null; }
+                    }
+                    final class Other {
+                        private int $n = 0;
+                        public function __construct(private Owner $owner) {}
+                        public function touch(): void {
+                            ++$this->n;
+                            $this->owner->clear();
+                        }
+                    }
+                    function afterTouch(Owner $owner, Other $other): Child {
+                        if ($owner->getChild() === null) {
+                            return new Child();
+                        }
+                        $other->touch();
+                        return $owner->getChild();
+                    }',
+                'error_message' => 'NullableReturnStatement',
+            ],
+            'getterReadingMoreThanItsPropertyMustBeForgotten' => [
+                'code' => '<?php
+                    final class Child {}
+                    final class Counter {
+                        public int $n = 0;
+                        public function inc(): void { ++$this->n; }
+                    }
+                    final class Owner {
+                        public ?Child $child = null;
+                        public function __construct(private Counter $counter) {}
+                        /** @psalm-mutation-free */
+                        public function getChild(): ?Child { return $this->counter->n === 0 ? $this->child : null; }
+                    }
+                    function afterIncrement(Owner $owner, Counter $counter): Child {
+                        if ($owner->getChild() === null) {
+                            return new Child();
+                        }
+                        $counter->inc();
+                        return $owner->getChild();
+                    }',
+                'error_message' => 'NullableReturnStatement',
+            ],
+            'getterOnWhatTheReceiverHoldsMustBeForgotten' => [
+                'code' => '<?php
+                    final class Child {}
+                    final class Owner {
+                        public ?Child $child = null;
+                        /** @psalm-mutation-free */
+                        public function getChild(): ?Child { return $this->child; }
+                    }
+                    final class Holder {
+                        public Owner $owner;
+                        public function __construct() { $this->owner = new Owner(); }
+                        public function replace(Owner $owner): void { $this->owner = $owner; }
+                    }
+                    function afterReplace(Holder $h, Owner $empty): Child {
+                        if ($h->owner->getChild() === null) {
+                            return new Child();
+                        }
+                        $h->replace($empty);
+                        return $h->owner->getChild();
                     }',
                 'error_message' => 'NullableReturnStatement',
             ],

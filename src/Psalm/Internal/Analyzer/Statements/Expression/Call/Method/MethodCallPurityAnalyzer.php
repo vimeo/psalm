@@ -36,6 +36,7 @@ use Psalm\Type\Union;
 use function array_pop;
 use function array_values;
 use function preg_match;
+use function str_starts_with;
 use function strtolower;
 
 /**
@@ -589,15 +590,18 @@ final class MethodCallPurityAnalyzer
             $context->removeMutableObjectVars(
                 true,
                 preserved_methods: $config->remember_property_assignments_after_call
-                    && $method_storage->only_direct_scalar_property_writes
-                    && $provided_capabilities === null
-                    // Inherited setters can dispatch to property hooks on a subclass.
-                    && strtolower($codebase->methods->getDeclaringMethodId($method_id)?->fq_class_name ?? '')
-                        === strtolower($class_storage->name)
-                    // An unset typed property may invoke __set/__get, even from inside the class.
-                    && !isset($class_storage->declaring_method_ids['__set'])
-                    && !isset($class_storage->declaring_method_ids['__get'])
-                    ? self::getUnrelatedObjectGetters($context, $codebase, $lhs_var_id, $class_storage)
+                    // the call writes nothing but properties of its receiver
+                    && ($method_storage->writes_only_this_properties
+                        || ($callee_capabilities & Capabilities::WRITE_PROPS) === 0)
+                    && ($template_capabilities & (Capabilities::WRITE_PROPS | Capabilities::WRITE_THIS_PROPS)) === 0
+                    && !self::hasByRefParam($method_storage)
+                    ? self::getUnaffectedPropertyGetters(
+                        $context,
+                        $codebase,
+                        $lhs_var_id,
+                        $class_storage,
+                        $method_storage->this_property_mutations,
+                    )
                     : [],
             );
 
@@ -641,26 +645,29 @@ final class MethodCallPurityAnalyzer
     }
 
     /**
-     * Preserve memoized direct-property getters only if the callee is proven to write
-     * *native scalar* properties of another final class, while the getter reads a
-     * *native object-or-null* property. These disjoint property types also prevent
-     * cross-object aliases through PHP references (`=&`).
+     * The memoized results of direct getters (`return $this->prop;`, see PropertyStorage::$getter_method) that a
+     * call writing only the properties of its receiver cannot change. Such a result is the property it returns, and
+     * with `rememberPropertyAssignmentsAfterCall` what is known of a property of another object is kept after the
+     * call: the result is kept the same way, unless
+     * - the getter is called on the receiver of the call or on what it holds (the call may write anything there,
+     *   through the other methods of the receiver it calls),
+     * - the getter returns a property of the name of one the call writes (the two objects may be the same, or the
+     *   two properties bound by reference),
+     * - reading the property may run code (`__get` when it was unset).
      *
-     * Unknown method effects, nontrivial getters, non-final classes, nested receivers,
-     * and any overlapping property types retain the usual conservative invalidation.
-     *
+     * @param array<string, bool> $written_properties
      * @return array<string, true>
      * @psalm-capabilities read-props
      */
-    private static function getUnrelatedObjectGetters(
+    private static function getUnaffectedPropertyGetters(
         Context $context,
         Codebase $codebase,
         ?string $receiver_id,
         ClassLikeStorage $receiver_class,
+        array $written_properties,
     ): array {
-        if (!$receiver_class->final
-            || $receiver_id === null
-            || preg_match('/^\$[a-zA-Z_][a-zA-Z_0-9]*$/D', $receiver_id) !== 1
+        if ($receiver_id === null
+            || !self::writesOnlyPlainProperties($codebase, $receiver_class, $written_properties)
         ) {
             return [];
         }
@@ -668,70 +675,128 @@ final class MethodCallPurityAnalyzer
         $preserved = [];
 
         foreach ($context->vars_in_scope as $var_id => $type) {
-            if (!$type->has_mutations
-                || preg_match('/^(\$[a-zA-Z_][a-zA-Z_0-9]*)->([a-zA-Z_][a-zA-Z_0-9]*)\(\)$/D', $var_id, $parts) !== 1
-                || !isset($parts[1], $parts[2])
-                || $parts[1] === $receiver_id
+            // the result of a call without arguments on a receiver that is not itself the result of a call
+            if (!$type->has_mutations || preg_match('/^([^(]+)->(\w+)\(\)$/D', $var_id, $parts) !== 1) {
+                continue;
+            }
+
+            [, $getter_receiver_id, $getter_name] = $parts;
+
+            if ($getter_receiver_id === $receiver_id
+                || str_starts_with($getter_receiver_id, $receiver_id . '->')
+                || str_starts_with($getter_receiver_id, $receiver_id . '[')
+                || !isset($context->vars_in_scope[$getter_receiver_id])
             ) {
                 continue;
             }
 
-            $owner_type = $context->vars_in_scope[$parts[1]] ?? null;
-            if ($owner_type === null || !$owner_type->isSingle()) {
-                continue;
-            }
+            $getter_name = strtolower($getter_name);
+            $is_property_getter = true;
 
-            $owner = $owner_type->getSingleAtomic();
-            if (!$owner instanceof TNamedObject
-                || $owner->getIntersectionTypes() !== []
-                || !$codebase->classlike_storage_provider->has($owner->value)
-            ) {
-                continue;
-            }
+            foreach ($context->vars_in_scope[$getter_receiver_id]->getAtomicTypes() as $atomic) {
+                $property_name = $atomic instanceof TNamedObject && $atomic->getIntersectionTypes() === []
+                    ? self::getGetterPropertyName($codebase, $atomic->value, $getter_name)
+                    : null;
 
-            $owner_class = $codebase->classlike_storage_provider->get($owner->value);
-            if (!$owner_class->final
-                || isset($owner_class->declaring_method_ids['__get'])
-                || strtolower($owner_class->name) === strtolower($receiver_class->name)
-            ) {
-                continue;
-            }
-
-            // The existing getter_method metadata is set only for a method whose
-            // entire body is `return $this->property;` (see FunctionLikeNodeScanner).
-            $getter = $owner_class->methods[strtolower($parts[2])] ?? null;
-            if ($getter === null || $getter->returns_by_ref) {
-                continue;
-            }
-
-            foreach ($owner_class->properties as $property) {
-                if ($property->getter_method !== strtolower($parts[2])
-                    || $property->hook_get !== null
-                    || $property->hook_set !== null
-                    || $property->signature_type === null
-                ) {
-                    continue;
-                }
-
-                // Native object types and native scalars cannot refer to the same
-                // PHP reference slot. Merely different final classes are NOT enough:
-                // two scalar properties of distinct classes can be bound with `=&`.
-                $object_only = true;
-                foreach ($property->signature_type->getAtomicTypes() as $atomic) {
-                    if (!$atomic instanceof TNamedObject && !$atomic instanceof Atomic\TNull) {
-                        $object_only = false;
-                        break;
-                    }
-                }
-
-                if ($object_only) {
-                    $preserved[$var_id] = true;
+                if ($property_name === null || isset($written_properties[$property_name])) {
+                    $is_property_getter = false;
                     break;
                 }
+            }
+
+            if ($is_property_getter) {
+                $preserved[$var_id] = true;
             }
         }
 
         return $preserved;
+    }
+
+    /**
+     * Whether writing these properties of an object of this class cannot run code (a hook, or `__set` when the
+     * property was unset)
+     *
+     * @param array<string, bool> $written_properties
+     * @psalm-capabilities read-props
+     */
+    private static function writesOnlyPlainProperties(
+        Codebase $codebase,
+        ClassLikeStorage $class_storage,
+        array $written_properties,
+    ): bool {
+        if (isset($class_storage->declaring_method_ids['__set'])) {
+            return false;
+        }
+
+        foreach ($written_properties as $name => $_) {
+            $declaring_class = $class_storage->declaring_property_ids[$name] ?? null;
+            $property = $declaring_class !== null && $codebase->classlike_storage_provider->has($declaring_class)
+                ? $codebase->classlike_storage_provider->get($declaring_class)->properties[$name] ?? null
+                : null;
+
+            if ($property === null
+                || $property->hook_get !== null
+                || $property->hook_set !== null
+                // a subclass may redeclare the property with a hook
+                || (!$class_storage->final
+                    && $property->visibility !== ClassLikeAnalyzer::VISIBILITY_PRIVATE
+                    && $codebase->analysis_php_version_id >= 8_04_00)
+            ) {
+                return false;
+            }
+        }
+
+        return true;
+    }
+
+    /**
+     * The property a method returns, if it is a direct getter (see PropertyStorage::$getter_method)
+     *
+     * @param lowercase-string $method_name
+     * @psalm-capabilities read-props
+     */
+    private static function getGetterPropertyName(
+        Codebase $codebase,
+        string $fq_class_name,
+        string $method_name,
+    ): ?string {
+        if (!$codebase->classlike_storage_provider->has($fq_class_name)
+            || isset($codebase->classlike_storage_provider->get($fq_class_name)->declaring_method_ids['__get'])
+        ) {
+            return null;
+        }
+
+        $declaring_method_id = $codebase->methods->getDeclaringMethodId(
+            new MethodIdentifier($fq_class_name, $method_name),
+        );
+
+        if ($declaring_method_id === null
+            || !$codebase->classlike_storage_provider->has($declaring_method_id->fq_class_name)
+        ) {
+            return null;
+        }
+
+        $declaring_class = $codebase->classlike_storage_provider->get($declaring_method_id->fq_class_name);
+
+        foreach ($declaring_class->properties as $name => $property) {
+            if ($property->getter_method === $method_name) {
+                return $name;
+            }
+        }
+
+        return null;
+    }
+
+    /** @psalm-capabilities read-props */
+    private static function hasByRefParam(MethodStorage $method_storage): bool
+    {
+        foreach ($method_storage->params as $param) {
+            if ($param->by_ref) {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     /**

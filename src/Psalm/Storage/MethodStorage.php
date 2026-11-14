@@ -61,11 +61,10 @@ final class MethodStorage extends FunctionLikeStorage
     public ?array $this_property_mutations = null;
 
     /**
-     * The scanner proved that every statement only writes a native scalar property of
-     * `$this` (from a scalar parameter or via an increment/decrement), with no other effects.
-     * Unlike this_property_mutations, this is an exhaustive check of the method body.
+     * Whether the body changes nothing but properties of `$this` and local variables: it calls nothing (except to
+     * build the exception it throws), so $this_property_mutations is all it writes outside of itself
      */
-    public bool $only_direct_scalar_property_writes = false;
+    public bool $writes_only_this_properties = false;
 
     /**
      * The static properties the body assigns directly: `self::$name`, `static::$name` and `parent::$name` as written,
