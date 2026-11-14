@@ -465,7 +465,7 @@ final class ArrayFetchAnalyzer
                     $stmt->var,
                     $statements_analyzer->getFQCLN(),
                     $statements_analyzer,
-                ))
+                )) !== null
                 && isset($context->vars_in_scope[$array_var_id])
             ) {
                 $context->null_array_offsets_read[$keyed_array_var_id] = [
