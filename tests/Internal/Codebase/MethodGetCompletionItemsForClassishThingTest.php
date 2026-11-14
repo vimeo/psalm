@@ -572,4 +572,50 @@ final class MethodGetCompletionItemsForClassishThingTest extends TestCase
 
         $this->assertEqualsCanonicalizing($expected_labels, $actual_labels);
     }
+
+    public function testMixinsOfTraitsAndParentClassesListAMemberOnceFromTheFirstMixin(): void
+    {
+        $content = <<<'EOF'
+            <?php
+            namespace B;
+
+            class FromTrait {
+                public function shared(): int { return 1; }
+                public function fromTrait(): void {}
+            }
+
+            class FromParent {
+                public function shared(): string { return ''; }
+                public function fromParent(): void {}
+            }
+
+            /** @mixin FromTrait */
+            trait ForwardsCalls {}
+
+            /** @mixin FromParent */
+            abstract class Base {}
+
+            final class A extends Base {
+                use ForwardsCalls;
+            }
+        EOF;
+
+        $this->addFile('somefile.php', $content);
+        $this->analyzeFile('somefile.php', new Context());
+
+        $details = [];
+
+        foreach ($this->codebase->getCompletionItemsForClassishThing('B\A', '->', true) as $item) {
+            $details[$item->label][] = $item->detail;
+        }
+
+        $this->assertSame(
+            [
+                'shared' => ['public function shared() : int'],
+                'fromTrait' => ['public function fromTrait() : void'],
+                'fromParent' => ['public function fromParent() : void'],
+            ],
+            $details,
+        );
+    }
 }
