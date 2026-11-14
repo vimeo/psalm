@@ -18,11 +18,13 @@ trait PsalmRunnerTrait
     /**
      * Seconds a Psalm process may run: a cold run on a slow CI runner (Windows) can take longer than the 60 default
      */
-    private const PROCESS_TIMEOUT = 300;
+    protected const PROCESS_TIMEOUT = 300;
 
-    private string $psalm = __DIR__ . '/../../psalm';
+    protected string $psalm = __DIR__ . '/../../psalm';
 
-    private string $psalter = __DIR__ . '/../../psalter';
+    protected string $psalter = __DIR__ . '/../../psalter';
+
+    protected string $psalmRefactor = __DIR__ . '/../../psalm-refactor';
 
     /**
      * Agent-harness environment variables that, when present in the developer
@@ -35,7 +37,7 @@ trait PsalmRunnerTrait
      * @return array<string, false>
      * @psalm-pure
      */
-    private static function agentEnvVarsToUnset(): array
+    protected static function agentEnvVarsToUnset(): array
     {
         return [
             'CLAUDECODE' => false,
@@ -63,10 +65,25 @@ trait PsalmRunnerTrait
     }
 
     /**
+     * A process that may run for PROCESS_TIMEOUT seconds, not Symfony's default 60
+     *
+     * @param list<string> $command
+     * @param array<string, string|false>|null $env
+     */
+    protected static function newProcess(
+        array $command,
+        ?string $cwd = null,
+        ?array $env = null,
+        ?string $input = null,
+    ): Process {
+        return new Process($command, $cwd, $env, $input, self::PROCESS_TIMEOUT);
+    }
+
+    /**
      * @param list<string> $args
      * @return array{STDOUT: string, STDERR: string, CODE: int|null}
      */
-    private function runPsalm(
+    protected function runPsalm(
         array $args,
         string $workingDir,
         bool $shouldFail = false,
@@ -85,20 +102,18 @@ trait PsalmRunnerTrait
         // we run `php psalm` rather than just `psalm`.
 
         if ($relyOnConfigDir) {
-            $process = new Process(
+            $process = self::newProcess(
                 array_merge([PHP_BINARY, $this->psalm, '-c=' . $workingDir . '/psalm.xml'], $args),
                 null,
                 self::agentEnvVarsToUnset(),
             );
         } else {
-            $process = new Process(
+            $process = self::newProcess(
                 array_merge([PHP_BINARY, $this->psalm], $args),
                 $workingDir,
                 self::agentEnvVarsToUnset(),
             );
         }
-
-        $process->setTimeout(self::PROCESS_TIMEOUT);
 
         if (!$shouldFail) {
             $process->mustRun();
