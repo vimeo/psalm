@@ -35,6 +35,7 @@ use Psalm\Internal\Provider\ClassLikeStorageProvider;
 use Psalm\Internal\Type\Comparator\UnionTypeComparator;
 use Psalm\Internal\Type\TypeExpander;
 use Psalm\Issue\DocblockTypeContradiction;
+use Psalm\Issue\InvalidArrayOffset;
 use Psalm\Issue\InvalidDocblock;
 use Psalm\Issue\RedundantCondition;
 use Psalm\Issue\RedundantConditionGivenDocblockType;
@@ -3891,6 +3892,36 @@ final class AssertionFinder
     }
 
     /**
+     * A non-numeric string literal is never a key of a list or of an array whose keys are all ints
+     *
+     * @psalm-pure
+     */
+    private static function isNonNumericStringKeyOfIntKeyedArray(Union $key_type, Union $array_type): bool
+    {
+        if (!$key_type->allStringLiterals()) {
+            return false;
+        }
+
+        foreach ($key_type->getLiteralStrings() as $literal_string) {
+            if (ArrayAnalyzer::getLiteralArrayKeyInt($literal_string->value) !== false) {
+                return false;
+            }
+        }
+
+        foreach ($array_type->getAtomicTypes() as $atomic_type) {
+            if ($atomic_type instanceof TKeyedArray && $atomic_type->is_list) {
+                continue;
+            }
+
+            if (!$atomic_type instanceof TArray || !$atomic_type->type_params[0]->isInt()) {
+                return false;
+            }
+        }
+
+        return true;
+    }
+
+    /**
      * What a key that exists in an array as an int is: the int, or the string that PHP casts to it, whichever the type
      * of the value looked up can be. A value that is not an int or a string (`true`, `1.0`) matches it too, so any
      * other type keeps the loose comparison
@@ -3946,6 +3977,24 @@ final class AssertionFinder
                 $first_var_type,
             );
         }
+        $args = $expr->getArgs();
+
+        if ($first_var_type
+            && $source instanceof StatementsAnalyzer
+            && isset($args[0], $args[1])
+            && ($array_type = $source->node_data->getType($args[1]->value))
+            && self::isNonNumericStringKeyOfIntKeyedArray($first_var_type, $array_type)
+        ) {
+            IssueBuffer::maybeAdd(
+                new InvalidArrayOffset(
+                    'Cannot check offset ' . $first_var_type->getId() . ' in ' . $array_type->getId()
+                        . ', which only has int keys',
+                    new CodeLocation($source, $args[0]->value),
+                ),
+                $source->getSuppressedIssues(),
+            );
+        }
+
         $if_types = [];
 
         $literal_assertions = [];
