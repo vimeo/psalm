@@ -4227,6 +4227,15 @@ final class AssertionFinder
             return [];
         }
 
+        // in the non-strict mode the length of null and false is 0 too: only a string is empty exactly when it is
+        $argument_type = $source instanceof StatementsAnalyzer
+            ? $source->node_data->getType($length_argument)
+            : null;
+
+        if ($argument_type === null || !$argument_type->isString(true)) {
+            return [];
+        }
+
         $empty_string = TLiteralString::make('');
 
         return [[$var_name => [[$is_non_empty ? new IsNotIdentical($empty_string) : new IsIdentical($empty_string)]]]];

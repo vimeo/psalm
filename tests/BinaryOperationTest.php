@@ -2251,6 +2251,38 @@ final class BinaryOperationTest extends TestCase
                     '$t===' => 'string',
                 ],
             ],
+            'stringLengthOfZeroKeepsTheNullAndFalseOfALooseArgument' => [
+                'code' => '<?php
+                    function nullable(?string $s): void {
+                        if (strlen($s) === 0) {
+                            /** @psalm-check-type-exact $s = null|string */
+                            echo 1;
+                        } else {
+                            /** @psalm-check-type-exact $s = string|null */
+                            echo 2;
+                        }
+                    }
+
+                    function falsable(string|false $s): void {
+                        if (mb_strlen($s) < 1) {
+                            /** @psalm-check-type-exact $s = false|string */
+                            echo 1;
+                        }
+                    }
+
+                    function plain(string $s): void {
+                        if (strlen($s) === 0) {
+                            /** @psalm-check-type-exact $s = "" */
+                            echo 1;
+                        } else {
+                            /** @psalm-check-type-exact $s = non-empty-string */
+                            echo 2;
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => ['PossiblyNullArgument', 'PossiblyFalseArgument'],
+                'php_version' => '8.1',
+            ],
             'stringLengthOfZeroAssertsAnEmptyString' => [
                 'code' => '<?php
                     /** @var string $s */
