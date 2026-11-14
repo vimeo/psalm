@@ -114,6 +114,7 @@ use function strrpos;
 use function strtolower;
 use function substr;
 use function substr_count;
+use function uasort;
 
 use const PHP_INT_SIZE;
 use const PHP_VERSION_ID;
@@ -1175,9 +1176,19 @@ final class Codebase
      */
     public function findReferencesToMethod(string $method_id): array
     {
-        return $this->code_use_graph->getReferenceLocations(
-            CodeUseGraph::functionLikeNode(strtolower($method_id)),
+        $method_id_lc = strtolower($method_id);
+
+        // calls whose return value is used are recorded on the return node
+        $locations = $this->code_use_graph->getReferenceLocations(CodeUseGraph::functionLikeNode($method_id_lc))
+            + $this->code_use_graph->getReferenceLocations(CodeUseGraph::functionLikeReturnNode($method_id_lc));
+
+        uasort(
+            $locations,
+            static fn(CodeLocation $a, CodeLocation $b): int
+                => [$a->file_path, $a->raw_file_start] <=> [$b->file_path, $b->raw_file_start],
         );
+
+        return $locations;
     }
 
     /**
