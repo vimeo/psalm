@@ -724,6 +724,22 @@ final class PropertyTypeInvarianceTest extends TestCase
                 'error_levels' => [],
                 'php_version' => '8.0',
             ],
+            'redeclaredPropertyWithoutDocblockTypeChecksItsNativeType' => [
+                'code' => '<?php
+                    /** @deprecated */
+                    final class Dep {}
+
+                    /** @psalm-suppress DeprecatedClass */
+                    class ParentClass {
+                        /** @var Dep|null */
+                        public ?Dep $dep = null;
+                    }
+
+                    final class ChildClass extends ParentClass {
+                        public ?Dep $dep = null;
+                    }',
+                'error_message' => 'DeprecatedClass - src' . DIRECTORY_SEPARATOR . 'somefile.php:12:32',
+            ],
         ];
     }
 

@@ -994,8 +994,11 @@ final class ClassAnalyzer extends ClassLikeAnalyzer
                 );
             }
 
+            // an inherited docblock type is checked where it is written, and the native type here
+            $inherits_type = $property_storage->documenting_property_id !== null;
+
             $has_docblock_over_signature = $property_storage->signature_type
-                && $property_storage->type?->getId() !== $property_storage->signature_type->getId();
+                && ($inherits_type || $property_storage->type?->getId() !== $property_storage->signature_type->getId());
 
             if ($property_type_location && (!$fleshed_out_type->isMixed() || $has_docblock_over_signature)) {
                 $stmt = array_filter(
@@ -1019,9 +1022,6 @@ final class ClassAnalyzer extends ClassLikeAnalyzer
                         }
                     }
                 }
-
-                // an inherited docblock type is checked where it is written
-                $inherits_type = $property_storage->documenting_property_id !== null;
 
                 if (!$inherits_type) {
                     /** @psalm-suppress UnusedMethodCall This call actually has the side effect of creating issues */
