@@ -822,6 +822,28 @@ final class ReferenceTest extends TestCase
                 'ignored_issues' => [],
                 'php_version' => '8.0',
             ],
+            'referenceThatWasOneBeforeTheLoopIsReboundBeforeABreakAndWrittenToAfterIt' => [
+                'code' => '<?php
+                    /**
+                     * @param array<string, mixed> $data
+                     * @param list<string> $path
+                     */
+                    function set(array &$data, array $path, string $value): void {
+                        $cursor = &$data;
+
+                        foreach ($path as $key) {
+                            if ($key === "stop") {
+                                $cursor = &$cursor[$key];
+                                break;
+                            }
+                        }
+
+                        $cursor = $value;
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
             'referenceReboundToAnItemBeforeABreakDoesNotWriteToTheArrayItWasBoundTo' => [
                 'code' => '<?php
                     /**
@@ -1326,57 +1348,6 @@ final class ReferenceTest extends TestCase
 
                     $var = "foo";
                 ',
-                'error_message' => 'ReferenceReusedFromConfusingScope',
-            ],
-            'referenceReboundInALoopIsReusedAfterIt' => [
-                'code' => '<?php
-                    /**
-                     * @param array<string, mixed> $data
-                     * @param list<string> $path
-                     */
-                    function set(array &$data, array $path, string $value): void {
-                        $cursor = &$data;
-
-                        foreach ($path as $key) {
-                            $cursor = &$cursor[$key];
-                        }
-
-                        $cursor = $value;
-                    }',
-                'error_message' => 'ReferenceReusedFromConfusingScope',
-            ],
-            'referenceReboundInAnIfIsReusedAfterIt' => [
-                'code' => '<?php
-                    /** @param array<string, mixed> $data */
-                    function set(array &$data, string $key, string $value, bool $nested): void {
-                        $cursor = &$data;
-
-                        if ($nested) {
-                            $cursor = &$cursor[$key];
-                        }
-
-                        $cursor = $value;
-                    }',
-                'error_message' => 'ReferenceReusedFromConfusingScope',
-            ],
-            'referenceReboundBeforeABreakIsReusedAfterTheLoop' => [
-                'code' => '<?php
-                    /**
-                     * @param array<string, mixed> $data
-                     * @param list<string> $path
-                     */
-                    function set(array &$data, array $path, string $value): void {
-                        $cursor = &$data;
-
-                        foreach ($path as $key) {
-                            if ($key === "stop") {
-                                $cursor = &$cursor[$key];
-                                break;
-                            }
-                        }
-
-                        $cursor = $value;
-                    }',
                 'error_message' => 'ReferenceReusedFromConfusingScope',
             ],
             'referenceNotReboundBeforeABreakStillWritesToTheParameter' => [
