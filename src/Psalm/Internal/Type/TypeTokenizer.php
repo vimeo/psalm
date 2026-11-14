@@ -419,6 +419,10 @@ final class TypeTokenizer
                 continue;
             }
 
+            if ($string_type_token[0] === '') {
+                throw new TypeParseTreeException('Type is empty.');
+            }
+
             if ($string_type_token[0][0] === '\\'
                 && strlen($string_type_token[0]) === 1
             ) {

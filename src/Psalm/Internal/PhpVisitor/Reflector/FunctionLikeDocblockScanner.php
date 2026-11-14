@@ -848,21 +848,17 @@ final class FunctionLikeDocblockScanner
         $is_loose_equality = false;
         $is_strict_equality = false;
 
-        if ($assertion_type === '') {
-            return null;
-        }
-
-        if ($assertion_type[0] === '!') {
+        if (str_starts_with($assertion_type, '!')) {
             $is_negation = true;
             $assertion_type = substr($assertion_type, 1);
         }
 
-        if ($assertion_type[0] === '~') {
+        if (str_starts_with($assertion_type, '~')) {
             $is_loose_equality = true;
             $assertion_type = substr($assertion_type, 1);
         }
 
-        if ($assertion_type[0] === '=') {
+        if (str_starts_with($assertion_type, '=')) {
             $is_strict_equality = true;
             $assertion_type = substr($assertion_type, 1);
         }
