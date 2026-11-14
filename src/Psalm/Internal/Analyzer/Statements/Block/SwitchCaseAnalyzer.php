@@ -16,6 +16,7 @@ use Psalm\Internal\Analyzer\ScopeAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\IntMaskComparisonAnalyzer;
 use Psalm\Internal\Analyzer\Statements\ExpressionAnalyzer;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
+use Psalm\Internal\Clause;
 use Psalm\Internal\PhpVisitor\ConditionCloningVisitor;
 use Psalm\Internal\PhpVisitor\TypeMappingVisitor;
 use Psalm\Internal\Scope\CaseScope;
@@ -354,20 +355,7 @@ final class SwitchCaseAnalyzer
             );
         }
 
-        $with_negated_clauses = $switch_scope->negated_clauses && count($switch_scope->negated_clauses) < 50;
-
-        $entry_clauses = $with_negated_clauses
-            ? [...$original_context->clauses, ...$switch_scope->negated_clauses]
-            : $original_context->clauses;
-
-        // what the case condition assigns is a new value, which the earlier clauses say nothing about
-        foreach ($cond_assigned_var_ids as $var_id => $_) {
-            $entry_clauses = Context::filterClauses($var_id, $entry_clauses);
-        }
-
-        if ($with_negated_clauses) {
-            $entry_clauses = Algebra::simplifyCNF($entry_clauses);
-        }
+        $entry_clauses = self::getEntryClauses($original_context, $switch_scope, $cond_assigned_var_ids);
 
         if ($case_clauses && $case->cond) {
             // this will see whether any of the clauses in set A conflict with the clauses in set B
@@ -558,6 +546,31 @@ final class SwitchCaseAnalyzer
         unset($case_context->case_scope);
 
         return null;
+    }
+
+    /**
+     * What holds when the case is reached: the clauses before the switch, and the earlier cases being false.
+     *
+     * @param array<string, int> $cond_assigned_var_ids
+     * @return list<Clause>
+     */
+    private static function getEntryClauses(
+        Context $original_context,
+        SwitchScope $switch_scope,
+        array $cond_assigned_var_ids,
+    ): array {
+        $with_negated_clauses = $switch_scope->negated_clauses && count($switch_scope->negated_clauses) < 50;
+
+        $entry_clauses = $with_negated_clauses
+            ? [...$original_context->clauses, ...$switch_scope->negated_clauses]
+            : $original_context->clauses;
+
+        // what the case condition assigns is a new value, which the earlier clauses say nothing about
+        foreach ($cond_assigned_var_ids as $var_id => $_) {
+            $entry_clauses = Context::filterClauses($var_id, $entry_clauses);
+        }
+
+        return $with_negated_clauses ? Algebra::simplifyCNF($entry_clauses) : $entry_clauses;
     }
 
     /**
