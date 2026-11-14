@@ -58,6 +58,51 @@ final class TypeAlgebraTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'notIdenticalOfAnOrChainGivesTheOperandsTheTypeOfTheComparedValues' => [
+                'code' => '<?php
+                    /** @param array<string, mixed> $metadata */
+                    function check(array $metadata, string $command): string {
+                        $version = $metadata["version"] ?? null;
+                        $metadataCommand = $metadata["command"] ?? null;
+                        $reason = $metadata["reason"] ?? null;
+
+                        if ($version !== 1 || $metadataCommand !== $command || $reason !== "OK") {
+                            throw new Exception("unexpected");
+                        }
+
+                        /** @psalm-check-type-exact $version = 1 */
+                        /** @psalm-check-type-exact $metadataCommand = string */
+                        /** @psalm-check-type-exact $reason = "OK" */
+                        return $metadataCommand;
+                    }',
+                'assertions' => [],
+                'ignored_issues' => ['MixedAssignment'],
+                'php_version' => '8.1',
+            ],
+            'notIdenticalOfAFalsableValueKeepsTheNarrowingToFalse' => [
+                'code' => '<?php
+                    function eqFalse(string|false|null $a): string {
+                        if ($a === false) {
+                            /** @psalm-check-type-exact $a = false */
+                            return "no";
+                        }
+
+                        /** @psalm-check-type-exact $a = string|null */
+                        return (string) $a;
+                    }
+
+                    function sameFalsable(string|false $a, string|false $b): string {
+                        if ($a !== $b) {
+                            return "different";
+                        }
+
+                        /** @psalm-check-type-exact $a = false|string */
+                        return "same";
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
             'coalesceAssignmentInConditionNarrowsTheVariable' => [
                 'code' => <<<'PHP'
                     <?php
