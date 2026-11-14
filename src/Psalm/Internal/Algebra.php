@@ -191,15 +191,11 @@ final class Algebra
                         if (!$clause_var_possibilities) {
                             $updated_clause = $clause_b->removePossibilities($clause_var);
 
-                            // nothing is left of the clause: it contradicts the unit clause, and both stay
-                            // for the reconciler to find the contradiction
-                            if (!$updated_clause) {
-                                continue;
-                            }
-
                             unset($cloned_clauses[$clause_b_hash]);
 
-                            $cloned_clauses[$updated_clause->hash] = $updated_clause;
+                            if ($updated_clause) {
+                                $cloned_clauses[$updated_clause->hash] = $updated_clause;
+                            }
                         } else {
                             unset($cloned_clauses[$clause_b_hash]);
 
