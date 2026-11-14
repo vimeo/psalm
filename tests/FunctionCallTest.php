@@ -3219,6 +3219,65 @@ final class FunctionCallTest extends TestCase
                 'ignored_issues' => [],
                 'php_version' => '7.4',
             ],
+            'pureFunctionCalledWithLiteralsRemembersWhatTheConditionTold' => [
+                'code' => '<?php
+                    /** @psalm-pure */
+                    function lookup(string $name): ?string {
+                        return $name === "test" ? "found" : null;
+                    }
+
+                    $a = "";
+                    if (lookup("test") !== null) {
+                        $a = lookup("test");
+                    }',
+                'assertions' => [
+                    '$a===' => 'string',
+                ],
+            ],
+            'pureFunctionCalledWithLiteralsRemembersAnEarlyReturnGuard' => [
+                'code' => '<?php
+                    /** @psalm-pure */
+                    function lookup(string $name): ?string {
+                        return $name === "test" ? "found" : null;
+                    }
+
+                    function guarded(): string {
+                        if (lookup("test") === null) {
+                            return "";
+                        }
+
+                        return lookup("test");
+                    }',
+            ],
+            'pureFunctionCalledWithLiteralsInALoopIsNotPossiblyUndefined' => [
+                'code' => '<?php
+                    /** @psalm-pure */
+                    function lookup(string $name): ?string {
+                        return $name === "test" ? "found" : null;
+                    }
+
+                    function loop(int $times): void {
+                        for ($i = 0; $i < $times; $i++) {
+                            $found = lookup("test");
+                            echo $found;
+                        }
+                    }',
+            ],
+            'pureFunctionCalledWithOtherArgumentsIsAnotherCall' => [
+                'code' => '<?php
+                    /** @psalm-pure */
+                    function lookup(string $name): ?string {
+                        return $name === "test" ? "found" : null;
+                    }
+
+                    $other = "";
+                    if (lookup("test") !== null) {
+                        $other = lookup("other");
+                    }',
+                'assertions' => [
+                    '$other===' => 'null|string',
+                ],
+            ],
             'filterVarIpGlobalRangeFlag' => [
                 'code' => <<<'PHP'
                     <?php

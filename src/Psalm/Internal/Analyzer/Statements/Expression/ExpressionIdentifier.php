@@ -16,6 +16,8 @@ use function count;
 use function implode;
 use function in_array;
 use function is_string;
+use function json_encode;
+use function preg_match;
 use function strtolower;
 
 /**
@@ -237,6 +239,10 @@ final class ExpressionIdentifier
             }
         }
 
+        if ($stmt instanceof PhpParser\Node\Expr\FuncCall && $stmt->getAttribute('memoizable', false)) {
+            return self::getFunctionCallId($stmt);
+        }
+
         if ($stmt instanceof PhpParser\Node\Expr\MethodCall
             && $stmt->name instanceof PhpParser\Node\Identifier
             && !$stmt->isFirstClassCallable()
@@ -260,5 +266,55 @@ final class ExpressionIdentifier
         }
 
         return self::getVarId($stmt, $this_class_name, $source);
+    }
+
+    /**
+     * Whether a key of the types of a context is an id made by {@see self::getFunctionCallId()}
+     *
+     * @psalm-pure
+     */
+    public static function isFunctionCallId(string $key): bool
+    {
+        return preg_match('/^[\w\\\\]+\\(.*\\)$/s', $key) === 1;
+    }
+
+    /**
+     * The id of a call of a function with scalar literals as its only arguments, `lookup('test', 1)`, or null for
+     * any other call. The result of a pure function is the same for the same arguments, so it can be remembered
+     * under this id.
+     */
+    public static function getFunctionCallId(PhpParser\Node\Expr\FuncCall $stmt): ?string
+    {
+        if (!$stmt->name instanceof PhpParser\Node\Name || $stmt->isFirstClassCallable()) {
+            return null;
+        }
+
+        $arguments = [];
+
+        foreach ($stmt->getArgs() as $arg) {
+            if ($arg->unpack || $arg->name !== null) {
+                return null;
+            }
+
+            $value = $arg->value;
+
+            if ($value instanceof PhpParser\Node\Scalar\String_
+                || $value instanceof PhpParser\Node\Scalar\Int_
+                || $value instanceof PhpParser\Node\Scalar\Float_
+            ) {
+                $arguments[] = json_encode($value->value);
+            } elseif ($value instanceof PhpParser\Node\Expr\ConstFetch
+                && in_array(strtolower($value->name->toString()), ['true', 'false', 'null'], true)
+            ) {
+                $arguments[] = strtolower($value->name->toString());
+            } else {
+                return null;
+            }
+        }
+
+        /** @var string|null $resolved_name */
+        $resolved_name = $stmt->name->getAttribute('resolvedName');
+
+        return strtolower($resolved_name ?? $stmt->name->toString()) . '(' . implode(', ', $arguments) . ')';
     }
 }

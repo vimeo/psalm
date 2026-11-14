@@ -12,6 +12,7 @@ use Psalm\Internal\Analyzer\Statements\Expression\ArrayAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\Assignment\ArrayAssignmentAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\Call\ClassTemplateParamCollector;
 use Psalm\Internal\Analyzer\Statements\Expression\Call\Method\MethodCallReturnTypeFetcher;
+use Psalm\Internal\Analyzer\Statements\Expression\ExpressionIdentifier;
 use Psalm\Internal\Analyzer\Statements\Expression\Fetch\ConstFetchAnalyzer;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\Internal\DataFlow\DataFlowNode;
@@ -258,6 +259,12 @@ class Reconciler
                 $has_object_array_access,
                 $statements_analyzer,
             );
+
+            // the remembered result of a function call that this context never made (the call was in the
+            // condition of an `if`): nothing is known to refine
+            if ($result_type === null && !$did_type_exist && ExpressionIdentifier::isFunctionCallId($key)) {
+                continue;
+            }
 
             if ($result_type && $result_type->isUnionEmpty()) {
                 throw new InvalidArgumentException('Union::$types cannot be empty after get value for ' . $key);
