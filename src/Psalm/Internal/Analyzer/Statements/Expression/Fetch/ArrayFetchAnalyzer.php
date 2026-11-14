@@ -107,6 +107,7 @@ use function array_values;
 use function count;
 use function implode;
 use function in_array;
+use function is_finite;
 use function is_int;
 use function spl_object_id;
 use function str_starts_with;
@@ -1458,6 +1459,48 @@ final class ArrayFetchAnalyzer
     }
 
     /**
+     * The key a write gives the array: PHP casts a float offset to an int and null to an empty string, and throws
+     * for an object or an array, so those are not keys the array can get
+     *
+     * @psalm-pure
+     */
+    public static function castOffsetTypeOfAWrite(Union $offset_type): Union
+    {
+        $atomic_types = [];
+        $changed = false;
+
+        foreach ($offset_type->getAtomicTypes() as $atomic_type) {
+            if ($atomic_type instanceof TLiteralFloat) {
+                $atomic_type = is_finite($atomic_type->value)
+                    ? new TLiteralInt((int) $atomic_type->value, $atomic_type->from_docblock)
+                    : new TInt($atomic_type->from_docblock);
+                $changed = true;
+            } elseif ($atomic_type instanceof TFloat) {
+                $atomic_type = new TInt($atomic_type->from_docblock);
+                $changed = true;
+            } elseif ($atomic_type instanceof TNull) {
+                $atomic_type = TLiteralString::make('', $atomic_type->from_docblock);
+                $changed = true;
+            } elseif ($atomic_type instanceof TObject
+                || $atomic_type instanceof TNamedObject
+                || $atomic_type instanceof TArray
+                || $atomic_type instanceof TKeyedArray
+            ) {
+                $changed = true;
+                continue;
+            }
+
+            $atomic_types[$atomic_type->getKey()] ??= $atomic_type;
+        }
+
+        if (!$changed) {
+            return $offset_type;
+        }
+
+        return $atomic_types === [] ? Type::getArrayKey() : $offset_type->setTypes($atomic_types);
+    }
+
+    /**
      * @param  TMixed|TTemplateParam|TNever $type
      */
     public static function handleMixedArrayAccess(
@@ -1700,7 +1743,7 @@ final class ArrayFetchAnalyzer
                 $type = $type->setTypeParams([
                     $offset_type->hasMixed()
                         ? Type::getArrayKey()
-                        : $offset_type->freeze(),
+                        : self::castOffsetTypeOfAWrite($offset_type->freeze()),
                     $type->type_params[1],
                 ]);
             }
