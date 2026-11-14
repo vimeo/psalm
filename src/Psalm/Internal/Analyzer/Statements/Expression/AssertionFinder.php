@@ -1427,6 +1427,14 @@ final class AssertionFinder
     public static function getArgumentOffsetVarId(string $var_id, array $args, FileSource $source): ?string
     {
         $parts = self::splitArgumentOffsetVarId($var_id);
+
+        // the position of a parameter says nothing of the argument once an argument is named or unpacked
+        foreach ($args as $call_arg) {
+            if ($call_arg instanceof PhpParser\Node\Arg && ($call_arg->name !== null || $call_arg->unpack)) {
+                return null;
+            }
+        }
+
         $arg = $parts === null ? null : ($args[$parts[0]] ?? null);
 
         if ($parts === null || !$arg instanceof PhpParser\Node\Arg) {

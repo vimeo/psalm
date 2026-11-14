@@ -4271,6 +4271,39 @@ final class AssertAnnotationTest extends TestCase
     public static function providerInvalidCodeParse(): iterable
     {
         return [
+            'assertAnOffsetOfAnArgumentIsIgnoredForANamedArgument' => [
+                'code' => <<<'PHP'
+                    <?php
+                    final class Obj {
+                        public function m(): int {
+                            return 1;
+                        }
+                    }
+
+                    /**
+                     * @psalm-assert Obj $context['obj']
+                     * @param array{obj?: mixed} $context
+                     */
+                    function assertObj(array $other, array $context): void {
+                        if (!isset($context['obj']) || !$context['obj'] instanceof Obj) {
+                            throw new InvalidArgumentException('Object is not set');
+                        }
+                    }
+
+                    /**
+                     * @param array{obj?: mixed} $a
+                     * @param array{obj?: mixed} $b
+                     */
+                    function f(array $a, array $b): int {
+                        assertObj(context: $a, other: $b);
+
+                        return $b['obj']->m();
+                    }
+                    PHP,
+                'error_message' => 'PossiblyUndefinedArrayOffset - src' . DIRECTORY_SEPARATOR . 'somefile.php:25:12 - Possibly undefined array key',
+                'error_levels' => [],
+                'php_version' => '8.1',
+            ],
             'assertNonEmptyArrayOnANonEmptyArray' => [
                 'code' => '<?php
                     /**
