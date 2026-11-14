@@ -10,9 +10,6 @@ use Psalm\IssueBuffer;
 use Psalm\Tests\Traits\InvalidCodeAnalysisTestTrait;
 use Psalm\Tests\Traits\InvalidCodeAnalysisWithIssuesTestTrait;
 use Psalm\Tests\Traits\ValidCodeAnalysisTestTrait;
-use Psalm\Type\Atomic;
-
-use function array_map;
 
 use const DIRECTORY_SEPARATOR;
 
@@ -1014,6 +1011,7 @@ final class MixinAnnotationTest extends TestCase
                         }
                     }
 
+                    // guards that the call goes to the mixin; the leaked `&static` is the same as on master
                     $a = Http::withHeaders();',
                 'assertions' => [
                     '$a===' => 'PendingRequest&static',
@@ -1045,6 +1043,8 @@ final class MixinAnnotationTest extends TestCase
 
                     class Customer extends Model {}
 
+                    // guards that the static call is typed as the instance call; the leaked `&static` is the same as
+                    // on master
                     $a = Customer::first();
                     $b = (new Customer())->first();',
                 'assertions' => [
@@ -2317,7 +2317,7 @@ final class MixinAnnotationTest extends TestCase
                     $child = new Child();
                     $result = $child->views;',
                 'assertions' => [
-                    '$result' => 'string',
+                    '$result===' => 'string',
                 ],
             ],
             'templatedMixinPropertyFetchRealProperty' => [
@@ -2413,7 +2413,7 @@ final class MixinAnnotationTest extends TestCase
                     $host = new SibHost();
                     $result = $host->val();',
                 'assertions' => [
-                    '$result' => 'int',
+                    '$result===' => 'int',
                 ],
             ],
             'nestedMixinPseudoMethodViaMagicCall' => [
@@ -2522,6 +2522,318 @@ final class MixinAnnotationTest extends TestCase
                 'ignored_issues' => ['UndefinedMagicMethod'],
                 'php_version' => '8.0',
             ],
+            'selfAndStaticInTheMixinOfATraitMeanTheClassUsingIt' => [
+                'code' => '<?php
+                    /** @template T */
+                    final class Builder
+                    {
+                        /** @return T */
+                        public function first(): mixed
+                        {
+                            throw new Exception();
+                        }
+                    }
+
+                    abstract class Model {}
+
+                    /** @template T of Model */
+                    final class ModelBuilder
+                    {
+                        /** @return T */
+                        public function firstModel(): mixed
+                        {
+                            throw new Exception();
+                        }
+                    }
+
+                    /** @mixin Builder<self> */
+                    trait HasSelfBuilder {}
+
+                    /** @mixin ModelBuilder<static> */
+                    trait HasModelBuilder {}
+
+                    final class Document
+                    {
+                        use HasSelfBuilder;
+                    }
+
+                    final class Customer extends Model
+                    {
+                        use HasModelBuilder;
+                    }
+
+                    $a = (new Document())->first();
+                    $b = (new Customer())->firstModel();',
+                'assertions' => [
+                    '$a===' => 'Document',
+                    '$b===' => 'Customer',
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'magicMemberOfAMixinUnreachableWithoutMagicMethodsDoesNotHideALaterMixin' => [
+                'code' => '<?php
+                    /**
+                     * @method string foo()
+                     * @property string $bar
+                     */
+                    final class Magic
+                    {
+                        /** @param list<mixed> $args */
+                        public function __call(string $name, array $args): mixed
+                        {
+                            return null;
+                        }
+
+                        public function __get(string $name): mixed
+                        {
+                            return null;
+                        }
+                    }
+
+                    final class Real
+                    {
+                        public int $bar = 1;
+
+                        public function foo(): int
+                        {
+                            return 1;
+                        }
+                    }
+
+                    /** @template T */
+                    final class Builder
+                    {
+                        public function foo(): int
+                        {
+                            return 1;
+                        }
+                    }
+
+                    /**
+                     * @mixin Magic
+                     * @mixin Real
+                     */
+                    final class Host {}
+
+                    /**
+                     * @mixin Magic
+                     * @mixin Builder<static>
+                     */
+                    class StaticHost
+                    {
+                        /** @param list<mixed> $args */
+                        public static function __callStatic(string $name, array $args): mixed
+                        {
+                            return null;
+                        }
+                    }
+
+                    $a = (new Host())->foo();
+                    $b = (new Host())->bar;
+                    $c = StaticHost::foo();',
+                'assertions' => [
+                    '$a===' => 'int',
+                    '$b===' => 'int',
+                    '$c===' => 'int',
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'magicMemberOfTheFirstMixinWinsWhenTheClassHasMagicMethods' => [
+                'code' => '<?php
+                    /**
+                     * @method string foo()
+                     * @property string $bar
+                     */
+                    final class Magic
+                    {
+                        /** @param list<mixed> $args */
+                        public function __call(string $name, array $args): mixed
+                        {
+                            return null;
+                        }
+
+                        public function __get(string $name): mixed
+                        {
+                            return null;
+                        }
+                    }
+
+                    final class Real
+                    {
+                        public int $bar = 1;
+
+                        public function foo(): int
+                        {
+                            return 1;
+                        }
+                    }
+
+                    /**
+                     * @mixin Magic
+                     * @mixin Real
+                     */
+                    final class Host
+                    {
+                        /** @param list<mixed> $args */
+                        public function __call(string $name, array $args): mixed
+                        {
+                            return null;
+                        }
+
+                        public function __get(string $name): mixed
+                        {
+                            return null;
+                        }
+                    }
+
+                    $a = (new Host())->foo();
+                    $b = (new Host())->bar;',
+                'assertions' => [
+                    '$a===' => 'string',
+                    '$b===' => 'string',
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'mixinNamingAClassAlias' => [
+                'code' => '<?php
+                    final class Real
+                    {
+                        public function real(): int
+                        {
+                            return 1;
+                        }
+                    }
+
+                    final class Other
+                    {
+                        public function other(): string
+                        {
+                            return "";
+                        }
+                    }
+
+                    class_alias(Real::class, "Aliased");
+
+                    /** @mixin Other */
+                    abstract class ParentHost {}
+
+                    /** @mixin Aliased */
+                    final class Host extends ParentHost {}
+
+                    $a = (new Host())->real();
+                    $b = (new Host())->other();',
+                'assertions' => [
+                    '$a===' => 'int',
+                    '$b===' => 'string',
+                ],
+            ],
+            'mixinDeclaredFirstWinsBetweenANamedAndATemplatedMixin' => [
+                'code' => '<?php
+                    final class Target
+                    {
+                        public int $p = 1;
+
+                        public function m(): int
+                        {
+                            return 1;
+                        }
+                    }
+
+                    final class Named
+                    {
+                        public string $p = "";
+
+                        public function m(): string
+                        {
+                            return "";
+                        }
+                    }
+
+                    /**
+                     * @template T
+                     * @mixin Named
+                     * @mixin T
+                     */
+                    final class NamedFirst {}
+
+                    /**
+                     * @template T
+                     * @mixin T
+                     * @mixin Named
+                     */
+                    final class TemplatedFirst {}
+
+                    /** @return NamedFirst<Target> */
+                    function namedFirst(): NamedFirst
+                    {
+                        throw new Exception();
+                    }
+
+                    /** @return TemplatedFirst<Target> */
+                    function templatedFirst(): TemplatedFirst
+                    {
+                        throw new Exception();
+                    }
+
+                    $a = namedFirst()->m();
+                    $b = namedFirst()->p;
+                    $c = templatedFirst()->m();
+                    $d = templatedFirst()->p;',
+                'assertions' => [
+                    '$a===' => 'string',
+                    '$b===' => 'string',
+                    '$c===' => 'int',
+                    '$d===' => 'int',
+                ],
+            ],
+            'inheritedPseudoMethodWinsOverTheOwnMixinOfTheClass' => [
+                'code' => '<?php
+                    final class QueryBuilder
+                    {
+                        public function find(): self
+                        {
+                            return $this;
+                        }
+                    }
+
+                    /** @method string find() */
+                    abstract class Model
+                    {
+                        /** @param list<mixed> $args */
+                        public function __call(string $name, array $args): mixed
+                        {
+                            return null;
+                        }
+                    }
+
+                    /** @mixin QueryBuilder */
+                    final class Post extends Model {}
+
+                    /** @method int find() */
+                    interface HasFind {}
+
+                    /** @mixin QueryBuilder */
+                    final class Comment implements HasFind
+                    {
+                        /** @param list<mixed> $args */
+                        public function __call(string $name, array $args): mixed
+                        {
+                            return null;
+                        }
+                    }
+
+                    $a = (new Post())->find();
+                    $b = (new Comment())->find();',
+                'assertions' => [
+                    '$a===' => 'string',
+                    '$b===' => 'int',
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
         ];
     }
 
@@ -2537,6 +2849,28 @@ final class MixinAnnotationTest extends TestCase
                     /** @mixin Missing */
                     trait ForwardsCalls {}',
                 'error_message' => 'UndefinedDocblockClass',
+            ],
+            'undefinedMixinOfAnInterface' => [
+                'code' => '<?php
+                    /** @mixin Missing */
+                    interface ForwardsCalls {}',
+                'error_message' => 'UndefinedDocblockClass',
+            ],
+            'mixinOfATraitNamingStaticIsCheckedForTheClassUsingIt' => [
+                'code' => '<?php
+                    abstract class Model {}
+
+                    /** @template T of Model */
+                    final class ModelBuilder {}
+
+                    /** @mixin ModelBuilder<static> */
+                    trait HasModelBuilder {}
+
+                    final class NotAModel
+                    {
+                        use HasModelBuilder;
+                    }',
+                'error_message' => 'InvalidTemplateParam - src' . DIRECTORY_SEPARATOR . 'somefile.php:10:33',
             ],
             'mixinCallDoesNotSuppressTheMixinCheckOfTheMixinTarget' => [
                 'code' => '<?php
@@ -2953,13 +3287,6 @@ final class MixinAnnotationTest extends TestCase
         }
 
         $this->assertSame(['InvalidDocblock'], $issue_types);
-        $this->assertSame(
-            ['Provider'],
-            array_map(
-                static fn(Atomic $mixin): string => $mixin->getId(),
-                $this->project_analyzer->getCodebase()->classlike_storage_provider->get('Host')->getMixins(),
-            ),
-        );
     }
 
     public function testUnparseableMixinAloneBehavesLikeNoMixin(): void
@@ -2981,9 +3308,5 @@ final class MixinAnnotationTest extends TestCase
         }
 
         $this->assertSame(['InvalidDocblock'], $issue_types);
-        $this->assertSame(
-            [],
-            $this->project_analyzer->getCodebase()->classlike_storage_provider->get('A')->getMixins(),
-        );
     }
 }

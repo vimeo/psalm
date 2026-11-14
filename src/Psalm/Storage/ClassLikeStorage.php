@@ -95,7 +95,8 @@ final class ClassLikeStorage implements HasAttributesInterface
     public array $namedMixins = [];
 
     /**
-     * The `@mixin`s the class declares, in declaration order.
+     * The `@mixin`s the class declares, in declaration order: the same objects as in namedMixins and
+     * templatedMixins, so getMixins() can tell them from those plugins added.
      *
      * @internal
      * @var list<TNamedObject|TTemplateParam>
@@ -103,14 +104,22 @@ final class ClassLikeStorage implements HasAttributesInterface
     public array $declaredMixins = [];
 
     /**
-     * @deprecated Always empty, removed in psalm-plugin-api 0.5.0: the mixins of a mixin are looked up along with it
+     * @deprecated Always empty; will be removed in psalm-plugin-api 0.5.0. Each mixin is bound in the context of the
+     *     class declaring it.
+     * @var array<lowercase-string, string>
+     */
+    public array $inheritedNamedMixinDeclaringClasses = [];
+
+    /**
+     * @deprecated Always empty; will be removed in psalm-plugin-api 0.5.0. The mixins of a mixin are looked up along
+     *     with it.
      * @var list<TNamedObject>
      */
     public array $transitiveNamedMixins = [];
 
     /**
-     * @deprecated Never set or read, removed in psalm-plugin-api 0.5.0: each mixin is bound in the context of the
-     *     class declaring it
+     * @deprecated Never set or read; will be removed in psalm-plugin-api 0.5.0. Each mixin is bound in the context
+     *     of the class declaring it.
      */
     public ?string $mixin_declaring_fqcln = null;
 
@@ -681,13 +690,42 @@ final class ClassLikeStorage implements HasAttributesInterface
     }
 
     /**
-     * @deprecated Removed in psalm-plugin-api 0.5.0: use getMixins() for the mixins the class declares
+     * @deprecated Will be removed in psalm-plugin-api 0.5.0. Returns only the named mixins the class declares (and
+     *     those plugins added); use getMixins().
      * @return list<TNamedObject>
      * @psalm-mutation-free
      */
     public function getNamedMixinsForLookup(): array
     {
         return $this->namedMixins;
+    }
+
+    /**
+     * @deprecated Will be removed in psalm-plugin-api 0.5.0. The class whose templates the type arguments of the
+     *     mixin are written with: the class declaring them, or the class itself.
+     * @psalm-mutation-free
+     */
+    public function getNamedMixinDeclaringClass(TNamedObject $mixin): string
+    {
+        foreach ($mixin instanceof TGenericObject ? $mixin->type_params : [] as $type_param) {
+            foreach ($type_param->getAtomicTypes() as $atomic_type) {
+                if ($atomic_type instanceof TTemplateParam) {
+                    return $atomic_type->defining_class;
+                }
+            }
+        }
+
+        return $this->name;
+    }
+
+    /**
+     * @deprecated Will be removed in psalm-plugin-api 0.5.0; use getMixins().
+     * @return list<TNamedObject|TTemplateParam>
+     * @psalm-mutation-free
+     */
+    public function getOwnMixins(): array
+    {
+        return $this->getMixins();
     }
 
     /**

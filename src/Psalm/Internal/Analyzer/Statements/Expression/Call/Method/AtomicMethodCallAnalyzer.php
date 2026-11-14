@@ -386,14 +386,16 @@ final class AtomicMethodCallAnalyzer extends CallAnalyzer
                 }
             }
 
-            $naive_method_exists = false;
-
-            // a `@method` of the class or of its interfaces, or a method an existence provider adds to the class,
-            // wins over its mixins
+            // a `@method` of the class, of its parent classes or of its interfaces, or a method an existence provider
+            // adds to the class, wins over its mixins
             if (!$fake_method_exists
-                && !MissingMethodCallHandler::hasPseudoMethod($codebase, $class_storage, $method_name_lc)
+                && MissingMethodCallHandler::findPseudoMethodAndClassStorages(
+                    $codebase,
+                    $class_storage,
+                    $method_name_lc,
+                ) === null
             ) {
-                [$mixin, $mixin_method_exists] = self::findMixinWithMethod(
+                [$mixin, $mixin_method_kind] = self::findMixinWithMethod(
                     $statements_analyzer,
                     $stmt,
                     $codebase,
@@ -405,16 +407,22 @@ final class AtomicMethodCallAnalyzer extends CallAnalyzer
                 );
 
                 if ($mixin !== null) {
-                    if ($mixin_method_exists) {
+                    if ($mixin_method_kind === 'pseudo') {
+                        // the call goes through the __call() of the class, with `$this` the class
+                        $pseudo_method_mixin = $mixin;
+                    } else {
                         $mixin_user_class = $fq_class_name;
-                        [$lhs_type_part, $class_storage] = $mixin;
+                        ['type' => $lhs_type_part, 'storage' => $class_storage] = $mixin;
                         $fq_class_name = $class_storage->name;
                         $method_id = new MethodIdentifier($fq_class_name, $method_name_lc);
                         $mixin_method_id = $method_id;
-                        $naive_method_exists = true;
-                    } else {
-                        // the call goes through the __call() of the class, with `$this` the class
-                        $pseudo_method_mixin = $mixin[0];
+                        $naive_method_exists = $mixin_method_kind === 'real';
+
+                        // a method an existence provider adds is analysed as the call on the mixin
+                        if ($mixin_method_kind === 'provided') {
+                            $fake_method_exists = true;
+                            $naive_method_id = $method_id;
+                        }
                     }
                 }
             }
@@ -824,12 +832,14 @@ final class AtomicMethodCallAnalyzer extends CallAnalyzer
     }
 
     /**
-     * The mixin with the method, bound for the receiver, and whether the method is a real one rather than a
-     * `@method` or a method an existence provider adds. The latter are only looked for when no mixin has the method
-     * otherwise.
+     * The mixin with the method, bound for the receiver, and whether the method is a real one, one an existence
+     * provider adds or a `@method`. A mixin's `@method` is only reached through the `__call()` of the class.
      *
      * @param lowercase-string $method_name_lc
-     * @return array{array{TNamedObject, ClassLikeStorage, TNamedObject|TTemplateParam}|null, bool}
+     * @return array{
+     *     array{type: TNamedObject, storage: ClassLikeStorage, declared: TNamedObject|TTemplateParam}|null,
+     *     'real'|'provided'|'pseudo',
+     * }
      */
     private static function findMixinWithMethod(
         StatementsAnalyzer $statements_analyzer,
@@ -841,55 +851,57 @@ final class AtomicMethodCallAnalyzer extends CallAnalyzer
         string $method_name_lc,
         bool $self_call,
     ): array {
-        $mixin_method_exists = false;
+        $kind = 'real';
+        $has_magic_call = isset($class_storage->declaring_method_ids['__call']);
 
-        foreach ([false, true] as $use_existence_provider) {
-            $mixin = MixinLookup::findMember(
+        $mixin = MixinLookup::findMember(
+            $codebase,
+            $class_storage,
+            $lhs_type_part,
+            static function (ClassLikeStorage $mixin_storage) use (
+                $statements_analyzer,
+                $stmt,
                 $codebase,
-                $class_storage,
-                $lhs_type_part,
-                static function (ClassLikeStorage $mixin_storage) use (
-                    $statements_analyzer,
-                    $stmt,
-                    $codebase,
-                    $context,
+                $context,
+                $method_name_lc,
+                $has_magic_call,
+                &$kind,
+            ): bool {
+                if ($codebase->methodExists(
+                    new MethodIdentifier($mixin_storage->name, $method_name_lc),
+                    $context->calling_method_id,
+                    $codebase->collect_locations
+                        ? new CodeLocation($statements_analyzer->getSource(), $stmt->name)
+                        : null,
+                    !$context->collect_initializations
+                    && !$context->collect_mutations
+                        ? $statements_analyzer
+                        : null,
+                    $statements_analyzer->getFilePath(),
+                    false,
+                    $context->insideUse(),
+                )) {
+                    $kind = 'real';
+                    return true;
+                }
+
+                if ($codebase->methods->existence_provider->doesMethodExist(
+                    $mixin_storage->name,
                     $method_name_lc,
-                    $use_existence_provider,
-                    &$mixin_method_exists,
-                ): bool {
-                    $mixin_method_exists = $codebase->methodExists(
-                        new MethodIdentifier($mixin_storage->name, $method_name_lc),
-                        $context->calling_method_id,
-                        $codebase->collect_locations
-                            ? new CodeLocation($statements_analyzer->getSource(), $stmt->name)
-                            : null,
-                        !$context->collect_initializations
-                        && !$context->collect_mutations
-                            ? $statements_analyzer
-                            : null,
-                        $statements_analyzer->getFilePath(),
-                        false,
-                        $context->insideUse(),
-                    );
+                    $statements_analyzer,
+                ) === true) {
+                    $kind = 'provided';
+                    return true;
+                }
 
-                    return $mixin_method_exists
-                        || isset($mixin_storage->pseudo_methods[$method_name_lc])
-                        || ($use_existence_provider
-                            && $codebase->methods->existence_provider->doesMethodExist(
-                                $mixin_storage->name,
-                                $method_name_lc,
-                                $statements_analyzer,
-                            ) === true);
-                },
-                $self_call,
-            );
+                $kind = 'pseudo';
 
-            if ($mixin !== null) {
-                return [$mixin, $mixin_method_exists];
-            }
-        }
+                return $has_magic_call && isset($mixin_storage->pseudo_methods[$method_name_lc]);
+            },
+            $self_call,
+        );
 
-        return [null, false];
+        return [$mixin, $kind];
     }
 
     private static function handleCallableObject(

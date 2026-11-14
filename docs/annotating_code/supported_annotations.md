@@ -92,14 +92,16 @@ echo $b->b;
 echo $b->a; // works
 ```
 
-The members of the class itself, its `@method`s and `@property`s included, come first. A member it lacks is looked up
-in its mixins in declaration order, then in those of its traits, then in those of its parent class, and so on. The
-mixins of a mixin are looked up right after it, and the first mixin with the member wins:
+The members of the class, of its parent classes and of its interfaces, their `@method`s and `@property`s included,
+come first. A member the class lacks is looked up in its mixins in declaration order, then in those of its traits,
+then in those of its parent class, and so on. The mixins of a mixin are looked up right after it, and the first mixin
+with the member wins:
 
 ```php
-class Deep { public function name(): int { return 1; } }
-class Near { public function name(): string { return ''; } }
-class Other { public function name(): bool { return true; } }
+class Deep { public function a(): int { return 1; } }
+class Near { public function a(): string { return ''; } public function d(): string { return ''; } }
+class Other { public function b(): bool { return true; } }
+class Far { public function b(): float { return 1.0; } public function c(): float { return 1.0; } }
 
 /** @mixin Deep */
 class Middle {}
@@ -107,17 +109,25 @@ class Middle {}
 /** @mixin Other */
 trait Forwards {}
 
-/** @mixin Near */
+/** @mixin Far */
 abstract class Base { public function __call(string $name, array $args): mixed { return null; } }
 
 /**
+ * @method null d()
  * @mixin Middle
  * @mixin Near
  */
 class Child extends Base { use Forwards; }
 
-(new Child())->name(); // int: Middle comes first, and Deep is its mixin
+$child = new Child();
+$child->a(); // int: Deep, the mixin of Middle, comes before Near
+$child->b(); // bool: the mixin of a trait comes before that of the parent class
+$child->c(); // float
+$child->d(); // null: the class's own `@method` comes first
 ```
+
+A mixin's `@method`s are only used when the class has `__call()`, and its `@property`s when the class has `__get()`
+or is an interface.
 
 
 ## Psalm-specific tags

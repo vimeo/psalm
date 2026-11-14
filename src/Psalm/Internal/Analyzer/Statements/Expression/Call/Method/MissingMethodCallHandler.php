@@ -32,6 +32,7 @@ use Psalm\Type;
 use Psalm\Type\Atomic;
 use Psalm\Type\Atomic\TClosure;
 use Psalm\Type\Atomic\TNamedObject;
+use Psalm\Type\Atomic\TTemplateParam;
 use Psalm\Type\Union;
 
 use function array_map;
@@ -44,7 +45,8 @@ use function count;
 final class MissingMethodCallHandler
 {
     /**
-     * @param ?TNamedObject $mixin the mixin, bound for the receiver, whose `@method` the call goes to
+     * @param array{type: TNamedObject, storage: ClassLikeStorage, declared: TNamedObject|TTemplateParam}|null $mixin
+     *     the mixin, bound for the receiver, whose `@method` the call goes to
      */
     public static function handleMagicMethod(
         StatementsAnalyzer $statements_analyzer,
@@ -58,14 +60,13 @@ final class MissingMethodCallHandler
         AtomicMethodCallAnalysisResult $result,
         ?Atomic $lhs_type_part,
         ?string $lhs_var_id,
-        ?TNamedObject $mixin = null,
+        ?array $mixin,
     ): ?AtomicCallContext {
         $fq_class_name = $method_id->fq_class_name;
         $method_name_lc = $method_id->method_name;
 
-        $pseudo_method_class_storage = $mixin !== null
-            ? $codebase->classlike_storage_provider->get($mixin->value)
-            : $class_storage;
+        $pseudo_method_class_storage = $mixin['storage'] ?? $class_storage;
+        $mixin_type = $mixin['type'] ?? null;
 
         if ($stmt->isFirstClassCallable()) {
             $found_method_and_class_storage = isset($pseudo_method_class_storage->pseudo_methods[$method_name_lc])
@@ -84,7 +85,7 @@ final class MissingMethodCallHandler
                     $found_method_and_class_storage[0],
                     $found_method_and_class_storage[1],
                     $pseudo_method_class_storage,
-                    $mixin ?? $lhs_type_part,
+                    $mixin_type ?? $lhs_type_part,
                 );
             } else {
                 $result->non_existent_magic_method_ids[] = $method_id->__toString();
@@ -170,8 +171,8 @@ final class MissingMethodCallHandler
                 $defining_class_storage,
                 $pseudo_method_class_storage,
                 $method_name_lc,
-                $mixin ?? $lhs_type_part,
-                $mixin === null
+                $mixin_type ?? $lhs_type_part,
+                $mixin_type === null
                     && !$statements_analyzer->isStatic()
                     && $method_id->fq_class_name === $context->self,
             );
@@ -737,20 +738,6 @@ final class MissingMethodCallHandler
     }
 
     /**
-     * Whether the class, one of its parent classes or one of its interfaces declares the `@method`
-     *
-     * @param lowercase-string $method_name_lc
-     * @psalm-mutation-free
-     */
-    public static function hasPseudoMethod(
-        Codebase $codebase,
-        ClassLikeStorage $class_storage,
-        string $method_name_lc,
-    ): bool {
-        return self::findPseudoMethodAndClassStorages($codebase, $class_storage, $method_name_lc) !== null;
-    }
-
-    /**
      * Try to find matching pseudo method over ancestors (including interfaces).
      *
      * Returns the pseudo method if exists, with its defining class storage.
@@ -758,10 +745,10 @@ final class MissingMethodCallHandler
      *
      * @param ClassLikeStorage $static_class_storage The called class
      * @param lowercase-string $method_name_lc
-     * @return array{MethodStorage, ClassLikeStorage}
+     * @return array{MethodStorage, ClassLikeStorage}|null
      * @psalm-mutation-free
      */
-    private static function findPseudoMethodAndClassStorages(
+    public static function findPseudoMethodAndClassStorages(
         Codebase $codebase,
         ClassLikeStorage $static_class_storage,
         string $method_name_lc,

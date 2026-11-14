@@ -460,12 +460,16 @@ final class AtomicStaticCallAnalyzer
             // the call goes to the mixin; through a generic mixin it is analysed as the instance call on the class,
             // which binds the mixin's type arguments (`Builder<static>`) for the class
             if ($mixin !== null) {
+                $receiver = $mixin['type'];
+
+                if ($mixin['declared'] instanceof TGenericObject) {
+                    $receiver = $lhs_type_part instanceof TNamedObject
+                        ? $lhs_type_part
+                        : new TNamedObject($fq_class_name);
+                }
+
                 $mixin_context = clone $context;
-                $mixin_context->vars_in_scope['$__tmp_mixin_var__'] = new Union([
-                    !$mixin[2] instanceof TGenericObject
-                        ? $mixin[0]
-                        : ($lhs_type_part instanceof TNamedObject ? $lhs_type_part : new TNamedObject($fq_class_name)),
-                ]);
+                $mixin_context->vars_in_scope['$__tmp_mixin_var__'] = new Union([$receiver]);
 
                 return self::forwardCallToInstanceMethod(
                     $statements_analyzer,

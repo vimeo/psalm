@@ -1203,9 +1203,10 @@ final class Populator
     }
 
     /**
-     * Second populate pass, once every class is populated: the file of a class inherits from each class its
-     * `@mixin` lookup (see MixinLookup) can reach, so that a change there invalidates it. They are not its
-     * dependent_classlikes, which would make it a descendant of them.
+     * Second populate pass, once every class is populated: the file of a class inherits from each named mixin class
+     * its `@mixin` lookup (see MixinLookup) can reach, so that a change there invalidates it. A `@mixin T` is skipped,
+     * as the class it names depends on the receiver. They are not its dependent_classlikes, which would make it a
+     * descendant of them.
      */
     private function registerMixinDependencies(): void
     {
@@ -1215,10 +1216,10 @@ final class Populator
             }
 
             $visited = [strtolower($storage->name) => true];
-            $queue = [$storage];
+            $pending = [$storage];
 
-            while ($queue) {
-                $current_storage = array_pop($queue);
+            while ($pending) {
+                $current_storage = array_pop($pending);
 
                 $scopes = MixinLookup::getScopes(
                     $this->classlike_storage_provider,
@@ -1254,7 +1255,7 @@ final class Populator
                             $mixin_name_lc,
                         );
 
-                        $queue[] = $mixin_storage;
+                        $pending[] = $mixin_storage;
                     }
                 }
             }

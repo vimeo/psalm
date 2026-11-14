@@ -328,6 +328,9 @@ final class AtomicPropertyFetchAnalyzer
 
             // a `@property` of the class wins over its mixins
             if (!isset($class_storage->pseudo_property_get_types['$' . $prop_name])) {
+                // a mixin's `@property` is read through the __get() of the class, or of the mixin for an interface
+                $has_magic_get = $class_storage->is_interface || isset($class_storage->declaring_method_ids['__get']);
+
                 $mixin = MixinLookup::findMember(
                     $codebase,
                     $class_storage,
@@ -340,18 +343,17 @@ final class AtomicPropertyFetchAnalyzer
                         $codebase->collect_locations
                             ? new CodeLocation($statements_analyzer->getSource(), $stmt)
                             : null,
-                    ) || isset($mixin_storage->pseudo_property_get_types['$' . $prop_name]),
+                    ) || ($has_magic_get && isset($mixin_storage->pseudo_property_get_types['$' . $prop_name])),
                 );
 
                 if ($mixin !== null) {
                     $matched_mixin = true;
 
-                    // an interface has no __get() of its own: a `@property` of its mixin is read through the mixin's
                     if ($class_storage->is_interface) {
-                        $get_method_id = new MethodIdentifier($mixin[1]->name, '__get');
+                        $get_method_id = new MethodIdentifier($mixin['storage']->name, '__get');
                     }
 
-                    [$lhs_type_part, $class_storage] = $mixin;
+                    ['type' => $lhs_type_part, 'storage' => $class_storage] = $mixin;
                     $fq_class_name = $class_storage->name;
                     $property_id = $fq_class_name . '::$' . $prop_name;
                     $naive_property_exists = !isset($class_storage->pseudo_property_get_types['$' . $prop_name]);

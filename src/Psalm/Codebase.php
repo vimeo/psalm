@@ -2466,7 +2466,8 @@ final class Codebase
                     }
 
                     if ($gap === '->') {
-                        // the mixins of its traits and parent classes too, and a member once: the first one found
+                        // members of the mixins of the class, its traits and parent classes, in lookup order; a member
+                        // already listed is not added again
                         $ignore_fq_class_names = [$type_string, ...$ignore_fq_class_names];
                         $member_keys = [];
 

@@ -370,33 +370,12 @@ final class ClassAnalyzer extends ClassLikeAnalyzer
             }
         }
 
-        $mixins = $storage->getMixins();
-
-        if ($mixins) {
-            $union = new Union($mixins);
-
-            $static_self = new TNamedObject($storage->name, true);
-
-            $union = TypeExpander::expandUnion(
-                $codebase,
-                $union,
-                $storage->name,
-                $static_self,
-                null,
-            );
-
-            /** @psalm-suppress UnusedMethodCall This call actually has the side effect of creating issues */
-            $union->check(
-                $this,
-                new CodeLocation(
-                    $this,
-                    $class->name ?: $class,
-                    null,
-                    true,
-                ),
-                $this->getSuppressedIssues(),
-            );
-        }
+        self::checkMixins(
+            $this,
+            $storage,
+            new CodeLocation($this, $class->name ?: $class, null, true),
+            $this->getSuppressedIssues(),
+        );
 
         if ($storage->template_extended_params) {
             foreach ($storage->template_extended_params as $type_map) {

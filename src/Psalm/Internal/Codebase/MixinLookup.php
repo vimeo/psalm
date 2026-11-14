@@ -62,9 +62,10 @@ final class MixinLookup
 
     /**
      * @param Closure(ClassLikeStorage): bool $has_member whether a mixin class has the member
-     * @return array{TNamedObject, ClassLikeStorage, TNamedObject|TTemplateParam}|null the mixin with the member,
-     *     bound for the receiver, its storage, and the mixin, as declared, of the class or of its traits or parent
-     *     classes the member was reached through
+     * @param bool $self_call whether the receiver is `$this`, whose templates stay unbound
+     * @return array{type: TNamedObject, storage: ClassLikeStorage, declared: TNamedObject|TTemplateParam}|null
+     *     the mixin with the member, bound for the receiver, its storage, and the mixin, as declared, of the class
+     *     or of its traits or parent classes the member was reached through
      */
     public static function findMember(
         Codebase $codebase,
@@ -116,7 +117,7 @@ final class MixinLookup
      * @param Closure(ClassLikeStorage): bool $has_member
      * @param array<lowercase-string, true> $visited
      * @param array<lowercase-string, true> $seen_scopes
-     * @return array{TNamedObject, ClassLikeStorage, TNamedObject|TTemplateParam}|null
+     * @return array{type: TNamedObject, storage: ClassLikeStorage, declared: TNamedObject|TTemplateParam}|null
      */
     private static function find(
         Codebase $codebase,
@@ -134,27 +135,40 @@ final class MixinLookup
             $visited[$parent_class_lc] = true;
         }
 
-        // a class or trait shared with a class looked up before keeps its mixins bound to that class
         $scopes = [];
+        $self_storage = $storage;
 
         foreach (self::getScopes($codebase->classlike_storage_provider, $codebase->classlikes, $storage) as $scope) {
-            $scope_name_lc = strtolower($scope->name);
-
-            if (!isset($seen_scopes[$scope_name_lc])) {
-                $seen_scopes[$scope_name_lc] = true;
-                $scopes[] = $scope;
+            // each class comes before its traits, whose `self` means that class
+            if (!$scope->is_trait) {
+                $self_storage = $scope;
             }
+
+            $scope_name_lc = strtolower($scope->name);
+            $scopes[] = [$scope, $self_storage, isset($seen_scopes[$scope_name_lc])];
+            $seen_scopes[$scope_name_lc] = true;
         }
 
-        foreach ($scopes as $scope) {
+        foreach ($scopes as [$scope, $self_storage, $seen_scope]) {
             foreach ($scope->getMixins() as $mixin) {
                 if ($mixin instanceof TNamedObject
-                    && isset($visited[strtolower($codebase->classlikes->getUnAliasedName($mixin->value))])
+                    // the named mixins of a class or trait shared with a class looked up before stay bound to that
+                    // class, while a `@mixin T` is bound to the type the receiver gives T
+                    && ($seen_scope
+                        || isset($visited[strtolower($codebase->classlikes->getUnAliasedName($mixin->value))]))
                 ) {
                     continue;
                 }
 
-                $bound_mixin = self::bind($codebase, $mixin, $scope, $storage, $receiver, $self_call);
+                $bound_mixin = self::bind(
+                    $codebase,
+                    $mixin,
+                    $scope,
+                    $self_storage,
+                    $storage,
+                    $receiver,
+                    $self_call,
+                );
 
                 if ($bound_mixin === null) {
                     continue;
@@ -173,7 +187,7 @@ final class MixinLookup
                 }
 
                 if ($has_member($mixin_storage)) {
-                    return [$bound_mixin, $mixin_storage, $mixin];
+                    return ['type' => $bound_mixin, 'storage' => $mixin_storage, 'declared' => $mixin];
                 }
 
                 $found = self::find(
@@ -187,7 +201,7 @@ final class MixinLookup
                 );
 
                 if ($found !== null) {
-                    return [$found[0], $found[1], $mixin];
+                    return ['declared' => $mixin] + $found;
                 }
             }
         }
@@ -198,11 +212,14 @@ final class MixinLookup
     /**
      * The mixin with the templates of the class declaring it replaced by their types for the receiver, or null when
      * that is not a single class.
+     *
+     * @param ClassLikeStorage $self_storage the class declaring the mixin, or using the trait declaring it
      */
     private static function bind(
         Codebase $codebase,
         TNamedObject|TTemplateParam $mixin,
         ClassLikeStorage $declaring_storage,
+        ClassLikeStorage $self_storage,
         ClassLikeStorage $storage,
         Atomic $receiver,
         bool $self_call,
@@ -213,6 +230,11 @@ final class MixinLookup
             } catch (InvalidArgumentException) {
                 return null;
             }
+
+            $self_storage = $declaring_storage;
+        } elseif ($declaring_storage->is_trait) {
+            // the `self` of a trait's docblock is resolved to the trait when it is scanned
+            $mixin = $mixin->replaceClassLike($declaring_storage->name, $self_storage->name);
         }
 
         $template_params = ClassTemplateParamCollector::collect(
@@ -244,9 +266,9 @@ final class MixinLookup
         $bound_mixin = TypeExpander::expandUnion(
             $codebase,
             $bound_mixin,
-            $declaring_storage->name,
+            $self_storage->name,
             $receiver instanceof TGenericObject ? $receiver : $storage->name,
-            $declaring_storage->parent_class,
+            $self_storage->parent_class,
             true,
             false,
             $storage->final,
