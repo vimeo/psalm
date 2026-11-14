@@ -1314,6 +1314,24 @@ final class IssetTest extends TestCase
                         }
                     }',
             ],
+            'variableAssignedInTheCallOnTheLeftOfACoalesceIsSetOnTheRight' => [
+                'code' => '<?php
+                    function foo(int $limit): ?string {
+                        return random_int(0, $limit) ? "" : null;
+                    }
+
+                    function bar(): string {
+                        return foo($limit = 3) ?? throw new Exception((string) $limit);
+                    }
+
+                    function baz(): string {
+                        $result = foo($limit = 3) ?? (string) $limit;
+                        return $result . $limit;
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
             'issetOnPropertyOfUnionWhereALaterMemberHasAMagicGetterStillSeesTheMissingOne' => [
                 'code' => '<?php
                     final class A {
@@ -1799,6 +1817,20 @@ final class IssetTest extends TestCase
                         echo $foo->bar;
                     }',
                 'error_message' => 'InvalidArgument',
+            ],
+            'variableAssignedOnlyOnTheRightOfACoalesceIsNotSetBefore' => [
+                'code' => '<?php
+                    function foo(int $limit): ?string {
+                        return random_int(0, $limit) ? "" : null;
+                    }
+
+                    function bar(): string {
+                        $result = foo(1) ?? ($limit = 3);
+                        return $result . $limit;
+                    }',
+                'error_message' => 'PossiblyUndefinedVariable',
+                'error_levels' => [],
+                'php_version' => '8.0',
             ],
             'issetOnPropertyOfEveryMemberOfUnionStaysRedundant' => [
                 'code' => '<?php
