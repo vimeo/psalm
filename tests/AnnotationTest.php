@@ -2343,7 +2343,6 @@ final class AnnotationTest extends TestCase
                         public function foo($a): void {}
                     }',
                 'error_message' => 'MissingParamType',
-                'error_levels' => ['MethodSignatureMismatch'],
             ],
             'psalmInvalidVar' => [
                 'code' => '<?php
@@ -2456,6 +2455,27 @@ final class AnnotationTest extends TestCase
                     /** @param ArrayIterator|string[] $i */
                     function takesArrayIteratorOfString(ArrayIterator $i): void {}',
                 'error_message' => 'MismatchingDocblockParamType',
+            ],
+            'mismatchingDocblockParamTypeShowsExactType' => [
+                'code' => '<?php
+                    /** @param numeric-string $a */
+                    function f(int $a): void {
+                        echo $a;
+                    }',
+                'error_message' => 'MismatchingDocblockParamType - src' . DIRECTORY_SEPARATOR . 'somefile.php:2:32'
+                    . ' - Parameter $a has wrong type \'numeric-string\', should be \'int',
+            ],
+            'mismatchingDocblockParamTypeShowsTemplateBound' => [
+                'code' => '<?php
+                    /**
+                     * @template T of string
+                     * @param T $s
+                     */
+                    function f(int $s): void {
+                        echo $s;
+                    }',
+                'error_message' => 'MismatchingDocblockParamType - src' . DIRECTORY_SEPARATOR . 'somefile.php:4:31'
+                    . ' - Parameter $s has wrong type \'T:fn-f as string\', should be \'int',
             ],
             'noPhpStormAnnotationsPossiblyInvalid' => [
                 'code' => '<?php
@@ -2660,7 +2680,6 @@ final class AnnotationTest extends TestCase
                     /**
                      * @param string &...$s
                      * @psalm-suppress UnusedParam
-                     * @psalm-mutation-free
                      */
                     function foo(&...$s) : void {}
 
@@ -2673,7 +2692,6 @@ final class AnnotationTest extends TestCase
                     /**
                      * @param string ...&$s
                      * @psalm-suppress UnusedParam
-                     * @psalm-mutation-free
                      */
                     function foo(&...$s) : void {}
 
@@ -2686,7 +2704,6 @@ final class AnnotationTest extends TestCase
                     /**
                      * @param string[] &$s
                      * @psalm-suppress UnusedParam
-                     * @psalm-mutation-free
                      */
                     function foo(&...$s) : void {}
 

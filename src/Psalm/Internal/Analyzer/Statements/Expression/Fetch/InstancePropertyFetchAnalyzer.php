@@ -260,6 +260,7 @@ final class InstancePropertyFetchAnalyzer
 
         $invalid_fetch_types = [];
         $has_valid_fetch_type = false;
+        $missing_in_isset = false;
 
         $var_atomic_types = $stmt_var_type->getAtomicTypes();
 
@@ -282,10 +283,22 @@ final class InstancePropertyFetchAnalyzer
                 $has_valid_fetch_type,
                 $invalid_fetch_types,
                 $is_static_access,
+                $missing_in_isset,
             );
         }
 
         $stmt_type = $statements_analyzer->node_data->getType($stmt);
+
+        // a member of the union that has no such property gives null to isset(), whatever the others give
+        if ($missing_in_isset
+            && !$stmt_var_type->isSingle()
+            && $stmt_type
+            && !$stmt_type->isNullable()
+            && !$stmt_type->hasMixed()
+        ) {
+            $stmt_type = $stmt_type->getBuilder()->addType(new TNull)->freeze();
+            $statements_analyzer->node_data->setType($stmt, $stmt_type);
+        }
 
         $short_circuit_null = $receiver_state !== NullsafeChainState::None && $stmt_var_type->isNullable();
 
