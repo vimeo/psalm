@@ -1235,6 +1235,46 @@ final class SwitchTypeTest extends TestCase
                         throw new InvalidArgumentException(sprintf("Unknown %s", $type));
                     }',
             ],
+            'switchWithoutDefaultAfterANullCaseKeepsTheStringsThatAreNotNull' => [
+                'code' => '<?php
+                    /** @return ?string */
+                    function value() {
+                        return null;
+                    }
+
+                    $type = value();
+                    switch ($type) {
+                        case null:
+                            throw new Exception();
+                        case "a":
+                            throw new Exception();
+                    }
+
+                    $rest = $type;',
+                'assertions' => [
+                    '$rest===' => 'string',
+                ],
+            ],
+            'switchWithoutDefaultAfterANullCaseOfAnIntDropsTheNull' => [
+                'code' => '<?php
+                    /** @return ?int */
+                    function value() {
+                        return null;
+                    }
+
+                    $type = value();
+                    switch ($type) {
+                        case null:
+                            throw new Exception();
+                        case 1:
+                            throw new Exception();
+                    }
+
+                    $rest = $type;',
+                'assertions' => [
+                    '$rest===' => 'int',
+                ],
+            ],
             'switchWithoutDefaultKeepsTheSubjectWhenACaseBreaks' => [
                 'code' => '<?php
                     /** @return "a"|"b"|"c" */

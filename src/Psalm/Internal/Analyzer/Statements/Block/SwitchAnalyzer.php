@@ -171,7 +171,19 @@ final class SwitchAnalyzer
                         $all_options_matched = true;
                     } elseif ($all_options_returned) {
                         // every case leaves the switch, so only no case matching reaches the code after it
-                        $context->vars_in_scope[$switch_var_id] = $case_vars_in_scope_reconciled[$switch_var_id];
+                        $switch_var_type = $context->vars_in_scope[$switch_var_id] ?? null;
+
+                        if ($switch_var_type?->isNullable()) {
+                            // a case loosely equal to null (`case null:`) is negated as a falsy check, which also
+                            // removes values that do not match it, like '0': only the null is dropped
+                            if (!$case_vars_in_scope_reconciled[$switch_var_id]->isNullable()) {
+                                $switch_var_type = $switch_var_type->getBuilder();
+                                $switch_var_type->removeType('null');
+                                $context->vars_in_scope[$switch_var_id] = $switch_var_type->freeze();
+                            }
+                        } else {
+                            $context->vars_in_scope[$switch_var_id] = $case_vars_in_scope_reconciled[$switch_var_id];
+                        }
                     }
                 }
             }
