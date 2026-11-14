@@ -2000,6 +2000,36 @@ final class AnnotationTest extends TestCase
 
                     echo strlen($title);',
             ],
+            'keyOfAndValueOfOfImportedTypeAlias' => [
+                'code' => '<?php
+                    /**
+                     * @psalm-type ATTRIBUTES=array{a: int, b: string}
+                     */
+                    class Foo {}
+
+                    /**
+                     * @psalm-import-type ATTRIBUTES from Foo as ATTRS
+                     */
+                    class Bar {
+                        /** @return key-of<ATTRS> */
+                        public static function key() {
+                            return "a";
+                        }
+
+                        /** @return value-of<ATTRS> */
+                        public static function value() {
+                            return 1;
+                        }
+                    }
+
+                    $key = Bar::key();
+                    $value = Bar::value();
+                    echo $key, $value;',
+                'assertions' => [
+                    '$key===' => "'a'|'b'",
+                    '$value===' => 'int|string',
+                ],
+            ],
         ];
     }
 
@@ -2327,7 +2357,6 @@ final class AnnotationTest extends TestCase
                         public function foo($a): void {}
                     }',
                 'error_message' => 'MissingParamType',
-                'error_levels' => ['MethodSignatureMismatch'],
             ],
             'psalmInvalidVar' => [
                 'code' => '<?php
@@ -2440,6 +2469,27 @@ final class AnnotationTest extends TestCase
                     /** @param ArrayIterator|string[] $i */
                     function takesArrayIteratorOfString(ArrayIterator $i): void {}',
                 'error_message' => 'MismatchingDocblockParamType',
+            ],
+            'mismatchingDocblockParamTypeShowsExactType' => [
+                'code' => '<?php
+                    /** @param numeric-string $a */
+                    function f(int $a): void {
+                        echo $a;
+                    }',
+                'error_message' => 'MismatchingDocblockParamType - src' . DIRECTORY_SEPARATOR . 'somefile.php:2:32'
+                    . ' - Parameter $a has wrong type \'numeric-string\', should be \'int',
+            ],
+            'mismatchingDocblockParamTypeShowsTemplateBound' => [
+                'code' => '<?php
+                    /**
+                     * @template T of string
+                     * @param T $s
+                     */
+                    function f(int $s): void {
+                        echo $s;
+                    }',
+                'error_message' => 'MismatchingDocblockParamType - src' . DIRECTORY_SEPARATOR . 'somefile.php:4:31'
+                    . ' - Parameter $s has wrong type \'T:fn-f as string\', should be \'int',
             ],
             'noPhpStormAnnotationsPossiblyInvalid' => [
                 'code' => '<?php
@@ -2644,7 +2694,6 @@ final class AnnotationTest extends TestCase
                     /**
                      * @param string &...$s
                      * @psalm-suppress UnusedParam
-                     * @psalm-mutation-free
                      */
                     function foo(&...$s) : void {}
 
@@ -2657,7 +2706,6 @@ final class AnnotationTest extends TestCase
                     /**
                      * @param string ...&$s
                      * @psalm-suppress UnusedParam
-                     * @psalm-mutation-free
                      */
                     function foo(&...$s) : void {}
 
@@ -2670,7 +2718,6 @@ final class AnnotationTest extends TestCase
                     /**
                      * @param string[] &$s
                      * @psalm-suppress UnusedParam
-                     * @psalm-mutation-free
                      */
                     function foo(&...$s) : void {}
 
@@ -2868,6 +2915,74 @@ final class AnnotationTest extends TestCase
                     /** @var string $title */
                     global $title;',
                 'error_message' => 'InvalidGlobal',
+            ],
+            'keyOfImportedTypeAliasOfANonArrayIsInvalid' => [
+                'code' => '<?php
+                    /**
+                     * @psalm-type NUMBER=int
+                     */
+                    class Foo {}
+
+                    /**
+                     * @psalm-import-type NUMBER from Foo
+                     */
+                    class Bar {
+                        /** @param key-of<NUMBER> $key */
+                        public static function set($key): void {}
+                    }',
+                'error_message' => 'InvalidDocblock - src' . DIRECTORY_SEPARATOR . 'somefile.php:11:36 - Untemplated key-of param int should be an array',
+            ],
+            'valueOfImportedTypeAliasOfANonArrayIsInvalid' => [
+                'code' => '<?php
+                    /**
+                     * @psalm-type NUMBER=int
+                     */
+                    class Foo {}
+
+                    /**
+                     * @psalm-import-type NUMBER from Foo
+                     */
+                    class Bar {
+                        /** @param value-of<NUMBER> $value */
+                        public static function set($value): void {}
+                    }',
+                'error_message' => 'InvalidDocblock - src' . DIRECTORY_SEPARATOR . 'somefile.php:11:36 - Untemplated value-of param int should be an array',
+            ],
+            'keyOfImportedTypeAliasRejectsUnknownKey' => [
+                'code' => '<?php
+                    /**
+                     * @psalm-type ATTRIBUTES=array{a: int, b: string}
+                     */
+                    class Foo {}
+
+                    /**
+                     * @psalm-import-type ATTRIBUTES from Foo as ATTRS
+                     */
+                    class Bar {
+                        /** @param key-of<ATTRS> $key */
+                        public static function set($key): void {}
+                    }
+
+                    Bar::set("zzz");',
+                'error_message' => 'InvalidArgument',
+            ],
+            'valueOfImportedTypeAliasRejectsWrongValue' => [
+                'code' => '<?php
+                    /**
+                     * @psalm-type ATTRIBUTES=array{a: int, b: int}
+                     */
+                    class Foo {}
+
+                    /**
+                     * @psalm-import-type ATTRIBUTES from Foo as ATTRS
+                     */
+                    class Bar {
+                        /** @param value-of<ATTRS> $value */
+                        public static function set($value): void {}
+                    }
+
+                    Bar::set("str");',
+                'error_message' => 'InvalidArgument',
             ],
         ];
     }

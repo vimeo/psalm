@@ -706,7 +706,6 @@ final class ArgTest extends TestCase
             ],
             'unpackArrayOrTemplateBoundToInt' => [
                 'code' => '<?php
-                    /** @psalm-suppress UnusedParam */
                     function foo(int $a, int $b): void {}
 
                     /**
@@ -720,33 +719,30 @@ final class ArgTest extends TestCase
             ],
             'unpackArrayOrObject' => [
                 'code' => '<?php
-                    /** @psalm-suppress UnusedParam */
                     function foo(int $a, int $b): void {}
 
                     /** @var array<int, int>|object $test */
                     $test = [1, 2];
                     foo(...$test);',
-                'error_message' => 'PossiblyInvalidArgument - src' . DIRECTORY_SEPARATOR . 'somefile.php:7:28 - Tried to unpack non-iterable array<int, int>|object',
+                'error_message' => 'PossiblyInvalidArgument - src' . DIRECTORY_SEPARATOR . 'somefile.php:6:28 - Tried to unpack non-iterable array<int, int>|object',
             ],
             'unpackArrayOrInt' => [
                 'code' => '<?php
-                    /** @psalm-suppress UnusedParam */
                     function foo(int $a, int $b): void {}
 
                     /** @var array<int, int>|int $test */
                     $test = [1, 2];
                     foo(...$test);',
-                'error_message' => 'PossiblyInvalidArgument - src' . DIRECTORY_SEPARATOR . 'somefile.php:7:28 - Tried to unpack non-iterable array<int, int>|int',
+                'error_message' => 'PossiblyInvalidArgument - src' . DIRECTORY_SEPARATOR . 'somefile.php:6:28 - Tried to unpack non-iterable array<int, int>|int',
             ],
             'unpackArrayOrNull' => [
                 'code' => '<?php
-                    /** @psalm-suppress UnusedParam */
                     function foo(int $a, int $b): void {}
 
                     /** @var array<int, int>|null $test */
                     $test = [1, 2];
                     foo(...$test);',
-                'error_message' => 'PossiblyInvalidArgument - src' . DIRECTORY_SEPARATOR . 'somefile.php:7:28 - Tried to unpack non-iterable array<int, int>|null',
+                'error_message' => 'PossiblyInvalidArgument - src' . DIRECTORY_SEPARATOR . 'somefile.php:6:28 - Tried to unpack non-iterable array<int, int>|null',
             ],
             'namedArgumentsRepeatingVariadicParamName' => [
                 'code' => '<?php
@@ -788,7 +784,7 @@ final class ArgTest extends TestCase
                 'code' => '<?php
                     max([1, 2], foo: 3);',
                 'error_message' => 'InvalidNamedArgument',
-                'error_levels' => ['TooManyArguments'],
+                'error_levels' => [],
                 'php_version' => '8.0',
             ],
             'iterableInUnionPassedToArrayParam' => [
@@ -842,10 +838,7 @@ final class ArgTest extends TestCase
             ],
             'possiblyInvalidArgumentWithMixed' => [
                 'code' => '<?php declare(strict_types=1);
-                    /**
-                     * @psalm-suppress MissingParamType
-                     * @psalm-suppress MixedArgument
-                     */
+                    /** @psalm-suppress MixedArgument */
                     function foo($a) : void {
                         if (rand(0, 1)) {
                             $a = 0;
@@ -975,6 +968,31 @@ final class ArgTest extends TestCase
                 'error_levels' => [],
                 'php_version' => '8.0',
             ],
+            'mixedArgumentShowsExactParamType' => [
+                'code' => '<?php
+                    interface I {
+                        /**
+                         * @param non-empty-string $a
+                         */
+                        public function f(string $a): void;
+                    }
+
+                    function g(I $i, mixed $m): void {
+                        $i->f($m);
+                    }',
+                'error_message' => 'MixedArgument - src' . DIRECTORY_SEPARATOR . 'somefile.php:10:31 - Argument 1 of'
+                    . ' I::f cannot be mixed, expecting non-empty-string',
+                'error_levels' => [],
+                'php_version' => '8.0',
+            ],
+            'mixedArgumentFromUntypedExpressionShowsExactParamType' => [
+                'code' => '<?php
+                    /** @param numeric-string $s */
+                    function f(string $s): void {}
+                    f(eval(\'return "42";\'));',
+                'error_message' => 'MixedArgument - src' . DIRECTORY_SEPARATOR . 'somefile.php:4:23 - Argument 1 of'
+                    . ' f cannot be mixed, expecting numeric-string',
+            ],
             'arrayWithoutAllNamedParametersSuppressMixed' => [
                 'code' => '<?php
                     class User {
@@ -1087,10 +1105,7 @@ final class ArgTest extends TestCase
             ],
             'noNamedArguments' => [
                 'code' => '<?php
-                    /**
-                     * @psalm-suppress UnusedParam
-                     * @no-named-arguments
-                     */
+                    /** @no-named-arguments */
                     function foo(int $arg1, int $arg2): void {}
 
                     foo(arg2: 0, arg1: 1);
@@ -1101,10 +1116,7 @@ final class ArgTest extends TestCase
             ],
             'noNamedArgumentsUnpackIterable' => [
                 'code' => '<?php
-                    /**
-                     * @psalm-suppress UnusedParam
-                     * @no-named-arguments
-                     */
+                    /** @no-named-arguments */
                     function foo(int $arg1, int $arg2): void {}
 
                     /** @var iterable<string, int> */
@@ -1132,7 +1144,6 @@ final class ArgTest extends TestCase
             ],
             'unpackNonArrayKeyIterable' => [
                 'code' => '<?php
-                    /** @psalm-suppress UnusedParam */
                     function foo(string ...$args): void {}
 
                     /** @var Iterator<float, string> */

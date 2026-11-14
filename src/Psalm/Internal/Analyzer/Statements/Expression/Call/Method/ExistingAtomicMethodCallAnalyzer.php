@@ -338,7 +338,7 @@ final class ExistingAtomicMethodCallAnalyzer extends CallAnalyzer
             $name_code_location = new CodeLocation($statements_analyzer, $stmt_name);
 
             MethodCallProhibitionAnalyzer::analyze(
-                $codebase,
+                $statements_analyzer,
                 $context,
                 $method_id,
                 $statements_analyzer->getFullyQualifiedFunctionMethodOrNamespaceName(),
