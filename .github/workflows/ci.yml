@@ -32,8 +32,8 @@ jobs:
       - name: Get Composer Cache Directories
         id: composer-cache
         run: |
-          echo "files_cache=$(composer config cache-files-dir)" >> $GITHUB_OUTPUT
-          echo "vcs_cache=$(composer config cache-vcs-dir)" >> $GITHUB_OUTPUT
+          echo "files_cache=$(composer config cache-files-dir)" >> "$GITHUB_OUTPUT"
+          echo "vcs_cache=$(composer config cache-vcs-dir)" >> "$GITHUB_OUTPUT"
 
       - name: Generate composer.lock
         run: |
@@ -62,8 +62,8 @@ jobs:
         env:
           COMPOSER_ROOT_VERSION: dev-master
 
-      - run: |
-          git ls-files | grep \\\.php$ | grep -v ^dictionaries/scripts/* | ./vendor/bin/parallel-lint --stdin
+      - shell: bash
+        run: git ls-files -- '*.php' ':(exclude)dictionaries/scripts/' | ./vendor/bin/parallel-lint --stdin
 
   code-style:
     name: Code Style Analysis
@@ -83,8 +83,8 @@ jobs:
       - name: Get Composer Cache Directories
         id: composer-cache
         run: |
-          echo "files_cache=$(composer config cache-files-dir)" >> $GITHUB_OUTPUT
-          echo "vcs_cache=$(composer config cache-vcs-dir)" >> $GITHUB_OUTPUT
+          echo "files_cache=$(composer config cache-files-dir)" >> "$GITHUB_OUTPUT"
+          echo "vcs_cache=$(composer config cache-vcs-dir)" >> "$GITHUB_OUTPUT"
 
       - name: Generate composer.lock
         run: composer update --no-install
@@ -126,8 +126,8 @@ jobs:
       - id: chunk-matrix
         name: Generates the Chunk Matrix
         run: |
-          echo "count=$(php -r 'echo json_encode([ ${{ env.CHUNK_COUNT }} ]);')" >> $GITHUB_OUTPUT
-          echo "chunks=$(php -r 'echo json_encode(range(1, ${{ env.CHUNK_COUNT }} ));')" >> $GITHUB_OUTPUT
+          echo "count=$(php -r 'echo json_encode([ ${{ env.CHUNK_COUNT }} ]);')" >> "$GITHUB_OUTPUT"
+          echo "chunks=$(php -r 'echo json_encode(range(1, ${{ env.CHUNK_COUNT }} ));')" >> "$GITHUB_OUTPUT"
 
   tests:
     name: "Unit Tests - PHP ${{ matrix.php-version }} ${{ matrix.chunk }}/${{ matrix.count }}"
@@ -170,8 +170,8 @@ jobs:
       - name: Get Composer Cache Directories
         id: composer-cache
         run: |
-          echo "files_cache=$(composer config cache-files-dir)" >> $GITHUB_OUTPUT
-          echo "vcs_cache=$(composer config cache-vcs-dir)" >> $GITHUB_OUTPUT
+          echo "files_cache=$(composer config cache-files-dir)" >> "$GITHUB_OUTPUT"
+          echo "vcs_cache=$(composer config cache-vcs-dir)" >> "$GITHUB_OUTPUT"
 
       - name: Generate composer.lock
         run: |
@@ -224,8 +224,8 @@ jobs:
       - name: Get Composer Cache Directories
         id: composer-cache
         run: |
-          echo "files_cache=$(composer config cache-files-dir)" >> $GITHUB_OUTPUT
-          echo "vcs_cache=$(composer config cache-vcs-dir)" >> $GITHUB_OUTPUT
+          echo "files_cache=$(composer config cache-files-dir)" >> "$GITHUB_OUTPUT"
+          echo "vcs_cache=$(composer config cache-vcs-dir)" >> "$GITHUB_OUTPUT"
 
       - name: Generate composer.lock
         run: composer update --no-install
