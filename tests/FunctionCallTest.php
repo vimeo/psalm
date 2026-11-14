@@ -24,6 +24,15 @@ final class FunctionCallTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'classExistsComparedWithTrueGuardsTheRightOperandOfAnd' => [
+                'code' => '<?php
+                    function check(): bool {
+                        return class_exists(Optional::class) === true && Optional::available();
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
             'classExistsAfterUnrelatedAndOperand' => [
                 'code' => <<<'PHP'
                     <?php

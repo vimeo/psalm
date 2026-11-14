@@ -161,9 +161,10 @@ final class AndAnalyzer
         }
 
         $right_context->inside_logical_operand = true;
-        // the classes the right side is only reached for when they exist
+        // the classes the right side is only reached for when they exist, besides what the left side added
         $right_context->phantom_classes = [
             ...$context->phantom_classes,
+            ...$right_context->phantom_classes,
             ...GuardedClasses::unknownWhenResult($stmt->left, true, $codebase),
         ];
 
