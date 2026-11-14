@@ -1047,10 +1047,10 @@ final class BinaryOperationTest extends TestCase
             ],
             'encapsedPossiblyEmptyLiteralString' => [
                 'code' => '<?php
-                    /** @var "foo"|"" */
-                    $foo = "";
-                    /** @var "bar"|"" */
-                    $bar = "";
+                    /**
+                     * @var ""|"foo" $foo
+                     * @var ""|"bar" $bar
+                     */
                     $interpolated = "{$foo}{$bar}";
                 ',
                 'assertions' => ['$interpolated===' => 'literal-string'],
