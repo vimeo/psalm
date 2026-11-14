@@ -37,7 +37,7 @@ To run Psalm up to 50% faster, use the [official docker image](https://psalm.dev
 
 Psalm also has a couple of command-line options that will result in faster builds:
 
-- `--threads=[n]` to run Psalm’s analysis in a number of threads
+- `--threads=[n|auto]` to run Psalm’s analysis in a number of threads (`auto`, the default, uses one per CPU core)
 - `--diff` which only checks files you’ve updated since the last run (and their dependents).
 
 In Psalm 4 `--diff` is turned on by default (you can disable it with `--no-diff`).

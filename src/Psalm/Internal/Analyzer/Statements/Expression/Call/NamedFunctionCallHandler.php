@@ -185,10 +185,18 @@ final class NamedFunctionCallHandler
         }
 
         if (in_array($function_id, ['is_file', 'file_exists']) && $first_arg) {
-            $var_id = ExpressionIdentifier::getExtendedVarId($first_arg->value, null);
+            $var_id = ExpressionIdentifier::getExtendedVarId($first_arg->value, null)
+                ?? IncludeAnalyzer::getConstantPhantomFileId($first_arg->value);
 
             if ($var_id) {
                 $context->phantom_files[$var_id] = true;
+
+                if ($context->inside_negation) {
+                    $context->negated_phantom_files[$var_id] = true;
+                } else {
+                    unset($context->negated_phantom_files[$var_id]);
+                }
+
                 return;
             }
 
@@ -204,7 +212,14 @@ final class NamedFunctionCallHandler
             );
 
             if ($path_to_file) {
-                $context->phantom_files[IncludeAnalyzer::normalizeFilePath($path_to_file)] = true;
+                $normalized_path = IncludeAnalyzer::normalizeFilePath($path_to_file);
+                $context->phantom_files[$normalized_path] = true;
+
+                if ($context->inside_negation) {
+                    $context->negated_phantom_files[$normalized_path] = true;
+                } else {
+                    unset($context->negated_phantom_files[$normalized_path]);
+                }
             }
 
             return;
@@ -241,7 +256,7 @@ final class NamedFunctionCallHandler
         }
 
         if ($function_id === 'defined') {
-            if ($first_arg && !$context->inside_negation) {
+            if ($first_arg) {
                 $fq_const_name = ConstFetchAnalyzer::getConstName(
                     $first_arg->value,
                     $statements_analyzer->node_data,
@@ -265,7 +280,11 @@ final class NamedFunctionCallHandler
                             $context,
                         );
 
-                        $context->check_consts = false;
+                        // `if (!defined('X')) { exit; }` defines X for the code after it, but says nothing
+                        // about the other constants
+                        if (!$context->inside_negation) {
+                            $context->check_consts = false;
+                        }
                     }
                 } else {
                     $context->check_consts = false;
@@ -312,10 +331,19 @@ final class NamedFunctionCallHandler
                             $validated_var_ids[] = $var_id;
 
                             if (isset($context->vars_in_scope[$var_id]) && $flag_value === EXTR_SKIP) {
-                                continue;
-                            }
+                                $existing_type = $context->vars_in_scope[$var_id];
 
-                            if (!isset($context->vars_in_scope[$var_id]) && $type->possibly_undefined === true) {
+                                if (!$existing_type->possibly_undefined) {
+                                    continue;
+                                }
+
+                                // it is skipped where it is set, extracted where it is not
+                                $type = Type::combineUnionTypes(
+                                    $existing_type->setPossiblyUndefined(false, false),
+                                    $type,
+                                    $codebase,
+                                );
+                            } elseif (!isset($context->vars_in_scope[$var_id]) && $type->possibly_undefined === true) {
                                 $context->possibly_assigned_var_ids[$var_id] = true;
                             } elseif (isset($context->vars_in_scope[$var_id])
                                 && $type->possibly_undefined === true
