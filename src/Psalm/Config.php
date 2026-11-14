@@ -2752,7 +2752,10 @@ final class Config
         return $this->mock_classes;
     }
 
-    public function visitPreloadedStubFiles(Codebase $codebase, ?Progress $progress = null): void
+    /**
+     * @param bool $populate false for overlay analysis, where each pass populates what it scanned
+     */
+    public function visitPreloadedStubFiles(Codebase $codebase, ?Progress $progress = null, bool $populate = true): void
     {
         if ($progress === null) {
             $progress = new VoidProgress();
@@ -2847,7 +2850,11 @@ final class Config
 
         $codebase->register_stub_files = true;
 
-        $codebase->scanFiles();
+        if ($populate) {
+            $codebase->scanFiles();
+        } else {
+            $codebase->scanFilesWithoutPopulating();
+        }
 
         $codebase->register_stub_files = false;
 
@@ -3483,6 +3490,14 @@ final class Config
     public function addPreloadedStubFile(string $stub_file): void
     {
         $this->preloaded_stub_files[$stub_file] = $stub_file;
+    }
+
+    /**
+     * @return array<string, string>
+     */
+    public function getPreloadedStubFiles(): array
+    {
+        return $this->preloaded_stub_files;
     }
 
     public function getPhpVersion(): ?string

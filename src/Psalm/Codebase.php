@@ -1036,6 +1036,17 @@ final class Codebase
      */
     public function scanFiles(int $threads = 1): void
     {
+        if ($this->scanFilesWithoutPopulating($threads)) {
+            $this->populateScannedFiles();
+        }
+    }
+
+    /**
+     * @internal the scan of scanFiles(), for a caller that populates later
+     * @return bool whether anything was scanned
+     */
+    public function scanFilesWithoutPopulating(int $threads = 1): bool
+    {
         // the classes of the global variables of the config are named nowhere else
         foreach ($this->config->globals as $global_type) {
             (new TypeScanner($this->scanner, null, []))->traverseArray(
@@ -1053,13 +1064,19 @@ final class Codebase
             }
         }
 
-        if ($has_changes) {
-            // the classes scanned again may make other `new`
-            $this->constructor_argument_starts = null;
-            $this->populator->populateCodebase();
-            // the files scanned again may declare other constants
-            $this->global_constant_types_by_wildcard = [];
-        }
+        return $has_changes;
+    }
+
+    /**
+     * @internal the populate step of scanFiles()
+     */
+    public function populateScannedFiles(): void
+    {
+        // the classes scanned again may make other `new`
+        $this->constructor_argument_starts = null;
+        $this->populator->populateCodebase();
+        // the files scanned again may declare other constants
+        $this->global_constant_types_by_wildcard = [];
     }
 
     /**

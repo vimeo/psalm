@@ -572,6 +572,29 @@ final class ProjectAnalyzer
         );
     }
 
+    /**
+     * What check() scans, without populating: overlay analysis replaces the scan results of overlaid files and
+     * populates in each pass
+     *
+     * @return array<string, string> the project files
+     */
+    public function scanWithoutPopulating(): array
+    {
+        $project_files = $this->initProjectFiles();
+        $this->initExtraFiles();
+        $this->full_run = true;
+
+        $this->config->visitPreloadedStubFiles($this->codebase, $this->progress, false);
+        $this->config->initializePlugins($this);
+        $this->visitAutoloadFiles();
+
+        $this->codebase->scanner->addFilesToShallowScan($this->extra_files);
+        $this->codebase->scanner->addFilesToDeepScan($project_files);
+        $this->codebase->scanFilesWithoutPopulating($this->scanThreads);
+
+        return $project_files;
+    }
+
     public function consolidateAnalyzedData(): void
     {
         $this->codebase->classlikes->consolidateAnalyzedData(
