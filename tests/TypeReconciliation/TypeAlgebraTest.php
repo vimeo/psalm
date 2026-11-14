@@ -71,6 +71,21 @@ final class TypeAlgebraTest extends TestCase
                 'ignored_issues' => [],
                 'php_version' => '8.4',
             ],
+            'aFunctionExistsCheckOfANewerNativeFunctionDoesNotContradictAVersionCheckOfTheSameCondition' => [
+                'code' => '<?php
+                    function f(): void {
+                        if (PHP_VERSION_ID < 8_05_00 && function_exists("array_first")) {
+                            echo "polyfill";
+                        }
+
+                        if (function_exists("array_first") && PHP_VERSION_ID < 8_05_00) {
+                            echo "polyfill";
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.4',
+            ],
             'twoClausesThatAreNotReconcilableAreBothKeptOfOneCondition' => [
                 'code' => '<?php
                     function f(?string $a, ?string $b, string $haystack): void {
