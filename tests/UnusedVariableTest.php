@@ -1603,6 +1603,24 @@ final class UnusedVariableTest extends TestCase
                         }
                     }',
             ],
+            'valueOverwrittenInTheCatchOfANestedTryIsUsedByTheOuterCatch' => [
+                'code' => '<?php
+                    function f(): void {
+                        $x = 1;
+
+                        try {
+                            try {
+                                throw new LogicException();
+                            } catch (RuntimeException $e) {
+                                $x = 2;
+                                $x = 3;
+                                echo $x;
+                            }
+                        } catch (Exception $e) {
+                            echo $x;
+                        }
+                    }',
+            ],
             'tryWithWhile' => [
                 'code' => '<?php
                     function foo(): void {
@@ -3138,6 +3156,22 @@ final class UnusedVariableTest extends TestCase
     public static function providerInvalidCodeParse(): array
     {
         return [
+            'valueOverwrittenInTheCatchOfANestedTryAndNeverReadIsUnused' => [
+                'code' => '<?php
+                    function f(): void {
+                        try {
+                            try {
+                                throw new LogicException();
+                            } catch (RuntimeException $e) {
+                                $y = 2;
+                                $y = 3;
+                                echo $y;
+                            }
+                        } catch (Exception $e) {
+                        }
+                    }',
+                'error_message' => 'UnusedVariable - src' . DIRECTORY_SEPARATOR . 'somefile.php:7:33',
+            ],
             'deadStoreInATryInALoopWhoseVariableIsReassignedInTheNextIteration' => [
                 'code' => '<?php
                     /** @param list<string> $lines */
