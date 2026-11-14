@@ -168,6 +168,7 @@ final class PsalterEndToEndTest extends PsalmEndToEndTestCase
         yield 'psalter' => [__DIR__ . '/../../psalter', $issues];
         yield 'psalm --alter' => [__DIR__ . '/../../psalm', ['--alter', ...$issues]];
         yield 'psalm-refactor' => [__DIR__ . '/../../psalm-refactor', ['--move', 'A::b', '--into', 'C', '-z']];
+        yield 'psalm-language-server' => [__DIR__ . '/../../psalm-language-server', ['-z']];
     }
 
     public function testPsalterRealRunThatChangesFilesExitsWithCode0(): void

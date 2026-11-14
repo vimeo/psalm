@@ -17,29 +17,21 @@ use Psalm\Internal\LanguageServer\PathMapper;
 use Psalm\Report;
 
 use function array_key_exists;
-use function array_map;
 use function array_search;
 use function array_slice;
 use function chdir;
-use function error_log;
 use function explode;
 use function fwrite;
 use function gc_disable;
 use function getcwd;
-use function getopt;
-use function implode;
-use function in_array;
 use function is_array;
 use function is_numeric;
 use function is_string;
-use function preg_replace;
 use function realpath;
 use function setlocale;
 use function str_contains;
-use function str_starts_with;
 use function strlen;
 use function strtolower;
-use function substr;
 
 use const DIRECTORY_SEPARATOR;
 use const LC_CTYPE;
@@ -111,38 +103,10 @@ final class LanguageServer
             unset($args[$psalm_proxy]);
         }
 
-        array_map(
-            static function (string $arg) use ($valid_long_options): void {
-                if (str_starts_with($arg, '--') && $arg !== '--') {
-                    $arg_name = (string) preg_replace('/=.*$/', '', substr($arg, 2), 1);
-
-                    if (!in_array($arg_name, $valid_long_options, true)
-                        && !in_array($arg_name . ':', $valid_long_options, true)
-                        && !in_array($arg_name . '::', $valid_long_options, true)
-                    ) {
-                        fwrite(
-                            STDERR,
-                            'Unrecognised argument "--' . $arg_name . '"' . PHP_EOL
-                            . 'Type --help to see a list of supported arguments' . PHP_EOL,
-                        );
-                        error_log('Bad argument');
-                        exit(1);
-                    }
-                }
-            },
-            $args,
-        );
+        CliUtils::rejectUnrecognisedOptions($args, $valid_short_options, $valid_long_options);
 
         // get options from command line
-        $options = CliUtils::chosenByOperator(getopt(implode('', $valid_short_options), $valid_long_options));
-        if ($options === false) {
-            // shouldn't really happen, but just in case
-            fwrite(
-                STDERR,
-                'Failed to get CLI args' . PHP_EOL,
-            );
-            exit(1);
-        }
+        $options = CliUtils::getOptions($args, $valid_short_options, $valid_long_options);
 
         CliUtils::setMemoryLimit($options, '1');
 
