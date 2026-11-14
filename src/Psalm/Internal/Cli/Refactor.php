@@ -32,13 +32,16 @@ use function fwrite;
 use function gc_collect_cycles;
 use function gc_disable;
 use function getcwd;
+use function in_array;
 use function is_array;
 use function is_string;
 use function microtime;
 use function preg_last_error_msg;
 use function preg_split;
 use function realpath;
+use function str_starts_with;
 use function strpos;
+use function substr;
 
 use const DIRECTORY_SEPARATOR;
 use const PHP_EOL;
