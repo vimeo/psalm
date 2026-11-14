@@ -100,7 +100,6 @@ final class ClassTemplateTest extends TestCase
 
                     $pager = new PagerOnQuery($items);',
                 'assertions' => [],
-                'ignored_issues' => ['UnusedVariable'],
             ],
             'closureOfAMethodOfAGenericObject' => [
                 'code' => '<?php
@@ -191,7 +190,7 @@ final class ClassTemplateTest extends TestCase
                         }
                     }',
                 'assertions' => [],
-                'ignored_issues' => ['UnusedProperty'],
+                'ignored_issues' => [],
                 'php_version' => '8.0',
             ],
             'recursiveFilterIteratorChildrenAreAFilter' => [
@@ -6065,7 +6064,7 @@ final class ClassTemplateTest extends TestCase
                 'assertions' => [
                     '$test===' => 'ContainerClass<string>',
                 ],
-                'ignored_issues' => ['UnusedProperty'],
+                'ignored_issues' => [],
                 'php_version' => '8.0',
             ],
             'templateNestedInAnInvariantGenericParamOfAFunctionIsInferred' => [
