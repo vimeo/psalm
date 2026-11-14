@@ -30,7 +30,7 @@ final class IntMaskComparisonTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
-            'previousFlagsAreComparedWithTheNewOnesOfANamespacedClass' => [
+            'previousFlagsAreComparedWithTheNewOnes' => [
                 'code' => '<?php
                     final class Decoder {
                         /** @var int-mask<JSON_BIGINT_AS_STRING, JSON_OBJECT_AS_ARRAY, JSON_THROW_ON_ERROR>|null */
@@ -59,6 +59,51 @@ final class IntMaskComparisonTest extends TestCase
                     function same(int $a, int $b): bool {
                         return $a !== $b;
                     }',
+            ],
+            'twoMasksAreSearchedInAListOfMasks' => [
+                'code' => '<?php' . self::FLAG . '
+                    /**
+                     * @param int-mask-of<Flag::*> $a
+                     * @param list<int-mask-of<Flag::*>> $masks
+                     */
+                    function search(int $a, array $masks): bool {
+                        $found = array_search($a, $masks, true);
+
+                        return in_array($a, $masks, true) && $found !== false;
+                    }',
+            ],
+            'twoMasksAreComparedLoosely' => [
+                'code' => '<?php' . self::FLAG . '
+                    /**
+                     * @param int-mask-of<Flag::*> $a
+                     * @param int-mask-of<Flag::*> $b
+                     */
+                    function looselySame(int $a, int $b): bool {
+                        return $a == $b || $a != $b;
+                    }',
+            ],
+            'twoMasksAreMatchedAndSwitched' => [
+                'code' => '<?php' . self::FLAG . '
+                    /**
+                     * @param int-mask-of<Flag::*> $a
+                     * @param int-mask-of<Flag::*> $b
+                     */
+                    function arms(int $a, int $b): string {
+                        $matched = match ($a) {
+                            $b => "same",
+                            default => "other",
+                        };
+
+                        switch ($a) {
+                            case $b:
+                                return $matched . "!";
+                            default:
+                                return $matched;
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
             ],
             'narrowedMaskIsComparedWithAnotherMask' => [
                 'code' => '<?php' . self::FLAG . '
