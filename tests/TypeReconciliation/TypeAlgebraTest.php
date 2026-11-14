@@ -58,6 +58,58 @@ final class TypeAlgebraTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'aStringThatIsNoTraitOrAnyOtherLoadedSymbolIsLeftByAConditionWithAnUnknownCall' => [
+                'code' => '<?php
+                    final class Registry {
+                        public function has(string $name): bool {
+                            return true;
+                        }
+                    }
+
+                    function f(Registry $registry, string $name): void {
+                        if ($registry->has($name)
+                            || (!class_exists($name, false)
+                                && !interface_exists($name, false)
+                                && !enum_exists($name, false)
+                                && !trait_exists($name, false))
+                        ) {
+                            return;
+                        }
+
+                        new ReflectionClass($name);
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
+            'theElseOfAConditionWithAClauseThatIsNotReconcilableDoesNotNarrowTheOtherOperand' => [
+                'code' => '<?php
+                    function f(?int $userId, ?string $filter, string $name): void {
+                        if ($userId !== null && ($filter === null || !str_contains($name, $filter))) {
+                            echo "if";
+                        } else {
+                            /** @psalm-check-type-exact $userId = int|null */
+                            echo get_debug_type($userId);
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
+            'theNegationOfAFalseComparisonOfAClauseThatIsNotReconcilableIsNotACertainty' => [
+                'code' => '<?php
+                    function f(?int $a, string $s, string $t): void {
+                        if (($a === null || !($s === $t)) === false) {
+                            echo "if";
+                        } else {
+                            /** @psalm-check-type-exact $a = int|null */
+                            echo get_debug_type($a);
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
             'coalesceAssignmentInConditionNarrowsTheVariable' => [
                 'code' => <<<'PHP'
                     <?php

@@ -707,17 +707,27 @@ final class Algebra
      */
     public static function negateFormula(array $clauses): array
     {
-        $reconcilable_clauses = array_filter(
-            $clauses,
-            static fn(Clause $clause): bool => $clause->reconcilable,
-        );
-
         // A clause that can't be reconciled, as one of its disjuncts says nothing (`$a === null || !f($a)`, with
-        // f() asserting nothing when false), still lists disjuncts that are all false where it is: where there is
-        // nothing else to negate, that is what the negation says
-        $clauses = $reconcilable_clauses ?: array_filter(
+        // f() asserting nothing when false), still lists the disjuncts that are all false where it is. The
+        // negation made of them says no more than what is known: it is only a part of the real one, which is
+        // told by a wedge clause, so that negating it again gives nothing instead of a certainty.
+        $is_partial = false;
+
+        $clauses = array_filter(
             $clauses,
-            static fn(Clause $clause): bool => $clause->possibilities && !$clause->wedge,
+            static function (Clause $clause) use (&$is_partial): bool {
+                if ($clause->reconcilable) {
+                    return true;
+                }
+
+                if ($clause->possibilities && !$clause->wedge) {
+                    $is_partial = true;
+
+                    return true;
+                }
+
+                return false;
+            },
         );
 
         if (!$clauses) {
@@ -745,6 +755,11 @@ final class Algebra
         if (!$negated) {
             $cond_id = mt_rand(0, 100_000_000);
             return [new Clause([], $cond_id, $cond_id, true)];
+        }
+
+        if ($is_partial) {
+            $cond_id = mt_rand(0, 100_000_000);
+            $negated[] = new Clause([], $cond_id, $cond_id, true);
         }
 
         return $negated;
