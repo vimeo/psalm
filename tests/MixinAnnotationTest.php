@@ -2896,6 +2896,41 @@ final class MixinAnnotationTest extends TestCase
                 'ignored_issues' => [],
                 'php_version' => '8.0',
             ],
+            'magicMemberOfAnInterfacesMixinWithoutMagicMethodsDoesNotHideALaterMixin' => [
+                'code' => '<?php
+                    /**
+                     * @method int bar()
+                     * @property int $p
+                     */
+                    final class NoMagic {}
+
+                    final class Real
+                    {
+                        public string $p = "";
+
+                        public function bar(): string
+                        {
+                            return "";
+                        }
+                    }
+
+                    /**
+                     * @mixin NoMagic
+                     * @mixin Real
+                     */
+                    interface HasBar {}
+
+                    function f(HasBar $object): void
+                    {
+                        $a = $object->bar();
+                        $b = $object->p;
+                        /** @psalm-check-type-exact $a = string */
+                        /** @psalm-check-type-exact $b = string */
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
             'cycleOfGenericMixinsEnds' => [
                 'code' => '<?php
                     /**
