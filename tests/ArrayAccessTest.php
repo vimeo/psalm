@@ -745,6 +745,46 @@ final class ArrayAccessTest extends TestCase
         $this->assertSame([7, 10, 18, 21, 27, 32, 37], $lines);
     }
 
+    public function testAnAssertionDoesNotEndTheDeduplicationOfTheNullOfAnArray(): void
+    {
+        $this->project_analyzer->getConfig()->throw_exception = false;
+        $this->project_analyzer->setPhpVersion('8.1', 'tests');
+        $file_path = self::$src_dir_path . 'somefile.php';
+
+        $this->addFile(
+            $file_path,
+            '<?php
+                /** @param array<string, string|int>|null $b */
+                function asserted(?array $b): void {
+                    echo $b["a"];
+                    if (is_string($b["c"])) { echo 1; }
+                    echo $b["a"];
+                }
+
+                final class S {
+                    /** @var list<string>|null */
+                    public static ?array $d = null;
+                    public function f(): void {
+                        echo self::$d[0];
+                        echo self::$d[0];
+                    }
+                }',
+        );
+        $this->analyzeFile($file_path, new Context());
+
+        $lines = [];
+        foreach (IssueBuffer::getIssuesDataForFile($file_path) as $issue) {
+            if ($issue->type === 'PossiblyNullArrayAccess') {
+                $lines[] = $issue->line_from;
+            }
+        }
+
+        sort($lines);
+
+        // `$b["a"]` and `self::$d[0]` are reported where they are first read, `$b["c"]` where it is read
+        $this->assertSame([4, 5, 13], $lines);
+    }
+
     /**
      * @psalm-pure
      */

@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Psalm;
 
+use ArrayObject;
 use InvalidArgumentException;
 use Psalm\Internal\Analyzer\ConstructorExits;
 use Psalm\Internal\Analyzer\Statements\Expression\Assignment\InstancePropertyAssignmentAnalyzer;
@@ -39,6 +40,7 @@ use function preg_quote;
 use function preg_replace;
 use function serialize;
 use function str_contains;
+use function str_starts_with;
 use function strcspn;
 use function strpos;
 use function strrpos;
@@ -177,12 +179,22 @@ final class Context
 
     /**
      * The array offsets read from a nullable array on a path of this context, whose remembered type holds the null of
-     * that array, with that type and the type of the array at the read: while both are unchanged, the read is not
-     * analysed again, as the null was reported where it was first read.
+     * that array, with the number of times the offset had been dropped (see $null_array_offset_drops) when it was
+     * read: while it was not dropped since, the read is not analysed again, as the null was reported where it was
+     * first read.
      *
-     * @var array<string, array{Union, Union}>
+     * @var array<string, int>
      */
     public array $null_array_offsets_read = [];
+
+    /**
+     * How many times each offset was dropped from a context (it was assigned, passed by reference, mutated, or
+     * removed): shared by the contexts of the branches and loops of a function, so that an offset dropped in one of
+     * them is read again after they merge.
+     *
+     * @var ArrayObject<string, int>
+     */
+    public ArrayObject $null_array_offset_drops;
 
     /**
      * Whether or not we're inside the conditional of an if/where etc.
@@ -482,6 +494,7 @@ final class Context
          */
         public ?string $self = null,
     ) {
+        $this->null_array_offset_drops = new ArrayObject();
     }
 
     /**
@@ -707,6 +720,21 @@ final class Context
         $this->forgetNarrowedShapeProperty($var_id);
     }
 
+    /**
+     * The offsets of the array that is removed are read again: that they were read is not true of what it holds next
+     */
+    private function dropNullArrayOffsets(string $remove_var_id): void
+    {
+        $drops = $this->null_array_offset_drops;
+        $drops[$remove_var_id] = ($drops[$remove_var_id] ?? 0) + 1;
+
+        foreach ($this->null_array_offsets_read as $offset_id => $_) {
+            if (str_starts_with($offset_id, $remove_var_id . '[')) {
+                $drops[$offset_id] = ($drops[$offset_id] ?? 0) + 1;
+            }
+        }
+    }
+
     public function remove(string $remove_var_id, bool $removeDescendents = true): void
     {
         if (isset($this->vars_in_scope[$remove_var_id])) {
@@ -720,6 +748,7 @@ final class Context
         }
         $this->removePossibleReference($remove_var_id);
         unset($this->vars_possibly_in_scope[$remove_var_id], $this->null_array_offsets_read[$remove_var_id]);
+        $this->dropNullArrayOffsets($remove_var_id);
     }
 
     /**
@@ -1132,6 +1161,16 @@ final class Context
 
         if (!$forget_properties && !$forget_statics) {
             return;
+        }
+
+        // the call may write what the array offsets read from a property or a static property were read from, even
+        // where the property keeps its remembered type
+        foreach ($this->null_array_offsets_read as $offset_id => $_) {
+            if (($forget_properties && str_contains($offset_id, '->'))
+                || ($forget_statics && str_contains($offset_id, '::'))
+            ) {
+                $this->null_array_offset_drops[$offset_id] = ($this->null_array_offset_drops[$offset_id] ?? 0) + 1;
+            }
         }
 
         $vars_to_remove = [];
