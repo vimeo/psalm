@@ -7,12 +7,16 @@ namespace Psalm\Tests\Template;
 use Override;
 use PhpParser\Node\Stmt\Return_;
 use Psalm\Context;
+use Psalm\Internal\Analyzer\IssueData;
+use Psalm\IssueBuffer;
 use Psalm\Plugin\EventHandler\AfterStatementAnalysisInterface;
 use Psalm\Plugin\EventHandler\Event\AfterStatementAnalysisEvent;
 use Psalm\Tests\TestCase;
 use Psalm\Tests\Traits\InvalidCodeAnalysisTestTrait;
 use Psalm\Tests\Traits\ValidCodeAnalysisTestTrait;
 
+use function array_column;
+use function array_map;
 use function count;
 use function get_class;
 
@@ -74,6 +78,93 @@ final class FunctionTemplateTest extends TestCase
         // the returned literal is still the literal `15`, not the template variable it is returned as (whose flow it
         // would take over); the variable on the other return is the variable
         $this->assertSame([9 => ['15', 0], 12 => ['T:fn-run as int', 1]], $hook::$literals);
+    }
+
+    public function testScalarConflictsWithInvariantObjectInTemplateUnion(): void
+    {
+        $this->project_analyzer->getConfig()->throw_exception = false;
+        $this->project_analyzer->setPhpVersion('8.0', 'tests');
+
+        $file_path = self::$src_dir_path . 'somefile.php';
+
+        $this->addFile(
+            $file_path,
+            '<?php
+                /** @template T */
+                final class InvariantBox {
+                    /** @param T $v */
+                    public function __construct(public mixed $v) {}
+                }
+
+                /**
+                 * @template T
+                 * @param T|InvariantBox<T> $x
+                 * @return T
+                 */
+                function unbox(mixed $x): mixed {
+                    throw new Exception();
+                }
+
+                /** @var string|InvariantBox<int> $in */
+                $in = "";
+                $a = unbox($in);',
+        );
+
+        $context = new Context();
+        $this->analyzeFile($file_path, $context);
+
+        $issues = array_map(
+            static fn(IssueData $issue): array => [$issue->type, $issue->message],
+            IssueBuffer::getIssuesDataForFile($file_path),
+        );
+
+        // `InvariantBox<int>` is no `InvariantBox<int|string>`
+        $this->assertSame([['InvalidArgument', 'Incompatible types found for T (string is not in int)']], $issues);
+        $this->assertSame('int|string', $context->vars_in_scope['$a']->getId());
+    }
+
+    public function testInputAtomRejectedByTemplateUnionLeavesNoBoundOfTheTemplate(): void
+    {
+        $this->project_analyzer->getConfig()->throw_exception = false;
+        $this->project_analyzer->setPhpVersion('8.0', 'tests');
+
+        $file_path = self::$src_dir_path . 'somefile.php';
+
+        $this->addFile(
+            $file_path,
+            '<?php
+                /**
+                 * @template T of int
+                 * @param T|list<T> $x
+                 * @return list<T>
+                 */
+                function intList(mixed $x): array {
+                    return [];
+                }
+
+                /**
+                 * @template T of int
+                 * @param T|array<string, T> $x
+                 * @return T
+                 */
+                function intMap(mixed $x): int {
+                    throw new Exception();
+                }
+
+                /** @var list<int|string> $in */
+                $in = [];
+                $a = intList($in);
+                $b = intMap([1]);',
+        );
+
+        $context = new Context();
+        $this->analyzeFile($file_path, $context);
+
+        $issue_types = array_column(IssueBuffer::getIssuesDataForFile($file_path), 'type');
+
+        $this->assertSame(['InvalidScalarArgument', 'InvalidArgument'], $issue_types);
+        $this->assertSame('list<int>', $context->vars_in_scope['$a']->getId());
+        $this->assertSame('int', $context->vars_in_scope['$b']->getId());
     }
 
     /**
@@ -2019,6 +2110,692 @@ final class FunctionTemplateTest extends TestCase
                 'ignored_issues' => [],
                 'php_version' => '8.0',
             ],
+            'inferTemplateFromEachAtomOfTemplateOrListUnion' => [
+                'code' => '<?php
+                    /**
+                     * @template T
+                     * @param T|list<T> $var
+                     * @return list<T>
+                     */
+                    function toList($var): array {
+                        return [];
+                    }
+
+                    /** @var string|list<int> $in */
+                    $in = "";
+                    $a = toList($in);',
+                'assertions' => [
+                    '$a===' => 'list<int|string>',
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'inferTemplateFromEachAtomOfTemplateOrKeyedArrayUnion' => [
+                'code' => '<?php
+                    /**
+                     * @template T
+                     * @param T|array<string, T> $var
+                     * @return list<T>
+                     */
+                    function toList($var): array {
+                        return [];
+                    }
+
+                    /** @var string|array<string, int> $in */
+                    $in = "";
+                    $a = toList($in);',
+                'assertions' => [
+                    '$a===' => 'list<int|string>',
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'inferTemplateFromEachAtomOfTemplateOrNestedListUnion' => [
+                'code' => '<?php
+                    /**
+                     * @template T
+                     * @param T|list<list<T>> $var
+                     * @return list<T>
+                     */
+                    function toList($var): array {
+                        return [];
+                    }
+
+                    /** @var string|list<list<int>> $in */
+                    $in = "";
+                    $a = toList($in);',
+                'assertions' => [
+                    '$a===' => 'list<int|string>',
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'inferTemplateFromEachAtomOfTemplateOrListOfTemplateOrListUnion' => [
+                'code' => '<?php
+                    /**
+                     * @template T
+                     * @param T|list<T|list<T>> $var
+                     * @return list<T>
+                     */
+                    function toList($var): array {
+                        return [];
+                    }
+
+                    /** @var string|list<string|list<int>> $in */
+                    $in = "";
+                    $a = toList($in);',
+                'assertions' => [
+                    '$a===' => 'list<int|string>',
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'inferTemplateFromEachAtomOfTemplateOrNullOrListUnion' => [
+                'code' => '<?php
+                    /**
+                     * @template T
+                     * @param T|null|list<T> $var
+                     * @return list<T>
+                     */
+                    function toList($var): array {
+                        return [];
+                    }
+
+                    /** @var string|null|list<int> $in */
+                    $in = "";
+                    $a = toList($in);',
+                'assertions' => [
+                    '$a===' => 'list<int|string>',
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'inferTemplateFromNullableListInTemplateOrNullOrListUnion' => [
+                'code' => '<?php
+                    /**
+                     * @template T
+                     * @param T|null|list<T> $var
+                     * @return list<T>
+                     */
+                    function toList($var): array {
+                        return [];
+                    }
+
+                    /** @var list<int>|null $in */
+                    $in = null;
+                    $a = toList($in);',
+                'assertions' => [
+                    '$a===' => 'list<int>',
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'inferTemplateFromEachAtomOfTemplateOrObjectUnion' => [
+                'code' => '<?php
+                    /** @template-covariant T */
+                    final class Box {
+                        /** @param T $v */
+                        public function __construct(public mixed $v) {}
+                    }
+
+                    /**
+                     * @template T
+                     * @param T|Box<T> $x
+                     * @return T
+                     */
+                    function unbox(mixed $x): mixed {
+                        throw new Exception();
+                    }
+
+                    /** @var string|Box<int> $in */
+                    $in = "";
+                    $a = unbox($in);',
+                'assertions' => [
+                    '$a===' => 'int|string',
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'inferTemplateFromEachAtomOfTemplateOrParentObjectUnion' => [
+                'code' => '<?php
+                    /** @template-covariant T */
+                    class Box {
+                        /** @param T $v */
+                        public function __construct(public mixed $v) {}
+                    }
+
+                    /**
+                     * @template-covariant T
+                     * @extends Box<T>
+                     */
+                    final class SubBox extends Box {}
+
+                    /**
+                     * @template T
+                     * @param T|Box<T> $x
+                     * @return T
+                     */
+                    function unbox(mixed $x): mixed {
+                        throw new Exception();
+                    }
+
+                    /** @var string|SubBox<int> $in */
+                    $in = "";
+                    $a = unbox($in);',
+                'assertions' => [
+                    '$a===' => 'int|string',
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'inferTemplateFromEachAtomOfTemplateOrListOrObjectUnion' => [
+                'code' => '<?php
+                    /** @template-covariant T */
+                    final class Box {
+                        /** @param T $v */
+                        public function __construct(public mixed $v) {}
+                    }
+
+                    /**
+                     * @template T
+                     * @param T|list<T>|Box<T> $x
+                     * @return list<T>
+                     */
+                    function toList(mixed $x): array {
+                        return [];
+                    }
+
+                    /** @var string|list<int>|Box<float> $in */
+                    $in = "";
+                    $a = toList($in);',
+                'assertions' => [
+                    '$a===' => 'list<float|int|string>',
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'inferTemplateFromInvariantObjectInTemplateOrObjectUnion' => [
+                'code' => '<?php
+                    /** @template T */
+                    final class InvariantBox {
+                        /** @param T $v */
+                        public function __construct(public mixed $v) {}
+                    }
+
+                    /**
+                     * @template T
+                     * @param T|InvariantBox<T> $x
+                     * @return T
+                     */
+                    function unbox(mixed $x): mixed {
+                        throw new Exception();
+                    }
+
+                    /** @var InvariantBox<int> $in */
+                    $in = new InvariantBox(1);
+                    $a = unbox($in);',
+                'assertions' => [
+                    '$a===' => 'int',
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'inferTemplateFromClosureInTemplateOrClosureUnion' => [
+                'code' => '<?php
+                    /**
+                     * @template T
+                     * @param T|(Closure(): T) $x
+                     * @return T
+                     */
+                    function value(mixed $x): mixed {
+                        throw new Exception();
+                    }
+
+                    /** @var Closure(): int $in */
+                    $in = fn(): int => 1;
+                    $a = value($in);',
+                'assertions' => [
+                    '$a===' => 'int',
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'inferTemplateFromEachAtomOfTemplateOrClosureUnion' => [
+                'code' => '<?php
+                    /**
+                     * @template T
+                     * @param T|(Closure(): T) $x
+                     * @return T
+                     */
+                    function value(mixed $x): mixed {
+                        throw new Exception();
+                    }
+
+                    /** @var string|(Closure(): int) $in */
+                    $in = "";
+                    $a = value($in);',
+                'assertions' => [
+                    '$a===' => 'int|string',
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'inferTemplateFromEachAtomOfTemplateOrCallableUnionWithInvokableObject' => [
+                'code' => '<?php
+                    final class Invokable {
+                        public function __invoke(): int {
+                            return 1;
+                        }
+                    }
+
+                    /**
+                     * @template T
+                     * @param T|(callable(): T) $x
+                     * @return T
+                     */
+                    function value(mixed $x): mixed {
+                        throw new Exception();
+                    }
+
+                    /** @var string|Invokable $in */
+                    $in = "";
+                    $a = value($in);',
+                'assertions' => [
+                    '$a===' => 'int|string',
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'inferTemplateFromEachAtomWhenOneMatchesAtSeveralDepths' => [
+                'code' => '<?php
+                    /**
+                     * @template-covariant A
+                     * @template-covariant B
+                     */
+                    final class Pair {
+                        /**
+                         * @param A $a
+                         * @param B $b
+                         */
+                        public function __construct(public mixed $a, public mixed $b) {}
+                    }
+
+                    /**
+                     * @template T
+                     * @param T|Pair<T, list<T>> $x
+                     * @return T
+                     */
+                    function first(mixed $x): mixed {
+                        throw new Exception();
+                    }
+
+                    /** @var float|Pair<string, list<int>> $in */
+                    $in = 1.0;
+                    $a = first($in);',
+                'assertions' => [
+                    '$a===' => 'float|int',
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'inferTemplateFromArrayWithKeysNotAcceptedByArrayInTemplateUnion' => [
+                'code' => '<?php
+                    /**
+                     * @template T
+                     * @param T|array<string, T> $var
+                     * @return list<T>
+                     */
+                    function toList($var): array {
+                        return [];
+                    }
+
+                    /** @var list<int> $in */
+                    $in = [];
+                    $a = toList($in);
+
+                    /** @var string|list<int> $in2 */
+                    $in2 = "";
+                    $b = toList($in2);',
+                'assertions' => [
+                    '$a===' => 'list<list<int>>',
+                    '$b===' => 'list<list<int>|string>',
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'inferTemplateFromClosureWithParamsNotAcceptedByCallableInTemplateUnion' => [
+                'code' => '<?php
+                    /**
+                     * @template T
+                     * @param T|(callable(int): T) $x
+                     * @return T
+                     */
+                    function value(mixed $x): mixed {
+                        throw new Exception();
+                    }
+
+                    /** @var Closure(string): int $in */
+                    $in = fn(string $s): int => 1;
+                    $a = value($in);',
+                'assertions' => [
+                    '$a===' => 'Closure[impure](string):int',
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'keepDeepestBoundOfOneAtomInTemplateUnion' => [
+                'code' => '<?php
+                    /**
+                     * @template-covariant A
+                     * @template-covariant B
+                     */
+                    final class Pair {
+                        /**
+                         * @param A $a
+                         * @param B $b
+                         */
+                        public function __construct(public mixed $a, public mixed $b) {}
+                    }
+
+                    /**
+                     * @template T
+                     * @param T|Pair<T, list<T>> $x
+                     * @return T
+                     */
+                    function first(mixed $x): mixed {
+                        throw new Exception();
+                    }
+
+                    /**
+                     * @template T
+                     * @param T|list<T>|list<list<T>> $x
+                     * @return list<T>
+                     */
+                    function flatten(mixed $x): array {
+                        return [];
+                    }
+
+                    /** @var Pair<string, list<int>> $a_in */
+                    $a_in = new Pair("", [1]);
+                    $a = first($a_in);
+
+                    /** @var list<list<int>> $b_in */
+                    $b_in = [];
+                    $b = flatten($b_in);',
+                'assertions' => [
+                    '$a===' => 'int',
+                    '$b===' => 'list<int>',
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'keepTemplateInferredFromSingleAtomInTemplateUnion' => [
+                'code' => '<?php
+                    /** @template-covariant T */
+                    class Box {
+                        /** @param T $v */
+                        public function __construct(public mixed $v) {}
+                    }
+
+                    /**
+                     * @template-covariant T
+                     * @extends Box<T>
+                     */
+                    final class SubBox extends Box {}
+
+                    /**
+                     * @template T
+                     * @param list<T>|T $x
+                     * @return list<T>
+                     */
+                    function wrap(mixed $x): array {
+                        return [];
+                    }
+
+                    /**
+                     * @template T
+                     * @param T|list<T> $x
+                     * @return list<T>
+                     */
+                    function toList(mixed $x): array {
+                        return [];
+                    }
+
+                    /**
+                     * @template T
+                     * @param T|Box<T> $x
+                     * @return T
+                     */
+                    function unbox(mixed $x): mixed {
+                        throw new Exception();
+                    }
+
+                    /**
+                     * @template T of object
+                     * @param T|Box<T> $x
+                     * @return T
+                     */
+                    function unboxObject(mixed $x): object {
+                        throw new Exception();
+                    }
+
+                    /**
+                     * @template T of object
+                     * @param T|class-string<T> $x
+                     * @return T
+                     */
+                    function instance(mixed $x): object {
+                        throw new Exception();
+                    }
+
+                    /** @var list<int> $a_in */
+                    $a_in = [];
+                    $a = wrap($a_in);
+                    $b = toList([1, 2]);
+                    $c = toList("x");
+
+                    /** @var SubBox<int> $d_in */
+                    $d_in = new SubBox(1);
+                    $d = unbox($d_in);
+
+                    /** @var Box<int> $e_in */
+                    $e_in = new Box(1);
+                    $e = unboxObject($e_in);
+                    unboxObject(new Box(1));
+
+                    $f = instance(Box::class);',
+                'assertions' => [
+                    '$a===' => 'list<int>',
+                    '$b===' => 'list<1|2>',
+                    '$c===' => 'list<\'x\'>',
+                    '$d===' => 'int',
+                    '$e===' => 'Box<int>',
+                    '$f===' => 'Box',
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'inferTemplateFromArrayNotAcceptedByArrayWithCallbackInTemplateUnion' => [
+                'code' => '<?php
+                    /**
+                     * @template T
+                     * @param T|array{callback: Closure(T): void, value: T, tag: int} $x
+                     * @return T
+                     */
+                    function value(mixed $x): mixed {
+                        throw new Exception();
+                    }
+
+                    /** @var string|array{callback: Closure(string): void, value: int, tag: string} $in */
+                    $in = "";
+                    $a = value($in);',
+                'assertions' => [
+                    '$a===' => 'array{callback: Closure[impure](string):void, tag: string, value: int}|string',
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'inferOtherTemplateOnlyFromArrayAcceptedByArrayInTemplateUnion' => [
+                'code' => '<?php
+                    /**
+                     * @template T
+                     * @template U
+                     * @param T|array{tag: "ok", value: T, other: U} $x
+                     * @param U $seed
+                     * @return array{T, U}
+                     */
+                    function value(mixed $x, mixed $seed): array {
+                        throw new Exception();
+                    }
+
+                    /** @var string|array{tag: "bad", value: int, other: string} $in */
+                    $in = "";
+                    $a = value($in, false);',
+                'assertions' => [
+                    '$a===' => 'list{array{other: string, tag: \'bad\', value: int}|string, false}',
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'keepInputMatchedByKeyFromTemplateIntersectionUnion' => [
+                'code' => '<?php
+                    final class Foo implements Countable {
+                        public function count(): int {
+                            return 0;
+                        }
+                    }
+
+                    final class Bar implements Countable {
+                        public function count(): int {
+                            return 0;
+                        }
+                    }
+
+                    /**
+                     * @template T of object
+                     * @param (T&Countable)|list<T> $x
+                     * @return list<T>
+                     */
+                    function toList(mixed $x): array {
+                        return [];
+                    }
+
+                    /** @var Foo|list<Bar> $in */
+                    $in = new Foo();
+                    $a = toList($in);',
+                'assertions' => [
+                    '$a===' => 'list<object>',
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'acceptCallbackTakingTemplateOrListOfIt' => [
+                'code' => '<?php
+                    /**
+                     * @template T
+                     * @param T $v
+                     * @param callable(T|list<T>): void $cb
+                     * @return T
+                     */
+                    function withCallback(mixed $v, callable $cb): mixed {
+                        throw new Exception();
+                    }
+
+                    /**
+                     * @template T
+                     * @param callable(): (T|list<T>) $cb
+                     * @return list<T>
+                     */
+                    function fromCallback(callable $cb): array {
+                        return [];
+                    }
+
+                    /** @param string|list<string> $x */
+                    $f = function ($x): void {};
+                    $a = withCallback("a", $f);
+
+                    /** @return string|list<int> */
+                    $g = function (): string|array {
+                        return "x";
+                    };
+                    $b = fromCallback($g);',
+                'assertions' => [
+                    '$a===' => '\'a\'',
+                    '$b===' => 'list<int|string>',
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'inferTemplateFromAtomReadingAnotherTemplateInTemplateUnion' => [
+                'code' => '<?php
+                    /**
+                     * @template K of array<string, int>
+                     * @template T
+                     * @param K $keys
+                     * @param T|array{value: T, key: key-of<K>} $x
+                     * @return T
+                     */
+                    function fromShape(array $keys, mixed $x): mixed {
+                        throw new Exception();
+                    }
+
+                    /**
+                     * @template K of array<string, int>
+                     * @template T
+                     * @param K $keys
+                     * @param T|(Closure(key-of<K>): T) $x
+                     * @return T
+                     */
+                    function fromClosure(array $keys, mixed $x): mixed {
+                        throw new Exception();
+                    }
+
+                    /**
+                     * @template T of array<string, int>
+                     * @param T|(Closure(key-of<T>): T) $x
+                     * @return T
+                     */
+                    function fromOwnKeys(mixed $x): array {
+                        throw new Exception();
+                    }
+
+                    /** @var string|array{value: int, key: "a"} $a_in */
+                    $a_in = "";
+                    $a = fromShape(["a" => 1], $a_in);
+
+                    /** @var string|(Closure("a"): int) $b_in */
+                    $b_in = "";
+                    $b = fromClosure(["a" => 1], $b_in);
+
+                    /** @var array{a: int}|(Closure("a"): array{a: int}) $c_in */
+                    $c_in = ["a" => 1];
+                    $c = fromOwnKeys($c_in);',
+                'assertions' => [
+                    '$a===' => 'int|string',
+                    '$b===' => 'int|string',
+                    '$c===' => 'array{a: int}',
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'inferUpperBoundFromCallableInTemplateUnion' => [
+                'code' => '<?php
+                    /**
+                     * @template T of scalar
+                     * @param T|(callable(T): void) $x
+                     * @return T
+                     */
+                    function fromCallback(mixed $x): mixed {
+                        throw new Exception();
+                    }
+
+                    $a = fromCallback(function (int $i): void {});',
+                'assertions' => [
+                    '$a===' => 'int',
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
             'templateChildClass' => [
                 'code' => '<?php
                     /** @template T */
@@ -3727,6 +4504,152 @@ final class FunctionTemplateTest extends TestCase
 
                     (new Garage)->find(Countable::class);',
                 'error_message' => 'InvalidArgument',
+            ],
+            'checkKeyOfTemplateAgainstTemplateInferredFromSameUnion' => [
+                'code' => '<?php
+                    /**
+                     * @template T of array<string, int>
+                     * @param T|key-of<T> $x
+                     * @return T
+                     */
+                    function withKeys(mixed $x): array {
+                        throw new Exception();
+                    }
+
+                    /** @var array{a: int}|"b" $in */
+                    $in = "b";
+                    withKeys($in);',
+                'error_message' => 'PossiblyInvalidArgument',
+                'error_levels' => [],
+                'php_version' => '8.0',
+            ],
+            'checkTemplateAgainstKeyOfTemplateBeforeItInUnion' => [
+                'code' => '<?php
+                    /**
+                     * @template T of array<string, int>
+                     * @param key-of<T>|T $x
+                     * @return T
+                     */
+                    function withKeys(mixed $x): array {
+                        throw new Exception();
+                    }
+
+                    /** @var array{a: int}|"b" $in */
+                    $in = "b";
+                    withKeys($in);',
+                'error_message' => 'Argument 1 of withKeys expects \'a\'|array<string, int',
+                'error_levels' => [],
+                'php_version' => '8.0',
+            ],
+            'checkKeyOfTemplateInClosureAgainstTemplateInferredFromSameUnion' => [
+                'code' => '<?php
+                    /**
+                     * @template T of array<string, int>
+                     * @param T|(Closure(): key-of<T>) $x
+                     * @return T
+                     */
+                    function withKeys(mixed $x): array {
+                        throw new Exception();
+                    }
+
+                    /** @var array{a: int}|(Closure(): "b") $in */
+                    $in = ["a" => 1];
+                    withKeys($in);',
+                'error_message' => 'Argument 1 of withKeys expects Closure[impure]():\'a\'|array<string, int',
+                'error_levels' => [],
+                'php_version' => '8.0',
+            ],
+            'checkValueOfTemplateInClosureAgainstTemplateInferredFromSameUnion' => [
+                'code' => '<?php
+                    /**
+                     * @template T of array<string, int>
+                     * @param T|(Closure(): value-of<T>) $x
+                     * @return T
+                     */
+                    function withValues(mixed $x): array {
+                        throw new Exception();
+                    }
+
+                    /** @var array{a: 1}|(Closure(): 2) $in */
+                    $in = ["a" => 1];
+                    withValues($in);',
+                'error_message' => 'Argument 1 of withValues expects Closure[impure]():1|array<string, int',
+                'error_levels' => [],
+                'php_version' => '8.0',
+            ],
+            'checkTemplateAgainstCallbackTakingTemplateOrListOfIt' => [
+                'code' => '<?php
+                    /**
+                     * @template T
+                     * @param T $v
+                     * @param callable(T|list<T>): void $cb
+                     * @return T
+                     */
+                    function withCallback(mixed $v, callable $cb): mixed {
+                        throw new Exception();
+                    }
+
+                    /** @param int|list<int> $x */
+                    $f = function ($x): void {};
+                    withCallback([1], $f);',
+                'error_message' => 'Type list{1} should be a subtype of int',
+                'error_levels' => [],
+                'php_version' => '8.0',
+            ],
+            'checkTemplateAgainstCallbackTakingTemplateOrListOfOtherType' => [
+                'code' => '<?php
+                    /**
+                     * @template T
+                     * @param T $v
+                     * @param callable(T|list<T>): void $cb
+                     * @return T
+                     */
+                    function withCallback(mixed $v, callable $cb): mixed {
+                        throw new Exception();
+                    }
+
+                    /** @param string|list<int> $x */
+                    $f = function ($x): void {};
+                    withCallback("a", $f);',
+                'error_message' => 'InvalidArgument - src' . DIRECTORY_SEPARATOR . 'somefile.php:14:21 - Type int should be a subtype of string',
+                'error_levels' => [],
+                'php_version' => '8.0',
+            ],
+            'checkTemplateAgainstParamOfCallableInTemplateUnion' => [
+                'code' => '<?php
+                    /**
+                     * @template T of scalar
+                     * @template U
+                     * @param T|(callable(U): void) $x
+                     * @param U $u
+                     * @return U
+                     */
+                    function withCallback(mixed $x, mixed $u): mixed {
+                        throw new Exception();
+                    }
+
+                    withCallback(function (int $i): void {}, "s");',
+                'error_message' => 'Type \'s\' should be a subtype of int',
+                'error_levels' => [],
+                'php_version' => '8.0',
+            ],
+            'checkTemplateAgainstParamOfClosureInTemplateUnionWithVariadicArgs' => [
+                'code' => '<?php
+                    /**
+                     * @template TValue
+                     * @template TArgs
+                     * @param TValue|\Closure(TArgs): TValue $value
+                     * @param TArgs ...$args
+                     * @return TValue
+                     */
+                    function value($value, ...$args) {
+                        throw new Exception();
+                    }
+
+                    value(fn(int $x) => 42, "s");',
+                'error_message' => 'Type \'s\' should be a subtype of int',
+                'error_levels' => [],
+                'php_version' => '8.0',
             ],
         ];
     }

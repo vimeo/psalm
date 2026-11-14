@@ -1037,6 +1037,7 @@ final class PreloaderList {
         \Psalm\Internal\TypeVisitor\ContainsClassLikeVisitor::class,
         \Psalm\Internal\TypeVisitor\ContainsLiteralVisitor::class,
         \Psalm\Internal\TypeVisitor\ContainsStaticVisitor::class,
+        \Psalm\Internal\TypeVisitor\ContainsTemplateReaderVisitor::class,
         \Psalm\Internal\TypeVisitor\DeferredIntersectionCollector::class,
         \Psalm\Internal\TypeVisitor\FromDocblockSetter::class,
         \Psalm\Internal\TypeVisitor\FunctionPurityTemplateReplacer::class,
