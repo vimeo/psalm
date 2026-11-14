@@ -24,6 +24,52 @@ final class FunctionCallTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'classExistsAfterUnrelatedAndOperand' => [
+                'code' => <<<'PHP'
+                    <?php
+                    if (rand(0, 1) && class_exists(Foo::class)) {
+                        new Foo();
+                    }
+                    PHP,
+            ],
+            'classExistsBeforeUnrelatedAndOperand' => [
+                'code' => <<<'PHP'
+                    <?php
+                    if (class_exists(Foo::class) && rand(0, 1)) {
+                        new Foo();
+                    }
+                    PHP,
+            ],
+            'classExistsBetweenUnrelatedAndOperands' => [
+                'code' => <<<'PHP'
+                    <?php
+                    if (rand(0, 1) && class_exists(Foo::class) && rand(0, 1)) {
+                        new Foo();
+                    }
+                    PHP,
+            ],
+            'classExistsInElseifAnd' => [
+                'code' => <<<'PHP'
+                    <?php
+                    if (rand(0, 1)) {
+                        echo 1;
+                    } elseif (rand(0, 1) && class_exists(Foo::class)) {
+                        new Foo();
+                    }
+                    PHP,
+            ],
+            'classExistsInAndChainExpression' => [
+                'code' => <<<'PHP'
+                    <?php
+                    echo rand(0, 1) && class_exists(Foo::class) && new Foo();
+                    PHP,
+            ],
+            'classExistsInAndTernary' => [
+                'code' => <<<'PHP'
+                    <?php
+                    echo rand(0, 1) && class_exists(Foo::class) ? json_encode(new Foo()) : '';
+                    PHP,
+            ],
             'existenceChecksOfALowercaseOrLiteralStringKeepTheNameType' => [
                 'code' => <<<'PHP'
                     <?php
@@ -3242,6 +3288,15 @@ final class FunctionCallTest extends TestCase
     public static function providerInvalidCodeParse(): iterable
     {
         return [
+            'classExistsInAndDoesNotLeakAfterTheCondition' => [
+                'code' => <<<'PHP'
+                    <?php
+                    if (rand(0, 1) && class_exists(Foo::class)) {
+                    }
+                    new Foo();
+                    PHP,
+                'error_message' => 'UndefinedClass',
+            ],
             'streamSelectDoesNotTakeAContextBeforePhp86' => [
                 'code' => '<?php
                     $read = [STDIN];
