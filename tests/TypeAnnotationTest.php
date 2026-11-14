@@ -21,8 +21,8 @@ final class TypeAnnotationTest extends TestCase
     public function testNullableReturnOfATypeAliasOfAClassScannedLaterContainsNull(): void
     {
         // files are scanned in the order of their paths
-        $stage_path = getcwd() . DIRECTORY_SEPARATOR . 'Stage.php';
-        $builder_path = getcwd() . DIRECTORY_SEPARATOR . 'lib' . DIRECTORY_SEPARATOR . 'ZBuilder.php';
+        $stage_path = (string) getcwd() . DIRECTORY_SEPARATOR . 'Stage.php';
+        $builder_path = (string) getcwd() . DIRECTORY_SEPARATOR . 'lib' . DIRECTORY_SEPARATOR . 'ZBuilder.php';
 
         $this->addFile(
             $stage_path,
