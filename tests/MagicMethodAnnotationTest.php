@@ -582,6 +582,31 @@ final class MagicMethodAnnotationTest extends TestCase
                 'ignored_issues' => [],
                 'php_version' => '8.1',
             ],
+            'methodReturnTypeOfFourLiteralStringsIsKept' => [
+                'code' => <<<'PHP'
+                    <?php
+                    /**
+                     * @method ('a'|'b'|'c'|'d') pick()
+                     */
+                    final class Foo
+                    {
+                        public function __call(string $name, array $arguments): mixed
+                        {
+                            return null;
+                        }
+                    }
+
+                    function test(Foo $foo): void
+                    {
+                        $picked = $foo->pick();
+
+                        /** @psalm-check-type-exact $picked = 'a'|'b'|'c'|'d' */
+                    }
+                    PHP,
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
             'methodNamedLikeATypeKeyword' => [
                 'code' => '<?php
                     /**
@@ -2109,6 +2134,52 @@ final class MagicMethodAnnotationTest extends TestCase
 
                     (new Many())->pick(1.5);',
                 'error_message' => 'InvalidArgument - src' . DIRECTORY_SEPARATOR . 'somefile.php:12:40',
+            ],
+            'methodParamOfFourLiteralStringsIsEnforced' => [
+                'code' => <<<'PHP'
+                    <?php
+                    /**
+                     * @method static four(('a'|'b'|'c'|'d') $mode)
+                     */
+                    final class Foo
+                    {
+                        public function __call(string $name, array $arguments): static
+                        {
+                            return $this;
+                        }
+                    }
+
+                    function test(Foo $foo): void
+                    {
+                        $foo->four('bogus');
+                    }
+                    PHP,
+                'error_message' => 'InvalidArgument',
+                'error_levels' => [],
+                'php_version' => '8.1',
+            ],
+            'methodParamOfFourLiteralIntsIsEnforced' => [
+                'code' => <<<'PHP'
+                    <?php
+                    /**
+                     * @method static fourInts((1|2|3|4) $n)
+                     */
+                    final class Foo
+                    {
+                        public function __call(string $name, array $arguments): static
+                        {
+                            return $this;
+                        }
+                    }
+
+                    function test(Foo $foo): void
+                    {
+                        $foo->fourInts(99);
+                    }
+                    PHP,
+                'error_message' => 'InvalidArgument',
+                'error_levels' => [],
+                'php_version' => '8.1',
             ],
             'invalidMagicMethodKeepsItsNameInTheMessage' => [
                 'code' => '<?php
