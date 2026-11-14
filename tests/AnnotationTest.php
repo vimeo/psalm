@@ -2456,6 +2456,15 @@ final class AnnotationTest extends TestCase
                     function takesArrayIteratorOfString(ArrayIterator $i): void {}',
                 'error_message' => 'MismatchingDocblockParamType',
             ],
+            'mismatchingDocblockParamTypeShowsExactType' => [
+                'code' => '<?php
+                    /** @param numeric-string $a */
+                    function f(int $a): void {
+                        echo $a;
+                    }',
+                'error_message' => 'MismatchingDocblockParamType - src' . DIRECTORY_SEPARATOR . 'somefile.php:2:32'
+                    . ' - Parameter $a has wrong type \'numeric-string\', should be \'int',
+            ],
             'noPhpStormAnnotationsPossiblyInvalid' => [
                 'code' => '<?php
                     /** @param ArrayIterator|string[] $i */

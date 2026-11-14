@@ -760,7 +760,7 @@ final class MethodComparator
                                     'Argument ' . ($i + 1) . ' of '
                                         . $cased_implementer_method_id . ' has wrong type \''
                                         . $implementer_param_type . '\', expecting \''
-                                        . $guide_param_signature_type . '\' as defined by '
+                                        . $guide_param_signature_type?->getId() . '\' as defined by '
                                         . $cased_guide_method_id,
                                     $implementer_param->location
                                         && $config->isInProjectDirs(
@@ -777,7 +777,7 @@ final class MethodComparator
                                     'Argument ' . ($i + 1) . ' of '
                                         . $cased_implementer_method_id . ' has wrong type \''
                                         . $implementer_param_type . '\', expecting \''
-                                        . $guide_param_signature_type . '\' as defined by '
+                                        . $guide_param_signature_type?->getId() . '\' as defined by '
                                         . $cased_guide_method_id,
                                     $implementer_param->location
                                         && $config->isInProjectDirs(

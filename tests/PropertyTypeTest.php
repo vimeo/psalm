@@ -5702,6 +5702,15 @@ final class PropertyTypeTest extends TestCase
                     }',
                 'error_message' => 'MismatchingDocblockPropertyType',
             ],
+            'mismatchingDocblockPropertyTypeShowsExactType' => [
+                'code' => '<?php
+                    class A {
+                        /** @var numeric-string */
+                        public int $s;
+                    }',
+                'error_message' => 'MismatchingDocblockPropertyType - src' . DIRECTORY_SEPARATOR . 'somefile.php:3:34'
+                    . ' - Parameter A::$s has wrong type \'numeric-string\', should be \'int',
+            ],
             'possiblyNullOnFunctionCallNotCoalesced' => [
                 'code' => '<?php
                     function getC() : ?C {

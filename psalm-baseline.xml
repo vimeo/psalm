@@ -192,7 +192,6 @@
     <ImplicitToStringCast>
       <code><![CDATA[$analyzed_method_id]]></code>
       <code><![CDATA[$const->name]]></code>
-      <code><![CDATA[$fleshed_out_type]]></code>
       <code><![CDATA[$prop->name]]></code>
     </ImplicitToStringCast>
     <PossiblyUndefinedIntArrayOffset>
@@ -302,10 +301,8 @@
   <file src="src/Psalm/Internal/Analyzer/FunctionLikeAnalyzer.php">
     <ImplicitToStringCast>
       <code><![CDATA[$method_id]]></code>
-      <code><![CDATA[$param_type]]></code>
       <code><![CDATA[$real_method_id]]></code>
       <code><![CDATA[$real_method_id]]></code>
-      <code><![CDATA[$signature_type]]></code>
       <code><![CDATA[$this->function->name]]></code>
     </ImplicitToStringCast>
     <ImpureStaticProperty>
@@ -367,8 +364,6 @@
   </file>
   <file src="src/Psalm/Internal/Analyzer/MethodComparator.php">
     <ImplicitToStringCast>
-      <code><![CDATA[$guide_param_signature_type]]></code>
-      <code><![CDATA[$guide_param_signature_type]]></code>
       <code><![CDATA[$guide_param_signature_type]]></code>
       <code><![CDATA[$guide_param_signature_type]]></code>
       <code><![CDATA[$guide_param_signature_type]]></code>
@@ -847,10 +842,6 @@
     <ComplexMethod>
       <code><![CDATA[verifyType]]></code>
     </ComplexMethod>
-    <ImplicitToStringCast>
-      <code><![CDATA[$param_type]]></code>
-      <code><![CDATA[$param_type]]></code>
-    </ImplicitToStringCast>
     <PossiblyUndefinedIntArrayOffset>
       <code><![CDATA[$method_name]]></code>
       <code><![CDATA[$parts[1]]]></code>
