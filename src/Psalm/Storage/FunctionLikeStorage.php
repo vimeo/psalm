@@ -434,6 +434,25 @@ abstract class FunctionLikeStorage implements HasAttributesInterface, Stringable
     {
         $variant = clone $this;
         $variant->params = $overload->params;
+
+        // what the real parameter at the same position declares for the arguments, not their types
+        foreach ($variant->params as $position => $overload_param) {
+            $real_param = $this->params[$position] ?? null;
+
+            if ($real_param === null) {
+                continue;
+            }
+
+            $overload_param = clone $overload_param;
+            $overload_param->sinks |= $real_param->sinks;
+            $overload_param->value_sinks |= $real_param->value_sinks;
+            $overload_param->assert_untainted = $overload_param->assert_untainted || $real_param->assert_untainted;
+            $overload_param->out_type ??= $overload_param->by_ref ? $real_param->out_type : null;
+            $overload_param->closure_this_type ??= $real_param->closure_this_type;
+
+            $variant->params[$position] = $overload_param;
+        }
+
         $variant->param_lookup = $overload->param_lookup;
         $variant->required_param_count = $overload->required_param_count;
         $variant->return_type = $overload->return_type;
