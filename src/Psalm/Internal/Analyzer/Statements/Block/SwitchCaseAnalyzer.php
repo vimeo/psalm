@@ -105,9 +105,14 @@ final class SwitchCaseAnalyzer
             $switch_condition = $stmt->cond;
         }
 
+        $cond_assigned_var_ids = [];
+
         if ($case->cond) {
             $was_inside_conditional = $case_context->inside_conditional;
             $case_context->inside_conditional = true;
+
+            $pre_assigned_var_ids = $case_context->assigned_var_ids;
+            $case_context->assigned_var_ids = [];
 
             if (ExpressionAnalyzer::analyze($statements_analyzer, $case->cond, $case_context) === false) {
                 unset($case_scope->parent_context);
@@ -115,6 +120,9 @@ final class SwitchCaseAnalyzer
 
                 return false;
             }
+
+            $cond_assigned_var_ids = $case_context->assigned_var_ids;
+            $case_context->assigned_var_ids = array_merge($pre_assigned_var_ids, $cond_assigned_var_ids);
 
             $case_context->inside_conditional = $was_inside_conditional;
 
@@ -346,12 +354,19 @@ final class SwitchCaseAnalyzer
             );
         }
 
-        if ($switch_scope->negated_clauses && count($switch_scope->negated_clauses) < 50) {
-            $entry_clauses = Algebra::simplifyCNF(
-                [...$original_context->clauses, ...$switch_scope->negated_clauses],
-            );
-        } else {
-            $entry_clauses = $original_context->clauses;
+        $with_negated_clauses = $switch_scope->negated_clauses && count($switch_scope->negated_clauses) < 50;
+
+        $entry_clauses = $with_negated_clauses
+            ? [...$original_context->clauses, ...$switch_scope->negated_clauses]
+            : $original_context->clauses;
+
+        // what the case condition assigns is a new value, which the earlier clauses say nothing about
+        foreach ($cond_assigned_var_ids as $var_id => $_) {
+            $entry_clauses = Context::filterClauses($var_id, $entry_clauses);
+        }
+
+        if ($with_negated_clauses) {
+            $entry_clauses = Algebra::simplifyCNF($entry_clauses);
         }
 
         if ($case_clauses && $case->cond) {
@@ -361,7 +376,7 @@ final class SwitchCaseAnalyzer
                 $case_clauses,
                 $statements_analyzer,
                 $case->cond,
-                [],
+                $cond_assigned_var_ids,
             );
 
             if (count($entry_clauses) + count($case_clauses) < 50) {
