@@ -4871,10 +4871,11 @@ final class CapabilitiesTest extends TestCase
                         public function __toString(): string { echo "x"; return "x"; }
                     }
                     /** @psalm-pure */
-                    function compare(Name $n): void {
+                    function compare(Name $n): bool {
                         switch ($n) {
-                            case "x": break;
+                            case "x": return true;
                         }
+                        return false;
                     }',
                 'error_message' => 'ImpureMethodCall - src' . DIRECTORY_SEPARATOR . 'somefile.php:9:34',
             ],
@@ -4885,10 +4886,11 @@ final class CapabilitiesTest extends TestCase
                         public function __toString(): string { echo "x"; return "x"; }
                     }
                     /** @psalm-pure */
-                    function compare(Name $n): void {
+                    function compare(Name $n): bool {
                         switch ("x") {
-                            case $n: break;
+                            case $n: return true;
                         }
+                        return false;
                     }',
                 'error_message' => 'ImpureMethodCall - src' . DIRECTORY_SEPARATOR . 'somefile.php:9:34',
             ],

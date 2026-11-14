@@ -546,10 +546,9 @@ final class SwitchCaseAnalyzer
     }
 
     /**
-     * @return null|false
-     */
-    /**
-     * The comparison of a case with the switch condition: `===` when both have the same scalar type, `==` otherwise.
+     * Builds the condition a case matches on: the case condition itself for `switch (true)`, otherwise its
+     * comparison with the switch condition, `===` when both have the same scalar type and `==` otherwise.
+     * A loose comparison of an object with a string charges the `__toString` it calls.
      */
     private static function getCaseEqualityExpr(
         StatementsAnalyzer $statements_analyzer,
