@@ -61,7 +61,8 @@ final class CoalesceAnalyzer
             ) === null;
 
         if ($has_call_root || $has_untracked_offset) {
-            $left_var_id = '$<tmp coalesce var>' . (int) $left_expr->getAttribute('startFilePos');
+            // unique, as the name of a variable that shows up in issue messages
+            $left_var_id = '$<left operand of ?? at offset ' . (int) $left_expr->getAttribute('startFilePos') . '>';
 
             // an untracked offset is evaluated unconditionally, so its assignments belong to the real context
             $cloned = $has_untracked_offset ? $context : clone $context;

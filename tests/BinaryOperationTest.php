@@ -2011,6 +2011,23 @@ final class BinaryOperationTest extends TestCase
                     '$b===' => 'non-falsy-string',
                 ],
             ],
+            'coalesceOnSeveralCallsOfOneExpressionKeepsTheirOwnTypes' => [
+                'code' => '<?php
+                    function getInt(): ?int {
+                        return null;
+                    }
+
+                    function getString(): ?string {
+                        return null;
+                    }
+
+                    $a = getInt() ?? getString() ?? 1.5;
+                    $b = [getInt() ?? "x", getString() ?? 2];',
+                'assertions' => [
+                    '$a===' => 'float(1.5)|int|string',
+                    '$b===' => 'list{\'x\'|int, 2|string}',
+                ],
+            ],
             'concatMixedWithNonFalsyLiteralReturnsNonFalsyString' => [
                 'code' => '<?php
                     /** @var mixed $m */
