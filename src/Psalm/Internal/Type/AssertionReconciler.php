@@ -1164,6 +1164,20 @@ final class AssertionReconciler extends Reconciler
             }
 
             return $type_1_atomic->replaceAs($type_1_as);
+        } elseif ($type_1_atomic instanceof TNamedObject
+            && $type_2_atomic instanceof TTemplateParam
+            && $type_2_atomic->as->hasObjectType()
+        ) {
+            // a template is contained by an object if any part of its bound is, so the other parts stay in the
+            // bound unless it is narrowed
+            $type_2_as_init = $type_2_atomic->as;
+            $type_2_as = self::filterTypeWithAnother(
+                $codebase,
+                $type_2_as_init,
+                new Union([$type_1_atomic]),
+            );
+
+            return $type_2_as !== null ? $type_2_atomic->replaceAs($type_2_as) : $type_2_atomic;
         } else {
             return $type_2_atomic;
         }
