@@ -4,15 +4,18 @@ declare(strict_types=1);
 
 namespace Psalm\Tests;
 
+use Psalm\CodeLocation;
 use Psalm\CodeLocation\Raw;
 use Psalm\Context;
 use Psalm\Internal\Analyzer\FileAnalyzer;
+use Psalm\Internal\Codebase\DataFlowGraph;
 use Psalm\Internal\Codebase\TaintFlowGraph;
 use Psalm\Internal\DataFlow\DataFlowNode;
 use Psalm\Internal\DataFlow\Path;
 use Psalm\IssueBuffer;
 use Psalm\Storage\FunctionStorage;
 use Psalm\Type\TaintKind;
+use ReflectionProperty;
 
 use function array_diff;
 use function array_keys;
@@ -211,8 +214,73 @@ final class TaintFlowGraphTest extends TestCase
     }
 
     /**
-     * A node of the sources, sinks or generator sent nodes that is the node of its id is written once, so after a
-     * round trip it must still be the same object as that node, and one that is a different object must stay one.
+     * A forked worker's graph reaches the main process serialized: hundreds of thousands of nodes on a large code
+     * base. Each id must be written once, however many nodes, sources and paths refer to it, and the locations of
+     * the nodes as their fields, not as CodeLocation objects (see TaintFlowGraph::__serialize()).
+     */
+    public function testSerializedGraphWritesEachIdOnceAndNoLocationObject(): void
+    {
+        $file_path = self::$src_dir_path . 'somefile.php';
+        $location = new Raw(str_repeat('$a = 1;', 10), $file_path, 'somefile.php', 0, 4);
+
+        $graph = new TaintFlowGraph();
+        $nodes = [];
+        foreach (range(1, 10) as $i) {
+            $nodes[] = DataFlowNode::getForAssignment('$var' . $i, $location);
+        }
+        foreach ($nodes as $i => $node) {
+            $graph->addNode($node);
+            if ($i > 0) {
+                $graph->addPath($nodes[$i - 1], $node, '=');
+            }
+        }
+        $graph->addSource($nodes[0]->setTaints(TaintKind::INPUT_HTML));
+        $graph->addSink($nodes[9]);
+
+        $serialized = serialize($graph);
+
+        foreach ($nodes as $node) {
+            $this->assertSame(1, substr_count($serialized, $node->id), $node->id);
+        }
+        // the graph is the only object written
+        $this->assertSame(1, substr_count($serialized, 'O:'));
+
+        /** @var TaintFlowGraph $unserialized */
+        $unserialized = unserialize($serialized);
+        $this->assertEquals($graph, $unserialized);
+    }
+
+    /**
+     * A path is immutable: the edges of a graph with the same type, length and taints share one, before and after
+     * the graph is serialized.
+     */
+    public function testEdgesWithTheSameFieldsShareTheirPath(): void
+    {
+        $file_path = self::$src_dir_path . 'somefile.php';
+        $location = new Raw('$a = 1;', $file_path, 'somefile.php', 0, 4);
+
+        $graph = new TaintFlowGraph();
+        $a = DataFlowNode::getForAssignment('$a', $location);
+        $b = DataFlowNode::getForAssignment('$b', $location);
+        $c = DataFlowNode::getForAssignment('$c', $location);
+        $graph->addPath($a, $b, '=', TaintKind::INPUT_HTML);
+        $graph->addPath($b, $c, '=', TaintKind::INPUT_HTML);
+        $graph->addPath($a, $c, '=');
+
+        /** @var TaintFlowGraph $unserialized */
+        $unserialized = unserialize(serialize($graph));
+
+        foreach ([$graph, $unserialized] as $read) {
+            /** @var array<string, array<string, Path>> $edges */
+            $edges = (new ReflectionProperty(DataFlowGraph::class, 'forward_edges'))->getValue($read);
+            $this->assertSame($edges[$a->id][$b->id], $edges[$b->id][$c->id]);
+            $this->assertNotSame($edges[$a->id][$b->id], $edges[$a->id][$c->id]);
+        }
+    }
+
+    /**
+     * A source or sink with the row of the node of its id is written once, so after a round trip it must still have
+     * that row, and one with another row (here, with taints) must keep its own.
      */
     public function testNodesSharedWithSourcesSinksAndSentNodesStayShared(): void
     {
@@ -230,11 +298,14 @@ final class TaintFlowGraphTest extends TestCase
         $graph->addGenerator($sent, $sent);
         // A source with the id of a node, but not that node
         $graph->addNode(DataFlowNode::getForAssignment('$other', $location));
-        $other_source = DataFlowNode::getForAssignment('$other', $location);
+        $other_source = DataFlowNode::getForAssignment('$other', $location)->setTaints(TaintKind::INPUT_HTML);
         $graph->addSource($other_source);
 
+        $serialized = serialize($graph);
+        $this->assertSame(1, substr_count($serialized, $other_source->id));
+
         /** @var TaintFlowGraph $unserialized */
-        $unserialized = unserialize(serialize($graph));
+        $unserialized = unserialize($serialized);
         $this->assertEquals($graph, $unserialized);
 
         $read = fn(string $property): array => (array) (fn(): mixed => $this->$property)->call($unserialized);
@@ -242,7 +313,7 @@ final class TaintFlowGraphTest extends TestCase
 
         $this->assertSame($nodes[$source->id], $read('sources')[$source->id]);
         $this->assertSame($nodes[$sink->id], $read('sinks')[$sink->id]);
-        $this->assertSame($nodes[$sent->id], $read('generator_sent_nodes')[$sent->id]);
+        $this->assertEquals($sent, $read('generator_sent_nodes')[$sent->id]);
         $this->assertNotSame($nodes[$other_source->id], $read('sources')[$other_source->id]);
     }
 
@@ -515,5 +586,45 @@ final class TaintFlowGraphTest extends TestCase
         $this->assertLessThan(400, $bytes_per_path);
         $this->assertSame(TaintKind::INPUT_HTML, $paths[0]->added_taints);
         $this->assertSame(10_000, $paths[9_999]->length);
+    }
+
+    /**
+     * A location is kept for the whole run, so a property table built while reading its compact state would stay
+     * with it (https://github.com/php/php-src/issues/10126).
+     */
+    public function testCompactStateLeavesNoPropertyTable(): void
+    {
+        $locations = [];
+        foreach (range(1, 10_000) as $_) {
+            $locations[] = CodeLocation::fromCompactState('/a/b.php', 'b.php', 10, 100, 120, []);
+        }
+
+        $before = memory_get_usage();
+        foreach ($locations as $location) {
+            /** @psalm-suppress UnusedMethodCall only the memory the call leaves behind is of interest */
+            $location->getCompactState();
+        }
+        $bytes_per_location = (memory_get_usage() - $before) / 10_000;
+
+        // ~1336 bytes a location with a property table, 0 without
+        $this->assertLessThan(100, $bytes_per_location);
+    }
+
+    public function testCompactStateReturnsTheStateItWasMadeFrom(): void
+    {
+        // Private, protected and public properties: their keys in (array) $this differ
+        $state = [
+            'end_line_number' => 12,
+            'text' => 'foo',
+            'docblock_start' => 90,
+            'docblock_line_number' => 8,
+        ];
+
+        $location = CodeLocation::fromCompactState('/a/b.php', 'b.php', 10, 100, 120, $state);
+        $this->assertSame($state, $location->getCompactState());
+
+        $state = ['class' => Raw::class] + $state;
+        $location = CodeLocation::fromCompactState('/a/b.php', 'b.php', 10, 100, 120, $state);
+        $this->assertSame($state, $location->getCompactState());
     }
 }

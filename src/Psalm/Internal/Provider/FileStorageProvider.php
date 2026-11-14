@@ -98,6 +98,15 @@ final class FileStorageProvider
     }
 
     /**
+     * Whether scanning the file is likely to find its storage ready: it is in memory, or cached for its contents
+     */
+    public function isCached(string $file_path, FileProvider $file_provider): bool
+    {
+        return isset(self::$storage[strtolower($file_path)])
+            || ($this->cache !== null && $this->cache->hasEntry($file_path, $file_provider));
+    }
+
+    /**
      * @return array<lowercase-string, FileStorage>
      * @psalm-external-mutation-free
      */
