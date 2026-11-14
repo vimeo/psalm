@@ -5784,6 +5784,54 @@ final class PropertyTypeTest extends TestCase
                 PHP,
                 'error_message' => 'MissingConstructor',
             ],
+            'mixedObjectOfPropertyAssignmentIsNamed' => [
+                'code' => '<?php
+                    function f(): mixed { return 1; }
+                    f()->name = "x";',
+                'error_message' => 'MixedPropertyAssignment - src' . DIRECTORY_SEPARATOR . 'somefile.php:3:21 - f() of type mixed cannot be assigned to',
+                'error_levels' => [],
+                'php_version' => '8.0',
+            ],
+            'arrayOffsetObjectOfPropertyAssignmentIsNamed' => [
+                'code' => '<?php
+                    function f(array $metadata, int $i, string $column): void {
+                        $metadata[$i]->name = $column;
+                    }',
+                'error_message' => 'MixedPropertyAssignment - src' . DIRECTORY_SEPARATOR . 'somefile.php:3:25 - $metadata[$i] of type mixed cannot be assigned to',
+            ],
+            'closureCallObjectOfPropertyAssignmentIsNamedOnOneLine' => [
+                'code' => '<?php
+                    (function () {
+                        return null;
+                    })()->name = "x";',
+                'error_message' => 'NullPropertyAssignment - src' . DIRECTORY_SEPARATOR . 'somefile.php:2:21 - (function () { return null; })() of type null cannot be assigned to',
+            ],
+            'nullObjectOfPropertyAssignmentIsNamed' => [
+                'code' => '<?php
+                    function f(): null { return null; }
+                    f()->name = "x";',
+                'error_message' => 'NullPropertyAssignment - src' . DIRECTORY_SEPARATOR . 'somefile.php:3:21 - f() of type null cannot be assigned to',
+            ],
+            'nullableObjectOfPropertyAssignmentIsNamed' => [
+                'code' => '<?php
+                    function f(): ?stdClass { return null; }
+                    f()->name = "x";',
+                'error_message' => 'PossiblyNullPropertyAssignment - src' . DIRECTORY_SEPARATOR . 'somefile.php:3:21 - f() with possibly null type',
+            ],
+            'nonObjectOfPropertyAssignmentIsNamed' => [
+                'code' => '<?php
+                    function f(): int { return 1; }
+                    f()->name = "x";',
+                'error_message' => 'InvalidPropertyAssignment - src' . DIRECTORY_SEPARATOR . 'somefile.php:3:21 - f() with non-object type',
+            ],
+            'possiblyNonObjectOfPropertyAssignmentIsNamed' => [
+                'code' => '<?php
+                    function f(): int|stdClass { return 1; }
+                    f()->name = "x";',
+                'error_message' => 'PossiblyInvalidPropertyAssignment - src' . DIRECTORY_SEPARATOR . 'somefile.php:3:21 - f() with possible non-object type',
+                'error_levels' => [],
+                'php_version' => '8.0',
+            ],
             'notSetWhenTheChildOverridesTheMethodOfAParentClass' => [
                 'code' => '<?php
                     abstract class Event {
