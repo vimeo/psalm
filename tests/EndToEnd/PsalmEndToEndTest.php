@@ -186,12 +186,22 @@ final class PsalmEndToEndTest extends PsalmEndToEndTestCase
         );
 
         $process = new Process(
-            [PHP_BINARY, $this->psalm, '--no-cache', '--threads=2', '--scan-threads=2', '--output-format=json'],
+            [
+                PHP_BINARY,
+                $this->psalm,
+                '--no-cache',
+                '--debug',
+                '--threads=2',
+                '--scan-threads=2',
+                '--output-format=json',
+            ],
             self::$tmpDir,
             self::agentEnvVarsToUnset(),
         );
         $process->setTimeout(self::PROCESS_TIMEOUT);
         $process->run();
+
+        $this->assertStringContainsString('Forking process for scanning', $process->getErrorOutput());
 
         /** @var list<array{type: string, file_name: string}> $issues */
         $issues = json_decode($process->getOutput(), true, 512, JSON_THROW_ON_ERROR);
