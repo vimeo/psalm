@@ -2278,6 +2278,28 @@ final class BinaryOperationTest extends TestCase
                 'error_levels' => [],
                 'php_version' => '7.4',
             ],
+            'staticPropertyOfStaticPassedByReferenceForgetsTheNarrowingOfSelfOne' => [
+                'code' => '<?php
+                    function clear(?string &$s): void {
+                        $s = null;
+                    }
+
+                    class Holder
+                    {
+                        protected static ?string $value = null;
+
+                        public static function get(): string
+                        {
+                            self::$value = "a";
+                            clear(static::$value);
+
+                            return self::$value;
+                        }
+                    }',
+                'error_message' => 'NullableReturnStatement',
+                'error_levels' => [],
+                'php_version' => '7.4',
+            ],
             'bcMathNumberPlusNonNumericString' => [
                 'code' => '<?php
                     namespace BcMath {

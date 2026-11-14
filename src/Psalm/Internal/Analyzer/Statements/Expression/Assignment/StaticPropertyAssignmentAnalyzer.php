@@ -340,7 +340,7 @@ final class StaticPropertyAssignmentAnalyzer
      * `self::$p`, `static::$p`, `parent::$p` and `Foo::$p` can name the same property: what is known of the others
      * does not hold after one of them is written
      */
-    private static function forgetAliasesOfStaticProperty(
+    public static function forgetAliasesOfStaticProperty(
         Codebase $codebase,
         Context $context,
         string $var_id,
