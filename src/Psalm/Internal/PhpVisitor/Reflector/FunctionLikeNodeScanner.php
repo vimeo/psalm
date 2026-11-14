@@ -522,7 +522,8 @@ final class FunctionLikeNodeScanner
 
                 $existing_property = $classlike_storage->properties[$param_storage->name] ?? null;
 
-                // only a property of this declaration clashes: a stub refines those of reflection and of other stubs
+                // only a property declared in the same file clashes; stubs refine properties from reflection and
+                // other stubs
                 if ($existing_property
                     && $existing_property->location
                     && $existing_property->location->file_path === $this->file_path

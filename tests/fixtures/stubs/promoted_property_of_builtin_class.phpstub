@@ -1,9 +1,7 @@
 <?php
 
-namespace Random;
-
-final class Randomizer
+final class ReflectionConstant implements Reflector
 {
-    /** @param \Random\Engine\Mt19937 $engine */
-    public function __construct(public readonly Engine $engine) {}
+    /** @param non-empty-string $name */
+    public function __construct(public string $name) {}
 }
