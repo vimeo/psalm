@@ -92,6 +92,7 @@ use function str_ends_with;
 use function str_split;
 use function str_starts_with;
 use function strlen;
+use function strpbrk;
 use function strpos;
 use function strtolower;
 use function substr;
