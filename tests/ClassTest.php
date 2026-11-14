@@ -2384,7 +2384,7 @@ final class ClassTest extends TestCase
                     final class Tagged {}
                     (new ReflectionClass(Tagged::class))->getAttributes("TagAlias");',
                 'error_message' => 'Attribute TagAlias cannot be used on a class',
-                'error_levels' => ['ArgumentTypeCoercion'],
+                'error_levels' => [],
                 'php_version' => '8.0',
             ],
             'classAliasCallableArray' => [

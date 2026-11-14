@@ -57,6 +57,30 @@ final class ClassTemplateTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'listParamInheritedFromATemplatedParentAcceptsAList' => [
+                'code' => '<?php
+                    /** @template T */
+                    abstract class P {
+                        /** @param list<string> $x */
+                        abstract public function f(array $x): void;
+
+                        /** @param non-empty-list<string> $x */
+                        abstract public function g(array $x): void;
+                    }
+
+                    /** @extends P<string> */
+                    final class C extends P {
+                        /** @inheritDoc */
+                        public function f(array $x): void {}
+
+                        /** @inheritDoc */
+                        public function g(array $x): void {}
+                    }
+
+                    $c = new C();
+                    $c->f(["a", "b"]);
+                    $c->g(["a", "b"]);',
+            ],
             'sameTypeFromTwoConstructionsOfAGenericClassIsOneType' => [
                 'code' => '<?php
                     class obj {}
@@ -76,7 +100,6 @@ final class ClassTemplateTest extends TestCase
 
                     $pager = new PagerOnQuery($items);',
                 'assertions' => [],
-                'ignored_issues' => ['UnusedVariable'],
             ],
             'closureOfAMethodOfAGenericObject' => [
                 'code' => '<?php
@@ -167,7 +190,7 @@ final class ClassTemplateTest extends TestCase
                         }
                     }',
                 'assertions' => [],
-                'ignored_issues' => ['UnusedProperty'],
+                'ignored_issues' => [],
                 'php_version' => '8.0',
             ],
             'recursiveFilterIteratorChildrenAreAFilter' => [
@@ -5948,6 +5971,127 @@ final class ClassTemplateTest extends TestCase
                 'ignored_issues' => [],
                 'php_version' => '8.0',
             ],
+            'methodParamBoundByTheReceiverAcceptsTheSameTypeArgument' => [
+                'code' => '<?php
+                    /** @template T */
+                    interface Validator {}
+
+                    /** @implements Validator<int> */
+                    final class IntValidator implements Validator {}
+
+                    /** @template T */
+                    final class Type {
+                        /** @param Validator<T> $v */
+                        public function one(Validator $v): void {}
+
+                        /** @param list<Validator<T>> $v */
+                        public function many(array $v): void {}
+                    }
+
+                    /** @param Type<int> $t */
+                    function f(Type $t): void {
+                        $t->one(new IntValidator());
+                        $t->many([new IntValidator()]);
+                    }',
+            ],
+            'methodParamBoundByTheReceiverAcceptsASubtypeOfACovariantTemplate' => [
+                'code' => '<?php
+                    /** @template-covariant T */
+                    interface Validator {}
+
+                    /** @implements Validator<positive-int> */
+                    final class MaxValue implements Validator {}
+
+                    /** @template T */
+                    final class Type {
+                        /** @param Validator<T> $v */
+                        public function one(Validator $v): void {}
+                    }
+
+                    /** @param Type<int> $t */
+                    function f(Type $t): void {
+                        $t->one(new MaxValue());
+                    }',
+            ],
+            'methodTemplateStillInfersFromTheArgumentOfAnInvariantParam' => [
+                'code' => '<?php
+                    /** @template T */
+                    interface Validator {}
+
+                    /** @implements Validator<positive-int> */
+                    final class MaxValue implements Validator {}
+
+                    final class Type {
+                        /**
+                         * @template U
+                         * @param Validator<U> $v
+                         * @return U
+                         */
+                        public function one(Validator $v) {
+                            throw new Exception();
+                        }
+                    }
+
+                    $t = new Type();
+                    $r = $t->one(new MaxValue());',
+                'assertions' => [
+                    '$r===' => 'int<1, max>',
+                ],
+            ],
+            'templateNestedInAnInvariantGenericParamOfAConstructorIsInferred' => [
+                'code' => '<?php
+                    /**
+                     * @template K
+                     * @template V
+                     */
+                    class Map {}
+
+                    /** @template T */
+                    class A {
+                        /** @param T $t */
+                        public function __construct(private mixed $t) {}
+                    }
+
+                    /** @template T */
+                    class ContainerClass {
+                        /** @param Map<int, A<T>> $m */
+                        public function __construct(private Map $m) {}
+                    }
+
+                    /** @var Map<int, A<string>> $map */
+                    $map = new Map();
+                    $test = new ContainerClass($map);',
+                'assertions' => [
+                    '$test===' => 'ContainerClass<string>',
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'templateNestedInAnInvariantGenericParamOfAFunctionIsInferred' => [
+                'code' => '<?php
+                    /**
+                     * @template K
+                     * @template V
+                     */
+                    class Map {}
+
+                    /** @template T */
+                    class A {}
+
+                    /**
+                     * @template T
+                     * @param Map<int, A<T>> $m
+                     * @return T
+                     */
+                    function f(Map $m) { throw new Exception(); }
+
+                    /** @var Map<int, A<string>> $map */
+                    $map = new Map();
+                    $r = f($map);',
+                'assertions' => [
+                    '$r===' => 'string',
+                ],
+            ],
         ];
     }
 
@@ -5958,6 +6102,23 @@ final class ClassTemplateTest extends TestCase
     public static function providerInvalidCodeParse(): iterable
     {
         return [
+            'listParamInheritedFromATemplatedParentRejectsAWrongList' => [
+                'code' => '<?php
+                    /** @template T */
+                    abstract class P {
+                        /** @param list<string> $x */
+                        abstract public function f(array $x): void;
+                    }
+
+                    /** @extends P<string> */
+                    final class C extends P {
+                        /** @inheritDoc */
+                        public function f(array $x): void {}
+                    }
+
+                    (new C())->f(["a", 1]);',
+                'error_message' => 'InvalidArgument',
+            ],
             'differentTypesFromTwoConstructionsOfAGenericClassAreNotOneType' => [
                 'code' => '<?php
                     class one {}
@@ -6244,7 +6405,6 @@ final class ClassTemplateTest extends TestCase
                      * @template T
                      * @param T $p
                      * @return Generic<T>
-                     * @psalm-suppress InvalidReturnType
                      */
                     function violate($p) {}',
                 'error_message' => 'InvalidTemplateParam',
@@ -6538,21 +6698,10 @@ final class ClassTemplateTest extends TestCase
                      */
                     class ArrayCollection
                     {
-                        /**
-                         * An array containing the entries of this collection.
-                         *
-                         * @psalm-var array<TKey,T>
-                         * @var array
-                         */
+                        /** @var array<TKey,T> */
                         private $elements = [];
 
-                        /**
-                         * Initializes a new ArrayCollection.
-                         *
-                         * @param array $elements
-                         *
-                         * @psalm-param array<TKey,T> $elements
-                         */
+                        /** @param array<TKey,T> $elements */
                         public function __construct(array $elements = [])
                         {
                             $this->elements = $elements;
@@ -7092,6 +7241,106 @@ final class ClassTemplateTest extends TestCase
                      */
                     final class A {}',
                 'error_message' => 'InvalidDocblock - src' . DIRECTORY_SEPARATOR . 'somefile.php:4:33 - Missing default after = for template T in docblock for A',
+            ],
+            'methodParamBoundByTheReceiverIsInvariantOnAnArgument' => [
+                'code' => '<?php
+                    /** @template T */
+                    interface Validator {}
+
+                    /** @implements Validator<positive-int> */
+                    final class MaxValue implements Validator {}
+
+                    /** @template T */
+                    final class Type {
+                        /** @param Validator<T> $v */
+                        public function one(Validator $v): void {}
+                    }
+
+                    /** @param Type<int> $t */
+                    function f(Type $t): void {
+                        $t->one(new MaxValue());
+                    }',
+                'error_message' => 'InvalidArgument',
+            ],
+            'methodListParamBoundByTheReceiverIsInvariantOnAnArgument' => [
+                'code' => '<?php
+                    /** @template T */
+                    interface Validator {}
+
+                    /** @implements Validator<positive-int> */
+                    final class MaxValue implements Validator {}
+
+                    /** @template T */
+                    interface Type {
+                        /**
+                         * @param T $value
+                         * @param non-empty-list<Validator<T>> $validators
+                         */
+                        public function validate(mixed $value, array $validators): void;
+                    }
+
+                    /** @param Type<int> $t */
+                    function f(Type $t): void {
+                        $t->validate(0, [new MaxValue()]);
+                    }',
+                'error_message' => 'InvalidArgument',
+                'error_levels' => [],
+                'php_version' => '8.0',
+            ],
+            'nestedTemplateInAUnionWithAnotherAlternativeStaysInvariant' => [
+                'code' => '<?php
+                    /** @template T */
+                    final class A {
+                        /** @param T $v */
+                        public function __construct(public $v) {}
+                    }
+
+                    final class B {}
+
+                    /**
+                     * @template K of array-key
+                     * @template V
+                     */
+                    final class Map {
+                        /** @param array<K, V> $items */
+                        public function __construct(public array $items = []) {}
+                    }
+
+                    /**
+                     * @template T
+                     * @param Map<int, A<T>|B> $m
+                     * @return T|null
+                     */
+                    function take(Map $m) { return null; }
+
+                    /** @param Map<int, A<string>> $onlyA */
+                    function f(Map $onlyA): void {
+                        take($onlyA);
+                    }',
+                'error_message' => 'InvalidArgument',
+            ],
+            'templateNestedInAnInvariantGenericParamStillConflictsWithAnotherArgument' => [
+                'code' => '<?php
+                    /**
+                     * @template K
+                     * @template V
+                     */
+                    class Map {}
+
+                    /** @template T */
+                    class A {}
+
+                    /**
+                     * @template T
+                     * @param Map<int, A<T>> $m
+                     * @param T $x
+                     */
+                    function f(Map $m, $x): void {}
+
+                    /** @var Map<int, A<string>> $map */
+                    $map = new Map();
+                    f($map, 5);',
+                'error_message' => 'InvalidArgument',
             ],
         ];
     }
