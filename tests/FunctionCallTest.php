@@ -4532,6 +4532,11 @@ final class FunctionCallTest extends TestCase
                     \print("word");',
                 'error_message' => 'UndefinedFunction',
             ],
+            'languageConstructEvalCalledAsAQualifiedFunction' => [
+                'code' => '<?php
+                    \eval("return 1;");',
+                'error_message' => 'UndefinedFunction - src' . DIRECTORY_SEPARATOR . 'somefile.php:2:21',
+            ],
             'languageConstructsCalledWithoutALeadingBackslashAreNotUndefinedFunctions' => [
                 'code' => '<?php
                     $what = 5;

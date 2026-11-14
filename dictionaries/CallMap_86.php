@@ -24544,11 +24544,6 @@ return array (
   array (
     -1 => 'void',
   ),
-  'eval' => 
-  array (
-    0 => 'mixed',
-    'code_str' => 'string',
-  ),
   'evcheck::__construct' => 
   array (
     0 => 'void',

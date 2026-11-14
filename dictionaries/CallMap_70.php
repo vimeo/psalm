@@ -22385,11 +22385,6 @@ return array (
     0 => 'void',
     -2 => 'none',
   ),
-  'eval' => 
-  array (
-    0 => 'mixed',
-    'code_str' => 'string',
-  ),
   'evcheck::__construct' => 
   array (
     0 => 'void',
