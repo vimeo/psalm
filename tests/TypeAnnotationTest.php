@@ -1665,7 +1665,7 @@ final class TypeAnnotationTest extends TestCase
                      * @psalm-type Q = X&Countable
                      */
                     class B {}',
-                'error_message' => 'InvalidDocblock',
+                'error_message' => 'InvalidDocblock - src' . DIRECTORY_SEPARATOR . 'somefile.php:11:21 - Intersection types must be all objects or all keyed array',
             ],
         ];
     }
