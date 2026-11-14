@@ -253,7 +253,9 @@ final class ArrayColumnReturnTypeProvider implements FunctionReturnTypeProviderI
                 }
 
                 if ($invalid_key_types !== [] && !$rows_are_all_skipped) {
+                    // a row without the index column is appended
                     $all_invalid = !$rows_may_be_skipped
+                        && !$key_column_type->possibly_undefined
                         && count($invalid_key_types) === count($key_column_type->getAtomicTypes());
 
                     IssueBuffer::maybeAdd(
@@ -387,12 +389,32 @@ final class ArrayColumnReturnTypeProvider implements FunctionReturnTypeProviderI
             if ($row_type->hasArray()) {
                 return $row_type->getArray();
             } elseif ($row_type->hasObjectType()) {
-                return GetObjectVarsReturnTypeProvider::getGetObjectVarsReturnType(
+                $row_shape = GetObjectVarsReturnTypeProvider::getGetObjectVarsReturnType(
                     $row_type,
                     $statements_source,
                     $context,
                     $code_location,
                 );
+
+                // array_column() also reads the columns that __isset() says are set
+                $object_type = $row_type->getSingleAtomic();
+                if ($object_type instanceof TNamedObject
+                    && $statements_source->getCodebase()->methodExists(
+                        new MethodIdentifier($object_type->value, '__isset'),
+                    )
+                ) {
+                    if ($row_shape instanceof TKeyedArray) {
+                        return TKeyedArray::make(
+                            $row_shape->properties,
+                            null,
+                            [Type::getString(), Type::getMixed()],
+                        );
+                    }
+
+                    return new TArray([Type::getString(), Type::getMixed()]);
+                }
+
+                return $row_shape;
             }
         }
         return null;

@@ -4467,6 +4467,42 @@ final class ArrayFunctionCallTest extends TestCase
                 'error_levels' => [],
                 'php_version' => '8.0',
             ],
+            'arrayColumnIndexColumnThatMayBeMissingMayBeAnObject' => [
+                'code' => '<?php
+                    /** @param non-empty-list<array{value: int, index?: stdClass}> $rows */
+                    function f(array $rows): void {
+                        array_column($rows, "value", "index");
+                    }',
+                'error_message' => 'PossiblyInvalidArgument',
+                'error_levels' => [],
+                'php_version' => '8.0',
+            ],
+            'arrayColumnIndexColumnOfAnObjectRowWithAMagicValueColumnMayBeAnObject' => [
+                'code' => '<?php
+                    final class Row {
+                        public stdClass $index;
+
+                        public function __construct() {
+                            $this->index = new stdClass;
+                        }
+
+                        public function __isset(string $name): bool {
+                            return $name === "value";
+                        }
+
+                        public function __get(string $name): int {
+                            return 1;
+                        }
+                    }
+
+                    /** @param non-empty-list<Row> $rows */
+                    function f(array $rows): void {
+                        array_column($rows, "value", "index");
+                    }',
+                'error_message' => 'PossiblyInvalidArgument',
+                'error_levels' => [],
+                'php_version' => '8.0',
+            ],
             'arrayColumnIndexColumnMayBeAnObjectWithAnUnknownValueColumn' => [
                 'code' => '<?php
                     /** @param list<array{0: stdClass, 1: int}> $rows */
