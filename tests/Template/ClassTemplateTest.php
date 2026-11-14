@@ -6038,6 +6038,24 @@ final class ClassTemplateTest extends TestCase
                     '$r===' => 'int<1, max>',
                 ],
             ],
+            'methodParamOfAReceiverWithoutTypeArgumentsAcceptsAnInvariantArgument' => [
+                'code' => '<?php
+                    /** @template T */
+                    interface Validator {}
+
+                    /** @implements Validator<int> */
+                    final class IntValidator implements Validator {}
+
+                    /** @template T */
+                    final class Type {
+                        /** @param Validator<T> $v */
+                        public function one(Validator $v): void {}
+                    }
+
+                    function f(Type $t): void {
+                        $t->one(new IntValidator());
+                    }',
+            ],
             'templateNestedInAnInvariantGenericParamOfAConstructorIsInferred' => [
                 'code' => '<?php
                     /**
