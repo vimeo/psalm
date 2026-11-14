@@ -1122,6 +1122,26 @@ final class ClassTest extends TestCase
                         Missing\Thing::run();
                     }',
             ],
+            'negatedClassExistsInAnOrWithReturnCoversTheCodeAfter' => [
+                'code' => '<?php
+                    function foo(bool $flag): void {
+                        if (!class_exists(Missing\Thing::class) || $flag) {
+                            return;
+                        }
+
+                        Missing\Thing::run();
+                    }',
+            ],
+            'negatedInterfaceExistsWithThrowCoversTheCodeAfter' => [
+                'code' => '<?php
+                    function foo(): void {
+                        if (!interface_exists(Missing\Thing::class)) {
+                            throw new Exception();
+                        }
+
+                        Missing\Thing::run();
+                    }',
+            ],
             'classExistsCoversTheIfAndElseIfBody' => [
                 'code' => '<?php
                     function foo(): void {
@@ -1637,6 +1657,52 @@ final class ClassTest extends TestCase
                         Missing\Thing::run();
                     }',
                 'error_message' => 'UndefinedClass',
+            ],
+            'classExistsAndAFlagDoesNotCoverTheCodeAfterTheIf' => [
+                'code' => '<?php
+                    function foo(bool $flag): void {
+                        if (class_exists(Missing\Thing::class) && $flag) {
+                            Missing\Thing::run();
+                        }
+
+                        Missing\Thing::run();
+                    }',
+                'error_message' => 'UndefinedClass - src' . DIRECTORY_SEPARATOR . 'somefile.php:7:25',
+            ],
+            'classExistsComparedToTrueDoesNotCoverTheCodeAfterTheIf' => [
+                'code' => '<?php
+                    function foo(bool $flag): void {
+                        if (class_exists(Missing\Thing::class) === true) {
+                            Missing\Thing::run();
+                        }
+
+                        Missing\Thing::run();
+                    }',
+                'error_message' => 'UndefinedClass - src' . DIRECTORY_SEPARATOR . 'somefile.php:7:25',
+            ],
+            'interfaceExistsDoesNotCoverTheCodeAfterTheIf' => [
+                'code' => '<?php
+                    function foo(bool $flag): void {
+                        if (interface_exists(Missing\Thing::class)) {
+                            Missing\Thing::run();
+                        }
+
+                        Missing\Thing::run();
+                    }',
+                'error_message' => 'UndefinedClass - src' . DIRECTORY_SEPARATOR . 'somefile.php:7:25',
+            ],
+            'enumExistsDoesNotCoverTheCodeAfterTheIf' => [
+                'code' => '<?php
+                    function foo(bool $flag): void {
+                        if (enum_exists(Missing\Thing::class)) {
+                            Missing\Thing::run();
+                        }
+
+                        Missing\Thing::run();
+                    }',
+                'error_message' => 'UndefinedClass - src' . DIRECTORY_SEPARATOR . 'somefile.php:7:25',
+                'error_levels' => [],
+                'php_version' => '8.1',
             ],
             'classExistsDoesNotCoverTheCodeAfterTheIfInAMethod' => [
                 'code' => '<?php
