@@ -2017,6 +2017,31 @@ final class AnnotationTest extends TestCase
                 'ignored_issues' => [],
                 'php_version' => '8.0',
             ],
+            'intMaskOfConstantsImportedWithUseConst' => [
+                'code' => '<?php
+                    namespace Bar {
+                        const E_ERROR = 4;
+                        const FLAG_A = 8;
+                    }
+
+                    namespace Foo {
+                        use const Bar\E_ERROR;
+                        use const Bar\FLAG_A as AA;
+
+                        /** @param int-mask<E_ERROR> $y */
+                        function f(int $y): void {
+                            echo $y;
+                        }
+
+                        /** @param int-mask<AA, E_ERROR> $y */
+                        function g(int $y): void {
+                            echo $y;
+                        }
+
+                        f(4);
+                        g(12);
+                    }',
+            ],
             'intMaskOfAnImportedGlobalConstant' => [
                 'code' => '<?php
                     namespace Foo;
@@ -2085,6 +2110,25 @@ final class AnnotationTest extends TestCase
     public static function providerInvalidCodeParse(): iterable
     {
         return [
+            'intMaskOfAConstantImportedWithUseConstIsNotTheGlobalOne' => [
+                'code' => '<?php
+                    namespace Bar {
+                        const E_ERROR = 4;
+                    }
+
+                    namespace Foo {
+                        use const Bar\E_ERROR;
+
+                        /** @param int-mask<E_ERROR> $y */
+                        function f(int $y): void {
+                            echo $y;
+                        }
+
+                        f(1);
+                    }',
+                'error_message' => 'InvalidArgument - src' . DIRECTORY_SEPARATOR . 'somefile.php:14:27 - '
+                    . 'Argument 1 of Foo\f expects 0|4, but 1 provided',
+            ],
             'intMaskOfANonIntegerConstantOfTheNamespace' => [
                 'code' => '<?php
                     namespace Foo;
