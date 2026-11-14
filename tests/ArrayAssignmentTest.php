@@ -2950,7 +2950,8 @@ final class ArrayAssignmentTest extends TestCase
 
                         return $new;
                     }',
-                'error_message' => 'PossiblyInvalidArrayOffset',
+                'error_message' => 'PossiblyInvalidArrayOffset - src' . DIRECTORY_SEPARATOR . 'somefile.php:7:25 - '
+                    . 'Cannot access value on variable $new[$key] using a array<array-key, mixed>|int|string offset',
             ],
             'possiblyInvalidArrayOffsetWhenAssigningToANonEmptyArray' => [
                 'code' => '<?php
@@ -2963,7 +2964,8 @@ final class ArrayAssignmentTest extends TestCase
 
                         return $arr;
                     }',
-                'error_message' => 'PossiblyInvalidArrayOffset',
+                'error_message' => 'PossiblyInvalidArrayOffset - src' . DIRECTORY_SEPARATOR . 'somefile.php:7:25 - '
+                    . 'Cannot access value on variable $arr[$key] using a array<array-key, mixed>|int|string offset',
             ],
             'invalidArrayOffsetWhenAssigningToANonEmptyArray' => [
                 'code' => '<?php
@@ -2976,7 +2978,8 @@ final class ArrayAssignmentTest extends TestCase
 
                         return $arr;
                     }',
-                'error_message' => 'InvalidArrayOffset',
+                'error_message' => 'InvalidArrayOffset - src' . DIRECTORY_SEPARATOR . 'somefile.php:7:25 - '
+                    . 'Cannot access value on variable $arr[$key] using a array<array-key, mixed> offset',
             ],
             'assignToTheItemOfAnArrayAFunctionReturnsByValue' => [
                 'code' => '<?php
