@@ -3181,8 +3181,8 @@ final class UnusedCodeTest extends TestCase
                     }
 
                     /**
-                     * @mixin Labels
                      * @mixin Repository<static>
+                     * @mixin Labels
                      */
                     final class Post {
                         /** @psalm-api */

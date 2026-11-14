@@ -564,11 +564,12 @@ final class ClassLikes
 
     /**
      * Whether the properties of a class cannot be determined statically: it is, extends or implements
-     * one of the universal object crates of the config
+     * one of the universal object crates of the config. A class that only extends or implements one still has
+     * the properties it declares, so those are not crate properties when the property name is given.
      *
      * @psalm-capabilities read-props
      */
-    public function isUniversalObjectCrate(string $fq_class_name): bool
+    public function isUniversalObjectCrate(string $fq_class_name, ?string $property_name = null): bool
     {
         $crates = $this->config->getUniversalObjectCrates();
         $class_name_lc = strtolower($fq_class_name);
@@ -588,7 +589,7 @@ final class ClassLikes
                 || isset($storage->class_implements[$crate])
                 || isset($storage->parent_interfaces[$crate])
             ) {
-                return true;
+                return $property_name === null || !isset($storage->declaring_property_ids[$property_name]);
             }
         }
 

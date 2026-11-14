@@ -1586,6 +1586,41 @@ final class UnusedVariableTest extends TestCase
                         echo $b;
                     }',
             ],
+            'valueOverwrittenInATryAndReadInTheCatchStaysUsed' => [
+                'code' => '<?php
+                    /** @param list<string> $lines */
+                    function import(array $lines): void {
+                        foreach ($lines as $line) {
+                            $ok = true;
+
+                            try {
+                                $ok = false;
+                                $ok = $line === "";
+                                echo $line;
+                            } catch (Exception $e) {
+                                echo $ok;
+                            }
+                        }
+                    }',
+            ],
+            'valueOverwrittenInTheCatchOfANestedTryIsUsedByTheOuterCatch' => [
+                'code' => '<?php
+                    function f(): void {
+                        $x = 1;
+
+                        try {
+                            try {
+                                throw new LogicException();
+                            } catch (RuntimeException $e) {
+                                $x = 2;
+                                $x = 3;
+                                echo $x;
+                            }
+                        } catch (Exception $e) {
+                            echo $x;
+                        }
+                    }',
+            ],
             'tryWithWhile' => [
                 'code' => '<?php
                     function foo(): void {
@@ -3121,6 +3156,58 @@ final class UnusedVariableTest extends TestCase
     public static function providerInvalidCodeParse(): array
     {
         return [
+            'valueOverwrittenInTheCatchOfANestedTryAndNeverReadIsUnused' => [
+                'code' => '<?php
+                    function f(): void {
+                        try {
+                            try {
+                                throw new LogicException();
+                            } catch (RuntimeException $e) {
+                                $y = 2;
+                                $y = 3;
+                                echo $y;
+                            }
+                        } catch (Exception $e) {
+                        }
+                    }',
+                'error_message' => 'UnusedVariable - src' . DIRECTORY_SEPARATOR . 'somefile.php:7:33',
+            ],
+            'deadStoreInATryInALoopWhoseVariableIsReassignedInTheNextIteration' => [
+                'code' => '<?php
+                    /** @param list<string> $lines */
+                    function import(array $lines): void {
+                        foreach ($lines as $line) {
+                            try {
+                                $ok = true;
+                                if ($line === "") {
+                                    $ok = false;
+                                } else {
+                                    if ($line === "bad") {
+                                        $ok = false;
+                                    }
+                                    if ($ok) {
+                                        echo $line;
+                                    }
+                                }
+                            } catch (Exception $e) {
+                            }
+                        }
+                    }',
+                'error_message' => 'UnusedVariable - src' . DIRECTORY_SEPARATOR . 'somefile.php:8:37',
+            ],
+            'valueBeforeATryIsUnusedWhenTheTryOverwritesItBeforeAnyRead' => [
+                'code' => '<?php
+                    function f(): void {
+                        $x = 1;
+
+                        try {
+                            $x = 2;
+                            echo $x;
+                        } catch (Exception $e) {
+                        }
+                    }',
+                'error_message' => 'UnusedVariable - src' . DIRECTORY_SEPARATOR . 'somefile.php:3:25',
+            ],
             'objectForeachValueReassignedFromACallOfItself' => [
                 'code' => '<?php
                     class D { public int $n = 0; }
