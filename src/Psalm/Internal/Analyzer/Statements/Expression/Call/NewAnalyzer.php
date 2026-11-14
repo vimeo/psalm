@@ -1635,14 +1635,23 @@ final class NewAnalyzer extends CallAnalyzer
             ) {
                 // do nothing
             } elseif ($lhs_type_part instanceof TNamedObject) {
-                if (!$statements_analyzer->node_data->getType($stmt)
+                if (!$lhs_type_part instanceof TAnonymousClassInstance
+                    && !$statements_analyzer->node_data->getType($stmt)
                     && $codebase->classlikes->classExists($lhs_type_part->value, null, $context)
                 ) {
                     $object_storage = $codebase->classlike_storage_provider->get($lhs_type_part->value);
 
+                    // a final class has no child that could change the constructor, and the object of an internal
+                    // class is mostly one just created (`$o = new stdClass; new $o`)
                     if ($object_storage->user_defined
                         && !$object_storage->final
-                        && !$object_storage->preserve_constructor_signature
+                        && !self::childConstructorsAcceptArgs(
+                            $statements_analyzer,
+                            $codebase,
+                            $context,
+                            $object_storage,
+                            $stmt->getArgs(),
+                        )
                     ) {
                         IssueBuffer::maybeAdd(
                             new UnsafeInstantiation(

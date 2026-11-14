@@ -224,6 +224,53 @@ final class MethodCallTest extends TestCase
                         return new $c(1);
                     }',
             ],
+            'instantiateFromObjectWhoseConstructorCannotChange' => [
+                'code' => '<?php
+                    class FinalConstructor {
+                        final public function __construct(public int $i = 0) {}
+                    }
+
+                    /** @final */
+                    class DocblockFinal {
+                        public function __construct(public int $i = 0) {}
+                    }
+
+                    interface Buildable {
+                        public function __construct(int $i);
+                    }
+
+                    class Impl implements Buildable {
+                        public function __construct(public int $i) {}
+                    }
+
+                    function fromFinalConstructor(FinalConstructor $o): FinalConstructor {
+                        return new $o();
+                    }
+
+                    function fromDocblockFinal(DocblockFinal $o): DocblockFinal {
+                        return new $o();
+                    }
+
+                    function fromInterfaceConstructor(Impl $o): Impl {
+                        return new $o(1);
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
+            'instantiateFromObjectOfAnAnonymousClass' => [
+                'code' => '<?php
+                    function f(): object {
+                        $a = new class {
+                            public function __construct(public int $i = 0) {}
+                        };
+
+                        return new $a();
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
             'propertyUnsetInABranchIsNotRestoredAfterIt' => [
                 'code' => '<?php
                     final class Box {
@@ -2200,6 +2247,36 @@ final class MethodCallTest extends TestCase
     public static function providerInvalidCodeParse(): iterable
     {
         return [
+            'unsafeInstantiationFromThis' => [
+                'code' => '<?php
+                    class A {
+                        public function __construct(public int $i = 0) {}
+
+                        public function copy(): static {
+                            return new $this();
+                        }
+                    }',
+                'error_message' => 'Cannot safely instantiate class A with "new $object" as its constructor',
+                'error_levels' => [],
+                'php_version' => '8.1',
+            ],
+            'unsafeInstantiationFromObjectWithArgumentsThatDontFitTheInterface' => [
+                'code' => '<?php
+                    interface Buildable {
+                        public function __construct(int $i);
+                    }
+
+                    class Impl implements Buildable {
+                        public function __construct(public int $i) {}
+                    }
+
+                    function f(Impl $o): Impl {
+                        return new $o("x");
+                    }',
+                'error_message' => 'UnsafeInstantiation',
+                'error_levels' => [],
+                'php_version' => '8.1',
+            ],
             'unsafeInstantiationFromObject' => [
                 'code' => '<?php
                     class A {}
