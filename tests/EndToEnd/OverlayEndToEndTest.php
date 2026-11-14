@@ -549,6 +549,28 @@ final class OverlayEndToEndTest extends TestCase
             true,
         ];
 
+        // the process has loaded the file as it is on disk: what the overlay removes is not taken from it
+        yield 'function removed from an autoloaded file' => [
+            [
+                'functions.php' => '<?php
+                    if (!function_exists("windows_os")) { function windows_os(): bool { return false; } }
+                    if (!function_exists("unix_os")) { function unix_os(): bool { return true; } }',
+                'UseFn.php' => '<?php namespace App; final class UseFn { public function f(): bool { return windows_os(); } }',
+            ],
+            ['src/functions.php' => '<?php
+                    if (!function_exists("unix_os")) { function unix_os(): bool { return true; } }'],
+            [['MixedReturnStatement', 'src/UseFn.php', 'error'], ['UndefinedFunction', 'src/UseFn.php', 'error']],
+        ];
+
+        yield 'constant removed from an autoloaded file' => [
+            [
+                'functions.php' => '<?php namespace App; const LIMIT = 1; function helper(): int { return 1; }',
+                'UseFn.php' => '<?php namespace App; final class UseFn { public function f(): int { return LIMIT; } }',
+            ],
+            ['src/functions.php' => '<?php namespace App; function helper(): int { return 1; }'],
+            [['MixedReturnStatement', 'src/UseFn.php', 'error'], ['UndefinedConstant', 'src/UseFn.php', 'error']],
+        ];
+
         yield 'new declaration resolves an undefined reference' => [
             [
                 'A.php' => $a,
