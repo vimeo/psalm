@@ -1863,6 +1863,51 @@ final class ForeachTest extends TestCase
     public static function providerInvalidCodeParse(): iterable
     {
         return [
+            'foreachBreakBeforeDefinitionInAFunction' => [
+                'code' => <<<'PHP'
+                    <?php
+                    /** @param list<int> $items */
+                    function f(array $items): void {
+                        foreach ($items as $item) {
+                            if (rand()) {
+                                break;
+                            }
+
+                            $x = $item;
+
+                            if (rand()) {
+                                break;
+                            }
+                        }
+
+                        echo $x;
+                    }
+                    PHP,
+                'error_message' => 'PossiblyUndefinedVariable - src' . DIRECTORY_SEPARATOR . 'somefile.php:16:10',
+                'error_levels' => [],
+                'php_version' => '8.1',
+            ],
+            'foreachBreakOfTheOuterLoopBeforeDefinition' => [
+                'code' => <<<'PHP'
+                    <?php
+                    function f(): void {
+                        for ($i = 0; $i < 3; $i++) {
+                            foreach ([1, 2] as $j) {
+                                if (rand()) {
+                                    break 2;
+                                }
+
+                                $z = 1;
+                            }
+                        }
+
+                        echo $z;
+                    }
+                    PHP,
+                'error_message' => 'PossiblyUndefinedVariable - src' . DIRECTORY_SEPARATOR . 'somefile.php:13:10',
+                'error_levels' => [],
+                'php_version' => '8.1',
+            ],
             'iteratorCurrentNullStaysWhenTheTemplateValueIsNullable' => [
                 'code' => '<?php
                     class Foo {
