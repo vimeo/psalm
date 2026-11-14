@@ -24,7 +24,6 @@ use function array_reverse;
 use function array_values;
 use function count;
 use function in_array;
-use function strtolower;
 
 /**
  * @api
@@ -82,38 +81,35 @@ final class ClassLikeStorage implements HasAttributesInterface
     public array $internal = [];
 
     /**
-     * The `@mixin T` of the class and of its parent classes, the parent's first. Each is bound in the context of
-     * its `defining_class`.
+     * The `@mixin T` the class declares. See getMixins().
      *
      * @var TTemplateParam[]
      */
     public array $templatedMixins = [];
 
     /**
-     * The named mixins of the class and of its parent classes, one per mixin class: the parent's first, so that
-     * with last-match-wins lookup the nearer one shadows it. See getNamedMixinDeclaringClass().
+     * The named `@mixin`s the class declares. See getMixins().
      *
      * @var list<TNamedObject>
      */
     public array $namedMixins = [];
 
     /**
-     * The parent class declaring each inherited named mixin, by the lowercase mixin class name.
+     * The `@mixin`s the class declares, in declaration order.
      *
-     * @var array<lowercase-string, string>
+     * @internal
+     * @var list<TNamedObject|TTemplateParam>
      */
-    public array $inheritedNamedMixinDeclaringClasses = [];
+    public array $declaredMixins = [];
 
     /**
-     * Named mixins reachable only through another mixin's own `@mixin` chain, deepest hop first.
-     * Filled during population; see getNamedMixinsForLookup().
-     *
+     * @deprecated Psalm no longer fills it: the mixins of a mixin are looked up along with it
      * @var list<TNamedObject>
      */
     public array $transitiveNamedMixins = [];
 
     /**
-     * The nearest class in the parent chain, this one included, that declares a `@mixin`.
+     * @deprecated Psalm no longer sets or uses it: each mixin is bound in the context of the class declaring it
      */
     public ?string $mixin_declaring_fqcln = null;
 
@@ -684,45 +680,35 @@ final class ClassLikeStorage implements HasAttributesInterface
     }
 
     /**
-     * Named mixins in member-lookup order: transitive ones first, then those inherited by the class, then its own,
-     * so that with last-match-wins lookup a nearer mixin shadows a deeper one.
-     *
+     * @deprecated Psalm no longer uses it, see getMixins()
      * @return list<TNamedObject>
      * @psalm-mutation-free
      */
     public function getNamedMixinsForLookup(): array
     {
-        return [...$this->transitiveNamedMixins, ...$this->namedMixins];
+        return $this->namedMixins;
     }
 
     /**
-     * The class whose templates the type arguments of the named mixin are written with.
+     * The mixins the class declares in declaration order, then those plugins added to namedMixins or
+     * templatedMixins. Those of its traits and parent classes are not included.
      *
+     * @return list<TNamedObject|TTemplateParam>
      * @psalm-mutation-free
      */
-    public function getNamedMixinDeclaringClass(TNamedObject $mixin): string
+    public function getMixins(): array
     {
-        return $this->inheritedNamedMixinDeclaringClasses[strtolower($mixin->value)] ?? $this->name;
-    }
-
-    /**
-     * The mixins declared on the class itself, without the inherited ones.
-     *
-     * @return list<TTemplateParam|TNamedObject>
-     * @psalm-mutation-free
-     */
-    public function getOwnMixins(): array
-    {
+        $current_mixins = [...$this->namedMixins, ...$this->templatedMixins];
         $mixins = [];
 
-        foreach ($this->templatedMixins as $mixin) {
-            if ($mixin->defining_class === $this->name) {
+        foreach ($this->declaredMixins as $mixin) {
+            if (in_array($mixin, $current_mixins, true)) {
                 $mixins[] = $mixin;
             }
         }
 
-        foreach ($this->namedMixins as $mixin) {
-            if ($this->getNamedMixinDeclaringClass($mixin) === $this->name) {
+        foreach ($current_mixins as $mixin) {
+            if (!in_array($mixin, $this->declaredMixins, true)) {
                 $mixins[] = $mixin;
             }
         }

@@ -35,8 +35,6 @@ use Psalm\Type\Union;
 
 use function array_map;
 use function array_merge;
-use function array_reverse;
-use function array_values;
 use function count;
 
 /**
@@ -755,26 +753,7 @@ final class MissingMethodCallHandler
             return [$pseudo_method_storage, $static_class_storage];
         }
 
-        $ancestors = $static_class_storage->class_implements;
-        // First match wins here, so the nearest mixins come first: those of the class, then those of its parent, and
-        // so on, each class's in declaration order.
-        $named_mixins_by_declaring_class = [];
-        foreach ($static_class_storage->namedMixins as $named_mixin) {
-            $named_mixins_by_declaring_class[$static_class_storage->getNamedMixinDeclaringClass($named_mixin)][]
-                = $named_mixin;
-        }
-        $named_mixins = [
-            ...array_merge(...array_reverse(array_values($named_mixins_by_declaring_class))),
-            ...array_reverse($static_class_storage->transitiveNamedMixins),
-        ];
-        foreach ($named_mixins as $namedObject) {
-            $type = $namedObject->value;
-            if ($type) {
-                $ancestors[$type] = true;
-            }
-        }
-
-        foreach ($ancestors as $fq_class_name => $_) {
+        foreach ($static_class_storage->class_implements as $fq_class_name => $_) {
             $class_storage = $codebase->classlikes->getStorageFor($fq_class_name);
 
             if ($class_storage && isset($class_storage->pseudo_methods[$method_name_lc])) {

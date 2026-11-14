@@ -92,8 +92,32 @@ echo $b->b;
 echo $b->a; // works
 ```
 
-Mixins are followed transitively: if `B` mixes in `A` and `C` mixes in `B`, members of `A` are also available on `C`.
-Chains are only followed through non-generic mixins; a generic hop such as `@mixin Collection<T>` is not traversed.
+The members of the class itself, its `@method`s and `@property`s included, come first. A member it lacks is looked up
+in its mixins in declaration order, then in those of its traits, then in those of its parent class, and so on. The
+mixins of a mixin are looked up right after it, and the first mixin with the member wins:
+
+```php
+class Deep { public function name(): int { return 1; } }
+class Near { public function name(): string { return ''; } }
+class Other { public function name(): bool { return true; } }
+
+/** @mixin Deep */
+class Middle {}
+
+/** @mixin Other */
+trait Forwards {}
+
+/** @mixin Near */
+abstract class Base { public function __call(string $name, array $args): mixed { return null; } }
+
+/**
+ * @mixin Middle
+ * @mixin Near
+ */
+class Child extends Base { use Forwards; }
+
+(new Child())->name(); // int: Middle comes first, and Deep is its mixin
+```
 
 
 ## Psalm-specific tags

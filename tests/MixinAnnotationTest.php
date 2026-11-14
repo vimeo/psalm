@@ -10,6 +10,9 @@ use Psalm\IssueBuffer;
 use Psalm\Tests\Traits\InvalidCodeAnalysisTestTrait;
 use Psalm\Tests\Traits\InvalidCodeAnalysisWithIssuesTestTrait;
 use Psalm\Tests\Traits\ValidCodeAnalysisTestTrait;
+use Psalm\Type\Atomic;
+
+use function array_map;
 
 use const DIRECTORY_SEPARATOR;
 
@@ -288,6 +291,417 @@ final class MixinAnnotationTest extends TestCase
                     $a = (new ChildHost())->foo();',
                 'assertions' => [
                     '$a===' => 'string',
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'firstDeclaredMixinWinsForAProperty' => [
+                'code' => '<?php
+                    final class First
+                    {
+                        public int $value = 1;
+                    }
+
+                    final class Second
+                    {
+                        public string $value = "";
+                    }
+
+                    /**
+                     * @mixin First
+                     * @mixin Second
+                     */
+                    final class Host
+                    {
+                        public function __get(string $name): mixed
+                        {
+                            return null;
+                        }
+                    }
+
+                    $a = (new Host())->value;',
+                'assertions' => [
+                    '$a===' => 'int',
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'pseudoMembersOfTheClassWinOverItsMixins' => [
+                'code' => '<?php
+                    final class Delegate
+                    {
+                        public string $value = "";
+
+                        public function foo(): string
+                        {
+                            return "";
+                        }
+
+                        public static function bar(): string
+                        {
+                            return "";
+                        }
+                    }
+
+                    /**
+                     * @method int foo()
+                     * @method static int bar()
+                     * @property int $value
+                     * @mixin Delegate
+                     */
+                    final class Host
+                    {
+                        /** @param list<mixed> $args */
+                        public function __call(string $name, array $args): mixed
+                        {
+                            return null;
+                        }
+
+                        /** @param list<mixed> $args */
+                        public static function __callStatic(string $name, array $args): mixed
+                        {
+                            return null;
+                        }
+
+                        public function __get(string $name): mixed
+                        {
+                            return null;
+                        }
+                    }
+
+                    $a = (new Host())->foo();
+                    $b = Host::bar();
+                    $c = (new Host())->value;',
+                'assertions' => [
+                    '$a===' => 'int',
+                    '$b===' => 'int',
+                    '$c===' => 'int',
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'mixinOfTheOwnMixinWinsOverTheParentMixin' => [
+                'code' => '<?php
+                    final class Deep
+                    {
+                        public function foo(): int
+                        {
+                            return 1;
+                        }
+                    }
+
+                    final class ParentMixin
+                    {
+                        public function foo(): string
+                        {
+                            return "";
+                        }
+                    }
+
+                    /** @mixin Deep */
+                    final class ChildMixin {}
+
+                    /** @mixin ParentMixin */
+                    abstract class Base
+                    {
+                        /** @param list<mixed> $args */
+                        public function __call(string $name, array $args): mixed
+                        {
+                            return null;
+                        }
+                    }
+
+                    /** @mixin ChildMixin */
+                    final class Child extends Base {}
+
+                    $a = (new Child())->foo();',
+                'assertions' => [
+                    '$a===' => 'int',
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'mixinOfATraitIsInheritedBeforeTheParentMixin' => [
+                'code' => '<?php
+                    final class TraitMixin
+                    {
+                        public function foo(): int
+                        {
+                            return 1;
+                        }
+
+                        public static function bar(): int
+                        {
+                            return 1;
+                        }
+                    }
+
+                    final class ParentMixin
+                    {
+                        public function foo(): string
+                        {
+                            return "";
+                        }
+                    }
+
+                    /** @mixin TraitMixin */
+                    trait ForwardsCalls {}
+
+                    /** @mixin ParentMixin */
+                    abstract class Base
+                    {
+                        /** @param list<mixed> $args */
+                        public function __call(string $name, array $args): mixed
+                        {
+                            return null;
+                        }
+
+                        /** @param list<mixed> $args */
+                        public static function __callStatic(string $name, array $args): mixed
+                        {
+                            return null;
+                        }
+                    }
+
+                    final class Child extends Base
+                    {
+                        use ForwardsCalls;
+                    }
+
+                    $a = (new Child())->foo();
+                    $b = Child::bar();',
+                'assertions' => [
+                    '$a===' => 'int',
+                    '$b===' => 'int',
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'classReachedThroughTwoMixinsIsLookedUpAtItsFirstPlace' => [
+                'code' => '<?php
+                    final class Shared
+                    {
+                        public function foo(): int
+                        {
+                            return 1;
+                        }
+                    }
+
+                    final class Other
+                    {
+                        public function foo(): string
+                        {
+                            return "";
+                        }
+                    }
+
+                    /** @mixin Shared */
+                    final class Left {}
+
+                    /**
+                     * @mixin Other
+                     * @mixin Shared
+                     */
+                    final class Right {}
+
+                    /**
+                     * @mixin Left
+                     * @mixin Right
+                     */
+                    final class Host
+                    {
+                        /** @param list<mixed> $args */
+                        public function __call(string $name, array $args): mixed
+                        {
+                            return null;
+                        }
+                    }
+
+                    $a = (new Host())->foo();',
+                'assertions' => [
+                    '$a===' => 'int',
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'pseudoMethodOfAMixinCalledStatically' => [
+                'code' => '<?php
+                    /** @method int pseudo() */
+                    final class Target
+                    {
+                        /** @param list<mixed> $args */
+                        public function __call(string $name, array $args): mixed
+                        {
+                            return null;
+                        }
+                    }
+
+                    /** @mixin Target */
+                    final class Host
+                    {
+                        /** @param list<mixed> $args */
+                        public static function __callStatic(string $name, array $args): mixed
+                        {
+                            return null;
+                        }
+                    }
+
+                    $a = Host::pseudo();',
+                'assertions' => [
+                    '$a===' => 'int',
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'propertyOfAGenericMixinIsBound' => [
+                'code' => '<?php
+                    /** @template TValue */
+                    final class Box
+                    {
+                        /** @var TValue */
+                        public mixed $value;
+
+                        /** @param TValue $value */
+                        public function __construct(mixed $value)
+                        {
+                            $this->value = $value;
+                        }
+                    }
+
+                    /**
+                     * @template T
+                     * @mixin Box<T>
+                     */
+                    final class Host
+                    {
+                        public function __get(string $name): mixed
+                        {
+                            return null;
+                        }
+                    }
+
+                    /** @param Host<int> $host */
+                    function value(Host $host): int
+                    {
+                        return $host->value;
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'mixinOfAGenericMixinIsFollowed' => [
+                'code' => '<?php
+                    /** @template TValue */
+                    final class Inner
+                    {
+                        /** @return TValue */
+                        public function get(): mixed
+                        {
+                            throw new RuntimeException();
+                        }
+                    }
+
+                    /**
+                     * @template T
+                     * @mixin Inner<T>
+                     */
+                    final class Collection
+                    {
+                        /** @param list<mixed> $args */
+                        public function __call(string $name, array $args): mixed
+                        {
+                            return null;
+                        }
+                    }
+
+                    /** @mixin Collection<string> */
+                    final class Host
+                    {
+                        /** @param list<mixed> $args */
+                        public function __call(string $name, array $args): mixed
+                        {
+                            return null;
+                        }
+                    }
+
+                    $a = (new Host())->get();',
+                'assertions' => [
+                    '$a===' => 'string',
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'inheritedTemplatedMixinOfANonGenericChild' => [
+                'code' => '<?php
+                    final class Implementation
+                    {
+                        public function go(): int
+                        {
+                            return 1;
+                        }
+                    }
+
+                    /**
+                     * @template T of object
+                     * @mixin T
+                     */
+                    abstract class Proxy
+                    {
+                        /** @param list<mixed> $args */
+                        public function __call(string $name, array $args): mixed
+                        {
+                            return null;
+                        }
+
+                        /** @param list<mixed> $args */
+                        public static function __callStatic(string $name, array $args): mixed
+                        {
+                            return null;
+                        }
+                    }
+
+                    /** @extends Proxy<Implementation> */
+                    final class ImplementationProxy extends Proxy {}
+
+                    $a = (new ImplementationProxy())->go();
+                    $b = ImplementationProxy::go();',
+                'assertions' => [
+                    '$a===' => 'int',
+                    '$b===' => 'int',
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'staticOfAGenericMixinIsTheGenericReceiver' => [
+                'code' => '<?php
+                    /** @template TValue */
+                    final class Holder
+                    {
+                        /** @return TValue */
+                        public function get(): mixed
+                        {
+                            throw new RuntimeException();
+                        }
+                    }
+
+                    /**
+                     * @template T
+                     * @mixin Holder<static>
+                     */
+                    final class Host
+                    {
+                        /** @param list<mixed> $args */
+                        public function __call(string $name, array $args): mixed
+                        {
+                            return null;
+                        }
+                    }
+
+                    /** @var Host<string> $host */
+                    $host = new Host();
+                    $a = $host->get();',
+                'assertions' => [
+                    '$a===' => 'Host<string>',
                 ],
                 'ignored_issues' => [],
                 'php_version' => '8.0',
@@ -1015,8 +1429,8 @@ final class MixinAnnotationTest extends TestCase
                     $t = (new Tag)->first();
                     $c = (new Comment)->first();',
                 'assertions' => [
-                    '$p===' => 'Post|null',
-                    '$t===' => 'string',
+                    '$p===' => 'string',
+                    '$t===' => 'Tag|null',
                     '$c===' => 'Comment|null',
                 ],
                 'ignored_issues' => [],
@@ -1035,8 +1449,8 @@ final class MixinAnnotationTest extends TestCase
                     }
 
                     /**
-                     * @mixin Labels
                      * @mixin Repository<static>
+                     * @mixin Labels
                      */
                     final class Post {
                         public function __call(string $name, array $args): mixed { return null; }
@@ -1100,8 +1514,8 @@ final class MixinAnnotationTest extends TestCase
                     }
 
                     /**
-                     * @mixin Labels
                      * @mixin Repository<static>
+                     * @mixin Labels
                      */
                     abstract class Model {
                         public function __call(string $name, array $args): mixed { return null; }
@@ -1132,8 +1546,8 @@ final class MixinAnnotationTest extends TestCase
                     }
 
                     /**
-                     * @mixin Labels
                      * @mixin Repository<static>
+                     * @mixin Labels
                      */
                     final class Post {
                         public function __call(string $name, array $args): mixed { return null; }
@@ -1161,8 +1575,8 @@ final class MixinAnnotationTest extends TestCase
 
                     /**
                      * @template T
-                     * @mixin Labels
                      * @mixin Repository<T>
+                     * @mixin Labels
                      */
                     final class Box {
                         public function __call(string $name, array $args): mixed { return null; }
@@ -1177,7 +1591,7 @@ final class MixinAnnotationTest extends TestCase
                 'ignored_issues' => [],
                 'php_version' => '8.0',
             ],
-            'lastOfSeveralTemplatedMixinsDeclaringTheMethodWins' => [
+            'firstOfSeveralTemplatedMixinsDeclaringTheMethodWins' => [
                 'code' => '<?php
                     final class A {
                         public function foo(): int { return 1; }
@@ -1201,12 +1615,12 @@ final class MixinAnnotationTest extends TestCase
                     $host = new Host;
                     $r = $host->foo();',
                 'assertions' => [
-                    '$r===' => 'string',
+                    '$r===' => 'int',
                 ],
                 'ignored_issues' => [],
                 'php_version' => '8.0',
             ],
-            'lastOfSeveralTemplatedMixinsDeclaringTheMethodAsPseudoMethodWins' => [
+            'firstOfSeveralTemplatedMixinsDeclaringTheMethodAsPseudoMethodWins' => [
                 'code' => '<?php
                     /** @method int foo() */
                     final class PA {}
@@ -1236,8 +1650,8 @@ final class MixinAnnotationTest extends TestCase
                     $h2 = new H;
                     $r2 = $h2->foo();',
                 'assertions' => [
-                    '$r===' => 'string',
-                    '$r2===' => 'string',
+                    '$r===' => 'int',
+                    '$r2===' => 'int',
                 ],
                 'ignored_issues' => [],
                 'php_version' => '8.0',
@@ -1629,7 +2043,7 @@ final class MixinAnnotationTest extends TestCase
                     '$result' => 'int',
                 ],
             ],
-            'nestedMixinLaterSiblingWinsAtSameDepth' => [
+            'nestedMixinOfTheFirstSiblingWins' => [
                 'code' => '<?php
                     namespace T;
 
@@ -1651,9 +2065,7 @@ final class MixinAnnotationTest extends TestCase
                     $host = new SibHost();
                     $result = $host->val();',
                 'assertions' => [
-                    // SibRight is declared after SibLeft, so its transitively mixed-in val() wins, matching
-                    // the analyzers last-match-wins precedence for same-depth mixins.
-                    '$result' => 'string',
+                    '$result' => 'int',
                 ],
             ],
             'nestedMixinPseudoMethodViaMagicCall' => [
@@ -2188,8 +2600,11 @@ final class MixinAnnotationTest extends TestCase
 
         $this->assertSame(['InvalidDocblock'], $issue_types);
         $this->assertSame(
-            'Host',
-            $this->project_analyzer->getCodebase()->classlike_storage_provider->get('Host')->mixin_declaring_fqcln,
+            ['Provider'],
+            array_map(
+                static fn(Atomic $mixin): string => $mixin->getId(),
+                $this->project_analyzer->getCodebase()->classlike_storage_provider->get('Host')->getMixins(),
+            ),
         );
     }
 
@@ -2212,8 +2627,9 @@ final class MixinAnnotationTest extends TestCase
         }
 
         $this->assertSame(['InvalidDocblock'], $issue_types);
-        $this->assertNull(
-            $this->project_analyzer->getCodebase()->classlike_storage_provider->get('A')->mixin_declaring_fqcln,
+        $this->assertSame(
+            [],
+            $this->project_analyzer->getCodebase()->classlike_storage_provider->get('A')->getMixins(),
         );
     }
 }

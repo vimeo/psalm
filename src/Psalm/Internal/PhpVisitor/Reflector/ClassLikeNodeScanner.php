@@ -964,14 +964,14 @@ final class ClassLikeNodeScanner
 
                     if ($mixin_type instanceof TNamedObject) {
                         $storage->namedMixins[] = $mixin_type;
+                        $storage->declaredMixins[] = $mixin_type;
                     }
 
                     if ($mixin_type instanceof TTemplateParam) {
                         $storage->templatedMixins[] = $mixin_type;
+                        $storage->declaredMixins[] = $mixin_type;
                     }
                 }
-
-                $storage->mixin_declaring_fqcln = $storage->name;
             }
 
             $deferred_capabilities = [];

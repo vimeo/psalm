@@ -370,8 +370,7 @@ final class ClassAnalyzer extends ClassLikeAnalyzer
             }
         }
 
-        // the inherited mixins are checked where they are declared
-        $mixins = $storage->getOwnMixins();
+        $mixins = $storage->getMixins();
 
         if ($mixins) {
             $union = new Union($mixins);
