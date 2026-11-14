@@ -1333,6 +1333,7 @@ final class NewAnalyzer extends CallAnalyzer
         }
 
         $has_single_class = $stmt_class_type->isSingleStringLiteral();
+        $class_string_class = null;
 
         if ($has_single_class) {
             // A class string is always fully qualified, so "\Foo" and "Foo" name the same class
@@ -1379,7 +1380,10 @@ final class NewAnalyzer extends CallAnalyzer
                 }
             }
 
-            if (self::checkMethodArgs(
+            // the arguments of a resolved class are analysed against its constructor below
+            $class_string_class = self::getClassOfClassString($codebase, $context, $stmt_class_type);
+
+            if ($class_string_class === null && self::checkMethodArgs(
                 null,
                 $stmt->getArgs(),
                 new TemplateResult([], []),
@@ -1401,6 +1405,12 @@ final class NewAnalyzer extends CallAnalyzer
             $can_extend,
         );
 
+        if ($class_string_class !== null) {
+            $fq_class_name = $class_string_class;
+
+            return;
+        }
+
         if (!$has_single_class) {
             if ($new_type) {
                 $statements_analyzer->node_data->setType($stmt, $new_type);
@@ -1418,6 +1428,39 @@ final class NewAnalyzer extends CallAnalyzer
             return;
         }
     }
+
+    /**
+     * The class of a class-string<A> whose constructor is the one of A, because child classes can't change it.
+     * A class-string<T> keeps the previous handling.
+     */
+    private static function getClassOfClassString(
+        Codebase $codebase,
+        Context $context,
+        Union $stmt_class_type,
+    ): ?string {
+        if (!$stmt_class_type->isSingle()) {
+            return null;
+        }
+
+        $class_string = $stmt_class_type->getSingleAtomic();
+
+        if (!$class_string instanceof TClassString
+            || $class_string instanceof TTemplateParamClass
+            || !$class_string->as_type
+            || $class_string->as_type->is_static
+            || !$codebase->classlikes->classExists($class_string->as_type->value, null, $context)
+        ) {
+            return null;
+        }
+
+        $storage = $codebase->classlike_storage_provider->get($class_string->as_type->value);
+
+        // the template arguments of the constructor call would replace the ones of the class-string
+        return $storage->preserve_constructor_signature && $storage->template_types === null
+            ? $class_string->as_type->value
+            : null;
+    }
+
     private static function getNewType(
         StatementsAnalyzer $statements_analyzer,
         Codebase $codebase,
