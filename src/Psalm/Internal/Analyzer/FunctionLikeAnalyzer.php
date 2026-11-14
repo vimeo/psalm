@@ -459,6 +459,27 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
             }
 
             $statements_analyzer->setByRefUses($byref_uses);
+        } elseif ($this instanceof ClosureAnalyzer
+            && $this->function instanceof ArrowFunction
+            && $this->source instanceof StatementsAnalyzer
+        ) {
+            $param_var_ids = [];
+
+            foreach ($this->function->params as $param) {
+                if ($param->var instanceof PhpParser\Node\Expr\Variable && is_string($param->var->name)) {
+                    $param_var_ids['$' . $param->var->name] = true;
+                }
+            }
+
+            // an arrow function reads the variables of the enclosing scope, possibly undefined ones included
+            foreach ($context->vars_in_scope as $var_id => $type) {
+                if (!isset($param_var_ids[$var_id])
+                    && ($type->possibly_undefined || $type->possibly_undefined_from_try)
+                    && ($first_appearance = $this->source->getFirstAppearance($var_id))
+                ) {
+                    $statements_analyzer->registerVariable($var_id, $first_appearance, null);
+                }
+            }
         }
 
         if ($storage->template_types) {

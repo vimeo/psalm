@@ -109,6 +109,56 @@ final class UndefinedVariableManipulationTest extends FileManipulationTestCase
                 'issues_to_fix' => ['PossiblyUndefinedGlobalVariable'],
                 'safe_types' => true,
             ],
+            'possiblyUndefinedVariableInIfElseifOfAFunction' => [
+                'input' => '<?php
+                    function g(): void {
+                        if (rand(0, 1)) {
+                            $a = 1;
+                        } elseif (rand(0, 1)) {
+                            $a = "b";
+                        }
+
+                        echo $a;
+                    }',
+                'output' => '<?php
+                    function g(): void {
+                        $a = null;
+                        if (rand(0, 1)) {
+                            $a = 1;
+                        } elseif (rand(0, 1)) {
+                            $a = "b";
+                        }
+
+                        echo $a;
+                    }',
+                'php_version' => '7.1',
+                'issues_to_fix' => ['PossiblyUndefinedVariable'],
+                'safe_types' => true,
+            ],
+            'possiblyUndefinedVariableDefinedByAPreviousIteration' => [
+                'input' => '<?php
+                    function f(array $xs): void {
+                        foreach ($xs as $x) {
+                            if ($x) {
+                                echo $a;
+                            }
+                            $a = "s";
+                        }
+                    }',
+                'output' => '<?php
+                    function f(array $xs): void {
+                        $a = null;
+                        foreach ($xs as $x) {
+                            if ($x) {
+                                echo $a;
+                            }
+                            $a = "s";
+                        }
+                    }',
+                'php_version' => '7.1',
+                'issues_to_fix' => ['PossiblyUndefinedVariable'],
+                'safe_types' => true,
+            ],
             'unsetPossiblyUndefinedVariable' => [
                 'input' => '<?php
                     if (rand(0, 1)) {

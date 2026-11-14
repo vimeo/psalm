@@ -97,9 +97,10 @@ final class SimpleNegatedAssertionReconciler extends Reconciler
 
         if ($assertion instanceof IsNotIsset) {
             if ($existing_var_type->possibly_undefined) {
-                // a variable that is not set reads as null, an offset or a property that is not set has no value
+                // a variable that is not set reads as null (and may still be undefined), an offset or a property
+                // that is not set has no value
                 return $key !== null && $key[0] === '$' && strpbrk($key, '[-:') === false
-                    ? Type::getNull()
+                    ? Type::getNull()->setPossiblyUndefined(true)
                     : Type::getNever();
             }
 
