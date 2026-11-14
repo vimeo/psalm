@@ -1,0 +1,11 @@
+<?php
+namespace Psalm\Tests\Fixtures\ConditionalStaticOverride;
+
+class Route
+{
+    /**
+     * @param string[]|string|null $middleware
+     * @return ($middleware is null ? string[] : static)
+     */
+    public function middleware($middleware = null) {}
+}
