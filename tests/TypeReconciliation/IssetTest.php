@@ -81,6 +81,33 @@ final class IssetTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'nullsafeCallCoalescedWithAFalsyValueKeepsTheReceiverNullableWhereItIsFalsy' => [
+                'code' => <<<'PHP'
+                    <?php
+                    final class A {
+                        public function m(): bool {
+                            return rand() > 0;
+                        }
+                    }
+
+                    function f(?A $a): void {
+                        if ($a?->m() ?? false) {
+                            /** @psalm-check-type-exact $a = A */
+                        } else {
+                            /** @psalm-check-type-exact $a = A|null */
+                        }
+
+                        if (!($a?->m() ?? false)) {
+                            /** @psalm-check-type-exact $a = A|null */
+                        } else {
+                            /** @psalm-check-type-exact $a = A */
+                        }
+                    }
+                    PHP,
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
             'negatedIssetOfAConditionallyDefinedVariableIsNullWhereTheLoopMayNotAssignIt' => [
                 'code' => '<?php
                     /** @param list<string> $values */
