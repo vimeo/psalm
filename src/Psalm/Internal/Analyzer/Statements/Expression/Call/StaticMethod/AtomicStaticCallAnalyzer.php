@@ -21,6 +21,7 @@ use Psalm\Internal\Analyzer\Statements\Expression\Call\ClassTemplateParamCollect
 use Psalm\Internal\Analyzer\Statements\Expression\Call\Method\MethodCallPurityAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\Call\Method\MethodCallReturnTypeFetcher;
 use Psalm\Internal\Analyzer\Statements\Expression\Call\Method\MethodVisibilityAnalyzer;
+use Psalm\Internal\Analyzer\Statements\Expression\Call\Method\MissingMethodCallHandler;
 use Psalm\Internal\Analyzer\Statements\Expression\Call\MethodCallAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\Call\NewAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\Call\StaticCallAnalyzer;
@@ -284,6 +285,7 @@ final class AtomicStaticCallAnalyzer
                                 $codebase,
                                 $declaring_method_id,
                                 $codebase->methods->getStorage($declaring_method_id),
+                                $statements_analyzer,
                             );
                             $self_fq_class_name = $stmt->class instanceof PhpParser\Node\Name
                                 && $stmt->class->getParts() === ['parent']
@@ -483,7 +485,7 @@ final class AtomicStaticCallAnalyzer
                         }
 
                         $mixin_declaring_class_storage = $codebase->classlike_storage_provider->get(
-                            $class_storage->mixin_declaring_fqcln,
+                            $class_storage->getNamedMixinDeclaringClass($tGenericMixin),
                         );
 
                         $new_mixin_candidate_type = AtomicPropertyFetchAnalyzer::localizePropertyType(
@@ -1068,14 +1070,23 @@ final class AtomicStaticCallAnalyzer
         Context $context,
         ?int $magic_method_capabilities,
     ): ?bool {
+        $codebase = $statements_analyzer->getCodebase();
+
+        $pseudo_method_storage = MissingMethodCallHandler::selectOverload(
+            $statements_analyzer,
+            $codebase,
+            $args,
+            $context,
+            $class_storage->pseudo_static_method_overloads[$method_id->method_name] ?? null,
+            $pseudo_method_storage,
+        );
+
         if (!$context->isSuppressingExceptions($statements_analyzer)) {
             $context->mergeFunctionExceptions(
                 $pseudo_method_storage,
                 new CodeLocation($statements_analyzer, $stmt),
             );
         }
-
-        $codebase = $statements_analyzer->getCodebase();
 
         $declaring_method_id = $class_storage->declaring_pseudo_static_method_ids[$method_id->method_name] ?? null;
         $declaring_class_storage = $declaring_method_id

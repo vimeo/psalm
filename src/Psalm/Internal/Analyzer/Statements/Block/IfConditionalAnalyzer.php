@@ -520,7 +520,8 @@ final class IfConditionalAnalyzer
         ?string $self,
         array $incoming,
     ): array {
-        if ($expr instanceof PhpParser\Node\Expr\Assign
+        // the value of `$a ??= $b` is the value `$a` has afterwards, like that of `$a = $b`
+        if (($expr instanceof PhpParser\Node\Expr\Assign || $expr instanceof PhpParser\Node\Expr\AssignOp\Coalesce)
             && ExpressionIdentifier::getExtendedVarId($expr->var, $self, $statements_analyzer) === $var_id
         ) {
             return [['truthy#' . spl_object_id($expr) => true], ['full#' . spl_object_id($expr) => true]];
@@ -658,11 +659,11 @@ final class IfConditionalAnalyzer
      * Whether an assignment that may be skipped is in the value of an assignment of the same variable that always runs
      * (`$a = match (...) { f($a = 1) => ... }`): the value of the outer one is what the variable is after both
      *
-     * @param list<PhpParser\Node\Expr\Assign> $unconditional_assignments
+     * @param list<PhpParser\Node\Expr\Assign|PhpParser\Node\Expr\AssignOp\Coalesce> $unconditional_assignments
      */
     private static function isOverwrittenByAnUnconditionalAssignment(
         StatementsAnalyzer $statements_analyzer,
-        PhpParser\Node\Expr\Assign $assign,
+        PhpParser\Node\Expr\Assign|PhpParser\Node\Expr\AssignOp\Coalesce $assign,
         array $unconditional_assignments,
         string $var_id,
         ?string $self,
@@ -684,14 +685,14 @@ final class IfConditionalAnalyzer
 
     /**
      * @param bool $only_unconditional leave out assignments in a part of the expression that may not run
-     * @return list<PhpParser\Node\Expr\Assign>
+     * @return list<PhpParser\Node\Expr\Assign|PhpParser\Node\Expr\AssignOp\Coalesce>
      */
     private static function getAssignmentsInCondition(
         PhpParser\Node\Expr $cond,
         bool $only_unconditional = false,
     ): array {
         $visitor = new class ($only_unconditional) extends PhpParser\NodeVisitorAbstract {
-            /** @var list<PhpParser\Node\Expr\Assign> */
+            /** @var list<PhpParser\Node\Expr\Assign|PhpParser\Node\Expr\AssignOp\Coalesce> */
             public array $assignments = [];
 
             public function __construct(private readonly bool $only_unconditional)
@@ -707,6 +708,11 @@ final class IfConditionalAnalyzer
                     || $node instanceof PhpParser\Node\Stmt\ClassLike
                 ) {
                     return PhpParser\NodeVisitor::DONT_TRAVERSE_CHILDREN;
+                }
+
+                // `$a ??= $b` always gives `$a` its value, but its right operand may not run
+                if ($node instanceof PhpParser\Node\Expr\AssignOp\Coalesce) {
+                    $this->assignments[] = $node;
                 }
 
                 if ($this->only_unconditional
