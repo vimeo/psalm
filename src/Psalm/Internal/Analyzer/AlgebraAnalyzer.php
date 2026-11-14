@@ -29,6 +29,7 @@ use function implode;
 use function reset;
 use function sort;
 use function spl_object_id;
+use function strpbrk;
 
 /**
  * @internal
@@ -36,7 +37,8 @@ use function spl_object_id;
 final class AlgebraAnalyzer
 {
     /**
-     * The variable of a clause that is only `isset($var)`
+     * The variable of a clause that is only `isset($var)`, when it is a plain local one: `isset($a['k'])` and
+     * `isset($o->p)` can be true while the value is null (`ArrayAccess::offsetExists()`, `__isset()`)
      *
      * @psalm-pure
      */
@@ -44,7 +46,12 @@ final class AlgebraAnalyzer
     {
         $assertion = self::getSingleAssertion($clause);
 
-        return $assertion !== null && $assertion[1] instanceof IsIsset ? $assertion[0] : null;
+        return $assertion !== null
+            && $assertion[1] instanceof IsIsset
+            && $assertion[0][0] === '$'
+            && strpbrk($assertion[0], '[-:') === false
+                ? $assertion[0]
+                : null;
     }
 
     /**
