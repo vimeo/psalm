@@ -692,6 +692,23 @@ final class ArrayKeyExistsTest extends TestCase
                 'error_levels' => [],
                 'php_version' => '8.1',
             ],
+            'arrayKeyExistsOfATemplateOfStringInAnArrayOfIntKeysNarrowsItToTheKeysAsStrings' => [
+                'code' => '<?php
+                    function takesInt(int $i): void {}
+
+                    /**
+                     * @template T of string
+                     * @param T $key
+                     */
+                    function ofTemplate(string $key): void {
+                        $items = [971 => "x", 972 => "y"];
+
+                        if (array_key_exists($key, $items)) {
+                            takesInt($key);
+                        }
+                    }',
+                'error_message' => 'expects int, but \'971\'|\'972\' provided',
+            ],
             'negatedIssetKeepsAnOptionalKeyThatMayBeNull' => [
                 'code' => '<?php
                     /**

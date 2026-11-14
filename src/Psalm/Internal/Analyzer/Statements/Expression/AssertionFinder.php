@@ -3899,11 +3899,11 @@ final class AssertionFinder
     {
         $assertions = [];
 
-        if (!$looked_up_type->isString()) {
+        if (!$looked_up_type->isString(true)) {
             $assertions[] = new IsIdentical(new TLiteralInt($key));
         }
 
-        if (!$looked_up_type->isInt()) {
+        if (!$looked_up_type->isInt(true)) {
             $assertions[] = new IsIdentical(TLiteralString::make((string) $key));
         }
 
