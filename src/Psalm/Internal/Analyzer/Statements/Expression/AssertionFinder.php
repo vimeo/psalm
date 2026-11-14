@@ -2213,13 +2213,17 @@ final class AssertionFinder
         }
 
         $var_name = ExpressionIdentifier::getExtendedVarId(
-            $base_conditional,
+            $base_conditional instanceof PhpParser\Node\Expr\AssignOp\Coalesce
+                ? $base_conditional->var
+                : $base_conditional,
             $this_class_name,
             $source,
         );
 
         if ($var_name) {
-            if ($base_conditional instanceof PhpParser\Node\Expr\Assign) {
+            if ($base_conditional instanceof PhpParser\Node\Expr\Assign
+                || $base_conditional instanceof PhpParser\Node\Expr\AssignOp\Coalesce
+            ) {
                 $var_name = '=' . $var_name;
             }
 
@@ -2938,12 +2942,17 @@ final class AssertionFinder
         }
 
         $var_name = ExpressionIdentifier::getExtendedVarId(
-            $base_conditional,
+            $base_conditional instanceof PhpParser\Node\Expr\AssignOp\Coalesce
+                ? $base_conditional->var
+                : $base_conditional,
             $this_class_name,
             $source,
         );
 
-        if ($var_name && $base_conditional instanceof PhpParser\Node\Expr\Assign) {
+        if ($var_name
+            && ($base_conditional instanceof PhpParser\Node\Expr\Assign
+                || $base_conditional instanceof PhpParser\Node\Expr\AssignOp\Coalesce)
+        ) {
             $var_name = '=' . $var_name;
         }
 
