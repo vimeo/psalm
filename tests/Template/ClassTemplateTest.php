@@ -6110,6 +6110,57 @@ final class ClassTemplateTest extends TestCase
                     '$r===' => 'string',
                 ],
             ],
+            'newOfTheClassItselfBindsItsTemplatesToTheArguments' => [
+                'code' => '<?php
+                    interface Item {}
+
+                    /** @template E of Item */
+                    class Wrapper
+                    {
+                        /** @param callable(E) $c */
+                        public function __construct(private callable $c) {}
+
+                        /**
+                         * @template E_ of Item
+                         * @param callable(E_) $c
+                         * @return Wrapper<E_>
+                         */
+                        public static function viaName(callable $c): Wrapper {
+                            return new Wrapper($c);
+                        }
+
+                        /**
+                         * @template E_ of Item
+                         * @param callable(E_) $c
+                         * @return Wrapper<E_>
+                         */
+                        public static function viaSelf(callable $c): Wrapper {
+                            return new self($c);
+                        }
+
+                        /**
+                         * @template E_ of Item
+                         * @param callable(E_) $c
+                         * @return Wrapper<E_>
+                         */
+                        public function viaInstance(callable $c): Wrapper {
+                            return new Wrapper($c);
+                        }
+                    }',
+            ],
+            'newOfTheClassItselfWithTheInstancesOwnTemplateKeepsIt' => [
+                'code' => '<?php
+                    /** @template T of object */
+                    class Box {
+                        /** @param T $item */
+                        public function __construct(public object $item) {}
+
+                        /** @return Box<T> */
+                        public function copy(): Box {
+                            return new Box($this->item);
+                        }
+                    }',
+            ],
             'templateNestedInACovariantGenericParamAcceptsASubtype' => [
                 'code' => '<?php
                     /**

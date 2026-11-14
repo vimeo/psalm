@@ -647,6 +647,7 @@ final class NewAnalyzer extends CallAnalyzer
             }
 
             $template_result ??= new TemplateResult([], []);
+            $template_result->constructed_class = $storage->name;
 
             if (!self::isInTrait($statements_analyzer)) {
                 $template_result->static_class_type = $fq_class_name;
