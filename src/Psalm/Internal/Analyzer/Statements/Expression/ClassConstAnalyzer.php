@@ -589,10 +589,7 @@ final class ClassConstAnalyzer
             $lhs_type_definite_class = null;
             if ($lhs_type->isSingle()) {
                 $atomic_type = $lhs_type->getSingleAtomic();
-                if ($atomic_type instanceof TNamedObject) {
-                    $fq_class_name = $atomic_type->value;
-                    $lhs_type_definite_class = $atomic_type->definite_class;
-                } elseif ($atomic_type instanceof TLiteralClassString) {
+                if ($atomic_type instanceof TNamedObject || $atomic_type instanceof TLiteralClassString) {
                     $fq_class_name = $atomic_type->value;
                     $lhs_type_definite_class = $atomic_type->definite_class;
                 } elseif ($atomic_type::class === TLiteralString::class

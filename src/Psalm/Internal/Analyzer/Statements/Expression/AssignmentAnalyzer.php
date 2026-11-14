@@ -111,6 +111,7 @@ use function reset;
 use function spl_object_id;
 use function str_contains;
 use function str_starts_with;
+use function strncasecmp;
 use function strpos;
 use function strtolower;
 use function substr;
@@ -1340,11 +1341,18 @@ final class AssignmentAnalyzer
 
             // Remove old reference parent node so previously referenced variable usage doesn't count as reference usage
             $old_type = $context->vars_in_scope[$lhs_var_id];
-            foreach ($old_type->parent_nodes as $old_parent_node_id => $_) {
+            $old_parent_nodes = $old_type->parent_nodes;
+            foreach ($old_parent_nodes as $old_parent_node_id => $_) {
                 if (str_starts_with($old_parent_node_id, "$lhs_var_id from ")) {
-                    unset($old_type->parent_nodes[$old_parent_node_id]);
+                    unset($old_parent_nodes[$old_parent_node_id]);
                 }
             }
+
+            // still a reference to the variable it was bound to, which keeps the new type
+            $context->vars_in_scope[$lhs_var_id] = $old_type->setParentNodes(
+                $old_parent_nodes,
+                $old_type->propagate_parent_nodes,
+            );
         }
         // When assigning an existing reference as a reference it removes the
         // old reference, so it's no longer potentially from a confusing scope.
@@ -1453,6 +1461,14 @@ final class AssignmentAnalyzer
                 $statements_analyzer,
             );
 
+            // `static::$p` is a variable of its own, but the property it names is declared for the class the code is in
+            if ($property_id !== null
+                && strncasecmp($property_id, 'static::$', 9) === 0
+                && ($self_class = $context->self ?? $statements_analyzer->getFQCLN()) !== null
+            ) {
+                $property_id = $self_class . substr($property_id, 6);
+            }
+
             if ($property_id !== null
                 && $codebase->propertyExists($property_id, false)
             ) {
@@ -1541,6 +1557,10 @@ final class AssignmentAnalyzer
 
             if (!$by_ref_type->hasMixed() && $constrain_type) {
                 $context->byref_constraints[$var_id] = new ReferenceConstraint($by_ref_type);
+            }
+
+            if ($stmt instanceof PhpParser\Node\Expr\StaticPropertyFetch) {
+                StaticPropertyAssignmentAnalyzer::forgetAliasesOfStaticProperty($codebase, $context, $var_id);
             }
 
             if (!$context->hasVariable($var_id)) {
