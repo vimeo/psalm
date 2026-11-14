@@ -47,6 +47,7 @@ use function array_merge;
 use function array_search;
 use function array_shift;
 use function array_splice;
+use function array_values;
 use function count;
 use function in_array;
 use function key;
@@ -545,8 +546,9 @@ final class Populator
 
         $dependent_classlikes[$fq_classlike_name_lc] = true;
 
-        // a storage populated again still holds the `@method`s it inherited the last time
+        // a storage populated again still holds the `@method`s and mixins it inherited the last time
         self::removeInheritedPseudoMethods($storage);
+        self::removeInheritedMixins($storage);
 
         $trait_storages = [];
 
@@ -1114,18 +1116,25 @@ final class Populator
             $storage->preserve_constructor_signature = true;
         }
 
-        if (($parent_storage->namedMixins || $parent_storage->templatedMixins)
-            && (!$storage->namedMixins || !$storage->templatedMixins)) {
-            $storage->mixin_declaring_fqcln = $parent_storage->mixin_declaring_fqcln;
+        $own_named_mixins = [];
 
-            if (!$storage->namedMixins) {
-                $storage->namedMixins = $parent_storage->namedMixins;
-            }
+        foreach ($storage->namedMixins as $mixin) {
+            $own_named_mixins[strtolower($this->classlikes->getUnAliasedName($mixin->value))] = true;
+        }
 
-            if (!$storage->templatedMixins) {
-                $storage->templatedMixins = $parent_storage->templatedMixins;
+        $inherited_named_mixins = [];
+
+        foreach ($parent_storage->namedMixins as $mixin) {
+            if (!isset($own_named_mixins[strtolower($this->classlikes->getUnAliasedName($mixin->value))])) {
+                $inherited_named_mixins[] = $mixin;
+                $storage->inheritedNamedMixinDeclaringClasses[strtolower($mixin->value)]
+                    = $parent_storage->getNamedMixinDeclaringClass($mixin);
             }
         }
+
+        $storage->namedMixins = [...$inherited_named_mixins, ...$storage->namedMixins];
+        $storage->templatedMixins = [...$parent_storage->templatedMixins, ...$storage->templatedMixins];
+        $storage->mixin_declaring_fqcln ??= $parent_storage->mixin_declaring_fqcln;
 
         $storage->pseudo_property_get_types += $parent_storage->pseudo_property_get_types;
         $storage->pseudo_property_set_types += $parent_storage->pseudo_property_set_types;
@@ -1216,16 +1225,41 @@ final class Populator
         }
     }
 
+    private static function removeInheritedMixins(ClassLikeStorage $storage): void
+    {
+        $fq_class_name_lc = strtolower($storage->name);
+
+        foreach ($storage->namedMixins as $i => $mixin) {
+            if (isset($storage->inheritedNamedMixinDeclaringClasses[strtolower($mixin->value)])) {
+                unset($storage->namedMixins[$i]);
+            }
+        }
+
+        foreach ($storage->templatedMixins as $i => $mixin) {
+            if (strtolower($mixin->defining_class) !== $fq_class_name_lc) {
+                unset($storage->templatedMixins[$i]);
+            }
+        }
+
+        $storage->namedMixins = array_values($storage->namedMixins);
+        $storage->templatedMixins = array_values($storage->templatedMixins);
+        $storage->inheritedNamedMixinDeclaringClasses = [];
+
+        if ($storage->mixin_declaring_fqcln !== $storage->name) {
+            $storage->mixin_declaring_fqcln = null;
+        }
+    }
+
     /**
      * Second populate pass: resolve transitive `@mixin` chains.
      *
-     * `namedMixins` holds only the mixins a class declares or inherits from its parent, and the analyzers look
+     * `namedMixins` holds the mixins a class declares and inherits from its parents, and the analyzers look
      * members up a single hop deep. This records every named mixin reachable through a mixin's own `@mixin`
      * chain (depth >= 2) in `transitiveNamedMixins`, so a member of a mixin-of-a-mixin resolves on the host.
      *
      * It runs once every class is populated, so each mixin target's `namedMixins` already contains those
-     * inherited from its parent class. `namedMixins` itself is never modified, which keeps the result
-     * independent of population order and leaves declaration-site checks on the declared mixins only.
+     * inherited from its parent classes. `namedMixins` itself is never modified, which keeps the result
+     * independent of population order.
      */
     private function populateTransitiveMixins(): void
     {

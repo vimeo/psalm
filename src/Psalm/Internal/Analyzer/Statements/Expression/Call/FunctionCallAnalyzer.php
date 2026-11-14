@@ -211,6 +211,23 @@ final class FunctionCallAnalyzer extends CallAnalyzer
             }
         }
 
+        $function_storage = $function_call_info->function_storage;
+
+        // a function requiring an instance of a class with @psalm-cli-only-instances is called with one: from the
+        // command line
+        if ($function_storage !== null
+            && $function_storage->cli_only
+            && $function_call_info->function_id !== null
+            && !CliOutput::requiresCliOnlyInstance($codebase, $function_storage)
+        ) {
+            CliOutput::checkCall(
+                $statements_analyzer,
+                $context,
+                'function ' . ($function_storage->cased_name ?? $function_call_info->function_id) . '()',
+                $code_location,
+            );
+        }
+
         $set_inside_conditional = false;
 
         if ($function_name instanceof PhpParser\Node\Name
@@ -271,7 +288,12 @@ final class FunctionCallAnalyzer extends CallAnalyzer
 
         // do this here to allow closure param checks
         if (!$is_first_class_callable && $function_call_info->function_params !== null) {
-            CliOutput::markPrintedArgs($statements_analyzer, $function_call_info->function_id, $stmt->getArgs());
+            CliOutput::markPrintedArgs(
+                $statements_analyzer,
+                $context,
+                $function_call_info->function_id,
+                $stmt->getArgs(),
+            );
 
             ArgumentsAnalyzer::checkArgumentsMatch(
                 $statements_analyzer,

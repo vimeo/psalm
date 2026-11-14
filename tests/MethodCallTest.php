@@ -205,6 +205,57 @@ final class MethodCallTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'methodCallOnATemplateBoundedByAnotherTemplate' => [
+                'code' => '<?php
+                    interface Document {
+                        public function total(): int;
+                    }
+
+                    /**
+                     * @template TDocument of Document
+                     * @template TDraft of TDocument
+                     * @param TDraft $draft
+                     */
+                    function draftTotal($draft): int {
+                        return $draft->total();
+                    }',
+            ],
+            'methodOfAnInterfaceATemplateBoundedByAnotherTemplateWasNarrowedTo' => [
+                'code' => '<?php
+                    interface Document {
+                        public function total(): int;
+                    }
+
+                    interface Sheet {
+                        public function total(): int;
+                    }
+
+                    /**
+                     * @template TDocument of Document
+                     * @template TDraft of TDocument
+                     * @param TDraft $draft
+                     */
+                    function draftCount($draft): int {
+                        if ($draft instanceof Countable) {
+                            return $draft->count() + $draft->total();
+                        }
+
+                        return 0;
+                    }
+
+                    /**
+                     * @template TDocument of Document|Sheet
+                     * @template TDraft of TDocument
+                     * @param TDraft $draft
+                     */
+                    function unionDraftCount($draft): int {
+                        if ($draft instanceof Countable) {
+                            return $draft->count() + $draft->total();
+                        }
+
+                        return 0;
+                    }',
+            ],
             'nullsafeCallOnAnAssignmentIsEvaluatedOnceAndNarrowed' => [
                 'code' => <<<'PHP'
                     <?php
@@ -278,7 +329,7 @@ final class MethodCallTest extends TestCase
                         $result = $query->where("x", Holder::$count);
                     }',
                 'assertions' => [],
-                'ignored_issues' => ['MixedMethodCall', 'MixedAssignment', 'UnusedVariable'],
+                'ignored_issues' => ['MixedMethodCall', 'MixedAssignment'],
             ],
             'privateConstructorOfAParentWithCallStaticStillInitializesTheProperties' => [
                 'code' => '<?php
@@ -297,7 +348,6 @@ final class MethodCallTest extends TestCase
 
                     final class Child extends Base {}',
                 'assertions' => [],
-                'ignored_issues' => ['ClassMustBeFinal'],
             ],
             'inaccessibleStaticMethodForwardedToCallStaticHasItsReturnType' => [
                 'code' => '<?php
@@ -332,7 +382,6 @@ final class MethodCallTest extends TestCase
 
                     $made = Child::make();',
                 'assertions' => ['$made===' => 'Base'],
-                'ignored_issues' => ['ClassMustBeFinal'],
             ],
             'inaccessibleStaticMethodForwardedToAnInheritedCallStaticResolvesStaticToTheCalledClass' => [
                 'code' => '<?php
@@ -354,7 +403,6 @@ final class MethodCallTest extends TestCase
 
                     $made = Child::make();',
                 'assertions' => ['$made===' => 'Child&static'],
-                'ignored_issues' => ['ClassMustBeFinal'],
             ],
             'staticCallOfInaccessibleMethodGoesToCallStatic' => [
                 'code' => <<<'PHP'
@@ -493,7 +541,6 @@ final class MethodCallTest extends TestCase
                         use Chain;
                     }',
                 'assertions' => [],
-                'ignored_issues' => ['MissingOverrideAttribute'],
             ],
             'selfStaticAndParentCallsKeepTheTypeArgumentsOfAStaticReturnType' => [
                 'code' => '<?php
@@ -533,7 +580,6 @@ final class MethodCallTest extends TestCase
                         }
                     }',
                 'assertions' => [],
-                'ignored_issues' => ['ClassMustBeFinal'],
             ],
             'parentSelfAndStaticCallsReturnTheStaticTypeOfTheCallingClass' => [
                 'code' => '<?php
@@ -574,7 +620,6 @@ final class MethodCallTest extends TestCase
                         }
                     }',
                 'assertions' => [],
-                'ignored_issues' => ['MissingOverrideAttribute'],
             ],
             'mysqliGetWarningsMayReturnFalse' => [
                 'code' => <<<'PHP'
@@ -2019,6 +2064,23 @@ final class MethodCallTest extends TestCase
     public static function providerInvalidCodeParse(): iterable
     {
         return [
+            'undefinedMethodOnATemplateBoundedByAnotherTemplate' => [
+                'code' => '<?php
+                    interface Document {
+                        public function total(): int;
+                    }
+
+                    /**
+                     * @template TDocument of Document
+                     * @template TDraft of TDocument
+                     * @param TDraft $draft
+                     * @return mixed
+                     */
+                    function draftNope($draft) {
+                        return $draft->nope();
+                    }',
+                'error_message' => 'PossiblyUndefinedMethod - src' . DIRECTORY_SEPARATOR . 'somefile.php:13:40 - Method Document::nope does not exist',
+            ],
             'undefinedStaticPropertyGivenToAMethodOfAnUnknownClass' => [
                 'code' => '<?php
                     class Holder {}
@@ -2145,10 +2207,6 @@ final class MethodCallTest extends TestCase
 
                     $a->barBar();',
                 'error_message' => 'MixedMethodCall',
-                'error_levels' => [
-                    'MissingPropertyType',
-                    'MixedAssignment',
-                ],
             ],
             'invalidMethodCall' => [
                 'code' => '<?php
@@ -2214,7 +2272,7 @@ final class MethodCallTest extends TestCase
                         }
                     }',
                 'error_message' => 'LessSpecificReturnStatement',
-                'error_levels' => ['MixedReturnStatement', 'MixedMethodCall'],
+                'error_levels' => ['MixedMethodCall'],
             ],
             'undefinedVariableStaticCall' => [
                 'code' => '<?php
