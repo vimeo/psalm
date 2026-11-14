@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Psalm\Internal\Type;
 
 use Psalm\CodeLocation;
+use Psalm\Codebase;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\Internal\Analyzer\TraitAnalyzer;
 use Psalm\Internal\Type\Comparator\AtomicTypeComparator;
@@ -21,6 +22,7 @@ use Psalm\Type\Atomic\TArray;
 use Psalm\Type\Atomic\TClassString;
 use Psalm\Type\Atomic\TEnumCase;
 use Psalm\Type\Atomic\TFloat;
+use Psalm\Type\Atomic\TGenericObject;
 use Psalm\Type\Atomic\TInt;
 use Psalm\Type\Atomic\TIterable;
 use Psalm\Type\Atomic\TKeyedArray;
@@ -167,9 +169,9 @@ final class NegatedAssertionReconciler extends Reconciler
         }
 
         if (!$is_equality && $assertion_type instanceof TNamedObject) {
-            foreach ($existing_var_type->getAtomicTypes() as $key => $type) {
+            foreach ($existing_var_type->getAtomicTypes() as $atomic_key => $type) {
                 if ($type instanceof TEnumCase && $type->value === $assertion_type->value) {
-                    $existing_var_type->removeType($key);
+                    $existing_var_type->removeType($atomic_key);
                 }
             }
         }
@@ -213,6 +215,7 @@ final class NegatedAssertionReconciler extends Reconciler
             && $existing_var_type->hasNamedObjectType()
             && $assertion_type instanceof TNamedObject
             && isset($existing_var_type->getAtomicTypes()[$assertion_type->getKey()])
+            && !self::isEnum($codebase, $assertion_type->value)
         ) {
             // checking if two types share a common parent is not enough to guarantee children are instanceof each other
             // fall through
@@ -237,7 +240,12 @@ final class NegatedAssertionReconciler extends Reconciler
 
             // go deeper than the direct hit, eliminating subtypes
             if ($assertion_type) {
-                if ($assertion_type instanceof TNamedObject) {
+                // an object that is Traversable is iterable, with the same key and value types
+                $object_assertion_type = $assertion_type instanceof TIterable
+                    ? new TGenericObject('Traversable', $assertion_type->type_params)
+                    : $assertion_type;
+
+                if ($object_assertion_type instanceof TNamedObject) {
                     foreach ($existing_var_type->getAtomicTypes() as $part_name => $existing_var_type_part) {
                         if ($existing_var_type_part instanceof TTemplateParam) {
                             // the objects the assertion excludes can't be what the template is bound to either
@@ -247,7 +255,7 @@ final class NegatedAssertionReconciler extends Reconciler
                                     && AtomicTypeComparator::isContainedBy(
                                         $codebase,
                                         $as_part,
-                                        $assertion_type,
+                                        $object_assertion_type,
                                     )),
                             );
 
@@ -279,7 +287,7 @@ final class NegatedAssertionReconciler extends Reconciler
                             && AtomicTypeComparator::isContainedBy(
                                 $codebase,
                                 $existing_var_type_part,
-                                $assertion_type,
+                                $object_assertion_type,
                                 false,
                                 false,
                                 $forward_comparison_result,
@@ -292,7 +300,7 @@ final class NegatedAssertionReconciler extends Reconciler
                         } elseif (!$is_direct_hit
                             && AtomicTypeComparator::isContainedBy(
                                 $codebase,
-                                $assertion_type,
+                                $object_assertion_type,
                                 $existing_var_type_part,
                                 false,
                                 false,
@@ -564,5 +572,16 @@ final class NegatedAssertionReconciler extends Reconciler
         }
 
         return $existing_var_type;
+    }
+
+    /**
+     * An enum has no child that an instanceof check of itself could leave out
+     *
+     * @psalm-capabilities read-props
+     */
+    private static function isEnum(Codebase $codebase, string $fq_class_name): bool
+    {
+        return $codebase->classlike_storage_provider->has($fq_class_name)
+            && $codebase->classlike_storage_provider->get($fq_class_name)->is_enum;
     }
 }

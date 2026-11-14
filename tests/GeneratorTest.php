@@ -449,9 +449,6 @@ final class GeneratorTest extends TestCase
                         yield 2;
                     }
 
-                    /**
-                     * @psalm-suppress InvalidNullableReturnType
-                     */
                     function notagenerator() : Generator {
                         if (rand(0, 1)) {
                             return;
