@@ -24,6 +24,7 @@ final class LinkableTypeAlias implements TypeAlias
         public readonly int $line_number,
         public readonly int $start_offset,
         public readonly int $end_offset,
+        public readonly ?string $as_fq_classlike_name = null,
     ) {
     }
 }
