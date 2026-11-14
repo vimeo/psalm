@@ -2896,7 +2896,45 @@ final class FunctionTemplateTest extends TestCase
                         return true;
                     });',
             ],
-            'nullOfATemplateOrNullParamDoesNotBoundTheTemplate' => [
+            'argumentThatIsAnAtomOfAUnionWithATemplateStillBindsIt' => [
+                'code' => '<?php
+                    /**
+                     * @template T
+                     * @param T|string $x
+                     * @return T
+                     */
+                    function withString($x) { throw new Exception(); }
+
+                    /**
+                     * @template T
+                     * @param T|array<int, string> $x
+                     * @return T
+                     */
+                    function withArray($x) { throw new Exception(); }
+
+                    /**
+                     * @template T
+                     * @param T|1 $x
+                     * @return T
+                     */
+                    function withLiteral($x) { throw new Exception(); }
+
+                    /** @param array<int, string> $arr */
+                    function check(string $s, array $arr): void {
+                        $a = withString($s);
+                        $b = withArray($arr);
+                        $c = withLiteral(1);
+
+                        /** @psalm-check-type-exact $a = string */
+                        /** @psalm-check-type-exact $b = array<int, string> */
+                        /** @psalm-check-type-exact $c = 1 */
+                        echo 1;
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
+            'defaultNullOfATemplateOrNullParamDoesNotBoundTheTemplate' => [
                 'code' => '<?php
                     /**
                      * @template T
@@ -2907,27 +2945,19 @@ final class FunctionTemplateTest extends TestCase
 
                     /**
                      * @template T
-                     * @param T|null $default
-                     * @param Closure(T):void $callback
-                     */
-                    function withNull($default, Closure $callback): void {}
-
-                    /**
-                     * @template T
                      * @param T|null $value
-                     * @return T|null
+                     * @return T
                      */
                     function identity($value) {
                         return $value;
                     }
 
                     withDefault(function (array $_item): void {});
-                    withNull(null, function (array $_item): void {});
                     $null = identity(null);
                     $one = identity(1);',
                 'assertions' => [
                     '$null===' => 'null',
-                    '$one===' => '1|null',
+                    '$one===' => '1',
                 ],
             ],
         ];

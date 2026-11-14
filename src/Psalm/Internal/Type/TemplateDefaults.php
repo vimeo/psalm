@@ -469,7 +469,7 @@ final class TemplateDefaults
 
     /**
      * Whether the arguments of a call or `new` leave a template to its default: no upper bound, and no lower bound but
-     * `never` and stand-ins for arguments saying nothing about it ({@see TemplateBound::$from_template_free_argument}).
+     * stand-ins for arguments saying nothing about it ({@see TemplateBound::$from_template_free_argument}).
      *
      * @psalm-mutation-free
      */
@@ -483,7 +483,7 @@ final class TemplateDefaults
         }
 
         foreach ($template_result->lower_bounds[$template_name][$defining_id] ?? [] as $lower_bound) {
-            if (!$lower_bound->from_template_free_argument && !$lower_bound->type->isNever()) {
+            if (!$lower_bound->from_template_free_argument) {
                 return false;
             }
         }
