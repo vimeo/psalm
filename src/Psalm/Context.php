@@ -1226,11 +1226,12 @@ final class Context
      * negated condition that encloses it
      *
      * @param array<lowercase-string,true> $negated_before the negated classes before the condition
+     * @param array<lowercase-string,true>|null $negated the negated classes after it, by default those of this context
      * @psalm-external-mutation-free
      */
-    public function promoteNegatedPhantomClasses(array $negated_before): void
+    public function promoteNegatedPhantomClasses(array $negated_before, ?array $negated = null): void
     {
-        $this->phantom_classes += array_diff_key($this->negated_phantom_classes, $negated_before);
+        $this->phantom_classes += array_diff_key($negated ?? $this->negated_phantom_classes, $negated_before);
     }
 
     /**
