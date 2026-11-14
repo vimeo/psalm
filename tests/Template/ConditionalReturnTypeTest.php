@@ -2290,30 +2290,6 @@ final class ConditionalReturnTypeTest extends TestCase
                         throw new RuntimeException();
                     }
 
-                    $model = new Model();
-                    $a = isString($model);
-                    $b = isString("x");
-                    $c = unlessFalsyString($model);
-                    $d = isScalar($model);
-                    $e = isScalar("x");',
-                'assertions' => [
-                    '$a===' => 'int',
-                    '$b===' => 'string',
-                    '$c===' => 'Model',
-                    '$d===' => '\'other\'',
-                    '$e===' => '\'scalar\'',
-                ],
-                'ignored_issues' => [],
-                'php_version' => '8.0',
-            ],
-            'templateConditionalOnStringableStillMatchesObjects' => [
-                'code' => '<?php
-                    class Model implements Stringable {
-                        public function __toString(): string {
-                            return "";
-                        }
-                    }
-
                     /**
                      * @template T
                      * @param T $v
@@ -2323,11 +2299,22 @@ final class ConditionalReturnTypeTest extends TestCase
                         throw new RuntimeException();
                     }
 
-                    $a = isStringable(new Model());
-                    $b = isStringable("x");',
+                    $model = new Model();
+                    $a = isString($model);
+                    $b = isString("x");
+                    $c = unlessFalsyString($model);
+                    $d = isScalar($model);
+                    $e = isScalar("x");
+                    $f = isStringable($model);
+                    $g = isStringable("x");',
                 'assertions' => [
-                    '$a===' => '\'yes\'',
-                    '$b===' => '\'no\'',
+                    '$a===' => 'int',
+                    '$b===' => 'string',
+                    '$c===' => 'Model',
+                    '$d===' => '\'other\'',
+                    '$e===' => '\'scalar\'',
+                    '$f===' => '\'yes\'',
+                    '$g===' => '\'no\'',
                 ],
                 'ignored_issues' => [],
                 'php_version' => '8.0',

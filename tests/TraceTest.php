@@ -38,6 +38,15 @@ final class TraceTest extends TestCase
                     $b = getmypid();',
                 'error_message' => 'Trace',
             ],
+            'traceMessageEndingInNonWordCharacterIsMatchedInFull' => [
+                'code' => '<?php
+                    /** @param array<string, int> $a */
+                    function f(array $a): void {
+                        /** @psalm-trace $a */
+                        echo 1;
+                    }',
+                'error_message' => '$a: array<string, int>',
+            ],
             'undefinedTraceVariable' => [
                 'code' => '<?php
                     /** @psalm-trace $b */

@@ -13,6 +13,7 @@ use Psalm\Tests\ImmutableAnnotationTest;
 use Psalm\Tests\PureAnnotationTest;
 use Psalm\Tests\PureCallableTest;
 
+use function preg_match;
 use function preg_quote;
 use function str_replace;
 use function strpos;
@@ -97,7 +98,15 @@ trait InvalidCodeAnalysisTestTrait
 
         $this->expectException(CodeException::class);
 
-        $this->expectExceptionMessageMatches('/\b' . preg_quote($error_message, '/') . '\b/');
+        // \b only holds between a word and a non-word character, so it must be
+        // omitted where the message starts or ends with a non-word character (e.g. `>` or `}`)
+        $this->expectExceptionMessageMatches(
+            '/'
+            . (preg_match('/^\w/', $error_message) === 1 ? '\b' : '')
+            . preg_quote($error_message, '/')
+            . (preg_match('/\w$/', $error_message) === 1 ? '\b' : '')
+            . '/',
+        );
 
         $codebase = $this->project_analyzer->getCodebase();
         $codebase->enterServerMode();
