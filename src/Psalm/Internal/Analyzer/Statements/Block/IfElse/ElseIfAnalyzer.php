@@ -385,7 +385,7 @@ final class ElseIfAnalyzer
             $outer_context->detachReferencesReboundIn(
                 $elseif_context->references_in_scope,
                 $statements_analyzer,
-                $elseif->stmts,
+                [$elseif->cond, ...$elseif->stmts],
             );
 
             IfAnalyzer::updateIfScope(

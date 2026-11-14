@@ -117,6 +117,10 @@ final class TryAnalyzer
 
         $context->has_returned = false;
 
+        // the contexts of the catches are cloned from the one before the try: the references the try body rebinds
+        // stay bound there
+        $try_context->detachReferencesReboundIn($context->references_in_scope, $statements_analyzer, $stmt->stmts);
+
         $try_block_control_actions = ScopeAnalyzer::getControlActions(
             $stmt->stmts,
             $statements_analyzer->node_data,
