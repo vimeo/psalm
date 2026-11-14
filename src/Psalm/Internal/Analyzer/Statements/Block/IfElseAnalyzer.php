@@ -104,6 +104,7 @@ final class IfElseAnalyzer
 
         $pre_cond_reconciled_clauses = $context->reconciled_expression_clauses;
 
+        $phantom_classes_before_cond = $context->phantom_classes;
         $reassigned_var_ids = FormulaGenerator::getVarsAssignedByOredRightSides($stmt->cond, $context->self);
 
         // the else of an `||` is analysed again from where the condition started, not from where it ended
@@ -122,6 +123,12 @@ final class IfElseAnalyzer
                 $if_scope,
                 $branch_point,
             );
+
+            // a class that doesn't exist is only known to be there in the block run when
+            // `class_exists()` (or the like) is true
+            if ($stmt->cond instanceof PhpParser\Node\Expr\FuncCall) {
+                $context->phantom_classes = $phantom_classes_before_cond;
+            }
 
             // this is the context for stuff that happens within the `if` block
             $if_context = $if_conditional_scope->if_context;

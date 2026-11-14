@@ -946,6 +946,27 @@ final class ClassTest extends TestCase
                     }
                 ',
             ],
+            'negatedClassExistsWithReturnCoversTheCodeAfter' => [
+                'code' => '<?php
+                    function foo(): void {
+                        if (!class_exists(Missing\Thing::class)) {
+                            return;
+                        }
+
+                        echo Missing\Thing::class;
+                        Missing\Thing::run();
+                    }',
+            ],
+            'classExistsCoversTheIfAndElseIfBody' => [
+                'code' => '<?php
+                    function foo(): void {
+                        if (class_exists(Missing\Thing::class)) {
+                            Missing\Thing::run();
+                        } elseif (class_exists(Missing\Other::class)) {
+                            Missing\Other::run();
+                        }
+                    }',
+            ],
             'extendException' => [
                 'code' => '<?php
                     class ME extends Exception {
@@ -1441,6 +1462,31 @@ final class ClassTest extends TestCase
     public static function providerInvalidCodeParse(): iterable
     {
         return [
+            'classExistsDoesNotCoverTheCodeAfterTheIf' => [
+                'code' => '<?php
+                    function foo(): void {
+                        if (class_exists(Missing\Thing::class)) {
+                            Missing\Thing::run();
+                        }
+
+                        Missing\Thing::run();
+                    }',
+                'error_message' => 'UndefinedClass',
+            ],
+            'classExistsDoesNotCoverTheCodeAfterTheIfInAMethod' => [
+                'code' => '<?php
+                    final class C {
+                        public function __construct() {
+                            if (class_exists(Missing\Thing::class)) {
+                                Missing\Thing::run();
+                            }
+
+                            echo Missing\Thing::class;
+                            Missing\Thing::run();
+                        }
+                    }',
+                'error_message' => 'UndefinedClass - src' . DIRECTORY_SEPARATOR . 'somefile.php:8',
+            ],
             'newStaticOfAClassImplementingAnInterfaceWithoutAConstructor' => [
                 'code' => '<?php
                     interface Marker {}
