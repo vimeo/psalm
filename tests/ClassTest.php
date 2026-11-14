@@ -112,6 +112,22 @@ final class ClassTest extends TestCase
                         return new $class(val: 1, name: "a");
                     }',
             ],
+            'classStringNewOfAnAbstractClassIsNotAnAbstractInstantiation' => [
+                'code' => '<?php
+                    /**
+                     * @psalm-consistent-constructor
+                     */
+                    abstract class A {
+                        public function __construct(public int $val = 0) {}
+                    }
+
+                    /**
+                     * @param class-string<A> $class
+                     */
+                    function f(string $class): A {
+                        return new $class(1);
+                    }',
+            ],
             'classStringNewOfGenericClassKeepsTheTemplateArguments' => [
                 'code' => '<?php
                     /**
@@ -1494,6 +1510,20 @@ final class ClassTest extends TestCase
                         return new $class();
                     }',
                 'error_message' => 'TooFewArguments',
+            ],
+            'classStringNewOfAClassWithoutConsistentConstructorOnlyReportsTheUnsafeInstantiation' => [
+                'code' => '<?php
+                    class A {
+                        public function __construct(public int $val) {}
+                    }
+
+                    /**
+                     * @param class-string<A> $class
+                     */
+                    function f(string $class): A {
+                        return new $class("x");
+                    }',
+                'error_message' => 'UnsafeInstantiation',
             ],
             'classStringNewWithTooManyArguments' => [
                 'code' => '<?php

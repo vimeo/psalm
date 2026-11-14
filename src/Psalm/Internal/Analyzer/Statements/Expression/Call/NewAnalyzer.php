@@ -1333,6 +1333,7 @@ final class NewAnalyzer extends CallAnalyzer
         }
 
         $has_single_class = $stmt_class_type->isSingleStringLiteral();
+        $class_string_class = null;
 
         if ($has_single_class) {
             // A class string is always fully qualified, so "\Foo" and "Foo" name the same class
@@ -1379,7 +1380,10 @@ final class NewAnalyzer extends CallAnalyzer
                 }
             }
 
-            if (self::checkMethodArgs(
+            // the arguments of a resolved class are analysed against its constructor below
+            $class_string_class = self::getClassOfClassString($codebase, $context, $stmt_class_type);
+
+            if ($class_string_class === null && self::checkMethodArgs(
                 null,
                 $stmt->getArgs(),
                 new TemplateResult([], []),
@@ -1400,9 +1404,6 @@ final class NewAnalyzer extends CallAnalyzer
             $config,
             $can_extend,
         );
-
-        // the constructor of a class-string<A> is the constructor of A when it can't change in child classes
-        $class_string_class = self::getClassOfClassString($codebase, $context, $stmt_class_type);
 
         if ($class_string_class !== null) {
             $fq_class_name = $class_string_class;
@@ -1427,8 +1428,10 @@ final class NewAnalyzer extends CallAnalyzer
             return;
         }
     }
+
     /**
-     * The class of a class-string<A> whose constructor is guaranteed to be the one of A
+     * The class of a class-string<A> whose constructor is the one of A, because child classes can't change it.
+     * A class-string<T> keeps the previous handling.
      */
     private static function getClassOfClassString(
         Codebase $codebase,
