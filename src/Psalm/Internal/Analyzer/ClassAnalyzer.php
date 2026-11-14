@@ -371,19 +371,7 @@ final class ClassAnalyzer extends ClassLikeAnalyzer
         }
 
         // the inherited mixins are checked where they are declared
-        $mixins = [];
-
-        foreach ($storage->templatedMixins as $mixin) {
-            if ($mixin->defining_class === $storage->name) {
-                $mixins[] = $mixin;
-            }
-        }
-
-        foreach ($storage->namedMixins as $mixin) {
-            if ($storage->getNamedMixinDeclaringClass($mixin) === $storage->name) {
-                $mixins[] = $mixin;
-            }
-        }
+        $mixins = $storage->getOwnMixins();
 
         if ($mixins) {
             $union = new Union($mixins);

@@ -706,6 +706,31 @@ final class ClassLikeStorage implements HasAttributesInterface
     }
 
     /**
+     * The mixins declared on the class itself, without the inherited ones.
+     *
+     * @return list<TTemplateParam|TNamedObject>
+     * @psalm-mutation-free
+     */
+    public function getOwnMixins(): array
+    {
+        $mixins = [];
+
+        foreach ($this->templatedMixins as $mixin) {
+            if ($mixin->defining_class === $this->name) {
+                $mixins[] = $mixin;
+            }
+        }
+
+        foreach ($this->namedMixins as $mixin) {
+            if ($this->getNamedMixinDeclaringClass($mixin) === $this->name) {
+                $mixins[] = $mixin;
+            }
+        }
+
+        return $mixins;
+    }
+
+    /**
      * @psalm-mutation-free
      */
     public function hasSealedProperties(Config $config): bool
