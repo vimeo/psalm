@@ -1646,10 +1646,10 @@ final class ClassTest extends TestCase
             'aliasOfAMissingClassInANegatedClassExistsBlockIsUndefined' => [
                 'code' => '<?php
                     if (!class_exists("Polyfill")) {
-                        class_alias(MissingSource::class, "Polyfill");
+                        class_alias("MissingSource", "Polyfill");
                         Polyfill::run();
                     }',
-                'error_message' => 'UndefinedClass - src' . DIRECTORY_SEPARATOR . 'somefile.php:3:37 - Class, interface or enum named MissingSource does not exist',
+                'error_message' => 'UndefinedClass - src' . DIRECTORY_SEPARATOR . 'somefile.php:4:25',
             ],
             'staticCallOnTheClassOfANegatedClassExistsAfterOtherStatements' => [
                 'code' => '<?php
