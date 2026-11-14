@@ -6123,6 +6123,18 @@ final class ClassTemplateTest extends TestCase
                     '$r===' => 'string',
                 ],
             ],
+            'templateInferredFromACallbackParamAcceptsATypedCallable' => [
+                'code' => '<?php
+                    /**
+                     * @template T
+                     * @param callable(T): void $c
+                     */
+                    function f(callable $c): void {}
+
+                    /** @var callable(int): void $cb */
+                    $cb = function (int $i): void {};
+                    f($cb);',
+            ],
         ];
     }
 
@@ -7424,6 +7436,21 @@ final class ClassTemplateTest extends TestCase
                     $map = new Map();
                     f($map);',
                 'error_message' => 'InvalidArgument - src' . DIRECTORY_SEPARATOR . 'somefile.php:26:23 - Argument 1 of f expects Map<int, A<string>>, but Map<int, ChildA<string>> provided',
+            ],
+            'extendedDependentTemplateBoundUsesTheEarlierTemplateArgument' => [
+                'code' => '<?php
+                    /** @template T */
+                    class A {}
+
+                    /**
+                     * @template T
+                     * @template U of A<T>
+                     */
+                    class Base {}
+
+                    /** @extends Base<string, A<int>> */
+                    class Child extends Base {}',
+                'error_message' => 'InvalidTemplateParam',
             ],
         ];
     }

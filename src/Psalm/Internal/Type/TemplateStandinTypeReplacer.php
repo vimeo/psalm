@@ -485,6 +485,42 @@ final class TemplateStandinTypeReplacer
             return [$replaced_atomic_type];
         }
 
+        return self::replaceMatchingAtomicTypes(
+            $atomic_type,
+            $matching_atomic_types,
+            $template_result,
+            $codebase,
+            $statements_analyzer,
+            $input_arg_offset,
+            $calling_class,
+            $calling_function,
+            $replace,
+            $add_lower_bound,
+            $depth,
+            $was_single,
+            $had_template,
+        );
+    }
+
+    /**
+     * @param non-empty-list<Atomic> $matching_atomic_types
+     * @return list<Atomic>
+     */
+    private static function replaceMatchingAtomicTypes(
+        Atomic $atomic_type,
+        array $matching_atomic_types,
+        TemplateResult $template_result,
+        Codebase $codebase,
+        ?StatementsAnalyzer $statements_analyzer,
+        ?int $input_arg_offset,
+        ?string $calling_class,
+        ?string $calling_function,
+        bool $replace,
+        bool $add_lower_bound,
+        int $depth,
+        bool $was_single,
+        bool &$had_template,
+    ): array {
         $atomic_types = [];
 
         foreach ($matching_atomic_types as $matching_atomic_type) {
