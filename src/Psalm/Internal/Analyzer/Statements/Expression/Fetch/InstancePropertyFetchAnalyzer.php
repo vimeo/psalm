@@ -8,8 +8,10 @@ use PhpParser;
 use Psalm\CodeLocation;
 use Psalm\Codebase;
 use Psalm\Context;
+use Psalm\Internal\Analyzer\ClassLikeAnalyzer;
 use Psalm\Internal\Analyzer\FunctionLikeAnalyzer;
 use Psalm\Internal\Analyzer\InheritedMethodTaints;
+use Psalm\Internal\Analyzer\Statements\Expression\Assignment\InstancePropertyAssignmentAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\ExpressionIdentifier;
 use Psalm\Internal\Analyzer\Statements\Expression\NullsafeChainState;
 use Psalm\Internal\Analyzer\Statements\ExpressionAnalyzer;
@@ -111,17 +113,7 @@ final class InstancePropertyFetchAnalyzer
             $statements_analyzer,
         );
 
-        // the property unset() removes is written, so it is checked as a property that is not known yet, unless it is
-        // a property of an interface only isset() found
-        $unset_var_type = UnsetAnalyzer::isTarget($context, $stmt)
-            ? $statements_analyzer->node_data->getType($stmt->var)
-            : null;
-        $is_checked_unset_target = UnsetAnalyzer::isTarget($context, $stmt)
-            && !($stmt->name instanceof PhpParser\Node\Identifier
-                && $unset_var_type !== null
-                && self::isUndeclaredInterfaceProperty($codebase, $unset_var_type, $stmt->name->name));
-
-        if ($var_id && $context->hasVariable($var_id) && !$is_checked_unset_target) {
+        if ($var_id && $context->hasVariable($var_id)) {
             self::handleScopedProperty(
                 $context,
                 $var_id,
@@ -532,20 +524,42 @@ final class InstancePropertyFetchAnalyzer
             // log the appearance
             foreach ($stmt_var_type->getAtomicTypes() as $lhs_type_part) {
                 if ($lhs_type_part instanceof TNamedObject) {
+                    $override_property_visibility = false;
+
                     if (!$codebase->classExists($lhs_type_part->value, null, $context)) {
-                        // the property of an interface that does not declare it is the one of its mixin
-                        if (!$codebase->interfaceExists($lhs_type_part->value, null, $context)
-                            || isset($codebase->classlike_storage_provider->get($lhs_type_part->value)
-                                ->declaring_property_ids[$stmt->name->name])
-                            || !($lhs_type_part = AtomicPropertyFetchAnalyzer::findMixinWithProperty(
-                                $codebase,
-                                $lhs_type_part,
-                                $stmt->name->name,
-                            ))
+                        if (!$codebase->interfaceExists($lhs_type_part->value, null, $context)) {
+                            continue;
+                        }
+
+                        $interface_storage = $codebase->classlike_storage_provider->get($lhs_type_part->value);
+
+                        // the property of an interface that neither declares it nor is intersected with a shape that
+                        // has it is the one of its mixin
+                        if (isset($interface_storage->declaring_property_ids[$stmt->name->name])) {
+                            continue;
+                        }
+
+                        foreach ($lhs_type_part->getIntersectionTypes() ?: [] as $intersection_type) {
+                            if ($intersection_type instanceof TObjectWithProperties
+                                && isset($intersection_type->properties[$stmt->name->name])
+                            ) {
+                                continue 2;
+                            }
+                        }
+
+                        $lhs_type_part = AtomicPropertyFetchAnalyzer::findMixinWithProperty(
+                            $codebase,
+                            $lhs_type_part,
+                            $stmt->name->name,
+                        );
+
+                        if ($lhs_type_part === null
                             || !$codebase->classExists($lhs_type_part->value, null, $context)
                         ) {
                             continue;
                         }
+
+                        $override_property_visibility = $interface_storage->override_property_visibility;
                     }
 
                     $property_id = $lhs_type_part->value . '::$' . $stmt->name->name;
@@ -599,6 +613,38 @@ final class InstancePropertyFetchAnalyzer
                             $stmt->name,
                             $property_id,
                         );
+                    }
+
+                    // unsetting a property is a write, so the set visibility and readonly apply
+                    if ($declaring_property_class !== null
+                        && UnsetAnalyzer::writesFetchedProperty($context, $stmt, $stmt_type)
+                    ) {
+                        if (!$override_property_visibility) {
+                            ClassLikeAnalyzer::checkPropertyVisibility(
+                                $property_id,
+                                $context,
+                                $statements_analyzer,
+                                new CodeLocation($statements_analyzer->getSource(), $stmt),
+                                $statements_analyzer->getSuppressedIssues(),
+                                true,
+                                true,
+                            );
+                        }
+
+                        $declaring_class_storage = $codebase->classlike_storage_provider->get(
+                            $declaring_property_class,
+                        );
+
+                        if (isset($declaring_class_storage->properties[$stmt->name->name])) {
+                            InstancePropertyAssignmentAnalyzer::checkReadonlyPropertyWrite(
+                                $statements_analyzer,
+                                $stmt,
+                                $property_id,
+                                $declaring_class_storage->properties[$stmt->name->name],
+                                $context,
+                                $stmt_var_type->reference_free && $stmt_var_type->allow_mutations,
+                            );
+                        }
                     }
 
                     if (!AtomicPropertyFetchAnalyzer::isFreeToAccess($statements_analyzer, $stmt, $class_storage)) {

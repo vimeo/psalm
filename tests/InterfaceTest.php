@@ -164,6 +164,23 @@ final class InterfaceTest extends TestCase
                 'ignored_issues' => [],
                 'php_version' => '8.4',
             ],
+            'propertyOfAShapeWinsOverTheMixinOfTheInterfaceWhenRemembered' => [
+                'code' => '<?php
+                    final class Data {
+                        /** @deprecated */
+                        public int $foo = 0;
+                    }
+
+                    /** @mixin Data */
+                    interface J {}
+
+                    /** @param J&object{foo: int} $x */
+                    function f($x): int {
+                        $a = $x->foo;
+
+                        return $a + $x->foo;
+                    }',
+            ],
             'unsetOfAPropertyOfAnInterfaceAnIssetFound' => [
                 'code' => '<?php
                     interface I {}
@@ -172,7 +189,25 @@ final class InterfaceTest extends TestCase
                         if (isset($x->foo)) {
                             unset($x->foo);
                         }
+                    }
+
+                    function g(I $x): void {
+                        if (isset($x->foo)) {
+                            unset($x->{"foo"});
+                        }
                     }',
+            ],
+            'unsetOfAPropertyOfAClassAnIssetFound' => [
+                'code' => '<?php
+                    class A {}
+
+                    function f(A $x): void {
+                        if (isset($x->foo)) {
+                            unset($x->foo);
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => ['ClassMustBeFinal'],
             ],
             'issetOfAPropertyOfAnInterfaceIsNotAnInterfaceProperty' => [
                 'code' => '<?php

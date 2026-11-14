@@ -289,6 +289,21 @@ final class ReadonlyPropertyTest extends TestCase
                 'error_levels' => [],
                 'php_version' => '8.1',
             ],
+            'unsetOfAPrivateSetPropertyAfterANarrowing' => [
+                'code' => '<?php
+                    final class P {
+                        private(set) ?int $q = null;
+                    }
+
+                    function f(P $p): void {
+                        if ($p->q !== null) {
+                            unset($p->q);
+                        }
+                    }',
+                'error_message' => 'InaccessibleProperty',
+                'error_levels' => [],
+                'php_version' => '8.4',
+            ],
             'promotedPropertyOfReadonlyClassIsReadonly' => [
                 'code' => '<?php
                     readonly class Service
