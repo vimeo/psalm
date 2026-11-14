@@ -296,7 +296,7 @@ final class ReferenceTest extends TestCase
                         settype($b[0], "string");
                     }',
                 'assertions' => [],
-                'ignored_issues' => ['MissingOverrideAttribute', 'MissingTemplateParam'],
+                'ignored_issues' => ['MissingTemplateParam'],
                 'php_version' => '8.0',
             ],
             'itemOfAUnionOfArrayAccessesPassedByReference' => [
