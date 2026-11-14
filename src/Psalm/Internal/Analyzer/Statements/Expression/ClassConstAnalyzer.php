@@ -902,7 +902,9 @@ final class ClassConstAnalyzer
             if ($parent_const_storage !== null) {
                 if ($const_storage->location !== null && $interface_const_storage !== null) {
                     assert($parent_classlike_storage !== null);
-                    if (!isset($parent_class_storage->class_implements[strtolower($parent_classlike_storage->name)])) {
+                    if (!isset($parent_class_storage->class_implements[strtolower($parent_classlike_storage->name)])
+                        && $interface_const_storage !== $parent_const_storage
+                    ) {
                         IssueBuffer::maybeAdd(
                             new AmbiguousConstantInheritance(
                                 "Ambiguous inheritance of {$class_storage->name}::{$const_name} from "
