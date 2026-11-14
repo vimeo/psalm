@@ -848,6 +848,15 @@ final class FunctionCallAnalyzer extends CallAnalyzer
                     strtolower($function_call_info->function_id),
                 );
 
+                // the file declaring the function is then referenced by the file of the call
+                $statements_analyzer->getCodebase()->addReferenceToFunctionLike(
+                    strtolower($function_call_info->function_id),
+                    null,
+                    $context,
+                    false,
+                    $statements_analyzer->getFilePath(),
+                );
+
                 $function_call_info->function_params = $function_call_info->function_storage->params;
 
                 if (!$function_storage->allow_named_arg_calls) {

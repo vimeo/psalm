@@ -16,6 +16,7 @@ use Psalm\Internal\Provider\FileReferenceProvider;
 use Psalm\Internal\Provider\Providers;
 use Psalm\Tests\Internal\Provider\FakeParserCacheProvider;
 
+use function array_combine;
 use function array_values;
 use function count;
 use function is_array;
@@ -354,6 +355,89 @@ final class FileReferenceTest extends TestCase
         // a change to the mixin of the mixin of a trait of the parent class reaches the file of the class
         self::assertEqualsCanonicalizing([$mid_path, $host_path], $provider->getFilesInheritingFromFile($deep_path));
         self::assertSame([$host_path], $provider->getFilesInheritingFromFile($mid_path));
+    }
+
+    public function testFileOfTheClassUsingATraitReferencesWhatTheTraitMethodsUse(): void
+    {
+        $files = $this->analyzeProject([
+            'a.php' => '<?php class A { public function foo(): void {} }',
+            't.php' => '<?php trait T { public function viaTrait(A $a): void { $a->foo(); } }',
+            'c.php' => '<?php final class C { use T; }',
+        ]);
+
+        // the body of a trait method is analysed with the class using the trait
+        self::assertContains($files['c.php'], $this->project_analyzer->getReferencedFilesFromDiff([$files['a.php']]));
+    }
+
+    public function testFileOfAFunctionIsReferencedByItsCallers(): void
+    {
+        // as for the functions of Composer's autoload files
+        $this->project_analyzer->getCodebase()->all_functions_global = true;
+
+        $files = $this->analyzeProject([
+            'functions.php' => '<?php function helper(int $i): int { return $i; }',
+            'caller.php' => '<?php final class Caller { public function f(): int { return helper(1); } }',
+            'top.php' => '<?php echo helper(2);',
+        ]);
+
+        self::assertEqualsCanonicalizing(
+            [$files['caller.php'], $files['top.php']],
+            $this->project_analyzer->getCodebase()->file_reference_provider->getFilesReferencingFile(
+                $files['functions.php'],
+            ),
+        );
+    }
+
+    public function testFileOfAClassDependsOnTheClassesItsConstantExpressionsName(): void
+    {
+        $files = $this->analyzeProject([
+            'a.php' => '<?php final class A { public const Y = 10; }',
+            'b.php' => '<?php final class B { public const X = A::Y * 2; }',
+            'd.php' => '<?php final class D { public function f(): bool { return B::X === 22; } }',
+            'e.php' => '<?php final class E { public function f(int $i = A::Y): int { return $i; } }',
+        ]);
+
+        // D reads B::X only, which is A::Y * 2 wherever it is read
+        $dependents = $this->project_analyzer->getReferencedFilesFromDiff([$files['a.php']]);
+        self::assertContains($files['d.php'], $dependents);
+        self::assertContains($files['e.php'], $dependents);
+    }
+
+    public function testFileOfAClassDependsOnTheClassesItImportsTypesFrom(): void
+    {
+        $files = $this->analyzeProject([
+            'a.php' => '<?php /** @psalm-type TA = array{a: int} */ final class A {}',
+            'imp.php' => '<?php
+                /** @psalm-import-type TA from A */
+                final class Imp {
+                    /** @param TA $x */
+                    public function f(array $x): int { return $x["a"]; }
+                }',
+        ]);
+
+        self::assertContains($files['imp.php'], $this->project_analyzer->getReferencedFilesFromDiff([$files['a.php']]));
+    }
+
+    /**
+     * @param array<string, string> $contents file name => contents
+     * @return array<string, string> file name => path
+     */
+    private function analyzeProject(array $contents): array
+    {
+        $codebase = $this->project_analyzer->getCodebase();
+        $codebase->config->throw_exception = false;
+
+        $files = [];
+        foreach ($contents as $name => $file_contents) {
+            $files[$name] = self::$src_dir_path . $name;
+            $this->file_provider->registerFile($files[$name], $file_contents);
+        }
+
+        $codebase->addFilesToAnalyze(array_combine($files, $files));
+        $codebase->scanFiles();
+        $codebase->analyzer->analyzeFiles($this->project_analyzer, 1, false);
+
+        return $files;
     }
 
     private function scanFileWithReferenceCache(FileReferenceCacheProvider $cache): string

@@ -12,12 +12,15 @@ use Psalm\Internal\PhpVisitor\Reflector\FunctionLikeDocblockScanner;
 use Psalm\Internal\Provider\ClassLikeStorageProvider;
 use Psalm\Internal\Provider\FileReferenceProvider;
 use Psalm\Internal\Provider\FileStorageProvider;
+use Psalm\Internal\Scanner\UnresolvedConstant\ClassConstant;
+use Psalm\Internal\Scanner\UnresolvedConstantComponent;
 use Psalm\Internal\Type\IterationPurity;
 use Psalm\Internal\Type\PurityArguments;
 use Psalm\Internal\Type\TemplateDefaults;
 use Psalm\Internal\Type\TemplateInferredTypeReplacer;
 use Psalm\Internal\Type\TemplateResult;
 use Psalm\Internal\Type\TypeAlias\ClassTypeAlias;
+use Psalm\Internal\Type\TypeAlias\LinkableTypeAlias;
 use Psalm\Internal\TypeVisitor\ContainsTemplateExpressionVisitor;
 use Psalm\Issue\CircularReference;
 use Psalm\Issue\UndefinedTrait;
@@ -50,8 +53,10 @@ use function array_merge;
 use function array_pop;
 use function array_search;
 use function array_splice;
+use function array_walk_recursive;
 use function count;
 use function explode;
+use function get_object_vars;
 use function in_array;
 use function key;
 use function reset;
@@ -653,6 +658,8 @@ final class Populator
             foreach ($storage->used_traits as $used_trait_lc => $_) {
                 $this->file_reference_provider->addFileInheritanceToClass($file_path, $used_trait_lc);
             }
+
+            $this->registerValueDependencies($storage, $file_path);
         }
 
         $this->resolveDeferredCapabilities($storage);
@@ -1205,6 +1212,65 @@ final class Populator
                     $storage->declaring_pseudo_static_method_ids[$method_name],
                 );
             }
+        }
+    }
+
+    /**
+     * What a class takes from another class through an imported type alias, or through a constant expression that
+     * is resolved where it is used (a constant, an enum case value, a parameter default), changes with that class,
+     * like what it inherits: the file of the class inherits from it, transitively
+     */
+    private function registerValueDependencies(ClassLikeStorage $storage, string $file_path): void
+    {
+        $type_aliases = $storage->type_aliases;
+
+        try {
+            // the aliases a class imports are kept with its file
+            $type_aliases += $this->file_storage_provider->get($file_path)->type_aliases;
+        } catch (InvalidArgumentException) {
+        }
+
+        foreach ($type_aliases as $type_alias) {
+            if ($type_alias instanceof LinkableTypeAlias) {
+                $this->file_reference_provider->addFileInheritanceToClass(
+                    $file_path,
+                    strtolower($type_alias->declaring_fq_classlike_name),
+                );
+            }
+        }
+
+        foreach ($storage->constants as $constant_storage) {
+            $this->registerClassConstantDependencies($constant_storage->unresolved_node, $file_path);
+        }
+
+        foreach ($storage->enum_cases as $enum_case_storage) {
+            $this->registerClassConstantDependencies($enum_case_storage->value, $file_path);
+        }
+
+        foreach ($storage->methods as $method_storage) {
+            foreach ($method_storage->params as $param) {
+                $this->registerClassConstantDependencies($param->default_type, $file_path);
+            }
+        }
+    }
+
+    /**
+     * @param mixed $node a part of a constant expression
+     */
+    private function registerClassConstantDependencies(mixed $node, string $file_path): void
+    {
+        if ($node instanceof ClassConstant) {
+            $this->file_reference_provider->addFileInheritanceToClass($file_path, strtolower($node->fqcln));
+        }
+
+        if ($node instanceof UnresolvedConstantComponent) {
+            $parts = get_object_vars($node);
+            array_walk_recursive(
+                $parts,
+                function (mixed $part) use ($file_path): void {
+                    $this->registerClassConstantDependencies($part, $file_path);
+                },
+            );
         }
     }
 
