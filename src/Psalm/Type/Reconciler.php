@@ -37,8 +37,12 @@ use Psalm\Storage\Assertion\HasArrayKey;
 use Psalm\Storage\Assertion\HasIntOrStringArrayAccess;
 use Psalm\Storage\Assertion\HasStringArrayAccess;
 use Psalm\Storage\Assertion\IsEqualIsset;
+use Psalm\Storage\Assertion\IsGreaterThan;
+use Psalm\Storage\Assertion\IsGreaterThanOrEqualTo;
 use Psalm\Storage\Assertion\IsIdentical;
 use Psalm\Storage\Assertion\IsIsset;
+use Psalm\Storage\Assertion\IsLessThan;
+use Psalm\Storage\Assertion\IsLessThanOrEqualTo;
 use Psalm\Storage\Assertion\IsNotIsset;
 use Psalm\Storage\Assertion\IsNotLooselyEqual;
 use Psalm\Storage\Assertion\NestedAssertions;
@@ -868,6 +872,10 @@ class Reconciler
                 return $existing_keys[$key] ?? Type::getIntRange(1, null);
             }
 
+            if ($key === Context::PHP_SAPI_VAR_ID) {
+                return $existing_keys[$key] ?? Type::getString();
+            }
+
             if (!isset($existing_keys[$key_parts[0]]) && str_contains($key, '::') && !str_contains($key, '$')) {
                 return self::getClassConstantTypeOfKey($codebase, $key, $statements_analyzer);
             }
@@ -1328,11 +1336,17 @@ class Reconciler
             $assertion_string = substr($assertion_string, 1);
         }
 
-        $operator = substr($assertion_string, 0, 1);
-        if ($operator === '>') {
-            $assertion_string = '>= '.substr($assertion_string, 1);
-        } elseif ($operator === '<') {
-            $assertion_string = '<= '.substr($assertion_string, 1);
+        // what the comparison says, as it is written: `!>5` is the assertion of `<= 5`
+        if ($assertion instanceof IsLessThan) {
+            $assertion_string = '< ' . $assertion->value;
+        } elseif ($assertion instanceof IsGreaterThan) {
+            $assertion_string = '> ' . $assertion->value;
+        } elseif ($assertion instanceof IsLessThanOrEqualTo) {
+            $assertion_string = '<= ' . $assertion->value;
+            $not = false;
+        } elseif ($assertion instanceof IsGreaterThanOrEqualTo) {
+            $assertion_string = '>= ' . $assertion->value;
+            $not = false;
         }
 
         if ($negated) {
@@ -1420,7 +1434,7 @@ class Reconciler
                             . ' for ' . $key
                             . ' is ' . ($not
                                 ? 'always ' . $assertion_string . ', so its negation can never be true'
-                                : 'never ' . $assertion),
+                                : 'never ' . $assertion_string),
                         $code_location,
                         $old_var_type_string . ' ' . $assertion,
                     );

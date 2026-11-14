@@ -695,7 +695,6 @@ final class ArrayKeyExistsTest extends TestCase
                             throw new Exception(\'bad\');
                         }
 
-                        /** @psalm-suppress MixedArgument */
                         echo $options[\'\\\'size\\\'\'];
                     }',
                 'error_message' => 'InvalidArrayOffset',

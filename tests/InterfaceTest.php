@@ -131,7 +131,7 @@ final class InterfaceTest extends TestCase
                         return $shape->name ?? null;
                     }',
                 'assertions' => [],
-                'ignored_issues' => ['MixedReturnStatement', 'MixedInferredReturnType', 'RiskyTruthyFalsyComparison'],
+                'ignored_issues' => ['MixedReturnStatement', 'RiskyTruthyFalsyComparison'],
                 'php_version' => '8.2',
             ],
             'interfaceDeclaredInAConditional' => [

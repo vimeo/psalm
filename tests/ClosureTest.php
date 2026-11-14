@@ -246,7 +246,7 @@ final class ClosureTest extends TestCase
                         return $total;
                     }',
                 'assertions' => [],
-                'ignored_issues' => ['MixedReturnStatement', 'MixedInferredReturnType'],
+                'ignored_issues' => ['MixedReturnStatement'],
             ],
             'closureCapturingTheVariableItIsAssignedToByReferenceInAnArgument' => [
                 'code' => '<?php
@@ -1148,7 +1148,7 @@ final class ClosureTest extends TestCase
                     '$make===' => 'Closure[impure]():SubItems',
                     '$result' => 'SubItems',
                 ],
-                'ignored_issues' => ['ClassMustBeFinal'],
+                'ignored_issues' => [],
                 'php_version' => '8.1',
             ],
             'FirstClassCallable:InstanceMethod:InheritedReturnTypeKeepsTheOwnParameters' => [
@@ -1835,7 +1835,7 @@ final class ClosureTest extends TestCase
                     '$find===' => 'Closure[impure](int):int',
                     '$fresh===' => 'Closure[impure]():Repository<int>&static',
                 ],
-                'ignored_issues' => ['MissingAbstractPureAnnotation'],
+                'ignored_issues' => [],
                 'php_version' => '8.1',
             ],
             'FirstClassCallable:InstanceMethod:PassedToTemplatedCallableParam' => [
@@ -2251,6 +2251,70 @@ final class ClosureTest extends TestCase
                         echo $closure() . $arrow();
                     }',
             ],
+            'recursiveClosureCalledThroughItsByReferenceUseHasItsOwnReturnType' => [
+                'code' => '<?php
+                    $factorial = function (int $x) use (&$factorial): int {
+                        if ($x === 1) {
+                            return 1;
+                        }
+
+                        return $x * $factorial($x - 1);
+                    };
+
+                    $result = $factorial(5);',
+                'assertions' => ['$result===' => 'int'],
+            ],
+            'recursiveClosureOfATemplatedClassPassesTheTemplatedValuesOfItsMethodsToItself' => [
+                'code' => '<?php
+                    /**
+                     * @template TNode
+                     */
+                    final class Link {
+                        /**
+                         * @param TNode $to
+                         */
+                        public function __construct(public mixed $to) {}
+                    }
+
+                    /**
+                     * @template TNode
+                     */
+                    final class Graph {
+                        /**
+                         * @param array<int, list<Link<TNode>>> $links
+                         */
+                        public function __construct(private array $links = []) {}
+
+                        /**
+                         * @param TNode $from
+                         * @return list<Link<TNode>>
+                         */
+                        public function linksFrom(mixed $from): array {
+                            return $this->links[(int) $from] ?? [];
+                        }
+
+                        public function reaches(): bool {
+                            $visit =
+                                /**
+                                 * @param TNode $node
+                                 */
+                                function (mixed $node) use (&$visit): bool {
+                                    foreach ($this->linksFrom($node) as $link) {
+                                        if ($visit($link->to)) {
+                                            return true;
+                                        }
+                                    }
+
+                                    return false;
+                                };
+
+                            return false;
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.2',
+            ],
             'fromCallableOfAClassStringMethodReturningStaticIsTheClassItself' => [
                 'code' => '<?php
                     class P {
@@ -2504,12 +2568,8 @@ final class ClosureTest extends TestCase
                      */
                     $foo = null;
 
-
                     $foo =
-                        /**
-                         * @param mixed $bar
-                         * @psalm-suppress MixedFunctionCall
-                         */
+                        /** @param mixed $bar */
                         function ($bar) use (&$foo): string
                         {
                             if (is_array($bar)) {
@@ -3058,6 +3118,17 @@ final class ClosureTest extends TestCase
                 'error_message' => 'NullableReturnStatement',
                 'error_levels' => [],
                 'php_version' => '8.1',
+            ],
+            'recursiveClosureCalledThroughItsByReferenceUseChecksItsParams' => [
+                'code' => '<?php
+                    $factorial = function (int $x) use (&$factorial): int {
+                        if ($x === 1) {
+                            return 1;
+                        }
+
+                        return $factorial("a");
+                    };',
+                'error_message' => 'InvalidScalarArgument',
             ],
         ];
     }

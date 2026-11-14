@@ -2343,7 +2343,6 @@ final class AnnotationTest extends TestCase
                         public function foo($a): void {}
                     }',
                 'error_message' => 'MissingParamType',
-                'error_levels' => ['MethodSignatureMismatch'],
             ],
             'psalmInvalidVar' => [
                 'code' => '<?php
@@ -2660,7 +2659,6 @@ final class AnnotationTest extends TestCase
                     /**
                      * @param string &...$s
                      * @psalm-suppress UnusedParam
-                     * @psalm-mutation-free
                      */
                     function foo(&...$s) : void {}
 
@@ -2673,7 +2671,6 @@ final class AnnotationTest extends TestCase
                     /**
                      * @param string ...&$s
                      * @psalm-suppress UnusedParam
-                     * @psalm-mutation-free
                      */
                     function foo(&...$s) : void {}
 
@@ -2686,7 +2683,6 @@ final class AnnotationTest extends TestCase
                     /**
                      * @param string[] &$s
                      * @psalm-suppress UnusedParam
-                     * @psalm-mutation-free
                      */
                     function foo(&...$s) : void {}
 
