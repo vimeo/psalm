@@ -114,6 +114,7 @@ use function strrpos;
 use function strtolower;
 use function substr;
 use function substr_count;
+use function uasort;
 
 use const PHP_INT_SIZE;
 use const PHP_VERSION_ID;
@@ -1003,10 +1004,11 @@ final class Codebase
     }
 
     /**
-     * Lets Psalm report issues in these files without scanning or analyzing them, e.g. in the template a plugin
-     * compiled the analyzed PHP from. An issue is checked in the process that raises it: files added in an
-     * AfterCodebasePopulated handler are reportable in every analysis worker, files added in a BeforeAddIssue
-     * handler only in the process that runs it.
+     * Lets Psalm report issues in these files, e.g. in the template a plugin compiled the analyzed PHP from. It
+     * doesn't queue them for scanning or analysis, a path counts only when it is the issue's file path verbatim,
+     * and the files the config ignores stay ignored. An issue is checked in the process that raises it: files
+     * added in the plugin entry point are reportable in every scanning and analysis process, files added in an
+     * AfterCodebasePopulated handler only for issues raised while analyzing.
      *
      * @api
      * @param list<string> $file_paths absolute paths
@@ -1025,7 +1027,7 @@ final class Codebase
      */
     public function isReportableFile(string $file_path): bool
     {
-        return isset($this->reportable_files[$file_path]);
+        return $this->reportable_files[$file_path] ?? false;
     }
 
     /**
@@ -1174,9 +1176,19 @@ final class Codebase
      */
     public function findReferencesToMethod(string $method_id): array
     {
-        return $this->code_use_graph->getReferenceLocations(
-            CodeUseGraph::functionLikeNode(strtolower($method_id)),
+        $method_id_lc = strtolower($method_id);
+
+        // calls whose return value is used are recorded on the return node
+        $locations = $this->code_use_graph->getReferenceLocations(CodeUseGraph::functionLikeNode($method_id_lc))
+            + $this->code_use_graph->getReferenceLocations(CodeUseGraph::functionLikeReturnNode($method_id_lc));
+
+        uasort(
+            $locations,
+            static fn(CodeLocation $a, CodeLocation $b): int
+                => [$a->file_path, $a->raw_file_start] <=> [$b->file_path, $b->raw_file_start],
         );
+
+        return $locations;
     }
 
     /**

@@ -23,6 +23,7 @@ use Psalm\Internal\Analyzer\Statements\Expression\Call\ClassTemplateParamCollect
 use Psalm\Internal\Analyzer\Statements\Expression\Call\MethodCallAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\ExpressionIdentifier;
 use Psalm\Internal\Analyzer\Statements\Expression\Fetch\AtomicPropertyFetchAnalyzer;
+use Psalm\Internal\Analyzer\Statements\Expression\Fetch\InstancePropertyFetchAnalyzer;
 use Psalm\Internal\Analyzer\Statements\ExpressionAnalyzer;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\Internal\Analyzer\TraitAnalyzer;
@@ -1307,6 +1308,11 @@ final class InstancePropertyAssignmentAnalyzer
                 } elseif (!$class_exists) {
                     // a property an isset() found is there: it is the object that has it, not the interface
                     if ($var_id !== null
+                        && InstancePropertyFetchAnalyzer::isUndeclaredInterfacePropertyOf(
+                            $codebase,
+                            $lhs_type_part,
+                            $prop_name,
+                        )
                         && isset($context->vars_in_scope[$var_id])
                         && !$context->vars_in_scope[$var_id]->isNull()
                         && !$context->vars_in_scope[$var_id]->possibly_undefined

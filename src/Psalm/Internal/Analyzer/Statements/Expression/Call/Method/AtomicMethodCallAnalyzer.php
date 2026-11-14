@@ -371,9 +371,14 @@ final class AtomicMethodCallAnalyzer extends CallAnalyzer
         // the mixin whose `@method` is called
         $pseudo_method_mixin = null;
 
-        if (!$naive_method_exists) {
+        // the caller can't access the method, so PHP calls __call() of the class, which forwards to its mixins
+        $hidden_by_magic_call = $naive_method_exists
+            && isset($class_storage->declaring_method_ids['__call'])
+            && !MethodAnalyzer::isMethodVisible($method_id, $context, $statements_analyzer->getSource());
+
+        if (!$naive_method_exists || $hidden_by_magic_call) {
             // if the method doesn't exist we check for any method existence providers
-            if ($codebase->methods->existence_provider->has($fq_class_name)) {
+            if (!$naive_method_exists && $codebase->methods->existence_provider->has($fq_class_name)) {
                 $method_exists = $codebase->methods->existence_provider->doesMethodExist(
                     $fq_class_name,
                     $method_id->method_name,

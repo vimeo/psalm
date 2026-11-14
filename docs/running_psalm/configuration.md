@@ -296,7 +296,7 @@ When `true`, Psalm infers property types from assignments seen in straightforwar
   findUnusedVariablesAndParams="[bool]"
 >
 ```
-When `true`, Psalm will attempt to find all unused variables, the equivalent of running with `--find-unused-variables`. Defaults to `false`.
+When `true`, Psalm will attempt to find all unused variables, the equivalent of running with `--find-unused-variables`. If not given, it takes the value of `findUnusedCode` when that is set; otherwise it is `true` at `errorLevel="1"` (unless `reportMixedIssues="false"`) and `false` at the other levels.
 
 #### findUnusedCode
 ```xml

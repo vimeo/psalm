@@ -193,20 +193,20 @@ Only plugins enabled with `<pluginClass>` (or enabled automatically because the 
 
 ## Reporting issues in files Psalm doesn't analyze
 
-A plugin that compiles templates to PHP analyzes the compiled file and reports its issues on the template. Psalm reports issues only in project files, so make the templates reportable. They are neither scanned nor analyzed:
+A plugin that compiles templates to PHP analyzes the compiled file and reports its issues on the template. Psalm reports issues only in project files, so make the templates reportable from the plugin entry point. They are neither scanned nor analyzed:
 
 ```php
-final class RegisterTemplates implements AfterCodebasePopulatedInterface
+final class Plugin implements PluginEntryPointInterface
 {
     #[Override]
-    public static function afterCodebasePopulated(AfterCodebasePopulatedEvent $event): void
+    public function __invoke(PluginRegistrationSocket $registration, ?SimpleXMLElement $config = null): void
     {
-        $event->getCodebase()->addReportableFiles(['/app/resources/views/order.blade.php']);
+        $registration->codebase->addReportableFiles(['/app/resources/views/order.blade.php']);
     }
 }
 ```
 
-An issue is checked in the process that raises it. Templates added in `afterCodebasePopulated()` are reportable in every analysis process; add the ones an issue raised while scanning needs right before reporting that issue, e.g. in a `BeforeAddIssueInterface` handler.
+An issue is checked in the process that raises it. Templates added in `__invoke()` are reportable in every scanning and analysis process. Templates added later, e.g. in an `AfterCodebasePopulatedInterface` handler, are reportable only for issues raised while analyzing.
 
 ## Upgrading file-based plugin to composer-based version
 
