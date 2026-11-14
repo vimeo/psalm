@@ -1089,6 +1089,98 @@ final class RedundantConditionTest extends TestCase
                         assert(!!$p);
                     }',
             ],
+            'instanceofOfAMoreSpecificTypeIsNotRedundant' => [
+                'code' => '<?php
+                    interface I {}
+                    interface J extends I {}
+                    class C {}
+                    class B extends C {}
+
+                    function ofInterface(I $o): bool {
+                        return $o instanceof J;
+                    }
+
+                    function ofClass(C $o): bool {
+                        return $o instanceof B;
+                    }
+
+                    function ofUnrelatedInterface(C $o): bool {
+                        return $o instanceof I;
+                    }
+
+                    function ofNullable(?I $o): bool {
+                        return $o instanceof I;
+                    }',
+            ],
+            'instanceofOfAClassStringVariableNarrowsToItsBound' => [
+                'code' => '<?php
+                    interface I {}
+
+                    /** @param class-string<I> $c */
+                    function f(object $o, string $c): ?I {
+                        $a = $o instanceof $c ? $o : null;
+
+                        return $a;
+                    }',
+            ],
+            'instanceofOfAClassStringVariableDoesNotNarrowTheElseBranch' => [
+                'code' => '<?php
+                    class C {}
+
+                    /** @param class-string<C> $c */
+                    function f(C $o, string $c): void {
+                        if ($o instanceof $c) {
+                            $a = $o;
+                        } else {
+                            $b = $o;
+                        }
+
+                        $x = $o instanceof $c ? $o : null;
+                        $y = $o instanceof $c ? null : $o;
+                    }
+
+                    /** @param class-string<C> $c */
+                    function g(C $o, string $c): C {
+                        if ($o instanceof $c) {
+                            return $o;
+                        }
+
+                        return $o;
+                    }',
+            ],
+            'instanceofOfAClassStringVariableIsNeverRedundant' => [
+                'code' => '<?php
+                    interface I {}
+                    class C {}
+                    final class B extends C {}
+                    final class D extends C {}
+
+                    /** @param class-string<C> $c */
+                    function ofClass(C $o, string $c): void {
+                        if ($o instanceof $c) {
+                            echo "yes";
+                        }
+                    }
+
+                    /** @param class-string<I> $c */
+                    function ofInterface(I $o, string $c): void {
+                        if ($o instanceof $c) {
+                            echo "yes";
+                        }
+                    }
+
+                    /**
+                     * @template T of C
+                     * @param class-string<T> $c
+                     */
+                    function ofTemplate(C $o, string $c): void {
+                        if ($o instanceof $c) {
+                            echo "yes";
+                        }
+                    }
+
+                    ofClass(new B(), D::class);',
+            ],
             'assignedArrayOffsetNarrowedByLongChain' => [
                 'code' => '<?php
                     /** @param array<int, string|int> $arr */
@@ -1148,6 +1240,73 @@ final class RedundantConditionTest extends TestCase
                 'assertions' => [],
                 'ignored_issues' => ['RiskyTruthyFalsyComparison'],
                 'php_version' => '8.1',
+            ],
+            'pathBelowAVariablePassedToCountInAnAndChainIsNotRedundant' => [
+                'code' => '<?php
+                    declare(strict_types=1);
+
+                    abstract class Expr {}
+                    final class Variable extends Expr {}
+                    final class Prop extends Expr {
+                        public ?Expr $var = null;
+                    }
+                    abstract class Stmt {}
+                    final class Return_ extends Stmt {
+                        public ?Expr $expr = null;
+                    }
+                    final class Method {
+                        /** @var Stmt[]|null */
+                        public ?array $stmts = null;
+                    }
+
+                    function f(Method $stmt): bool {
+                        if ($stmt->stmts
+                            && count($stmt->stmts) === 1
+                            && $stmt->stmts[0] instanceof Return_
+                            && $stmt->stmts[0]->expr instanceof Prop
+                            && $stmt->stmts[0]->expr->var instanceof Variable
+                        ) {
+                            return true;
+                        }
+
+                        return false;
+                    }',
+                'assertions' => [],
+                'ignored_issues' => ['RiskyTruthyFalsyComparison'],
+            ],
+            'pathBelowAnAssignedVariableInAnAndChainIsNotRedundant' => [
+                'code' => '<?php
+                    /** @return array{x: int|null}|null */
+                    function f(): ?array {
+                        return null;
+                    }
+
+                    function g(bool $c): bool {
+                        if (($b = f()) && $b["x"] !== null && $b["x"] > 0 && $c) {
+                            return true;
+                        }
+
+                        return false;
+                    }',
+                'assertions' => [],
+                'ignored_issues' => ['RiskyTruthyFalsyComparison'],
+            ],
+            'pathBelowAnAssignedVariableInAnOrChainIsNotRedundant' => [
+                'code' => '<?php
+                    /** @return array{x: int|null}|null */
+                    function f(): ?array {
+                        return null;
+                    }
+
+                    function g(bool $c): bool {
+                        if (!($b = f()) || $b["x"] === null || $b["x"] < 0 || $c) {
+                            return false;
+                        }
+
+                        return true;
+                    }',
+                'assertions' => [],
+                'ignored_issues' => ['RiskyTruthyFalsyComparison'],
             ],
             'identicalComparisonOfAListWithAShapeWhoseGapItCanFill' => [
                 'code' => '<?php
@@ -1910,6 +2069,66 @@ final class RedundantConditionTest extends TestCase
                     if (array_key_exists("10", $a) && array_key_exists(10, $a)) {}',
                 'error_message' => 'RedundantCondition',
             ],
+            'instanceofOfALiteralClassStringAlreadyImplied' => [
+                'code' => '<?php
+                    interface I {}
+
+                    function f(I $o): void {
+                        $class = I::class;
+                        if ($o instanceof $class) {
+                            echo "yes";
+                        }
+                    }',
+                'error_message' => 'RedundantCondition',
+            ],
+            'instanceofOfAClassAlreadyImplied' => [
+                'code' => '<?php
+                    class C {}
+
+                    function f(C $o): void {
+                        if ($o instanceof C) {
+                            echo "yes";
+                        }
+                    }',
+                'error_message' => 'RedundantCondition',
+            ],
+            'instanceofOfAParentInterfaceAlreadyImplied' => [
+                'code' => '<?php
+                    interface I {}
+                    interface J extends I {}
+
+                    function f(J $o): void {
+                        if ($o instanceof I) {
+                            echo "yes";
+                        }
+                    }',
+                'error_message' => 'RedundantCondition',
+            ],
+            'instanceofOfAnInterfaceAlreadyImplied' => [
+                'code' => '<?php
+                    interface I {}
+
+                    function f(I $o): void {
+                        if ($o instanceof I) {
+                            echo "yes";
+                        }
+                    }',
+                'error_message' => 'RedundantCondition',
+            ],
+            'assertionOfAnInterfaceAlreadyImplied' => [
+                'code' => '<?php
+                    interface Comparable {
+                        /** @psalm-assert-if-true static $object */
+                        public function equals(Comparable $object): bool;
+                    }
+
+                    function f(Comparable $left, Comparable $right): void {
+                        if ($left->equals($right)) {
+                            echo "yes";
+                        }
+                    }',
+                'error_message' => 'RedundantCondition - src' . DIRECTORY_SEPARATOR . 'somefile.php:8:29 - Type Comparable for $right is always Comparable',
+            ],
             'assignedArrayOffsetCheckedTwice' => [
                 'code' => '<?php
                     /** @param array<int, string|int> $arr */
@@ -1922,6 +2141,24 @@ final class RedundantConditionTest extends TestCase
                         }
                     }',
                 'error_message' => 'RedundantCondition',
+            ],
+            'repeatedPathBelowAnAssignedVariableInAnAndChainIsStillRedundant' => [
+                'code' => '<?php
+                    declare(strict_types=1);
+
+                    /** @return array{x: int|null}|null */
+                    function f(): ?array {
+                        return null;
+                    }
+
+                    function g(): void {
+                        if (($a = f()) && $a["x"] !== null && $a["x"] !== null) {
+                            echo 1;
+                        }
+                    }',
+                'error_message' => 'RedundantConditionGivenDocblockType - src' . DIRECTORY_SEPARATOR
+                    . 'somefile.php:10:63',
+                'error_levels' => ['RiskyTruthyFalsyComparison'],
             ],
             'identicalComparisonOfAShapeWithAListOfOtherValuesIsImpossible' => [
                 'code' => '<?php
