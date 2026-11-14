@@ -64,6 +64,7 @@ final class Pass
         }
 
         $codebase->scanFilesWithoutPopulating();
+        RuntimeDeclarations::forgetRemoved($project_analyzer->getConfig(), $overlays);
 
         foreach ($signatures as $path => [$before]) {
             $signatures[$path] = [$before, StorageFingerprint::getSignature($codebase, $path)];

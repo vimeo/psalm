@@ -67,7 +67,10 @@ final class Engine
             $codebase->addTemporaryFileChanges($path, $contents);
         }
 
-        return [$project_analyzer->scanWithoutPopulating(), $taint];
+        $project_files = $project_analyzer->scanWithoutPopulating();
+        RuntimeDeclarations::forgetRemoved($project_analyzer->getConfig(), $overlays);
+
+        return [$project_files, $taint];
     }
 
     /**

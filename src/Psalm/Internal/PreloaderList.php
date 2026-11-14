@@ -873,6 +873,7 @@ final class PreloaderList {
         \Psalm\Internal\Overlay\Protocol::class,
         \Psalm\Internal\Overlay\ReferenceIndex::class,
         \Psalm\Internal\Overlay\Request::class,
+        \Psalm\Internal\Overlay\RuntimeDeclarations::class,
         \Psalm\Internal\Overlay\SnapshotServer::class,
         \Psalm\Internal\Overlay\StorageFingerprint::class,
         \Psalm\Internal\Overlay\Strategy::class,

@@ -3216,6 +3216,33 @@ final class Config
     }
 
     /**
+     * Functions and constants this process defines, which the analysed code no longer declares: they are not taken
+     * from the process
+     *
+     * @param list<string> $functions lowercase ids
+     * @param list<string> $constants
+     * @internal
+     * @psalm-capabilities read-props|write-this-props|write-refs
+     */
+    public function forgetPredefined(array $functions, array $constants): void
+    {
+        foreach ($functions as $function) {
+            unset($this->predefined_functions[$function]);
+        }
+
+        foreach ($constants as $constant) {
+            // the namespace of a constant is case-insensitive
+            $separator = strrpos($constant, '\\');
+            unset(
+                $this->predefined_constants[$constant],
+                $this->predefined_constants[$separator === false
+                    ? $constant
+                    : strtolower(substr($constant, 0, $separator)) . substr($constant, $separator)],
+            );
+        }
+    }
+
+    /**
      * @psalm-external-mutation-free
      */
     public function setIncludeCollector(IncludeCollector $include_collector): void
