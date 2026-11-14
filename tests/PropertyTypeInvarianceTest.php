@@ -516,7 +516,7 @@ final class PropertyTypeInvarianceTest extends TestCase
                 'code' => '<?php
                     trait T {
                         /** @var non-empty-string */
-                        public $name = "a";
+                        public string $name = "a";
                     }
 
                     class ParentClass {
@@ -524,32 +524,13 @@ final class PropertyTypeInvarianceTest extends TestCase
                     }
 
                     final class ChildClass extends ParentClass {
-                        public $name = "b";
+                        public string $name = "b";
                     }
 
                     $name = (new ChildClass())->name;',
                 'assertions' => [
                     '$name===' => 'non-empty-string',
                 ],
-            ],
-            'propertyTypeComputedFromTemplatesIsNotInherited' => [
-                'code' => '<?php
-                    /** @template T */
-                    class ParentClass {
-                        /** @var (T is string ? list<string> : list<int>) */
-                        public array $items = [];
-                    }
-
-                    /** @extends ParentClass<string> */
-                    final class ChildClass extends ParentClass {
-                        public array $items = [];
-                    }
-
-                    $items = (new ChildClass())->items;',
-                'assertions' => [
-                    '$items===' => 'array<array-key, mixed>',
-                ],
-                'ignored_issues' => ['NonInvariantDocblockPropertyType'],
             ],
             'propertyOfAnImplementedInterface' => [
                 'code' => '<?php
@@ -568,6 +549,46 @@ final class PropertyTypeInvarianceTest extends TestCase
                 ],
                 'ignored_issues' => [],
                 'php_version' => '8.4',
+            ],
+            'inheritedClassStringOfATemplateUnion' => [
+                'code' => '<?php
+                    class AA {}
+                    class BB {}
+
+                    /** @template T of object */
+                    class ParentClass {
+                        /** @var class-string<T>|null */
+                        public ?string $item = null;
+                    }
+
+                    /** @extends ParentClass<AA|BB> */
+                    final class ChildClass extends ParentClass {
+                        public ?string $item = AA::class;
+                    }
+
+                    $item = (new ChildClass())->item;',
+                'assertions' => [
+                    '$item===' => 'class-string<AA>|class-string<BB>|null',
+                ],
+            ],
+            'promotedPropertyWithInheritedTypeIsCheckedWhereItIsWritten' => [
+                'code' => '<?php
+                    /** @psalm-suppress UndefinedDocblockClass */
+                    class ParentClass {
+                        /** @var list<Undefined> */
+                        public array $items = [];
+                    }
+
+                    final class ChildClass extends ParentClass {
+                        /**
+                         * @template T
+                         * @param T $t
+                         */
+                        public function __construct(public array $items, $t) {}
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
             ],
         ];
     }
@@ -785,6 +806,91 @@ final class PropertyTypeInvarianceTest extends TestCase
                         use T;
                     }',
                 'error_message' => 'NonInvariantDocblockPropertyType',
+            ],
+            'propertyTypeComputedFromTemplatesIsNotInherited' => [
+                'code' => '<?php
+                    /** @template T */
+                    class ParentClass {
+                        /** @var (T is string ? list<string> : list<int>) */
+                        public array $items = [];
+                    }
+
+                    /** @extends ParentClass<string> */
+                    final class ChildClass extends ParentClass {
+                        public array $items = [];
+                    }',
+                'error_message' => 'NonInvariantDocblockPropertyType',
+            ],
+            'staticRedeclarationDoesNotInheritTheType' => [
+                'code' => '<?php
+                    class ParentClass {
+                        /** @var non-empty-string */
+                        public static string $name = "a";
+                    }
+
+                    final class ChildClass extends ParentClass {
+                        public string $name = "b";
+                    }',
+                'error_message' => 'NonInvariantDocblockPropertyType',
+            ],
+            'nonReadonlyRedeclarationDoesNotInheritTheType' => [
+                'code' => '<?php
+                    class ParentClass {
+                        /** @var non-empty-string */
+                        public readonly string $name;
+
+                        public function __construct() {
+                            $this->name = "a";
+                        }
+                    }
+
+                    final class ChildClass extends ParentClass {
+                        public string $name = "b";
+                    }',
+                'error_message' => 'NonInvariantDocblockPropertyType',
+                'error_levels' => [],
+                'php_version' => '8.1',
+            ],
+            'nullableTypedPropertyWithoutDefaultIsNotInitialized' => [
+                'code' => '<?php
+                    /** @template T of string */
+                    final class A {
+                        /** @var T|null */
+                        public ?string $name;
+                    }',
+                'error_message' => 'MissingConstructor',
+            ],
+            'nullableTypedPropertyWithInheritedTypeIsNotInitialized' => [
+                'code' => '<?php
+                    /** @template T of string */
+                    class ParentClass {
+                        /** @var T|null */
+                        public ?string $name = null;
+                    }
+
+                    /** @extends ParentClass<non-empty-string> */
+                    final class ChildClass extends ParentClass {
+                        public ?string $name;
+                    }',
+                'error_message' => 'MissingConstructor',
+            ],
+            'promotedPropertyWithInheritedTypeChecksItsNativeType' => [
+                'code' => '<?php
+                    /** @deprecated */
+                    final class Dep {}
+
+                    /** @psalm-suppress DeprecatedClass */
+                    class ParentClass {
+                        /** @var Dep|null */
+                        public ?Dep $dep = null;
+                    }
+
+                    final class ChildClass extends ParentClass {
+                        public function __construct(public ?Dep $dep) {}
+                    }',
+                'error_message' => 'DeprecatedClass - src' . DIRECTORY_SEPARATOR . 'somefile.php:12:53',
+                'error_levels' => [],
+                'php_version' => '8.0',
             ],
         ];
     }
