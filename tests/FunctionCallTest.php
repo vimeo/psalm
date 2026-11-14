@@ -24,6 +24,48 @@ final class FunctionCallTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'existenceChecksOfALowercaseOrLiteralStringKeepTheNameType' => [
+                'code' => <<<'PHP'
+                    <?php
+                    /** @param non-empty-lowercase-string $function */
+                    function functionOf(string $function): void {
+                        if (function_exists($function)) {
+                            /** @psalm-check-type-exact $function = callable-string */
+                        }
+                    }
+
+                    /** @param lowercase-string $class */
+                    function classOf(string $class): void {
+                        if (class_exists($class)) {
+                            /** @psalm-check-type-exact $class = class-string */
+                        }
+                    }
+
+                    /** @param literal-string $name */
+                    function interfaceOf(string $name): void {
+                        if (interface_exists($name)) {
+                            /** @psalm-check-type-exact $name = interface-string */
+                        }
+                    }
+
+                    /** @param non-empty-lowercase-string $name */
+                    function callableOf(string $name): void {
+                        if (is_callable($name)) {
+                            /** @psalm-check-type-exact $name = callable-string */
+                        }
+                    }
+
+                    /** @param non-empty-literal-string $name */
+                    function literalCallableOf(string $name): void {
+                        if (is_callable($name)) {
+                            /** @psalm-check-type-exact $name = callable-string */
+                        }
+                    }
+                    PHP,
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
             'zeroIsANonEmptyLowercaseString' => [
                 'code' => <<<'PHP'
                     <?php
@@ -4349,6 +4391,22 @@ final class FunctionCallTest extends TestCase
                     }
                     ',
                 'error_message' => 'ParadoxicalCondition',
+                'error_levels' => [],
+                'php_version' => '8.1',
+            ],
+            'functionExistsOfANumericString' => [
+                'code' => <<<'PHP'
+                    <?php
+                    /** @param numeric-string $function */
+                    function check(string $function): bool {
+                        if (function_exists($function)) {
+                            return true;
+                        }
+
+                        return false;
+                    }
+                    PHP,
+                'error_message' => 'DocblockTypeContradiction',
                 'error_levels' => [],
                 'php_version' => '8.1',
             ],
