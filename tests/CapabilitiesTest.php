@@ -2963,6 +2963,47 @@ final class CapabilitiesTest extends TestCase
     public static function providerInvalidCodeParse(): iterable
     {
         return [
+            'impureKeyOfAnArrayAccessItemIsReportedAtTheKey' => [
+                'code' => '<?php
+                    function impureKey(): int {
+                        echo "x";
+                        return 1;
+                    }
+
+                    /**
+                     * @param ArrayObject<int, int> $object
+                     * @psalm-pure
+                     */
+                    function first(ArrayObject $object): int {
+                        return $object[impureKey()];
+                    }',
+                'error_message' => 'ImpureFunctionCall - src' . DIRECTORY_SEPARATOR . 'somefile.php:12:40'
+                    . ' - The context is pure but function call on impurekey requires impure',
+            ],
+            'arrayAccessItemWrittenByOffsetSetForgetsMemoizedResultsOfItsMethods' => [
+                'code' => '<?php
+                    /**
+                     * @extends ArrayObject<int, list<int>>
+                     * @psalm-capabilities read-props|write-this-props
+                     */
+                    final class Lists extends ArrayObject {
+                        /** @psalm-capabilities read-props */
+                        public function first(): int {
+                            return $this[0][0];
+                        }
+                    }
+
+                    /** @return 2 */
+                    function firstAfterWriting(Lists $o, int $k): int {
+                        if ($o->first() !== 2) {
+                            return 2;
+                        }
+
+                        $o[$k] = [9];
+                        return $o->first();
+                    }',
+                'error_message' => 'LessSpecificReturnStatement - src' . DIRECTORY_SEPARATOR . 'somefile.php:20:32',
+            ],
             'impureToStringCalledImplicitlyByAnArgument' => [
                 'code' => '<?php
                     final class Imp {

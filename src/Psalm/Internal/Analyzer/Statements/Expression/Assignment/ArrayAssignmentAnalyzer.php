@@ -60,6 +60,7 @@ use function assert;
 use function count;
 use function end;
 use function implode;
+use function is_array;
 use function is_string;
 use function preg_match;
 use function sort;
@@ -378,6 +379,60 @@ final class ArrayAssignmentAnalyzer
         }
 
         return $operands;
+    }
+
+    /**
+     * The outermost sub-expressions of $expr (itself included) that change something when analysed: assignments,
+     * increments and calls given arguments. Closures are not entered.
+     *
+     * @return list<PhpParser\Node\Expr>
+     */
+    public static function getSideEffects(PhpParser\Node\Expr $expr): array
+    {
+        $side_effects = [];
+        self::collectSideEffects($expr, $side_effects);
+
+        return $side_effects;
+    }
+
+    /**
+     * @param list<PhpParser\Node\Expr> $side_effects
+     */
+    private static function collectSideEffects(PhpParser\Node $node, array &$side_effects): void
+    {
+        if ($node instanceof PhpParser\Node\Expr\Closure
+            || $node instanceof PhpParser\Node\Expr\ArrowFunction
+            || $node instanceof PhpParser\Node\Stmt
+        ) {
+            return;
+        }
+
+        if ($node instanceof PhpParser\Node\Expr\Assign
+            || $node instanceof PhpParser\Node\Expr\AssignOp
+            || $node instanceof PhpParser\Node\Expr\AssignRef
+            || $node instanceof PhpParser\Node\Expr\PreInc
+            || $node instanceof PhpParser\Node\Expr\PreDec
+            || $node instanceof PhpParser\Node\Expr\PostInc
+            || $node instanceof PhpParser\Node\Expr\PostDec
+            || ($node instanceof PhpParser\Node\Expr\CallLike
+                && !$node->isFirstClassCallable()
+                && $node->getArgs() !== [])
+        ) {
+            $side_effects[] = $node;
+
+            return;
+        }
+
+        foreach ($node->getSubNodeNames() as $name) {
+            /** @var PhpParser\Node|list<PhpParser\Node|null>|scalar|null $sub_node */
+            $sub_node = $node->{$name};
+
+            foreach (is_array($sub_node) ? $sub_node : [$sub_node] as $child) {
+                if ($child instanceof PhpParser\Node) {
+                    self::collectSideEffects($child, $side_effects);
+                }
+            }
+        }
     }
 
     /**

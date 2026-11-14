@@ -11,6 +11,7 @@ use Psalm\Codebase;
 use Psalm\Context;
 use Psalm\Internal\Analyzer\AttributesAnalyzer;
 use Psalm\Internal\Analyzer\FunctionLikeAnalyzer;
+use Psalm\Internal\Analyzer\Statements\Expression\Assignment\ArrayAssignmentAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\Assignment\InstancePropertyAssignmentAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\AssignmentAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\BinaryOp\ConcatAnalyzer;
@@ -2224,6 +2225,9 @@ final class ArgumentsAnalyzer
         $context->inside_by_ref_offset = $arg->value instanceof PhpParser\Node\Expr\ArrayDimFetch
             && self::phpTakesArgumentByReference($method_id, $argument_offset);
 
+        $analyzed_for_assignment = false;
+        $analyzed_for_read = false;
+
         try {
             if (($var_id && isset($context->vars_in_scope[$var_id]))
                 || ($method_id
@@ -2249,6 +2253,7 @@ final class ArgumentsAnalyzer
                 }
 
                 $context->inside_assignment = $was_inside_assignment;
+                $analyzed_for_assignment = true;
             }
 
             // special handling for array sort
@@ -2311,12 +2316,26 @@ final class ArgumentsAnalyzer
                 ) === false) {
                     return false;
                 }
+
+                $analyzed_for_read = true;
             }
 
-            if (!$arg->value instanceof PhpParser\Node\Expr\Variable
-                && ExpressionAnalyzer::analyze($statements_analyzer, $arg->value, $context) === false
-            ) {
-                return false;
+            if (!$analyzed_for_read && !$arg->value instanceof PhpParser\Node\Expr\Variable) {
+                // analysing the argument for assignment did not report what reading it does (a variable a loop
+                // defines is possibly undefined), but it did evaluate the keys that change something: not again
+                $node_data = $statements_analyzer->node_data;
+                $evaluated = $analyzed_for_assignment && $arg->value instanceof PhpParser\Node\Expr\ArrayDimFetch
+                    ? ArrayAssignmentAnalyzer::getSideEffects($arg->value)
+                    : [];
+                $node_data->markEvaluated($evaluated);
+
+                try {
+                    if (ExpressionAnalyzer::analyze($statements_analyzer, $arg->value, $context) === false) {
+                        return false;
+                    }
+                } finally {
+                    $node_data->unmarkEvaluated($evaluated);
+                }
             }
 
             return null;

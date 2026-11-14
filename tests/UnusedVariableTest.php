@@ -3134,6 +3134,15 @@ final class UnusedVariableTest extends TestCase
                     }',
                 'error_message' => 'UnusedVariable - src' . DIRECTORY_SEPARATOR . 'somefile.php:8:29',
             ],
+            'keyOfAnArrayAccessItemReadIsIncrementedOnce' => [
+                'code' => '<?php
+                    /** @param ArrayObject<int, list<int>> $a */
+                    function f(ArrayObject $a): int {
+                        $i = 0;
+                        return count($a[$i++]);
+                    }',
+                'error_message' => 'UnusedVariable - src' . DIRECTORY_SEPARATOR . 'somefile.php:5:41',
+            ],
             'keyOfAnArrayItemPassedByReferenceIsIncrementedOnce' => [
                 'code' => '<?php
                     /** @param list<list<int>> $a */
@@ -3168,6 +3177,16 @@ final class UnusedVariableTest extends TestCase
                     $b = [];
                     echo $a;',
                 'error_message' => 'UnusedVariable',
+            ],
+            'keyOfAnItemPassedByReferenceToASortFunctionIsIncrementedOnce' => [
+                'code' => '<?php
+                    /** @param array<int, mixed> $a */
+                    function f(array $a): void {
+                        $i = 0;
+                        asort($a[$i++]);
+                    }',
+                'error_message' => 'UnusedVariable - src' . DIRECTORY_SEPARATOR . 'somefile.php:5:34',
+                'error_levels' => ['MixedArgument'],
             ],
             'unusedVarWithAdditionOp' => [
                 'code' => '<?php
