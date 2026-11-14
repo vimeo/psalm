@@ -138,6 +138,11 @@ final class StatementsAnalyzer extends SourceAnalyzer
     private array $unused_var_locations = [];
 
     /**
+     * @var array<string, CodeLocation>
+     */
+    private array $last_assignment_locations = [];
+
+    /**
      * The issues suppressed where a variable is assigned, as it's only reported once the whole function is analysed
      *
      * @var array<string, array<array-key, string>>
@@ -1224,6 +1229,25 @@ final class StatementsAnalyzer extends SourceAnalyzer
     {
         $this->unused_var_locations[$location->getHash()] = [$var_id, $location];
         $this->unused_var_suppressions[$location->getHash()] = $this->getSuppressedIssues();
+        $this->last_assignment_locations[$var_id] = $location;
+    }
+
+    /**
+     * The first and the last assignment of the variable in this set of statements being evaluated
+     *
+     * @return list<CodeLocation>
+     * @psalm-mutation-free
+     */
+    public function getFirstAndLastAssignments(string $var_id): array
+    {
+        $first = $this->all_vars[$var_id] ?? null;
+        $last = $this->last_assignment_locations[$var_id] ?? null;
+
+        if ($first === null) {
+            return [];
+        }
+
+        return $last === null || $last->getHash() === $first->getHash() ? [$first] : [$first, $last];
     }
 
     /**

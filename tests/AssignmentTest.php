@@ -5,6 +5,8 @@ declare(strict_types=1);
 namespace Psalm\Tests;
 
 use Override;
+use Psalm\Context;
+use Psalm\IssueBuffer;
 use Psalm\Tests\Traits\InvalidCodeAnalysisTestTrait;
 use Psalm\Tests\Traits\ValidCodeAnalysisTestTrait;
 
@@ -12,6 +14,81 @@ final class AssignmentTest extends TestCase
 {
     use InvalidCodeAnalysisTestTrait;
     use ValidCodeAnalysisTestTrait;
+
+    /**
+     * @return list<int>
+     */
+    private function getMixedAssignmentLines(string $code): array
+    {
+        $this->testConfig->throw_exception = false;
+        $file_path = self::$src_dir_path . 'somefile.php';
+        $this->addFile($file_path, $code);
+
+        $this->analyzeFile($file_path, new Context());
+
+        $lines = [];
+
+        foreach (IssueBuffer::getIssuesDataForFile($file_path) as $issue) {
+            if ($issue->type === 'MixedAssignment') {
+                $lines[] = $issue->line_from;
+            }
+        }
+
+        return $lines;
+    }
+
+    public function testMixedAssignmentIsNotReportedInASecondLoopOfAVariableAssertedInTheFirst(): void
+    {
+        self::assertSame(
+            [],
+            $this->getMixedAssignmentLines('<?php
+                /** @var array<mixed> $data */
+                $data = [];
+
+                foreach ($data as $value) {
+                    assert(is_array($value));
+                }
+
+                foreach ($data as $value) {
+                    assert(is_array($value));
+                }'),
+        );
+    }
+
+    public function testMixedAssignmentIsNotReportedForAReassignedVariableAssertedAfterTheFirstAssignment(): void
+    {
+        self::assertSame(
+            [],
+            $this->getMixedAssignmentLines('<?php
+                /** @var mixed $first */
+                $first = 1;
+                /** @var mixed $second */
+                $second = 2;
+
+                $value = $first;
+                $value = $second;
+
+                assert(is_int($value));'),
+        );
+    }
+
+    public function testMixedAssignmentIsStillReportedWhenTheVariableIsNotAsserted(): void
+    {
+        self::assertSame(
+            [9],
+            $this->getMixedAssignmentLines('<?php
+                /** @var array<mixed> $data */
+                $data = [];
+
+                foreach ($data as $value) {
+                    assert(is_array($value));
+                }
+
+                foreach ($data as $value) {
+                    echo "x";
+                }'),
+        );
+    }
 
     /**
      * @psalm-pure
