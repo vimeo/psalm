@@ -13,22 +13,82 @@ use Psalm\Internal\Clause;
 use Psalm\Issue\ParadoxicalCondition;
 use Psalm\Issue\RedundantCondition;
 use Psalm\IssueBuffer;
+use Psalm\Storage\Assertion;
 use Psalm\Storage\Assertion\InArray;
+use Psalm\Storage\Assertion\IsIsset;
+use Psalm\Storage\Assertion\IsNotType;
 use Psalm\Storage\Assertion\NotInArray;
+use Psalm\Type\Atomic\TNull;
 
 use function array_intersect_key;
+use function array_key_first;
 use function array_keys;
 use function array_unique;
 use function count;
 use function implode;
+use function reset;
 use function sort;
 use function spl_object_id;
+use function strpbrk;
 
 /**
  * @internal
  */
 final class AlgebraAnalyzer
 {
+    /**
+     * The variable of a clause that is only `isset($var)`, when it is a plain local one: `isset($a['k'])` and
+     * `isset($o->p)` can be true while the value is null (`ArrayAccess::offsetExists()`, `__isset()`)
+     *
+     * @psalm-pure
+     */
+    private static function getIssetVarId(Clause $clause): ?string
+    {
+        $assertion = self::getSingleAssertion($clause);
+
+        return $assertion !== null
+            && $assertion[1] instanceof IsIsset
+            && $assertion[0][0] === '$'
+            && strpbrk($assertion[0], '[-:') === false
+                ? $assertion[0]
+                : null;
+    }
+
+    /**
+     * The variable of a clause that is only `$var !== null`
+     *
+     * @psalm-pure
+     */
+    private static function getNotNullVarId(Clause $clause): ?string
+    {
+        $assertion = self::getSingleAssertion($clause);
+
+        return $assertion !== null
+            && $assertion[1] instanceof IsNotType
+            && $assertion[1]->type instanceof TNull
+                ? $assertion[0]
+                : null;
+    }
+
+    /**
+     * The variable and the assertion of a clause that has no other possibility
+     *
+     * @return array{string, Assertion}|null
+     * @psalm-pure
+     */
+    private static function getSingleAssertion(Clause $clause): ?array
+    {
+        if (count($clause->possibilities) !== 1) {
+            return null;
+        }
+
+        $var_id = array_key_first($clause->possibilities);
+
+        return count($clause->possibilities[$var_id]) === 1
+            ? [$var_id, reset($clause->possibilities[$var_id])]
+            : null;
+    }
+
     /**
      * `in-array-X` doesn't say which array the value was looked up in: two equal ones are not a repetition
      *
@@ -80,13 +140,28 @@ final class AlgebraAnalyzer
 
         $formula_2_hashes = [];
 
+        $isset_var_ids = [];
+
+        foreach ($formula_1 as $formula_1_clause) {
+            $isset_var_id = self::getIssetVarId($formula_1_clause);
+
+            if ($isset_var_id !== null) {
+                $isset_var_ids[$isset_var_id] = true;
+            }
+        }
+
         foreach ($formula_2 as $formula_2_clause) {
             $hash = $formula_2_clause->hash;
+
+            $not_null_var_id = self::getNotNullVarId($formula_2_clause);
 
             if (!$formula_2_clause->generated
                 && !$formula_2_clause->wedge
                 && $formula_2_clause->reconcilable
-                && (isset($formula_1_hashes[$hash]) || isset($formula_2_hashes[$hash]))
+                && (isset($formula_1_hashes[$hash])
+                    || isset($formula_2_hashes[$hash])
+                    // isset($x) already says that $x is not null
+                    || ($not_null_var_id !== null && isset($isset_var_ids[$not_null_var_id])))
                 && !array_intersect_key($new_assigned_var_ids, $formula_2_clause->possibilities)
                 && !self::hasInArrayPossibility($formula_2_clause)
             ) {
@@ -101,6 +176,12 @@ final class AlgebraAnalyzer
             }
 
             $formula_2_hashes[$hash] = true;
+
+            $isset_var_id = self::getIssetVarId($formula_2_clause);
+
+            if ($isset_var_id !== null) {
+                $isset_var_ids[$isset_var_id] = true;
+            }
         }
 
         $implication = self::findImplication($formula_1, $negated_formula2);
