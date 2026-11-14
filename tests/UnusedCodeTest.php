@@ -410,6 +410,58 @@ final class UnusedCodeTest extends TestCase
         );
     }
 
+    public function testParamsOfMethodWithUnanalysedBodyAreNotReportedUnused(): void
+    {
+        $this->project_analyzer->getConfig()->throw_exception = false;
+        $file_path = self::$src_dir_path . 'somefile.php';
+
+        $this->addFile(
+            $file_path,
+            '<?php
+                interface AA extends Missing\ABC {}
+
+                final class A {
+                    private AA $a;
+                    private string $b;
+                    private Undefined\Foo $c;
+
+                    public function __construct(AA $a, string $b, Undefined\Foo $c) {
+                        $this->a = $a;
+                        $this->b = $b;
+                        $this->c = $c;
+                    }
+
+                    public function usedByNobody(AA $a): void {
+                        echo get_class($a);
+                    }
+                }
+
+                echo A::class;',
+        );
+        $this->analyzeFile($file_path, new Context(), false);
+        $this->project_analyzer->consolidateAnalyzedData();
+
+        $types = array_column(IssueBuffer::getIssuesDataForFile($file_path), 'type');
+        sort($types);
+
+        self::assertSame(
+            [
+                'MissingDependency',
+                'MissingDependency',
+                'MissingDependency',
+                'PossiblyUnusedMethod',
+                'PossiblyUnusedMethod',
+                'UndefinedClass',
+                'UndefinedClass',
+                'UndefinedClass',
+                'UnusedProperty',
+                'UnusedProperty',
+                'UnusedProperty',
+            ],
+            $types,
+        );
+    }
+
     public function testSeesUnusedClassReferencedByUnevaluatedCode(): void
     {
         $this->project_analyzer->getConfig()->throw_exception = false;
