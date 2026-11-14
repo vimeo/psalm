@@ -18,6 +18,7 @@ use Psalm\Internal\Type\TemplateDefaults;
 use Psalm\Internal\Type\TemplateInferredTypeReplacer;
 use Psalm\Internal\Type\TemplateResult;
 use Psalm\Internal\Type\TypeAlias\ClassTypeAlias;
+use Psalm\Internal\TypeVisitor\ContainsTemplateExpressionVisitor;
 use Psalm\Issue\CircularReference;
 use Psalm\Issue\UndefinedTrait;
 use Psalm\IssueBuffer;
@@ -1956,6 +1957,14 @@ final class Populator
                     : $documenting_property_storage->signature_type !== null
                         && $property_storage->signature_type->equals($documenting_property_storage->signature_type))
             ) {
+                continue;
+            }
+
+            // localizing a type computed from templates takes a Codebase, which population has not
+            $template_expression_finder = new ContainsTemplateExpressionVisitor();
+            $template_expression_finder->traverse($documenting_property_storage->type);
+
+            if ($template_expression_finder->matches()) {
                 continue;
             }
 

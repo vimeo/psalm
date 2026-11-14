@@ -557,6 +557,25 @@ final class PropertyTypeInvarianceTest extends TestCase
                     '$names===' => 'list<non-empty-string>',
                 ],
             ],
+            'propertyTypeComputedFromTemplatesIsNotInherited' => [
+                'code' => '<?php
+                    /** @template T */
+                    class ParentClass {
+                        /** @var (T is string ? list<string> : list<int>) */
+                        public array $items = [];
+                    }
+
+                    /** @extends ParentClass<string> */
+                    final class ChildClass extends ParentClass {
+                        public array $items = [];
+                    }
+
+                    $items = (new ChildClass())->items;',
+                'assertions' => [
+                    '$items===' => 'array<array-key, mixed>',
+                ],
+                'ignored_issues' => ['NonInvariantDocblockPropertyType'],
+            ],
             'propertyOfAnImplementedInterface' => [
                 'code' => '<?php
                     interface HasName {
