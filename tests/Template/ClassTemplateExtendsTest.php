@@ -196,7 +196,7 @@ final class ClassTemplateExtendsTest extends TestCase
                 'assertions' => [
                     '$result===' => 'null|string',
                 ],
-                'ignored_issues' => ['MissingOverrideAttribute'],
+                'ignored_issues' => [],
                 'php_version' => '8.0',
             ],
             'implementedTemplateWithOwnTemplateIsResolvedAtTheCall' => [
@@ -226,7 +226,6 @@ final class ClassTemplateExtendsTest extends TestCase
                 'assertions' => [
                     '$items===' => 'list<int>',
                 ],
-                'ignored_issues' => ['MissingOverrideAttribute'],
             ],
             'inheritedDocblockReturnTypeResolvesThroughSubclassTemplates' => [
                 'code' => '<?php
