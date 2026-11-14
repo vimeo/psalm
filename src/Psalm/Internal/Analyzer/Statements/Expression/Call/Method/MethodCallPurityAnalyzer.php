@@ -20,6 +20,7 @@ use Psalm\Internal\Analyzer\Statements\Expression\GlobalStateAnalyzer;
 use Psalm\Internal\Analyzer\Statements\ReturnAnalyzer;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\Internal\MethodIdentifier;
+use Psalm\Internal\Type\Comparator\UnionTypeComparator;
 use Psalm\Internal\Type\TemplateResult;
 use Psalm\Issue\ImpureMethodCall;
 use Psalm\Issue\UnusedMethodCall;
@@ -27,6 +28,7 @@ use Psalm\IssueBuffer;
 use Psalm\Storage\Capabilities;
 use Psalm\Storage\ClassLikeStorage;
 use Psalm\Storage\MethodStorage;
+use Psalm\Storage\PropertyStorage;
 use Psalm\Type;
 use Psalm\Type\Atomic;
 use Psalm\Type\Atomic\TNamedObject;
@@ -589,11 +591,9 @@ final class MethodCallPurityAnalyzer
             // may be NONE while the callee still writes its own properties.
             $context->removeMutableObjectVars(
                 true,
-                // the call writes nothing but properties of its receiver (and its by-reference arguments, which
-                // the caller forgets)
-                preserved_methods: ($method_storage->writes_only_this_properties
-                        || ($callee_capabilities & Capabilities::WRITE_PROPS) === 0)
-                    && ($template_capabilities & (Capabilities::WRITE_PROPS | Capabilities::WRITE_THIS_PROPS)) === 0
+                // an override may do anything
+                preserved_methods: $method_storage->writes_only_this_properties
+                    && !$method_storage->overridden_downstream
                     ? self::getUnaffectedPropertyGetters(
                         $context,
                         $codebase,
@@ -649,13 +649,14 @@ final class MethodCallPurityAnalyzer
      * is kept like what is known of a property of another object, unless
      * - the getter is called on the receiver of the call or on what it holds (the call may write anything there,
      *   through the other methods of the receiver it calls),
-     * - the getter returns a property of the name of one the call writes (the two objects may be the same, or the
-     *   two properties bound by reference),
-     * - reading the property may run code (`__get` when it was unset).
+     * - the getter returns a property of the name of one the call writes (the two objects may be the same),
+     * - the result may be the value of a property the call writes (the two properties may be bound by reference:
+     *   a value they share is of the native types of both),
+     * - writing or reading the properties may run code (a hook, `__set` or `__get` when the property was unset),
+     * - the getter may be overridden.
      *
      * @param array<string, bool> $written_properties
      * @return array<string, true>
-     * @psalm-capabilities read-props
      */
     private static function getUnaffectedPropertyGetters(
         Context $context,
@@ -664,10 +665,20 @@ final class MethodCallPurityAnalyzer
         ClassLikeStorage $receiver_class,
         array $written_properties,
     ): array {
-        if ($receiver_id === null
-            || !self::writesOnlyPlainProperties($codebase, $receiver_class, $written_properties)
-        ) {
+        if ($receiver_id === null || isset($receiver_class->declaring_method_ids['__set'])) {
             return [];
+        }
+
+        $written_types = [];
+
+        foreach ($written_properties as $name => $_) {
+            $property = self::getPlainProperty($codebase, $receiver_class, $name);
+
+            if ($property === null) {
+                return [];
+            }
+
+            $written_types[] = $property->signature_type ?? Type::getMixed();
         }
 
         $preserved = [];
@@ -702,49 +713,49 @@ final class MethodCallPurityAnalyzer
                 }
             }
 
-            if ($is_property_getter) {
-                $preserved[$var_id] = true;
+            if (!$is_property_getter) {
+                continue;
             }
+
+            foreach ($written_types as $written_type) {
+                if (UnionTypeComparator::canExpressionTypesBeIdentical($codebase, $type, $written_type)) {
+                    continue 2;
+                }
+            }
+
+            $preserved[$var_id] = true;
         }
 
         return $preserved;
     }
 
     /**
-     * Whether writing these properties of an object of this class cannot run code (a hook, or `__set` when the
-     * property was unset)
+     * A declared property of the objects of this class whose reads and writes cannot run code
      *
-     * @param array<string, bool> $written_properties
      * @psalm-capabilities read-props
      */
-    private static function writesOnlyPlainProperties(
+    private static function getPlainProperty(
         Codebase $codebase,
         ClassLikeStorage $class_storage,
-        array $written_properties,
-    ): bool {
-        if (isset($class_storage->declaring_method_ids['__set'])) {
-            return false;
+        string $name,
+    ): ?PropertyStorage {
+        $declaring_class = $class_storage->declaring_property_ids[$name] ?? null;
+        $property = $declaring_class !== null && $codebase->classlike_storage_provider->has($declaring_class)
+            ? $codebase->classlike_storage_provider->get($declaring_class)->properties[$name] ?? null
+            : null;
+
+        if ($property === null
+            || $property->hook_get !== null
+            || $property->hook_set !== null
+            // a subclass may redeclare the property with a hook
+            || (!$class_storage->final
+                && $property->visibility !== ClassLikeAnalyzer::VISIBILITY_PRIVATE
+                && $codebase->analysis_php_version_id >= 8_04_00)
+        ) {
+            return null;
         }
 
-        foreach ($written_properties as $name => $_) {
-            $declaring_class = $class_storage->declaring_property_ids[$name] ?? null;
-            $property = $declaring_class !== null && $codebase->classlike_storage_provider->has($declaring_class)
-                ? $codebase->classlike_storage_provider->get($declaring_class)->properties[$name] ?? null
-                : null;
-
-            if ($property === null
-                || $property->hook_get !== null
-                || $property->hook_set !== null
-                // a subclass may redeclare the property with a hook
-                || (!$class_storage->final
-                    && $property->visibility !== ClassLikeAnalyzer::VISIBILITY_PRIVATE
-                    && $codebase->analysis_php_version_id >= 8_04_00)
-            ) {
-                return false;
-            }
-        }
-
-        return true;
+        return $property;
     }
 
     /**
@@ -758,18 +769,19 @@ final class MethodCallPurityAnalyzer
         string $fq_class_name,
         string $method_name,
     ): ?string {
-        if (!$codebase->classlike_storage_provider->has($fq_class_name)
-            || isset($codebase->classlike_storage_provider->get($fq_class_name)->declaring_method_ids['__get'])
-        ) {
+        if (!$codebase->classlike_storage_provider->has($fq_class_name)) {
             return null;
         }
 
+        $class_storage = $codebase->classlike_storage_provider->get($fq_class_name);
         $declaring_method_id = $codebase->methods->getDeclaringMethodId(
             new MethodIdentifier($fq_class_name, $method_name),
         );
 
-        if ($declaring_method_id === null
+        if (isset($class_storage->declaring_method_ids['__get'])
+            || $declaring_method_id === null
             || !$codebase->classlike_storage_provider->has($declaring_method_id->fq_class_name)
+            || $codebase->methods->getStorage($declaring_method_id)->overridden_downstream
         ) {
             return null;
         }
@@ -777,8 +789,9 @@ final class MethodCallPurityAnalyzer
         $declaring_class = $codebase->classlike_storage_provider->get($declaring_method_id->fq_class_name);
 
         foreach ($declaring_class->properties as $name => $property) {
+            // the property read is that of the class of the object, which may redeclare it
             if ($property->getter_method === $method_name) {
-                return $name;
+                return self::getPlainProperty($codebase, $class_storage, $name) !== null ? $name : null;
             }
         }
 

@@ -3220,6 +3220,7 @@ final class CapabilitiesTest extends TestCase
                     }
                     PHP,
                 'error_message' => 'NullableReturnStatement',
+                'error_levels' => [],
                 'php_version' => '8.4',
             ],
             'differentFinalClassesCanShareScalarPropertyByReference' => [
@@ -3405,6 +3406,163 @@ final class CapabilitiesTest extends TestCase
                         $runner->run(function () use ($owner): void {
                             $owner->child = null;
                         });
+                        return $owner->getChild();
+                    }',
+                'error_message' => 'NullableReturnStatement',
+            ],
+            'overriddenMutatorMustNotKeepGetter' => [
+                'code' => '<?php
+                    final class Child {}
+                    final class Owner {
+                        public ?Child $child = null;
+                        /** @psalm-mutation-free */
+                        public function getChild(): ?Child { return $this->child; }
+                    }
+                    class Counter {
+                        private int $n = 0;
+                        public function touch(): void { ++$this->n; }
+                    }
+                    final class ClearingCounter extends Counter {
+                        public function __construct(private Owner $owner) {}
+                        public function touch(): void { $this->owner->child = null; }
+                    }
+                    function afterTouch(Owner $owner, Counter $counter): Child {
+                        if ($owner->getChild() === null) {
+                            return new Child();
+                        }
+                        $counter->touch();
+                        return $owner->getChild();
+                    }',
+                'error_message' => 'NullableReturnStatement',
+            ],
+            'mutatorWritingThroughAnotherMethodMustNotKeepGetterOfAnAlias' => [
+                'code' => '<?php
+                    final class Box {
+                        private int $n = 0;
+                        private ?stdClass $child = null;
+                        /** @psalm-mutation-free */
+                        public function getChild(): ?stdClass { return $this->child; }
+                        /** @psalm-capabilities read-props|write-this-props */
+                        public function touch(): void {
+                            ++$this->n;
+                            $this->clearChild();
+                        }
+                        /** @psalm-capabilities read-props|write-this-props */
+                        private function clearChild(): void { $this->child = null; }
+                    }
+                    function afterTouch(Box $a, Box $b): stdClass {
+                        if ($a->getChild() === null) {
+                            return new stdClass();
+                        }
+                        $b->touch();
+                        return $a->getChild();
+                    }',
+                'error_message' => 'NullableReturnStatement',
+            ],
+            'differentlyNamedPropertiesOfCompatibleTypesCanShareAReference' => [
+                'code' => '<?php
+                    final class A {
+                        public ?string $value = "x";
+                        /** @psalm-mutation-free */
+                        public function getValue(): ?string { return $this->value; }
+                    }
+                    final class B {
+                        public ?string $slot = "x";
+                        public function clear(): void { $this->slot = null; }
+                    }
+                    function getAfterClear(A $a, B $b): string {
+                        if ($a->getValue() === null) {
+                            return "";
+                        }
+                        // $b->slot =& $a->value;
+                        $b->clear();
+                        return $a->getValue();
+                    }',
+                'error_message' => 'NullableReturnStatement',
+            ],
+            'overriddenGetterMustBeForgotten' => [
+                'code' => '<?php
+                    final class Child {}
+                    final class Counter {
+                        public int $n = 0;
+                        public function inc(): void { ++$this->n; }
+                    }
+                    class Owner {
+                        public ?Child $child = null;
+                        /** @psalm-mutation-free */
+                        public function getChild(): ?Child { return $this->child; }
+                    }
+                    final class CountingOwner extends Owner {
+                        public function __construct(private Counter $counter) {}
+                        /** @psalm-mutation-free */
+                        public function getChild(): ?Child { return $this->counter->n === 0 ? $this->child : null; }
+                    }
+                    function afterIncrement(Owner $owner, Counter $counter): Child {
+                        if ($owner->getChild() === null) {
+                            return new Child();
+                        }
+                        $counter->inc();
+                        return $owner->getChild();
+                    }',
+                'error_message' => 'NullableReturnStatement',
+            ],
+            'inheritedGetterOfAPropertyRedeclaredWithAHookMustBeForgotten' => [
+                'code' => '<?php
+                    final class Child {}
+                    final class Counter {
+                        public int $n = 0;
+                        public function inc(): void { ++$this->n; }
+                    }
+                    class Owner {
+                        public ?Child $child = null;
+                        /** @psalm-mutation-free */
+                        public function getChild(): ?Child { return $this->child; }
+                    }
+                    final class HookedOwner extends Owner {
+                        public function __construct(private Counter $counter) {}
+                        public ?Child $child = null {
+                            get => $this->counter->n === 0 ? $this->child : null;
+                        }
+                    }
+                    function afterIncrement(HookedOwner $owner, Counter $counter): Child {
+                        if ($owner->getChild() === null) {
+                            return new Child();
+                        }
+                        $counter->inc();
+                        return $owner->getChild();
+                    }',
+                'error_message' => 'NullableReturnStatement',
+                'error_levels' => [],
+                'php_version' => '8.4',
+            ],
+            'exceptionConstructedAndCaughtByTheMutatorMustNotKeepGetter' => [
+                'code' => '<?php
+                    final class Child {}
+                    final class Owner {
+                        public ?Child $child = null;
+                        /** @psalm-mutation-free */
+                        public function getChild(): ?Child { return $this->child; }
+                    }
+                    final class ResetException extends Exception {
+                        public function __construct(Owner $owner) {
+                            $owner->child = null;
+                            parent::__construct();
+                        }
+                    }
+                    final class Other {
+                        private int $n = 0;
+                        public function touch(Owner $owner): void {
+                            ++$this->n;
+                            try {
+                                throw new ResetException($owner);
+                            } catch (ResetException $e) {}
+                        }
+                    }
+                    function afterTouch(Owner $owner, Other $other): Child {
+                        if ($owner->getChild() === null) {
+                            return new Child();
+                        }
+                        $other->touch($owner);
                         return $owner->getChild();
                     }',
                 'error_message' => 'NullableReturnStatement',
