@@ -619,6 +619,38 @@ final class ArrayAccessTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'falseOffsetOfAnArrayAccessObjectIsNotReportedAsZero' => [
+                'code' => '<?php
+                    /** @implements ArrayAccess<int|false, string> */
+                    final class Bag implements ArrayAccess {
+                        #[Override]
+                        public function offsetExists(mixed $offset): bool {
+                            return true;
+                        }
+
+                        #[Override]
+                        public function offsetGet(mixed $offset): string {
+                            return "x";
+                        }
+
+                        #[Override]
+                        public function offsetSet(mixed $offset, mixed $value): void {}
+
+                        #[Override]
+                        public function offsetUnset(mixed $offset): void {}
+                    }
+
+                    function read(Bag $bag): string {
+                        $key = array_search("a", ["a"]);
+                        $bag[$key] = "y";
+                        unset($bag[$key]);
+
+                        return $bag[$key];
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
             'coalesceOnAnIntKeyThatMayBeMissingKeepsTheFoundType' => [
                 'code' => '<?php
                     $a = [1 => "Hello"];
@@ -1672,6 +1704,26 @@ final class ArrayAccessTest extends TestCase
                         return $foo[bar($key)] ?? $default;
                     }',
             ],
+            'falseOffsetOfInternalFunctionIsIgnoredWhenConfigured' => [
+                'code' => '<?php
+                    /** @param array<int, string> $a */
+                    function f(array $a, string $file): string {
+                        return $a[filesize($file)];
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'falseOffsetInIssetIsNotReported' => [
+                'code' => '<?php
+                    /** @param array<int, string> $a */
+                    function f(array $a, int|false $k): string {
+                        return $a[$k] ?? "";
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
         ];
     }
 
@@ -1682,6 +1734,15 @@ final class ArrayAccessTest extends TestCase
     public static function providerInvalidCodeParse(): iterable
     {
         return [
+            'possiblyFalseOffsetOfAnArrayVariableNamesTheVariable' => [
+                'code' => '<?php
+                    function read(array $items): void {
+                        $key = array_search("a", $items);
+
+                        echo $items[$key];
+                    }',
+                'error_message' => 'PossiblyInvalidArrayOffset - src' . DIRECTORY_SEPARATOR . 'somefile.php:5:30 - Cannot access value on variable $items using possibly false offset array-key|false, which is 0',
+            ],
             'intRangeOffsetPartlyInsideTheKeysOfAList' => [
                 'code' => '<?php
                     function f(int $i): void {
@@ -2199,6 +2260,47 @@ final class ArrayAccessTest extends TestCase
                 }
                 PHP,
                 'error_message' => 'NamedArgumentNotAllowed',
+            ],
+            'possiblyFalseOffsetOfArraySearch' => [
+                'code' => '<?php
+                    /** @param array<int, string> $a */
+                    function f(array $a): void {
+                        $found = array_search("d", $a);
+                        unset($a[$found]);
+                    }',
+                'error_message' => 'PossiblyInvalidArrayOffset',
+                'error_levels' => [],
+                'php_version' => '8.0',
+            ],
+            'possiblyFalseOffsetRead' => [
+                'code' => '<?php
+                    /** @param array<int, string> $a */
+                    function f(array $a, int|false $k): string {
+                        return $a[$k];
+                    }',
+                'error_message' => 'PossiblyInvalidArrayOffset',
+                'error_levels' => [],
+                'php_version' => '8.0',
+            ],
+            'possiblyFalseOffsetAssignment' => [
+                'code' => '<?php
+                    /** @param array<int, string> $a */
+                    function f(array $a, int|false $k): void {
+                        $a[$k] = "x";
+                    }',
+                'error_message' => 'PossiblyInvalidArrayOffset',
+                'error_levels' => [],
+                'php_version' => '8.0',
+            ],
+            'falseOffsetRead' => [
+                'code' => '<?php
+                    /** @param array<int, string> $a */
+                    function f(array $a): string {
+                        return $a[false];
+                    }',
+                'error_message' => 'InvalidArrayOffset',
+                'error_levels' => [],
+                'php_version' => '8.0',
             ],
         ];
     }
