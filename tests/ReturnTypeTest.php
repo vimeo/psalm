@@ -867,6 +867,50 @@ final class ReturnTypeTest extends TestCase
                         }
                     }',
             ],
+            'switchWhoseCasesFallThroughIntoADefaultThatEnds' => [
+                'code' => '<?php
+                    function toEnd(int $value): int {
+                        switch ($value) {
+                            case 0:
+                                echo "zero";
+                            default:
+                                return 2;
+                        }
+                    }
+
+                    function toThrow(int $value): int {
+                        switch ($value) {
+                            case 0:
+                                return 1;
+                            case 1:
+                                echo "one";
+                            default:
+                                throw new Exception();
+                        }
+                    }',
+            ],
+            'switchWithADefaultInTheMiddleThatFallsThroughIntoAnEndingCase' => [
+                'code' => '<?php
+                    function defaultFirst(int $x): int {
+                        switch ($x) {
+                            default:
+                                echo "x";
+                            case 1:
+                                return 1;
+                        }
+                    }
+
+                    function defaultBetween(int $x): int {
+                        switch ($x) {
+                            case 0:
+                                return 0;
+                            default:
+                                echo "x";
+                            case 1:
+                                throw new Exception();
+                        }
+                    }',
+            ],
             'extendsStaticCallReturnType' => [
                 'code' => '<?php
                     /**
@@ -2371,6 +2415,70 @@ final class ReturnTypeTest extends TestCase
     public static function providerInvalidCodeParse(): iterable
     {
         return [
+            'switchWithADefaultInTheMiddleThatFallsThroughIntoACaseThatDoesNotEnd' => [
+                'code' => '<?php
+                    function classify(int $x): int {
+                        switch ($x) {
+                            default:
+                                echo "x";
+                            case 1:
+                                echo "one";
+                        }
+                    }',
+                'error_message' => 'InvalidReturnType',
+            ],
+            'switchWithADefaultInTheMiddleFollowedByABreak' => [
+                'code' => '<?php
+                    function classify(int $x): int {
+                        switch ($x) {
+                            default:
+                                echo "x";
+                            case 1:
+                                return 1;
+                            case 2:
+                                break;
+                        }
+                    }',
+                'error_message' => 'InvalidReturnType',
+            ],
+            'switchDefaultThatFallsThroughWithoutReturning' => [
+                'code' => '<?php
+                    function classify(int $value): int {
+                        switch ($value) {
+                            case 0:
+                                return 1;
+                            default:
+                                echo "Other value";
+                        }
+                    }',
+                'error_message' => 'InvalidReturnType',
+            ],
+            'switchCaseThatFallsThroughIntoADefaultWithoutReturning' => [
+                'code' => '<?php
+                    function classify(int $value): int {
+                        switch ($value) {
+                            case 0:
+                                return 1;
+                            case 1:
+                                echo "one";
+                            default:
+                                echo "other";
+                        }
+                    }',
+                'error_message' => 'InvalidReturnType',
+            ],
+            'switchDefaultThatBreaksWithoutReturning' => [
+                'code' => '<?php
+                    function classify(int $value): int {
+                        switch ($value) {
+                            case 0:
+                                return 1;
+                            default:
+                                break;
+                        }
+                    }',
+                'error_message' => 'InvalidReturnType',
+            ],
             'finalMethodOfASubclassableClassKeepsItsStaticReturnType' => [
                 'code' => <<<'PHP'
                     <?php
