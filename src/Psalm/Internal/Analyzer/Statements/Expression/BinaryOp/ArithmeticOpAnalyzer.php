@@ -1347,7 +1347,7 @@ final class ArithmeticOpAnalyzer
 
         // the loop is analysed a fixed number of times, so a bound that keeps moving with every
         // `+=`/`-=` of a range is unbounded
-        if ($widen_range && $right_type_part->min_bound !== $right_type_part->max_bound) {
+        if ($widen_range && ($right_type_part->min_bound !== 0 || $right_type_part->max_bound !== 0)) {
             $is_minus = $parent instanceof PhpParser\Node\Expr\BinaryOp\Minus;
             $grows_up = $is_minus ? $right_type_part->min_bound : $right_type_part->max_bound;
             $grows_down = $is_minus ? $right_type_part->max_bound : $right_type_part->min_bound;

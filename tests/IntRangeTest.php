@@ -34,6 +34,34 @@ final class IntRangeTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'loopThatAddsAConstantOrIncrementsWidensTheRange' => [
+                'code' => <<<'PHP'
+                    <?php
+                    function f(): void {
+                        $by_constant = rand(0, 10);
+                        while (rand()) {
+                            $by_constant += 3;
+                        }
+
+                        $incremented = rand(0, 10);
+                        while (rand()) {
+                            $incremented++;
+                        }
+
+                        $decremented = rand(0, 10);
+                        while (rand()) {
+                            $decremented -= 2;
+                        }
+
+                        /** @psalm-check-type-exact $by_constant = int<0, max> */
+                        /** @psalm-check-type-exact $incremented = int<0, max> */
+                        /** @psalm-check-type-exact $decremented = int<min, 10> */
+                    }
+                    PHP,
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
             'comparisonsNarrowTheRangeNextToItsBounds' => [
                 'code' => '<?php
                     /**
