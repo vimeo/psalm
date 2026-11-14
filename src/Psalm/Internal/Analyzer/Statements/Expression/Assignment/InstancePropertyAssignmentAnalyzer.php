@@ -1390,6 +1390,13 @@ final class InstancePropertyAssignmentAnalyzer
 
         $set_method_id = new MethodIdentifier($fq_class_name, '__set');
 
+        $has_pseudo_property_without_magic_setter = self::hasPseudoPropertyWithoutMagicSetter(
+            $codebase,
+            $class_exists,
+            $fq_class_name,
+            $prop_name,
+        );
+
         if ((!$codebase->propertyExists($property_id, false, $statements_analyzer, $context)
                 || ($lhs_var_id !== '$this'
                     && $fq_class_name !== $context->self
@@ -1403,18 +1410,19 @@ final class InstancePropertyAssignmentAnalyzer
                         true,
                     ) !== true)
             )
-            && $codebase->methodExists(
-                $set_method_id,
-                $context->calling_method_id,
-                $codebase->collect_locations
-                    ? new CodeLocation($statements_analyzer->getSource(), $stmt)
-                    : null,
-                !$context->collect_initializations
-                && !$context->collect_mutations
-                    ? $statements_analyzer
-                    : null,
-                $statements_analyzer->getFilePath(),
-            )
+            && ($has_pseudo_property_without_magic_setter
+                || $codebase->methodExists(
+                    $set_method_id,
+                    $context->calling_method_id,
+                    $codebase->collect_locations
+                        ? new CodeLocation($statements_analyzer->getSource(), $stmt)
+                        : null,
+                    !$context->collect_initializations
+                    && !$context->collect_mutations
+                        ? $statements_analyzer
+                        : null,
+                    $statements_analyzer->getFilePath(),
+                ))
         ) {
             $has_magic_setter = true;
             $class_storage = $codebase->classlike_storage_provider->get($fq_class_name);
@@ -1450,7 +1458,9 @@ final class InstancePropertyAssignmentAnalyzer
                 }
             }
 
-            if ($assignment_value) {
+            if ($assignment_value
+                && (!$has_pseudo_property_without_magic_setter || isset($class_storage->declaring_method_ids['__set']))
+            ) {
                 self::analyzeSetCall(
                     $var_id,
                     $context,
@@ -1952,6 +1962,29 @@ final class InstancePropertyAssignmentAnalyzer
         }
 
         return $lhs_type_part instanceof TGenericObject ? $lhs_type_part : null;
+    }
+
+    /**
+     * Whether `@property` or `@property-write` declares the property although there is no `__set`, and
+     * `usePhpDocPropertiesWithoutMagicCall` or `#[AllowDynamicProperties]` lets it stand in for one
+     *
+     * @psalm-capabilities read-props
+     */
+    private static function hasPseudoPropertyWithoutMagicSetter(
+        Codebase $codebase,
+        bool $class_exists,
+        string $fq_class_name,
+        string $prop_name,
+    ): bool {
+        if (!$class_exists) {
+            return false;
+        }
+
+        $class_storage = $codebase->classlike_storage_provider->get($fq_class_name);
+
+        return isset($class_storage->pseudo_property_set_types['$' . $prop_name])
+            && ($codebase->config->use_phpdoc_property_without_magic_or_parent
+                || $class_storage->hasAttributeIncludingParents('AllowDynamicProperties', $codebase));
     }
 
     private static function analyzeSetCall(
