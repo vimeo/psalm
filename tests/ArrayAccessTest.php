@@ -17,6 +17,7 @@ use function array_keys;
 use function array_merge;
 use function array_values;
 use function ksort;
+use function sort;
 use function str_contains;
 
 use const DIRECTORY_SEPARATOR;
@@ -612,6 +613,138 @@ final class ArrayAccessTest extends TestCase
         );
     }
 
+    public function testOffsetOfANullableArrayIsReportedWhereItIsFirstRead(): void
+    {
+        $this->project_analyzer->getConfig()->throw_exception = false;
+        $this->project_analyzer->setPhpVersion('8.1', 'tests');
+        $file_path = self::$src_dir_path . 'somefile.php';
+
+        $this->addFile(
+            $file_path,
+            '<?php
+                /** @param array<string, string>|null $a */
+                function truthy(?array $a): void {
+                    if ($a["k"] && strlen($a["k"]) > 1) { echo 1; }
+                }
+
+                /** @param array<string, string|null>|null $a */
+                function notNull(?array $a): void {
+                    if ($a["k"] !== null && strlen($a["k"]) > 1) { echo 1; }
+                }
+
+                /** @param array<string, list<string>|int>|null $a */
+                function isArr(?array $a): void {
+                    if (is_array($a["k"]) && count($a["k"]) > 0) { echo 1; }
+                }
+
+                /** @param array<string, list<string>>|null $lists */
+                function unguarded(?array $lists): void {
+                    if (isset($lists["codes"]) && is_array($lists["codes"])) { echo 1; }
+                    if (is_array($lists["codes"])) { echo 2; }
+                }',
+        );
+        $this->analyzeFile($file_path, new Context());
+
+        $lines = [];
+        foreach (IssueBuffer::getIssuesDataForFile($file_path) as $issue) {
+            if ($issue->type === 'PossiblyNullArrayAccess') {
+                $lines[] = $issue->line_from;
+            }
+        }
+
+        $this->assertSame([4, 9, 14, 20], $lines);
+    }
+
+    public function testRepeatedReadOfAnOffsetOfANullableArrayIsReportedOnce(): void
+    {
+        $this->project_analyzer->getConfig()->throw_exception = false;
+        $this->project_analyzer->setPhpVersion('8.1', 'tests');
+        $file_path = self::$src_dir_path . 'somefile.php';
+
+        $this->addFile(
+            $file_path,
+            '<?php
+                /** @param list<string>|null $m */
+                function repeated(?array $m): void {
+                    echo $m[0];
+                    echo $m[0];
+                }',
+        );
+        $this->analyzeFile($file_path, new Context());
+
+        $lines = [];
+        foreach (IssueBuffer::getIssuesDataForFile($file_path) as $issue) {
+            if ($issue->type === 'PossiblyNullArrayAccess') {
+                $lines[] = $issue->line_from;
+            }
+        }
+
+        $this->assertSame([4], $lines);
+    }
+
+    public function testOffsetOfANullableArrayIsReportedAgainAfterTheArrayChanged(): void
+    {
+        $this->project_analyzer->getConfig()->throw_exception = false;
+        $this->project_analyzer->setPhpVersion('8.1', 'tests');
+        $file_path = self::$src_dir_path . 'somefile.php';
+
+        $this->addFile(
+            $file_path,
+            '<?php
+                /**
+                 * @param list<string>|null $m
+                 * @param list<string>|null $n
+                 */
+                function branch(?array $m, ?array $n): void {
+                    echo $m[0];
+                    if (rand(0, 1)) { $m = $n; }
+                    if (isset($m[0]) && is_string($m[0])) { echo 1; }
+                    echo $m[0];
+                }
+
+                final class P {
+                    /** @var list<string>|null */
+                    public ?array $d = null;
+                    public function mutate(): void { $this->d = null; }
+                    public function f(): void {
+                        echo $this->d[0];
+                        $this->mutate();
+                        if (isset($this->d[0]) && is_string($this->d[0])) { echo 1; }
+                        echo $this->d[0];
+                    }
+                }
+
+                /** @param list<string>|null $m */
+                function loop(?array $m): void {
+                    echo $m[0];
+                    foreach ([1, 2] as $_) {
+                        if (rand(0, 1)) { $m = null; }
+                    }
+                    if (isset($m[0]) && is_string($m[0])) { echo 1; }
+                    echo $m[0];
+                }
+
+                /** @param list<string>|null $m */
+                function unchangedByTheBranch(?array $m): void {
+                    echo $m[0];
+                    if (rand(0, 1)) { echo 2; }
+                    echo $m[0];
+                }',
+        );
+        $this->analyzeFile($file_path, new Context());
+
+        $lines = [];
+        foreach (IssueBuffer::getIssuesDataForFile($file_path) as $issue) {
+            if ($issue->type === 'PossiblyNullArrayAccess') {
+                $lines[] = $issue->line_from;
+            }
+        }
+
+        sort($lines);
+
+        $this->assertSame([7, 10, 18, 21, 27, 32, 37], $lines);
+    }
+
     /**
      * @psalm-pure
      */
@@ -619,6 +752,24 @@ final class ArrayAccessTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'offsetOfANullableArrayIsReadInsideTheGuardsThatNarrowIt' => [
+                'code' => '<?php
+                    /** @param array<string, list<string>>|null $lists */
+                    function guarded(?array $lists): int {
+                        if (isset($lists["codes"]) && is_array($lists["codes"])) {
+                            return count($lists["codes"]);
+                        }
+
+                        if ($lists !== null && is_array($lists["codes"] ?? null)) {
+                            return 1;
+                        }
+
+                        return 0;
+                    }',
+                'assertions' => [],
+                'ignored_issues' => ['RedundantConditionGivenDocblockType', 'DocblockTypeContradiction'],
+                'php_version' => '8.1',
+            ],
             'coalesceOnAnIntKeyThatMayBeMissingKeepsTheFoundType' => [
                 'code' => '<?php
                     $a = [1 => "Hello"];
@@ -1682,6 +1833,24 @@ final class ArrayAccessTest extends TestCase
     public static function providerInvalidCodeParse(): iterable
     {
         return [
+            'offsetOfANullableArrayAfterAnIssetGuardIsPossiblyNull' => [
+                'code' => '<?php
+                    /** @param array<string, list<string>>|null $lists */
+                    function unguarded(?array $lists): int {
+                        if (isset($lists["codes"]) && is_array($lists["codes"])) {
+                            echo count($lists["codes"]);
+                        }
+
+                        if (is_array($lists["codes"])) {
+                            return 1;
+                        }
+
+                        return 0;
+                    }',
+                'error_message' => 'PossiblyNullArrayAccess',
+                'error_levels' => ['RedundantConditionGivenDocblockType'],
+                'php_version' => '8.1',
+            ],
             'intRangeOffsetPartlyInsideTheKeysOfAList' => [
                 'code' => '<?php
                     function f(int $i): void {
