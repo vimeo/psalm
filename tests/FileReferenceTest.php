@@ -391,6 +391,36 @@ final class FileReferenceTest extends TestCase
                 'A::foo',
                 ['7:32:foo'],
             ],
+            'getMethodLocationWithUsedReturnValue' => [
+                '<?php
+                    final class A {
+                        public function foo(): ?string {
+                            return null;
+                        }
+                    }
+
+                    function f(A $a): string {
+                        return $a->foo() ?? "";
+                    }
+
+                    function g(A $a): void {
+                        $a->foo();
+                    }',
+                'A::foo',
+                ['9:36:foo', '13:29:foo'],
+            ],
+            'getInterfaceMethodLocationWithUsedReturnValue' => [
+                '<?php
+                    interface I {
+                        public function foo(): string;
+                    }
+
+                    function f(I $i): string {
+                        return $i->foo();
+                    }',
+                'I::foo',
+                ['7:36:foo'],
+            ],
             'getPropertyLocation' => [
                 '<?php
                     class A {

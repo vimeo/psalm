@@ -195,7 +195,7 @@ final class CodeUseEdgesCacheTest extends TestCase
         $fresh = $this->freshRun(self::NEEDS_LOCATIONS);
 
         self::assertTrue($run['record_edges']);
-        self::assertSame(['C.php:3:17'], $run['references']);
+        self::assertSame(['B.php:3:24', 'C.php:3:17'], $run['references']);
         self::assertSame($fresh['references'], $run['references']);
     }
 
