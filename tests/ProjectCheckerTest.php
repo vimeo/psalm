@@ -7,6 +7,7 @@ namespace Psalm\Tests;
 use Override;
 use PHPUnit\Framework\Attributes\DataProvider;
 use Psalm\Config;
+use Psalm\Internal\Analyzer\IssueData;
 use Psalm\Internal\Analyzer\ProjectAnalyzer;
 use Psalm\Internal\IncludeCollector;
 use Psalm\Internal\LanguageServer\ClientConfiguration;
@@ -29,6 +30,7 @@ use Psalm\Tests\LanguageServer\MockProtocolStream;
 use Psalm\Tests\Progress\EchoProgress;
 use Psalm\Tests\TestConfig;
 
+use function array_map;
 use function get_class;
 use function getcwd;
 use function microtime;
@@ -351,6 +353,73 @@ function checkDirRegression(): int
 
         $this->assertTrue($this->project_analyzer->canReportIssues($project_dir . DIRECTORY_SEPARATOR . 'Bar.php'));
         $this->assertFalse($this->project_analyzer->canReportIssues((string) getcwd() . DIRECTORY_SEPARATOR . 'psalm'));
+    }
+
+    public function testIssuesInAnAnalyzedFileOutsideTheProjectAreReportedOnceItIsReportable(): void
+    {
+        $this->project_analyzer = $this->getProjectAnalyzerWithConfig(
+            Config::loadFromXML(
+                (string)getcwd(),
+                '<?xml version="1.0"?>
+                <psalm>
+                    <projectFiles>
+                        <directory name="tests/fixtures/DummyProject" />
+                    </projectFiles>
+                </psalm>',
+            ),
+        );
+        $this->project_analyzer->setPhpVersion('8.1', 'tests');
+
+        // a plugin compiles a template to PHP outside the project and has it analyzed
+        $compiled_view = (string) getcwd() . DIRECTORY_SEPARATOR . 'tests' . DIRECTORY_SEPARATOR . 'CompiledView.php';
+        $this->file_provider->registerFile($compiled_view, '<?php
+            function orderTotal(): int {
+                return "total";
+            }');
+
+        $codebase = $this->project_analyzer->getCodebase();
+        $codebase->addFilesToAnalyze([$compiled_view => $compiled_view]);
+        $codebase->addReportableFiles([$compiled_view]);
+
+        $this->project_analyzer->check('tests/fixtures/DummyProject');
+
+        $this->assertSame(
+            ['InvalidReturnStatement', 'InvalidReturnType'],
+            array_map(
+                static fn(IssueData $issue): string => $issue->type,
+                IssueBuffer::getIssuesDataForFile($compiled_view),
+            ),
+        );
+    }
+
+    public function testReportableFileIsNotAnalyzed(): void
+    {
+        $this->project_analyzer = $this->getProjectAnalyzerWithConfig(
+            Config::loadFromXML(
+                (string)getcwd(),
+                '<?xml version="1.0"?>
+                <psalm>
+                    <projectFiles>
+                        <directory name="tests/fixtures/DummyProject" />
+                    </projectFiles>
+                </psalm>',
+            ),
+        );
+        $this->project_analyzer->setPhpVersion('8.1', 'tests');
+
+        // a template: issues are reported in it, but it is not PHP to analyze
+        $template = (string) getcwd() . DIRECTORY_SEPARATOR . 'tests' . DIRECTORY_SEPARATOR . 'order.blade.php';
+        $this->file_provider->registerFile($template, '<?php
+            function orderTotal(): int {
+                return "total";
+            }');
+
+        $this->project_analyzer->getCodebase()->addReportableFiles([$template]);
+
+        $this->project_analyzer->check('tests/fixtures/DummyProject');
+
+        $this->assertTrue($this->project_analyzer->canReportIssues($template));
+        $this->assertSame([], IssueBuffer::getIssuesDataForFile($template));
     }
 
     public function testCheck(): void

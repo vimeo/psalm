@@ -191,6 +191,23 @@ Passing `true` as the third argument of `IssueBuffer::accepts()` makes Psalm sug
 
 Only plugins enabled with `<pluginClass>` (or enabled automatically because the project requires their library) can declare fixable issues. They require `psalm/psalm-plugin-api` `^0.4.2`.
 
+## Reporting issues in files Psalm doesn't analyze
+
+A plugin that compiles templates to PHP analyzes the compiled file and reports its issues on the template. Psalm reports issues only in project files, so make the templates reportable. They are neither scanned nor analyzed:
+
+```php
+final class RegisterTemplates implements AfterCodebasePopulatedInterface
+{
+    #[Override]
+    public static function afterCodebasePopulated(AfterCodebasePopulatedEvent $event): void
+    {
+        $event->getCodebase()->addReportableFiles(['/app/resources/views/order.blade.php']);
+    }
+}
+```
+
+An issue is checked in the process that raises it. Templates added in `afterCodebasePopulated()` are reportable in every analysis process; add the ones an issue raised while scanning needs right before reporting that issue, e.g. in a `BeforeAddIssueInterface` handler.
+
 ## Upgrading file-based plugin to composer-based version
 
 Create new plugin project using skeleton, then pass the class name of you file-based plugin to `registerHooksFromClass()`
