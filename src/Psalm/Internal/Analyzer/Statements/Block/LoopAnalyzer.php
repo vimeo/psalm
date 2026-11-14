@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Psalm\Internal\Analyzer\Statements\Block;
 
+use Override;
 use PhpParser;
 use Psalm\CodeLocation;
 use Psalm\Context;
@@ -1079,16 +1080,39 @@ final class LoopAnalyzer
     {
         $assigned_var_ids = [];
 
-        $assignments = (new PhpParser\NodeFinder())->find(
-            $conditions,
-            static fn(PhpParser\Node $node): bool => $node instanceof PhpParser\Node\Expr\Assign
-                || $node instanceof PhpParser\Node\Expr\AssignRef
-                || $node instanceof PhpParser\Node\Expr\AssignOp
-                || $node instanceof PhpParser\Node\Expr\PreInc
-                || $node instanceof PhpParser\Node\Expr\PreDec
-                || $node instanceof PhpParser\Node\Expr\PostInc
-                || $node instanceof PhpParser\Node\Expr\PostDec,
-        );
+        // what a closure or an arrow function in the condition assigns is not assigned in the scope of the loop
+        $visitor = new class extends PhpParser\NodeVisitorAbstract {
+            /** @var list<PhpParser\Node> */
+            public array $assignments = [];
+
+            /**
+             * @psalm-capabilities read-props|write-this-props|write-refs
+             */
+            #[Override]
+            public function enterNode(PhpParser\Node $node): ?int
+            {
+                if ($node instanceof PhpParser\Node\FunctionLike) {
+                    return PhpParser\NodeVisitor::DONT_TRAVERSE_CHILDREN;
+                }
+
+                if ($node instanceof PhpParser\Node\Expr\Assign
+                    || $node instanceof PhpParser\Node\Expr\AssignRef
+                    || $node instanceof PhpParser\Node\Expr\AssignOp
+                    || $node instanceof PhpParser\Node\Expr\PreInc
+                    || $node instanceof PhpParser\Node\Expr\PreDec
+                    || $node instanceof PhpParser\Node\Expr\PostInc
+                    || $node instanceof PhpParser\Node\Expr\PostDec
+                ) {
+                    $this->assignments[] = $node;
+                }
+
+                return null;
+            }
+        };
+
+        (new PhpParser\NodeTraverser($visitor))->traverse($conditions);
+
+        $assignments = $visitor->assignments;
 
         foreach ($assignments as $assignment) {
             /** @var PhpParser\Node\Expr\Assign|PhpParser\Node\Expr\AssignRef|PhpParser\Node\Expr\AssignOp|PhpParser\Node\Expr\PreInc|PhpParser\Node\Expr\PreDec|PhpParser\Node\Expr\PostInc|PhpParser\Node\Expr\PostDec $assignment */
