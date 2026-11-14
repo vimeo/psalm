@@ -148,6 +148,43 @@ final class ClosureTest extends TestCase
                 'assertions' => [],
                 'ignored_issues' => ['PossiblyUndefinedVariable'],
             ],
+            'useOfANonEmptyMixedDefinedByAPreviousIterationBindsItToMixed' => [
+                'code' => '<?php
+                    /**
+                     * @param list<non-empty-mixed> $xs
+                     */
+                    function f(array $xs): void {
+                        foreach ($xs as $x) {
+                            $f = function () use ($a): void {
+                                /** @psalm-check-type-exact $a = mixed */;
+                                if (!isset($a)) {
+                                    echo "first";
+                                }
+                            };
+                            $f();
+                            $a = $x;
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => ['PossiblyUndefinedVariable', 'MixedAssignment'],
+            ],
+            'useOfAMixedDefinedByAPreviousIterationKeepsMixed' => [
+                'code' => '<?php
+                    function f(array $xs): void {
+                        foreach ($xs as $x) {
+                            $f = function () use ($a): void {
+                                /** @psalm-check-type-exact $a = mixed */;
+                                if (!isset($a)) {
+                                    echo "first";
+                                }
+                            };
+                            $f();
+                            $a = $x;
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => ['PossiblyUndefinedVariable', 'MixedAssignment'],
+            ],
             'useByReferenceOfAVariableDefinedByAPreviousIterationDefinesIt' => [
                 'code' => '<?php
                     function f(array $xs): ?int {
@@ -2523,6 +2560,19 @@ final class ClosureTest extends TestCase
                         }
                     }',
                 'error_message' => 'PossiblyUndefinedVariable - src' . DIRECTORY_SEPARATOR . 'somefile.php:4:51',
+            ],
+            'useOfAVariableExtractedFromAnOptionalKeyIsPossiblyUndefinedAtTheUse' => [
+                'code' => '<?php
+                    /** @param array{x?: int} $data */
+                    function f(array $data): ?int {
+                        extract($data);
+                        $f = function () use ($x): ?int {
+                            return $x;
+                        };
+                        return $f();
+                    }',
+                'error_message' => 'PossiblyUndefinedVariable - src' . DIRECTORY_SEPARATOR . 'somefile.php:5:47'
+                    . ' - Possibly undefined variable $x',
             ],
             'arrowFunctionReadingAVariableDefinedByAPreviousIterationIsPossiblyUndefined' => [
                 'code' => '<?php
