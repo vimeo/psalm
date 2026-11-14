@@ -10,9 +10,11 @@ use Psalm\Context;
 use Psalm\Internal\Algebra;
 use Psalm\Internal\Algebra\FormulaGenerator;
 use Psalm\Internal\Analyzer\ScopeAnalyzer;
+use Psalm\Internal\Analyzer\Statements\Expression\ExpressionIdentifier;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\Internal\Clause;
 use Psalm\Internal\Scope\LoopScope;
+use Psalm\Type;
 use Psalm\Type\Reconciler;
 use UnexpectedValueException;
 
@@ -113,6 +115,31 @@ final class DoAnalyzer
             throw new UnexpectedValueException('There should be an inner loop context');
         }
 
+        // the variables the condition assigns keep the assigned type when the loop is left, not the one narrowed for
+        // the next iteration; the operands after the first are skipped when an earlier one is false
+        foreach (WhileAnalyzer::getAndExpressions($stmt->cond) as $operand_offset => $operand) {
+            foreach (self::getAlwaysEvaluatedAssignments($operand) as $assign) {
+                $assigned_var_id = ExpressionIdentifier::getExtendedVarId(
+                    $assign->var,
+                    $context->self,
+                    $statements_analyzer,
+                );
+                $assigned_type = $statements_analyzer->node_data->getType($assign);
+
+                if ($assigned_var_id === null || $assigned_type === null) {
+                    continue;
+                }
+
+                if ($operand_offset > 0) {
+                    $assigned_type = isset($context->vars_in_scope[$assigned_var_id])
+                        ? Type::combineUnionTypes($context->vars_in_scope[$assigned_var_id], $assigned_type)
+                        : $assigned_type->setPossiblyUndefined(true);
+                }
+
+                $inner_loop_context->vars_in_scope[$assigned_var_id] = $assigned_type;
+            }
+        }
+
         $negated_while_clauses = Algebra::negateFormula($while_clauses);
 
         $negated_while_types = Algebra::getTruthsFromFormula(
@@ -164,6 +191,36 @@ final class DoAnalyzer
         }
 
         return null;
+    }
+
+    /**
+     * @return list<PhpParser\Node\Expr\Assign>
+     * @psalm-capabilities read-props
+     */
+    private static function getAlwaysEvaluatedAssignments(PhpParser\Node\Expr $expr): array
+    {
+        if ($expr instanceof PhpParser\Node\Expr\Assign) {
+            return [$expr];
+        }
+
+        if ($expr instanceof PhpParser\Node\Expr\BooleanNot) {
+            return self::getAlwaysEvaluatedAssignments($expr->expr);
+        }
+
+        if ($expr instanceof PhpParser\Node\Expr\BinaryOp
+            && !$expr instanceof PhpParser\Node\Expr\BinaryOp\BooleanAnd
+            && !$expr instanceof PhpParser\Node\Expr\BinaryOp\BooleanOr
+            && !$expr instanceof PhpParser\Node\Expr\BinaryOp\LogicalAnd
+            && !$expr instanceof PhpParser\Node\Expr\BinaryOp\LogicalOr
+            && !$expr instanceof PhpParser\Node\Expr\BinaryOp\Coalesce
+        ) {
+            return [
+                ...self::getAlwaysEvaluatedAssignments($expr->left),
+                ...self::getAlwaysEvaluatedAssignments($expr->right),
+            ];
+        }
+
+        return [];
     }
 
     private static function analyzeDoNaively(

@@ -417,6 +417,58 @@ final class DoTest extends TestCase
                         echo "here";
                     } while ($code === 1);',
             ],
+            'doWhileConditionAssignmentKeepsTheAssignedTypeAfterTheLoop' => [
+                'code' => '<?php
+                    function fetchError(): ?stdClass {
+                        return rand(0, 1) ? new stdClass() : null;
+                    }
+
+                    $try = 0;
+                    do {
+                        $try++;
+                    } while ((null !== $error = fetchError()) && $try < 3);
+
+                    $result = $error;
+
+                    if (null !== $error) {
+                        echo "failed";
+                    }',
+                'assertions' => [
+                    '$result===' => 'null|stdClass',
+                ],
+            ],
+            'doWhileConditionAssignmentAfterTheFirstOperandMayBeSkipped' => [
+                'code' => '<?php
+                    function fetchError(): ?stdClass {
+                        return rand(0, 1) ? new stdClass() : null;
+                    }
+
+                    $try = 0;
+                    $error = null;
+                    do {
+                        $try++;
+                    } while ($try < 3 && null !== ($error = fetchError()));
+
+                    $result = $error;',
+                'assertions' => [
+                    '$result===' => 'null|stdClass',
+                ],
+            ],
+            'doWhileConditionAssignmentIsNarrowedWhenTheLoopEndsOnIt' => [
+                'code' => '<?php
+                    function fetchError(): ?stdClass {
+                        return rand(0, 1) ? new stdClass() : null;
+                    }
+
+                    do {
+                        $x = 1;
+                    } while (null !== ($error = fetchError()));
+
+                    $result = $error;',
+                'assertions' => [
+                    '$result===' => 'null',
+                ],
+            ],
             'doWhileConditionOnVariableIncrementedAfterIt' => [
                 'code' => '<?php
                     $v = 0;
