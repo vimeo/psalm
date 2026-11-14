@@ -1200,15 +1200,6 @@ final class MagicPropertyTest extends TestCase
                      * @property PropertyType $foo
                      */
                     class A {
-                        /** @param string $name */
-                        public function __get($name): ?string {
-                            if ($name === "foo") {
-                                return "hello";
-                            }
-
-                            return null;
-                        }
-
                         /**
                          * @param string $name
                          * @param mixed $value
@@ -1219,7 +1210,7 @@ final class MagicPropertyTest extends TestCase
 
                     $a = new A();
                     $a->foo = new SomeOtherPropertyType();',
-                'error_message' => 'InvalidPropertyAssignmentValue - src' . DIRECTORY_SEPARATOR . 'somefile.php:29:31 - $a->foo with declared type'
+                'error_message' => 'InvalidPropertyAssignmentValue - src' . DIRECTORY_SEPARATOR . 'somefile.php:20:31 - $a->foo with declared type'
                     . ' \'Bar\PropertyType\' cannot',
             ],
             'propertyWriteDocblockInvalidAssignment' => [
@@ -1485,7 +1476,6 @@ final class MagicPropertyTest extends TestCase
                         $a->__set("foo", $b);
                     }',
                 'error_message' => 'MixedPropertyTypeCoercion',
-                'error_levels' => ['MixedAssignment'],
             ],
             'magicInterfacePropertyWrongProperty' => [
                 'code' => '<?php

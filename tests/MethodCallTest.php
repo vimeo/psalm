@@ -2213,10 +2213,6 @@ final class MethodCallTest extends TestCase
 
                     $a->barBar();',
                 'error_message' => 'MixedMethodCall',
-                'error_levels' => [
-                    'MissingPropertyType',
-                    'MixedAssignment',
-                ],
             ],
             'invalidMethodCall' => [
                 'code' => '<?php
@@ -2282,7 +2278,7 @@ final class MethodCallTest extends TestCase
                         }
                     }',
                 'error_message' => 'LessSpecificReturnStatement',
-                'error_levels' => ['MixedReturnStatement', 'MixedMethodCall'],
+                'error_levels' => ['MixedMethodCall'],
             ],
             'undefinedVariableStaticCall' => [
                 'code' => '<?php

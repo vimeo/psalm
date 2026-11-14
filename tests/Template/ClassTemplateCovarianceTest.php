@@ -713,9 +713,6 @@ final class ClassTemplateCovarianceTest extends TestCase
                     class MyArray implements ArrayAccess, IteratorAggregate {
                         /** @var array<int,T> */
                         private $values = [];
-                        public function __construct() {
-                            $this->values = [];
-                        }
 
                         /**
                          * @param int $offset
@@ -792,23 +789,7 @@ final class ClassTemplateCovarianceTest extends TestCase
             'preventCovariantParamMappingToInvariant' => [
                 'code' => '<?php
                     /** @template T */
-                    class InvariantReference
-                    {
-                        /** @var T */
-                        private $value;
-
-                        /** @param T $value */
-                        public function __construct($value)
-                        {
-                            $this->value = $value;
-                        }
-
-                        /** @return T */
-                        public function get()
-                        {
-                            return $this->value;
-                        }
-                    }
+                    class InvariantReference {}
 
                     /**
                      * @template-covariant T

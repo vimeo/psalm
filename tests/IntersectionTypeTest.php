@@ -594,7 +594,6 @@ final class IntersectionTypeTest extends TestCase
                     }
                 ',
                 'error_message' => 'InvalidArgument',
-                'error_levels' => ['UnsafeInstantiation', 'MixedMethodCall'],
             ],
             'classStringOfCallableObjectWithInvalidStringArgument' => [
                 'code' => '<?php
@@ -639,19 +638,8 @@ final class IntersectionTypeTest extends TestCase
                         $object = new $className();
                         return $object();
                     }
-
-                    class Foo
-                    {
-                        public function __invoke(): int
-                        {
-                            return 0;
-                        }
-                    }
-
-                    takesCallableObject(Foo::class);
                     ',
                 'error_message' => 'class-string param can only target',
-                'error_levels' => ['UnsafeInstantiation', 'MixedMethodCall'],
             ],
             'objectShapePropertyOnFinalClassWithoutMagicGetter' => [
                 'code' => '<?php

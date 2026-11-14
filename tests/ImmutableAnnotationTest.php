@@ -803,16 +803,9 @@ final class ImmutableAnnotationTest extends TestCase
             ],
             'disallowOnlyMutationFreeInPureContext' => [
                 'code' => '<?php
-
-                    /**
-                     * @psalm-mutation-free
-                     */
+                    /** @psalm-mutation-free */
                     function getData(): array {
-                        /** @psalm-suppress ImpureGlobalVariable */
-                        /** @var mixed $arr */
-                        $arr = $GLOBALS["cachedData"] ?? [];
-
-                        return is_array($arr) ? $arr : [];
+                        return [];
                     }
 
                     /**
@@ -1123,14 +1116,8 @@ final class ImmutableAnnotationTest extends TestCase
                         }
                     }
 
-                    /**
-                     * @psalm-mutation-free
-                     * 
-                     * @param string $a
-                     * @param array $b
-                     * @return void
-                     */
-                    function bar($a, &$b) {}
+                    /** @psalm-mutation-free */
+                    function bar(string $a, array &$b): void {}
 
                     $x = new Foo([]);
                     bar("hello", $x->values);',

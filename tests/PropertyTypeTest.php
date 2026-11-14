@@ -4252,7 +4252,7 @@ final class PropertyTypeTest extends TestCase
                         }
                     }',
                 'error_message' => 'PropertyNotSetInConstructor - src' . DIRECTORY_SEPARATOR . 'somefile.php:7:40 - Property Response::$canary',
-                'error_levels' => ['RedundantPropertyInitializationCheck', 'RedundantCondition'],
+                'error_levels' => ['RedundantPropertyInitializationCheck'],
             ],
             'propertyNotInitializedByAnInterfaceStaticMethodCalledInTheConstructor' => [
                 'code' => '<?php
@@ -4698,10 +4698,6 @@ final class PropertyTypeTest extends TestCase
 
                     echo $a->foo;',
                 'error_message' => 'MixedPropertyFetch',
-                'error_levels' => [
-                    'MissingPropertyType',
-                    'MixedAssignment',
-                ],
             ],
             'mixedPropertyAssignment' => [
                 'code' => '<?php
@@ -4715,10 +4711,6 @@ final class PropertyTypeTest extends TestCase
 
                     $a->foo = "hello";',
                 'error_message' => 'MixedPropertyAssignment',
-                'error_levels' => [
-                    'MissingPropertyType',
-                    'MixedAssignment',
-                ],
             ],
             'possiblyNullablePropertyAssignment' => [
                 'code' => '<?php
@@ -4875,7 +4867,6 @@ final class PropertyTypeTest extends TestCase
                         }
                     }',
                 'error_message' => 'PropertyNotSetInConstructor',
-                'error_levels' => ['RedundantPropertyInitializationCheck'],
             ],
             'propertyReadUnconditionallyInATraitIsReportedAtAReturnOfConstructor' => [
                 'code' => '<?php
@@ -4907,7 +4898,6 @@ final class PropertyTypeTest extends TestCase
                         }
                     }',
                 'error_message' => 'PropertyNotSetInConstructor',
-                'error_levels' => ['RedundantPropertyInitializationCheck'],
             ],
             'propertyReadUnconditionallyInATraitUsedByAnAliasIsReportedAtAReturnOfConstructor' => [
                 'code' => '<?php
@@ -4940,7 +4930,6 @@ final class PropertyTypeTest extends TestCase
                         }
                     }',
                 'error_message' => 'PropertyNotSetInConstructor',
-                'error_levels' => ['RedundantPropertyInitializationCheck'],
             ],
             'propertyReadAsAnArgumentOfACoalesceOperandIsReportedAtAReturnOfConstructor' => [
                 'code' => '<?php
@@ -4974,7 +4963,7 @@ final class PropertyTypeTest extends TestCase
                         }
                     }',
                 'error_message' => 'PropertyNotSetInConstructor',
-                'error_levels' => ['RedundantPropertyInitializationCheck', 'RedundantConditionGivenDocblockType', 'DocblockTypeContradiction', 'RedundantCondition', 'TypeDoesNotContainNull'],
+                'error_levels' => ['RedundantCondition', 'TypeDoesNotContainNull'],
             ],
             'propertyReadAsTheIndexOfAnIssetIsReportedAtAReturnOfConstructor' => [
                 'code' => '<?php
@@ -5001,7 +4990,6 @@ final class PropertyTypeTest extends TestCase
                         }
                     }',
                 'error_message' => 'PropertyNotSetInConstructor',
-                'error_levels' => ['RedundantPropertyInitializationCheck'],
             ],
             'notSetBeforeReturnOfConstructor' => [
                 'code' => '<?php
@@ -5396,7 +5384,7 @@ final class PropertyTypeTest extends TestCase
                         }
                     }',
                 'error_message' => 'UninitializedProperty',
-                'error_levels' => ['MixedArgument', 'MissingPropertyType'],
+                'error_levels' => ['MixedArgument'],
             ],
             'uninitializedObjectProperty' => [
                 'code' => '<?php

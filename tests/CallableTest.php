@@ -3585,11 +3585,12 @@ final class CallableTest extends TestCase
                      */
                     function foo($arg) {}
 
-                    function bar(string $a, string $b, string $c): bool {}
+                    function bar(string $a, string $b, string $c): bool {
+                        return true;
+                    }
 
                     foo("bar");',
                 'error_message' => 'PossiblyInvalidArgument',
-                'error_levels' => ['InvalidReturnType'],
             ],
             'callableMissingRequiredMultipleParams' => [
                 'code' => '<?php
@@ -3599,11 +3600,12 @@ final class CallableTest extends TestCase
                      */
                     function foo($arg) {}
 
-                    function bar(string $a, string $b, string $c): bool {}
+                    function bar(string $a, string $b, string $c): bool {
+                        return true;
+                    }
 
                     foo("bar");',
                 'error_message' => 'PossiblyInvalidArgument',
-                'error_levels' => ['InvalidReturnType'],
             ],
             'callableAdditionalRequiredParam' => [
                 'code' => '<?php
@@ -3613,11 +3615,12 @@ final class CallableTest extends TestCase
                      */
                     function foo($arg) {}
 
-                    function bar(string $a, string $b, string $c, string $d): bool {}
+                    function bar(string $a, string $b, string $c, string $d): bool {
+                        return true;
+                    }
 
                     foo("bar");',
                 'error_message' => 'InvalidArgument',
-                'error_levels' => ['InvalidReturnType'],
             ],
             'callableMultipleParamsWithOptional' => [
                 'code' => '<?php
@@ -3627,11 +3630,12 @@ final class CallableTest extends TestCase
                      */
                     function foo($arg) {}
 
-                    function bar(string $a, string $b, string $c): bool {}
+                    function bar(string $a, string $b, string $c): bool {
+                        return true;
+                    }
 
                     foo("bar");',
                 'error_message' => 'PossiblyInvalidArgument',
-                'error_levels' => ['InvalidReturnType'],
             ],
             'preventStringDocblockType' => [
                 'code' => '<?php

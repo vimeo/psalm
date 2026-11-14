@@ -847,22 +847,16 @@ final class PureAnnotationTest extends TestCase
                         public function set(mixed $v): void {
                             $this->v = $v;
                         }
-
-                        /** @return T */
-                        public function get(): mixed {
-                            return $this->v;
-                        }
                     }
 
                     /**
                      * @psalm-pure
                      * @param Box<int> $b
                      */
-                    function f(Box $b, int $i): int {
+                    function f(Box $b, int $i): void {
                         /** @var Box<int> */
                         $c = $b;
                         $c->set($i);
-                        return $c->get();
                     }',
                 'error_message' => 'ImpureMethodCall',
                 'error_levels' => [],
@@ -885,11 +879,6 @@ final class PureAnnotationTest extends TestCase
                         public function set(mixed $v): void {
                             $this->v = $v;
                         }
-
-                        /** @return T */
-                        public function get(): mixed {
-                            return $this->v;
-                        }
                     }
 
                     final class Holder {
@@ -898,11 +887,10 @@ final class PureAnnotationTest extends TestCase
                     }
 
                     /** @psalm-mutation-free */
-                    function f(Holder $h, int $i): int {
+                    function f(Holder $h, int $i): void {
                         /** @var Box<int> */
                         $c = $h->box;
                         $c->set($i);
-                        return $c->get();
                     }',
                 'error_message' => 'ImpureMethodCall',
                 'error_levels' => [],
@@ -1390,34 +1378,16 @@ final class PureAnnotationTest extends TestCase
             ],
             'impureCallableInImmutableContext' => [
                 'code' => '<?php
-
                     /**
                      * @psalm-immutable
                      */
                     class Either
                     {
-                        /**
-                         * @psalm-param callable $_
-                         */
-                        public function fold($_): void
+                        public function fold(callable $_): void
                         {
                             $_();
                         }
-                    }
-
-                    class Whatever
-                    {
-                        public function __construct()
-                        {
-                            $either = new Either();
-                            $either->fold(
-                                function (): void {}
-                            );
-                        }
-                    }
-
-                    new Whatever();
-                    ',
+                    }',
                 'error_message' => 'ImpureFunctionCall',
             ],
         ];

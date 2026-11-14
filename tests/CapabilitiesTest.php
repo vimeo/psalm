@@ -3175,60 +3175,18 @@ final class CapabilitiesTest extends TestCase
                         return $seed ?? random_int(0, 10);
                     }
 
-                    final class Ids {
-                        /** @psalm-capabilities ($seed is null ? io : pure) */
-                        public function make(?int $seed = null): int {
-                            return $seed ?? random_int(0, 10);
-                        }
-
-                        /** @psalm-capabilities ($seed is null ? io : pure) */
-                        public static function makeStatic(?int $seed = null): int {
-                            return $seed ?? random_int(0, 10);
-                        }
-                    }
-
-                    /** @psalm-capabilities read-props|write-this-props|io */
-                    final class Id {
-                        public int $value;
-
-                        /** @psalm-capabilities ($seed is null ? io : pure) */
-                        public function __construct(?int $seed = null) {
-                            $this->value = $seed ?? random_int(0, 10);
-                        }
-                    }
-
                     /** @psalm-capabilities read-props */
-                    function caller(Ids $ids, ?int $seed): int {
+                    function caller(): int {
                         return makeId();
                     }',
                 'error_message' => 'The context is read-props but function call on makeid requires io',
             ],
             'conditionalCapabilitiesOfAMethodCalledWithANullableArgument' => [
                 'code' => '<?php
-                    /** @psalm-capabilities ($seed is null ? io : pure) */
-                    function makeId(?int $seed = null): int {
-                        return $seed ?? random_int(0, 10);
-                    }
-
                     final class Ids {
                         /** @psalm-capabilities ($seed is null ? io : pure) */
                         public function make(?int $seed = null): int {
                             return $seed ?? random_int(0, 10);
-                        }
-
-                        /** @psalm-capabilities ($seed is null ? io : pure) */
-                        public static function makeStatic(?int $seed = null): int {
-                            return $seed ?? random_int(0, 10);
-                        }
-                    }
-
-                    /** @psalm-capabilities read-props|write-this-props|io */
-                    final class Id {
-                        public int $value;
-
-                        /** @psalm-capabilities ($seed is null ? io : pure) */
-                        public function __construct(?int $seed = null) {
-                            $this->value = $seed ?? random_int(0, 10);
                         }
                     }
 
@@ -3240,58 +3198,21 @@ final class CapabilitiesTest extends TestCase
             ],
             'conditionalCapabilitiesOfAStaticMethodCalledWithNull' => [
                 'code' => '<?php
-                    /** @psalm-capabilities ($seed is null ? io : pure) */
-                    function makeId(?int $seed = null): int {
-                        return $seed ?? random_int(0, 10);
-                    }
-
                     final class Ids {
-                        /** @psalm-capabilities ($seed is null ? io : pure) */
-                        public function make(?int $seed = null): int {
-                            return $seed ?? random_int(0, 10);
-                        }
-
                         /** @psalm-capabilities ($seed is null ? io : pure) */
                         public static function makeStatic(?int $seed = null): int {
                             return $seed ?? random_int(0, 10);
                         }
                     }
 
-                    /** @psalm-capabilities read-props|write-this-props|io */
-                    final class Id {
-                        public int $value;
-
-                        /** @psalm-capabilities ($seed is null ? io : pure) */
-                        public function __construct(?int $seed = null) {
-                            $this->value = $seed ?? random_int(0, 10);
-                        }
-                    }
-
                     /** @psalm-capabilities read-props */
-                    function caller(Ids $ids, ?int $seed): int {
+                    function caller(): int {
                         return Ids::makeStatic(null);
                     }',
                 'error_message' => 'The context is read-props but method Ids::makeStatic requires io',
             ],
             'conditionalCapabilitiesOfAConstructorCalledWithoutTheArgument' => [
                 'code' => '<?php
-                    /** @psalm-capabilities ($seed is null ? io : pure) */
-                    function makeId(?int $seed = null): int {
-                        return $seed ?? random_int(0, 10);
-                    }
-
-                    final class Ids {
-                        /** @psalm-capabilities ($seed is null ? io : pure) */
-                        public function make(?int $seed = null): int {
-                            return $seed ?? random_int(0, 10);
-                        }
-
-                        /** @psalm-capabilities ($seed is null ? io : pure) */
-                        public static function makeStatic(?int $seed = null): int {
-                            return $seed ?? random_int(0, 10);
-                        }
-                    }
-
                     /** @psalm-capabilities read-props|write-this-props|io */
                     final class Id {
                         public int $value;
@@ -3303,7 +3224,7 @@ final class CapabilitiesTest extends TestCase
                     }
 
                     /** @psalm-capabilities read-props */
-                    function caller(Ids $ids, ?int $seed): int {
+                    function caller(): int {
                         return (new Id())->value;
                     }',
                 'error_message' => 'The context is read-props but constructor Id::__construct requires io',
@@ -4491,7 +4412,6 @@ final class CapabilitiesTest extends TestCase
 
                     /**
                      * @psalm-pure
-                     * @psalm-suppress UndefinedMagicPropertyFetch, UndefinedThisPropertyFetch
                      */
                     function get(Magic $m): int {
                         return $m->foo;

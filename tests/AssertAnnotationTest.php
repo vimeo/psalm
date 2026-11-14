@@ -4687,11 +4687,6 @@ final class AssertAnnotationTest extends TestCase
 
                             return null;
                         }
-
-                        public function __set(string $key, string $value): void
-                        {
-                            throw new \Exception("Setting not supported!");
-                        }
                     }
 
                     $a = new A;

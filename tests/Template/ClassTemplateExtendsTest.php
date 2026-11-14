@@ -5388,30 +5388,13 @@ final class ClassTemplateExtendsTest extends TestCase
                         {
                             return new static();
                         }
-
-                        /**
-                         * @template TRelated of Model
-                         * @param BaseFactory<TRelated> $factory
-                         */
-                        public function for(BaseFactory $factory): void {}
                     }
 
                     /**
                      * @template TModel of Model
                      * @extends BaseFactory<TModel>
                      */
-                    abstract class Factory extends BaseFactory
-                    {
-                        /**
-                         * @template TRelated of Model
-                         * @param BaseFactory<TRelated> $factory
-                         */
-                        #[\Override]
-                        public function for(BaseFactory $factory): void {}
-                    }
-
-                    /** @extends Factory<Customer> */
-                    final class CustomerFactory extends Factory {}
+                    abstract class Factory extends BaseFactory {}
 
                     /**
                      * @template TMechanic of Mechanic
@@ -5589,13 +5572,6 @@ final class ClassTemplateExtendsTest extends TestCase
                         public function __construct($id)
                         {
                             $this->id = $id;
-                        }
-                        /**
-                         * @return T
-                         */
-                        public function getID()
-                        {
-                            return $this->id;
                         }
                     }
 
@@ -5963,11 +5939,6 @@ final class ClassTemplateExtendsTest extends TestCase
                     class Base {
                         /** @param T $_o */
                         public function __construct($_o) {}
-                        /**
-                         * @return T
-                         * @psalm-suppress InvalidReturnType
-                         */
-                        public function t() {}
                     }
 
                     /** @template-extends Base<int> */
@@ -6404,14 +6375,6 @@ final class ClassTemplateExtendsTest extends TestCase
                      */
                     class C implements I
                     {
-                        /** @var T2 */
-                        private object $o;
-
-                        /** @param T2 $o */
-                        public function __construct(object $o) {
-                            $this->o = $o;
-                        }
-
                         /**
                          * @return class-string<T2>
                          */
@@ -6440,14 +6403,6 @@ final class ClassTemplateExtendsTest extends TestCase
                      */
                     class C implements I
                     {
-                        /** @var T2 */
-                        private object $o;
-
-                        /** @param T2 $o */
-                        public function __construct(object $o) {
-                            $this->o = $o;
-                        }
-
                         public function m(): string {
                             return static::class;
                         }
@@ -6622,14 +6577,6 @@ final class ClassTemplateExtendsTest extends TestCase
                         public static function getContainer($t) {
                             return new static($t);
                         }
-
-                        /**
-                         * @return T
-                         */
-                        public function getValue()
-                        {
-                            return $this->t;
-                        }
                     }
 
                     /**
@@ -6663,14 +6610,6 @@ final class ClassTemplateExtendsTest extends TestCase
                         public static function getContainer($t) {
                             return new static($t);
                         }
-
-                        /**
-                         * @return T
-                         */
-                        public function getValue()
-                        {
-                            return $this->t;
-                        }
                     }
 
                     /**
@@ -6703,14 +6642,6 @@ final class ClassTemplateExtendsTest extends TestCase
                         public static function getContainer($t) {
                             return new static($t);
                         }
-
-                        /**
-                         * @return T
-                         */
-                        public function getValue()
-                        {
-                            return $this->t;
-                        }
                     }
 
                     class ObjectContainer extends Container {}',
@@ -6739,14 +6670,6 @@ final class ClassTemplateExtendsTest extends TestCase
                          */
                         public static function getContainer($t) {
                             return new static($t);
-                        }
-
-                        /**
-                         * @return T
-                         */
-                        public function getValue()
-                        {
-                            return $this->t;
                         }
                     }
 
@@ -6781,14 +6704,6 @@ final class ClassTemplateExtendsTest extends TestCase
                         public static function getContainer($t) {
                             return new static($t);
                         }
-
-                        /**
-                         * @return T
-                         */
-                        public function getValue()
-                        {
-                            return $this->t;
-                        }
                     }',
                 'error_message' => 'UnsafeGenericInstantiation',
             ],
@@ -6814,14 +6729,6 @@ final class ClassTemplateExtendsTest extends TestCase
                          */
                         public static function getContainer($t) {
                             return new static($t);
-                        }
-
-                        /**
-                         * @return T
-                         */
-                        public function getValue()
-                        {
-                            return $this->t;
                         }
                     }',
                 'error_message' => 'UnsafeGenericInstantiation',

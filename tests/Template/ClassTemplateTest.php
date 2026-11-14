@@ -6286,11 +6286,6 @@ final class ClassTemplateTest extends TestCase
                     /** @template T as object */
                     class Foo
                     {
-                        /**
-                         * @psalm-var class-string
-                         */
-                        private $type;
-
                         /** @var array<T> */
                         private $items;
 
@@ -6299,10 +6294,6 @@ final class ClassTemplateTest extends TestCase
                          */
                         public function __construct(string $type)
                         {
-                            if (!in_array($type, [A::class, B::class], true)) {
-                                throw new \InvalidArgumentException;
-                            }
-                            $this->type = $type;
                             $this->items = [];
                         }
 
@@ -6319,18 +6310,13 @@ final class ClassTemplateTest extends TestCase
                     $foo = new Foo(A::class);
                     $foo->add(new B);',
                 'error_message' => 'IncompatibleTypeParameters - src' . DIRECTORY_SEPARATOR
-                    . 'somefile.php:36:31 - Type B should be a subtype of A',
+                    . 'somefile.php:27:31 - Type B should be a subtype of A',
             ],
             'restrictTemplateInputWithTClassBadInput' => [
                 'code' => '<?php
                     /** @template T */
                     class Foo
                     {
-                        /**
-                         * @psalm-var class-string
-                         */
-                        private $type;
-
                         /** @var array<T> */
                         private $items;
 
@@ -6339,10 +6325,6 @@ final class ClassTemplateTest extends TestCase
                          */
                         public function __construct(string $type)
                         {
-                            if (!in_array($type, [A::class, B::class], true)) {
-                                throw new \InvalidArgumentException;
-                            }
-                            $this->type = $type;
                             $this->items = [];
                         }
 
@@ -6359,7 +6341,7 @@ final class ClassTemplateTest extends TestCase
                     $foo = new Foo(A::class);
                     $foo->add(new B);',
                 'error_message' => 'IncompatibleTypeParameters - src' . DIRECTORY_SEPARATOR
-                    . 'somefile.php:36:31 - Type B should be a subtype of A',
+                    . 'somefile.php:27:31 - Type B should be a subtype of A',
             ],
             'templatedClosureProperty' => [
                 'code' => '<?php
@@ -6406,7 +6388,6 @@ final class ClassTemplateTest extends TestCase
                      * @template T
                      * @param T $p
                      * @return Generic<T>
-                     * @psalm-suppress InvalidReturnType
                      */
                     function violate($p) {}',
                 'error_message' => 'InvalidTemplateParam',
@@ -6540,22 +6521,9 @@ final class ClassTemplateTest extends TestCase
                          * @template K as key-of<TData>
                          *
                          * @param K $property
-                         *
-                         * @return TData[K]
-                         */
-                        public function __get(string $property) {
-                            // validation logic would go here
-                            return $this->data[$property];
-                        }
-
-                        /**
-                         * @template K as key-of<TData>
-                         *
-                         * @param K $property
                          * @param TData[K] $value
                          */
                         public function __set(string $property, $value) {
-                            // data updating would go here
                             $this->data[$property] = $value;
                         }
                     }
@@ -6566,7 +6534,7 @@ final class ClassTemplateTest extends TestCase
                     $mario = new CharacterRow(["id" => 5, "name" => "Mario", "height" => 3.5]);
 
                     $mario->ame = "Luigi";',
-                'error_message' => 'InvalidArgument - src' . DIRECTORY_SEPARATOR . "somefile.php:47:29 - Argument 1 of CharacterRow::__set expects 'height'|'id'|'name', but 'ame' provided",
+                'error_message' => 'InvalidArgument - src' . DIRECTORY_SEPARATOR . "somefile.php:34:29 - Argument 1 of CharacterRow::__set expects 'height'|'id'|'name', but 'ame' provided",
             ],
             'specialiseTypeBeforeReturning' => [
                 'code' => '<?php
@@ -6700,21 +6668,10 @@ final class ClassTemplateTest extends TestCase
                      */
                     class ArrayCollection
                     {
-                        /**
-                         * An array containing the entries of this collection.
-                         *
-                         * @psalm-var array<TKey,T>
-                         * @var array
-                         */
+                        /** @var array<TKey,T> */
                         private $elements = [];
 
-                        /**
-                         * Initializes a new ArrayCollection.
-                         *
-                         * @param array $elements
-                         *
-                         * @psalm-param array<TKey,T> $elements
-                         */
+                        /** @param array<TKey,T> $elements */
                         public function __construct(array $elements = [])
                         {
                             $this->elements = $elements;
@@ -6753,15 +6710,6 @@ final class ClassTemplateTest extends TestCase
                      */
                     class Container
                     {
-                        /** @var T */
-                        private $t;
-
-                        /** @param T $t */
-                        public function __construct($t)
-                        {
-                            $this->t = $t;
-                        }
-
                         /**
                          * @param T $t
                          * @return T
@@ -6889,9 +6837,6 @@ final class ClassTemplateTest extends TestCase
 
                     /** @template T of object */
                     interface Collection2 {
-                        /** @param T $item */
-                        public function add(object $item): void;
-
                         /** @return T */
                         public function get(): object;
                     }

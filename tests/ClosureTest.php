@@ -2568,12 +2568,8 @@ final class ClosureTest extends TestCase
                      */
                     $foo = null;
 
-
                     $foo =
-                        /**
-                         * @param mixed $bar
-                         * @psalm-suppress MixedFunctionCall
-                         */
+                        /** @param mixed $bar */
                         function ($bar) use (&$foo): string
                         {
                             if (is_array($bar)) {

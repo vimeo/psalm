@@ -916,9 +916,10 @@ final class FunctionClassStringTemplateTest extends TestCase
                      * @param TClass $realInstance
                      *
                      * @return Closure(TClass) : void
-                     * @psalm-suppress InvalidReturnType
                      */
-                    function createInitializer(string $className, object $realInstance) : Closure {}
+                    function createInitializer(string $className, object $realInstance) : Closure {
+                        return function (object $_o): void {};
+                    }
 
                     function foo(object $realInstance) : void {
                         $className = get_class($realInstance);

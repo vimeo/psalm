@@ -379,9 +379,6 @@ final class NestedTemplateTest extends TestCase
                     class StudentViewData implements IBaseViewData {}
                     class TeacherViewData implements IBaseViewData {}
 
-                    /** @extends BaseModel<StudentViewData> */
-                    class StudentModel extends BaseModel {}
-
                     /** @extends BaseModel<TeacherViewData> */
                     class TeacherModel extends BaseModel {}
 

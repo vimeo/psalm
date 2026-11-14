@@ -2364,10 +2364,9 @@ final class MethodSignatureTest extends TestCase
 
                     class C implements I {
                         /**
-                         * @param array<int,float> $f
-                         * @psalm-suppress ParamNameMismatch
+                         * @param array<int,float> $rest
                          */
-                        public function f($f): void {}
+                        public function f($rest): void {}
                     }',
                 'error_message' => 'MethodSignatureMismatch',
                 'error_levels' => ['MoreSpecificImplementedParamType'],
