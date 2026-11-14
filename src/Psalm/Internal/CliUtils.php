@@ -510,7 +510,7 @@ final class CliUtils
                 continue;
             }
 
-            if ($input_path[0] === '-' && $input_path[1] !== '-' && strlen($input_path) > 2) {
+            if (strlen($input_path) > 2 && $input_path[0] === '-' && $input_path[1] !== '-') {
                 // a group of short options like -mh, or -cpsalm.xml with the value attached;
                 // the value of the option that ends a group follows it, as in `-mc psalm.xml`
                 if (strcspn($input_path, 'cfr', 1) + 1 === strlen($input_path) - 1) {
