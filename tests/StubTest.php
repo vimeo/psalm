@@ -1619,6 +1619,234 @@ final class StubTest extends DeferredAnalyzerTestCase
         $this->analyzeFile($file_path, new Context());
     }
 
+    private function configureStub(string $fixture): void
+    {
+        $this->project_analyzer = $this->getProjectAnalyzerWithConfig(
+            TestConfig::loadFromXML(
+                dirname(__DIR__),
+                '<?xml version="1.0"?>
+                <psalm
+                    errorLevel="1"
+                >
+                    <projectFiles>
+                        <directory name="src" />
+                    </projectFiles>
+
+                    <stubs>
+                        <file name="tests/fixtures/stubs/' . $fixture . '" />
+                    </stubs>
+                </psalm>',
+            ),
+        );
+    }
+
+    public function testStubbedMethodOfTraitIsInheritedByEveryLevelOfSubclasses(): void
+    {
+        $this->configureStub('trait_method_override.phpstub');
+
+        // stubs only override classes declared outside the project directories
+        $file_path = (string) getcwd() . '/vendor/somefile.php';
+
+        $this->addFile(
+            $file_path,
+            '<?php
+                namespace Foo;
+
+                trait Bar {
+                    /** @param string $x */
+                    public function m($x): void {}
+                }
+
+                trait Baz {
+                    /** @param int|string $x */
+                    public function m($x): void {}
+                }
+
+                trait Qux {
+                    /** @param int|string|bool $x */
+                    public function m($x): void {}
+                }
+
+                trait Requirement {
+                    /** @param mixed $x */
+                    abstract public function m($x): void;
+                }
+
+                class TraitUser {
+                    use Bar;
+
+                    /** @param bool $x */
+                    public function n($x): void {}
+                }
+                class Child extends TraitUser {}
+                class GrandChild extends Child {}
+                class ChildWithAliasedTrait extends TraitUser {
+                    use Qux { m as n; }
+                }
+                class ChildWithAbstractTraitMethod extends TraitUser { use Requirement; }
+                class GrandChildOfAbstractTraitMethod extends ChildWithAbstractTraitMethod {}
+                class ChildWithOwnTrait extends TraitUser { use Baz; }
+                class GrandChildOfOwnTrait extends ChildWithOwnTrait {}
+                class ChildWithOwnMethod extends TraitUser {
+                    /** @param int|float $x */
+                    public function m($x): void {}
+                }
+                class GrandChildOfOwnMethod extends ChildWithOwnMethod {}
+
+                (new TraitUser())->m(1);
+                (new Child())->m(2);
+                (new GrandChild())->m(3);
+                (new ChildWithAliasedTrait())->m(1);
+                (new ChildWithAliasedTrait())->n("a");
+                (new ChildWithAbstractTraitMethod())->m(4);
+                (new GrandChildOfAbstractTraitMethod())->m(5);
+                (new ChildWithOwnTrait())->m("a");
+                (new GrandChildOfOwnTrait())->m("b");
+                (new ChildWithOwnMethod())->m(1.5);
+                (new GrandChildOfOwnMethod())->m(2.5);',
+        );
+
+        $this->analyzeFile($file_path, new Context());
+    }
+
+    public function testStubbedMethodOfTraitReplacesTheOneOfTheTraitInSubclasses(): void
+    {
+        $this->configureStub('trait_method_override.phpstub');
+
+        $file_path = (string) getcwd() . '/vendor/somefile.php';
+
+        $this->addFile(
+            $file_path,
+            '<?php
+                namespace Foo;
+
+                trait Bar {
+                    /** @param string $x */
+                    public function m($x): void {}
+                }
+
+                class TraitUser { use Bar; }
+                class Child extends TraitUser {}
+                class GrandChild extends Child {}
+
+                (new GrandChild())->m("a");',
+        );
+
+        $this->expectException(CodeException::class);
+        $this->expectExceptionMessage(
+            "Argument 1 of Foo\\GrandChild::m expects int, but 'a' provided",
+        );
+
+        $this->analyzeFile($file_path, new Context());
+    }
+
+    public function testStubbedPropertyOfTraitIsInheritedByEveryLevelOfSubclasses(): void
+    {
+        $this->configureStub('trait_property_override.phpstub');
+
+        $file_path = (string) getcwd() . '/vendor/somefile.php';
+
+        $this->addFile(
+            $file_path,
+            '<?php
+                namespace Foo;
+
+                trait Bar {
+                    /** @var string */
+                    public $p = "";
+                }
+
+                class TraitUser { use Bar; }
+                class Child extends TraitUser {}
+                class GrandChild extends Child {}
+
+                /** @param int $_i */
+                function takesInt($_i): void {}
+
+                takesInt((new TraitUser())->p);
+                takesInt((new Child())->p);
+                takesInt((new GrandChild())->p);',
+        );
+
+        $this->analyzeFile($file_path, new Context());
+    }
+
+    public function testMethodOverridingStubbedMethodOfTraitIsComparedWithTheStubbedOneAtEveryLevel(): void
+    {
+        $this->configureStub('trait_method_override.phpstub');
+
+        $file_path = (string) getcwd() . '/vendor/somefile.php';
+
+        $this->addFile(
+            $file_path,
+            '<?php
+                namespace Foo;
+
+                trait Bar {
+                    /** @param string $x */
+                    public function m($x): void {}
+                }
+
+                class TraitUser { use Bar; }
+                class Child extends TraitUser {}
+                class GrandChild extends Child {}
+                class GreatGrandChild extends GrandChild {
+                    /** @param string $x */
+                    #[\Override]
+                    public function m($x): void {}
+                }',
+        );
+
+        $this->expectException(CodeException::class);
+        $this->expectExceptionMessage(
+            "Argument 1 of Foo\\GreatGrandChild::m has wrong type 'string', expecting 'int' as defined by "
+            . "Foo\\TraitUser::m",
+        );
+
+        $this->analyzeFile($file_path, new Context());
+    }
+
+    /**
+     * Guard, passes without the fix too: the built-in methods the scanner gives an enum are not inherited by
+     * population, so they must survive the enum being populated again.
+     */
+    public function testEnumImplementingStubbedInterfaceKeepsItsBuiltInMethods(): void
+    {
+        $this->configureStub('interface_method_override.phpstub');
+        $this->project_analyzer->setPhpVersion('8.1', 'tests');
+
+        $file_path = (string) getcwd() . '/vendor/somefile.php';
+
+        $this->addFile(
+            $file_path,
+            '<?php
+                namespace Foo;
+
+                interface Describable {
+                    /** @return string */
+                    public function describe();
+                }
+
+                enum Suit: string implements Describable {
+                    case Hearts = "h";
+
+                    public function describe(): int {
+                        return 1;
+                    }
+                }
+
+                /** @param int $_i */
+                function takesInt($_i): void {}
+
+                takesInt(Suit::Hearts->describe());
+                takesInt(count(Suit::cases()));
+                takesInt(Suit::from("h")->describe());
+                takesInt(Suit::tryFrom("h")?->describe() ?? 0);',
+        );
+
+        $this->analyzeFile($file_path, new Context());
+    }
+
     public function testExtendOnlyStubbedClass(): void
     {
         $this->project_analyzer = $this->getProjectAnalyzerWithConfig(

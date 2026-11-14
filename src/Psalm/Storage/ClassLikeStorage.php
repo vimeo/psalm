@@ -24,6 +24,7 @@ use function array_reverse;
 use function array_values;
 use function count;
 use function in_array;
+use function strtolower;
 
 /**
  * @api
@@ -594,6 +595,72 @@ final class ClassLikeStorage implements HasAttributesInterface
      */
     public function __construct(public string $name)
     {
+    }
+
+    /**
+     * Marks the storage to be populated again, from what scanning gave it: the members it inherited the last time
+     * are dropped to be inherited anew, as the classes, traits and interfaces they came from may have changed since
+     * (a stub redeclares a method the class got from a trait). What the class declares itself stays, and so do the
+     * methods the scanner gives an enum from `UnitEnum` and `BackedEnum`, which are not inherited by population.
+     *
+     * @internal
+     * @psalm-capabilities read-props|write-this-props|write-refs
+     */
+    public function unpopulate(): void
+    {
+        $this->populated = false;
+
+        $fq_class_name_lc = strtolower($this->name);
+
+        foreach ($this->declaring_method_ids as $method_name => $method_id) {
+            $declaring_class_lc = strtolower($method_id->fq_class_name);
+
+            if ($declaring_class_lc === $fq_class_name_lc) {
+                $this->overridden_method_ids[$method_name] = [];
+
+                continue;
+            }
+
+            unset($this->overridden_method_ids[$method_name]);
+
+            if ($this->is_enum && ($declaring_class_lc === 'unitenum' || $declaring_class_lc === 'backedenum')) {
+                continue;
+            }
+
+            unset(
+                $this->declaring_method_ids[$method_name],
+                $this->appearing_method_ids[$method_name],
+                $this->inheritable_method_ids[$method_name],
+                $this->potential_declaring_method_ids[$method_name],
+            );
+        }
+
+        foreach ($this->declaring_pseudo_method_ids as $method_name => $method_id) {
+            if (strtolower($method_id->fq_class_name) !== $fq_class_name_lc) {
+                unset($this->pseudo_methods[$method_name], $this->declaring_pseudo_method_ids[$method_name]);
+            }
+        }
+
+        foreach ($this->declaring_pseudo_static_method_ids as $method_name => $method_id) {
+            if (strtolower($method_id->fq_class_name) !== $fq_class_name_lc) {
+                unset(
+                    $this->pseudo_static_methods[$method_name],
+                    $this->declaring_pseudo_static_method_ids[$method_name],
+                );
+            }
+        }
+
+        foreach ($this->declaring_property_ids as $property_name => $declaring_class) {
+            if (strtolower($declaring_class) !== $fq_class_name_lc) {
+                unset(
+                    $this->declaring_property_ids[$property_name],
+                    $this->appearing_property_ids[$property_name],
+                    $this->inheritable_property_ids[$property_name],
+                );
+            }
+        }
+
+        $this->overridden_property_ids = [];
     }
 
     /**
