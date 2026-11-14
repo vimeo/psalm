@@ -33,7 +33,7 @@ final class AssignmentInConditionalTest extends TestCase
 
                     $b = $a;',
                 'assertions' => [
-                    '$b===' => "'b'|1",
+                    '$b===' => "'b'|1|null",
                 ],
                 'ignored_issues' => ['PossiblyUndefinedGlobalVariable'],
             ],

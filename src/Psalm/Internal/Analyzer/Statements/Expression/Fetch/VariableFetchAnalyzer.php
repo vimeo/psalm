@@ -442,9 +442,14 @@ final class VariableFetchAnalyzer
 
             $context->vars_in_scope[$var_name] = $stmt_type;
             // the value that is read is defined, whatever the variable is (an isset() asks about the variable)
+            // reading an undefined variable gives null
             $statements_analyzer->node_data->setType(
                 $stmt,
-                $context->inside_isset ? $stmt_type : $stmt_type->setPossiblyUndefined(false),
+                $context->inside_isset
+                    ? $stmt_type
+                    : ($stmt_type->possibly_undefined && !$stmt_type->possibly_undefined_from_try
+                        ? Type::combineUnionTypes($stmt_type->setPossiblyUndefined(false), Type::getNull())
+                        : $stmt_type->setPossiblyUndefined(false)),
             );
 
             // a variable a loop defines, where an iteration starts (see LoopAnalyzer)
