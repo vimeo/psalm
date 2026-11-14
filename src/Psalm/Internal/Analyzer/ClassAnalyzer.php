@@ -919,7 +919,9 @@ final class ClassAnalyzer extends ClassLikeAnalyzer
                                 $storage->declaring_method_ids['__construct']->fq_class_name,
                             ) === strtolower($fq_class_name)))
                     && !$property_storage->has_default
-                    && !($property_type->isNullable() && $property_type->from_docblock)
+                    && !($property_storage->signature_type === null
+                        && $property_type->isNullable()
+                        && $property_type->from_docblock)
                 ) {
                     $property_type = $property_type->setProperties([
                         'initialized' => false,
@@ -1243,7 +1245,12 @@ final class ClassAnalyzer extends ClassLikeAnalyzer
                 continue;
             }
 
-            if ($property->type && $property->type->from_docblock && $property->type->isNullable()) {
+            // an untyped property is null until it is assigned
+            if ($property->signature_type === null
+                && $property->type
+                && $property->type->from_docblock
+                && $property->type->isNullable()
+            ) {
                 continue;
             }
 
