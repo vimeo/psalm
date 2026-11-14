@@ -785,7 +785,6 @@ final class ArrayAccessTest extends TestCase
                     '$first===' => 'string',
                     '$second===' => 'string',
                 ],
-                'ignored_issues' => ['MissingOverrideAttribute'],
             ],
             'allowEmptyList' => [
                 'code' => '<?php
@@ -1520,6 +1519,52 @@ final class ArrayAccessTest extends TestCase
                     $a = [1 => $test];
                     unset($a[$test->value]);',
             ],
+            'nestedUnsetAfterIssetOnMixedArray' => [
+                'code' => '<?php
+                    /**
+                     * @param array<string, mixed> $data
+                     * @return array<string, mixed>
+                     * @psalm-suppress MixedArrayAccess
+                     */
+                    function clean(array $data): array {
+                        if (isset($data["d"]["items"]["list"])) {
+                            echo "has items";
+                        }
+                        unset($data["d"]["result"]["meta"]);
+                        return $data;
+                    }
+                    echo count(clean([]));',
+            ],
+            'unsetOnPossiblyNullIntermediateArray' => [
+                'code' => '<?php
+                    /** @param array<string, array<string, int>|null> $data */
+                    function clearNested(array $data): array {
+                        unset($data["d"]["meta"]);
+                        return $data;
+                    }
+                    clearNested(["d" => null]);',
+            ],
+            'unsetOnNullArray' => [
+                'code' => '<?php
+                    function clearNull(): void {
+                        $data = null;
+                        unset($data["d"]["meta"]);
+                    }
+                    clearNull();',
+            ],
+            'unsetThroughPropertyOfPossiblyNullArray' => [
+                'code' => '<?php
+                    final class Holder {
+                        /** @var array<string, int> */
+                        public array $items = [];
+                    }
+                    /** @param array<string, Holder>|null $holders */
+                    function clearHeld(?array $holders): void {
+                        unset($holders["h"]->items["x"]);
+                    }',
+                'assertions' => [],
+                'ignored_issues' => ['PossiblyNullPropertyFetch'],
+            ],
             'arrayAssertionShouldNotBeNull' => [
                 'code' => '<?php
                     function foo(?array $arr, string $s) : void {
@@ -1800,7 +1845,6 @@ final class ArrayAccessTest extends TestCase
                     $a = [];
                     echo $a[0];',
                 'error_message' => 'MixedArrayAccess',
-                'error_levels' => ['MixedAssignment'],
             ],
             'mixedArrayOffset' => [
                 'code' => '<?php
@@ -1808,7 +1852,6 @@ final class ArrayAccessTest extends TestCase
                     $a = 5;
                     echo [1, 2, 3, 4][$a];',
                 'error_message' => 'MixedArrayOffset',
-                'error_levels' => ['MixedAssignment'],
             ],
             'nullArrayAccess' => [
                 'code' => '<?php
@@ -1821,6 +1864,86 @@ final class ArrayAccessTest extends TestCase
                     $a = rand(0, 1) ? [1, 2] : null;
                     echo $a[0];',
                 'error_message' => 'PossiblyNullArrayAccess',
+            ],
+            'nullableArrayReadAsUnsetOffset' => [
+                'code' => '<?php
+                    /**
+                     * @param array<string, int> $data
+                     * @param array{key: string}|null $keys
+                     */
+                    function removeByKey(array $data, ?array $keys): void {
+                        unset($data[$keys["key"]]);
+                    }',
+                'error_message' => 'PossiblyNullArrayAccess',
+            ],
+            'nullableArrayReadInUnsetCallArgument' => [
+                'code' => '<?php
+                    /** @return array<string, int> */
+                    function fetch(?string $key): array {
+                        return ["entry" => 1];
+                    }
+                    /** @param array{key: string}|null $keys */
+                    function remove(?array $keys): void {
+                        unset(fetch($keys["key"])["entry"]);
+                    }',
+                'error_message' => 'PossiblyNullArrayAccess',
+            ],
+            'nullArrayReadInUnsetCallArgument' => [
+                'code' => '<?php
+                    /** @return array<string, int> */
+                    function fetch(?string $key): array {
+                        return ["entry" => 1];
+                    }
+                    function remove(): void {
+                        $keys = null;
+                        unset(fetch($keys["key"])["entry"]);
+                    }',
+                'error_message' => 'NullArrayAccess',
+            ],
+            'cannotUnsetOffsetOfInt' => [
+                'code' => '<?php
+                    function invalidUnset(int $data): void {
+                        unset($data["key"]);
+                    }',
+                'error_message' => 'InvalidArrayAccess',
+            ],
+            'nullableArrayReadAsUnsetMethodReceiver' => [
+                'code' => '<?php
+                    final class Box {
+                        /** @return array<string, int> */
+                        public function items(): array {
+                            return [];
+                        }
+                    }
+                    /** @param array{box: Box}|null $boxes */
+                    function remove(?array $boxes): void {
+                        unset($boxes["box"]->items()["x"]);
+                    }',
+                'error_message' => 'PossiblyNullArrayAccess',
+            ],
+            'nullableArrayReadAsUnsetPropertyName' => [
+                'code' => '<?php
+                    final class Bag {
+                        /** @var array<string, int> */
+                        public array $items = [];
+                    }
+                    /** @param array{name: "items"}|null $names */
+                    function remove(Bag $bag, ?array $names): void {
+                        unset($bag->{$names["name"]}["x"]);
+                    }',
+                'error_message' => 'PossiblyNullArrayAccess',
+            ],
+            'nullArrayReadAsUnsetStaticPropertyClass' => [
+                'code' => '<?php
+                    final class Registry {
+                        /** @var array<string, int> */
+                        public static array $items = [];
+                    }
+                    function remove(): void {
+                        $classes = null;
+                        unset($classes["registry"]::$items["x"]);
+                    }',
+                'error_message' => 'NullArrayAccess',
             ],
             'specificErrorMessage' => [
                 'code' => '<?php
@@ -1957,7 +2080,6 @@ final class ArrayAccessTest extends TestCase
             ],
             'recogniseBadVar' => [
                 'code' => '<?php
-                    /** @psalm-suppress MixedAssignment */
                     $array = $_GET["foo"] ?? [];
 
                     $array[$a] = "b";',
