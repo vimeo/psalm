@@ -8,6 +8,7 @@ use InvalidArgumentException;
 use Psalm\Codebase;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\Internal\Codebase\Methods;
+use Psalm\Internal\Type\Comparator\AtomicTypeComparator;
 use Psalm\Internal\Type\Comparator\CallableTypeComparator;
 use Psalm\Internal\Type\Comparator\KeyedArrayComparator;
 use Psalm\Internal\Type\Comparator\UnionTypeComparator;
@@ -40,6 +41,7 @@ use Psalm\Type\Atomic\TTemplateValueOf;
 use Psalm\Type\Atomic\TTypeVariable;
 use Psalm\Type\Union;
 
+use function array_any;
 use function array_fill;
 use function array_filter;
 use function array_keys;
@@ -138,6 +140,47 @@ final class TemplateStandinTypeReplacer
             }
 
             $other_input_type = $new_input_type->isUnionEmpty() ? null : $new_input_type->freeze();
+
+            // a literal or a more specific type of one the union has, `'a'` for `string`, is not the template's
+            // either, unless it is all that is left or it binds a template inside a type, as `class-string<T>` or
+            // `iterable<T>` do
+            if ($other_input_type) {
+                $template_free_input_type = $other_input_type->getBuilder();
+
+                $template_free_atomic_types = [];
+                $templated_atomic_types = [];
+
+                foreach ($original_atomic_types as $original_atomic_type) {
+                    if (!(new Union([$original_atomic_type]))->getTemplateTypes()) {
+                        $template_free_atomic_types[] = $original_atomic_type;
+                    } elseif ($original_atomic_type instanceof TTemplateParamClass) {
+                        $templated_atomic_types[] = new TClassString(
+                            $original_atomic_type->as,
+                            $original_atomic_type->as_type,
+                        );
+                    } elseif (!$original_atomic_type instanceof TTemplateParam) {
+                        $templated_atomic_types[] = $original_atomic_type;
+                    }
+                }
+
+                foreach ($other_input_type->getAtomicTypes() as $input_key => $input_atomic_type) {
+                    if (array_any(
+                        $template_free_atomic_types,
+                        static fn(Atomic $atomic_type): bool
+                            => AtomicTypeComparator::isContainedBy($codebase, $input_atomic_type, $atomic_type),
+                    ) && !array_any(
+                        $templated_atomic_types,
+                        static fn(Atomic $atomic_type): bool
+                            => AtomicTypeComparator::isContainedBy($codebase, $input_atomic_type, $atomic_type),
+                    )) {
+                        $template_free_input_type->removeType($input_key);
+                    }
+                }
+
+                if (!$template_free_input_type->isUnionEmpty()) {
+                    $other_input_type = $template_free_input_type->freeze();
+                }
+            }
 
             // a bare template keeps the subtraction for every atom: its bounds would otherwise
             // compete by depth with the deeper bounds a matched container atom adds
