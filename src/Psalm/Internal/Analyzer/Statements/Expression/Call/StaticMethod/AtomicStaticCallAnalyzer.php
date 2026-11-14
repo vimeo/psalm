@@ -1057,6 +1057,7 @@ final class AtomicStaticCallAnalyzer
             $context->mergeFunctionExceptions(
                 $pseudo_method_storage,
                 new CodeLocation($statements_analyzer, $stmt),
+                $statements_analyzer->getCodebase(),
             );
         }
 

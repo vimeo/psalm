@@ -154,6 +154,123 @@ final class ThrowsAnnotationTest extends TestCase
         $this->analyzeFile('somefile.php', $context);
     }
 
+    public function testCatchingTheThrowableOfAnIntersectionCoversTheGroup(): void
+    {
+        Config::getInstance()->check_for_throws_docblock = true;
+
+        $this->addFile(
+            'somefile.php',
+            '<?php
+                interface Marker {}
+                final class MarkedException extends RuntimeException implements Marker {}
+                class Svc {
+                    /** @throws Marker&\Throwable */
+                    public function run(): void {
+                        throw new MarkedException();
+                    }
+                }
+                function caller(Svc $s): void {
+                    try {
+                        $s->run();
+                    } catch (\Throwable) {
+                    }
+                }',
+        );
+
+        $context = new Context();
+
+        $this->analyzeFile('somefile.php', $context);
+        $this->assertSame(0, IssueBuffer::getErrorCount());
+    }
+
+    public function testDeclaringTheThrowableOfAnIntersectionCoversTheGroup(): void
+    {
+        Config::getInstance()->check_for_throws_docblock = true;
+
+        $this->addFile(
+            'somefile.php',
+            '<?php
+                interface Marker {}
+                final class MarkedException extends RuntimeException implements Marker {}
+                class Svc {
+                    /** @throws Marker&\Throwable */
+                    public function run(): void {
+                        throw new MarkedException();
+                    }
+                }
+                /** @throws Throwable */
+                function caller(Svc $s): void {
+                    $s->run();
+                }',
+        );
+
+        $context = new Context();
+
+        $this->analyzeFile('somefile.php', $context);
+        $this->assertSame(0, IssueBuffer::getErrorCount());
+    }
+
+    public function testNotHandlingAnIntersectionInTheCallerIsReported(): void
+    {
+        $this->expectExceptionMessage('Throwable is thrown but not caught');
+        $this->expectException(CodeException::class);
+        Config::getInstance()->check_for_throws_docblock = true;
+
+        $this->addFile(
+            'somefile.php',
+            '<?php
+                interface Marker {}
+                final class MarkedException extends RuntimeException implements Marker {}
+                class Svc {
+                    /** @throws Marker&\Throwable */
+                    public function run(): void {
+                        throw new MarkedException();
+                    }
+                }
+                function caller(Svc $s): void {
+                    $s->run();
+                }',
+        );
+
+        $context = new Context();
+
+        $this->analyzeFile('somefile.php', $context);
+    }
+
+    public function testInheritedIntersectionThrowsCoversTheGroupInTheCaller(): void
+    {
+        Config::getInstance()->check_for_throws_docblock = true;
+
+        $this->addFile(
+            'somefile.php',
+            '<?php
+                interface Marker {}
+                final class MarkedException extends RuntimeException implements Marker {}
+                class Svc {
+                    /** @throws Marker&\Throwable */
+                    public function run(): void {
+                        throw new MarkedException();
+                    }
+                }
+                class Child extends Svc {
+                    public function run(): void {
+                        throw new MarkedException();
+                    }
+                }
+                function caller(Child $s): void {
+                    try {
+                        $s->run();
+                    } catch (\Throwable) {
+                    }
+                }',
+        );
+
+        $context = new Context();
+
+        $this->analyzeFile('somefile.php', $context);
+        $this->assertSame(0, IssueBuffer::getErrorCount());
+    }
+
     public function testInheritedThrowableClassAsThrows(): void
     {
         $this->addFile(

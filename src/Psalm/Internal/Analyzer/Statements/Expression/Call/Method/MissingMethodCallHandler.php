@@ -106,6 +106,7 @@ final class MissingMethodCallHandler
             $context->mergeFunctionExceptions(
                 $found_method_and_class_storage[0],
                 new CodeLocation($statements_analyzer->getSource(), $stmt->name),
+                $statements_analyzer->getCodebase(),
             );
         }
 
@@ -426,6 +427,7 @@ final class MissingMethodCallHandler
                 $context->mergeFunctionExceptions(
                     $pseudo_method_storage,
                     new CodeLocation($statements_analyzer, $stmt->name),
+                    $statements_analyzer->getCodebase(),
                 );
             }
 

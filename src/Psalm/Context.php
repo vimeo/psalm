@@ -26,6 +26,7 @@ use Psalm\Type\Atomic\TObjectWithProperties;
 use Psalm\Type\Union;
 use RuntimeException;
 
+use function array_any;
 use function array_keys;
 use function array_search;
 use function array_shift;
@@ -1315,11 +1316,37 @@ final class Context
     public function mergeFunctionExceptions(
         FunctionLikeStorage $function_storage,
         CodeLocation $codelocation,
+        ?Codebase $codebase = null,
     ): void {
         $hash = $codelocation->getHash();
         foreach ($function_storage->throws as $possibly_thrown_exception => $_) {
+            // a thrown value of `A&Throwable` is caught or declared as the Throwable it is, not as `A`
+            if ($codebase
+                && isset($function_storage->throw_intersections[$possibly_thrown_exception])
+                && !self::isThrowable($codebase, $possibly_thrown_exception)
+                && array_any(
+                    $function_storage->throw_intersections[$possibly_thrown_exception],
+                    static fn(array $group): bool => array_any(
+                        $group,
+                        static fn(string $member): bool => self::isThrowable($codebase, $member),
+                    ),
+                )
+            ) {
+                continue;
+            }
+
             $this->possibly_thrown_exceptions[$possibly_thrown_exception][$hash] = $codelocation;
         }
+    }
+
+    /**
+     * @psalm-mutation-free
+     */
+    private static function isThrowable(Codebase $codebase, string $fq_class_name): bool
+    {
+        return $codebase->classlike_storage_provider->has($fq_class_name)
+            && (strtolower($fq_class_name) === 'throwable'
+                || $codebase->classExtendsOrImplements($fq_class_name, 'Throwable'));
     }
 
     /**

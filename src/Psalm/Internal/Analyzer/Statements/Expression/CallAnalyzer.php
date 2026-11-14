@@ -381,7 +381,11 @@ abstract class CallAnalyzer
             }
 
             if (!$context->isSuppressingExceptions($statements_analyzer)) {
-                $context->mergeFunctionExceptions($method_storage, $code_location);
+                $context->mergeFunctionExceptions(
+                    $method_storage,
+                    $code_location,
+                    $statements_analyzer->getCodebase(),
+                );
             }
         }
 

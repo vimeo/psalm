@@ -816,6 +816,7 @@ final class Populator
                                 && (!$method_storage->throws || $method_storage->inheritdoc)
                             ) {
                                 $method_storage->throws += $interface_method_storage->throws;
+                                $method_storage->throw_intersections += $interface_method_storage->throw_intersections;
                             }
                         }
                     }
@@ -937,6 +938,7 @@ final class Populator
                         && (!$method_storage->throws || $method_storage->inheritdoc)
                     ) {
                         $method_storage->throws += $declaring_method_storage->throws;
+                        $method_storage->throw_intersections += $declaring_method_storage->throw_intersections;
                     }
                 }
 
