@@ -2876,6 +2876,90 @@ final class FunctionTemplateTest extends TestCase
                     '$cars===' => 'list<Car>',
                 ],
             ],
+            'closureOfATemplateWithANullDefaultOfTheSameTemplate' => [
+                'code' => '<?php
+                    /** @template T */
+                    final class Collection {
+                        /**
+                         * @param Closure(T,mixed):bool|null $callback
+                         * @param T|null $default
+                         * @return T|null
+                         */
+                        public function last(?Closure $callback = null, $default = null) {
+                            return $default;
+                        }
+                    }
+
+                    /** @var Collection<array> $collection */
+                    $collection = new Collection();
+                    $collection->last(function (array $_item): bool {
+                        return true;
+                    });',
+            ],
+            'argumentThatIsAnAtomOfAUnionWithATemplateStillBindsIt' => [
+                'code' => '<?php
+                    /**
+                     * @template T
+                     * @param T|string $x
+                     * @return T
+                     */
+                    function withString($x) { throw new Exception(); }
+
+                    /**
+                     * @template T
+                     * @param T|array<int, string> $x
+                     * @return T
+                     */
+                    function withArray($x) { throw new Exception(); }
+
+                    /**
+                     * @template T
+                     * @param T|1 $x
+                     * @return T
+                     */
+                    function withLiteral($x) { throw new Exception(); }
+
+                    /** @param array<int, string> $arr */
+                    function check(string $s, array $arr): void {
+                        $a = withString($s);
+                        $b = withArray($arr);
+                        $c = withLiteral(1);
+
+                        /** @psalm-check-type-exact $a = string */
+                        /** @psalm-check-type-exact $b = array<int, string> */
+                        /** @psalm-check-type-exact $c = 1 */
+                        echo 1;
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
+            'defaultNullOfATemplateOrNullParamDoesNotBoundTheTemplate' => [
+                'code' => '<?php
+                    /**
+                     * @template T
+                     * @param Closure(T):void $callback
+                     * @param T|null $default
+                     */
+                    function withDefault(Closure $callback, $default = null): void {}
+
+                    /**
+                     * @template T
+                     * @param T|null $value
+                     * @return T
+                     */
+                    function identity($value) {
+                        return $value;
+                    }
+
+                    withDefault(function (array $_item): void {});
+                    $null = identity(null);
+                    $one = identity(1);',
+                'assertions' => [
+                    '$null===' => 'null',
+                    '$one===' => '1',
+                ],
+            ],
         ];
     }
 
