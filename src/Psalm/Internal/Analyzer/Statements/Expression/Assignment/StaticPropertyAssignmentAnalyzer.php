@@ -372,31 +372,42 @@ final class StaticPropertyAssignmentAnalyzer
                 continue;
             }
 
-            if (self::mayBeTheSameClass($codebase, $context, $assigned_class, $other_class)) {
+            if (self::mayBeTheSameProperty($codebase, $context, $assigned_class, $other_class, $property_id)) {
                 $context->remove($other_id);
             }
         }
     }
 
-    private static function mayBeTheSameClass(
+    private static function mayBeTheSameProperty(
         Codebase $codebase,
         Context $context,
         string $first,
         string $second,
+        string $property_name,
     ): bool {
-        $first = self::resolveRelativeClass($context, $first);
-        $second = self::resolveRelativeClass($context, $second);
+        $first_class = self::resolveRelativeClass($context, $first);
+        $second_class = self::resolveRelativeClass($context, $second);
 
-        if ($first === null || $second === null) {
+        if ($first_class === null || $second_class === null) {
             return true;
         }
 
-        // `static` may be a descendant of the class the code is in, but a class it shares the property with is
-        // still an ancestor or a descendant of that class
-        return strtolower($first) === strtolower($second)
-            || ($codebase->classOrInterfaceExists($first)
-                && $codebase->classOrInterfaceExists($second)
-                && ($codebase->classExtends($first, $second) || $codebase->classExtends($second, $first)));
+        if (Context::getStaticPropertyDeclaringClass($codebase, $first_class, $property_name)
+            === Context::getStaticPropertyDeclaringClass($codebase, $second_class, $property_name)
+        ) {
+            return true;
+        }
+
+        // `static` can also be a descendant of the class the code is in, with a property of its own
+        return (strtolower($first) === 'static' && self::classExtends($codebase, $second_class, $first_class))
+            || (strtolower($second) === 'static' && self::classExtends($codebase, $first_class, $second_class));
+    }
+
+    private static function classExtends(Codebase $codebase, string $class, string $possible_parent): bool
+    {
+        return $codebase->classOrInterfaceExists($class)
+            && $codebase->classOrInterfaceExists($possible_parent)
+            && $codebase->classExtends($class, $possible_parent);
     }
 
     /**

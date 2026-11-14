@@ -945,6 +945,56 @@ final class BinaryOperationTest extends TestCase
                 'ignored_issues' => [],
                 'php_version' => '7.4',
             ],
+            'assignmentToStaticPropertyKeepsTheNarrowingOfAParentPropertyItRedeclares' => [
+                'code' => '<?php
+                    class Base
+                    {
+                        public static ?string $value = null;
+                    }
+
+                    final class Child extends Base
+                    {
+                        public static ?string $value = null;
+
+                        public static function get(): string
+                        {
+                            Base::$value = "a";
+                            static::$value = null;
+
+                            return Base::$value;
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '7.4',
+            ],
+            'staticPropertyOfStaticPassedByReferenceKeepsTheNarrowingOfAParentPropertyItRedeclares' => [
+                'code' => '<?php
+                    function clear(?string &$s): void {
+                        $s = null;
+                    }
+
+                    class Base
+                    {
+                        public static ?string $value = null;
+                    }
+
+                    final class Child extends Base
+                    {
+                        public static ?string $value = null;
+
+                        public static function get(): string
+                        {
+                            Base::$value = "a";
+                            clear(static::$value);
+
+                            return Base::$value;
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '7.4',
+            ],
             'staticPropertyGuardedByANullCheckIsNotNullAfterIt' => [
                 'code' => '<?php
                     interface Container {}
@@ -2387,6 +2437,52 @@ final class BinaryOperationTest extends TestCase
                     }
 
                     final class Child extends Base {}',
+                'error_message' => 'NullableReturnStatement',
+                'error_levels' => [],
+                'php_version' => '7.4',
+            ],
+            'assignmentToStaticPropertyForgetsTheNarrowingOfASiblingClassOne' => [
+                'code' => '<?php
+                    abstract class Base
+                    {
+                        public static ?string $value = null;
+                    }
+
+                    final class Left extends Base
+                    {
+                        public static function get(): string
+                        {
+                            Right::$value = "a";
+                            static::$value = null;
+
+                            return Right::$value;
+                        }
+                    }
+
+                    final class Right extends Base {}',
+                'error_message' => 'NullableReturnStatement',
+                'error_levels' => [],
+                'php_version' => '7.4',
+            ],
+            'assignmentToStaticPropertyForgetsTheNarrowingOfAChildPropertyStaticMayBe' => [
+                'code' => '<?php
+                    class Base
+                    {
+                        public static ?string $value = null;
+
+                        public static function get(): string
+                        {
+                            Child::$value = "a";
+                            static::$value = null;
+
+                            return Child::$value;
+                        }
+                    }
+
+                    final class Child extends Base
+                    {
+                        public static ?string $value = null;
+                    }',
                 'error_message' => 'NullableReturnStatement',
                 'error_levels' => [],
                 'php_version' => '7.4',
