@@ -1,0 +1,185 @@
+<?php
+
+/**
+ * The protobuf extension (https://github.com/protocolbuffers/protobuf-php), whose classes have no types of their own
+ * when PHP reflects them: the public API of Message and of the well-known types Timestamp and Duration, plus the
+ * protected helpers generated message classes call, with the types of the google/protobuf package 5.36
+ */
+
+namespace Google\Protobuf\Internal {
+    class Message
+    {
+        /**
+         * @param array<array-key, mixed>|null $data
+         */
+        public function __construct($data = null) {}
+
+        /**
+         * Clear all containing fields.
+         *
+         * @return null
+         */
+        public function clear() {}
+
+        /**
+         * Clear all unknown fields previously parsed.
+         *
+         * @return null
+         */
+        public function discardUnknownFields() {}
+
+        /**
+         * @param object $msg Protobuf message to be merged from.
+         * @return null
+         */
+        public function mergeFrom($msg) {}
+
+        /**
+         * @param string $data Binary protobuf data.
+         * @param int $recursion_limit Maximum message nesting depth allowed while parsing.
+         * @return null
+         * @throws \Exception Invalid data.
+         */
+        public function mergeFromString($data, $recursion_limit = 100) {}
+
+        /**
+         * @param string $data Json protobuf data.
+         * @param bool $ignore_unknown
+         * @return null
+         * @throws \Exception Invalid data.
+         */
+        public function mergeFromJsonString($data, $ignore_unknown = false) {}
+
+        /**
+         * @param int $recursion_limit
+         * @return string Serialized binary protobuf data.
+         */
+        public function serializeToString($recursion_limit = 100) {}
+
+        /**
+         * @param int $options
+         * @return string Serialized json protobuf data.
+         */
+        public function serializeToJsonString($options = 0) {}
+
+        /**
+         * @param string $member Name of a field of a wrapper type (Int32Value, StringValue, ...).
+         * @return mixed The wrapped value, null when the wrapper is not set.
+         */
+        protected function readWrapperValue($member) {}
+
+        /**
+         * @param string $member Name of a field of a wrapper type (Int32Value, StringValue, ...).
+         * @param mixed $value
+         * @return void
+         */
+        protected function writeWrapperValue($member, $value) {}
+
+        /**
+         * @param int $number Field number.
+         * @return mixed The value of the field when it is the one set in its oneof, its default otherwise.
+         */
+        protected function readOneof($number) {}
+
+        /**
+         * @param int $number Field number.
+         * @return bool
+         */
+        protected function hasOneof($number) {}
+
+        /**
+         * @param int $number Field number.
+         * @param mixed $value Null clears the oneof.
+         * @return void
+         */
+        protected function writeOneof($number, $value) {}
+
+        /**
+         * @param string $oneof_name
+         * @return string Name of the field set in the oneof, "" when none is.
+         */
+        protected function whichOneof($oneof_name) {}
+
+        /**
+         * @param array<array-key, mixed> $array Message properties and values.
+         * @return null
+         */
+        protected function mergeFromArray(array $array) {}
+    }
+}
+
+namespace Google\Protobuf {
+    class Timestamp extends \Google\Protobuf\Internal\Message
+    {
+        /**
+         * @param array{seconds?: int|string, nanos?: int}|null $data
+         */
+        public function __construct($data = null) {}
+
+        /**
+         * @return int|string
+         */
+        public function getSeconds() {}
+
+        /**
+         * @param int|string $var
+         * @return $this
+         */
+        public function setSeconds(int|string $var) {}
+
+        /**
+         * @return int
+         */
+        public function getNanos() {}
+
+        /**
+         * @param int $var
+         * @return $this
+         */
+        public function setNanos(int $var) {}
+
+        /**
+         * Converts PHP DateTime to Timestamp.
+         *
+         * @return void
+         */
+        public function fromDateTime(\DateTime $datetime) {}
+
+        /**
+         * Converts Timestamp to PHP DateTime.
+         *
+         * @return \DateTime
+         */
+        public function toDateTime() {}
+    }
+
+    class Duration extends \Google\Protobuf\Internal\Message
+    {
+        /**
+         * @param array{seconds?: int|string, nanos?: int}|null $data
+         */
+        public function __construct($data = null) {}
+
+        /**
+         * @return int|string
+         */
+        public function getSeconds() {}
+
+        /**
+         * @param int|string $var
+         * @return $this
+         */
+        public function setSeconds(int|string $var) {}
+
+        /**
+         * @return int
+         */
+        public function getNanos() {}
+
+        /**
+         * @param int $var
+         * @return $this
+         */
+        public function setNanos(int $var) {}
+    }
+}
