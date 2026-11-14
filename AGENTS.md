@@ -15,6 +15,10 @@ Domain skills (load them before touching the area):
 - `pr-description`: the PR description format, and reformatting existing descriptions
 - `plugin-api-bc`: a failing BC check, the roave XML, and the psalm-plugin-api PR
 
+`skills/psalm` is the skill Psalm ships to its users. A PR that changes a CLI option, an issue
+type or its docs page, or what a `psalm.xml` attribute does updates that skill too.
+`tests/AgentSkillTest.php` only checks that the names it mentions still exist.
+
 ## Fixing bugs and writing features
 
 These come first, before every other rule here:
