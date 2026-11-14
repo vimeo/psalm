@@ -154,6 +154,28 @@ final class ConditionalTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'looseNullComparisonOfAStringKeepsTheZeroString' => [
+                'code' => '<?php
+                    function maybeString(): ?string {
+                        return rand(0, 1) ? "0" : null;
+                    }
+
+                    $s = maybeString();
+                    $not_equal = null;
+                    $equal = null;
+
+                    if ($s != null) {
+                        $not_equal = $s;
+                    }
+
+                    if ($s == null) {
+                        $equal = $s;
+                    }',
+                'assertions' => [
+                    '$not_equal===' => 'non-empty-string|null',
+                    '$equal===' => "''|null",
+                ],
+            ],
             'notIterableDropsTheObjectsThatAreTraversable' => [
                 'code' => '<?php
                     function f(Throwable $e): void {
