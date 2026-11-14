@@ -1,0 +1,9 @@
+<?php
+
+namespace Random;
+
+final class Randomizer
+{
+    /** @param \Random\Engine\Mt19937 $engine */
+    public function __construct(public readonly Engine $engine) {}
+}

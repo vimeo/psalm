@@ -1391,6 +1391,80 @@ final class StubTest extends DeferredAnalyzerTestCase
         $this->analyzeFile($file_path, new Context());
     }
 
+    public function testStubOfBuiltinClassDeclaresPromotedProperty(): void
+    {
+        $this->project_analyzer = $this->getProjectAnalyzerWithConfig(
+            TestConfig::loadFromXML(
+                dirname(__DIR__),
+                '<?xml version="1.0"?>
+                <psalm
+                    errorLevel="1"
+                >
+                    <projectFiles>
+                        <directory name="src" />
+                    </projectFiles>
+
+                    <stubs>
+                        <file name="tests/fixtures/stubs/promoted_property_of_builtin_class.phpstub" />
+                    </stubs>
+                </psalm>',
+            ),
+        );
+        $this->project_analyzer->setPhpVersion('8.2', 'tests');
+
+        $file_path = (string) getcwd() . '/src/somefile.php';
+
+        $this->addFile(
+            $file_path,
+            '<?php
+                function engineOf(Random\Randomizer $randomizer): Random\Engine\Mt19937
+                {
+                    return $randomizer->engine;
+                }',
+        );
+
+        $this->analyzeFile($file_path, new Context());
+    }
+
+    public function testStubRedeclaresPropertyOfAnotherStubWithPromotion(): void
+    {
+        $this->project_analyzer = $this->getProjectAnalyzerWithConfig(
+            TestConfig::loadFromXML(
+                dirname(__DIR__),
+                '<?xml version="1.0"?>
+                <psalm
+                    errorLevel="1"
+                >
+                    <projectFiles>
+                        <directory name="src" />
+                    </projectFiles>
+
+                    <stubs>
+                        <file name="tests/fixtures/stubs/promoted_property_of_stubbed_class.phpstub" />
+                    </stubs>
+                </psalm>',
+            ),
+        );
+        $this->project_analyzer->setPhpVersion('8.2', 'tests');
+
+        $file_path = (string) getcwd() . '/src/somefile.php';
+
+        $this->addFile(
+            $file_path,
+            '<?php
+                final class OrderNotFound extends Exception
+                {
+                    /** @return non-empty-string */
+                    public function reason(): string
+                    {
+                        return $this->message;
+                    }
+                }',
+        );
+
+        $this->analyzeFile($file_path, new Context());
+    }
+
     public function testStubFileWithPartialClassDefinitionWithMoreMethods(): void
     {
         $this->project_analyzer = $this->getProjectAnalyzerWithConfig(

@@ -520,7 +520,14 @@ final class FunctionLikeNodeScanner
                     continue;
                 }
 
-                if (isset($classlike_storage->properties[$param_storage->name]) && $param_storage->location) {
+                $existing_property = $classlike_storage->properties[$param_storage->name] ?? null;
+
+                // only a property of this declaration clashes: a stub refines those of reflection and of other stubs
+                if ($existing_property
+                    && $existing_property->location
+                    && $existing_property->location->file_path === $this->file_path
+                    && $param_storage->location
+                ) {
                     IssueBuffer::maybeAdd(
                         new ParseError(
                             'Promoted property ' . $param_storage->name . ' clashes with an existing property',
