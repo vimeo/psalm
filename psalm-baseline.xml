@@ -968,14 +968,10 @@
       <code><![CDATA[$lhs_type_part]]></code>
     </ImplicitToStringCast>
     <RiskyTruthyFalsyComparison>
-      <code><![CDATA[$class_storage->mixin_declaring_fqcln]]></code>
-      <code><![CDATA[$class_storage->template_types]]></code>
-      <code><![CDATA[$class_storage->template_types]]></code>
       <code><![CDATA[$context->calling_method_id]]></code>
       <code><![CDATA[$context->calling_method_id]]></code>
       <code><![CDATA[$context->self]]></code>
       <code><![CDATA[$lhs_var_id]]></code>
-      <code><![CDATA[$mixin_class_template_params]]></code>
     </RiskyTruthyFalsyComparison>
   </file>
   <file src="src/Psalm/Internal/Analyzer/Statements/Expression/Call/Method/ExistingAtomicMethodCallAnalyzer.php">
@@ -1087,7 +1083,6 @@
     <RiskyTruthyFalsyComparison>
       <code><![CDATA[!$context->self]]></code>
       <code><![CDATA[!$fq_class_name]]></code>
-      <code><![CDATA[$class_storage->mixin_declaring_fqcln]]></code>
       <code><![CDATA[$context->calling_method_id]]></code>
       <code><![CDATA[$context->calling_method_id]]></code>
     </RiskyTruthyFalsyComparison>
