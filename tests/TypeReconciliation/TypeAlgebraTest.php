@@ -82,6 +82,37 @@ final class TypeAlgebraTest extends TestCase
                 'ignored_issues' => [],
                 'php_version' => '8.1',
             ],
+            'twoClausesThatAreNotReconcilableAreBothKeptOfOneCondition' => [
+                'code' => '<?php
+                    function f(?string $a, ?string $b, string $haystack): void {
+                        if (($a === null || !str_contains($haystack, $a))
+                            && ($b === null || !str_contains($haystack, $b))
+                        ) {
+                            echo "if";
+                        } else {
+                            /** @psalm-check-type-exact $b = null|string */
+                            echo get_debug_type($b);
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
+            'simplifyingThreeClausesDoesNotMakeAUnitClauseOfAReducedOne' => [
+                'code' => '<?php
+                    function f(mixed $a, mixed $x, mixed $y): void {
+                        if ((is_int($a) || is_int($x) || is_int($y))
+                            && (!is_int($a) || is_int($x) || is_int($y))
+                            && (is_int($a) || !is_int($x) || is_int($y))
+                        ) {
+                            /** @psalm-check-type-exact $y = mixed */
+                            echo get_debug_type($y);
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
             'theElseOfAConditionWithAClauseThatIsNotReconcilableDoesNotNarrowTheOtherOperand' => [
                 'code' => '<?php
                     function f(?int $userId, ?string $filter, string $name): void {
@@ -96,10 +127,99 @@ final class TypeAlgebraTest extends TestCase
                 'ignored_issues' => [],
                 'php_version' => '8.1',
             ],
+            'aClauseIsNotTheResolventOfTwoClausesThatClashOnTwoVariables' => [
+                'code' => '<?php
+                    function f(mixed $a, mixed $b, mixed $x, mixed $y): void {
+                        if ((is_int($a) || is_int($b) || is_int($x))
+                            && (!is_int($a) || !is_int($b) || is_int($y))
+                            && (is_int($x) || is_int($y))
+                        ) {
+                            echo "if";
+                        } elseif (is_int($a)) {
+                            /** @psalm-check-type-exact $b = mixed */
+                            echo get_debug_type($b);
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
+            'twoClausesAreNotRedundantBecauseOfEachOther' => [
+                'code' => '<?php
+                    function f(?int $p, ?int $u, ?int $v): void {
+                        if (($v !== null || $p !== null)
+                            && ($v === null || $u !== null)
+                            && ($p !== null || $u !== null)
+                            && ($u === null || $v !== null)
+                        ) {
+                            echo "if";
+                        } else {
+                            if ($u === null) {
+                                /** @psalm-check-type-exact $v = int|null */
+                                echo get_debug_type($v);
+                            }
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
             'theNegationOfAFalseComparisonOfAClauseThatIsNotReconcilableIsNotACertainty' => [
                 'code' => '<?php
                     function f(?int $a, string $s, string $t): void {
                         if (($a === null || !($s === $t)) === false) {
+                            echo "if";
+                        } else {
+                            /** @psalm-check-type-exact $a = int|null */
+                            echo get_debug_type($a);
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
+            'aClauseThatIsNotReconcilableIsNotAParentOfAResolvent' => [
+                'code' => '<?php
+                    function f(?int $a, ?int $x, ?int $y, string $s, string $t): void {
+                        if (($a !== null || $x !== null || !($s === $t))
+                            && ($a === null || $y !== null)
+                            && ($x !== null || $y !== null)
+                        ) {
+                            echo "if";
+                        } else {
+                            /** @psalm-check-type-exact $a = int|null */
+                            echo get_debug_type($a);
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
+            'twoClausesAreNotRedundantBecauseOfEachOtherWhenTheLaterOneIsReduced' => [
+                'code' => '<?php
+                    function f(?int $p, ?int $u, ?int $v): void {
+                        if (($u === null || $v !== null)
+                            && ($v === null || $u !== null)
+                            && ($p !== null || $u !== null)
+                            && ($v !== null || $p !== null)
+                        ) {
+                            echo "if";
+                        } elseif ($u === null) {
+                            /** @psalm-check-type-exact $v = int|null */
+                            echo get_debug_type($v);
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
+            'aClauseThatIsNotReconcilableIsNotTheLaterParentOfAResolvent' => [
+                'code' => '<?php
+                    function f(?int $a, ?int $x, ?int $y, string $s, string $t): void {
+                        if (($a === null || $y !== null)
+                            && ($a !== null || $x !== null || !($s === $t))
+                            && ($x !== null || $y !== null)
+                        ) {
                             echo "if";
                         } else {
                             /** @psalm-check-type-exact $a = int|null */
@@ -306,6 +426,51 @@ final class TypeAlgebraTest extends TestCase
                     PHP,
                 'assertions' => [],
                 'ignored_issues' => ['RiskyTruthyFalsyComparison'],
+                'php_version' => '8.1',
+            ],
+            'nullsafeCallComparedToBoolLiteralDoesNotNarrowReceiver' => [
+                'code' => <<<'PHP'
+                    <?php
+                    final class Box
+                    {
+                        public function check(): bool { return (bool) rand(0, 1); }
+                        public function other(): bool { return (bool) rand(0, 1); }
+                    }
+                    function identicalFalse(?Box $box): void {
+                        if ($box?->check() === false) {
+                            /** @psalm-check-type-exact $box = Box|null */;
+                        } else {
+                            /** @psalm-check-type-exact $box = Box|null */;
+                        }
+                    }
+                    function identicalFalseLiteralOnLeft(?Box $box): void {
+                        if (false === $box?->check()) {
+                            /** @psalm-check-type-exact $box = Box|null */;
+                        }
+                    }
+                    function identicalTrue(?Box $box): void {
+                        if ($box?->check() === true) {
+                            /** @psalm-check-type-exact $box = Box */;
+                        } else {
+                            /** @psalm-check-type-exact $box = Box|null */;
+                        }
+                    }
+                    function notIdenticalFalse(?Box $box): void {
+                        if ($box?->check() !== false) {
+                            /** @psalm-check-type-exact $box = Box|null */;
+                        } else {
+                            /** @psalm-check-type-exact $box = Box */;
+                        }
+                    }
+                    function notIdenticalTrue(?Box $box): void {
+                        if ($box?->check() !== true) {
+                            /** @psalm-check-type-exact $box = Box|null */;
+                        } else {
+                            /** @psalm-check-type-exact $box = Box */;
+                        }
+                    }
+                    PHP,
+                'assertions' => [],
                 'php_version' => '8.1',
             ],
             'boolVarIdenticalToFalseNarrowsItsConjuncts' => [
