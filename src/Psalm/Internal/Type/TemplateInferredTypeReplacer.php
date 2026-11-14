@@ -14,6 +14,7 @@ use Psalm\Type;
 use Psalm\Type\Atomic;
 use Psalm\Type\Atomic\TArray;
 use Psalm\Type\Atomic\TClassString;
+use Psalm\Type\Atomic\TClosure;
 use Psalm\Type\Atomic\TConditional;
 use Psalm\Type\Atomic\TInt;
 use Psalm\Type\Atomic\TIntersection;
@@ -39,11 +40,13 @@ use Psalm\Type\Atomic\TValueOf;
 use Psalm\Type\Union;
 use UnexpectedValueException;
 
+use function array_all;
 use function array_merge;
 use function array_shift;
 use function array_values;
 use function assert;
 use function str_starts_with;
+use function strtolower;
 
 /**
  * @internal
@@ -551,6 +554,15 @@ final class TemplateInferredTypeReplacer
                     continue;
                 }
 
+                // an intersection of an interface and the final Closure is not an object there can be
+                if (array_all(
+                    $conditional_type->getAtomicTypes(),
+                    static fn(Atomic $conditional_atomic_type): bool
+                        => self::isDisjointFromClosure($codebase, $candidate_atomic_type, $conditional_atomic_type),
+                )) {
+                    continue;
+                }
+
                 $if_part = Type::intersectUnionTypes(
                     $candidate,
                     $conditional_type,
@@ -746,6 +758,37 @@ final class TemplateInferredTypeReplacer
             new Union($overlapping_atomic_types),
             false,
         );
+    }
+
+    /**
+     * Whether $candidate can't be a Closure: it is final and extends or implements nothing, so only the
+     * class itself, `object`, `callable` and what they bound are possibly one
+     */
+    private static function isDisjointFromClosure(
+        Codebase $codebase,
+        Atomic $candidate,
+        Atomic $conditional_atomic_type,
+    ): bool {
+        if (!$conditional_atomic_type instanceof TClosure) {
+            return false;
+        }
+
+        if ($candidate instanceof TTemplateParam) {
+            return array_all(
+                $candidate->as->getAtomicTypes(),
+                static fn(Atomic $bound): bool
+                    => self::isDisjointFromClosure($codebase, $bound, $conditional_atomic_type)
+                    || !UnionTypeComparator::canExpressionTypesBeIdentical(
+                        $codebase,
+                        new Union([$bound]),
+                        new Union([$conditional_atomic_type]),
+                        false,
+                    ),
+            );
+        }
+
+        return $candidate instanceof TIterable
+            || ($candidate instanceof TNamedObject && strtolower($candidate->value) !== 'closure');
     }
 
     /**
