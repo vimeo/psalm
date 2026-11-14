@@ -1215,10 +1215,12 @@ final class Context
      * pure or read-globals function, leaves every refinement in place.
      *
      * @param CapabilitySet $callee_capabilities
+     * @param array<string, true> $preserved_methods Memoized results that cannot be affected by this call
      */
     public function removeMutableObjectVars(
         bool $methods_only = false,
         int $callee_capabilities = Capabilities::ALL,
+        array $preserved_methods = [],
     ): void {
         $forget_properties
             = ($callee_capabilities & (Capabilities::WRITE_PROPS | Capabilities::WRITE_THIS_PROPS)) !== 0;
@@ -1231,7 +1233,8 @@ final class Context
         $vars_to_remove = [];
 
         foreach ($this->vars_in_scope as $var_id => $type) {
-            if ($type->has_mutations
+            if (!isset($preserved_methods[$var_id])
+                && $type->has_mutations
                 && (($forget_properties && str_contains($var_id, '->'))
                     || ($forget_statics && (str_contains($var_id, '::') || self::isInSuperGlobal($var_id))))
                 && (!$methods_only || strpos($var_id, '()'))
@@ -1254,7 +1257,8 @@ final class Context
             $abandon_clause = false;
 
             foreach ($clause->possibilities as $key => $_) {
-                if ((($forget_properties && str_contains($key, '->'))
+                if (!isset($preserved_methods[$key])
+                    && (($forget_properties && str_contains($key, '->'))
                         || ($forget_statics && (str_contains($key, '::') || self::isInSuperGlobal($key))))
                     && (!$methods_only || strpos($key, '()'))
                 ) {

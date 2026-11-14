@@ -236,7 +236,7 @@ final class ScopeAnalyzer
                     }
 
                     $case_does_end = !array_diff(
-                        $control_actions,
+                        $case_actions,
                         [self::ACTION_END, self::ACTION_RETURN],
                     );
 

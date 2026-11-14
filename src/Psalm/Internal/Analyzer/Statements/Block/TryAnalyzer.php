@@ -22,6 +22,7 @@ use Psalm\Type\Atomic\TNamedObject;
 use Psalm\Type\Union;
 use UnexpectedValueException;
 
+use function array_filter;
 use function array_intersect_key;
 use function array_map;
 use function array_merge;
@@ -179,6 +180,17 @@ final class TryAnalyzer
         // and $try_context - which allows all variables to have the union of the values before and after
         // the try was applied
         $original_context = clone $try_context;
+
+        foreach ($try_scope->overwritten_parent_nodes as $try_var_id => $overwritten_parent_nodes) {
+            foreach (array_filter([$original_context, $try_context->finally_scope]) as $try_exit_context) {
+                if (isset($try_exit_context->vars_in_scope[$try_var_id])) {
+                    $try_exit_context->vars_in_scope[$try_var_id] = $try_exit_context->vars_in_scope[$try_var_id]
+                        ->setParentNodes(
+                            $try_exit_context->vars_in_scope[$try_var_id]->parent_nodes + $overwritten_parent_nodes,
+                        );
+                }
+            }
+        }
 
         // what the throwing branches assigned reaches the code after the try only through a catch that goes on, so the
         // catches take it from their own throws (above), not from the types the try context is built from
