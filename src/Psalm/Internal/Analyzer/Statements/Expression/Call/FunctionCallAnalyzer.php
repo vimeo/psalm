@@ -848,6 +848,18 @@ final class FunctionCallAnalyzer extends CallAnalyzer
                     strtolower($function_call_info->function_id),
                 );
 
+                if ($function_storage->overloads !== [] && !$stmt->isFirstClassCallable()) {
+                    $function_call_info->function_storage = $function_storage = $function_storage->withOverload(
+                        OverloadSelector::select(
+                            $statements_analyzer,
+                            $codebase,
+                            $args,
+                            $context,
+                            $function_storage->overloads,
+                        ),
+                    );
+                }
+
                 $function_call_info->function_params = $function_call_info->function_storage->params;
 
                 if (!$function_storage->allow_named_arg_calls) {

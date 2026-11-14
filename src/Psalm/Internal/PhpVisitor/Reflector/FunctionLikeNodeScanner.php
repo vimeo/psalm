@@ -103,6 +103,56 @@ final class FunctionLikeNodeScanner
     }
 
     /**
+     * @param list<array{entry: string, offset: int}> $overloads
+     */
+    private function addOverloads(
+        FunctionLikeStorage $storage,
+        PhpParser\Node\FunctionLike $stmt,
+        PhpParser\Comment\Doc $doc_comment,
+        array $overloads,
+        string $cased_function_id,
+    ): void {
+        foreach ($overloads as ['entry' => $entry, 'offset' => $offset]) {
+            try {
+                $overload_node = PseudoMethodParser::parse(
+                    $this->codebase,
+                    $this->aliases,
+                    $stmt,
+                    $doc_comment,
+                    $doc_comment,
+                    'overload' . $entry,
+                    $offset,
+                    [],
+                    [],
+                );
+            } catch (DocblockParseException $e) {
+                $storage->docblock_issues[] = new InvalidDocblock(
+                    $e->getMessage() . ' in docblock for ' . $cased_function_id,
+                    new CodeLocation($this->file_scanner, $stmt, null, true),
+                );
+
+                continue;
+            }
+
+            $overload_scanner = new self(
+                $this->codebase,
+                $this->file_scanner,
+                $this->file_storage,
+                $this->aliases,
+                $this->type_aliases,
+                null,
+                [],
+            );
+
+            /** @var MethodStorage $overload_storage */
+            $overload_storage = $overload_scanner->start($overload_node, true);
+
+            $storage->docblock_issues = [...$storage->docblock_issues, ...$overload_storage->docblock_issues];
+            $storage->overloads[] = $overload_storage;
+        }
+    }
+
+    /**
      * @param  bool $fake_method in the case of @method annotations we do something a little strange
      */
     public function start(
@@ -444,6 +494,10 @@ final class FunctionLikeNodeScanner
                     $fake_method,
                     $cased_function_id,
                 );
+
+                if ($stmt instanceof PhpParser\Node\Stmt\Function_) {
+                    $this->addOverloads($storage, $stmt, $doc_comment, $docblock_info->overloads, $cased_function_id);
+                }
             }
         }
 
