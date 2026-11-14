@@ -2491,6 +2491,46 @@ final class BinaryOperationTest extends TestCase
                 'error_levels' => [],
                 'php_version' => '8.0',
             ],
+            'possiblyNullOperandMessageShowsExactType' => [
+                'code' => '<?php
+                    /** @param numeric-string|null $s */
+                    function f(?string $s): int {
+                        return $s + 1;
+                    }',
+                'error_message' => 'PossiblyNullOperand - src' . DIRECTORY_SEPARATOR . 'somefile.php:4:32'
+                    . ' - Left operand cannot be nullable, got null|numeric-string',
+            ],
+            'possiblyFalseOperandMessageShowsExactType' => [
+                'code' => '<?php
+                    /** @param numeric-string|false $s */
+                    function f(string|false $s): int {
+                        return $s + 1;
+                    }',
+                'error_message' => 'PossiblyFalseOperand - src' . DIRECTORY_SEPARATOR . 'somefile.php:4:32'
+                    . ' - Left operand cannot be falsable, got false|numeric-string',
+                'error_levels' => [],
+                'php_version' => '8.0',
+            ],
+            'possiblyInvalidConcatOperandMessageShowsExactType' => [
+                'code' => '<?php
+                    /** @param array<\'a\'>|\'a\' $s */
+                    function f(array|string $s): string {
+                        return "x" . $s;
+                    }',
+                'error_message' => 'PossiblyInvalidOperand - src' . DIRECTORY_SEPARATOR . 'somefile.php:4:38'
+                    . ' - Cannot concatenate with a \'a\'|array<array-key, \'a',
+                'error_levels' => [],
+                'php_version' => '8.0',
+            ],
+            'invalidConcatOperandMessageShowsExactType' => [
+                'code' => '<?php
+                    /** @param array<\'a\'> $s */
+                    function f(array $s): string {
+                        return "x" . $s;
+                    }',
+                'error_message' => 'InvalidOperand - src' . DIRECTORY_SEPARATOR . 'somefile.php:4:38'
+                    . ' - Cannot concatenate with a array<array-key, \'a',
+            ],
         ];
     }
 

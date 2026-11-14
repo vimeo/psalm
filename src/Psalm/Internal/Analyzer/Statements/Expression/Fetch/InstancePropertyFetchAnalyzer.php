@@ -219,7 +219,7 @@ final class InstancePropertyFetchAnalyzer
                     IssueBuffer::maybeAdd(
                         new PossiblyNullPropertyFetch(
                             rtrim('Cannot get property on possibly null variable ' . $stmt_var_id)
-                            . ' of type ' . $stmt_var_type,
+                            . ' of type ' . $stmt_var_type->getId(),
                             new CodeLocation($statements_analyzer->getSource(), $stmt),
                         ),
                         $statements_analyzer->getSuppressedIssues(),

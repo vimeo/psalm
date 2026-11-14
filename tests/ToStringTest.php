@@ -14,6 +14,8 @@ use Psalm\Tests\Traits\ValidCodeAnalysisTestTrait;
 
 use function array_map;
 
+use const DIRECTORY_SEPARATOR;
+
 final class ToStringTest extends TestCase
 {
     use InvalidCodeAnalysisTestTrait;
@@ -558,6 +560,35 @@ final class ToStringTest extends TestCase
                 'code' => '<?php
                     echo (float) array(\'hello\');',
                 'error_message' => 'RiskyCast',
+            ],
+            'implicitToStringCastMessageShowsExactPropertyType' => [
+                'code' => '<?php
+                    final class A {
+                        public function __toString(): string {
+                            return "a";
+                        }
+                    }
+                    final class B {
+                        /** @var non-empty-string */
+                        public string $s = "b";
+                    }
+                    function f(B $b): void {
+                        $b->s = new A();
+                    }',
+                'error_message' => 'ImplicitToStringCast - src' . DIRECTORY_SEPARATOR . 'somefile.php:12:33'
+                    . ' - $b->s expects \'non-empty-string\', \'A\' provided with a __toString method',
+                'error_levels' => ['PropertyTypeCoercion'],
+            ],
+            'invalidToStringMessageShowsExactReturnedType' => [
+                'code' => '<?php
+                    final class A {
+                        public function __toString(): string {
+                            return 1;
+                        }
+                    }',
+                'error_message' => 'InvalidToString - src' . DIRECTORY_SEPARATOR . 'somefile.php:3:55'
+                    . ' - __toString methods must return a string, 1 returned',
+                'error_levels' => ['InvalidReturnStatement'],
             ],
         ];
     }

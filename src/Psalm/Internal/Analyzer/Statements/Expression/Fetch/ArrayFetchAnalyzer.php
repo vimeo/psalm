@@ -930,7 +930,7 @@ final class ArrayFetchAnalyzer
                 IssueBuffer::maybeAdd(
                     new PossiblyNullArrayOffset(
                         'Cannot access value on variable ' . self::describeArrayVar($extended_var_id, $stmt)
-                            . ' using possibly null offset ' . $offset_type,
+                            . ' using possibly null offset ' . $offset_type->getId(),
                         new CodeLocation($statements_analyzer->getSource(), $stmt->var),
                     ),
                     $statements_analyzer->getSuppressedIssues(),
@@ -1027,7 +1027,7 @@ final class ArrayFetchAnalyzer
                             new PossiblyNullArrayAssignment(
                                 'Cannot access array value on possibly null variable ' .
                                     self::describeArrayVar($extended_var_id, $stmt) .
-                                    ' of type ' . $array_type,
+                                    ' of type ' . $array_type->getId(),
                                 new CodeLocation($statements_analyzer->getSource(), $stmt),
                             ),
                             $statements_analyzer->getSuppressedIssues(),
@@ -1041,7 +1041,7 @@ final class ArrayFetchAnalyzer
                             new PossiblyNullArrayAccess(
                                 'Cannot access array value on possibly null variable ' .
                                     self::describeArrayVar($extended_var_id, $stmt) .
-                                    ' of type ' . $array_type,
+                                    ' of type ' . $array_type->getId(),
                                 new CodeLocation($statements_analyzer->getSource(), $stmt),
                             ),
                             $statements_analyzer->getSuppressedIssues(),
@@ -1984,7 +1984,7 @@ final class ArrayFetchAnalyzer
                 $key_value = $string_to_int === false ? $key_value : new TLiteralInt($string_to_int);
 
                 if ($type->is_list && (!is_int($key_value->value) || $key_value->value < 0)) {
-                    $expected_offset_types[] = $type->getGenericKeyType();
+                    $expected_offset_types[] = $type->getGenericKeyType()->getId();
                     $has_valid_offset = false;
                 } elseif ((isset($properties[$key_value->value]) && !(
                     $key_value->value === 0 && AtomicTypeComparator::isLegacyTListLike($type)
@@ -2261,7 +2261,10 @@ final class ArrayFetchAnalyzer
         Type\Union|Type\MutableUnion $array_type,
         Type\Union|Type\MutableUnion $offset_type,
     ): void {
-        $literal_offsets = array_keys($offset_type->getLiteralStrings());
+        $literal_offsets = array_map(
+            static fn(TLiteralString $literal_offset): string => $literal_offset->getId(),
+            array_values($offset_type->getLiteralStrings()),
+        );
         if (!$literal_offsets) {
             return;
         }
@@ -2276,7 +2279,8 @@ final class ArrayFetchAnalyzer
         }
         if (IssueBuffer::accepts(
             new LiteralKeyUnshapedArray(
-                'Literal offset ' . implode('|', $literal_offsets) . ' was used on unshaped array '.$array_type,
+                'Literal offset ' . implode('|', $literal_offsets) . ' was used on unshaped array '
+                    . $array_type->getId(),
                 new CodeLocation($statements_analyzer->getSource(), $stmt),
             ),
             $statements_analyzer->getSuppressedIssues(),

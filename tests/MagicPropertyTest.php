@@ -1639,6 +1639,64 @@ final class MagicPropertyTest extends TestCase
                     $a->foo = 5;',
                 'error_message' => 'InvalidPropertyAssignmentValue',
             ],
+            'pseudoPropertyCoercionMessageShowsExactTypes' => [
+                'code' => '<?php
+                    /** @property non-empty-lowercase-string $s */
+                    final class A {
+                        public function __set(string $n, mixed $v): void {}
+                    }
+                    /** @param non-empty-string $v */
+                    function f(A $a, string $v): void {
+                        $a->__set("s", $v);
+                    }',
+                'error_message' => 'PropertyTypeCoercion - src' . DIRECTORY_SEPARATOR . 'somefile.php:8:25'
+                    . ' - s expects \'non-empty-lowercase-string\',  parent type `non-empty-string` provided',
+                'error_levels' => [],
+                'php_version' => '8.0',
+            ],
+            'pseudoPropertyInvalidAssignmentMessageShowsExactTypes' => [
+                'code' => '<?php
+                    /** @property non-empty-string $s */
+                    final class A {
+                        public function __set(string $n, mixed $v): void {}
+                    }
+                    function f(A $a, int $i): void {
+                        $a->__set("s", $i);
+                    }',
+                'error_message' => 'InvalidPropertyAssignmentValue - src' . DIRECTORY_SEPARATOR . 'somefile.php:7:25'
+                    . ' - s with declared type \'non-empty-string\' cannot be assigned type \'int',
+                'error_levels' => [],
+                'php_version' => '8.0',
+            ],
+            'pseudoPropertyPossiblyInvalidAssignmentMessageShowsExactTypes' => [
+                'code' => '<?php
+                    /** @property non-empty-string $s */
+                    final class A {
+                        public function __set(string $n, mixed $v): void {}
+                    }
+                    /** @param \'a\'|int $v */
+                    function f(A $a, string|int $v): void {
+                        $a->__set("s", $v);
+                    }',
+                'error_message' => 'PossiblyInvalidPropertyAssignmentValue - src' . DIRECTORY_SEPARATOR . 'somefile.php:8:25'
+                    . ' - s with declared type \'non-empty-string\' cannot be assigned possibly different type \'\'a\'|int',
+                'error_levels' => [],
+                'php_version' => '8.0',
+            ],
+            'pseudoPropertyMixedCoercionMessageShowsExactTypes' => [
+                'code' => '<?php
+                    /** @property array{a: non-empty-string, b: int} $s */
+                    final class A {
+                        public function __set(string $n, mixed $v): void {}
+                    }
+                    function f(A $a, mixed $m): void {
+                        $a->__set("s", ["a" => $m, "b" => 1]);
+                    }',
+                'error_message' => 'MixedPropertyTypeCoercion - src' . DIRECTORY_SEPARATOR . 'somefile.php:7:25'
+                    . ' - s expects \'array{a: non-empty-string, b: int}\',  parent type `array{a: mixed, b: 1}` provided',
+                'error_levels' => [],
+                'php_version' => '8.0',
+            ],
         ];
     }
 

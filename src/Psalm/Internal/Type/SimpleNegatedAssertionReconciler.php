@@ -111,7 +111,7 @@ final class SimpleNegatedAssertionReconciler extends Reconciler
                         IssueBuffer::maybeAdd(
                             new RedundantPropertyInitializationCheck(
                                 'Static property ' . $key . ' with type '
-                                    . $existing_var_type
+                                    . $existing_var_type->getId()
                                     . ' has unexpected isset check — should it be nullable?',
                                 $code_location,
                             ),
@@ -121,7 +121,7 @@ final class SimpleNegatedAssertionReconciler extends Reconciler
                         IssueBuffer::maybeAdd(
                             new RedundantPropertyInitializationCheck(
                                 'Property ' . $key . ' with type '
-                                    . $existing_var_type . ' should already be set in the constructor',
+                                    . $existing_var_type->getId() . ' should already be set in the constructor',
                                 $code_location,
                             ),
                             $suppressed_issues,
@@ -130,7 +130,7 @@ final class SimpleNegatedAssertionReconciler extends Reconciler
                         IssueBuffer::maybeAdd(
                             new DocblockTypeContradiction(
                                 'Cannot resolve types for ' . $key . ' with docblock-defined type '
-                                    . $existing_var_type . ' and !isset assertion',
+                                    . $existing_var_type->getId() . ' and !isset assertion',
                                 $code_location,
                                 'cannot resolve !isset '.$existing_var_type. ' ' . $key,
                             ),
@@ -140,7 +140,7 @@ final class SimpleNegatedAssertionReconciler extends Reconciler
                         IssueBuffer::maybeAdd(
                             new TypeDoesNotContainType(
                                 'Cannot resolve types for ' . $key . ' with type '
-                                    . $existing_var_type . ' and !isset assertion',
+                                    . $existing_var_type->getId() . ' and !isset assertion',
                                 $code_location,
                                 'cannot resolve !isset '.$existing_var_type. ' ' . $key,
                             ),

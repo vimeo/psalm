@@ -51,6 +51,28 @@ final class ArrayAccessTest extends TestCase
         $this->analyzeFile('somefile.php', new Context());
     }
 
+    public function testLiteralKeyUnshapedArrayMessageShowsExactTypes(): void
+    {
+        $this->expectException(CodeException::class);
+        $this->expectExceptionMessage(
+            'LiteralKeyUnshapedArray - somefile.php:4:28'
+            . ' - Literal offset \'k\' was used on unshaped array array<string, list<\'a\'>>',
+        );
+
+        $this->project_analyzer->getCodebase()->literal_array_key_check = true;
+
+        $this->addFile(
+            'somefile.php',
+            '<?php
+                /** @param array<string, list<\'a\'>> $a */
+                function f(array $a): array {
+                    return $a["k"];
+                }',
+        );
+
+        $this->analyzeFile('somefile.php', new Context());
+    }
+
     public function testEnsureArrayOffsetsExistWithIssetCheck(): void
     {
         Config::getInstance()->ensure_array_string_offsets_exist = true;
@@ -2077,6 +2099,36 @@ final class ArrayAccessTest extends TestCase
                 }
                 PHP,
                 'error_message' => 'NamedArgumentNotAllowed',
+            ],
+            'possiblyNullArrayOffsetMessageShowsExactType' => [
+                'code' => '<?php
+                    /**
+                     * @param array<string, int> $a
+                     * @param \'a\'|null $k
+                     */
+                    function f(array $a, ?string $k): int {
+                        return $a[$k];
+                    }',
+                'error_message' => 'PossiblyNullArrayOffset - src' . DIRECTORY_SEPARATOR . 'somefile.php:7:32'
+                    . ' - Cannot access value on variable $a using possibly null offset \'a\'|null',
+            ],
+            'possiblyNullArrayAccessMessageShowsExactType' => [
+                'code' => '<?php
+                    /** @param array<\'k\', \'v\'>|null $a */
+                    function f(?array $a): ?string {
+                        return $a["k"];
+                    }',
+                'error_message' => 'PossiblyNullArrayAccess - src' . DIRECTORY_SEPARATOR . 'somefile.php:4:32'
+                    . ' - Cannot access array value on possibly null variable $a of type array<\'k\', \'v\'>|null',
+            ],
+            'listOffsetMessageShowsExactKeyType' => [
+                'code' => '<?php
+                    /** @param list{numeric-string} $a */
+                    function f(array $a): string {
+                        return $a[-1];
+                    }',
+                'error_message' => 'InvalidArrayOffset - src' . DIRECTORY_SEPARATOR . 'somefile.php:4:32'
+                    . ' - Cannot access value on variable $a using offset value of \'-1\', expecting 0',
             ],
         ];
     }

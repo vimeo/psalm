@@ -209,7 +209,7 @@ final class ReturnTypeAnalyzer
             if (IssueBuffer::accepts(
                 new InvalidReturnType(
                     'Not all code paths of ' . $cased_method_id . ' end in a return statement, return type '
-                        . $return_type . ' expected',
+                        . $return_type->getId() . ' expected',
                     $return_type_location,
                 ),
                 $suppressed_issues,
@@ -343,7 +343,7 @@ final class ReturnTypeAnalyzer
             ) {
                 if (IssueBuffer::accepts(
                     new InvalidToString(
-                        '__toString methods must return a string, ' . $inferred_return_type . ' returned',
+                        '__toString methods must return a string, ' . $inferred_return_type->getId() . ' returned',
                         $return_type_location,
                     ),
                     $suppressed_issues,
@@ -356,7 +356,7 @@ final class ReturnTypeAnalyzer
                 IssueBuffer::maybeAdd(
                     new ImplicitToStringCast(
                         'The declared return type for ' . $cased_method_id . ' expects string, ' .
-                        '\'' . $inferred_return_type . '\' provided with a __toString method',
+                        '\'' . $inferred_return_type->getId() . '\' provided with a __toString method',
                         $return_type_location,
                     ),
                     $suppressed_issues,
@@ -506,7 +506,7 @@ final class ReturnTypeAnalyzer
                 if (IssueBuffer::accepts(
                     new InvalidReturnType(
                         'No return statements were found for method ' . $cased_method_id .
-                            ' but return type \'' . $declared_return_type . '\' was expected',
+                            ' but return type \'' . $declared_return_type->getId() . '\' was expected',
                         $return_type_location,
                     ),
                     $suppressed_issues,
@@ -765,7 +765,7 @@ final class ReturnTypeAnalyzer
                 IssueBuffer::maybeAdd(
                     new ImplicitToStringCast(
                         'The declared return type for ' . $cased_method_id . ' expects \'' .
-                        $declared_return_type . '\', ' . '\'' . $inferred_return_type .
+                        $declared_return_type->getId() . '\', ' . '\'' . $inferred_return_type->getId() .
                         '\' provided with a __toString method',
                         $return_type_location,
                     ),
@@ -800,8 +800,8 @@ final class ReturnTypeAnalyzer
 
                 if (IssueBuffer::accepts(
                     new InvalidNullableReturnType(
-                        'The declared return type \'' . $declared_return_type . '\' for ' . $cased_method_id .
-                            ' is not nullable, but \'' . $inferred_return_type . '\' contains null',
+                        'The declared return type \'' . $declared_return_type->getId() . '\' for ' . $cased_method_id .
+                            ' is not nullable, but \'' . $inferred_return_type->getId() . '\' contains null',
                         $return_type_location,
                     ),
                     $suppressed_issues,
@@ -836,8 +836,8 @@ final class ReturnTypeAnalyzer
 
                 if (IssueBuffer::accepts(
                     new InvalidFalsableReturnType(
-                        'The declared return type \'' . $declared_return_type . '\' for ' . $cased_method_id .
-                            ' does not allow false, but \'' . $inferred_return_type . '\' contains false',
+                        'The declared return type \'' . $declared_return_type->getId() . '\' for ' . $cased_method_id .
+                            ' does not allow false, but \'' . $inferred_return_type->getId() . '\' contains false',
                         $return_type_location,
                     ),
                     $suppressed_issues,

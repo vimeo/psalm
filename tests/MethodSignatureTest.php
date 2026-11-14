@@ -2922,6 +2922,24 @@ final class MethodSignatureTest extends TestCase
                 'error_levels' => [],
                 'php_version' => '8.1',
             ],
+            'staticReturnTypeMismatchMessageShowsExactType' => [
+                'code' => '<?php
+                    class A {
+                        public function r(): int {
+                            return 1;
+                        }
+                    }
+                    final class B extends A {
+                        #[Override]
+                        public function r(): static {
+                            return $this;
+                        }
+                    }',
+                'error_message' => 'MethodSignatureMismatch - src' . DIRECTORY_SEPARATOR . 'somefile.php:8:25'
+                    . ' - Method B::r with return type \'B&static\' is different to return type \'int\' of inherited method A::r',
+                'error_levels' => [],
+                'php_version' => '8.3',
+            ],
         ];
     }
 }

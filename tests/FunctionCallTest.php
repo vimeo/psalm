@@ -4427,6 +4427,65 @@ final class FunctionCallTest extends TestCase
                 'error_levels' => [],
                 'php_version' => '7.4',
             ],
+            'mixedArgumentMessageShowsExactParamType' => [
+                'code' => '<?php
+                    interface I
+                    {
+                        /**
+                         * @param numeric-string $a
+                         * @param non-empty-string $b
+                         */
+                        public function f(string $a, string $b): void;
+                    }
+                    function g(I $i, mixed $m): void
+                    {
+                        $i->f($m, $m);
+                    }',
+                'error_message' => 'MixedArgument - src' . DIRECTORY_SEPARATOR . 'somefile.php:12:31'
+                    . ' - Argument 1 of I::f cannot be mixed, expecting numeric-string',
+                'error_levels' => [],
+                'php_version' => '8.0',
+            ],
+            'mixedArgumentMessageShowsLiteralUnionParamType' => [
+                'code' => '<?php
+                    /** @param \'a\'|\'b\' $s */
+                    function takesLiteral(string $s): void {}
+                    /** @param mixed $m */
+                    function f($m): void {
+                        takesLiteral($m);
+                    }',
+                'error_message' => 'MixedArgument - src' . DIRECTORY_SEPARATOR . 'somefile.php:6:38'
+                    . ' - Argument 1 of takesLiteral cannot be mixed, expecting \'a\'|\'b',
+            ],
+            'mixedArgumentVariadicMessageShowsExactParamType' => [
+                'code' => '<?php
+                    /** @param non-empty-string ...$xs */
+                    function takesNonEmptyStrings(string ...$xs): void {}
+                    /** @param mixed $m */
+                    function f($m): void {
+                        takesNonEmptyStrings($m);
+                    }',
+                'error_message' => 'MixedArgument - src' . DIRECTORY_SEPARATOR . 'somefile.php:6:46'
+                    . ' - Argument 1 of takesNonEmptyStrings cannot be mixed, expecting non-empty-string',
+            ],
+            'redundantArrayValuesMessageShowsExactDocblockType' => [
+                'code' => '<?php
+                    /** @param list<\'a\'> $l */
+                    function f($l): array {
+                        return array_values($l);
+                    }',
+                'error_message' => 'RedundantFunctionCallGivenDocblockType - src' . DIRECTORY_SEPARATOR . 'somefile.php:4:32'
+                    . ' - The call to array_values is unnecessary given the list docblock type list<\'a',
+            ],
+            'redundantArrayValuesMessageShowsExactType' => [
+                'code' => '<?php
+                    function f(): array {
+                        $l = ["a"];
+                        return array_values($l);
+                    }',
+                'error_message' => 'RedundantFunctionCall - src' . DIRECTORY_SEPARATOR . 'somefile.php:4:32'
+                    . ' - The call to array_values is unnecessary, list{\'a\'} is already a list',
+            ],
         ];
     }
 

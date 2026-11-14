@@ -4308,6 +4308,16 @@ final class UnusedVariableTest extends TestCase
                 'error_levels' => [],
                 'php_version' => '8.5',
             ],
+            'unnecessaryVarAnnotationMessageShowsExactType' => [
+                'code' => '<?php
+                    function f(): void {
+                        /** @var \'abc\' $a */
+                        $a = "abc";
+                        echo $a;
+                    }',
+                'error_message' => 'UnnecessaryVarAnnotation - src' . DIRECTORY_SEPARATOR . 'somefile.php:3:34'
+                    . ' - The @var \'abc\' annotation for $a is unnecessary',
+            ],
         ];
     }
 }

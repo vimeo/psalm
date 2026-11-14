@@ -441,7 +441,7 @@ final class AssignmentAnalyzer
                 } else {
                     IssueBuffer::maybeAdd(
                         new UnnecessaryVarAnnotation(
-                            'The @var ' . $comment_type . ' annotation for '
+                            'The @var ' . $comment_type->getId() . ' annotation for '
                             . $extended_var_id . ' is unnecessary',
                             $comment_type_location,
                         ),
@@ -612,7 +612,7 @@ final class AssignmentAnalyzer
                     IssueBuffer::maybeAdd(
                         new ReferenceConstraintViolation(
                             'Variable ' . $var_id . ' is limited to values of type '
-                                . $context->byref_constraints[$var_id]->type
+                                . $outer_constraint_type->getId()
                                 . ' because it is passed by reference, '
                                 . $assign_value_type->getId() . ' type found',
                             new CodeLocation($statements_analyzer->getSource(), $assign_var),
@@ -1009,7 +1009,7 @@ final class AssignmentAnalyzer
                 } else {
                     IssueBuffer::maybeAdd(
                         new UnnecessaryVarAnnotation(
-                            'The @var ' . $var_comment_type . ' annotation for '
+                            'The @var ' . $var_comment_type->getId() . ' annotation for '
                             . $var_comment->var_id . ' is unnecessary',
                             $type_location,
                         ),

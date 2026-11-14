@@ -210,7 +210,7 @@ final class ArgumentAnalyzer
                     IssueBuffer::maybeAdd(
                         new MixedArgument(
                             'Argument ' . ($argument_offset + 1) . ' of ' . $cased_method_id
-                                . ' cannot be mixed, expecting ' . $param_type,
+                                . ' cannot be mixed, expecting ' . $param_type->getId(),
                             new CodeLocation($statements_analyzer->getSource(), $arg->value),
                             $cased_method_id,
                         ),
@@ -980,7 +980,7 @@ final class ArgumentAnalyzer
                 new MixedArgument(
                     'Argument ' . ($argument_offset + 1) . $method_identifier
                         . ' cannot be ' . $input_type->getId() . ', expecting ' .
-                        $param_type,
+                        $param_type->getId(),
                     $arg_location,
                     $cased_method_id,
                     $origin_location,

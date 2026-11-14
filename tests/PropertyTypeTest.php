@@ -5905,6 +5905,86 @@ final class PropertyTypeTest extends TestCase
                     }',
                 'error_message' => 'PropertyNotSetInConstructor - src' . DIRECTORY_SEPARATOR . 'somefile.php:20:27 - Property B::$prop is not defined in constructor of B',
             ],
+            'mismatchingDocblockPropertyTypeMessageShowsExactType' => [
+                'code' => '<?php
+                    final class A {
+                        /** @param non-empty-string $s */
+                        public function __construct(public int $s) {}
+                    }',
+                'error_message' => 'MismatchingDocblockPropertyType - src' . DIRECTORY_SEPARATOR . 'somefile.php:3:36'
+                    . ' - Parameter A::$s has wrong type \'non-empty-string\', should be \'int',
+                'error_levels' => ['MismatchingDocblockParamType'],
+                'php_version' => '8.0',
+            ],
+            'possiblyNullPropertyAssignmentValueMessageShowsExactTypes' => [
+                'code' => '<?php
+                    final class A {
+                        /** @var non-empty-string */
+                        public string $s = "a";
+                    }
+                    /** @param \'a\'|null $v */
+                    function f(A $a, ?string $v): void {
+                        $a->s = $v;
+                    }',
+                'error_message' => 'PossiblyNullPropertyAssignmentValue - src' . DIRECTORY_SEPARATOR . 'somefile.php:8:33'
+                    . ' - $a->s with non-nullable declared type \'non-empty-string\' cannot be assigned nullable type \'\'a\'|null',
+            ],
+            'possiblyFalsePropertyAssignmentValueMessageShowsExactTypes' => [
+                'code' => '<?php
+                    final class A {
+                        /** @var non-empty-string */
+                        public string $s = "a";
+                    }
+                    /** @param \'a\'|false $v */
+                    function f(A $a, string|false $v): void {
+                        $a->s = $v;
+                    }',
+                'error_message' => 'PossiblyFalsePropertyAssignmentValue - src' . DIRECTORY_SEPARATOR . 'somefile.php:8:33'
+                    . ' - $a->s with non-falsable declared type \'non-empty-string\' cannot be assigned possibly false type \'\'a\'|false',
+                'error_levels' => [],
+                'php_version' => '8.0',
+            ],
+            'possiblyNullPropertyAssignmentMessageShowsExactType' => [
+                'code' => '<?php
+                    /** @template T */
+                    final class Box {
+                        public string $s = "x";
+                    }
+                    /** @param Box<\'a\'>|null $b */
+                    function f(?Box $b): void {
+                        $b->s = "x";
+                    }',
+                'error_message' => 'PossiblyNullPropertyAssignment - src' . DIRECTORY_SEPARATOR . 'somefile.php:8:25'
+                    . ' - $b with possibly null type \'Box<\'a\'>|null\' cannot be assigned to',
+            ],
+            'possiblyNullPropertyFetchMessageShowsExactType' => [
+                'code' => '<?php
+                    /** @template T */
+                    final class Box {
+                        public string $s = "x";
+                    }
+                    /** @param Box<\'a\'>|null $b */
+                    function f(?Box $b): ?string {
+                        return $b->s;
+                    }',
+                'error_message' => 'PossiblyNullPropertyFetch - src' . DIRECTORY_SEPARATOR . 'somefile.php:8:32'
+                    . ' - Cannot get property on possibly null variable $b of type Box<\'a\'>|null',
+            ],
+            'redundantPropertyInitializationCheckMessageShowsExactType' => [
+                'code' => '<?php
+                    final class A {
+                        /** @var non-empty-string */
+                        public string $s;
+                        public function __construct() {
+                            $this->s = "a";
+                        }
+                        public function f(): void {
+                            if (!isset($this->s)) {}
+                        }
+                    }',
+                'error_message' => 'RedundantPropertyInitializationCheck - src' . DIRECTORY_SEPARATOR . 'somefile.php:9:34'
+                    . ' - Property $this->s with type non-empty-string should already be set in the constructor',
+            ],
         ];
     }
 }

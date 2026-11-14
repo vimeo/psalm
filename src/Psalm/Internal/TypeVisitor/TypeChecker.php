@@ -563,7 +563,7 @@ final class TypeChecker extends TypeVisitor
         IssueBuffer::maybeAdd(
             new InvalidDocblock(
                 'Untemplated ' . ($atomic instanceof TKeyOf ? 'key-of' : 'value-of') . ' param '
-                    . $expanded_type->getId(false) . ' should be an array',
+                    . $expanded_type->getId() . ' should be an array',
                 $this->code_location,
             ),
             $this->suppressed_issues,

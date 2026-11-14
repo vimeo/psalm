@@ -3212,6 +3212,47 @@ final class ReturnTypeTest extends TestCase
                 'error_levels' => [],
                 'php_version' => '8.3',
             ],
+            'invalidNullableReturnTypeMessageShowsExactTypes' => [
+                'code' => '<?php
+                    /** @return non-empty-string */
+                    function f(bool $b): string {
+                        return $b ? "a" : null;
+                    }',
+                'error_message' => 'InvalidNullableReturnType - src' . DIRECTORY_SEPARATOR . 'somefile.php:2:33'
+                    . ' - The declared return type \'non-empty-string\' for f is not nullable,'
+                    . ' but \'\'a\'|null\' contains null',
+                'error_levels' => ['NullableReturnStatement'],
+            ],
+            'invalidReturnTypeMessageShowsExactType' => [
+                'code' => '<?php
+                    /** @return non-empty-string */
+                    function f(bool $b): string {
+                        if ($b) {
+                            return "a";
+                        }
+                    }',
+                'error_message' => 'InvalidReturnType - src' . DIRECTORY_SEPARATOR . 'somefile.php:2:33'
+                    . ' - Not all code paths of f end in a return statement, return type non-empty-string expected',
+            ],
+            'falsableReturnStatementMessageShowsExactTypes' => [
+                'code' => '<?php
+                    /** @return non-empty-string */
+                    function f(bool $b): string {
+                        return $b ? "a" : false;
+                    }',
+                'error_message' => 'FalsableReturnStatement - src' . DIRECTORY_SEPARATOR . 'somefile.php:4:32'
+                    . ' - The declared return type \'non-empty-string\' for f does not allow false, but the function returns \'\'a\'|false',
+            ],
+            'invalidFalsableReturnTypeMessageShowsExactTypes' => [
+                'code' => '<?php
+                    /** @return non-empty-string */
+                    function f(bool $b): string {
+                        return $b ? "a" : false;
+                    }',
+                'error_message' => 'InvalidFalsableReturnType - src' . DIRECTORY_SEPARATOR . 'somefile.php:2:33'
+                    . ' - The declared return type \'non-empty-string\' for f does not allow false, but \'\'a\'|false\' contains false',
+                'error_levels' => ['FalsableReturnStatement'],
+            ],
         ];
     }
 }

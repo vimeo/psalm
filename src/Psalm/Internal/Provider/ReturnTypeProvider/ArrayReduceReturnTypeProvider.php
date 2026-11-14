@@ -155,7 +155,7 @@ final class ArrayReduceReturnTypeProvider implements FunctionReturnTypeProviderI
                     IssueBuffer::maybeAdd(
                         new InvalidArgument(
                             'The first param of the closure passed to array_reduce must take '
-                                . $reduce_return_type . ' but only accepts ' . $carry_param->type,
+                                . $reduce_return_type->getId() . ' but only accepts ' . $carry_param->type->getId(),
                             $carry_param->type_location
                                 ?: new CodeLocation($statements_source, $function_call_arg),
                         ),
@@ -178,7 +178,8 @@ final class ArrayReduceReturnTypeProvider implements FunctionReturnTypeProviderI
                     IssueBuffer::maybeAdd(
                         new InvalidArgument(
                             'The second param of the closure passed to array_reduce must take '
-                                . $array_arg_atomic_type->type_params[1] . ' but only accepts ' . $item_param->type,
+                                . $array_arg_atomic_type->type_params[1]->getId()
+                                . ' but only accepts ' . $item_param->type->getId(),
                             $item_param->type_location
                                 ?: new CodeLocation($statements_source, $function_call_arg),
                         ),
