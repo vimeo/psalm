@@ -164,6 +164,8 @@ final class Algebra
                             }
 
                             $cloned_clauses[$clause_a->hash] = $clause_a;
+                            $clause_a_hash = $clause_a->hash;
+                            $clause_a_keys = array_keys($clause_a->possibilities);
                         }
                     }
                 }
@@ -243,8 +245,19 @@ final class Algebra
             $clauses = array_values($simplified_clauses);
             for ($i = 0; $i < $clause_count; $i++) {
                 $clause_a = $clauses[$i];
+
+                if (!$clause_a->reconcilable || $clause_a->wedge || !isset($simplified_clauses[$clause_a->hash])) {
+                    continue;
+                }
+
                 for ($k = $i + 1; $k < $clause_count; $k++) {
                     $clause_b = $clauses[$k];
+
+                    // a clause that was removed as a resolvent is no parent of another resolvent
+                    if (!$clause_b->reconcilable || $clause_b->wedge || !isset($simplified_clauses[$clause_b->hash])) {
+                        continue;
+                    }
+
                     $common_keys = array_keys(
                         array_intersect_key($clause_a->possibilities, $clause_b->possibilities),
                     );
@@ -261,7 +274,8 @@ final class Algebra
                             }
                         }
 
-                        if ($common_negated_keys) {
+                        // the resolvent of clauses that clash on two keys is a tautology
+                        if (count($common_negated_keys) === 1) {
                             $new_possibilities = [];
 
                             foreach ($clause_a->possibilities as $var_id => $possibilities) {

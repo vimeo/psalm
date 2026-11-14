@@ -1404,9 +1404,9 @@ final class TypeExpander
             ) {
                 if ($throw_on_unresolvable_constant) {
                     throw new UnresolvableConstantException($type_param->fq_classlike_name, $type_param->const_name);
-                } else {
-                    return [$return_type];
                 }
+
+                return [$return_type];
             }
 
             $type_atomics = array_merge(
