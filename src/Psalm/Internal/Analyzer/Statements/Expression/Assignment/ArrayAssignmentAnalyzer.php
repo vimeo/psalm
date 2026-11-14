@@ -51,6 +51,7 @@ use Psalm\Type\Atomic\TTemplateParamClass;
 use Psalm\Type\Union;
 
 use function array_fill;
+use function array_key_last;
 use function array_keys;
 use function array_pop;
 use function array_reverse;
@@ -1063,6 +1064,18 @@ final class ArrayAssignmentAnalyzer
                     && $atomic_root_type_array->fallback_params === null
                 ) {
                     $array_atomic_type = $atomic_root_type_array;
+
+                    // the item an append in the middle of a nested write added holds nothing yet: it is the value
+                    $last_item_key = array_key_last($atomic_root_type_array->properties);
+
+                    if ($array_atomic_type_list !== null
+                        && $atomic_root_type_array->properties[$last_item_key]->isNever()
+                    ) {
+                        $array_atomic_type = $atomic_root_type_array->setProperties([
+                            ...$atomic_root_type_array->properties,
+                            $last_item_key => $array_atomic_type_list,
+                        ]);
+                    }
                 } elseif ($atomic_root_type_array instanceof TNonEmptyArray
                     || ($atomic_root_type_array instanceof TKeyedArray
                         && $atomic_root_type_array->is_list

@@ -142,6 +142,18 @@ final class ArrayAssignmentTest extends TestCase
                 'ignored_issues' => [],
                 'php_version' => '8.0',
             ],
+            'nestedAppendToASealedListFillsTheAppendedItem' => [
+                'code' => '<?php
+                    $l = [1];
+                    $l[]["C"] = [];
+
+                    $m = [1, 2];
+                    $m[][] = "x";',
+                'assertions' => [
+                    '$l===' => 'list{1, array{C: array<never, never>}}',
+                    '$m===' => "list{1, 2, non-empty-list<'x'>}",
+                ],
+            ],
             'appendedElementsOfAnEmptyArrayHoldOnlyTheirOwnKeys' => [
                 'code' => '<?php
                     $m = [];
