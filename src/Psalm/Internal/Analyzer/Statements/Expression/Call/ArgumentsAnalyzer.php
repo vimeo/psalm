@@ -312,8 +312,6 @@ final class ArgumentsAnalyzer
 
             $was_inside_isset = $context->inside_isset;
             $context->inside_isset = false;
-            $was_inside_unset = $context->inside_unset;
-            $context->inside_unset = false;
 
             if (ExpressionAnalyzer::analyze(
                 $statements_analyzer,
@@ -325,14 +323,12 @@ final class ArgumentsAnalyzer
                 $high_order_template_result,
             ) === false) {
                 $context->inside_isset = $was_inside_isset;
-                $context->inside_unset = $was_inside_unset;
                 $context->inside_call = $was_inside_call;
 
                 return false;
             }
 
             $context->inside_isset = $was_inside_isset;
-            $context->inside_unset = $was_inside_unset;
             $context->inside_call = $was_inside_call;
 
             if ($high_order_callable_info && $high_order_template_result) {
