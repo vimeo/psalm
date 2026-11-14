@@ -24,6 +24,7 @@ use function array_reverse;
 use function array_values;
 use function count;
 use function in_array;
+use function strtolower;
 
 /**
  * @api
@@ -81,14 +82,27 @@ final class ClassLikeStorage implements HasAttributesInterface
     public array $internal = [];
 
     /**
+     * The `@mixin T` of the class and of its parent classes, the parent's first. Each is bound in the context of
+     * its `defining_class`.
+     *
      * @var TTemplateParam[]
      */
     public array $templatedMixins = [];
 
     /**
+     * The named mixins of the class and of its parent classes, one per mixin class: the parent's first, so that
+     * with last-match-wins lookup the nearer one shadows it. See getNamedMixinDeclaringClass().
+     *
      * @var list<TNamedObject>
      */
     public array $namedMixins = [];
+
+    /**
+     * The parent class declaring each inherited named mixin, by the lowercase mixin class name.
+     *
+     * @var array<lowercase-string, string>
+     */
+    public array $inheritedNamedMixinDeclaringClasses = [];
 
     /**
      * Named mixins reachable only through another mixin's own `@mixin` chain, deepest hop first.
@@ -98,6 +112,9 @@ final class ClassLikeStorage implements HasAttributesInterface
      */
     public array $transitiveNamedMixins = [];
 
+    /**
+     * The nearest class in the parent chain, this one included, that declares a `@mixin`.
+     */
     public ?string $mixin_declaring_fqcln = null;
 
     public ?bool $sealed_properties = null;
@@ -270,6 +287,12 @@ final class ClassLikeStorage implements HasAttributesInterface
      * terminal, not to an HTML response
      */
     public bool $cli_only = false;
+
+    /**
+     * Whether the instances of the class only exist in command-line processes (`@psalm-cli-only-instances`): its
+     * instance methods, and the function-likes requiring an instance of it, only run from the command line
+     */
+    public bool $cli_only_instances = false;
 
     /**
      * @var array<lowercase-string, MethodStorage>
@@ -661,8 +684,8 @@ final class ClassLikeStorage implements HasAttributesInterface
     }
 
     /**
-     * Named mixins in member-lookup order: transitive ones first, then those declared on or inherited by
-     * the class, so that with last-match-wins lookup a nearer mixin shadows a deeper one.
+     * Named mixins in member-lookup order: transitive ones first, then those inherited by the class, then its own,
+     * so that with last-match-wins lookup a nearer mixin shadows a deeper one.
      *
      * @return list<TNamedObject>
      * @psalm-mutation-free
@@ -670,6 +693,41 @@ final class ClassLikeStorage implements HasAttributesInterface
     public function getNamedMixinsForLookup(): array
     {
         return [...$this->transitiveNamedMixins, ...$this->namedMixins];
+    }
+
+    /**
+     * The class whose templates the type arguments of the named mixin are written with.
+     *
+     * @psalm-mutation-free
+     */
+    public function getNamedMixinDeclaringClass(TNamedObject $mixin): string
+    {
+        return $this->inheritedNamedMixinDeclaringClasses[strtolower($mixin->value)] ?? $this->name;
+    }
+
+    /**
+     * The mixins declared on the class itself, without the inherited ones.
+     *
+     * @return list<TTemplateParam|TNamedObject>
+     * @psalm-mutation-free
+     */
+    public function getOwnMixins(): array
+    {
+        $mixins = [];
+
+        foreach ($this->templatedMixins as $mixin) {
+            if ($mixin->defining_class === $this->name) {
+                $mixins[] = $mixin;
+            }
+        }
+
+        foreach ($this->namedMixins as $mixin) {
+            if ($this->getNamedMixinDeclaringClass($mixin) === $this->name) {
+                $mixins[] = $mixin;
+            }
+        }
+
+        return $mixins;
     }
 
     /**

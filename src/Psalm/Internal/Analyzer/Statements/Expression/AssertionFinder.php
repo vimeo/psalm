@@ -1159,6 +1159,8 @@ final class AssertionFinder
                     if ($var_id) {
                         $if_types[$var_id] = self::getAlternatives($assertion->rule);
                     }
+                } elseif ($assertion->var_id === Context::PHP_SAPI_VAR_ID) {
+                    $if_types[Context::PHP_SAPI_VAR_ID] = self::getAlternatives($assertion->rule);
                 } elseif (is_string($assertion->var_id) && self::isArrayOffsetAssertionId($assertion->var_id)) {
                     $offset_var_id = self::getArrayOffsetVarId(
                         $assertion->var_id,
@@ -1241,6 +1243,8 @@ final class AssertionFinder
                     if ($var_id) {
                         $if_types[$var_id] = self::getNegatedAlternatives($assertion->rule);
                     }
+                } elseif ($assertion->var_id === Context::PHP_SAPI_VAR_ID) {
+                    $if_types[Context::PHP_SAPI_VAR_ID] = self::getNegatedAlternatives($assertion->rule);
                 } elseif (is_string($assertion->var_id) && self::isArrayOffsetAssertionId($assertion->var_id)) {
                     $offset_var_id = self::getArrayOffsetVarId(
                         $assertion->var_id,

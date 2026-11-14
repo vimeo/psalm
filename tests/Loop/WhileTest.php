@@ -58,7 +58,7 @@ final class WhileTest extends TestCase
                     '$line===' => 'false',
                     '$other===' => 'Slot|false',
                 ],
-                'ignored_issues' => ['RedundantCondition', 'UnusedVariable', 'MixedAssignment'],
+                'ignored_issues' => ['RedundantCondition', 'MixedAssignment'],
                 'php_version' => '8.2',
             ],
             'variableAssignedInTheWhileConditionIsDefinedAfterTheLoop' => [
