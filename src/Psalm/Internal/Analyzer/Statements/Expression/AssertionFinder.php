@@ -1392,6 +1392,12 @@ final class AssertionFinder
         FileSource $source,
     ): array {
         if ($stmt->class instanceof PhpParser\Node\Name) {
+            // no object is an instance of `iterable` (a reserved word reported where it is analysed): the check
+            // says nothing about the variable, instead of being resolved to the type iterable
+            if (strtolower($stmt->class->toString()) === 'iterable') {
+                return [];
+            }
+
             if (!in_array(strtolower($stmt->class->getFirst()), ['self', 'static', 'parent'], true)) {
                 $instanceof_class = ClassLikeAnalyzer::getFQCLNFromNameObject(
                     $stmt->class,

@@ -94,6 +94,25 @@ final class ClassTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'instanceofIterableDoesNotNarrowTheVariable' => [
+                'code' => <<<'PHP'
+                    <?php
+                    function f(ArrayObject $o, mixed $m): void {
+                        if ($o instanceof iterable) {
+                            /** @psalm-check-type-exact $o = ArrayObject<array-key, mixed> */
+                        } else {
+                            /** @psalm-check-type-exact $o = ArrayObject<array-key, mixed> */
+                        }
+
+                        if ($m instanceof iterable) {
+                            /** @psalm-check-type-exact $m = mixed */
+                        }
+                    }
+                    PHP,
+                'assertions' => [],
+                'ignored_issues' => ['ReservedWord'],
+                'php_version' => '8.1',
+            ],
             'newStaticOfAClassImplementingAnInterfaceWithAConstructor' => [
                 'code' => '<?php
                     interface Buildable {
@@ -1441,6 +1460,17 @@ final class ClassTest extends TestCase
     public static function providerInvalidCodeParse(): iterable
     {
         return [
+            'instanceofIterableIsReportedOnlyAsAReservedWord' => [
+                'code' => '<?php
+                    function f(ArrayObject $o): void {
+                        if ($o instanceof iterable) {
+                            echo "never";
+                        }
+                    }',
+                'error_message' => 'ReservedWord',
+                'error_levels' => [],
+                'php_version' => '8.1',
+            ],
             'instanceofIterableInANamespace' => [
                 'code' => '<?php
                     namespace Foo;
