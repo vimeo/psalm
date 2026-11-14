@@ -58,6 +58,51 @@ final class TypeAlgebraTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'notIdenticalOfAnOrChainGivesTheOperandsTheTypeOfTheComparedValues' => [
+                'code' => '<?php
+                    /** @param array<string, mixed> $metadata */
+                    function check(array $metadata, string $command): string {
+                        $version = $metadata["version"] ?? null;
+                        $metadataCommand = $metadata["command"] ?? null;
+                        $reason = $metadata["reason"] ?? null;
+
+                        if ($version !== 1 || $metadataCommand !== $command || $reason !== "OK") {
+                            throw new Exception("unexpected");
+                        }
+
+                        /** @psalm-check-type-exact $version = 1 */
+                        /** @psalm-check-type-exact $metadataCommand = string */
+                        /** @psalm-check-type-exact $reason = "OK" */
+                        return $metadataCommand;
+                    }',
+                'assertions' => [],
+                'ignored_issues' => ['MixedAssignment'],
+                'php_version' => '8.1',
+            ],
+            'notIdenticalOfAFalsableValueKeepsTheNarrowingToFalse' => [
+                'code' => '<?php
+                    function eqFalse(string|false|null $a): string {
+                        if ($a === false) {
+                            /** @psalm-check-type-exact $a = false */
+                            return "no";
+                        }
+
+                        /** @psalm-check-type-exact $a = string|null */
+                        return (string) $a;
+                    }
+
+                    function sameFalsable(string|false $a, string|false $b): string {
+                        if ($a !== $b) {
+                            return "different";
+                        }
+
+                        /** @psalm-check-type-exact $a = false|string */
+                        return "same";
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
             'coalesceAssignmentInConditionNarrowsTheVariable' => [
                 'code' => <<<'PHP'
                     <?php
@@ -1759,6 +1804,98 @@ final class TypeAlgebraTest extends TestCase
 
                         return A::$x->y;
                     }',
+            ],
+            'notIdenticalKeepsTheIgnoredFalseOfTheNarrowedVariable' => [
+                'code' => '<?php
+                    /** @psalm-ignore-falsable-return */
+                    function path(string $p): string|false {
+                        return $p === "" ? false : $p;
+                    }
+
+                    /** @return non-empty-string|false */
+                    function other(string $p) {
+                        return $p === "" ? false : $p;
+                    }
+
+                    function takesString(string $s): void {
+                        echo $s;
+                    }
+
+                    function f(): void {
+                        $file = path("a");
+
+                        if (other("b") !== $file) {
+                            return;
+                        }
+
+                        takesString($file);
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.2',
+            ],
+            'notIdenticalToAStringVariableThenExitingGivesTheString' => [
+                'code' => '<?php
+                    /** @param mixed $b */
+                    function f(string $a, $b): string {
+                        if ($b !== $a) {
+                            throw new Exception("not equal");
+                        }
+
+                        /** @psalm-check-type-exact $b = string */
+
+                        return $b;
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.2',
+            ],
+            'notIdenticalWithTheTypedVariableOnTheLeftGivesTheString' => [
+                'code' => '<?php
+                    /** @param mixed $b */
+                    function f(string $a, $b): string {
+                        if ($a !== $b) {
+                            throw new Exception("not equal");
+                        }
+
+                        /** @psalm-check-type-exact $b = string */
+
+                        return $b;
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.2',
+            ],
+            'notIdenticalOfTwoUnionsKeepsTheUnion' => [
+                'code' => '<?php
+                    function f(int|string $a, int|string $b): int|string {
+                        if ($a !== $b) {
+                            return 0;
+                        }
+
+                        /** @psalm-check-type-exact $a = int|string */
+                        /** @psalm-check-type-exact $b = int|string */
+
+                        return $b;
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.2',
+            ],
+            'notIdenticalElseBranchOfAnUnrelatedPairIsUnchanged' => [
+                'code' => '<?php
+                    function f(string $a, string $b): string {
+                        if ($a !== $b) {
+                            return $a;
+                        }
+
+                        /** @psalm-check-type-exact $b = string */
+
+                        return $b;
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.2',
             ],
             'offsetKnownFromTheConditionIsForgottenWhenTheArrayIsReassignedAndThenAnOffsetIsWritten' => [
                 'code' => '<?php

@@ -774,6 +774,42 @@ final class AssertionFinder
             );
         }
 
+        $var_type = $source->node_data->getType($conditional->left);
+        $other_type = $source->node_data->getType($conditional->right);
+
+        if ($codebase
+            && $var_type
+            && $other_type
+            && $conditional instanceof PhpParser\Node\Expr\BinaryOp\NotIdentical
+            && UnionTypeComparator::canExpressionTypesBeIdentical($codebase, $var_type, $other_type)
+        ) {
+            // where they are not not identical, both sides have the intersection of both
+            $intersection_type = Type::intersectUnionTypes($var_type, $other_type, $codebase, false, false);
+
+            if ($intersection_type !== null) {
+                $if_types = [];
+
+                $anded_types = [];
+                foreach ($intersection_type->getAtomicTypes() as $atomic_type) {
+                    $anded_types[] = [new IsNotIdentical($atomic_type)];
+                }
+
+                foreach ([[$conditional->left, $var_type], [$conditional->right, $other_type]] as [$operand, $type]) {
+                    $operand_name = ExpressionIdentifier::getExtendedVarId(
+                        $operand,
+                        $this_class_name,
+                        $source,
+                    );
+
+                    if ($operand_name !== null && $type->getId() !== $intersection_type->getId()) {
+                        $if_types[$operand_name] = $anded_types;
+                    }
+                }
+
+                return $if_types ? [$if_types] : [];
+            }
+        }
+
         return [];
     }
 

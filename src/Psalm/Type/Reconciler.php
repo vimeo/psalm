@@ -390,6 +390,19 @@ class Reconciler
                 throw new UnexpectedValueException('$result_type should not be null');
             }
 
+            // narrowing a value does not make its false or null (that the config ignores) matter again
+            if ($before_adjustment
+                && (($before_adjustment->ignore_falsable_issues && !$result_type->ignore_falsable_issues)
+                    || ($before_adjustment->ignore_nullable_issues && !$result_type->ignore_nullable_issues))
+            ) {
+                $result_type = $result_type->setProperties([
+                    'ignore_falsable_issues' => $result_type->ignore_falsable_issues
+                        || $before_adjustment->ignore_falsable_issues,
+                    'ignore_nullable_issues' => $result_type->ignore_nullable_issues
+                        || $before_adjustment->ignore_nullable_issues,
+                ]);
+            }
+
             if ($has_inverted_key_exists || $has_inverted_isset) {
                 self::reconcileAbsentArrayValue(
                     $new_type_parts,

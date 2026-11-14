@@ -6,6 +6,7 @@ namespace Psalm\Internal;
 
 use Override;
 use Psalm\Storage\Assertion;
+use Psalm\Storage\Assertion\IsNotIdentical;
 use Psalm\Storage\ImmutableNonCloneableTrait;
 use Psalm\Type\Atomic\TClassConstant;
 use Psalm\Type\Atomic\TEnumCase;
@@ -252,7 +253,10 @@ final class Clause implements Stringable
             $impossibility = [];
 
             foreach ($possibility as $type) {
+                // `$a !== $b` being false makes the two identical, so `$a` has the type of `$b`: this
+                // is not so for `$a === $b` being false
                 if (!$type->hasEquality()
+                    || $type instanceof IsNotIdentical
                     || (($inner_type = $type->getAtomicType())
                         && ($inner_type instanceof TLiteralInt
                             || $inner_type instanceof TLiteralFloat
