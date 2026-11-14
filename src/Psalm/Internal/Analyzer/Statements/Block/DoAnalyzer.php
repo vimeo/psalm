@@ -176,36 +176,26 @@ final class DoAnalyzer
 
         $suppressed_issues = $statements_analyzer->getSuppressedIssues();
 
-        if (!isset($suppressed_issues['RedundantCondition'])) {
-            $statements_analyzer->addSuppressedIssues(['RedundantCondition']);
-        }
-        if (!isset($suppressed_issues['RedundantConditionGivenDocblockType'])) {
-            $statements_analyzer->addSuppressedIssues(['RedundantConditionGivenDocblockType']);
-        }
-        if (!isset($suppressed_issues['TypeDoesNotContainType'])) {
-            $statements_analyzer->addSuppressedIssues(['TypeDoesNotContainType']);
-        }
-        // a branch only impossible in the first iteration is reachable in the next ones
-        if (!isset($suppressed_issues['NoValue'])) {
-            $statements_analyzer->addSuppressedIssues(['NoValue']);
-        }
+        // the types of the first pass are provisional: `$counter = 0` is still `0` where the next passes see more,
+        // so a branch or an operand impossible in it is reachable (a `never` operand) in the next ones
+        $naive_pass_suppressed_issues = array_values(array_filter(
+            [
+                'RedundantCondition',
+                'RedundantConditionGivenDocblockType',
+                'TypeDoesNotContainType',
+                'NoValue',
+                'InvalidCast',
+            ],
+            static fn(string $issue_type): bool => !isset($suppressed_issues[$issue_type]),
+        ));
 
         $do_context->loop_scope = $loop_scope;
 
+        $statements_analyzer->addSuppressedIssues($naive_pass_suppressed_issues);
+
         $statements_analyzer->analyze($stmt->stmts, $do_context);
 
-        if (!isset($suppressed_issues['RedundantCondition'])) {
-            $statements_analyzer->removeSuppressedIssues(['RedundantCondition']);
-        }
-        if (!isset($suppressed_issues['RedundantConditionGivenDocblockType'])) {
-            $statements_analyzer->removeSuppressedIssues(['RedundantConditionGivenDocblockType']);
-        }
-        if (!isset($suppressed_issues['TypeDoesNotContainType'])) {
-            $statements_analyzer->removeSuppressedIssues(['TypeDoesNotContainType']);
-        }
-        if (!isset($suppressed_issues['NoValue'])) {
-            $statements_analyzer->removeSuppressedIssues(['NoValue']);
-        }
+        $statements_analyzer->removeSuppressedIssues($naive_pass_suppressed_issues);
     }
 
     /**

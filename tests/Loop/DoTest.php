@@ -417,6 +417,43 @@ final class DoTest extends TestCase
                         echo "here";
                     } while ($code === 1);',
             ],
+            'counterOfDoWhileIsNotAZeroInItsFirstPassForTheIssues' => [
+                'code' => <<<'PHP'
+                    <?php
+                    /** @param list<string> $existing */
+                    function nextId(array $existing): string {
+                        $counter = 0;
+
+                        do {
+                            $id = rand(0, 1) . ($counter === 0 ? '' : '-' . (string) $counter);
+                            $counter++;
+                        } while (in_array($id, $existing, true));
+
+                        return $id;
+                    }
+                    PHP,
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
+            'castsOfDoWhileCounterAreNotNeverInItsFirstPass' => [
+                'code' => <<<'PHP'
+                    <?php
+                    function f(): void {
+                        $counter = 0;
+
+                        do {
+                            if ($counter !== 0) {
+                                echo (string) $counter, (int) $counter, (float) $counter;
+                            }
+                            $counter++;
+                        } while ($counter < 3);
+                    }
+                    PHP,
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
             'doWhileConditionOnVariableIncrementedAfterIt' => [
                 'code' => '<?php
                     $v = 0;
@@ -515,6 +552,35 @@ final class DoTest extends TestCase
                     } while (rand(0, 1));',
                 'error_message' => 'PossiblyUndefinedGlobalVariable - src' . DIRECTORY_SEPARATOR . 'somefile.php:3:25 - Possibly undefined ' .
                     'global variable $array, first seen on line 3',
+            ],
+            'invalidCastInTheBodyOfDoWhileIsStillReported' => [
+                'code' => <<<'PHP'
+                    <?php
+                    function f(array $values): void {
+                        $i = 0;
+                        do {
+                            echo (string) $values;
+                            $i++;
+                        } while ($i < 3);
+                    }
+                    PHP,
+                'error_message' => 'InvalidCast',
+                'error_levels' => [],
+                'php_version' => '8.1',
+            ],
+            'issueInTheBodyOfDoWhileIsStillReported' => [
+                'code' => <<<'PHP'
+                    <?php
+                    function f(int $i): void {
+                        do {
+                            $i++;
+                            echo $undefined;
+                        } while ($i < 3);
+                    }
+                    PHP,
+                'error_message' => 'UndefinedVariable',
+                'error_levels' => [],
+                'php_version' => '8.1',
             ],
         ];
     }
