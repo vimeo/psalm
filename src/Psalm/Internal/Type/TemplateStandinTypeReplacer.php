@@ -827,7 +827,7 @@ final class TemplateStandinTypeReplacer
                     // a binding that is only read (class templates fixed by the receiver) is the actual
                     // type, not a stand-in for what the arguments may still infer, unless the receiver
                     // left the template to its bound
-                    if (!$template_result->readonly || $template_type->had_template) {
+                    if (!$template_result->readonly || PurityArguments::isOmittedArgument($template_type)) {
                         $had_template = true;
                     }
                 }

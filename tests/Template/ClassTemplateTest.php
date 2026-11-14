@@ -6338,6 +6338,46 @@ final class ClassTemplateTest extends TestCase
                 'error_message' => 'IncompatibleTypeParameters - src' . DIRECTORY_SEPARATOR
                     . 'somefile.php:36:31 - Type B should be a subtype of A',
             ],
+            'methodParamOfAReceiverInferredByNewKeepsAnInvariantArgumentCheck' => [
+                'code' => '<?php
+                    /** @template T */
+                    interface Validator {}
+
+                    /** @implements Validator<positive-int> */
+                    final class PositiveIntValidator implements Validator {}
+
+                    /** @template T */
+                    final class Type {
+                        /** @param T $t */
+                        public function __construct($t) {}
+
+                        /** @param Validator<T> $v */
+                        public function one(Validator $v): void {}
+                    }
+
+                    (new Type(0))->one(new PositiveIntValidator());',
+                'error_message' => 'IncompatibleTypeParameters',
+            ],
+            'methodParamOfAReceiverWithMixedTypeArgumentKeepsAnInvariantArgumentCheck' => [
+                'code' => '<?php
+                    /** @template T */
+                    interface Validator {}
+
+                    /** @implements Validator<int> */
+                    final class IntValidator implements Validator {}
+
+                    /** @template T */
+                    final class Type {
+                        /** @param Validator<T> $v */
+                        public function one(Validator $v): void {}
+                    }
+
+                    /** @param Type<mixed> $t */
+                    function f(Type $t): void {
+                        $t->one(new IntValidator());
+                    }',
+                'error_message' => 'InvalidArgument',
+            ],
             'restrictTemplateInputWithTClassBadInput' => [
                 'code' => '<?php
                     /** @template T */
