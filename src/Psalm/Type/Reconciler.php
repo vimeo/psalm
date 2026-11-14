@@ -553,6 +553,9 @@ class Reconciler
 
             if (!$has_object_array_access) {
                 $existing_types[$key] = $result_type;
+            } elseif (!$did_type_exist) {
+                // the offset of an object isn't tracked, nor what its array alternatives gave before the narrowing
+                unset($existing_types[$key]);
             }
 
             if (!$did_type_exist && isset($existing_types[$key]) && isset($reference_graph[$key_parts[0]])) {
@@ -925,6 +928,7 @@ class Reconciler
 
                 if (!isset($existing_keys[$new_base_key])) {
                     $new_base_type = null;
+                    $has_object_part = false;
 
                     // a variable holding one literal is that literal as a key
                     $lookup_key = $array_key;
@@ -997,11 +1001,10 @@ class Reconciler
                         } elseif ($existing_key_type_part instanceof TNamedObject
                             && ($has_isset || $has_inverted_isset || $has_inverted_key_exists)
                         ) {
-                            $has_object_array_access = true;
+                            // the object's offset is unknown, only its array alternatives are narrowed
+                            $has_object_array_access = $has_object_part = true;
 
-                            unset($existing_keys[$new_base_key]);
-
-                            return null;
+                            continue;
                         } elseif (!$existing_key_type_part instanceof TKeyedArray) {
                             return Type::getMixed();
                         } elseif ($lookup_key[0] === '$'
@@ -1040,6 +1043,12 @@ class Reconciler
                         );
 
                         $existing_keys[$new_base_key] = $new_base_type;
+                    }
+
+                    if ($has_object_part && ($new_base_type === null || $new_base_type->isMixed())) {
+                        unset($existing_keys[$new_base_key]);
+
+                        return null;
                     }
                 }
 
