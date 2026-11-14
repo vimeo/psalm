@@ -81,6 +81,56 @@ final class IssetTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'negatedIssetOfAConditionallyDefinedVariableIsNullWhereTheLoopMayNotAssignIt' => [
+                'code' => '<?php
+                    /** @param list<string> $values */
+                    function validate(array $values, bool $early, bool $answered): int {
+                        if ($early) {
+                            $status = 401;
+                        }
+
+                        if (!isset($status)) {
+                            if ($answered) {
+                                $status = 409;
+                            }
+
+                            if (!isset($status)) {
+                                foreach ($values as $value) {
+                                    if ($value === "") {
+                                        $status = 400;
+                                        break;
+                                    }
+                                }
+
+                                if (!isset($status)) {
+                                    $status = 201;
+                                }
+                            }
+                        }
+
+                        return (int) $status;
+                    }
+
+                    function nested(bool $a, bool $b): void {
+                        if ($a) {
+                            $s = 409;
+                        }
+
+                        if (!isset($s)) {
+                            if ($b) {
+                                $s = 5;
+                            }
+
+                            if (!isset($s)) {
+                                /** @psalm-check-type-exact $s = null */
+                                echo 1;
+                            }
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => ['MixedReturnStatement', 'PossiblyUndefinedVariable'],
+                'php_version' => '8.0',
+            ],
             'issetOfAnOptionalKeyOfAnUnsealedShapeKeepsTheShape' => [
                 'code' => '<?php
                     /** @var array{name?: string, id: string, ...} $a */
@@ -1314,6 +1364,155 @@ final class IssetTest extends TestCase
                         }
                     }',
             ],
+            'issetOnPropertyOfUnionWhereALaterMemberHasAMagicGetterStillSeesTheMissingOne' => [
+                'code' => '<?php
+                    final class A {
+                        public string $a = "";
+                    }
+
+                    final class B {}
+
+                    final class C {
+                        public function __get(string $name): string {
+                            return "";
+                        }
+                    }
+
+                    function f(A|C|B $x): string {
+                        return isset($x->a) ? $x->a : "";
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.2',
+            ],
+            'issetOnPropertyOfOnlyOneMemberOfUnion' => [
+                'code' => '<?php
+                    class A {
+                        public function __construct(public readonly string $a) {}
+                    }
+
+                    class B {
+                        public function __construct(public readonly string $b) {}
+                    }
+
+                    function f(A|B $obj): string {
+                        return $obj->a ?? "";
+                    }
+
+                    function g(B|A $obj): string {
+                        return $obj->a ?? "";
+                    }
+
+                    function h(A|B $obj): void {
+                        if (isset($obj->a)) {
+                            echo $obj->a;
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
+            'issetOnPropertyOfNoMemberOfUnionIsStillUnknown' => [
+                'code' => '<?php
+                    class A {}
+
+                    class B {}
+
+                    function f(A|B $obj): void {
+                        if (isset($obj->nope)) {
+                            echo 1;
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
+            'comparisonOfAnItemWithAUnionKeyKeepsTheTypesOfItemsOfOtherTypes' => [
+                'code' => <<<'PHP'
+                    <?php
+                    /**
+                     * @param array{a: int, b: string} $p
+                     * @param 'a'|'b' $key
+                     */
+                    function comparison(array $p, string $key): int {
+                        if ($p[$key] === $p[$key]) {
+                            /** @psalm-check-type-exact $p = array{a: int, b: string} */
+                            return 1;
+                        }
+
+                        return 0;
+                    }
+
+                    /**
+                     * @param array{a: int, b: string} $p
+                     * @param 'a'|'b' $key
+                     */
+                    function issetOf(array $p, string $key): void {
+                        if (isset($p[$key])) {
+                            /** @psalm-check-type-exact $p = array{a: int, b: string} */
+                        }
+                    }
+
+                    /**
+                     * @param array{a: int, b: string} $p
+                     * @param 'a'|'b' $key
+                     */
+                    function isInt(array $p, string $key): void {
+                        if (is_int($p[$key])) {
+                            /** @psalm-check-type-exact $p = array{a: int, b: string} */
+                        }
+                    }
+                    PHP,
+                'assertions' => [],
+                'ignored_issues' => ['RedundantCondition', 'RedundantConditionGivenDocblockType', 'TypeDoesNotContainType'],
+                'php_version' => '8.1',
+            ],
+            'comparisonOfAnItemWithAUnionKeyKeepsTheOtherItemsDefined' => [
+                'code' => <<<'PHP'
+                    <?php
+                    /**
+                     * @param array{asd: int, qwe: int} $p
+                     * @param 'asd'|'qwe' $key
+                     */
+                    function comparison(array $p, string $key): int {
+                        if ($p[$key] < 0) {
+                            /** @psalm-check-type-exact $p = array{asd: int, qwe: int} */
+                            return 1;
+                        }
+
+                        /** @psalm-check-type-exact $p = array{asd: int, qwe: int} */
+                        return 0;
+                    }
+
+                    /**
+                     * @param array{asd: int, qwe: int} $p
+                     * @param list<'asd'|'qwe'> $keys
+                     */
+                    function loop(array $p, array $keys): int {
+                        $negatives = 0;
+                        foreach ($keys as $key) {
+                            if ($p[$key] < 0) {
+                                ++$negatives;
+                            }
+                        }
+
+                        return $negatives;
+                    }
+
+                    /**
+                     * @param array{asd?: int, qwe?: int} $p
+                     * @param 'asd'|'qwe' $key
+                     */
+                    function optional(array $p, string $key): void {
+                        if (isset($p[$key])) {
+                            /** @psalm-check-type-exact $p = array{asd?: int, qwe?: int} */
+                        }
+                    }
+                    PHP,
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
         ];
     }
 
@@ -1324,6 +1523,22 @@ final class IssetTest extends TestCase
     public static function providerInvalidCodeParse(): iterable
     {
         return [
+            'issetOnPropertyOfUnionWhoseMembersAllHaveItThroughAnIntersectionIsRedundant' => [
+                'code' => '<?php
+                    final class A {
+                        public string $a = "";
+                    }
+
+                    interface B {}
+
+                    /** @param A|(B&object{a: string}) $x */
+                    function f($x): string {
+                        return isset($x->a) ? $x->a : "";
+                    }',
+                'error_message' => 'RedundantConditionGivenDocblockType',
+                'error_levels' => [],
+                'php_version' => '8.2',
+            ],
             'variableNotSetByTheEmptyBranchOfAnIssetCheckIsPossiblyUndefinedAfterIt' => [
                 'code' => '<?php
 
@@ -1450,7 +1665,6 @@ final class IssetTest extends TestCase
 
                     function foo() : void {
                         $arr = returnPossiblyFalseArray();
-                        /** @psalm-suppress PossiblyInvalidArrayAccess */
                         if (!isset($arr["b"])) {}
                         echo $arr["b"];
                     }',
@@ -1635,6 +1849,46 @@ final class IssetTest extends TestCase
                         echo $foo->bar;
                     }',
                 'error_message' => 'InvalidArgument',
+            ],
+            'issetOnPropertyOfEveryMemberOfUnionStaysRedundant' => [
+                'code' => '<?php
+                    class A {
+                        public function __construct(public readonly string $a) {}
+                    }
+
+                    class B {
+                        public function __construct(public readonly string $a) {}
+                    }
+
+                    function f(A|B $obj): void {
+                        if (isset($obj->a)) {
+                            echo $obj->a;
+                        }
+                    }',
+                'error_message' => 'RedundantCondition',
+                'error_levels' => [],
+                'php_version' => '8.1',
+            ],
+            'issetOnPropertyOfMemberWithMagicGetterOfUnion' => [
+                'code' => '<?php
+                    class A {
+                        public string $a = "";
+                    }
+
+                    class B {
+                        public function __get(string $name): string {
+                            return $name;
+                        }
+                    }
+
+                    function f(A|B $obj): void {
+                        if (isset($obj->a)) {
+                            echo $obj->a;
+                        }
+                    }',
+                'error_message' => 'RedundantCondition',
+                'error_levels' => [],
+                'php_version' => '8.1',
             ],
         ];
     }
