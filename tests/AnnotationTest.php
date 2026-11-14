@@ -208,6 +208,27 @@ final class AnnotationTest extends TestCase
                 'ignored_issues' => [],
                 'php_version' => '8.1',
             ],
+            'staticOfAGlobalTagIsTheClassOfTheMethodAfterACallThatMayWriteTheGlobal' => [
+                'code' => '<?php
+                    class Foo {
+                        /** @return static */
+                        public function me() {
+                            return $this;
+                        }
+
+                        /** @global static $q */
+                        public function c(): Foo {
+                            global $q;
+
+                            $q->c();
+                            $x = $q->me();
+
+                            /** @psalm-check-type-exact $x = Foo&static */
+
+                            return $x;
+                        }
+                    }',
+            ],
             'globalDocblockStaticTypeDoesNotCrashAMethodCall' => [
                 'code' => '<?php
                     class Foo {

@@ -99,7 +99,7 @@ final class MethodCallReturnTypeFetcher
                     $static_type,
                     $class_storage->parent_class,
                     $static_type instanceof TNamedObject
-                    && $codebase->classlikes->getStorageFor($static_type->value)?->final === true,
+                    && $codebase->classlike_storage_provider->get($static_type->value)->final,
                     true,
                 );
             }
@@ -246,7 +246,7 @@ final class MethodCallReturnTypeFetcher
                         true,
                         false,
                         $static_type instanceof TNamedObject
-                        && $codebase->classlikes->getStorageFor($static_type->value)?->final === true,
+                        && $codebase->classlike_storage_provider->get($static_type->value)->final,
                         true,
                     );
                 }
@@ -268,7 +268,7 @@ final class MethodCallReturnTypeFetcher
                     true,
                     false,
                     $static_type instanceof TNamedObject
-                    && $codebase->classlikes->getStorageFor($static_type->value)?->final === true,
+                    && $codebase->classlike_storage_provider->get($static_type->value)->final,
                     true,
                 );
 
