@@ -30,7 +30,6 @@ use Psalm\Internal\Type\TypeExpander;
 use Psalm\Internal\Type\TypeVariableTracker;
 use Psalm\Issue\ArgumentTypeCoercion;
 use Psalm\Issue\InvalidArgument;
-use Psalm\Issue\InvalidDocblock;
 use Psalm\Issue\InvalidScalarArgument;
 use Psalm\Issue\MixedArgumentTypeCoercion;
 use Psalm\Issue\TypeDoesNotContainType;
@@ -65,11 +64,9 @@ use function array_unique;
 use function array_values;
 use function assert;
 use function count;
-use function explode;
 use function implode;
 use function in_array;
 use function is_int;
-use function is_numeric;
 use function mt_rand;
 use function pathinfo;
 use function preg_match;
@@ -127,6 +124,7 @@ abstract class CallAnalyzer
                     $context,
                     $source->getRootFilePath(),
                     $source->getRootFileName(),
+                    $source->getFileAnalyzer(),
                 );
             }
         } elseif ($context->collect_initializations &&
@@ -143,6 +141,7 @@ abstract class CallAnalyzer
             $method_id = new MethodIdentifier($fq_class_name, $method_name_lc);
 
             $declaring_method_id = $codebase->methods->getDeclaringMethodId($method_id);
+            $source_appearing_method_id = $codebase->methods->getAppearingMethodId($method_id);
 
             if (isset($context->vars_in_scope['$this'])) {
                 foreach ($context->vars_in_scope['$this']->getAtomicTypes() as $atomic_type) {
@@ -255,18 +254,25 @@ abstract class CallAnalyzer
 
                 $old_calling_method_id = $context->calling_method_id;
 
-                if ($fq_class_name === $source->getFQCLN()) {
+                // the class whose code has the method: the class using the trait that declares it, or the ancestor
+                // the method appears in, as the class analyzer of the source only knows its own methods and traits
+                $appearing_method_id = $codebase->methods->getAppearingMethodId($method_id)
+                    ?? $source_appearing_method_id;
+                $method_class_name = $appearing_method_id !== null
+                    ? $appearing_method_id->fq_class_name
+                    : $declaring_method_id->fq_class_name;
+
+                if ($method_class_name === $source->getFQCLN()) {
                     $class_analyzer->getMethodMutations($method_name_lc, $context);
                 } else {
-                    $declaring_fq_class_name = $declaring_method_id->fq_class_name;
-
                     $old_self = $context->self;
-                    $context->self = $declaring_fq_class_name;
+                    $context->self = $method_class_name;
                     $project_analyzer->getMethodMutations(
-                        $declaring_method_id,
+                        new MethodIdentifier($method_class_name, $method_name_lc),
                         $context,
                         $source->getRootFilePath(),
                         $source->getRootFileName(),
+                        $source->getFileAnalyzer(),
                     );
                     $context->self = $old_self;
                 }
@@ -359,11 +365,14 @@ abstract class CallAnalyzer
 
             $method_storage = $codebase->methods->getStorage($declaring_method_id);
 
+            // the class using a trait holds the docblock its method inherits
+            $documenting_class_storage = $declaring_class_storage->is_trait ? $class_storage : $declaring_class_storage;
+
             if ($declaring_class_storage->user_defined
                 && !$method_storage->has_docblock_param_types
-                && isset($declaring_class_storage->documenting_method_ids[$method_name])
+                && isset($documenting_class_storage->documenting_method_ids[$method_name])
             ) {
-                $documenting_method_id = $declaring_class_storage->documenting_method_ids[$method_name];
+                $documenting_method_id = $documenting_class_storage->documenting_method_ids[$method_name];
 
                 $documenting_method_storage = $codebase->methods->getStorage($documenting_method_id);
 
@@ -833,6 +842,9 @@ abstract class CallAnalyzer
             } elseif (str_contains($var_possibilities->var_id, '::$')) {
                 // allow assertions to bring external static props into scope
                 $assertion_var_id = $var_possibilities->var_id;
+            } elseif ($var_possibilities->var_id === Context::PHP_SAPI_VAR_ID) {
+                // a guard asserting the SAPI narrows it like an inline check, so e.g. the code after it is CLI code
+                $assertion_var_id = Context::PHP_SAPI_VAR_ID;
             } elseif (AssertionFinder::isArrayOffsetAssertionId($var_possibilities->var_id)) {
                 $assertion_var_id = AssertionFinder::getArrayOffsetVarId(
                     $var_possibilities->var_id,
@@ -843,63 +855,16 @@ abstract class CallAnalyzer
             } elseif (isset($context->vars_in_scope[$var_possibilities->var_id])) {
                 $assertion_var_id = $var_possibilities->var_id;
             } elseif (str_contains($var_possibilities->var_id, '->')) {
-                $exploded = explode('->', $var_possibilities->var_id);
+                $assertion_var_id = AssertionFinder::getAssertedArgumentPropertyVarId(
+                    $expr,
+                    $args,
+                    $statements_analyzer,
+                    $var_possibilities->var_id,
+                );
 
-                if (count($exploded) < 2) {
-                    IssueBuffer::maybeAdd(
-                        new InvalidDocblock(
-                            'Assert notation is malformed',
-                            new CodeLocation($statements_analyzer, $expr),
-                        ),
-                    );
+                if ($assertion_var_id === null) {
                     continue;
                 }
-
-                [$var_id, $property] = $exploded;
-
-                $var_id = is_numeric($var_id) ? (int) $var_id : $var_id;
-
-                if (!is_int($var_id) || !isset($args[$var_id])) {
-                    IssueBuffer::maybeAdd(
-                        new InvalidDocblock(
-                            'Variable ' . $var_id . ' is not an argument so cannot be asserted',
-                            new CodeLocation($statements_analyzer, $expr),
-                        ),
-                    );
-                    continue;
-                }
-
-                $arg_value = $args[$var_id]->value;
-
-                $arg_var_id = ExpressionIdentifier::getExtendedVarId($arg_value, null, $statements_analyzer);
-
-                if (!$arg_var_id) {
-                    IssueBuffer::maybeAdd(
-                        new InvalidDocblock(
-                            'Variable being asserted as argument ' . ($var_id+1) .  ' cannot be found in local scope',
-                            new CodeLocation($statements_analyzer, $expr),
-                        ),
-                    );
-                    continue;
-                }
-
-                if (count($exploded) === 2) {
-                    $failedMessage = AssertionFinder::isPropertyImmutableOnArgument(
-                        $property,
-                        $statements_analyzer->getNodeTypeProvider()->getType($arg_value),
-                        $statements_analyzer->getCodebase()->classlike_storage_provider,
-                        $arg_var_id,
-                    );
-
-                    if (null !== $failedMessage) {
-                        IssueBuffer::maybeAdd(
-                            new InvalidDocblock($failedMessage, new CodeLocation($statements_analyzer, $expr)),
-                        );
-                        continue;
-                    }
-                }
-
-                $assertion_var_id = str_replace((string) $var_id, $arg_var_id, $var_possibilities->var_id);
             }
 
             $codebase = $statements_analyzer->getCodebase();
@@ -1196,6 +1161,15 @@ abstract class CallAnalyzer
                                 $code_location,
                                 $statements_analyzer->getSuppressedIssues(),
                             );
+                        }
+
+                        // elements that may be mixed say nothing about the type the callback takes, as for
+                        // array_map(), whose callback is not checked against them either
+                        if (!$is_contained_by
+                            && $function_id === 'array_reduce'
+                            && $lower_bound_type->hasMixed()
+                        ) {
+                            continue;
                         }
 
                         if (!$is_contained_by) {

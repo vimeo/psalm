@@ -7,9 +7,11 @@ namespace Psalm\Tests;
 use Countable;
 use DateTime;
 use Override;
+use PHPUnit\Framework\Attributes\DataProvider;
 use Psalm\Config;
 use Psalm\Context;
 use Psalm\Exception\CodeException;
+use Psalm\IssueBuffer;
 use Psalm\Tests\Traits\InvalidCodeAnalysisTestTrait;
 use Psalm\Tests\Traits\ValidCodeAnalysisTestTrait;
 
@@ -660,6 +662,67 @@ final class PropertyTypeTest extends TestCase
         );
 
         $this->analyzeFile('somefile.php', new Context());
+    }
+
+    /**
+     * A parameter type naming a missing class makes the analysis of a constructor skip its body, but the properties
+     * the body sets are still initialised in the subclasses.
+     */
+    #[DataProvider('providerSubclassesOfAConstructorWithAMissingParamClass')]
+    public function testConstructorWithAMissingParamClassInitialisesSubclassProperties(string $child_code): void
+    {
+        $this->testConfig->throw_exception = false;
+
+        $parent_file = self::$src_dir_path . 'parent.php';
+        $child_file = self::$src_dir_path . 'child.php';
+
+        $this->addFile($parent_file, '<?php
+            namespace Fixture;
+
+            class ParentClass {
+                protected string $name;
+
+                /** @param MissingClass $finder */
+                public function __construct($finder = null) {
+                    $this->name = "name";
+                }
+            }
+        ');
+        $this->addFile($child_file, $child_code);
+
+        $this->analyzeFile($child_file, new Context());
+
+        $issues = [];
+
+        foreach ([$parent_file, $child_file] as $file) {
+            foreach (IssueBuffer::getIssuesDataForFile($file) as $issue) {
+                $issues[] = $issue->type . ' ' . $issue->file_name . ':' . $issue->line_from;
+            }
+        }
+
+        self::assertSame(['UndefinedDocblockClass src' . DIRECTORY_SEPARATOR . 'parent.php:7'], $issues);
+    }
+
+    /**
+     * @return iterable<string, array{string}>
+     * @psalm-pure
+     */
+    public static function providerSubclassesOfAConstructorWithAMissingParamClass(): iterable
+    {
+        yield 'inheriting the constructor' => ['<?php
+            namespace Fixture;
+
+            class ChildClass extends ParentClass {}
+        '];
+        yield 'calling the constructor' => ['<?php
+            namespace Fixture;
+
+            class ChildClass extends ParentClass {
+                public function __construct() {
+                    parent::__construct();
+                }
+            }
+        '];
     }
 
     /**
@@ -3929,6 +3992,104 @@ final class PropertyTypeTest extends TestCase
                 'ignored_issues' => [],
                 'php_version' => '8.4',
             ],
+            'inheritedConstructorCallingAMethodReturningStaticInAFinalChild' => [
+                'code' => '<?php
+                    abstract class Base
+                    {
+                        protected stdClass $prop;
+
+                        public function __construct(stdClass $prop) {
+                            $this->prop = $prop;
+                            $this->touch();
+                        }
+
+                        /** @return $this */
+                        public function touch(): static
+                        {
+                            return $this;
+                        }
+                    }
+
+                    final class Child extends Base
+                    {
+                    }',
+            ],
+            'setInFinalMethodOfAParentClass' => [
+                'code' => '<?php
+                    abstract class Event {
+                        protected string $uniqueId;
+
+                        final protected function generateUniqueId(): void {
+                            $this->uniqueId = "test";
+                        }
+                    }
+
+                    final class SomeEvent extends Event {
+                        public function __construct(string $someValue) {
+                            $this->generateUniqueId();
+                        }
+                    }',
+            ],
+            'setInPrivateTraitMethodByAParentConstructor' => [
+                'code' => '<?php
+                    trait CreatedAt {
+                        protected DateTimeImmutable $createdAt;
+
+                        private function onCreated(): void {
+                            $this->createdAt = new DateTimeImmutable();
+                        }
+                    }
+
+                    class Foo {
+                        use CreatedAt;
+
+                        public function __construct() {
+                            $this->onCreated();
+                        }
+                    }
+
+                    class Bar extends Foo {}',
+            ],
+            'setInFinalTraitMethodByAParentConstructor' => [
+                'code' => '<?php
+                    trait Tr {
+                        protected int $a;
+
+                        final protected function set(): void {
+                            $this->a = 5;
+                        }
+                    }
+
+                    class B {
+                        use Tr;
+
+                        protected function __construct() {
+                            $this->set();
+                        }
+                    }
+
+                    final class Cl extends B {}',
+            ],
+            'setByATraitMethodCalledByItsAliasWhileTheClassOverridesTheName' => [
+                'code' => '<?php
+                    trait T {
+                        protected int $prop;
+
+                        protected function init(): void {
+                            $this->prop = 1;
+                        }
+                    }
+
+                    class A {
+                        use T { init as alias; }
+
+                        protected function init(): void {}
+
+                        public function __construct() {
+                            $this->alias();
+                        }
+                    }',
+            ],
         ];
     }
 
@@ -5634,6 +5795,115 @@ final class PropertyTypeTest extends TestCase
                     }
                 PHP,
                 'error_message' => 'MissingConstructor',
+            ],
+            'notSetWhenTheChildOverridesTheMethodOfAParentClass' => [
+                'code' => '<?php
+                    abstract class Event {
+                        protected string $uniqueId;
+
+                        protected function generateUniqueId(): void {
+                            $this->uniqueId = "test";
+                        }
+                    }
+
+                    final class SomeEvent extends Event {
+                        protected function generateUniqueId(): void {}
+
+                        public function __construct() {
+                            $this->generateUniqueId();
+                        }
+                    }',
+                'error_message' => 'Property SomeEvent::$uniqueId is not defined in constructor',
+            ],
+            'notSetInFinalMethodOfAParentClassThatSetsAnotherProperty' => [
+                'code' => '<?php
+                    abstract class Event {
+                        protected string $uniqueId;
+
+                        protected string $when;
+
+                        final protected function generateUniqueId(): void {
+                            $this->uniqueId = "test";
+                        }
+                    }
+
+                    final class SomeEvent extends Event {
+                        public function __construct() {
+                            $this->generateUniqueId();
+                        }
+                    }',
+                'error_message' => 'Property SomeEvent::$when is not defined in constructor',
+            ],
+            'notSetByAParentConstructorThatTheChildDoesNotCall' => [
+                'code' => '<?php
+                    trait CreatedAt {
+                        protected DateTimeImmutable $createdAt;
+
+                        private function onCreated(): void {
+                            $this->createdAt = new DateTimeImmutable();
+                        }
+                    }
+
+                    class Foo {
+                        use CreatedAt;
+
+                        public function __construct() {
+                            $this->onCreated();
+                        }
+                    }
+
+                    class Bar extends Foo {
+                        public function __construct() {}
+                    }',
+                'error_message' => 'PropertyNotSetInConstructor - src' . DIRECTORY_SEPARATOR . 'somefile.php:18',
+            ],
+            'notSetByATraitMethodCalledByItsAliasWhileTheClassOverridesTheName' => [
+                'code' => '<?php
+                    trait T {
+                        protected function init(): void {}
+                    }
+
+                    class A {
+                        use T { init as alias; }
+
+                        protected int $prop;
+
+                        protected function init(): void {
+                            $this->prop = 1;
+                        }
+
+                        public function __construct() {
+                            $this->alias();
+                        }
+                    }',
+                'error_message' => 'PropertyNotSetInConstructor',
+            ],
+            'notSetByAnInheritedTraitMethodCalledByItsAliasWhileTheParentOverridesTheName' => [
+                'code' => '<?php
+                    trait T {
+                        protected function init(): void {}
+                    }
+
+                    class P {
+                        use T { init as alias; }
+
+                        protected int $prop;
+
+                        public function __construct() {
+                            $this->init();
+                        }
+
+                        protected function init(): void {
+                            $this->prop = 1;
+                        }
+                    }
+
+                    class B extends P {
+                        public function __construct() {
+                            $this->alias();
+                        }
+                    }',
+                'error_message' => 'PropertyNotSetInConstructor - src' . DIRECTORY_SEPARATOR . 'somefile.php:20:27 - Property B::$prop is not defined in constructor of B',
             ],
         ];
     }
