@@ -3977,18 +3977,19 @@ final class AssertionFinder
                 $first_var_type,
             );
         }
+        $args = $expr->getArgs();
+
         if ($first_var_type
             && $source instanceof StatementsAnalyzer
-            && isset($expr->getArgs()[0])
-            && isset($expr->getArgs()[1])
-            && ($array_type = $source->node_data->getType($expr->getArgs()[1]->value))
+            && isset($args[0], $args[1])
+            && ($array_type = $source->node_data->getType($args[1]->value))
             && self::isNonNumericStringKeyOfIntKeyedArray($first_var_type, $array_type)
         ) {
             IssueBuffer::maybeAdd(
                 new InvalidArrayOffset(
                     'Cannot check offset ' . $first_var_type->getId() . ' in ' . $array_type->getId()
                         . ', which only has int keys',
-                    new CodeLocation($source, $expr->getArgs()[0]->value),
+                    new CodeLocation($source, $args[0]->value),
                 ),
                 $source->getSuppressedIssues(),
             );
