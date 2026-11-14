@@ -5,8 +5,11 @@ declare(strict_types=1);
 namespace Psalm\Tests;
 
 use Override;
+use Psalm\Context;
 use Psalm\Tests\Traits\InvalidCodeAnalysisTestTrait;
 use Psalm\Tests\Traits\ValidCodeAnalysisTestTrait;
+
+use function getcwd;
 
 use const DIRECTORY_SEPARATOR;
 
@@ -14,6 +17,47 @@ final class TypeAnnotationTest extends TestCase
 {
     use InvalidCodeAnalysisTestTrait;
     use ValidCodeAnalysisTestTrait;
+
+    public function testNullableReturnOfATypeAliasOfAClassScannedLaterContainsNull(): void
+    {
+        // files are scanned in the order of their paths
+        $stage_path = getcwd() . DIRECTORY_SEPARATOR . 'Stage.php';
+        $builder_path = getcwd() . DIRECTORY_SEPARATOR . 'lib' . DIRECTORY_SEPARATOR . 'ZBuilder.php';
+
+        $this->addFile(
+            $stage_path,
+            '<?php
+                namespace Lib;
+
+                /** @psalm-import-type StageExpression from Builder */
+                abstract class Stage
+                {
+                    /** @return StageExpression */
+                    abstract public function getExpression(): ?array;
+                }
+
+                /** @var Stage $stage */
+                $x = $stage->getExpression();',
+        );
+
+        $this->addFile(
+            $builder_path,
+            '<?php
+                namespace Lib;
+
+                /** @psalm-type StageExpression = array<string, mixed> */
+                final class Builder {}',
+        );
+
+        // known to exist, as through an autoloader, but scanned after the class that imports the alias
+        $this->project_analyzer->getCodebase()->classlikes->addFullyQualifiedClassName('Lib\Builder', $builder_path);
+
+        $context = new Context();
+
+        $this->analyzeFile($stage_path, $context);
+
+        $this->assertSame('array<string, mixed>|null', $context->vars_in_scope['$x']->getId());
+    }
 
     /**
      * @psalm-pure
