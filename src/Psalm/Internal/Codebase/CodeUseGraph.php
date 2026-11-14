@@ -14,11 +14,16 @@ use Psalm\Storage\MethodStorage;
 
 use function array_intersect_key;
 use function array_pop;
+use function ksort;
 use function md5;
+use function serialize;
 use function str_contains;
+use function strcmp;
 use function strpos;
 use function strtolower;
 use function substr;
+
+use const SORT_STRING;
 
 /**
  * A directed graph of "uses" between code elements (classes, function-likes,
@@ -561,8 +566,9 @@ final class CodeUseGraph
             }
         }
 
-        $this->mutation_info = $other->mutation_info + $this->mutation_info;
-        $this->mutation_levels = null;
+        foreach ($other->mutation_info as $node_id => $info) {
+            $this->addMutationInfo($node_id, $info);
+        }
     }
 
     /**
@@ -593,13 +599,88 @@ final class CodeUseGraph
      */
     public function addMutationInfo(string $node_id, array $info): void
     {
-        $this->mutation_info[$node_id] = $info;
-        $this->mutation_levels = null;
+        $existing = $this->mutation_info[$node_id] ?? null;
+
+        if ($existing === null || self::replacesMutationInfo($info, $existing)) {
+            $this->mutation_info[$node_id] = $info;
+            $this->mutation_levels = null;
+        }
 
         if (!$this->record_edges) {
             // stale info is pruned by file, which addReference() notes only while edges are recorded
             $this->noteNodeFile($node_id, $info['location']->file_path);
         }
+    }
+
+    /**
+     * Whether $info, of a function-like analysed more than once, replaces $existing, whatever the order the analyses
+     * came in (they come from any process of a parallel run). In decreasing precedence:
+     * - the analysis of a previous run loses to any fresh one;
+     * - the analysis in the file declaring it: what it does there is not up to the including file;
+     * - the analysis when included, by the including file with the greatest path;
+     * - the analysis of its body for an object of an inheriting class, which has the callees of that class.
+     *
+     * Analyses of one category and root (a trait method is analysed once per class using it) are ordered by
+     * everything the level resolution reads, so that no two differing ones tie.
+     *
+     * @param MutationInfo $info
+     * @param MutationInfo $existing
+     * @psalm-pure
+     */
+    private static function replacesMutationInfo(array $info, array $existing): bool
+    {
+        if ($info['fresh'] !== $existing['fresh']) {
+            return $info['fresh'];
+        }
+
+        $order = self::mutationInfoCategory($info) <=> self::mutationInfoCategory($existing)
+            ?: strcmp($info['root'], $existing['root'])
+            ?: strcmp(self::mutationInfoDetails($info), self::mutationInfoDetails($existing));
+
+        return $order > 0;
+    }
+
+    /**
+     * @param MutationInfo $info
+     * @psalm-pure
+     */
+    private static function mutationInfoCategory(array $info): int
+    {
+        return $info['inherited']
+            ? 0
+            : ($info['root'] === $info['location']->file_path ? 2 : 1);
+    }
+
+    /**
+     * Binary-safe canonical form of what is left to tell two analyses apart: the maps are sorted, as their order
+     * depends on the order the body was analysed in.
+     *
+     * @param MutationInfo $info
+     * @psalm-pure
+     */
+    private static function mutationInfoDetails(array $info): string
+    {
+        $callees = $info['callees'];
+        $default_callees = $info['default_callees'];
+
+        ksort($callees, SORT_STRING);
+        ksort($default_callees, SORT_STRING);
+
+        return serialize([
+            $info['intrinsic'],
+            $info['allowed'],
+            $callees,
+            $info['default_intrinsic'],
+            $default_callees,
+            $info['wildcards'] ?? [],
+            $info['report'],
+            $info['class'],
+            $info['cased_name'],
+            $info['suppressed_issues'],
+            $info['start'],
+            $info['location']->file_path,
+            $info['location']->raw_file_start,
+        ]);
     }
 
     /**
