@@ -13,6 +13,8 @@ use Psalm\Tests\Traits\ValidCodeAnalysisTestTrait;
 
 use function array_column;
 
+use const DIRECTORY_SEPARATOR;
+
 final class TypeAlgebraTest extends TestCase
 {
     use InvalidCodeAnalysisTestTrait;
@@ -410,6 +412,86 @@ final class TypeAlgebraTest extends TestCase
                         }
 
                         return 3;
+                    }',
+                'assertions' => [],
+            ],
+            'orOfAnExcludedValueAndAPossibleOneOfTheSameVariableIsNotReported' => [
+                'code' => '<?php
+                    final class Model {
+                        public const A = "MODEL_A";
+                        public const B = "MODEL_B";
+                    }
+
+                    function pick(string $m, bool $flag): int {
+                        if ($m !== Model::A) {
+                            if ($flag || $m === Model::B) {
+                                return 1;
+                            }
+                        }
+
+                        return 0;
+                    }',
+                'assertions' => [],
+            ],
+            'orOperandOfAVariableAssignedInTheOrIsNotParadoxical' => [
+                'code' => '<?php
+                    function h(): string {
+                        return rand(0, 1) ? "a" : "b";
+                    }
+
+                    function pick(string $m, bool $flag): int {
+                        if ($m !== "a") {
+                            if ($flag || ($m = h()) === "a") {
+                                return 1;
+                            }
+                        }
+
+                        return 0;
+                    }',
+                'assertions' => [],
+            ],
+            'orOperandAfterAnOperandAssigningItsVariableIsNotParadoxical' => [
+                'code' => '<?php
+                    function h(): string {
+                        return rand(0, 1) ? "a" : "b";
+                    }
+
+                    function pick(string $m, bool $flag): int {
+                        if ($m !== "a") {
+                            if ($flag && ($m = h()) !== "" || $m === "a") {
+                                return 1;
+                            }
+                        }
+
+                        return 0;
+                    }',
+                'assertions' => [],
+            ],
+            'orOperandOfAnIncrementedVariableIsNotParadoxical' => [
+                'code' => '<?php
+                    function pick(int $i, bool $flag): int {
+                        if ($i !== 0) {
+                            if ($flag || ++$i === 0) {
+                                return 1;
+                            }
+                        }
+
+                        return 0;
+                    }',
+                'assertions' => [],
+            ],
+            'ternaryOrOperandOfAVariableAssignedInTheOrIsNotParadoxical' => [
+                'code' => '<?php
+                    function h(): string {
+                        return rand(0, 1) ? "a" : "b";
+                    }
+
+                    function pick(string $m, bool $flag): string {
+                        if ($m !== "a") {
+                            return $flag || ($m = h()) === "a" ? $m : "";
+                        }
+
+                        return "";
                     }',
                 'assertions' => [],
             ],
@@ -1921,6 +2003,111 @@ final class TypeAlgebraTest extends TestCase
                 'error_levels' => [],
                 'php_version' => '8.1',
             ],
+            'deadOperandOnTheRightOfAnOrIsParadoxical' => [
+                'code' => '<?php
+                    final class Model {
+                        public const A = "MODEL_A";
+                        public const B = "MODEL_B";
+                    }
+
+                    function pick(string $m, bool $flag): int {
+                        if ($m !== Model::A && $m !== Model::B) {
+                            if ($flag || $m === Model::A) {
+                                return 1;
+                            }
+                        }
+
+                        return 0;
+                    }',
+                'error_message' => 'ParadoxicalCondition - src' . DIRECTORY_SEPARATOR . 'somefile.php:9:42',
+            ],
+            'deadOperandOnTheLeftOfAnOrIsParadoxical' => [
+                'code' => '<?php
+                    final class Model {
+                        public const A = "MODEL_A";
+                        public const B = "MODEL_B";
+                    }
+
+                    function pick(string $m, bool $flag): int {
+                        if ($m !== Model::A && $m !== Model::B) {
+                            if ($m === Model::A || $flag) {
+                                return 1;
+                            }
+                        }
+
+                        return 0;
+                    }',
+                'error_message' => 'ParadoxicalCondition - src' . DIRECTORY_SEPARATOR . 'somefile.php:9:33',
+            ],
+            'deadOperandInAChainOfOrsIsParadoxical' => [
+                'code' => '<?php
+                    final class Model {
+                        public const A = "MODEL_A";
+                        public const B = "MODEL_B";
+                    }
+
+                    function pick(string $m, bool $flag, bool $other): int {
+                        if ($m !== Model::A && $m !== Model::B) {
+                            if ($flag || $other || $m === Model::B) {
+                                return 1;
+                            }
+                        }
+
+                        return 0;
+                    }',
+                'error_message' => 'ParadoxicalCondition - src' . DIRECTORY_SEPARATOR . 'somefile.php:9:52',
+            ],
+            'deadOperandNextToAnAssignmentOfAnotherVariableIsParadoxical' => [
+                'code' => '<?php
+                    function h(): string {
+                        return rand(0, 1) ? "a" : "b";
+                    }
+
+                    function pick(string $m, bool $flag): string {
+                        if ($m !== "a") {
+                            if ($flag || ($n = h()) === "b" || $m === "a") {
+                                return $n ?? "";
+                            }
+                        }
+
+                        return "";
+                    }',
+                'error_message' => 'ParadoxicalCondition - src' . DIRECTORY_SEPARATOR . 'somefile.php:8:64',
+            ],
+            'deadOperandBeforeAnOperandAssigningItsVariableIsParadoxical' => [
+                'code' => '<?php
+                    function h(): string {
+                        return rand(0, 1) ? "a" : "b";
+                    }
+
+                    function pick(string $m, bool $flag): int {
+                        if ($m !== "a") {
+                            if ($flag || $m === "a" || ($m = h()) === "b") {
+                                return 1;
+                            }
+                        }
+
+                        return 0;
+                    }',
+                'error_message' => 'ParadoxicalCondition - src' . DIRECTORY_SEPARATOR . 'somefile.php:8:42',
+            ],
+            'deadOperandNextToAnArrowFunctionAssigningItsVariableIsParadoxical' => [
+                'code' => '<?php
+                    function accepts(callable $c): bool {
+                        return (bool) $c();
+                    }
+
+                    function pick(string $m, bool $flag): int {
+                        if ($m !== "a") {
+                            if ($flag || accepts(static fn(): string => $m = "a") || $m === "a") {
+                                return 1;
+                            }
+                        }
+
+                        return 0;
+                    }',
+                'error_message' => 'ParadoxicalCondition - src' . DIRECTORY_SEPARATOR . 'somefile.php:8:86',
+            ],
             'conditionOfOnlyValuesAnEarlierConditionExcludedIsParadoxical' => [
                 'code' => '<?php
                     function test(string $value): int {
@@ -2004,7 +2191,6 @@ final class TypeAlgebraTest extends TestCase
                         return $a;
                     }',
                 'error_message' => 'NullableReturnStatement',
-                'error_levels' => ['RiskyTruthyFalsyComparison'],
             ],
             'invertedTwoVarLogicNotNestedWithElseif' => [
                 'code' => '<?php
