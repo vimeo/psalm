@@ -170,6 +170,14 @@ final class Context
     public array $references_possibly_from_confusing_scope = [];
 
     /**
+     * The array offsets read from a nullable array on a path of this context, whose remembered type holds the null of
+     * that array: their read is not analysed again, as the null was reported where they were first read.
+     *
+     * @var array<string, true>
+     */
+    public array $null_array_offsets_read = [];
+
+    /**
      * Whether or not we're inside the conditional of an if/where etc.
      *
      * This changes whether or not the context is cloned
@@ -694,7 +702,7 @@ final class Context
             }
         }
         $this->removePossibleReference($remove_var_id);
-        unset($this->vars_possibly_in_scope[$remove_var_id]);
+        unset($this->vars_possibly_in_scope[$remove_var_id], $this->null_array_offsets_read[$remove_var_id]);
     }
 
     /**

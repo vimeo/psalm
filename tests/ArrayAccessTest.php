@@ -654,6 +654,33 @@ final class ArrayAccessTest extends TestCase
         $this->assertSame([4, 9, 14, 20], $lines);
     }
 
+    public function testRepeatedReadOfAnOffsetOfANullableArrayIsReportedOnce(): void
+    {
+        $this->project_analyzer->getConfig()->throw_exception = false;
+        $this->project_analyzer->setPhpVersion('8.1', 'tests');
+        $file_path = self::$src_dir_path . 'somefile.php';
+
+        $this->addFile(
+            $file_path,
+            '<?php
+                /** @param list<string>|null $m */
+                function repeated(?array $m): void {
+                    echo $m[0];
+                    echo $m[0];
+                }',
+        );
+        $this->analyzeFile($file_path, new Context());
+
+        $lines = [];
+        foreach (IssueBuffer::getIssuesDataForFile($file_path) as $issue) {
+            if ($issue->type === 'PossiblyNullArrayAccess') {
+                $lines[] = $issue->line_from;
+            }
+        }
+
+        $this->assertSame([4], $lines);
+    }
+
     /**
      * @psalm-pure
      */
