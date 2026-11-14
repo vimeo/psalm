@@ -6038,6 +6038,24 @@ final class ClassTemplateTest extends TestCase
                     '$r===' => 'int<1, max>',
                 ],
             ],
+            'methodParamOfAReceiverWithoutTypeArgumentsAcceptsAnInvariantArgument' => [
+                'code' => '<?php
+                    /** @template T */
+                    interface Validator {}
+
+                    /** @implements Validator<int> */
+                    final class IntValidator implements Validator {}
+
+                    /** @template T */
+                    final class Type {
+                        /** @param Validator<T> $v */
+                        public function one(Validator $v): void {}
+                    }
+
+                    function f(Type $t): void {
+                        $t->one(new IntValidator());
+                    }',
+            ],
             'templateNestedInAnInvariantGenericParamOfAConstructorIsInferred' => [
                 'code' => '<?php
                     /**
@@ -6141,6 +6159,76 @@ final class ClassTemplateTest extends TestCase
                 'assertions' => [],
                 'ignored_issues' => [],
                 'php_version' => '8.0',
+            ],
+            'templateNestedInACovariantGenericParamAcceptsASubtype' => [
+                'code' => '<?php
+                    /**
+                     * @template K
+                     * @template-covariant V
+                     */
+                    class Map {}
+
+                    /** @template T */
+                    class A {}
+
+                    /**
+                     * @template T
+                     * @extends A<T>
+                     */
+                    class ChildA extends A {}
+
+                    /**
+                     * @template T
+                     * @param Map<int, A<T>> $m
+                     * @return T
+                     */
+                    function f(Map $m) { throw new Exception(); }
+
+                    /** @var Map<int, ChildA<string>> $map */
+                    $map = new Map();
+                    $r = f($map);',
+                'assertions' => [
+                    '$r===' => 'string',
+                ],
+            ],
+            'templateInferredFromACallbackParamAcceptsATypedCallable' => [
+                'code' => '<?php
+                    /**
+                     * @template T
+                     * @param callable(T): void $c
+                     */
+                    function f(callable $c): void {}
+
+                    /** @var callable(int): void $cb */
+                    $cb = function (int $i): void {};
+                    f($cb);',
+            ],
+            'keyOfTemplateNestedInACovariantGenericParamAcceptsASubtype' => [
+                'code' => '<?php
+                    /**
+                     * @template K
+                     * @template-covariant V
+                     */
+                    class Map {}
+
+                    /** @template T */
+                    class A {}
+
+                    /**
+                     * @template T
+                     * @extends A<T>
+                     */
+                    class ChildA extends A {}
+
+                    /**
+                     * @template T of array<int, string>
+                     * @param Map<int, A<key-of<T>>> $m
+                     */
+                    function f(Map $m): void {}
+
+                    /** @var Map<int, ChildA<int>> $map */
+                    $map = new Map();
+                    f($map);',
             ],
         ];
     }
@@ -6369,6 +6457,65 @@ final class ClassTemplateTest extends TestCase
                     $foo->add(new B);',
                 'error_message' => 'IncompatibleTypeParameters - src' . DIRECTORY_SEPARATOR
                     . 'somefile.php:36:31 - Type B should be a subtype of A',
+            ],
+            'methodParamOfAReceiverInferredByNewKeepsAnInvariantArgumentCheck' => [
+                'code' => '<?php
+                    /** @template T */
+                    interface Validator {}
+
+                    /** @implements Validator<positive-int> */
+                    final class PositiveIntValidator implements Validator {}
+
+                    /** @template T */
+                    final class Type {
+                        /** @param T $t */
+                        public function __construct($t) {}
+
+                        /** @param Validator<T> $v */
+                        public function one(Validator $v): void {}
+                    }
+
+                    (new Type(0))->one(new PositiveIntValidator());',
+                'error_message' => 'IncompatibleTypeParameters',
+            ],
+            'methodParamOfAReceiverWithMixedTypeArgumentKeepsAnInvariantArgumentCheck' => [
+                'code' => '<?php
+                    /** @template T */
+                    interface Validator {}
+
+                    /** @implements Validator<int> */
+                    final class IntValidator implements Validator {}
+
+                    /** @template T */
+                    final class Type {
+                        /** @param Validator<T> $v */
+                        public function one(Validator $v): void {}
+                    }
+
+                    /** @param Type<mixed> $t */
+                    function f(Type $t): void {
+                        $t->one(new IntValidator());
+                    }',
+                'error_message' => 'InvalidArgument',
+            ],
+            'methodParamOfAReceiverWithoutTypeArgumentsKeepsTheOtherMembersInvariant' => [
+                'code' => '<?php
+                    /** @template T */
+                    interface Validator {}
+
+                    /** @implements Validator<string> */
+                    final class StringValidator implements Validator {}
+
+                    /** @template T */
+                    final class Type {
+                        /** @param Validator<T|int> $v */
+                        public function one(Validator $v): void {}
+                    }
+
+                    function f(Type $t): void {
+                        $t->one(new StringValidator());
+                    }',
+                'error_message' => 'InvalidArgument',
             ],
             'restrictTemplateInputWithTClassBadInput' => [
                 'code' => '<?php
@@ -7441,6 +7588,73 @@ final class ClassTemplateTest extends TestCase
                 'error_message' => 'InvalidArgument',
                 'error_levels' => [],
                 'php_version' => '8.0',
+            ],
+            'templateNestedInAnInvariantGenericParamConflictsWithAnEarlierArgument' => [
+                'code' => '<?php
+                    /**
+                     * @template K
+                     * @template V
+                     */
+                    class Map {}
+
+                    /** @template T */
+                    class A {}
+
+                    /**
+                     * @template T
+                     * @param T $x
+                     * @param Map<int, A<T>> $m
+                     */
+                    function f($x, Map $m): void {}
+
+                    /** @var Map<int, A<string>> $map */
+                    $map = new Map();
+                    f(5, $map);',
+                'error_message' => 'InvalidArgument',
+            ],
+            'subtypeOfATemplatedClassInAnInvariantGenericParamIsInvalid' => [
+                'code' => '<?php
+                    /**
+                     * @template K
+                     * @template V
+                     */
+                    class Map {}
+
+                    /** @template T */
+                    class A {}
+
+                    /**
+                     * @template T
+                     * @extends A<T>
+                     */
+                    class ChildA extends A {}
+
+                    /**
+                     * @template T
+                     * @param Map<int, A<T>> $m
+                     * @return T
+                     */
+                    function f(Map $m) { throw new Exception(); }
+
+                    /** @var Map<int, ChildA<string>> $map */
+                    $map = new Map();
+                    f($map);',
+                'error_message' => 'InvalidArgument - src' . DIRECTORY_SEPARATOR . 'somefile.php:26:23 - Argument 1 of f expects Map<int, A<string>>, but Map<int, ChildA<string>> provided',
+            ],
+            'extendedDependentTemplateBoundUsesTheEarlierTemplateArgument' => [
+                'code' => '<?php
+                    /** @template T */
+                    class A {}
+
+                    /**
+                     * @template T
+                     * @template U of A<T>
+                     */
+                    class Base {}
+
+                    /** @extends Base<string, A<int>> */
+                    class Child extends Base {}',
+                'error_message' => 'InvalidTemplateParam',
             ],
         ];
     }

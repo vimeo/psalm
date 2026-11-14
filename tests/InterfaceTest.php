@@ -115,6 +115,100 @@ final class InterfaceTest extends TestCase
                 'ignored_issues' => [],
                 'php_version' => '8.4',
             ],
+            'propertyOfAnInterfaceGivenByAShapeOrAMixinIsRemembered' => [
+                'code' => '<?php
+                    interface I {}
+
+                    /** @param I&object{foo: ?int} $x */
+                    function f($x): int {
+                        if ($x->foo !== null) {
+                            return $x->foo;
+                        }
+
+                        return 0;
+                    }
+
+                    final class Data {
+                        public ?int $foo = null;
+                    }
+
+                    /** @mixin Data */
+                    interface J {}
+
+                    function g(J $x): int {
+                        if ($x->foo !== null) {
+                            return $x->foo;
+                        }
+
+                        return 0;
+                    }',
+            ],
+            'propertyDeclaredByAnInterfaceWinsOverItsMixinWhenRemembered' => [
+                'code' => '<?php
+                    final class Data {
+                        /** @deprecated */
+                        public int $foo = 0;
+                    }
+
+                    /** @mixin Data */
+                    interface J {
+                        public int $foo { get; }
+                    }
+
+                    function f(J $x): int {
+                        $a = $x->foo;
+
+                        return $a + $x->foo;
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.4',
+            ],
+            'propertyOfAShapeWinsOverTheMixinOfTheInterfaceWhenRemembered' => [
+                'code' => '<?php
+                    final class Data {
+                        /** @deprecated */
+                        public int $foo = 0;
+                    }
+
+                    /** @mixin Data */
+                    interface J {}
+
+                    /** @param J&object{foo: int} $x */
+                    function f($x): int {
+                        $a = $x->foo;
+
+                        return $a + $x->foo;
+                    }',
+            ],
+            'unsetOfAPropertyOfAnInterfaceAnIssetFound' => [
+                'code' => '<?php
+                    interface I {}
+
+                    function f(I $x): void {
+                        if (isset($x->foo)) {
+                            unset($x->foo);
+                        }
+                    }
+
+                    function g(I $x): void {
+                        if (isset($x->foo)) {
+                            unset($x->{"foo"});
+                        }
+                    }',
+            ],
+            'unsetOfAPropertyOfAClassAnIssetFound' => [
+                'code' => '<?php
+                    class A {}
+
+                    function f(A $x): void {
+                        if (isset($x->foo)) {
+                            unset($x->foo);
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => ['ClassMustBeFinal'],
+            ],
             'issetOfAPropertyOfAnInterfaceIsNotAnInterfaceProperty' => [
                 'code' => '<?php
                     interface Shape {}
@@ -1271,6 +1365,54 @@ final class InterfaceTest extends TestCase
                         $shape->label = "renamed";
                     }',
                 'error_message' => 'NoInterfaceProperties',
+            ],
+            'assignmentToAPropertyOfAnInterfaceGivenByAMixinAfterAFetch' => [
+                'code' => '<?php
+                    final class Data {
+                        public int $foo = 0;
+                    }
+
+                    /** @mixin Data */
+                    interface J {}
+
+                    function f(J $x): int {
+                        $old = $x->foo;
+                        $x->foo = "bad";
+
+                        return $old;
+                    }',
+                'error_message' => 'NoInterfaceProperties',
+            ],
+            'assignmentToAPropertyOfAnInterfaceGivenByAShapeAfterAFetch' => [
+                'code' => '<?php
+                    interface I {}
+
+                    /** @param I&object{foo: int} $x */
+                    function f($x): int {
+                        $old = $x->foo;
+                        $x->foo = "bad";
+
+                        return $old;
+                    }',
+                'error_message' => 'NoInterfaceProperties',
+            ],
+            'unsetOfAPropertyOfAnInterfaceGivenByAMixinAfterAFetchWritesIt' => [
+                'code' => '<?php
+                    final class Data {
+                        public int $foo = 0;
+                    }
+
+                    /** @mixin Data */
+                    interface J {}
+
+                    /** @psalm-capabilities read-props */
+                    function f(J $x): int {
+                        $old = $x->foo;
+                        unset($x->foo);
+
+                        return $old;
+                    }',
+                'error_message' => 'ImpurePropertyAssignment',
             ],
             'interfaceExtendsUndefinedInterface' => [
                 'code' => '<?php

@@ -8,8 +8,10 @@ use PhpParser;
 use Psalm\CodeLocation;
 use Psalm\Codebase;
 use Psalm\Context;
+use Psalm\Internal\Analyzer\ClassLikeAnalyzer;
 use Psalm\Internal\Analyzer\FunctionLikeAnalyzer;
 use Psalm\Internal\Analyzer\InheritedMethodTaints;
+use Psalm\Internal\Analyzer\Statements\Expression\Assignment\InstancePropertyAssignmentAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\ExpressionIdentifier;
 use Psalm\Internal\Analyzer\Statements\Expression\NullsafeChainState;
 use Psalm\Internal\Analyzer\Statements\ExpressionAnalyzer;
@@ -30,6 +32,7 @@ use Psalm\Storage\Capabilities;
 use Psalm\Type;
 use Psalm\Type\Atomic\TNamedObject;
 use Psalm\Type\Atomic\TNull;
+use Psalm\Type\Atomic\TObjectWithProperties;
 use Psalm\Type\Atomic\TTemplateParam;
 use Psalm\Type\Union;
 
@@ -366,46 +369,63 @@ final class InstancePropertyFetchAnalyzer
         return true;
     }
 
-    /**
-     * Whether the type is an interface, intersected only with interfaces, that none of declares the property
-     */
     private static function isUndeclaredInterfaceProperty(
         Codebase $codebase,
         Union $object_type,
         string $property_name,
     ): bool {
         foreach ($object_type->getAtomicTypes() as $atomic_type) {
-            if (!$atomic_type instanceof TNamedObject) {
-                continue;
-            }
-
-            $has_interface = false;
-            $declares_property = false;
-
-            foreach ([$atomic_type, ...array_values($atomic_type->getIntersectionTypes() ?: [])] as $part) {
-                if (!$part instanceof TNamedObject) {
-                    continue;
-                }
-
-                if ($codebase->classExists($part->value)) {
-                    $declares_property = true;
-                } elseif ($codebase->interfaceExists($part->value)) {
-                    $has_interface = true;
-
-                    if (isset($codebase->classlike_storage_provider->get($part->value)
-                        ->declaring_property_ids[$property_name])
-                    ) {
-                        $declares_property = true;
-                    }
-                }
-            }
-
-            if ($has_interface && !$declares_property) {
+            if ($atomic_type instanceof TNamedObject
+                && self::isUndeclaredInterfacePropertyOf($codebase, $atomic_type, $property_name)
+            ) {
                 return true;
             }
         }
 
         return false;
+    }
+
+    /**
+     * Whether the type is an interface, intersected only with interfaces, none of which declares the property or
+     * gives it with a shape or a mixin
+     */
+    public static function isUndeclaredInterfacePropertyOf(
+        Codebase $codebase,
+        TNamedObject $object_type,
+        string $property_name,
+    ): bool {
+        $has_interface = false;
+
+        foreach ([$object_type, ...array_values($object_type->getIntersectionTypes() ?: [])] as $part) {
+            if ($part instanceof TObjectWithProperties) {
+                if (isset($part->properties[$property_name])) {
+                    return false;
+                }
+
+                continue;
+            }
+
+            if (!$part instanceof TNamedObject) {
+                continue;
+            }
+
+            if ($codebase->classExists($part->value)) {
+                return false;
+            }
+
+            if ($codebase->interfaceExists($part->value)) {
+                $has_interface = true;
+
+                if (isset($codebase->classlike_storage_provider->get($part->value)
+                        ->declaring_property_ids[$property_name])
+                    || AtomicPropertyFetchAnalyzer::findMixinWithProperty($codebase, $part, $property_name) !== null
+                ) {
+                    return false;
+                }
+            }
+        }
+
+        return $has_interface;
     }
 
     private static function handleScopedProperty(
@@ -504,8 +524,42 @@ final class InstancePropertyFetchAnalyzer
             // log the appearance
             foreach ($stmt_var_type->getAtomicTypes() as $lhs_type_part) {
                 if ($lhs_type_part instanceof TNamedObject) {
+                    $override_property_visibility = false;
+
                     if (!$codebase->classExists($lhs_type_part->value, null, $context)) {
-                        continue;
+                        if (!$codebase->interfaceExists($lhs_type_part->value, null, $context)) {
+                            continue;
+                        }
+
+                        $interface_storage = $codebase->classlike_storage_provider->get($lhs_type_part->value);
+
+                        // the property of an interface that neither declares it nor is intersected with a shape that
+                        // has it is the one of its mixin
+                        if (isset($interface_storage->declaring_property_ids[$stmt->name->name])) {
+                            continue;
+                        }
+
+                        foreach ($lhs_type_part->getIntersectionTypes() ?: [] as $intersection_type) {
+                            if ($intersection_type instanceof TObjectWithProperties
+                                && isset($intersection_type->properties[$stmt->name->name])
+                            ) {
+                                continue 2;
+                            }
+                        }
+
+                        $lhs_type_part = AtomicPropertyFetchAnalyzer::findMixinWithProperty(
+                            $codebase,
+                            $lhs_type_part,
+                            $stmt->name->name,
+                        );
+
+                        if ($lhs_type_part === null
+                            || !$codebase->classExists($lhs_type_part->value, null, $context)
+                        ) {
+                            continue;
+                        }
+
+                        $override_property_visibility = $interface_storage->override_property_visibility;
                     }
 
                     $property_id = $lhs_type_part->value . '::$' . $stmt->name->name;
@@ -559,6 +613,38 @@ final class InstancePropertyFetchAnalyzer
                             $stmt->name,
                             $property_id,
                         );
+                    }
+
+                    // unsetting a property is a write, so the set visibility and readonly apply
+                    if ($declaring_property_class !== null
+                        && UnsetAnalyzer::writesFetchedProperty($context, $stmt, $stmt_type)
+                    ) {
+                        if (!$override_property_visibility) {
+                            ClassLikeAnalyzer::checkPropertyVisibility(
+                                $property_id,
+                                $context,
+                                $statements_analyzer,
+                                new CodeLocation($statements_analyzer->getSource(), $stmt),
+                                $statements_analyzer->getSuppressedIssues(),
+                                true,
+                                true,
+                            );
+                        }
+
+                        $declaring_class_storage = $codebase->classlike_storage_provider->get(
+                            $declaring_property_class,
+                        );
+
+                        if (isset($declaring_class_storage->properties[$stmt->name->name])) {
+                            InstancePropertyAssignmentAnalyzer::checkReadonlyPropertyWrite(
+                                $statements_analyzer,
+                                $stmt,
+                                $property_id,
+                                $declaring_class_storage->properties[$stmt->name->name],
+                                $context,
+                                $stmt_var_type->reference_free && $stmt_var_type->allow_mutations,
+                            );
+                        }
                     }
 
                     if (!AtomicPropertyFetchAnalyzer::isFreeToAccess($statements_analyzer, $stmt, $class_storage)) {

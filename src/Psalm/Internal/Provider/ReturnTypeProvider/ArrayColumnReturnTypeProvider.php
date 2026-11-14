@@ -240,8 +240,23 @@ final class ArrayColumnReturnTypeProvider implements FunctionReturnTypeProviderI
                 $codebase = $statements_source->getCodebase();
                 $invalid_key_types = self::getTypesThatCannotBeKeys($codebase, $key_column_type);
 
-                if ($invalid_key_types !== []) {
-                    $all_invalid = count($invalid_key_types) === count($key_column_type->getAtomicTypes());
+                // array_column() skips the rows without the value column before it reads their index
+                if ($value_column_name_is_null) {
+                    $rows_may_be_skipped = false;
+                    $rows_are_all_skipped = false;
+                } elseif (null !== $value_column_name && isset($row_shape->properties[$value_column_name])) {
+                    $rows_may_be_skipped = $row_shape->properties[$value_column_name]->possibly_undefined;
+                    $rows_are_all_skipped = false;
+                } else {
+                    $rows_may_be_skipped = true;
+                    $rows_are_all_skipped = null !== $value_column_name && $row_shape->fallback_params === null;
+                }
+
+                if ($invalid_key_types !== [] && !$rows_are_all_skipped) {
+                    // a row without the index column is appended
+                    $all_invalid = !$rows_may_be_skipped
+                        && !$key_column_type->possibly_undefined
+                        && count($invalid_key_types) === count($key_column_type->getAtomicTypes());
 
                     IssueBuffer::maybeAdd(
                         $all_invalid
@@ -284,7 +299,7 @@ final class ArrayColumnReturnTypeProvider implements FunctionReturnTypeProviderI
 
     /**
      * The parts of the index column type that array_column() throws a TypeError for: arrays, and objects that
-     * can't be cast to a string
+     * aren't cast to a string
      *
      * @return list<Atomic>
      */
@@ -295,7 +310,7 @@ final class ArrayColumnReturnTypeProvider implements FunctionReturnTypeProviderI
         foreach ($key_type->getAtomicTypes() as $atomic_type) {
             if ($atomic_type instanceof TArray
                 || $atomic_type instanceof TKeyedArray
-                || ($atomic_type instanceof TNamedObject && !self::isStringable($codebase, $atomic_type))
+                || ($atomic_type instanceof TNamedObject && !self::isCastToAString($codebase, $atomic_type))
             ) {
                 $invalid[] = $atomic_type;
             }
@@ -304,16 +319,21 @@ final class ArrayColumnReturnTypeProvider implements FunctionReturnTypeProviderI
         return $invalid;
     }
 
-    private static function isStringable(Codebase $codebase, TNamedObject $object): bool
+    /**
+     * Before PHP 8, an object with a __toString() in the index column is cast to a string; since then it is a
+     * TypeError, like any other object
+     */
+    private static function isCastToAString(Codebase $codebase, TNamedObject $object): bool
     {
-        return $codebase->classOrInterfaceExists($object->value)
+        return $codebase->analysis_php_version_id < 8_00_00
+            && $codebase->classOrInterfaceExists($object->value)
             && $codebase->methodExists(new MethodIdentifier($object->value, '__tostring'));
     }
 
     /**
-     * The type of the key array_column() sets for a value: null, bools, floats and objects with a __toString() are
-     * cast to the array key they stand for. What can't be a key is left out (see getTypesThatCannotBeKeys()),
-     * and a type that is nothing but that is an array key.
+     * The type of the key array_column() sets for a value: null, bools, floats and, before PHP 8, objects with a
+     * __toString() are cast to the array key they stand for. What can't be a key is left out (see
+     * getTypesThatCannotBeKeys()), and a type that is nothing but that is an array key.
      */
     private static function castToArrayKey(Codebase $codebase, Union $key_type): Union
     {
@@ -337,7 +357,7 @@ final class ArrayColumnReturnTypeProvider implements FunctionReturnTypeProviderI
                 || $atomic_type instanceof TTemplateParam
             ) {
                 $atomic_types[] = $atomic_type;
-            } elseif ($atomic_type instanceof TNamedObject && self::isStringable($codebase, $atomic_type)) {
+            } elseif ($atomic_type instanceof TNamedObject && self::isCastToAString($codebase, $atomic_type)) {
                 $atomic_types[] = new TString();
             } elseif ($atomic_type instanceof TArray
                 || $atomic_type instanceof TKeyedArray
@@ -369,12 +389,32 @@ final class ArrayColumnReturnTypeProvider implements FunctionReturnTypeProviderI
             if ($row_type->hasArray()) {
                 return $row_type->getArray();
             } elseif ($row_type->hasObjectType()) {
-                return GetObjectVarsReturnTypeProvider::getGetObjectVarsReturnType(
+                $row_shape = GetObjectVarsReturnTypeProvider::getGetObjectVarsReturnType(
                     $row_type,
                     $statements_source,
                     $context,
                     $code_location,
                 );
+
+                // array_column() also reads the columns that __isset() says are set
+                $object_type = $row_type->getSingleAtomic();
+                if ($object_type instanceof TNamedObject
+                    && $statements_source->getCodebase()->methodExists(
+                        new MethodIdentifier($object_type->value, '__isset'),
+                    )
+                ) {
+                    if ($row_shape instanceof TKeyedArray) {
+                        return TKeyedArray::make(
+                            $row_shape->properties,
+                            null,
+                            [Type::getString(), Type::getMixed()],
+                        );
+                    }
+
+                    return new TArray([Type::getString(), Type::getMixed()]);
+                }
+
+                return $row_shape;
             }
         }
         return null;
