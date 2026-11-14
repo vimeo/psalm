@@ -1193,7 +1193,7 @@ final class MethodCallReturnTypeFetcher
                 foreach ($type_map as $defining_class => $bounds) {
                     foreach ($bounds as $bound) {
                         $bound_type = $bound->type;
-                        (new StaticResolver())->traverse($bound_type);
+                        (new StaticResolver($codebase, $method_id->fq_class_name))->traverse($bound_type);
 
                         $resolved_bound = clone $bound;
                         $resolved_bound->type = $bound_type;

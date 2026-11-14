@@ -6093,6 +6093,44 @@ final class ClassTemplateTest extends TestCase
                     '$r===' => 'string',
                 ],
             ],
+            'staticOfAClassUsingATraitIsTheReceiverOfTheCall' => [
+                'code' => '<?php
+                    /**
+                     * @template TKey of array-key
+                     * @template TValue
+                     */
+                    class Coll {}
+
+                    /** @template TCollection of Coll */
+                    trait HasColl {
+                        /**
+                         * @param array<array-key, mixed> $models
+                         * @return TCollection
+                         */
+                        public function newCollection(array $models = []) { throw new Exception(); }
+                    }
+
+                    class Model {
+                        /** @use HasColl<Coll<array-key, static & self>> */
+                        use HasColl;
+                    }
+
+                    /** @template TModel of Model */
+                    class Builder {
+                        /** @return TModel */
+                        public function newModelInstance() { throw new Exception(); }
+
+                        /** @return Coll<array-key, TModel> */
+                        public function hydrate() {
+                            $instance = $this->newModelInstance();
+
+                            return $instance->newCollection([]);
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
             'staticReturnOfAMethodCalledOnATemplateParamReceiver' => [
                 'code' => '<?php
                     /** @template U */
