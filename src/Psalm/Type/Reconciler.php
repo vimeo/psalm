@@ -570,6 +570,25 @@ class Reconciler
     }
 
     /**
+     * What a comparison narrows of a template is its bound: the template keeps its name and gets the narrowed bound,
+     * and is dropped when nothing is left of the bound
+     *
+     * @param callable(Union): Union $reconcile_bound
+     */
+    protected static function narrowTemplateBound(
+        MutableUnion $existing_var_type,
+        TTemplateParam $template,
+        callable $reconcile_bound,
+    ): void {
+        $existing_var_type->removeType($template->getKey());
+        $narrowed_bound = $reconcile_bound($template->as);
+
+        if (!$narrowed_bound->isNever()) {
+            $existing_var_type->addType($template->replaceAs($narrowed_bound));
+        }
+    }
+
+    /**
      * This generates a list of extra assertions for an assertion on a nested key.
      *
      * For example  ['$a[0]->foo->bar' => 'isset']

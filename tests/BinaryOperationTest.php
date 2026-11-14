@@ -2175,6 +2175,110 @@ final class BinaryOperationTest extends TestCase
                 'ignored_issues' => ['TypeDoesNotContainType', 'RedundantCondition'],
                 'php_version' => '8.1',
             ],
+            'comparisonNarrowsTheBoundOfATemplateInTheTypeOfTheVariable' => [
+                'code' => '<?php
+                    /** @param int<1, max> $n */
+                    function positive(int $n): void {}
+
+                    /** @param int<min, 0> $n */
+                    function nonPositive(int $n): void {}
+
+                    /** @param int<min, 4> $n */
+                    function belowFive(int $n): void {}
+
+                    /** @param int<5, max> $n */
+                    function fiveOrMore(int $n): void {}
+
+                    /**
+                     * @template T of int
+                     * @param T $n
+                     */
+                    function f(int $n): void {
+                        if ($n > 0) {
+                            positive($n);
+                        } else {
+                            nonPositive($n);
+                        }
+
+                        if ($n < 5) {
+                            belowFive($n);
+                        } else {
+                            fiveOrMore($n);
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
+            'comparisonNarrowsTheBoundOfATemplate' => [
+                'code' => '<?php
+                    /**
+                     * @template T of int<0, max>
+                     * @param T $n
+                     * @return int<2, max>
+                     */
+                    function greater(int $n): int {
+                        return $n > 1 ? $n : 2;
+                    }
+
+                    /**
+                     * @template T of int<0, max>
+                     * @param T $n
+                     * @return int<3, max>
+                     */
+                    function greaterOrEqual(int $n): int {
+                        return $n >= 3 ? $n : 3;
+                    }
+
+                    /**
+                     * @template T of int<0, max>
+                     * @param T $n
+                     * @return int<0, 4>
+                     */
+                    function smaller(int $n): int {
+                        return $n < 5 ? $n : 4;
+                    }
+
+                    /**
+                     * @template T of int<0, max>
+                     * @param T $n
+                     * @return int<0, 6>
+                     */
+                    function smallerOrEqual(int $n): int {
+                        return $n <= 6 ? $n : 6;
+                    }',
+            ],
+            'arithmeticOnATemplateBoundedByAnIntRange' => [
+                'code' => '<?php
+                    /**
+                     * @template T of positive-int|0
+                     * @param T $depth
+                     */
+                    function recursiveFn(int $depth = 1): int {
+                        if ($depth > 1) {
+                            return recursiveFn($depth - 1);
+                        }
+
+                        return 0;
+                    }
+
+                    /**
+                     * @template T of int<0, max>
+                     * @param T $n
+                     * @return array{int<-1, max>, int<1, max>, int<0, max>, int<0, max>}
+                     */
+                    function ops(int $n): array {
+                        return [$n - 1, $n + 1, $n * 2, 2 * $n];
+                    }
+
+                    /**
+                     * @template T of float
+                     * @param T $n
+                     */
+                    function floats(float $n): float {
+                        return $n * 2;
+                    }',
+            ],
             'arithmeticOnATemplateBoundedByIntOrFloat' => [
                 'code' => '<?php
                     /**
@@ -2477,6 +2581,19 @@ final class BinaryOperationTest extends TestCase
                         return "hello $s1 $s2";
                     }',
                 'error_message' => 'LessSpecificReturnStatement',
+            ],
+            'comparisonOutsideTheBoundOfATemplate' => [
+                'code' => '<?php
+                    /**
+                     * @template T of int<0, 3>
+                     * @param T $n
+                     */
+                    function f(int $n): void {
+                        if ($n > 10) {
+                            echo $n;
+                        }
+                    }',
+                'error_message' => 'DocblockTypeContradiction',
             ],
             'arithmeticOnATemplateBoundedByAStringIsStillMixed' => [
                 'code' => '<?php

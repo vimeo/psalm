@@ -1936,6 +1936,22 @@ final class SimpleNegatedAssertionReconciler extends Reconciler
                 $redundant = false;
                 $existing_var_type->removeType($atomic_type->getKey());
                 $existing_var_type->addType(new TIntRange(null, $assertion_value));
+            } elseif ($atomic_type instanceof TTemplateParam) {
+                $redundant = false;
+                self::narrowTemplateBound(
+                    $existing_var_type,
+                    $atomic_type,
+                    static fn(Union $bound): Union => self::reconcileIsLessThanOrEqualTo(
+                        $assertion,
+                        $bound,
+                        $inside_loop,
+                        $old_var_type_string,
+                        null,
+                        $negated,
+                        null,
+                        $suppressed_issues,
+                    ),
+                );
             } else {
                 // we assume that other types may have been removed (empty strings? numeric strings?)
                 //It may be worth refining to improve reconciliation while keeping in mind we're on loose comparison
@@ -2041,6 +2057,22 @@ final class SimpleNegatedAssertionReconciler extends Reconciler
                 $redundant = false;
                 $existing_var_type->removeType($atomic_type->getKey());
                 $existing_var_type->addType(new TIntRange($assertion_value, null));
+            } elseif ($atomic_type instanceof TTemplateParam) {
+                $redundant = false;
+                self::narrowTemplateBound(
+                    $existing_var_type,
+                    $atomic_type,
+                    static fn(Union $bound): Union => self::reconcileIsGreaterThanOrEqualTo(
+                        $assertion,
+                        $bound,
+                        $inside_loop,
+                        $old_var_type_string,
+                        null,
+                        $negated,
+                        null,
+                        $suppressed_issues,
+                    ),
+                );
             } else {
                 // we assume that other types may have been removed (empty strings? numeric strings?)
                 //It may be worth refining to improve reconciliation while keeping in mind we're on loose comparison
