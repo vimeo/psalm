@@ -198,6 +198,14 @@ final class InstancePropertyAssignmentAnalyzer
             );
         }
 
+        $can_narrow_property = true;
+        foreach ($assigned_properties as $assigned_property) {
+            if ($assigned_property->interface_setter) {
+                $can_narrow_property = false;
+                break;
+            }
+        }
+
         foreach ($assigned_properties as $assigned_property) {
             $class_property_type = $assigned_property->property_type;
             $assignment_type = $assigned_property->assignment_type;
@@ -218,7 +226,7 @@ final class InstancePropertyAssignmentAnalyzer
             );
 
             if ($type_match_found && $union_comparison_results->replacement_union_type) {
-                if ($var_id) {
+                if ($var_id && $can_narrow_property) {
                     $context->vars_in_scope[$var_id] = $union_comparison_results->replacement_union_type
                         ->setProperties([
                             'initialized_class' => ($context->vars_in_scope[$var_id] ?? null)?->initialized_class,
@@ -1083,6 +1091,7 @@ final class InstancePropertyAssignmentAnalyzer
         $assigned_properties = [];
 
         $context_type = null;
+        $can_cache_read = true;
 
         while ($lhs_atomic_types) {
             $lhs_type_part = array_pop($lhs_atomic_types);
@@ -1116,14 +1125,13 @@ final class InstancePropertyAssignmentAnalyzer
             if ($assigned_property) {
                 $assigned_properties[] = $assigned_property;
 
-                if ($context_type) {
-                    $context_type = Type::combineUnionTypes(
-                        $context_type,
-                        $assigned_property->assignment_type,
-                        $codebase,
-                    );
+                $read_type = $assigned_property->interface_setter
+                    ? $assigned_property->read_type
+                    : $assigned_property->assignment_type;
+                if ($read_type === null) {
+                    $can_cache_read = false;
                 } else {
-                    $context_type = $assigned_property->assignment_type;
+                    $context_type = Type::combineUnionTypes($context_type, $read_type, $codebase);
                 }
             }
         }
@@ -1166,7 +1174,11 @@ final class InstancePropertyAssignmentAnalyzer
             }
 
             // because we don't want to be assigning for property declarations
-            $context->vars_in_scope[$var_id] = $context_type;
+            if ($can_cache_read) {
+                $context->vars_in_scope[$var_id] = $context_type;
+            } else {
+                unset($context->vars_in_scope[$var_id]);
+            }
         }
 
         return $assigned_properties;
@@ -1255,6 +1267,7 @@ final class InstancePropertyAssignmentAnalyzer
 
         $class_exists = false;
         $interface_exists = false;
+        $interface_setter = false;
 
         // a private property of the current class, assigned on an object of a child class
         $is_recovered_by_self = static fn(string $class_name): bool => $context->self !== null
@@ -1304,7 +1317,9 @@ final class InstancePropertyAssignmentAnalyzer
                 }
 
                 if ($hook_interface !== null && !$class_exists) {
+                    $interface_setter = true;
                     $fq_class_name = $hook_interface->value;
+                    $lhs_type_part = $hook_interface;
                 } elseif (!$class_exists) {
                     // a property an isset() found is there: it is the object that has it, not the interface
                     if ($var_id !== null
@@ -1384,7 +1399,9 @@ final class InstancePropertyAssignmentAnalyzer
                 );
 
                 if ($hook_interface !== null) {
+                    $interface_setter = true;
                     $fq_class_name = $hook_interface->value;
+                    $lhs_type_part = $hook_interface;
                     $class_exists = false;
                 }
             }
@@ -1498,7 +1515,7 @@ final class InstancePropertyAssignmentAnalyzer
             }
         }
 
-        if (!$class_exists) {
+        if (!$class_exists && !$interface_setter) {
             return null;
         }
 
@@ -1662,9 +1679,8 @@ final class InstancePropertyAssignmentAnalyzer
 
         $declaring_class_storage = $codebase->classlike_storage_provider->get($declaring_property_class);
 
-        if (isset($declaring_class_storage->properties[$prop_name])) {
-            $property_storage = $declaring_class_storage->properties[$prop_name];
-
+        $property_storage = $declaring_class_storage->properties[$prop_name] ?? null;
+        if ($property_storage !== null) {
             if ($property_storage->deprecated) {
                 IssueBuffer::maybeAdd(
                     new DeprecatedProperty(
@@ -1816,10 +1832,35 @@ final class InstancePropertyAssignmentAnalyzer
             }
         }
 
+        $read_type = null;
+        if ($interface_setter && $property_storage !== null && $property_storage->hook_get !== null) {
+            $read_type = $codebase->properties->getPropertyType($property_id, false, $statements_analyzer, $context)
+                ?? Type::getMixed();
+            $read_type = TypeExpander::expandUnion(
+                $codebase,
+                $read_type,
+                $fq_class_name,
+                $lhs_type_part,
+                $declaring_class_storage->parent_class,
+            );
+            $read_type = Methods::localizeType($codebase, $read_type, $fq_class_name, $declaring_property_class);
+            if ($lhs_type_part instanceof TGenericObject) {
+                $read_type = AtomicPropertyFetchAnalyzer::localizePropertyType(
+                    $codebase,
+                    $read_type,
+                    $lhs_type_part,
+                    $codebase->classlike_storage_provider->get($fq_class_name),
+                    $declaring_class_storage,
+                );
+            }
+        }
+
         return new AssignedProperty(
             $class_property_type,
             $property_id,
             $assignment_value_type,
+            $interface_setter,
+            $read_type,
         );
     }
 
