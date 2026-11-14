@@ -440,6 +440,12 @@ final class IfElseAnalyzer
             unset($type);
         }
 
+        foreach ($if_scope->partial_new_vars as $var_id => $type) {
+            if (!isset($context->vars_in_scope[$var_id])) {
+                $context->vars_in_scope[$var_id] = $type->setPossiblyUndefined(true);
+            }
+        }
+
         if ($if_scope->redefined_vars) {
             foreach ($if_scope->redefined_vars as $var_id => $type) {
                 $previous_type = $context->vars_in_scope[$var_id] ?? null;

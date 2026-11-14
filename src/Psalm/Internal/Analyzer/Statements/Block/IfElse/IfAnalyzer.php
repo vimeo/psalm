@@ -442,6 +442,12 @@ final class IfAnalyzer
     ): void {
         $redefined_vars = $if_context->getRedefinedVars($outer_context->vars_in_scope);
 
+        foreach (array_diff_key($if_context->vars_in_scope, $outer_context->vars_in_scope) as $new_var => $type) {
+            $if_scope->partial_new_vars[$new_var] = isset($if_scope->partial_new_vars[$new_var])
+                ? Type::combineUnionTypes($if_scope->partial_new_vars[$new_var], $type, $codebase)
+                : $type;
+        }
+
         if ($if_scope->new_vars === null) {
             if ($update_new_vars) {
                 $if_scope->new_vars = array_diff_key($if_context->vars_in_scope, $outer_context->vars_in_scope);

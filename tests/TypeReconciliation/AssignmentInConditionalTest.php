@@ -23,6 +23,20 @@ final class AssignmentInConditionalTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'variableDefinedInSomeBranchesKeepsItsTypeWhenPossiblyUndefined' => [
+                'code' => '<?php
+                    if (rand(0, 1)) {
+                        $a = 1;
+                    } elseif (rand(0, 1)) {
+                        $a = "b";
+                    }
+
+                    $b = $a;',
+                'assertions' => [
+                    '$b===' => "'b'|1",
+                ],
+                'ignored_issues' => ['PossiblyUndefinedGlobalVariable'],
+            ],
             'negatedAssignedVariableIsTruthyOnTheRightOfOr' => [
                 'code' => '<?php
                     function takesObject(object $o): bool {
