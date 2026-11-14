@@ -780,6 +780,7 @@ final class PreloaderList {
         \Psalm\Internal\Codebase\InternalCallMapHandler::class,
         \Psalm\Internal\Codebase\InternalTaintSourceMap::class,
         \Psalm\Internal\Codebase\Methods::class,
+        \Psalm\Internal\Codebase\MixinLookup::class,
         \Psalm\Internal\Codebase\MutationLevelResolver::class,
         \Psalm\Internal\Codebase\NosqlEqualityOperand::class,
         \Psalm\Internal\Codebase\Populator::class,
