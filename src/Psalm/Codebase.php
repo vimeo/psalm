@@ -101,6 +101,7 @@ use function is_string;
 use function krsort;
 use function ksort;
 use function ltrim;
+use function max;
 use function min;
 use function preg_match;
 use function preg_replace;
