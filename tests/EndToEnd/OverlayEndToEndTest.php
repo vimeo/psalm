@@ -8,6 +8,9 @@ use FilesystemIterator;
 use Override;
 use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\TestCase;
+use Psalm\Overlay\OverlayException;
+use Psalm\Overlay\OverlayOptions;
+use Psalm\Overlay\OverlaySession;
 use RecursiveDirectoryIterator;
 use RecursiveIteratorIterator;
 use SplFileInfo;
@@ -239,6 +242,35 @@ final class OverlayEndToEndTest extends TestCase
 
         /** @var array{id?: int|string|null, result?: array<array-key, mixed>, error?: array{data: array{kind: string}}} */
         return json_decode($line, true, 512, JSON_THROW_ON_ERROR);
+    }
+
+    public function testSessionAnswersLikeTheCommand(): void
+    {
+        $this->writeFiles(['A.php' => self::A, 'B.php' => self::B]);
+        $this->recordReferences();
+        $overlay = ['src/A.php' => str_replace('public function', 'private function', self::A)];
+        [, $expected] = $this->overlay($overlay);
+
+        $session = OverlaySession::open(new OverlayOptions($this->project, command: [PHP_BINARY, $this->psalm]));
+
+        try {
+            $result = $session->analyze($overlay);
+
+            $this->assertTrue($result->hasNewErrors());
+            $this->assertSame(
+                $expected,
+                json_decode(json_encode($result, JSON_THROW_ON_ERROR), true, 512, JSON_THROW_ON_ERROR),
+            );
+
+            try {
+                $session->analyze(['src/A.php' => null]);
+                $this->fail('a deleted file is not supported yet');
+            } catch (OverlayException $e) {
+                $this->assertSame('unsupported', $e->kind);
+            }
+        } finally {
+            $session->close();
+        }
     }
 
     public function testVisibilityChangeAnalysesTheReferencesOfTheMember(): void

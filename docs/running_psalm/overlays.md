@@ -77,7 +77,7 @@ echo '{"overlays": [{"path": "src/A.php", "contents": "<?php ..."}, {"path": "sr
   | vendor/bin/psalm --overlays-from=- --output-format=json
 ```
 
-Relative paths are relative to the directory Psalm runs in, on every transport: `--overlay`, `--overlays-from` and the server.
+Relative paths are relative to the directory Psalm runs in, on every transport: `--overlay`, `--overlays-from` and the server (`OverlaySession` runs it in its `root`).
 
 Overlays of files that do not exist yet, and `{"path": "...", "deleted": true}`, answer `unsupported` for now. Overlays of the config, the baseline, `composer.json`, `composer.lock` and stub files (preloaded or not) are `invalid_overlay`.
 
@@ -93,7 +93,7 @@ Without pcntl (Windows), the deadline is PHP's time limit, which counts whole se
 
 The envelope, the issues in it and the server's answers can gain keys without a new `protocol` number. Clients must ignore keys they do not know. A change that removes or redefines a key raises `protocol`.
 
-## Server (experimental)
+## Server and PHP API (experimental)
 
 `psalm --overlay-server [--threads=N]` reads JSON-RPC 2.0 requests from standard input, one per line, and writes the answers to standard output. The protocol may still change. Linux and macOS only.
 
@@ -111,3 +111,18 @@ The envelope, the issues in it and the server's answers can gain keys without a 
 Up to `--threads` requests run at once, and answers may come out of order. The id of a request must not be the id of another one that has no answer yet: such a request is answered with `invalid_request`. After files change on disk, send `projectChanged`.
 
 When the snapshot process cannot start (a config error, for example), every request is answered with the kind of the failure (`config`), and the server tries again after a few seconds, or at once after `projectChanged`. Without pcntl the server answers every request with `unsupported`.
+
+From PHP, `Psalm\Overlay\OverlaySession` starts the server and talks to it. Psalm does not load into your process.
+
+```php
+use Psalm\Overlay\OverlayOptions;
+use Psalm\Overlay\OverlaySession;
+
+$session = OverlaySession::open(new OverlayOptions('/path/to/project', timeout: 5.0));
+$result = $session->analyze(['src/A.php' => $mutated_contents]);
+$result->hasNewErrors();               // true
+$result->new_issues[0]->type;          // 'InaccessibleMethod'
+$session->close();
+```
+
+On Windows, and with a PHP without pcntl, each `analyze()` runs `psalm --overlays-from=-` instead.
