@@ -4491,7 +4491,6 @@ final class CapabilitiesTest extends TestCase
 
                     /**
                      * @psalm-pure
-                     * @psalm-suppress UndefinedMagicPropertyFetch, UndefinedThisPropertyFetch
                      */
                     function get(Magic $m): int {
                         return $m->foo;

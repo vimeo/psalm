@@ -13,6 +13,7 @@ use Psalm\Storage\FunctionLikeStorage;
 use Psalm\Storage\MethodStorage;
 
 use function array_intersect_key;
+use function array_keys;
 use function array_pop;
 use function array_unique;
 use function array_values;
@@ -169,6 +170,15 @@ final class CodeUseGraph
      * @var array<string, true>|null
      */
     private ?array $used = null;
+
+    /**
+     * Nodes that are not used, but are reachable from used code through a
+     * potential call (e.g. a call with a dynamic method name). Disjoint from
+     * $used, only meaningful once resolved.
+     *
+     * @var array<string, true>
+     */
+    private array $possibly_used = [];
 
     /**
      * Cached reverse index of $node_files (file => node ids), rebuilt on demand.
@@ -682,15 +692,25 @@ final class CodeUseGraph
      * Computes the set of used nodes: everything reachable from a root node
      * through non-write edges. Iterative, so cycles and deep graphs are fine.
      *
+     * Then computes the set of possibly used nodes: what used code may reach
+     * through the given potential calls, such as calls with a dynamic method
+     * name, and isn't used otherwise. A method only reachable this way is not
+     * used, as nothing is known to call it, but what it references shouldn't
+     * be reported as definitely unused either.
+     *
      * Must be called before isUsed(), and again after the graph changes.
      *
      * @param Closure[_](string): bool $is_external whether a node (with outgoing
      *        edges) belongs to code outside of the project, e.g. a vendor class
      *        or a caller made up by a plugin: such code is never reported as
      *        unused, so what it references is used.
+     * @param array<string, array<string, array<string, true>>> $potential_calls
+     *        source node => receiver class node => possible callee nodes. The
+     *        callees are only reached once both the source and the receiver
+     *        class are reached.
      * @psalm-capabilities read-props|write-this-props|write-refs
      */
-    public function resolve(Closure $is_external): void
+    public function resolve(Closure $is_external, array $potential_calls = []): void
     {
         $used = [self::PUBLIC_API => true];
         $queue = [self::PUBLIC_API];
@@ -702,18 +722,65 @@ final class CodeUseGraph
             }
         }
 
-        /**
-         * Override edges whose target's class is not used yet, by class node
-         *
-         * @var array<string, list<string>>
-         */
         $deferred = [];
 
+        $this->reach($used, [], $queue, $deferred, $is_external, []);
+
+        $possibly_used = [];
+
+        if ($potential_calls !== []) {
+            // only the used nodes making potential calls have something new to reach
+            $this->reach(
+                $possibly_used,
+                $used,
+                array_keys(array_intersect_key($potential_calls, $used)),
+                $deferred,
+                $is_external,
+                $potential_calls,
+            );
+        }
+
+        $this->used = $used;
+        $this->possibly_used = $possibly_used;
+    }
+
+    /**
+     * Adds to $reached everything reachable from the queued nodes that isn't
+     * in $known already.
+     *
+     * @param array<string, true> $reached
+     * @param array<string, true> $known nodes reached by a previous pass
+     * @param list<string> $queue
+     * @param array<string, array<string, true>> $deferred nodes waiting for
+     *        the class node they're keyed by to be reached, kept across passes
+     * @param Closure[_](string): bool $is_external
+     * @param array<string, array<string, array<string, true>>> $potential_calls
+     * @psalm-capabilities read-props|write-refs
+     */
+    private function reach(
+        array &$reached,
+        array $known,
+        array $queue,
+        array &$deferred,
+        Closure $is_external,
+        array $potential_calls,
+    ): void {
         while ($queue) {
             $node_id = array_pop($queue);
 
+            /** @var array<string, true> */
+            $targets = [];
+
+            foreach ($potential_calls[$node_id] ?? [] as $class_node => $callees) {
+                if (isset($known[$class_node]) || isset($reached[$class_node])) {
+                    $targets += $callees;
+                } else {
+                    $deferred[$class_node] = ($deferred[$class_node] ?? []) + $callees;
+                }
+            }
+
             foreach ($this->forward_edges[$node_id] ?? [] as $target_node => $type) {
-                if ($type === self::EDGE_WRITE || isset($used[$target_node])) {
+                if ($type === self::EDGE_WRITE || isset($known[$target_node]) || isset($reached[$target_node])) {
                     continue;
                 }
 
@@ -732,30 +799,35 @@ final class CodeUseGraph
                     if ($owner_class !== null && !$is_external($node_id)) {
                         $owner_node = self::classNode($owner_class);
 
-                        if (!isset($used[$owner_node])) {
-                            $deferred[$owner_node][] = $target_node;
+                        if (!isset($known[$owner_node]) && !isset($reached[$owner_node])) {
+                            $deferred[$owner_node][$target_node] = true;
                             continue;
                         }
                     }
                 }
 
-                $used[$target_node] = true;
+                $targets[$target_node] = true;
+            }
+
+            foreach ($targets as $target_node => $_) {
+                if (isset($known[$target_node]) || isset($reached[$target_node])) {
+                    continue;
+                }
+
+                $reached[$target_node] = true;
                 $queue[] = $target_node;
 
-                if (isset($deferred[$target_node])) {
-                    foreach ($deferred[$target_node] as $deferred_node) {
-                        if (!isset($used[$deferred_node])) {
-                            $used[$deferred_node] = true;
-                            $queue[] = $deferred_node;
-                        }
+                // a class that is now reached releases what was waiting for it
+                foreach ($deferred[$target_node] ?? [] as $deferred_node => $_true) {
+                    if (!isset($known[$deferred_node]) && !isset($reached[$deferred_node])) {
+                        $reached[$deferred_node] = true;
+                        $queue[] = $deferred_node;
                     }
-
-                    unset($deferred[$target_node]);
                 }
+
+                unset($deferred[$target_node]);
             }
         }
-
-        $this->used = $used;
     }
 
     /**
@@ -771,8 +843,23 @@ final class CodeUseGraph
     }
 
     /**
-     * Whether a node is referenced by other used code, as opposed to being
-     * merely alive as an entry point or through its own members.
+     * Whether a node is not used, but reachable from used code through a
+     * potential call given to resolve().
+     *
+     * @psalm-mutation-free
+     */
+    public function isPossiblyUsed(string $node_id): bool
+    {
+        if ($this->used === null) {
+            throw new LogicException('The graph must be resolved before checking usage');
+        }
+
+        return isset($this->possibly_used[$node_id]);
+    }
+
+    /**
+     * Whether a node is referenced by other used or possibly used code, as
+     * opposed to being merely alive as an entry point or through its own members.
      *
      * @psalm-mutation-free
      */
@@ -784,7 +871,7 @@ final class CodeUseGraph
 
         foreach ($this->backward_edges[$node_id] ?? [] as $source_node => $type) {
             if (($type === self::EDGE_USE || $type === self::EDGE_WRITE)
-                && isset($this->used[$source_node])
+                && (isset($this->used[$source_node]) || isset($this->possibly_used[$source_node]))
                 && self::getOwnerClass($source_node) !== self::getOwnerClass($node_id)
             ) {
                 return true;
@@ -829,6 +916,21 @@ final class CodeUseGraph
         }
 
         return array_intersect_key($this->getReferencingNodes($node_id, $type), $this->used);
+    }
+
+    /**
+     * Returns only references made by code that is possibly used.
+     *
+     * @return array<string, true>
+     * @psalm-mutation-free
+     */
+    public function getPossiblyUsedReferencingNodes(string $node_id, ?string $type = null): array
+    {
+        if ($this->used === null) {
+            throw new LogicException('The graph must be resolved before checking usage');
+        }
+
+        return array_intersect_key($this->getReferencingNodes($node_id, $type), $this->possibly_used);
     }
 
     /**

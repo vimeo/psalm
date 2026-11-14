@@ -54,6 +54,108 @@ final class CodeUseGraphTest extends TestCase
         self::assertFalse($graph->isUsed($unused_b));
     }
 
+    public function testPotentialCallsOnlyMakeNodesPossiblyUsed(): void
+    {
+        $graph = new CodeUseGraph();
+        $file = CodeUseGraph::fileNode('/entry.php');
+        $class = CodeUseGraph::classNode('a');
+        $entry = CodeUseGraph::functionLikeNode('a::entry');
+        $helper = CodeUseGraph::functionLikeNode('a::helper');
+        $read = CodeUseGraph::propertyNode('a', 'read');
+        $written = CodeUseGraph::propertyNode('a', 'written');
+        $dead = CodeUseGraph::propertyNode('a', 'dead');
+        $graph->addEdge($file, $class);
+        $graph->addEdge($entry, $helper);
+        $graph->addEdge($helper, $read);
+        $graph->addEdge($helper, $written, CodeUseGraph::EDGE_WRITE);
+        $graph->resolve(self::notExternal(), [
+            $file => [$class => [$entry => true]],
+        ]);
+
+        foreach ([$entry, $helper, $read] as $node) {
+            self::assertFalse($graph->isUsed($node));
+            self::assertTrue($graph->isPossiblyUsed($node));
+        }
+
+        self::assertFalse($graph->isPossiblyUsed($written));
+        self::assertFalse($graph->isPossiblyUsed($dead));
+        self::assertTrue($graph->isUsed($class));
+        self::assertFalse($graph->isPossiblyUsed($class));
+        self::assertSame([$entry => true], $graph->getPossiblyUsedReferencingNodes($helper));
+    }
+
+    public function testPotentialCallWaitsForItsReceiverClass(): void
+    {
+        $graph = new CodeUseGraph();
+        $file = CodeUseGraph::fileNode('/entry.php');
+        $class_a = CodeUseGraph::classNode('a');
+        $class_b = CodeUseGraph::classNode('b');
+        $entry = CodeUseGraph::functionLikeNode('a::entry');
+        $b_action = CodeUseGraph::functionLikeNode('b::action');
+        $graph->addEdge($file, $class_a);
+        $graph->addEdge($entry, $class_b);
+        $graph->resolve(self::notExternal(), [
+            // b is only instantiated by a::entry, itself only possibly used
+            $file => [$class_a => [$entry => true], $class_b => [$b_action => true]],
+        ]);
+
+        self::assertTrue($graph->isPossiblyUsed($class_b));
+        self::assertTrue($graph->isPossiblyUsed($b_action));
+
+        $graph->resolve(self::notExternal(), [
+            $file => [$class_b => [$b_action => true]],
+        ]);
+
+        self::assertFalse($graph->isPossiblyUsed($b_action));
+    }
+
+    public function testPotentialReachabilityCanActivateDeferredOverrides(): void
+    {
+        $graph = new CodeUseGraph();
+        $file = CodeUseGraph::fileNode('/entry.php');
+        $class_a = CodeUseGraph::classNode('a');
+        $class_b = CodeUseGraph::classNode('b');
+        $entry = CodeUseGraph::functionLikeNode('a::entry');
+        $parent = CodeUseGraph::functionLikeNode('parent::api');
+        $override = CodeUseGraph::functionLikeNode('b::api');
+        $graph->addEdge($file, $class_a);
+        $graph->addEdge($entry, $class_b);
+        $graph->addEdge($parent, $override, CodeUseGraph::EDGE_OVERRIDE);
+        $graph->markAsPublicApi($parent);
+
+        $graph->resolve(self::notExternal());
+
+        self::assertFalse($graph->isUsed($override));
+        self::assertFalse($graph->isPossiblyUsed($override));
+
+        $graph->resolve(self::notExternal(), [
+            $file => [$class_a => [$entry => true]],
+        ]);
+
+        self::assertTrue($graph->isPossiblyUsed($class_b));
+        self::assertTrue($graph->isPossiblyUsed($override));
+        self::assertFalse($graph->isUsed($override));
+    }
+
+    public function testPotentialCallFromDeadMethodReachesNothing(): void
+    {
+        $graph = new CodeUseGraph();
+        $file = CodeUseGraph::fileNode('/entry.php');
+        $class = CodeUseGraph::classNode('a');
+        $dead_dispatch = CodeUseGraph::functionLikeNode('a::dead');
+        $entry = CodeUseGraph::functionLikeNode('a::entry');
+        $property = CodeUseGraph::propertyNode('a', 'value');
+        $graph->addEdge($file, $class);
+        $graph->addEdge($entry, $property);
+        $graph->addEdge($dead_dispatch, $class);
+        $graph->resolve(self::notExternal(), [
+            $dead_dispatch => [$class => [$entry => true]],
+        ]);
+
+        self::assertFalse($graph->isPossiblyUsed($entry));
+        self::assertFalse($graph->isPossiblyUsed($property));
+    }
+
     public function testUsedReturnUsesFunction(): void
     {
         $graph = new CodeUseGraph();

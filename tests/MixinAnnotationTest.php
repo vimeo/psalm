@@ -2074,9 +2074,6 @@ final class MixinAnnotationTest extends TestCase
                      */
                     abstract class FooChild extends Foo{}
 
-                    /**
-                     * @psalm-suppress MissingConstructor
-                     */
                     final class FooGrandChild extends FooChild {}
 
                     function test() : FooGrandChild {
