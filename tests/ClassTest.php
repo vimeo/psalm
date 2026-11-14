@@ -219,6 +219,185 @@ final class ClassTest extends TestCase
                         public function __construct(string $name, int $optional = 0) {}
                     }',
             ],
+            'preventDoubleStaticResolutionOnAPlainReceiver1' => [
+                'code' => '<?php
+
+                    /**
+                     * @template TTKey of array-key
+                     * @template TTValue
+                     *
+                     * @extends ArrayObject<TTKey, TTValue>
+                     * @psalm-capabilities read-props|write-this-props
+                     */
+                    class iter extends ArrayObject {
+                        /**
+                         * @return self<TTKey, TTValue>
+                         */
+                        public function stabilize(): self {
+                            return $this;
+                        }
+                    }
+
+                    class a {
+                        /**
+                         * @return iter<int, static>
+                         */
+                        public function ret(): iter {
+                            return new iter([$this]);
+                        }
+                    }
+                    class b extends a {
+                    }
+
+                    $a = new b;
+                    $a = $a->ret();
+                    $a = $a->stabilize();',
+                'assertions' => [
+                    '$a===' => 'iter<int, b&static>',
+                ],
+            ],
+            'preventDoubleStaticResolutionOnAPlainReceiver2' => [
+                'code' => '<?php
+                    /**
+                     * @template TTKey of array-key
+                     * @template TTValue
+                     *
+                     * @extends ArrayObject<TTKey, TTValue>
+                     * @psalm-capabilities read-props|write-this-props
+                     */
+                    class iter extends ArrayObject {
+                        /**
+                         * @return self<TTKey, TTValue>
+                         */
+                        public function stabilize(): self {
+                            return $this;
+                        }
+                    }
+
+                    interface a {
+                        /**
+                         * @return iter<int, static>
+                         */
+                        public function ret(): iter;
+                    }
+                    class b implements a {
+                        public function ret(): iter {
+                            return new iter([$this]);
+                        }
+                    }
+
+                    /** @var a */
+                    $a = new b;
+                    $a = $a->ret();
+                    $a = $a->stabilize();',
+                'assertions' => [
+                    '$a===' => 'iter<int, a&static>',
+                ],
+            ],
+            'preventDoubleStaticResolutionOnAPlainReceiver3' => [
+                'code' => '<?php
+                    /**
+                     * @template TTKey of array-key
+                     * @template TTValue
+                     *
+                     * @extends ArrayObject<TTKey, TTValue>
+                     * @psalm-capabilities read-props|write-this-props
+                     */
+                    class iter extends ArrayObject {
+                        /**
+                         * @return self<TTKey, TTValue>
+                         */
+                        public function stabilize(): self {
+                            return $this;
+                        }
+                    }
+
+                    interface a {
+                        /**
+                         * @return iter<int, a&static>
+                         */
+                        public function ret(): iter;
+                    }
+                    class b implements a {
+                        public function ret(): iter {
+                            return new iter([$this]);
+                        }
+                    }
+
+                    /** @var a */
+                    $a = new b;
+                    $a = $a->ret();
+                    $a = $a->stabilize();',
+                'assertions' => [
+                    '$a===' => 'iter<int, a&static>',
+                ],
+            ],
+            'staticOfAPlainReceiverIsBoundOnlyWhereTheTypeIsCovariant' => [
+                'code' => '<?php
+                    class Base {
+                        /** @param static $other */
+                        public function consume(self $other): void {}
+
+                        /** @return Closure(static):void */
+                        public function callback(): Closure {
+                            return $this->consume(...);
+                        }
+
+                        /** @return Box<static> */
+                        public function boxed(): Box {
+                            throw new RuntimeException();
+                        }
+
+                        /** @return CovariantBox<static> */
+                        public function covariantBoxed(): CovariantBox {
+                            throw new RuntimeException();
+                        }
+                    }
+
+                    /** @template T */
+                    final class Box {}
+
+                    /** @template-covariant T */
+                    final class CovariantBox {}
+
+                    function test(Base $receiver): void {
+                        $callback = $receiver->callback();
+                        /** @psalm-check-type-exact $callback = Closure(Base&static):void */;
+                        $boxed = $receiver->boxed();
+                        /** @psalm-check-type-exact $boxed = Box<Base&static> */;
+                        $covariant = $receiver->covariantBoxed();
+                        /** @psalm-check-type-exact $covariant = CovariantBox<Base> */;
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
+            'lateStaticOfAGenericClassKeepsItsTypeArgumentsInATemplateArgument' => [
+                'code' => '<?php
+                    /** @template T of int */
+                    class GenInt {
+                        /** @param static $other */
+                        public function test($other): void {
+                            $boxed = box($other);
+                            /** @psalm-check-type-exact $boxed = Box<GenInt<int>&static> */;
+                        }
+                    }
+
+                    /** @template T */
+                    final class Box {}
+
+                    /**
+                     * @template T
+                     * @param T $value
+                     * @return Box<T>
+                     */
+                    function box(mixed $value): Box {
+                        return new Box();
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
             'classesOfBothBranchesOfAnUnknownAnd' => [
                 'code' => '<?php
                     if (rand(0, 1) && rand(0, 1)) {
@@ -1022,14 +1201,12 @@ final class ClassTest extends TestCase
                         }
                     }
                     class b extends a {
-                    }
-
-                    $a = new b;
-                    $a = $a->ret();
-                    $a = $a->stabilize();',
-                'assertions' => [
-                    '$a===' => 'iter<int, b&static>',
-                ],
+                        public function test(): void {
+                            $a = $this->ret();
+                            $a = $a->stabilize();
+                            /** @psalm-check-type-exact $a = iter<int, b&static> */;
+                        }
+                    }',
             ],
             'preventDoubleStaticResolution2' => [
                 'code' => '<?php
@@ -1055,19 +1232,13 @@ final class ClassTest extends TestCase
                          */
                         public function ret(): iter;
                     }
-                    class b implements a {
-                        public function ret(): iter {
-                            return new iter([$this]);
+                    abstract class b implements a {
+                        public function test(): void {
+                            $a = $this->ret();
+                            $a = $a->stabilize();
+                            /** @psalm-check-type-exact $a = iter<int, b&static> */;
                         }
-                    }
-
-                    /** @var a */
-                    $a = new b;
-                    $a = $a->ret();
-                    $a = $a->stabilize();',
-                'assertions' => [
-                    '$a===' => 'iter<int, a&static>',
-                ],
+                    }',
             ],
             'preventDoubleStaticResolution3' => [
                 'code' => '<?php
@@ -1093,19 +1264,13 @@ final class ClassTest extends TestCase
                          */
                         public function ret(): iter;
                     }
-                    class b implements a {
-                        public function ret(): iter {
-                            return new iter([$this]);
+                    abstract class b implements a {
+                        public function test(): void {
+                            $a = $this->ret();
+                            $a = $a->stabilize();
+                            /** @psalm-check-type-exact $a = iter<int, b&static&a> */;
                         }
-                    }
-
-                    /** @var a */
-                    $a = new b;
-                    $a = $a->ret();
-                    $a = $a->stabilize();',
-                'assertions' => [
-                    '$a===' => 'iter<int, a&static>',
-                ],
+                    }',
             ],
             'preventDoubleStaticResolutionAfterUnionWithNull' => [
                 'code' => '<?php
@@ -1118,14 +1283,17 @@ final class ClassTest extends TestCase
                     }
 
                     /** @template T */
-                    interface Bag {
+                    abstract class Bag {
                         /** @return static<int> */
-                        public function map(): static;
-                    }
+                        abstract public function map(): static;
 
-                    /** @return Bag<string> */
-                    function bag(): Bag {
-                        throw new RuntimeException();
+                        public function test(): void {
+                            $a = box($this->map());
+                            /** @psalm-check-type-exact $a = Box<Bag<int>&static|null> */;
+                            $b = $a->same();
+                            $c = $b->same();
+                            /** @psalm-check-type-exact $c = Box<Bag<int>&static|null> */;
+                        }
                     }
 
                     /**
@@ -1135,17 +1303,8 @@ final class ClassTest extends TestCase
                      */
                     function box(mixed $value): Box {
                         return new Box();
-                    }
-
-                    $bag = bag();
-                    $a = box($bag->map());
-                    $b = $a->same();
-                    $c = $b->same();',
-                'assertions' => [
-                    '$a===' => 'Box<Bag<int>&static|null>',
-                    '$b===' => 'Box<Bag<int>&static|null>',
-                    '$c===' => 'Box<Bag<int>&static|null>',
-                ],
+                    }',
+                'assertions' => [],
                 'ignored_issues' => [],
                 'php_version' => '8.0',
             ],
@@ -1160,17 +1319,18 @@ final class ClassTest extends TestCase
                     }
 
                     /** @template T */
-                    interface Bag {
+                    abstract class Bag {
                         /** @return static<int> */
-                        public function toInt(): static;
+                        abstract public function toInt(): static;
 
                         /** @return static<float> */
-                        public function toFloat(): static;
-                    }
+                        abstract public function toFloat(): static;
 
-                    /** @return Bag<string> */
-                    function bag(): Bag {
-                        throw new RuntimeException();
+                        public function test(): void {
+                            $a = box(rand(0, 1) ? $this->toInt() : $this->toFloat());
+                            $b = $a->same();
+                            /** @psalm-check-type-exact $b = Box<Bag<float>&static|Bag<int>&static> */;
+                        }
                     }
 
                     /**
@@ -1180,14 +1340,8 @@ final class ClassTest extends TestCase
                      */
                     function box(mixed $value): Box {
                         return new Box();
-                    }
-
-                    $bag = bag();
-                    $a = box(rand(0, 1) ? $bag->toInt() : $bag->toFloat());
-                    $b = $a->same();',
-                'assertions' => [
-                    '$b===' => 'Box<Bag<float>&static|Bag<int>&static>',
-                ],
+                    }',
+                'assertions' => [],
                 'ignored_issues' => [],
                 'php_version' => '8.0',
             ],
@@ -1211,14 +1365,258 @@ final class ClassTest extends TestCase
                     }
 
                     /** @template T */
-                    interface Bag {
+                    abstract class Bag {
                         /** @return static<int> */
-                        public function map(): static;
+                        abstract public function map(): static;
+
+                        public function test(): void {
+                            $a = box($this->map())->apply(fn($x) => $x);
+                            /** @psalm-check-type-exact $a = Box<Bag<int>&static> */;
+                            $b = $a->same();
+                            /** @psalm-check-type-exact $b = Box<Bag<int>&static> */;
+                        }
                     }
 
-                    /** @return Bag<string> */
-                    function bag(): Bag {
-                        throw new RuntimeException();
+                    /**
+                     * @template T
+                     * @param T $value
+                     * @return Box<T>
+                     */
+                    function box(mixed $value): Box {
+                        return new Box();
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'staticReturnOfANonStaticReceiverIsItsClass' => [
+                'code' => '<?php
+                    /** @template T */
+                    class Box {
+                        /** @return self<T> */
+                        public function same(): self {
+                            return $this;
+                        }
+                    }
+
+                    /** @template T */
+                    class Bag {
+                        /** @return static<int> */
+                        public function map(): static {
+                            throw new RuntimeException();
+                        }
+                    }
+
+                    /**
+                     * @template T
+                     * @param T $value
+                     * @return Box<T|null>
+                     */
+                    function box(mixed $value): Box {
+                        return new Box();
+                    }
+
+                    /** @var Bag<string> $bag */
+                    $bag = new Bag();
+                    $mapped = $bag->map();
+                    $a = box($bag->map());
+                    $b = $a->same();',
+                'assertions' => [
+                    '$mapped===' => 'Bag<int>',
+                    '$a===' => 'Box<Bag<int>|null>',
+                    '$b===' => 'Box<Bag<int>|null>',
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'firstClassCallableOfANonStaticReceiverBindsTheStaticOfItsReturnType' => [
+                'code' => '<?php
+                    /** @template T */
+                    class Bag {
+                        /** @return static<int> */
+                        public function map(): static {
+                            throw new RuntimeException();
+                        }
+
+                        /** @param static $other */
+                        public function merge($other): static {
+                            return $this;
+                        }
+                    }
+
+                    /** @var Bag<string> $bag */
+                    $bag = new Bag();
+                    $map = $bag->map(...);
+                    $merge = $bag->merge(...);',
+                'assertions' => [
+                    '$map===' => 'Closure[impure]():Bag<int>',
+                    '$merge===' => 'Closure[impure](Bag<string>&static):Bag<string>',
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
+            'callersLateStaticIsNotBoundToTheReceiverOfTheCall' => [
+                'code' => '<?php
+                    final class Container {
+                        /**
+                         * @template T of object
+                         * @param class-string<T> $abstract
+                         * @return T
+                         */
+                        public function make(string $abstract): object {
+                            throw new RuntimeException();
+                        }
+                    }
+
+                    /**
+                     * @template-covariant TValue
+                     */
+                    final class Coll {
+                        /**
+                         * @template U
+                         * @param callable(TValue): U $f
+                         * @return Coll<U>
+                         */
+                        public function map(callable $f): Coll {
+                            throw new RuntimeException();
+                        }
+                    }
+
+                    class Component {
+                        public function make(Container $container): static {
+                            $made = $container->make(static::class);
+                            /** @psalm-check-type-exact $made = Component&static */;
+                            return $made;
+                        }
+
+                        /**
+                         * @param Coll<int> $ids
+                         * @return Coll<static>
+                         */
+                        public function copies(Coll $ids): Coll {
+                            $copies = $ids->map(fn (int $_id): static => clone $this);
+                            /** @psalm-check-type-exact $copies = Coll<Component&static> */;
+                            return $copies;
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'staticReturnOnATemplatedReceiverKeepsTheCallersTemplate' => [
+                'code' => '<?php
+                    /** @template T */
+                    class Bag {
+                        /**
+                         * @param T $value
+                         * @return static
+                         */
+                        public function with($value): static {
+                            return $this;
+                        }
+                    }
+
+                    /**
+                     * @template TBag of Bag<int>
+                     * @param TBag $bag
+                     * @return TBag
+                     */
+                    function withOne(Bag $bag): Bag {
+                        $with = $bag->with(1);
+                        /** @psalm-check-type-exact $with = TBag */;
+                        return $with;
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'staticOfTheCalleesTemplateArgumentsIsBoundToTheReceiver' => [
+                'code' => '<?php
+                    /** @template TModel of object */
+                    class Factory {
+                        public static function new(): static {
+                            return new static();
+                        }
+
+                        public function count(int $count): static {
+                            return $this;
+                        }
+
+                        public static function times(int $count): static {
+                            $factory = static::new()->count($count);
+                            /** @psalm-check-type-exact $factory = Factory<TModel>&static */;
+                            return $factory;
+                        }
+                    }
+
+                    /** @template-covariant TValue */
+                    final class Coll {}
+
+                    /** @template TColl of Coll */
+                    trait HasColl {
+                        /** @return TColl */
+                        public function newCollection(): Coll {
+                            throw new RuntimeException();
+                        }
+                    }
+
+                    abstract class Model {
+                        /** @use HasColl<Coll<static & self>> */
+                        use HasColl;
+                    }
+
+                    final class User extends Model {}
+
+                    $users = (new User())->newCollection();',
+                'assertions' => [
+                    '$users===' => 'Coll<User>',
+                ],
+                'ignored_issues' => ['UnsafeInstantiation'],
+                'php_version' => '8.0',
+            ],
+            'staticOfABoundedGenericClassKeepsItsTypeArgumentsAndStaticInATemplateArgument' => [
+                'code' => '<?php
+                    /** @template T of int */
+                    class Foo {
+                        /** @param static $foo */
+                        public function test($foo): void {
+                            $a = box($foo);
+                            /** @psalm-check-type-exact $a = Box<Foo<int>&static> */;
+                        }
+                    }
+
+                    /** @template T */
+                    final class Box {}
+
+                    /**
+                     * @template T
+                     * @param T $value
+                     * @return Box<T>
+                     */
+                    function box(mixed $value): Box {
+                        return new Box();
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'thisInATemplateArgumentIsNotBoundToLaterReceivers' => [
+                'code' => '<?php
+                    class Foo {
+                        public function test(): void {
+                            $a = box($this)->same()->same()->same();
+                            /** @psalm-check-type-exact $a = Box<Foo&static> */;
+                            $n = boxOrNull($this)->same()->same()->same();
+                            /** @psalm-check-type-exact $n = Box<Foo&static|null> */;
+                        }
+                    }
+
+                    /** @template T */
+                    final class Box {
+                        /** @return self<T> */
+                        public function same(): self {
+                            return $this;
+                        }
                     }
 
                     /**
@@ -1230,12 +1628,391 @@ final class ClassTest extends TestCase
                         return new Box();
                     }
 
-                    $a = box(bag()->map())->apply(fn($x) => $x);
-                    $b = $a->same();',
+                    /**
+                     * @template T
+                     * @param T $value
+                     * @return Box<T|null>
+                     */
+                    function boxOrNull(mixed $value): Box {
+                        return new Box();
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'thisInATemplateArgumentIsNotBoundOnOtherCallPaths' => [
+                'code' => '<?php
+                    class Foo {
+                        /**
+                         * @template T
+                         * @param T $value
+                         * @return Box<T>
+                         */
+                        public function wrap(mixed $value): Box {
+                            return new Box($value);
+                        }
+
+                        public function test(Bar $bar): void {
+                            $subclass_receiver = $bar->wrap($this);
+                            /** @psalm-check-type-exact $subclass_receiver = Box<Foo&static> */;
+                            $first_class_callable = (box($this)->same(...))();
+                            /** @psalm-check-type-exact $first_class_callable = Box<Foo&static> */;
+                            $template_return = box($this)->get();
+                            /** @psalm-check-type-exact $template_return = Foo&static */;
+                            $static_return = box($this)->stat()->stat();
+                            /** @psalm-check-type-exact $static_return = Box<Foo&static> */;
+                            $stubbed = iterator($this)->current();
+                            /** @psalm-check-type-exact $stubbed = Foo&static|null */;
+                        }
+                    }
+
+                    class Bar extends Foo {}
+
+                    /** @template T */
+                    class Box {
+                        /** @param T $value */
+                        public function __construct(public mixed $value) {}
+
+                        /** @return self<T> */
+                        public function same(): self {
+                            return $this;
+                        }
+
+                        /** @return T */
+                        public function get(): mixed {
+                            return $this->value;
+                        }
+
+                        public function stat(): static {
+                            return $this;
+                        }
+                    }
+
+                    /**
+                     * @template T
+                     * @param T $value
+                     * @return Box<T>
+                     */
+                    function box(mixed $value): Box {
+                        return new Box($value);
+                    }
+
+                    /**
+                     * @template T
+                     * @param T $value
+                     * @return ArrayIterator<int, T>
+                     */
+                    function iterator(mixed $value): ArrayIterator {
+                        return new ArrayIterator([$value]);
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'staticOfTheCallingContextIsNotBoundToLaterReceivers' => [
+                'code' => '<?php
+                    class Bar {
+                        public string $initialized_in_constructor;
+
+                        public function __construct() {
+                            $constructor = box($this)->same()->same();
+                            /** @psalm-check-type-exact $constructor = Box<Bar&static> */;
+                            $this->initialized_in_constructor = "";
+                        }
+                    }
+
+                    trait Boxes {
+                        public function test(): void {
+                            $trait_method = box($this)->same()->same();
+                            /** @psalm-check-type-exact $trait_method = Box<Baz&static> */;
+                        }
+                    }
+
+                    class Baz {
+                        use Boxes;
+                    }
+
+                    class Foo {
+                        final public function __construct() {}
+
+                        public function test(object $object): void {
+                            $new_static = box(new static())->same()->same();
+                            /** @psalm-check-type-exact $new_static = Box<Foo&static> */;
+                            $class = static::class;
+                            $static_class = box(new $class())->same()->same();
+                            /** @psalm-check-type-exact $static_class = Box<Foo&static> */;
+                            $called_class = get_called_class();
+                            $called = box(new $called_class())->same()->same();
+                            /** @psalm-check-type-exact $called = Box<Foo&static> */;
+                            if ($object instanceof static) {
+                                $instanceof_static = box($object)->same()->same();
+                                /** @psalm-check-type-exact $instanceof_static = Box<Foo&static> */;
+                            }
+                            if ($object instanceof $this) {
+                                $instanceof_this = box($object)->same()->same();
+                                /** @psalm-check-type-exact $instanceof_this = Box<Foo&static> */;
+                            }
+                            if (is_a($object, static::class)) {
+                                $is_a = box($object)->same()->same();
+                                /** @psalm-check-type-exact $is_a = Box<Foo&static> */;
+                            }
+                            $closure = (function () {
+                                return box($this)->same()->same();
+                            })();
+                            /** @psalm-check-type-exact $closure = Box<Foo&static> */;
+                        }
+                    }
+
+                    /** @template T */
+                    final class Box {
+                        /** @return self<T> */
+                        public function same(): self {
+                            return $this;
+                        }
+                    }
+
+                    /**
+                     * @template T
+                     * @param T $value
+                     * @return Box<T>
+                     */
+                    function box(mixed $value): Box {
+                        return new Box();
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'staticNarrowedInAGenericClassIsNotBoundToLaterReceivers' => [
+                'code' => '<?php
+                    /** @template T */
+                    interface Collection {}
+
+                    /**
+                     * @template T
+                     * @implements Collection<T>
+                     */
+                    class ListCollection implements Collection {
+                        /** @param Collection<int> $collection */
+                        public function test(Collection $collection): void {
+                            if ($collection instanceof static) {
+                                $a = box($collection)->same()->same();
+                                /** @psalm-check-type-exact $a = Box<ListCollection<int>&Collection<int>&static> */;
+                            }
+                        }
+                    }
+
+                    /** @template T of int */
+                    class IntCollection {
+                        public function test(object $object): void {
+                            if ($object instanceof static) {
+                                $b = box($object)->same()->same();
+                                /** @psalm-check-type-exact $b = Box<IntCollection<int>&static> */;
+                            }
+                        }
+                    }
+
+                    /** @template T */
+                    final class Box {
+                        /** @return self<T> */
+                        public function same(): self {
+                            return $this;
+                        }
+                    }
+
+                    /**
+                     * @template T
+                     * @param T $value
+                     * @return Box<T>
+                     */
+                    function box(mixed $value): Box {
+                        return new Box();
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'thisOfAClassBoundByStaticIsNotBoundToLaterReceivers' => [
+                'code' => '<?php
+                    /** @template T of static */
+                    class Foo {
+                        public function test(): void {
+                            $a = box($this)->same()->same();
+                            /** @psalm-check-type-exact $a = Box<Foo<T>&static> */;
+                        }
+                    }
+
+                    /** @template T */
+                    final class Box {
+                        /** @return self<T> */
+                        public function same(): self {
+                            return $this;
+                        }
+                    }
+
+                    /**
+                     * @template T
+                     * @param T $value
+                     * @return Box<T>
+                     */
+                    function box(mixed $value): Box {
+                        return new Box();
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'staticOfAMethodOverriddenWithSelfIsBoundToTheCalledClass' => [
+                'code' => '<?php
+                    abstract class Factory {
+                        /** @return static */
+                        abstract public static function make(): self;
+
+                        /** @return static|null */
+                        abstract public static function makeOrNull(): self|null|false;
+                    }
+
+                    /** @psalm-consistent-constructor */
+                    class Concrete extends Factory {
+                        public static function make(): self {
+                            return new static();
+                        }
+
+                        public static function makeOrNull(): self|false {
+                            return new static();
+                        }
+                    }
+
+                    class Child extends Concrete {
+                        public function onlyOnChild(): void {}
+                    }
+
+                    $child = Child::make();
+                    $child->onlyOnChild();
+                    $child_or_null = Child::makeOrNull();
+                    $child_or_null->onlyOnChild();',
                 'assertions' => [
-                    '$a===' => 'Box<Bag<int>&static>',
-                    '$b===' => 'Box<Bag<int>&static>',
+                    '$child===' => 'Child',
+                    '$child_or_null===' => 'Child',
                 ],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'genericStaticOfAnInheritedStaticFactoryIsBoundToTheFinalCalledClass' => [
+                'code' => '<?php
+                    /** @template T */
+                    abstract class Collection {
+                        /** @return static<T> */
+                        abstract public static function empty(): static;
+                    }
+
+                    /**
+                     * @template T
+                     * @extends Collection<T>
+                     * @psalm-consistent-constructor
+                     * @psalm-consistent-templates
+                     */
+                    class ListCollection extends Collection {
+                        public static function empty(): static {
+                            return new static();
+                        }
+                    }
+
+                    /**
+                     * @template T
+                     * @extends ListCollection<T>
+                     */
+                    final class Leaf extends ListCollection {
+                        public function onlyOnLeaf(): void {}
+                    }
+
+                    $leaf = Leaf::empty();
+                    $leaf->onlyOnLeaf();',
+                'assertions' => [
+                    '$leaf===' => 'Leaf<mixed>',
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'staticDeclaredByTheReceiverClassIsStillBoundToTheReceiver' => [
+                'code' => '<?php
+                    /** @template T */
+                    abstract class Repository {
+                        /** @return T */
+                        public function find(): mixed {
+                            throw new Exception();
+                        }
+                    }
+
+                    /**
+                     * @template TKey of array-key
+                     * @template TValue
+                     */
+                    final class Collection {}
+
+                    /** @template TCollection of Collection */
+                    trait HasCollection {
+                        /** @return TCollection */
+                        public function newCollection(): Collection {
+                            throw new Exception();
+                        }
+                    }
+
+                    /** @extends Repository<static> */
+                    abstract class Model extends Repository {
+                        /** @use HasCollection<Collection<array-key, static & self>> */
+                        use HasCollection;
+                    }
+
+                    final class User extends Model {}
+
+                    class Post extends Model {}
+
+                    final class Draft extends Post {}
+
+                    $user = (new User())->find();
+                    $post = (new Post())->find();
+                    $draft = (new Draft())->find();
+                    $users = (new User())->newCollection();
+                    $posts = (new Post())->newCollection();',
+                'assertions' => [
+                    '$user===' => 'User',
+                    '$post===' => 'Post',
+                    '$draft===' => 'Draft',
+                    '$users===' => 'Collection<array-key, User>',
+                    '$posts===' => 'Collection<array-key, Post&static>',
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'staticDeclaredByAMethodCalledOnThisIsStillBoundToThis' => [
+                'code' => '<?php
+                    /**
+                     * @template TKey of array-key
+                     * @template TValue
+                     */
+                    abstract class Collection {
+                        /** @return static */
+                        public function same(): static {
+                            return $this;
+                        }
+
+                        /** @return static<int, TValue> */
+                        abstract public function values(): static;
+
+                        /** @return Collection<int, TKey> */
+                        abstract public function keys(): Collection;
+
+                        public function test(): void {
+                            $same = $this->same();
+                            /** @psalm-check-type-exact $same = Collection<TKey, TValue>&static */;
+                            $values = $this->values();
+                            /** @psalm-check-type-exact $values = Collection<int, TValue>&static */;
+                            $keys = $this->keys()->same();
+                            /** @psalm-check-type-exact $keys = Collection<int, TKey> */;
+                        }
+                    }',
+                'assertions' => [],
                 'ignored_issues' => [],
                 'php_version' => '8.0',
             ],
@@ -1613,6 +2390,58 @@ final class ClassTest extends TestCase
                         public UndefinedClass $a;
                     }',
                 'error_message' => 'UndefinedClass',
+            ],
+            'constructorDoesNotBindTheLateStaticOfItsArgument' => [
+                'code' => '<?php
+                    /** @template T */
+                    class Base {
+                        /** @var T */
+                        public mixed $value;
+
+                        /**
+                         * @param T $value
+                         * @psalm-self-out static<T>
+                         */
+                        public function __construct(mixed $value) {
+                            $this->value = $value;
+                        }
+
+                        public function test(): void {
+                            $box = new Child($this);
+                            $box->value->childOnly();
+                        }
+                    }
+
+                    /**
+                     * @template T
+                     * @extends Base<T>
+                     */
+                    class Child extends Base {
+                        public function childOnly(): void {}
+                    }',
+                'error_message' => 'UndefinedMethod - src' . DIRECTORY_SEPARATOR . 'somefile.php:17:42 - Method Base::childOnly',
+                'error_levels' => [],
+                'php_version' => '8.0',
+            ],
+            'callbackOfAPlainReceiverKeepsTheLateStaticOfItsParameter' => [
+                'code' => '<?php
+                    class Base {
+                        /** @param static $other */
+                        public function consume(self $other): void {}
+
+                        /** @return Closure(static):void */
+                        public function callback(): Closure {
+                            return $this->consume(...);
+                        }
+                    }
+
+                    function test(Base $receiver): void {
+                        $callback = $receiver->callback();
+                        $callback(new Base());
+                    }',
+                'error_message' => 'ArgumentTypeCoercion',
+                'error_levels' => [],
+                'php_version' => '8.1',
             ],
             'elseOfAKnownTrueAndIsNotDeclared' => [
                 'code' => '<?php

@@ -813,7 +813,16 @@ final class Methods
 
                 $self_class = $overridden_method_id->fq_class_name;
 
-                return $overridden_storage_return_type;
+                // `static` in it is left for the call to bind, to its receiver
+                return TypeExpander::expandUnion(
+                    $codebase,
+                    $overridden_storage->return_type,
+                    $overridden_method_id->fq_class_name,
+                    null,
+                    $overridden_class_storage->parent_class,
+                    true,
+                    false,
+                );
             }
         }
 

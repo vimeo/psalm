@@ -517,6 +517,65 @@ final class MethodCallTest extends TestCase
                         }
                     }',
             ],
+            'staticReturnInheritedOrFromTheCallMapIsBoundToAPlainReceiver' => [
+                'code' => '<?php
+                    interface WithX {
+                        /** @return static */
+                        public function withX(int $x): static;
+                    }
+
+                    class Bag implements WithX {
+                        public function withX(int $x): static {
+                            return clone $this;
+                        }
+                    }
+
+                    interface WithY {
+                        /** @return static */
+                        public function withY(int $y);
+                    }
+
+                    class Message implements WithY {
+                        public function withY(int $y): self {
+                            return clone $this;
+                        }
+                    }
+
+                    class MyDate extends DateTime {}
+
+                    function test(Bag $bag, Message $message, DateTime $date, MyDate $my_date): void {
+                        $x = $bag->withX(1);
+                        /** @psalm-check-type-exact $x = Bag */;
+                        $y = $message->withY(1);
+                        /** @psalm-check-type-exact $y = Message */;
+                        $time = $date->setTime(1, 2);
+                        /** @psalm-check-type-exact $time = DateTime */;
+                        $zone = $my_date->setTimezone(new DateTimeZone("UTC"));
+                        /** @psalm-check-type-exact $zone = MyDate */;
+                    }',
+                'assertions' => [],
+                'ignored_issues' => ['MissingReturnType'],
+                'php_version' => '8.0',
+            ],
+            'parentMagicMethodCallReturnsTheLateStaticOfThis' => [
+                'code' => '<?php
+                    /** @psalm-no-seal-methods */
+                    class Model {
+                        /** @return static */
+                        public function __call(string $method, array $args) {
+                            return new static();
+                        }
+                    }
+
+                    class Post extends Model {
+                        public function create(): static {
+                            return parent::create([]);
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => ['UnsafeInstantiation'],
+                'php_version' => '8.0',
+            ],
             'parentCallOfAStaticReturnTypeInAChildOfAGenericClass' => [
                 'code' => '<?php
                     /** @template T */
@@ -1667,13 +1726,50 @@ final class MethodCallTest extends TestCase
                     $finalNative = (new D())->returnThis();
                     $finalDocblock = (new D())->docReturnThis();',
                 'assertions' => [
-                    '$z===' => 'C&static',
-                    '$y===' => 'C&static',
-                    '$chained===' => 'C&static',
+                    '$z===' => 'C',
+                    '$y===' => 'C',
+                    '$chained===' => 'C',
                     '$finalNative===' => 'D',
                     '$finalDocblock===' => 'D',
                 ],
                 'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'lateStaticReceiversKeepStatic' => [
+                'code' => '<?php
+                    class Bag {
+                        public function fluent(): static {
+                            return $this;
+                        }
+
+                        public function viaThis(): static {
+                            return $this->fluent()->fluent();
+                        }
+
+                        public function viaClone(): static {
+                            $copy = clone $this;
+                            return $copy->fluent();
+                        }
+
+                        public function viaNewStatic(): static {
+                            return (new static())->fluent();
+                        }
+
+                        /** @param static $other */
+                        public function viaStaticParam($other): static {
+                            return $other->fluent();
+                        }
+
+                        public function viaInstanceofStatic(object $other): static {
+                            if ($other instanceof static) {
+                                return $other->fluent();
+                            }
+
+                            return $this;
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => ['UnsafeInstantiation'],
                 'php_version' => '8.0',
             ],
             'resolveFinalInParentCall' => [
@@ -2137,6 +2233,56 @@ final class MethodCallTest extends TestCase
                         }
                     }',
                 'error_message' => 'TypeDoesNotContainType',
+            ],
+            'staticCallOnAnotherInstanceIsNotTheCallersStatic' => [
+                'code' => '<?php
+                    /** @psalm-consistent-constructor */
+                    class Bag {
+                        public static function create(): static {
+                            return new static();
+                        }
+
+                        public function make(self $other): static {
+                            return $other::create();
+                        }
+                    }',
+                'error_message' => 'LessSpecificReturnStatement',
+                'error_levels' => [],
+                'php_version' => '8.0',
+            ],
+            'staticReturnOfAnotherInstanceIsNotTheCallersStatic' => [
+                'code' => '<?php
+                    class Bag {
+                        public function fluent(): static {
+                            return $this;
+                        }
+
+                        public function copyOf(self $other): static {
+                            return $other->fluent();
+                        }
+                    }',
+                'error_message' => 'LessSpecificReturnStatement',
+                'error_levels' => [],
+                'php_version' => '8.0',
+            ],
+            'staticIntersectionReturnOfAnotherInstanceIsNotTheCallersStatic' => [
+                'code' => '<?php
+                    interface Marker {}
+
+                    class Bag {
+                        /** @return Marker&static */
+                        public function marked(): Marker {
+                            throw new RuntimeException();
+                        }
+
+                        /** @return Marker&static */
+                        public function markedOf(self $other): Marker {
+                            return $other->marked();
+                        }
+                    }',
+                'error_message' => 'LessSpecificReturnStatement',
+                'error_levels' => [],
+                'php_version' => '8.0',
             ],
             'methodMissingFromALaterTypeOfAUnionTemplateBound' => [
                 'code' => '<?php

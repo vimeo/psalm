@@ -226,6 +226,9 @@ final class MissingMethodCallHandler
                     $defining_class_storage->name,
                     $lhs_type_part instanceof Atomic\TNamedObject ? $lhs_type_part : $fq_class_name,
                     $defining_class_storage->parent_class,
+                    true,
+                    false,
+                    MethodCallReturnTypeFetcher::bindsStaticToReceiverClass($codebase, $lhs_type_part),
                 );
 
                 if ($all_intersection_return_type) {
@@ -483,7 +486,8 @@ final class MissingMethodCallHandler
                     $defining_class_storage->parent_class,
                     true,
                     false,
-                    $class_storage->final,
+                    $class_storage->final
+                        || MethodCallReturnTypeFetcher::bindsStaticToReceiverClass($codebase, $lhs_type_part),
                 );
 
                 $result->return_type = Type::combineUnionTypes($return_type_candidate, $result->return_type);
@@ -572,7 +576,7 @@ final class MissingMethodCallHandler
             $defining_class_storage->name,
             $lhs_type_part instanceof Atomic\TNamedObject ? $lhs_type_part : $method_id->fq_class_name,
             $defining_class_storage->parent_class,
-            $class_storage->final,
+            $class_storage->final || MethodCallReturnTypeFetcher::bindsStaticToReceiverClass($codebase, $lhs_type_part),
         );
     }
 

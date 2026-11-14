@@ -260,7 +260,7 @@ final class ClassTemplateTest extends TestCase
                     $copy = getColl()->copy();
                     $std_copy = (new StdColl([]))->copy();',
                 'assertions' => [
-                    '$copy===' => 'Coll<stdClass>&static',
+                    '$copy===' => 'Coll<stdClass>',
                     '$std_copy===' => 'StdColl',
                 ],
             ],

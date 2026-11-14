@@ -603,6 +603,38 @@ final class MagicMethodAnnotationTest extends TestCase
                     '$c===' => 'float',
                 ],
             ],
+            'staticPseudoMethodOfAPlainOrFinalReceiverIsItsClass' => [
+                'code' => '<?php
+                    /**
+                     * @method static fluent()
+                     */
+                    final class FinalMagic {
+                        /** @param list<mixed> $args */
+                        public function __call(string $name, array $args): mixed {
+                            return $this;
+                        }
+                    }
+
+                    /**
+                     * @method static fluent()
+                     */
+                    class Magic {
+                        /** @param list<mixed> $args */
+                        public function __call(string $name, array $args): mixed {
+                            return $this;
+                        }
+                    }
+
+                    function test(FinalMagic $final_magic, Magic $magic): void {
+                        $final_fluent = $final_magic->fluent();
+                        /** @psalm-check-type-exact $final_fluent = FinalMagic */;
+                        $closure = $magic->fluent(...);
+                        /** @psalm-check-type-exact $closure = Closure():Magic */;
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
             'trailingReturnTypes' => [
                 'code' => '<?php
                     class ParentClass {
@@ -1511,8 +1543,8 @@ final class MagicMethodAnnotationTest extends TestCase
                     /** @var I<B> $i */
                     $c = $i->foo();',
                 'assertions' => [
-                    '$b' => 'A<B>&static',
-                    '$c' => 'I<B>&static',
+                    '$b' => 'A<B>',
+                    '$c' => 'I<B>',
                 ],
             ],
             'genericsOfInheritedMethodsShouldBeResolved' => [
@@ -2117,6 +2149,25 @@ final class MagicMethodAnnotationTest extends TestCase
                      */
                     class Foo {}',
                 'error_message' => 'InvalidDocblock - src' . DIRECTORY_SEPARATOR . 'somefile.php:5:27 - callable(int) is not a valid method',
+            ],
+            'staticPseudoMethodReturnOfAnotherInstanceIsNotTheCallersStatic' => [
+                'code' => '<?php
+                    /**
+                     * @method static fluent()
+                     */
+                    class Bag {
+                        /** @param list<mixed> $args */
+                        public function __call(string $name, array $args): mixed {
+                            return $this;
+                        }
+
+                        public function copyOf(self $other): static {
+                            return $other->fluent();
+                        }
+                    }',
+                'error_message' => 'LessSpecificReturnStatement',
+                'error_levels' => [],
+                'php_version' => '8.0',
             ],
             'wildcardPurityPropagatesImpureClosure' => [
                 'code' => '<?php

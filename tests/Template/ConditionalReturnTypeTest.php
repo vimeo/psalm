@@ -1743,7 +1743,7 @@ final class ConditionalReturnTypeTest extends TestCase
                 'assertions' => [
                     '$final===' => 'FinalChild',
                     '$finalByBase===' => 'FinalChild',
-                    '$open===' => 'OpenChild&static',
+                    '$open===' => 'OpenChild',
                     '$finalStatic===' => 'FinalChild',
                     '$openStatic===' => 'OpenChild',
                 ],
@@ -1765,7 +1765,7 @@ final class ConditionalReturnTypeTest extends TestCase
                     $coll = new Coll();
                     $tapped = $coll->tap(fn (Coll $_c): int => 1);',
                 'assertions' => [
-                    '$tapped===' => 'Coll<int>&static',
+                    '$tapped===' => 'Coll<int>',
                 ],
             ],
             'paramConditionalOnStaticParam' => [
@@ -2077,7 +2077,7 @@ final class ConditionalReturnTypeTest extends TestCase
                 ],
                 'ignored_issues' => ['InvalidArgument', 'MissingClosureParamType'],
             ],
-            'paramConditionalOnUntypedCallableOfStaticThroughMixinKeepsMastersResult' => [
+            'paramConditionalOnUntypedCallableOfStaticThroughMixinIsTheReceiver' => [
                 'code' => '<?php
                     class MixTarget {
                         /**
@@ -2102,7 +2102,7 @@ final class ConditionalReturnTypeTest extends TestCase
 
                     $tapped = (new MixUser())->tap(fn ($_t): int => 1);',
                 'assertions' => [
-                    '$tapped===' => 'MixUser&static',
+                    '$tapped===' => 'MixUser',
                 ],
                 'ignored_issues' => ['InvalidArgument', 'MissingClosureParamType'],
             ],
