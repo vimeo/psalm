@@ -339,6 +339,30 @@ final class IntersectionTypeTest extends TestCase
                     '$c===' => 'float',
                 ],
             ],
+            'intersectionOfObjectShapesFitsEachShapeAndTheirUnion' => [
+                'code' => '<?php
+                    /** @param object{a: int} $x */
+                    function takesA(object $x): void {
+                        echo $x->a;
+                    }
+
+                    /** @param object{b: string} $x */
+                    function takesB(object $x): void {
+                        echo $x->b;
+                    }
+
+                    /** @param object{a: int, b: string} $x */
+                    function takesBoth(object $x): void {
+                        echo $x->a, $x->b;
+                    }
+
+                    /** @param object{a: int}&object{b: string} $x */
+                    function pass(object $x): void {
+                        takesA($x);
+                        takesB($x);
+                        takesBoth($x);
+                    }',
+            ],
             'objectShapePropertyOnInterfaceIntersection' => [
                 'code' => '<?php
                     interface Foo {}
@@ -499,6 +523,32 @@ final class IntersectionTypeTest extends TestCase
     public static function providerInvalidCodeParse(): iterable
     {
         return [
+            'intersectionOfObjectShapesLacksAProperty' => [
+                'code' => '<?php
+                    /** @param object{c: int} $x */
+                    function takesC(object $x): void {
+                        echo $x->c;
+                    }
+
+                    /** @param object{a: int}&object{b: string} $x */
+                    function pass(object $x): void {
+                        takesC($x);
+                    }',
+                'error_message' => 'InvalidArgument',
+            ],
+            'intersectionOfObjectShapesHasWrongPropertyType' => [
+                'code' => '<?php
+                    /** @param object{b: int} $x */
+                    function takesB(object $x): void {
+                        echo $x->b;
+                    }
+
+                    /** @param object{a: int}&object{b: string} $x */
+                    function pass(object $x): void {
+                        takesB($x);
+                    }',
+                'error_message' => 'InvalidArgument',
+            ],
             'missingPropertyOfAnIntersectionWithAnInterface' => [
                 'code' => '<?php
                     interface I {}
