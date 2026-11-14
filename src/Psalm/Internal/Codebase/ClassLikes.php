@@ -871,6 +871,12 @@ final class ClassLikes
 
         $this->rebuildStructuralEdges($code_use_graph);
 
+        // A method called with a dynamic name is only possibly called, but what
+        // it uses must not be reported as definitely unused.
+        $potential_calls = $find_unused_code
+            ? $this->getPotentialDynamicMethodCalls($codebase->analyzer->getMixedMemberNames())
+            : [];
+
         $code_use_graph->resolve(function (string $node_id): bool {
             $owner_class = CodeUseGraph::getOwnerClass($node_id);
 
@@ -887,14 +893,7 @@ final class ClassLikes
 
             return !$owner_storage->location
                 || !$this->config->isInProjectDirs($owner_storage->location->file_path);
-        });
-
-        // A dynamically invoked method remains only *possibly* called, but code it
-        // reads or invokes must not be reported as definitely unused.
-        $potential_calls = $find_unused_code
-            ? $this->getPotentialDynamicMethodCalls($codebase->analyzer->getMixedMemberNames())
-            : [];
-        $possibly_used_nodes = $code_use_graph->getPotentiallyUsedNodes($potential_calls);
+        }, $potential_calls);
 
         // A dynamic entry point remains possibly unused even if it is also
         // referenced by another method in the same recursive call group.
@@ -928,18 +927,11 @@ final class ClassLikes
 
                         // a class that is only alive because of its own methods
                         // still has its members unchecked
-                        if (($code_use_graph->isUsed($class_node)
-                            && ($classlike_storage->public_api || $code_use_graph->isReferenced($class_node)))
-                            || isset($possibly_used_nodes[$class_node])
+                        if (($code_use_graph->isUsed($class_node) || $code_use_graph->isPossiblyUsed($class_node))
+                            && ($classlike_storage->public_api || $code_use_graph->isReferenced($class_node))
                         ) {
-                            // Speculatively reachable classes still need their members checked.
-                            $this->checkMethodReferences(
-                                $classlike_storage,
-                                $methods,
-                                $possibly_used_nodes,
-                                $dynamic_entry_nodes,
-                            );
-                            $this->checkPropertyReferences($classlike_storage, $possibly_used_nodes);
+                            $this->checkMethodReferences($classlike_storage, $methods, $dynamic_entry_nodes);
+                            $this->checkPropertyReferences($classlike_storage);
                         } else {
                             IssueBuffer::maybeAdd(
                                 new UnusedClass(
@@ -2289,13 +2281,11 @@ final class ClassLikes
     }
 
     /**
-     * @param array<string, true> $possibly_used_nodes
-     * @param array<string, true> $dynamic_entry_nodes
+     * @param array<string, true> $dynamic_entry_nodes methods that may be called with a dynamic name
      */
     private function checkMethodReferences(
         ClassLikeStorage $classlike_storage,
         Methods $methods,
-        array $possibly_used_nodes,
         array $dynamic_entry_nodes,
     ): void {
         $project_analyzer = ProjectAnalyzer::getInstance();
@@ -2354,21 +2344,20 @@ final class ClassLikes
             $method_node = CodeUseGraph::functionLikeNode(strtolower((string) $method_id));
             $method_referenced = $codebase->code_use_graph->isUsed($method_node);
 
-            if (!$method_referenced && isset($possibly_used_nodes[$method_node])) {
-                // A private method can be reached through a dynamic call, or
-                // through another method which is only potentially called.
+            if (!$method_referenced && $codebase->code_use_graph->isPossiblyUsed($method_node)) {
+                // There is no weaker form of UnusedMethod to report a private
+                // method that a dynamic call or a possibly used method may call.
                 if ($method_storage->visibility === ClassLikeAnalyzer::VISIBILITY_PRIVATE) {
                     continue;
                 }
 
-                // A dynamic entry point must keep its warning, including when
-                // methods in a recursive group reference each other.
-                if (!isset($dynamic_entry_nodes[$method_node])) {
-                    foreach ($codebase->code_use_graph->getReferencingNodes($method_node) as $source_node => $_) {
-                        if (isset($possibly_used_nodes[$source_node])) {
-                            continue 2;
-                        }
-                    }
+                // A method called by a possibly used method is as used as its
+                // caller, but a dynamic entry point keeps its PossiblyUnusedMethod,
+                // even when the methods of a recursive group call each other.
+                if (!isset($dynamic_entry_nodes[$method_node])
+                    && $codebase->code_use_graph->getPossiblyUsedReferencingNodes($method_node) !== []
+                ) {
+                    continue;
                 }
             }
 
@@ -2789,10 +2778,7 @@ final class ClassLikes
         return true;
     }
 
-    /**
-     * @param array<string, true> $possibly_used_nodes
-     */
-    private function checkPropertyReferences(ClassLikeStorage $classlike_storage, array $possibly_used_nodes): void
+    private function checkPropertyReferences(ClassLikeStorage $classlike_storage): void
     {
         $project_analyzer = ProjectAnalyzer::getInstance();
         $codebase = $project_analyzer->getCodebase();
@@ -2811,15 +2797,20 @@ final class ClassLikes
             $property_node = CodeUseGraph::propertyNode(strtolower($classlike_storage->name), $property_name);
             $property_referenced = $codebase->code_use_graph->isUsed($property_node);
 
-            // A speculative read also defeats the constructor-only heuristic.
-            // Writes do not propagate through the code-use graph.
-            if (isset($possibly_used_nodes[$property_node])) {
+            // Only read by possibly used code. There is no weaker form of
+            // UnusedProperty for a private property, and PossiblyUnusedProperty
+            // would claim that no reference was found, so report nothing.
+            if ($codebase->code_use_graph->isPossiblyUsed($property_node)) {
                 continue;
             }
 
             $property_constructor_referenced = false;
             if ($property_referenced && $property_storage->visibility === ClassLikeAnalyzer::VISIBILITY_PRIVATE) {
+                // a read by possibly used code also defeats the constructor-only heuristic
                 $property_references = $codebase->code_use_graph->getUsedReferencingNodes(
+                    $property_node,
+                    CodeUseGraph::EDGE_USE,
+                ) + $codebase->code_use_graph->getPossiblyUsedReferencingNodes(
                     $property_node,
                     CodeUseGraph::EDGE_USE,
                 );

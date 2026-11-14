@@ -11,7 +11,6 @@ use Psalm\Context;
 use Psalm\Exception\CodeException;
 use Psalm\Internal\Analyzer\ProjectAnalyzer;
 use Psalm\Internal\Codebase\CodeUseGraph;
-use Psalm\Internal\MethodIdentifier;
 use Psalm\IssueBuffer;
 use Psalm\Plugin\EventHandler\Event\MethodExistenceProviderEvent;
 use Psalm\Storage\Capabilities;
@@ -405,36 +404,72 @@ final class UnusedCodeTest extends TestCase
         self::assertContains('Cannot find any calls to method Worker::unused', array_column($issues, 'message'));
     }
 
-    public function testDynamicCallSkipsAppearingMethodWithoutDeclaringStorage(): void
+    public function testDynamicCallOnSubclassWithInheritedPrivateMethod(): void
     {
         $this->project_analyzer->getConfig()->throw_exception = false;
         $this->project_analyzer->getConfig()->setCustomErrorLevel('PossiblyUnusedMethod', Config::REPORT_INFO);
         $file_path = self::$src_dir_path . 'somefile.php';
 
+        // Base::secret appears in Child without being declared there, as it is private
         $this->addFile($file_path, '<?php
-            final class DynamicController {
+            abstract class Base {
                 private string $value = "ok";
-                public function run(): string { return $this->value; }
+
+                public function run(): string {
+                    return $this->secret();
+                }
+
+                private function secret(): string {
+                    return $this->value;
+                }
             }
-            $controller = new DynamicController();
+            final class Child extends Base {
+                public function action(): void {}
+            }
+            $child = new Child();
+            echo $child->run();
             $method = (string) getenv("ACTION");
-            if (method_exists($controller, $method)) {
-                echo (string) $controller->$method();
+            if (method_exists($child, $method)) {
+                $child->$method();
             }');
 
         $this->analyzeFile($file_path, new Context(), false);
-
-        // Some appearing methods have no corresponding declaring method ID.
-        // This must not crash the potential-reachability collector.
-        $storage = $this->project_analyzer->getCodebase()->classlike_storage_provider->get('DynamicController');
-        $storage->appearing_method_ids['synthetic'] = new MethodIdentifier('ExternalClass', 'synthetic');
-
         $this->project_analyzer->consolidateAnalyzedData();
 
         self::assertSame(
-            ['PossiblyUnusedMethod'],
-            array_column(IssueBuffer::getIssuesDataForFile($file_path), 'type'),
+            ['Cannot find explicit calls to method Child::action (but did find some potential callers)'],
+            array_column(IssueBuffer::getIssuesDataForFile($file_path), 'message'),
         );
+    }
+
+    public function testPrivateMethodCalledWithDynamicNameIsNotDefinitelyUnused(): void
+    {
+        $this->project_analyzer->getConfig()->throw_exception = false;
+        $file_path = self::$src_dir_path . 'somefile.php';
+
+        $this->addFile($file_path, '<?php
+            final class Handler {
+                private string $prefix = "on";
+
+                public function handle(string $event): void {
+                    $method = $this->prefix . ucfirst($event);
+                    if (method_exists($this, $method)) {
+                        $this->$method();
+                    }
+                }
+
+                private function onSave(): void {
+                    $this->log();
+                }
+
+                private function log(): void {}
+            }
+            (new Handler())->handle((string) getenv("EVENT"));');
+
+        $this->analyzeFile($file_path, new Context(), false);
+        $this->project_analyzer->consolidateAnalyzedData();
+
+        self::assertSame([], IssueBuffer::getIssuesDataForFile($file_path));
     }
 
     public function testUnrelatedDynamicCallerDoesNotReachProtectedMethods(): void
