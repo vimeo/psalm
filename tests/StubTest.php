@@ -314,6 +314,66 @@ final class StubTest extends DeferredAnalyzerTestCase
         $this->analyzeFile($file_path, new Context());
     }
 
+    public function testFunctionExistsOfANativeFunctionStubbedInAPhpFileGuardsItsVersion(): void
+    {
+        $this->project_analyzer = $this->getProjectAnalyzerWithNativeFunctionStub();
+
+        $file_path = (string) getcwd() . '/src/somefile.php';
+
+        $this->addFile(
+            $file_path,
+            '<?php
+                function a(): ?object {
+                    if (function_exists("fdiv")) {
+                        return new WeakMap();
+                    }
+
+                    return null;
+                }',
+        );
+
+        $this->analyzeFile($file_path, new Context());
+    }
+
+    public function testNativeFunctionStubbedInAPhpFileIsUndefinedBelowItsVersion(): void
+    {
+        $this->expectException(CodeException::class);
+        $this->expectExceptionMessage('UndefinedFunction');
+
+        $this->project_analyzer = $this->getProjectAnalyzerWithNativeFunctionStub();
+
+        $file_path = (string) getcwd() . '/src/somefile.php';
+
+        $this->addFile(
+            $file_path,
+            '<?php
+                echo fdiv(1.0, 2.0);',
+        );
+
+        $this->analyzeFile($file_path, new Context());
+    }
+
+    private function getProjectAnalyzerWithNativeFunctionStub(): ProjectAnalyzer
+    {
+        return $this->getProjectAnalyzerWithConfig(
+            TestConfig::loadFromXML(
+                dirname(__DIR__),
+                '<?xml version="1.0"?>
+                <psalm
+                    errorLevel="1"
+                >
+                    <projectFiles>
+                        <directory name="src" />
+                    </projectFiles>
+
+                    <stubs>
+                        <file name="tests/fixtures/stubs/native_function.php" />
+                    </stubs>
+                </psalm>',
+            ),
+        );
+    }
+
     public function testStubFileClass(): void
     {
         $this->project_analyzer = $this->getProjectAnalyzerWithConfig(

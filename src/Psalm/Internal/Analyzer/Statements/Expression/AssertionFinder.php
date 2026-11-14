@@ -949,7 +949,7 @@ final class AssertionFinder
 
                     // a polyfill defines it on older versions too
                     if ($since_php_version_id > $codebase->analysis_php_version_id
-                        && $codebase->functions->isDeclaredInCode($guarded_function_id)
+                        && $codebase->functions->isDeclaredInCode($guarded_function_id, $codebase->scanner)
                     ) {
                         $since_php_version_id = null;
                     }
