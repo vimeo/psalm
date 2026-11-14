@@ -126,6 +126,15 @@ final class Reflection
                 $storage->properties[$property_name]->visibility = ClassLikeAnalyzer::VISIBILITY_PRIVATE;
             }
 
+            $storage->properties[$property_name]->set_visibility = $storage->properties[$property_name]->visibility;
+            if (PHP_VERSION_ID >= 8_04_00) {
+                if ($class_property->isPrivateSet()) {
+                    $storage->properties[$property_name]->set_visibility = ClassLikeAnalyzer::VISIBILITY_PRIVATE;
+                } elseif ($class_property->isProtectedSet()) {
+                    $storage->properties[$property_name]->set_visibility = ClassLikeAnalyzer::VISIBILITY_PROTECTED;
+                }
+            }
+
             $property_id = $class_property->class . '::$' . $property_name;
 
             $storage->declaring_property_ids[$property_name] = $class_property->class;
