@@ -1327,21 +1327,40 @@ final class MethodComparator
             && $implementer_classlike_storage->final
             && !$implementer_classlike_storage->final_from_docblock;
 
+        // what a trait method refers to as self or static is the class it ends up in
+        $implementing_class_name = $implementer_classlike_storage->is_trait
+            ? $implementer_called_class_name
+            : $implementer_classlike_storage->name;
+
+        $class_using_trait = self::getClassUsingTrait(
+            $codebase,
+            $implementer_classlike_storage,
+            $guide_classlike_storage,
+        );
+
+        // `parent` of a non-abstract trait method is the parent of the class using the trait
+        $guide_parent_class = $guide_classlike_storage->parent_class;
+
+        if ($guide_classlike_storage->is_trait) {
+            $guide_parent_class = $implementer_classlike_storage->parent_class;
+
+            if (!$guide_method_storage->abstract && $class_using_trait !== null) {
+                $guide_parent_class = $codebase->classlike_storage_provider->get($class_using_trait)->parent_class;
+            }
+        }
+
         $guide_signature_return_type = TypeExpander::expandUnion(
             $codebase,
             $guide_signature_return_type,
             $guide_classlike_storage->is_trait && $guide_method_storage->abstract
-                ? $implementer_classlike_storage->name
-                : self::getClassUsingTrait($codebase, $implementer_classlike_storage, $guide_classlike_storage)
-                    ?? $guide_classlike_storage->name,
-            ($guide_classlike_storage->is_trait && $guide_method_storage->abstract)
+                ? $implementing_class_name
+                : $class_using_trait ?? $guide_classlike_storage->name,
+            $guide_classlike_storage->is_trait
                 || $guide_classlike_storage->final
                 || $resolve_static_to_final_class
-                ? $implementer_classlike_storage->name
+                ? $implementing_class_name
                 : $guide_classlike_storage->name,
-            $guide_classlike_storage->is_trait && $guide_method_storage->abstract
-                ? $implementer_classlike_storage->parent_class
-                : $guide_classlike_storage->parent_class,
+            $guide_parent_class,
             true,
             true,
             $resolve_static_to_final_class,
@@ -1351,9 +1370,7 @@ final class MethodComparator
             ? TypeExpander::expandUnion(
                 $codebase,
                 $implementer_method_storage->signature_return_type,
-                $implementer_classlike_storage->is_trait
-                    ? $implementer_called_class_name
-                    : $implementer_classlike_storage->name,
+                $implementing_class_name,
                 // an inherited method returns `static` of the class it is called on
                 new TNamedObject($implementer_called_class_name),
                 $implementer_classlike_storage->parent_class,
