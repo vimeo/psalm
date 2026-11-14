@@ -516,25 +516,8 @@ final class ClassConstAnalyzer
             return true;
         }
 
-        // Check all alternatives, not only the single-type variable path below.
-        if (!$codebase->config->allow_string_standin_for_class) {
-            foreach ($lhs_type->getAtomicTypes() as $lhs_atomic_type) {
-                if ($lhs_atomic_type instanceof TString
-                    && !$lhs_atomic_type instanceof TClassString
-                    && !$lhs_atomic_type instanceof TDependentGetClass
-                ) {
-                    IssueBuffer::maybeAdd(
-                        new InvalidStringClass(
-                            'String cannot be used as a class',
-                            new CodeLocation($statements_analyzer->getSource(), $stmt->class),
-                        ),
-                        $statements_analyzer->getSuppressedIssues(),
-                    );
-                    break;
-                }
-            }
-        }
-
+        // ::class retrieves a class name; it is not a use of a string literal
+        // instead of ::class. In particular, do not report a class-string made by Foo::class.
         if ($stmt->name instanceof PhpParser\Node\Identifier && $stmt->name->name === 'class') {
             $class_string_types = [];
 
@@ -579,6 +562,26 @@ final class ClassConstAnalyzer
             }
 
             return true;
+        }
+
+        // Check all union members, not just the single-type variable case below.
+        if (!$codebase->config->allow_string_standin_for_class) {
+            foreach ($lhs_type->getAtomicTypes() as $lhs_atomic_type) {
+                if ($lhs_atomic_type instanceof TString
+                    && !$lhs_atomic_type instanceof TClassString
+                    && !$lhs_atomic_type instanceof TDependentGetClass
+                    && !$lhs_atomic_type instanceof TLiteralClassString
+                ) {
+                    IssueBuffer::maybeAdd(
+                        new InvalidStringClass(
+                            'String cannot be used as a class',
+                            new CodeLocation($statements_analyzer->getSource(), $stmt->class),
+                        ),
+                        $statements_analyzer->getSuppressedIssues(),
+                    );
+                    break;
+                }
+            }
         }
 
         if ($stmt->class instanceof PhpParser\Node\Expr\Variable) {

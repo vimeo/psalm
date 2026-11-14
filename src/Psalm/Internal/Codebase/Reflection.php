@@ -225,7 +225,7 @@ final class Reflection
             $this->extractReflectionMethodInfo($reflection_method);
 
             if ($reflection_method->class !== $class_name
-                && ($class_name !== 'SoapFault' || $reflection_method->name !== '__construct')
+                && ($class_name !== \SoapFault::class || $reflection_method->name !== '__construct')
             ) {
                 $reflection_method_name = strtolower($reflection_method->name);
                 $reflection_method_class = $reflection_method->class;
