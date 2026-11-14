@@ -432,8 +432,10 @@ final class AtomicStaticCallAnalyzer
 
         $args = $stmt->isFirstClassCallable() ? [] : $stmt->getArgs();
 
-        // a `@method static` of the class wins over its mixins
-        if (!$naive_method_exists && !isset($class_storage->pseudo_static_methods[$method_name_lc])) {
+        // a `@method static` of the class or of its interfaces wins over its mixins
+        if (!$naive_method_exists
+            && self::findPseudoMethodAndClassStorages($codebase, $class_storage, $method_name_lc, false) === null
+        ) {
             $mixin = MixinLookup::findMember(
                 $codebase,
                 $class_storage,

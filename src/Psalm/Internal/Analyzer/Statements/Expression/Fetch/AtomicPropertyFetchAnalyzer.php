@@ -358,11 +358,7 @@ final class AtomicPropertyFetchAnalyzer
                 }
             }
 
-            if (!$matched_mixin
-                && $intersection_types !== []
-                && !$class_storage->final
-                && !MixinLookup::hasNamedMixin($codebase, $class_storage)
-            ) {
+            if (!$matched_mixin && $intersection_types !== [] && !$class_storage->final) {
                 foreach ($intersection_types as $intersection_type) {
                     self::analyze(
                         $statements_analyzer,

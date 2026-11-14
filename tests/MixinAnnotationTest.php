@@ -870,6 +870,101 @@ final class MixinAnnotationTest extends TestCase
                 'ignored_issues' => [],
                 'php_version' => '8.0',
             ],
+            'firstClassCallableOfAPseudoMethodOfATemplatedMixin' => [
+                'code' => '<?php
+                    /**
+                     * @template T
+                     * @method T get()
+                     */
+                    final class Box
+                    {
+                        /** @param list<mixed> $args */
+                        public function __call(string $name, array $args): mixed
+                        {
+                            return null;
+                        }
+                    }
+
+                    /**
+                     * @template TMixin of object
+                     * @mixin TMixin
+                     */
+                    final class Proxy
+                    {
+                        /** @param list<mixed> $args */
+                        public function __call(string $name, array $args): mixed
+                        {
+                            return null;
+                        }
+                    }
+
+                    /** @param Proxy<Box<int>> $proxy */
+                    function read(Proxy $proxy): int
+                    {
+                        $get = $proxy->get(...);
+
+                        return $get();
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
+            'intersectionPropertyNextToAMixinWithoutIt' => [
+                'code' => '<?php
+                    final class EmptyTarget {}
+
+                    /** @mixin EmptyTarget */
+                    trait ForwardsCalls {}
+
+                    class Host
+                    {
+                        use ForwardsCalls;
+                    }
+
+                    class HasValue
+                    {
+                        public int $value = 1;
+                    }
+
+                    /** @param Host&HasValue $host */
+                    function read(Host $host): int
+                    {
+                        return $host->value;
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'staticPseudoMethodOfAnInterfaceWinsOverTheMixins' => [
+                'code' => '<?php
+                    final class Delegate
+                    {
+                        public static function foo(): string
+                        {
+                            return "";
+                        }
+                    }
+
+                    /** @method static int foo() */
+                    interface HasFoo {}
+
+                    /** @mixin Delegate */
+                    final class Host implements HasFoo
+                    {
+                        /** @param list<mixed> $args */
+                        public static function __callStatic(string $name, array $args): mixed
+                        {
+                            return null;
+                        }
+                    }
+
+                    $a = Host::foo();',
+                'assertions' => [
+                    '$a===' => 'int',
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
             'nearestMixinWinsForAStaticMethodOfNestedMixins' => [
                 'code' => '<?php
                     final class Deep

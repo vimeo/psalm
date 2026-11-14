@@ -78,24 +78,6 @@ final class MixinLookup
     }
 
     /**
-     * Whether the class, one of its traits or one of its parent classes declares a named mixin
-     *
-     * @psalm-capabilities read-props|write-this-props|write-refs
-     */
-    public static function hasNamedMixin(Codebase $codebase, ClassLikeStorage $storage): bool
-    {
-        foreach (self::getScopes($codebase->classlike_storage_provider, $codebase->classlikes, $storage) as $scope) {
-            foreach ($scope->getMixins() as $mixin) {
-                if ($mixin instanceof TNamedObject) {
-                    return true;
-                }
-            }
-        }
-
-        return false;
-    }
-
-    /**
      * @param list<ClassLikeStorage> $scopes
      * @param array<lowercase-string, true> $seen_traits
      * @psalm-capabilities read-props|write-this-props|write-refs

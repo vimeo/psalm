@@ -2466,8 +2466,13 @@ final class Codebase
                     }
 
                     if ($gap === '->') {
-                        // the mixins of its traits and parent classes too, each mixin class once
+                        // the mixins of its traits and parent classes too, and a member once: the first one found
                         $ignore_fq_class_names = [$type_string, ...$ignore_fq_class_names];
+                        $member_keys = [];
+
+                        foreach ($completion_items as $completion_item) {
+                            $member_keys[$completion_item->kind . ' ' . $completion_item->label] = true;
+                        }
 
                         foreach (MixinLookup::getScopes(
                             $this->classlike_storage_provider,
@@ -2490,7 +2495,15 @@ final class Codebase
                                     [ClassLikeAnalyzer::VISIBILITY_PUBLIC],
                                     $ignore_fq_class_names,
                                 );
-                                $completion_items = [...$completion_items, ...$mixin_completion_items];
+
+                                foreach ($mixin_completion_items as $completion_item) {
+                                    $member_key = $completion_item->kind . ' ' . $completion_item->label;
+
+                                    if (!isset($member_keys[$member_key])) {
+                                        $member_keys[$member_key] = true;
+                                        $completion_items[] = $completion_item;
+                                    }
+                                }
                             }
                         }
                     }

@@ -83,8 +83,8 @@ final class MissingMethodCallHandler
                     $method_id,
                     $found_method_and_class_storage[0],
                     $found_method_and_class_storage[1],
-                    $class_storage,
-                    $lhs_type_part,
+                    $pseudo_method_class_storage,
+                    $mixin ?? $lhs_type_part,
                 );
             } else {
                 $result->non_existent_magic_method_ids[] = $method_id->__toString();
