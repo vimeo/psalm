@@ -1668,6 +1668,137 @@ final class ForeachTest extends TestCase
                 'ignored_issues' => [],
                 'php_version' => '8.0',
             ],
+            'incrementInsideAnAssignmentInLoopIsNotFoldedLikeALiteral' => [
+                'code' => <<<'PHP'
+                    <?php
+                    $counts = ['one' => 0];
+                    $previous = 0;
+
+                    foreach ([1, 2, 3] as $_) {
+                        $previous = $counts['one']++;
+                    }
+                    PHP,
+                'assertions' => [
+                    '$counts===' => 'array{one: int<1, max>}',
+                    '$previous===' => 'int<0, max>',
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
+            'readOfAnItemTheLoopDoesNotChangeIsFoldedLikeALiteral' => [
+                'code' => <<<'PHP'
+                    <?php
+                    $config = ['step' => 1];
+                    $counts = ['one' => 0];
+                    $next = 0;
+
+                    foreach ([1, 2, 3] as $_) {
+                        $counts['one']++;
+                        $next = $config['step'] + 1;
+                    }
+                    PHP,
+                'assertions' => [
+                    '$next===' => '2',
+                    '$counts===' => 'array{one: int<1, max>}',
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
+            'readOfAPropertyOfAnObjectPassedToACallInLoopIsNotFoldedLikeALiteral' => [
+                'code' => <<<'PHP'
+                    <?php
+                    class Counter {
+                        public int $count = 0;
+                        public ?Counter $next = null;
+                    }
+
+                    function bump(Counter $c): void {
+                        $c->count++;
+                    }
+
+                    $counter = new Counter();
+                    $counter->count = 1;
+                    $nested = new Counter();
+                    $nested->next = new Counter();
+                    $nested->next->count = 1;
+
+                    foreach ([1, 2, 3] as $_) {
+                        bump($counter);
+                        bump($nested->next);
+                        $direct = $counter->count + 1;
+                        $deep = $nested->next->count + 1;
+                    }
+                    PHP,
+                'assertions' => [
+                    '$direct===' => 'int<1, max>',
+                    '$deep===' => 'int<1, max>',
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
+            'readOfAPropertyOfAnObjectTheLoopDoesNotChangeIsFoldedNextToOneItPassesToACall' => [
+                'code' => <<<'PHP'
+                    <?php
+                    class Counter {
+                        public int $count = 0;
+                    }
+
+                    function bump(Counter $c): void {
+                        $c->count++;
+                    }
+
+                    $counter = new Counter();
+                    $counter->count = 1;
+                    $other = new Counter();
+                    $other->count = 1;
+
+                    foreach ([1, 2, 3] as $_) {
+                        bump($counter);
+                        $other_next = $other->count + 1;
+                    }
+                    PHP,
+                'assertions' => [
+                    '$other_next===' => '2',
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
+            'incrementOfAnItemInLoopIsNotFoldedLikeALiteral' => [
+                'code' => <<<'PHP'
+                    <?php
+                    /** @param list<string> $elems */
+                    function check(array $elems): bool {
+                        $results = ['one' => 0, 'two' => 0];
+
+                        foreach ($elems as $elem) {
+                            $results[$elem]++;
+                        }
+
+                        return isset($results['one']) && $results['one'] == 4;
+                    }
+
+                    class Counter {
+                        public int $count = 0;
+                    }
+
+                    $counts = ['one' => 0];
+                    $counter = new Counter();
+
+                    foreach ([1, 2, 3] as $_) {
+                        $counts['one']++;
+                        $counter->count += 1;
+                    }
+
+                    $once = ['one' => 0];
+                    $once['one']++;
+                    PHP,
+                'assertions' => [
+                    '$counts===' => 'array{one: int<1, max>}',
+                    '$once===' => 'array{one: 1}',
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
         ];
     }
 

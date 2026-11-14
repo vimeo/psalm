@@ -964,14 +964,14 @@ final class ClassLikeNodeScanner
 
                     if ($mixin_type instanceof TNamedObject) {
                         $storage->namedMixins[] = $mixin_type;
+                        $storage->declaredMixins[] = $mixin_type;
                     }
 
                     if ($mixin_type instanceof TTemplateParam) {
                         $storage->templatedMixins[] = $mixin_type;
+                        $storage->declaredMixins[] = $mixin_type;
                     }
                 }
-
-                $storage->mixin_declaring_fqcln = $storage->name;
             }
 
             $deferred_capabilities = [];
@@ -1016,6 +1016,17 @@ final class ClassLikeNodeScanner
             // the `@psalm-pure` and `@psalm-mutation-free` they spell
             $storage->taint_specialize = $docblock_info->taint_specialize;
             $storage->cli_only = $docblock_info->cli_only;
+
+            if ($docblock_info->cli_only_instances) {
+                if ($node instanceof PhpParser\Node\Stmt\Class_) {
+                    $storage->cli_only_instances = true;
+                } else {
+                    $storage->docblock_issues[] = new InvalidDocblock(
+                        '@psalm-cli-only-instances is only allowed on a class, not on ' . $fq_classlike_name,
+                        $name_location ?? $class_location,
+                    );
+                }
+            }
             $storage->taint_property_bag = $docblock_info->taint_property_bag;
             $storage->specialize_instance = $docblock_info->taint_specialize
                 || ($docblock_info->has_mutations_annotation
@@ -2052,7 +2063,14 @@ final class ClassLikeNodeScanner
         foreach ($stmt->props as $property) {
             $doc_var_location = null;
 
-            if (isset($storage->properties[$property->name->name])) {
+            $existing_property = $storage->properties[$property->name->name] ?? null;
+
+            // only a property declared in the same file is a duplicate; stubs refine properties from reflection and
+            // other stubs
+            if ($existing_property
+                && $existing_property->location
+                && $existing_property->location->file_path === $this->file_path
+            ) {
                 $this->file_storage->scan_issues[] = new DuplicateProperty(
                     'Property ' . $fq_classlike_name . '::$' . $property->name->name . ' has already been defined',
                     new CodeLocation($this->file_scanner, $stmt, null, true),

@@ -22,6 +22,7 @@ use Psalm\Type\Atomic\TArray;
 use Psalm\Type\Atomic\TClassString;
 use Psalm\Type\Atomic\TEnumCase;
 use Psalm\Type\Atomic\TFloat;
+use Psalm\Type\Atomic\TGenericObject;
 use Psalm\Type\Atomic\TInt;
 use Psalm\Type\Atomic\TIterable;
 use Psalm\Type\Atomic\TKeyedArray;
@@ -238,7 +239,12 @@ final class NegatedAssertionReconciler extends Reconciler
 
             // go deeper than the direct hit, eliminating subtypes
             if ($assertion_type) {
-                if ($assertion_type instanceof TNamedObject) {
+                // an object that is Traversable is iterable, with the same key and value types
+                $object_assertion_type = $assertion_type instanceof TIterable
+                    ? new TGenericObject('Traversable', $assertion_type->type_params)
+                    : $assertion_type;
+
+                if ($object_assertion_type instanceof TNamedObject) {
                     foreach ($existing_var_type->getAtomicTypes() as $part_name => $existing_var_type_part) {
                         if ($existing_var_type_part instanceof TTemplateParam) {
                             // the objects the assertion excludes can't be what the template is bound to either
@@ -248,7 +254,7 @@ final class NegatedAssertionReconciler extends Reconciler
                                     && AtomicTypeComparator::isContainedBy(
                                         $codebase,
                                         $as_part,
-                                        $assertion_type,
+                                        $object_assertion_type,
                                     )),
                             );
 
@@ -280,7 +286,7 @@ final class NegatedAssertionReconciler extends Reconciler
                             && AtomicTypeComparator::isContainedBy(
                                 $codebase,
                                 $existing_var_type_part,
-                                $assertion_type,
+                                $object_assertion_type,
                                 false,
                                 false,
                                 $forward_comparison_result,
@@ -293,7 +299,7 @@ final class NegatedAssertionReconciler extends Reconciler
                         } elseif (!$is_direct_hit
                             && AtomicTypeComparator::isContainedBy(
                                 $codebase,
-                                $assertion_type,
+                                $object_assertion_type,
                                 $existing_var_type_part,
                                 false,
                                 false,

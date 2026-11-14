@@ -11,6 +11,7 @@ use Psalm\Config;
 use Psalm\Context;
 use Psalm\Internal\Analyzer\FunctionLikeAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\Assignment\ArrayAssignmentAnalyzer;
+use Psalm\Internal\Analyzer\Statements\Expression\ExpressionIdentifier;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\Internal\Analyzer\TraitAnalyzer;
 use Psalm\Internal\Provider\NodeDataProvider;
@@ -58,7 +59,9 @@ use function is_numeric;
 use function max;
 use function min;
 use function preg_match;
+use function strrpos;
 use function strtolower;
+use function substr;
 
 /**
  * @internal
@@ -371,10 +374,10 @@ final class ArithmeticOpAnalyzer
         if (($left_type_part instanceof TLiteralInt || $left_type_part instanceof TLiteralFloat)
             && ($right_type_part instanceof TLiteralInt || $right_type_part instanceof TLiteralFloat)
             && (
-                //we don't try to do arithmetics on variables in loops
+                //we don't try to do arithmetics on what a loop can change in loops: variables, items, properties
                 $context === null
                 || $context->inside_loop === false
-                || (!$left instanceof PhpParser\Node\Expr\Variable && !$right instanceof PhpParser\Node\Expr\Variable)
+                || (!self::isChangeableByLoop($left, $context) && !self::isChangeableByLoop($right, $context))
             )
         ) {
             // get_class is fine here because both classes are final.
@@ -1127,6 +1130,42 @@ final class ArithmeticOpAnalyzer
         }
 
         return $calculated_type;
+    }
+
+    /**
+     * What a loop can change: any variable, and an item or property of one the loop assigns or passes to a call
+     */
+    private static function isChangeableByLoop(PhpParser\Node\Expr $expr, ?Context $context): bool
+    {
+        if ($expr instanceof PhpParser\Node\Expr\Variable) {
+            return true;
+        }
+
+        if (!$expr instanceof PhpParser\Node\Expr\ArrayDimFetch
+            && !$expr instanceof PhpParser\Node\Expr\PropertyFetch
+            && !$expr instanceof PhpParser\Node\Expr\StaticPropertyFetch
+        ) {
+            return false;
+        }
+
+        $root_var_id = $context !== null ? ExpressionIdentifier::getRootVarId($expr, $context->self) : null;
+
+        if ($root_var_id === null || $context?->loop_scope === null) {
+            return true;
+        }
+
+        // passing `$a` to a call or assigning `$a->b` changes what `$a->b->c` reads
+        while (!isset($context->loop_scope->assigned_root_var_ids[$root_var_id])) {
+            $property_separator = strrpos($root_var_id, '->');
+
+            if ($property_separator === false) {
+                return false;
+            }
+
+            $root_var_id = substr($root_var_id, 0, $property_separator);
+        }
+
+        return true;
     }
 
     /**
