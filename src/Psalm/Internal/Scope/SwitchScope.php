@@ -46,7 +46,7 @@ final class SwitchScope
     public array $negated_clauses = [];
 
     /**
-     * @var array<string, bool>|null
+     * @var array<string, int>|null
      */
     public ?array $new_assigned_var_ids = null;
 }

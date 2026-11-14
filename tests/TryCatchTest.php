@@ -20,6 +20,40 @@ final class TryCatchTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'variableAssignedInSwitchInTryAndInCatch' => [
+                'code' => '<?php
+                    function a(int $a): string {
+                        try {
+                            switch ($a) {
+                                case 1:
+                                    $data = "one";
+                                    break;
+                                default:
+                                    throw new RuntimeException("not one");
+                            }
+                        } catch (Throwable $e) {
+                            $data = $e->getMessage();
+                        }
+
+                        return $data;
+                    }
+
+                    function b(int $a): string {
+                        try {
+                            switch ($a) {
+                                case 1:
+                                    $data = "one";
+                                    break;
+                                default:
+                                    $data = "other";
+                            }
+                        } catch (Throwable $e) {
+                            $data = $e->getMessage();
+                        }
+
+                        return $data;
+                    }',
+            ],
             'variableAssignedAfterABreakOfANestedLoopInADoWhileInATryIsDefinedAfterIt' => [
                 'code' => '<?php
                     function f(): string {
@@ -809,6 +843,67 @@ final class TryCatchTest extends TestCase
     public static function providerInvalidCodeParse(): iterable
     {
         return [
+            'variableAssignedInOnlySomeCasesOfASwitchInATryIsPossiblyUndefined' => [
+                'code' => '<?php
+                    function a(int $a): string {
+                        try {
+                            switch ($a) {
+                                case 1:
+                                    $data = "one";
+                                    break;
+                                case 2:
+                                    break;
+                                default:
+                                    $data = "other";
+                            }
+                        } catch (Throwable $e) {
+                            $data = $e->getMessage();
+                        }
+
+                        return $data;
+                    }',
+                'error_message' => 'PossiblyUndefinedVariable',
+                'error_levels' => ['MixedReturnStatement'],
+            ],
+            'variableAssignedInACaseThatThrowsOfASwitchInATryIsPossiblyUndefined' => [
+                'code' => '<?php
+                    function a(int $a): string {
+                        try {
+                            switch ($a) {
+                                case 1:
+                                    $data = "one";
+                                    throw new RuntimeException("one");
+                                default:
+                                    break;
+                            }
+                        } catch (Throwable $e) {
+                            $data = $e->getMessage();
+                        }
+
+                        return $data;
+                    }',
+                'error_message' => 'PossiblyUndefinedVariable',
+                'error_levels' => ['MixedReturnStatement'],
+            ],
+            'variableAssignedInSwitchInTryNotInCatch' => [
+                'code' => '<?php
+                    function a(int $a): string {
+                        try {
+                            switch ($a) {
+                                case 1:
+                                    $data = "one";
+                                    break;
+                                default:
+                                    $data = "other";
+                            }
+                        } catch (Throwable $e) {
+                            echo $e->getMessage();
+                        }
+
+                        return $data;
+                    }',
+                'error_message' => 'PossiblyUndefinedVariable',
+            ],
             'variableAssignedAfterABreakTwoLevelsOutOfANestedLoopIsPossiblyUndefined' => [
                 'code' => '<?php
                     function f(): string {
