@@ -47,6 +47,7 @@ use function array_merge;
 use function array_search;
 use function array_shift;
 use function array_splice;
+use function array_values;
 use function count;
 use function in_array;
 use function key;
@@ -545,8 +546,9 @@ final class Populator
 
         $dependent_classlikes[$fq_classlike_name_lc] = true;
 
-        // a storage populated again still holds the `@method`s it inherited the last time
+        // a storage populated again still holds the `@method`s and mixins it inherited the last time
         self::removeInheritedPseudoMethods($storage);
+        self::removeInheritedMixins($storage);
 
         $trait_storages = [];
 
@@ -825,7 +827,26 @@ final class Populator
 
         $storage->documenting_method_ids = [];
 
-        foreach ($storage->methods as $method_name => $method_storage) {
+        // the storage of a method a class takes from a trait is shared by every class using the trait, so what is
+        // inherited by one class's method is recorded on the class only
+        $method_storages = $storage->methods;
+
+        foreach ($storage->declaring_method_ids as $method_name => $trait_method_id) {
+            if (isset($storage->methods[$method_name]) || !isset($storage->overridden_method_ids[$method_name])) {
+                continue;
+            }
+
+            $trait_storage = $storage_provider->get($trait_method_id->fq_class_name);
+
+            if ($trait_storage->is_trait && isset($trait_storage->methods[$trait_method_id->method_name])) {
+                $method_storages[$method_name] = $trait_storage->methods[$trait_method_id->method_name];
+            }
+        }
+
+        foreach ($method_storages as $method_name => $method_storage) {
+            $is_own_method = isset($storage->methods[$method_name]);
+            $inherited_return_type = $is_own_method ? $method_storage->inherited_return_type : false;
+
             if (isset($storage->overridden_method_ids[$method_name])) {
                 $overridden_method_ids = $storage->overridden_method_ids[$method_name];
 
@@ -865,21 +886,21 @@ final class Populator
                             || $declaring_method_storage->has_docblock_return_type)
                         && !$method_storage->has_docblock_param_types
                         && !$method_storage->has_docblock_return_type
-                        && $method_storage->inherited_return_type !== null
+                        && $inherited_return_type !== null
                     ) {
                         if (!isset($storage->documenting_method_ids[$method_name])
                             || (string) $storage->documenting_method_ids[$method_name]
                                 === (string) $declaring_method_id
                         ) {
                             $storage->documenting_method_ids[$method_name] = $declaring_method_id;
-                            $method_storage->inherited_return_type = true;
+                            $inherited_return_type = true;
                         } else {
                             if (in_array(
                                 $storage->documenting_method_ids[$method_name]->fq_class_name,
                                 $declaring_class_storage->parent_interfaces,
                             )) {
                                 $storage->documenting_method_ids[$method_name] = $declaring_method_id;
-                                $method_storage->inherited_return_type = true;
+                                $inherited_return_type = true;
                             } else {
                                 $documenting_class_storage = $declaring_class_storages
                                     [$storage->documenting_method_ids[$method_name]->fq_class_name];
@@ -890,10 +911,14 @@ final class Populator
                                 ) && $documenting_class_storage->is_interface
                                 ) {
                                     unset($storage->documenting_method_ids[$method_name]);
-                                    $method_storage->inherited_return_type = null;
+                                    $inherited_return_type = null;
                                 }
                             }
                         }
+                    }
+
+                    if (!$is_own_method) {
+                        continue;
                     }
 
                     // tell the declaring class it's overridden downstream
@@ -910,6 +935,10 @@ final class Populator
                     ) {
                         $method_storage->throws += $declaring_method_storage->throws;
                     }
+                }
+
+                if ($is_own_method) {
+                    $method_storage->inherited_return_type = $inherited_return_type;
                 }
             }
         }
@@ -1087,18 +1116,25 @@ final class Populator
             $storage->preserve_constructor_signature = true;
         }
 
-        if (($parent_storage->namedMixins || $parent_storage->templatedMixins)
-            && (!$storage->namedMixins || !$storage->templatedMixins)) {
-            $storage->mixin_declaring_fqcln = $parent_storage->mixin_declaring_fqcln;
+        $own_named_mixins = [];
 
-            if (!$storage->namedMixins) {
-                $storage->namedMixins = $parent_storage->namedMixins;
-            }
+        foreach ($storage->namedMixins as $mixin) {
+            $own_named_mixins[strtolower($this->classlikes->getUnAliasedName($mixin->value))] = true;
+        }
 
-            if (!$storage->templatedMixins) {
-                $storage->templatedMixins = $parent_storage->templatedMixins;
+        $inherited_named_mixins = [];
+
+        foreach ($parent_storage->namedMixins as $mixin) {
+            if (!isset($own_named_mixins[strtolower($this->classlikes->getUnAliasedName($mixin->value))])) {
+                $inherited_named_mixins[] = $mixin;
+                $storage->inheritedNamedMixinDeclaringClasses[strtolower($mixin->value)]
+                    = $parent_storage->getNamedMixinDeclaringClass($mixin);
             }
         }
+
+        $storage->namedMixins = [...$inherited_named_mixins, ...$storage->namedMixins];
+        $storage->templatedMixins = [...$parent_storage->templatedMixins, ...$storage->templatedMixins];
+        $storage->mixin_declaring_fqcln ??= $parent_storage->mixin_declaring_fqcln;
 
         $storage->pseudo_property_get_types += $parent_storage->pseudo_property_get_types;
         $storage->pseudo_property_set_types += $parent_storage->pseudo_property_set_types;
@@ -1189,16 +1225,41 @@ final class Populator
         }
     }
 
+    private static function removeInheritedMixins(ClassLikeStorage $storage): void
+    {
+        $fq_class_name_lc = strtolower($storage->name);
+
+        foreach ($storage->namedMixins as $i => $mixin) {
+            if (isset($storage->inheritedNamedMixinDeclaringClasses[strtolower($mixin->value)])) {
+                unset($storage->namedMixins[$i]);
+            }
+        }
+
+        foreach ($storage->templatedMixins as $i => $mixin) {
+            if (strtolower($mixin->defining_class) !== $fq_class_name_lc) {
+                unset($storage->templatedMixins[$i]);
+            }
+        }
+
+        $storage->namedMixins = array_values($storage->namedMixins);
+        $storage->templatedMixins = array_values($storage->templatedMixins);
+        $storage->inheritedNamedMixinDeclaringClasses = [];
+
+        if ($storage->mixin_declaring_fqcln !== $storage->name) {
+            $storage->mixin_declaring_fqcln = null;
+        }
+    }
+
     /**
      * Second populate pass: resolve transitive `@mixin` chains.
      *
-     * `namedMixins` holds only the mixins a class declares or inherits from its parent, and the analyzers look
+     * `namedMixins` holds the mixins a class declares and inherits from its parents, and the analyzers look
      * members up a single hop deep. This records every named mixin reachable through a mixin's own `@mixin`
      * chain (depth >= 2) in `transitiveNamedMixins`, so a member of a mixin-of-a-mixin resolves on the host.
      *
      * It runs once every class is populated, so each mixin target's `namedMixins` already contains those
-     * inherited from its parent class. `namedMixins` itself is never modified, which keeps the result
-     * independent of population order and leaves declaration-site checks on the declared mixins only.
+     * inherited from its parent classes. `namedMixins` itself is never modified, which keeps the result
+     * independent of population order.
      */
     private function populateTransitiveMixins(): void
     {
