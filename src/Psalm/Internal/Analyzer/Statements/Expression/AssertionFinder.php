@@ -3626,7 +3626,6 @@ final class AssertionFinder
             }
         }
 
-
         return $if_types;
     }
 

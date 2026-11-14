@@ -493,6 +493,33 @@ final class ConditionalTest extends TestCase
                 'ignored_issues' => [],
                 'php_version' => '8.1',
             ],
+            'comparisonOfANullsafeFetchWithNullAssertsTheReceiver' => [
+                'code' => <<<'PHP'
+                    <?php
+                    final class A {
+                        public ?int $p = null;
+                    }
+
+                    function notNull(?A $a): int {
+                        if ($a?->p !== null) {
+                            return $a->p;
+                        }
+
+                        return 0;
+                    }
+
+                    function throwsOnNull(?A $a): int {
+                        if (null === $a?->p) {
+                            throw new Exception();
+                        }
+
+                        return $a->p;
+                    }
+                    PHP,
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.2',
+            ],
             'identityOfANullsafeFetchWithAnotherVariableAssertsTheReceiver' => [
                 'code' => <<<'PHP'
                     <?php
