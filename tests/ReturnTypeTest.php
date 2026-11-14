@@ -889,6 +889,28 @@ final class ReturnTypeTest extends TestCase
                         }
                     }',
             ],
+            'switchWithADefaultInTheMiddleThatFallsThroughIntoAnEndingCase' => [
+                'code' => '<?php
+                    function defaultFirst(int $x): int {
+                        switch ($x) {
+                            default:
+                                echo "x";
+                            case 1:
+                                return 1;
+                        }
+                    }
+
+                    function defaultBetween(int $x): int {
+                        switch ($x) {
+                            case 0:
+                                return 0;
+                            default:
+                                echo "x";
+                            case 1:
+                                throw new Exception();
+                        }
+                    }',
+            ],
             'extendsStaticCallReturnType' => [
                 'code' => '<?php
                     /**
@@ -2394,6 +2416,32 @@ final class ReturnTypeTest extends TestCase
     public static function providerInvalidCodeParse(): iterable
     {
         return [
+            'switchWithADefaultInTheMiddleThatFallsThroughIntoACaseThatDoesNotEnd' => [
+                'code' => '<?php
+                    function classify(int $x): int {
+                        switch ($x) {
+                            default:
+                                echo "x";
+                            case 1:
+                                echo "one";
+                        }
+                    }',
+                'error_message' => 'InvalidReturnType',
+            ],
+            'switchWithADefaultInTheMiddleFollowedByABreak' => [
+                'code' => '<?php
+                    function classify(int $x): int {
+                        switch ($x) {
+                            default:
+                                echo "x";
+                            case 1:
+                                return 1;
+                            case 2:
+                                break;
+                        }
+                    }',
+                'error_message' => 'InvalidReturnType',
+            ],
             'switchDefaultThatFallsThroughWithoutReturning' => [
                 'code' => '<?php
                     function classify(int $value): int {
