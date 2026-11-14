@@ -9,6 +9,7 @@ use Psalm\Exception\CodeException;
 use Psalm\Internal\Analyzer\FileAnalyzer;
 use Psalm\Internal\Analyzer\IssueData;
 use Psalm\Internal\Analyzer\ProjectAnalyzer;
+use Psalm\Internal\BaselineMatcher;
 use Psalm\Internal\ExecutionEnvironment\BuildInfoCollector;
 use Psalm\Internal\ExecutionEnvironment\GitInfoCollector;
 use Psalm\Internal\Provider\FileProvider;
@@ -52,7 +53,6 @@ use function array_splice;
 use function array_sum;
 use function array_values;
 use function arsort;
-use function count;
 use function debug_print_backtrace;
 use function dirname;
 use function explode;
@@ -80,7 +80,6 @@ use function str_repeat;
 use function str_replace;
 use function str_starts_with;
 use function strlen;
-use function trim;
 use function usort;
 
 use const ARRAY_FILTER_USE_KEY;
@@ -781,31 +780,15 @@ final class IssueBuffer
             // Set severity for issues in baseline to INFO
             foreach ($issues_data as $file_path => $file_issues) {
                 foreach ($file_issues as $key => $issue_data) {
-                    $file = $issue_data->file_name;
-                    $file = str_replace('\\', '/', $file);
-                    $type = $issue_data->type;
-
-                    if (isset($issue_baseline[$file][$type])
-                        && $issue_baseline[$file][$type]['o'] > 0
-                        && $codebase->config->isSuppressible($type)
+                    if ($codebase->config->isSuppressible($issue_data->type)
+                        && BaselineMatcher::consume(
+                            $issue_baseline,
+                            $issue_data->file_name,
+                            $issue_data->type,
+                            $issue_data->selected_text,
+                        )
                     ) {
-                        if ($issue_baseline[$file][$type]['o'] === count($issue_baseline[$file][$type]['s'])) {
-                            $position = array_search(
-                                str_replace("\r\n", "\n", trim($issue_data->selected_text)),
-                                $issue_baseline[$file][$type]['s'],
-                                true,
-                            );
-
-                            if ($position !== false) {
-                                $issue_data->severity = IssueData::SEVERITY_INFO;
-                                array_splice($issue_baseline[$file][$type]['s'], $position, 1);
-                                $issue_baseline[$file][$type]['o']--;
-                            }
-                        } else {
-                            $issue_baseline[$file][$type]['s'] = [];
-                            $issue_data->severity = IssueData::SEVERITY_INFO;
-                            $issue_baseline[$file][$type]['o']--;
-                        }
+                        $issue_data->severity = IssueData::SEVERITY_INFO;
                     }
 
                     $issues_data[$file_path][$key] = $issue_data;
