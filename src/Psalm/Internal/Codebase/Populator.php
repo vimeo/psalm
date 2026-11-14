@@ -15,6 +15,8 @@ use Psalm\Internal\Provider\FileStorageProvider;
 use Psalm\Internal\Type\IterationPurity;
 use Psalm\Internal\Type\PurityArguments;
 use Psalm\Internal\Type\TemplateDefaults;
+use Psalm\Internal\Type\TemplateInferredTypeReplacer;
+use Psalm\Internal\Type\TemplateResult;
 use Psalm\Internal\Type\TypeAlias\ClassTypeAlias;
 use Psalm\Issue\CircularReference;
 use Psalm\Issue\UndefinedTrait;
@@ -48,6 +50,7 @@ use function array_pop;
 use function array_search;
 use function array_splice;
 use function count;
+use function explode;
 use function in_array;
 use function key;
 use function reset;
@@ -723,6 +726,8 @@ final class Populator
                 $property->internal = [...$storage->internal, ...$property->internal];
             }
         }
+
+        $this->inheritPropertyTypes($storage);
 
         $this->populateOverriddenMethods($storage, $storage_provider);
 
@@ -1887,6 +1892,112 @@ final class Populator
             }
 
             $storage->inheritable_property_ids[$property_name] = $inheritable_property_id;
+        }
+    }
+
+    /**
+     * A property redeclared without a docblock type has the docblock type of the property it overrides, where the
+     * native types are the same
+     */
+    private function inheritPropertyTypes(ClassLikeStorage $storage): void
+    {
+        $constructor = $storage->methods['__construct'] ?? null;
+        $parent_storage = $storage->parent_class !== null
+            && $this->classlike_storage_provider->has($storage->parent_class)
+                ? $this->classlike_storage_provider->get($storage->parent_class)
+                : null;
+        $template_result = null;
+
+        foreach ($storage->properties as $property_name => $property_storage) {
+            $promoted_param = null;
+
+            if ($property_storage->is_promoted && $constructor) {
+                foreach ($constructor->params as $param) {
+                    if ($param->promoted_property && $param->name === $property_name) {
+                        $promoted_param = $param;
+                        break;
+                    }
+                }
+            }
+
+            if ($property_storage->documenting_property_id !== null) {
+                // populated again
+                $property_storage->type = $property_storage->own_type;
+                $property_storage->own_type = null;
+                $property_storage->documenting_property_id = null;
+
+                if ($promoted_param) {
+                    $promoted_param->type = $property_storage->type;
+                    $promoted_param->type_location = $property_storage->type_location;
+                }
+            } elseif ($property_storage->has_docblock_type) {
+                continue;
+            }
+
+            $documenting_class = $parent_storage?->declaring_property_ids[$property_name] ?? null;
+
+            if ($parent_storage === null
+                || $documenting_class === null
+                || $this->isPrivateProperty($parent_storage, $property_name)
+                || !$this->classlike_storage_provider->has($documenting_class)
+            ) {
+                continue;
+            }
+
+            $documenting_property_storage = $this->classlike_storage_provider->get($documenting_class)
+                ->properties[$property_name] ?? null;
+
+            if ($documenting_property_storage === null
+                || $documenting_property_storage->type === null
+                || (!$documenting_property_storage->has_docblock_type
+                    && $documenting_property_storage->documenting_property_id === null)
+                || !($property_storage->signature_type === null
+                    ? $documenting_property_storage->signature_type === null
+                    : $documenting_property_storage->signature_type !== null
+                        && $property_storage->signature_type->equals($documenting_property_storage->signature_type))
+            ) {
+                continue;
+            }
+
+            // `self` and `parent` are those of the class the docblock is written for (a trait's user for a trait)
+            $appearing_property_id = $parent_storage->appearing_property_ids[$property_name] ?? $documenting_class;
+            [$self_class] = explode('::$', $appearing_property_id);
+            $type = $documenting_property_storage->type->replaceClassLike('self', $self_class);
+
+            $self_class_parent = $this->classlike_storage_provider->has($self_class)
+                ? $this->classlike_storage_provider->get($self_class)->parent_class
+                : null;
+
+            if ($self_class_parent !== null) {
+                $type = $type->replaceClassLike('parent', $self_class_parent);
+            }
+
+            if ($storage->template_extended_params !== null) {
+                if ($template_result === null) {
+                    $lower_bounds = [];
+
+                    foreach ($storage->template_extended_params as $template_class => $type_map) {
+                        foreach ($type_map as $template_name => $extended_type) {
+                            $lower_bounds[$template_name][$template_class] = $extended_type;
+                        }
+                    }
+
+                    $template_result = new TemplateResult([], $lower_bounds);
+                }
+
+                $type = TemplateInferredTypeReplacer::replace($type, $template_result, null);
+            }
+
+            $property_storage->own_type = $property_storage->type;
+            $property_storage->type = $type;
+            $property_storage->documenting_property_id = $documenting_property_storage->documenting_property_id
+                ?? $documenting_class . '::$' . $property_name;
+
+            if ($promoted_param) {
+                $promoted_param->type = $type;
+                // the default is checked against the type
+                $promoted_param->type_location ??= $promoted_param->location;
+            }
         }
     }
 }

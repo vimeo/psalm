@@ -120,6 +120,39 @@ final class ClassLikeStorageCacheTest extends TestCase
         self::assertSame($cold, $this->analyze($config, $providers_without_classlikes));
     }
 
+    public function testInheritedPropertyTypeOfCachedStorage(): void
+    {
+        [$config, $file_provider, $providers] = $this->createProviders();
+
+        $dir = $config->base_dir . DIRECTORY_SEPARATOR . 'src' . DIRECTORY_SEPARATOR;
+
+        $file_provider->registerFile(
+            $dir . 'ParentClass.php',
+            <<<'PHP'
+                <?php
+                class ParentClass
+                {
+                    /** @var non-empty-string */
+                    public string $name = 'a';
+                }
+                PHP,
+        );
+        $file_provider->registerFile(
+            $dir . 'ChildClass.php',
+            <<<'PHP'
+                <?php
+                final class ChildClass extends ParentClass
+                {
+                    public string $name = '';
+                }
+                PHP,
+        );
+        $cold = $this->analyze($config, $providers);
+
+        self::assertSame(['InvalidPropertyAssignmentValue'], $cold);
+        self::assertSame($cold, $this->analyze($config, $providers));
+    }
+
     /**
      * @return array{Config, FakeFileProvider, Providers}
      */

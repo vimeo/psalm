@@ -608,6 +608,7 @@ final class FunctionLikeNodeScanner
                 $property_storage->signature_type = $param_storage->signature_type;
                 $property_storage->signature_type_location = $param_storage->signature_type_location;
                 $property_storage->type_location = $param_storage->type_location;
+                $property_storage->has_docblock_type = $param_storage->has_docblock_type || $var_comment_type !== null;
                 $property_storage->location = $param_storage->location;
                 $property_storage->stmt_location = new CodeLocation($this->file_scanner, $param);
                 $property_storage->has_default = (bool)$param->default;

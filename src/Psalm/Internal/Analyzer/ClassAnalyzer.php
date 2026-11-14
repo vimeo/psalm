@@ -802,8 +802,8 @@ final class ClassAnalyzer extends ClassLikeAnalyzer
                         );
                     }
 
-                    if ($property_storage->type === null) {
-                        // Property type not set, no need to check for docblock invariance
+                    // without a docblock type of its own, the property has the one it overrides
+                    if ($property_storage->type === null || $property_storage->documenting_property_id !== null) {
                         continue;
                     }
 
@@ -1020,14 +1020,19 @@ final class ClassAnalyzer extends ClassLikeAnalyzer
                     }
                 }
 
-                /** @psalm-suppress UnusedMethodCall This call actually has the side effect of creating issues */
-                $fleshed_out_type->check(
-                    $statements_source,
-                    $property_type_location,
-                    $storage->suppressed_issues + $statements_source->getSuppressedIssues() + $suppressed,
-                    [],
-                    false,
-                );
+                // an inherited docblock type is checked where it is written
+                $inherits_type = $property_storage->documenting_property_id !== null;
+
+                if (!$inherits_type) {
+                    /** @psalm-suppress UnusedMethodCall This call actually has the side effect of creating issues */
+                    $fleshed_out_type->check(
+                        $statements_source,
+                        $property_type_location,
+                        $storage->suppressed_issues + $statements_source->getSuppressedIssues() + $suppressed,
+                        [],
+                        false,
+                    );
+                }
 
                 if ($property_storage->signature_type) {
                     $union_comparison_result = new TypeComparisonResult();
@@ -1041,7 +1046,7 @@ final class ClassAnalyzer extends ClassLikeAnalyzer
                         $parent_fq_class_name,
                     );
 
-                    if (!UnionTypeComparator::isContainedBy(
+                    if (!$inherits_type && !UnionTypeComparator::isContainedBy(
                         $codebase,
                         $fleshed_out_type,
                         $signature_type,

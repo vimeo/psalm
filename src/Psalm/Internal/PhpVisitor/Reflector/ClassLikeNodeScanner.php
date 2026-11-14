@@ -2084,6 +2084,7 @@ final class ClassLikeNodeScanner
             $property_storage->signature_type = $signature_type;
             $property_storage->signature_type_location = $signature_type_location;
             $property_storage->type_location = $signature_type_location;
+            $property_storage->has_docblock_type = $doc_var_group_type !== null;
             $property_storage->location = new CodeLocation($this->file_scanner, $property->name);
             $property_storage->stmt_location = new CodeLocation($this->file_scanner, $stmt);
             $property_storage->has_default = (bool)$property->default;

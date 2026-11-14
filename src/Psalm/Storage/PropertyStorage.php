@@ -52,6 +52,23 @@ final class PropertyStorage implements HasAttributesInterface
 
     public ?Union $signature_type = null;
 
+    /**
+     * Whether $type comes from the property's own docblock
+     */
+    public bool $has_docblock_type = false;
+
+    /**
+     * The property whose docblock type this property, redeclared without one, has as its type
+     */
+    public ?string $documenting_property_id = null;
+
+    /**
+     * The type the property has from its own declaration, when $type is inherited
+     *
+     * @internal
+     */
+    public ?Union $own_type = null;
+
     public ?Union $suggested_type = null;
 
     public bool $has_default = false;
