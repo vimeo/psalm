@@ -318,6 +318,7 @@ These issues become info (non-blocking) at level 7 and higher.
  - [UndefinedPropertyAssignment](issues/UndefinedPropertyAssignment.md)
  - [UndefinedPropertyFetch](issues/UndefinedPropertyFetch.md)
  - [UndefinedThisPropertyFetch](issues/UndefinedThisPropertyFetch.md)
+ - [WrongCaseFunction](issues/WrongCaseFunction.md)
 
 ## Errors at level 7 and below
 

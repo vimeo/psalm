@@ -34,6 +34,7 @@ use Psalm\Issue\InvalidScalarArgument;
 use Psalm\Issue\MixedArgumentTypeCoercion;
 use Psalm\Issue\TypeDoesNotContainType;
 use Psalm\Issue\UndefinedFunction;
+use Psalm\Issue\WrongCaseFunction;
 use Psalm\IssueBuffer;
 use Psalm\Node\Expr\BinaryOp\VirtualIdentical;
 use Psalm\Node\Expr\VirtualConstFetch;
@@ -45,6 +46,7 @@ use Psalm\Storage\Assertion\IsType;
 use Psalm\Storage\Assertion\Truthy;
 use Psalm\Storage\ClassLikeStorage;
 use Psalm\Storage\FunctionLikeStorage;
+use Psalm\Storage\FunctionStorage;
 use Psalm\Storage\Possibilities;
 use Psalm\Type;
 use Psalm\Type\Atomic\TCallableObject;
@@ -641,6 +643,45 @@ abstract class CallAnalyzer
     }
 
     /**
+     * @psalm-pure
+     */
+    public static function getUnqualifiedFunctionName(string $function_id): string
+    {
+        return (string) preg_replace('/.*\\\\/', '', $function_id);
+    }
+
+    /**
+     * Reports a function that is called with another casing than the one it is declared with
+     *
+     * @param string $written_name the name of the call, qualified or not
+     */
+    public static function checkFunctionNameCase(
+        StatementsAnalyzer $statements_analyzer,
+        FunctionStorage $function_storage,
+        string $written_name,
+        CodeLocation $code_location,
+        string $function_id,
+    ): void {
+        if ($function_storage->cased_name === null) {
+            return;
+        }
+
+        $declared_name = self::getUnqualifiedFunctionName($function_storage->cased_name);
+        $written_name = self::getUnqualifiedFunctionName($written_name);
+
+        if ($declared_name !== $written_name) {
+            IssueBuffer::maybeAdd(
+                new WrongCaseFunction(
+                    'Function ' . $written_name . ' is declared as ' . $declared_name . ' and has wrong casing',
+                    $code_location,
+                    $function_id,
+                ),
+                $statements_analyzer->getSuppressedIssues(),
+            );
+        }
+    }
+
+    /**
      * @param  non-empty-string     $function_id
      * @param  bool                 $can_be_in_root_scope if true, the function can be shortened to the root version
      */
@@ -694,6 +735,14 @@ abstract class CallAnalyzer
         } catch (UnexpectedValueException) {
             return true;
         }
+
+        self::checkFunctionNameCase(
+            $statements_analyzer,
+            $function_storage,
+            $cased_function_id,
+            $code_location,
+            $function_id,
+        );
 
         $since_php_version_id = $function_storage->since_php_version_id;
 

@@ -850,6 +850,22 @@ final class FunctionCallAnalyzer extends CallAnalyzer
 
                 $function_call_info->function_params = $function_call_info->function_storage->params;
 
+                if ($function_call_info->in_call_map && $function_storage->cased_name !== null) {
+                    // a function imported with an alias is called by the alias: its name is the imported one
+                    $imported_name = count($function_name->getParts()) === 1
+                        ? $statements_analyzer->getAliases()->functions[strtolower($function_name->getFirst())]
+                            ?? null
+                        : null;
+
+                    CallAnalyzer::checkFunctionNameCase(
+                        $statements_analyzer,
+                        $function_storage,
+                        $imported_name ?? $function_name->getLast(),
+                        $code_location,
+                        $function_call_info->function_id,
+                    );
+                }
+
                 if (!$function_storage->allow_named_arg_calls) {
                     $function_call_info->allow_named_args = false;
                 }
