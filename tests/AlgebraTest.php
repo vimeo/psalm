@@ -155,8 +155,11 @@ final class AlgebraTest extends TestCase
 
         $negated_formula = Algebra::negateFormula($formula);
 
-        $this->assertCount(1, $negated_formula);
-        $this->assertSame('$a is not int', (string)$negated_formula[0]);
+        // not ($a is int && ($b is int || unknown)) holds where $a is not an int, or $b is not an int and the unknown
+        // is false: the clause of the unreconcilable term only says that much, and the wedge that it is no more
+        $this->assertCount(2, $negated_formula);
+        $this->assertSame('($a is not int) || ($b is not int)', (string)$negated_formula[0]);
+        $this->assertTrue($negated_formula[1]->wedge);
     }
 
     public function testCombinatorialExpansion(): void
