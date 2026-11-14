@@ -102,6 +102,10 @@ abstract class PsalmEndToEndTestCase extends TestCase
             self::recursiveRemoveDirectory(self::$tmpDir . '/cache');
         }
 
+        if (file_exists(self::$tmpDir . '/compiled')) {
+            self::recursiveRemoveDirectory(self::$tmpDir . '/compiled');
+        }
+
         if (file_exists(self::$tmpDir . '/src')) {
             self::recursiveRemoveDirectory(self::$tmpDir . '/src');
         }

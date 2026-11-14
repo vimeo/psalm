@@ -1004,9 +1004,9 @@ final class Codebase
 
     /**
      * Lets Psalm report issues in these files without scanning or analyzing them, e.g. in the template a plugin
-     * compiled the analyzed PHP from. An issue is checked in the process that raises it: files added in an
-     * AfterCodebasePopulated handler are reportable in every analysis worker, files added in a BeforeAddIssue
-     * handler only in the process that runs it.
+     * compiled the analyzed PHP from. An issue is checked in the process that raises it: files added in the plugin
+     * entry point are reportable in every scanning and analysis process, files added in an AfterCodebasePopulated
+     * handler only for issues raised while analyzing.
      *
      * @api
      * @param list<string> $file_paths absolute paths
