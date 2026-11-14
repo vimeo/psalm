@@ -1696,7 +1696,6 @@ final class RedundantConditionTest extends TestCase
                         $b = $a && rand(0, 1);
                     }',
                 'error_message' => 'RedundantCondition',
-                'error_levels' => ['MissingParamType'],
             ],
             'negatedInstanceof' => [
                 'code' => '<?php
@@ -2158,7 +2157,6 @@ final class RedundantConditionTest extends TestCase
                     }',
                 'error_message' => 'RedundantConditionGivenDocblockType - src' . DIRECTORY_SEPARATOR
                     . 'somefile.php:10:63',
-                'error_levels' => ['RiskyTruthyFalsyComparison'],
             ],
             'identicalComparisonOfAShapeWithAListOfOtherValuesIsImpossible' => [
                 'code' => '<?php

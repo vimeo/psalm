@@ -100,7 +100,6 @@ final class ClassTemplateTest extends TestCase
 
                     $pager = new PagerOnQuery($items);',
                 'assertions' => [],
-                'ignored_issues' => ['UnusedVariable'],
             ],
             'closureOfAMethodOfAGenericObject' => [
                 'code' => '<?php
@@ -191,7 +190,7 @@ final class ClassTemplateTest extends TestCase
                         }
                     }',
                 'assertions' => [],
-                'ignored_issues' => ['UnusedProperty'],
+                'ignored_issues' => [],
                 'php_version' => '8.0',
             ],
             'recursiveFilterIteratorChildrenAreAFilter' => [
@@ -6065,7 +6064,7 @@ final class ClassTemplateTest extends TestCase
                 'assertions' => [
                     '$test===' => 'ContainerClass<string>',
                 ],
-                'ignored_issues' => ['UnusedProperty'],
+                'ignored_issues' => [],
                 'php_version' => '8.0',
             ],
             'templateNestedInAnInvariantGenericParamOfAFunctionIsInferred' => [
@@ -6406,7 +6405,6 @@ final class ClassTemplateTest extends TestCase
                      * @template T
                      * @param T $p
                      * @return Generic<T>
-                     * @psalm-suppress InvalidReturnType
                      */
                     function violate($p) {}',
                 'error_message' => 'InvalidTemplateParam',
@@ -6700,21 +6698,10 @@ final class ClassTemplateTest extends TestCase
                      */
                     class ArrayCollection
                     {
-                        /**
-                         * An array containing the entries of this collection.
-                         *
-                         * @psalm-var array<TKey,T>
-                         * @var array
-                         */
+                        /** @var array<TKey,T> */
                         private $elements = [];
 
-                        /**
-                         * Initializes a new ArrayCollection.
-                         *
-                         * @param array $elements
-                         *
-                         * @psalm-param array<TKey,T> $elements
-                         */
+                        /** @param array<TKey,T> $elements */
                         public function __construct(array $elements = [])
                         {
                             $this->elements = $elements;

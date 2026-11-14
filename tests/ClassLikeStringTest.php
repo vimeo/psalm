@@ -367,7 +367,6 @@ final class ClassLikeStringTest extends TestCase
                         return $builder->build(MessageImpl::class);
                     }',
                 'assertions' => [],
-                'ignored_issues' => ['MissingOverrideAttribute'],
             ],
             'isAKeepsTheTemplateOfAClassString' => [
                 'code' => '<?php
