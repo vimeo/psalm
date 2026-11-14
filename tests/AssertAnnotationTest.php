@@ -4175,6 +4175,39 @@ final class AssertAnnotationTest extends TestCase
                 'ignored_issues' => [],
                 'php_version' => '8.2',
             ],
+            'callAssertingSeveralPropertiesIsNotRedundantIfOneOfThemChangesAType' => [
+                'code' => <<<'PHP'
+                    <?php
+                    final class Pair {
+                        public ?int $a = null;
+                        public ?int $b = null;
+
+                        /**
+                         * @psalm-mutation-free
+                         * @psalm-assert !null $this->a
+                         * @psalm-assert !null $this->b
+                         */
+                        public function assertBoth(): void {
+                            if ($this->a === null || $this->b === null) {
+                                throw new Exception();
+                            }
+                        }
+
+                        public function test(): int {
+                            if ($this->a === null) {
+                                return 0;
+                            }
+
+                            $this->assertBoth();
+
+                            return $this->b;
+                        }
+                    }
+                    PHP,
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
             'assertedPropertyNamedLikeTheArgumentIndexIsKept' => [
                 'code' => '<?php
                     final class A {
@@ -4754,6 +4787,37 @@ final class AssertAnnotationTest extends TestCase
                 'error_message' => 'TypeDoesNotContainType',
                 'error_levels' => [],
                 'php_version' => '8.2',
+            ],
+            'callAssertingSeveralPropertiesIsRedundantIfAllOfThemAre' => [
+                'code' => <<<'PHP'
+                    <?php
+                    final class Pair {
+                        public ?int $a = null;
+                        public ?int $b = null;
+
+                        /**
+                         * @psalm-mutation-free
+                         * @psalm-assert !null $this->a
+                         * @psalm-assert !null $this->b
+                         */
+                        public function assertBoth(): void {
+                            if ($this->a === null || $this->b === null) {
+                                throw new Exception();
+                            }
+                        }
+
+                        public function test(): void {
+                            if ($this->a === null || $this->b === null) {
+                                return;
+                            }
+
+                            $this->assertBoth();
+                        }
+                    }
+                    PHP,
+                'error_message' => 'RedundantCondition',
+                'error_levels' => [],
+                'php_version' => '8.1',
             ],
         ];
     }
