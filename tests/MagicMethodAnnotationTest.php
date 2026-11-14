@@ -397,6 +397,29 @@ final class MagicMethodAnnotationTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'returnTypeAfterParamsWithTrailingSemicolon' => [
+                'code' => '<?php
+                    /**
+                     * @method exists(string $path): bool;
+                     * @method readStream(string $path): ?resource;
+                     * @method string url(string $url): string;
+                     */
+                    final class Filesystem {
+                        public function __call(string $name, array $args) {
+                            return null;
+                        }
+                    }
+
+                    $f = new Filesystem();
+                    $exists = $f->exists("a");
+                    $stream = $f->readStream("a");
+                    $url = $f->url("a");',
+                'assertions' => [
+                    '$exists===' => 'bool',
+                    '$stream===' => 'null|resource',
+                    '$url===' => 'string',
+                ],
+            ],
             'magicMethodOverloadsAreChosenByTheTypeOfTheArgument' => [
                 'code' => '<?php
                     interface Query {}
@@ -2298,6 +2321,14 @@ final class MagicMethodAnnotationTest extends TestCase
                         return $r->run();
                     }',
                 'error_message' => 'ImpureMethodCall',
+            ],
+            'unparsableReturnTypeAfterParams' => [
+                'code' => '<?php
+                    /**
+                     * @method foo(): bool!
+                     */
+                    abstract class A {}',
+                'error_message' => 'InvalidDocblock - src' . DIRECTORY_SEPARATOR . 'somefile.php:5:36 - foo():bool! is not a valid method: Invalid type',
             ],
             'annotationWithBadDocblock' => [
                 'code' => '<?php

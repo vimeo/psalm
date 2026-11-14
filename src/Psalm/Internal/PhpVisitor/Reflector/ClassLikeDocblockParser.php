@@ -397,7 +397,7 @@ final class ClassLikeDocblockParser
                             && isset($return_matches[1])
                         ) {
                             $method_entry .= ':' . CommentAnalyzer::sanitizeDocblockType(
-                                CommentAnalyzer::splitDocLine($return_matches[1])[0],
+                                rtrim(CommentAnalyzer::splitDocLine($return_matches[1])[0], ';'),
                             );
                         }
                     }
@@ -467,12 +467,23 @@ final class ClassLikeDocblockParser
                     }
 
                     if (!$has_return) {
-                        $docblock_lines[] = '@return ' . TypeParser::getTypeFromTree(
-                            $method_tree->children[1],
-                            $codebase,
-                            null,
-                            $purity_template_map,
-                        )->toNamespacedString($aliases->namespace, $aliases->uses, null, false);
+                        try {
+                            $return_type = TypeParser::getTypeFromTree(
+                                $method_tree->children[1],
+                                $codebase,
+                                null,
+                                $purity_template_map,
+                            );
+                        } catch (TypeParseTreeException $e) {
+                            throw new DocblockParseException(
+                                $method_entry . ' is not a valid method: ' . $e->getMessage(),
+                                0,
+                                $e,
+                            );
+                        }
+
+                        $docblock_lines[] = '@return '
+                            . $return_type->toNamespacedString($aliases->namespace, $aliases->uses, null, false);
                     }
 
                     $method_tree = $method_tree->children[0];
