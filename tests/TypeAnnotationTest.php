@@ -1629,6 +1629,16 @@ final class TypeAnnotationTest extends TestCase
                 'error_levels' => [],
                 'php_version' => '8.1',
             ],
+            'typeAliasImportedFromAnExistingClassWithoutTheAliasDoesNotCrash' => [
+                'code' => '<?php
+                    /** @psalm-import-type StageExpression from \\Directory */
+                    abstract class Stage
+                    {
+                        /** @return StageExpression */
+                        abstract public function getExpression(): ?array;
+                    }',
+                'error_message' => 'MismatchingDocblockReturnType',
+            ],
         ];
     }
 }
