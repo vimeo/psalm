@@ -97,8 +97,8 @@ final class UnionTypeComparator
         $some_part_failed = false;
         $failed_parts_coerced = true;
         $failed_parts_to_string_cast = false;
-        $failed_parts_coerced_from_mixed = false;
-        $failed_parts_coerced_from_as_mixed = false;
+        $failed_parts_coerced_from_mixed = true;
+        $failed_parts_coerced_from_as_mixed = true;
         $failed_parts_scalar_match_found = false;
         $failed_parts_missing_shape_fields = [];
         $failed_parts_all_miss_shape_fields = true;
@@ -501,11 +501,11 @@ final class UnionTypeComparator
                 $some_part_failed = true;
                 $failed_parts_coerced = $failed_parts_coerced && $some_type_coerced;
                 $failed_parts_to_string_cast = $failed_parts_to_string_cast || $some_to_string_cast;
-                $failed_parts_coerced_from_mixed = $failed_parts_coerced_from_mixed || $some_type_coerced_from_mixed;
+                $failed_parts_coerced_from_mixed = $failed_parts_coerced_from_mixed && $some_type_coerced_from_mixed;
                 $failed_parts_coerced_from_as_mixed = $failed_parts_coerced_from_as_mixed
-                    || ($some_type_coerced_from_mixed
-                        && (($input_type->from_template_default && $input_type->from_docblock)
-                            || $all_type_coerced_from_as_mixed));
+                    && $some_type_coerced_from_mixed
+                    && (($input_type->from_template_default && $input_type->from_docblock)
+                        || $all_type_coerced_from_as_mixed);
                 $failed_parts_scalar_match_found = $failed_parts_scalar_match_found || $scalar_type_match_found;
 
                 if ($some_missing_shape_fields && !$some_type_coerced && !$scalar_type_match_found) {
@@ -520,7 +520,7 @@ final class UnionTypeComparator
         }
 
         if ($some_part_failed && $union_comparison_result) {
-            if ($failed_parts_coerced || $failed_parts_coerced_from_mixed) {
+            if ($failed_parts_coerced) {
                 $union_comparison_result->type_coerced = true;
             } elseif ($failed_parts_to_string_cast) {
                 $union_comparison_result->type_coerced = false;
