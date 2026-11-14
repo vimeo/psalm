@@ -2480,6 +2480,42 @@ final class CallableTest extends TestCase
                 'ignored_issues' => [],
                 'php_version' => '8.0',
             ],
+            'callableWithNamedArgumentsVariadic' => [
+                'code' => <<<'PHP'
+                <?php
+                /** @param callable(int ...$i) $c */
+                function f(callable $c): void {
+                    $c(z: 1);
+                }
+                PHP,
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'callableWithNamedArgumentsDefault' => [
+                'code' => <<<'PHP'
+                <?php
+                /** @param callable(int $i=) $c */
+                function f(callable $c): void {
+                    $c(i: 1);
+                }
+                PHP,
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'callableWithNamedArgumentsDefaultUsed' => [
+                'code' => <<<'PHP'
+                <?php
+                /** @param callable(int $i=) $c */
+                function f(callable $c): void {
+                    $c();
+                }
+                PHP,
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
             'callableArrayPassedAsCallable' => [
                 'code' => <<<'PHP'
                 <?php
@@ -3775,6 +3811,18 @@ final class CallableTest extends TestCase
                 'code' => <<<'PHP'
                 <?php
                 /** @param callable(int $a) $c */
+                function f(callable $c): void {
+                    $c(b: 1);
+                }
+                PHP,
+                'error_message' => 'InvalidNamedArgument',
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'callableWithInvalidNamedArgumentsDefault' => [
+                'code' => <<<'PHP'
+                <?php
+                /** @param callable(int $a=) $c */
                 function f(callable $c): void {
                     $c(b: 1);
                 }
