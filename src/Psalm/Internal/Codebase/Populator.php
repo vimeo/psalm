@@ -44,13 +44,12 @@ use function array_flip;
 use function array_intersect_key;
 use function array_keys;
 use function array_merge;
+use function array_pop;
 use function array_search;
-use function array_shift;
 use function array_splice;
 use function count;
 use function in_array;
 use function key;
-use function krsort;
 use function reset;
 use function strpos;
 use function strtolower;
@@ -95,7 +94,7 @@ final class Populator
             $this->populateClassLikeStorage($class_storage);
         }
 
-        $this->populateTransitiveMixins();
+        $this->registerMixinDependencies();
 
         // a class populated before its parents were scanned is populated again, and bound again
         $this->iteration_purity_bound = [];
@@ -825,7 +824,26 @@ final class Populator
 
         $storage->documenting_method_ids = [];
 
-        foreach ($storage->methods as $method_name => $method_storage) {
+        // the storage of a method a class takes from a trait is shared by every class using the trait, so what is
+        // inherited by one class's method is recorded on the class only
+        $method_storages = $storage->methods;
+
+        foreach ($storage->declaring_method_ids as $method_name => $trait_method_id) {
+            if (isset($storage->methods[$method_name]) || !isset($storage->overridden_method_ids[$method_name])) {
+                continue;
+            }
+
+            $trait_storage = $storage_provider->get($trait_method_id->fq_class_name);
+
+            if ($trait_storage->is_trait && isset($trait_storage->methods[$trait_method_id->method_name])) {
+                $method_storages[$method_name] = $trait_storage->methods[$trait_method_id->method_name];
+            }
+        }
+
+        foreach ($method_storages as $method_name => $method_storage) {
+            $is_own_method = isset($storage->methods[$method_name]);
+            $inherited_return_type = $is_own_method ? $method_storage->inherited_return_type : false;
+
             if (isset($storage->overridden_method_ids[$method_name])) {
                 $overridden_method_ids = $storage->overridden_method_ids[$method_name];
 
@@ -865,21 +883,21 @@ final class Populator
                             || $declaring_method_storage->has_docblock_return_type)
                         && !$method_storage->has_docblock_param_types
                         && !$method_storage->has_docblock_return_type
-                        && $method_storage->inherited_return_type !== null
+                        && $inherited_return_type !== null
                     ) {
                         if (!isset($storage->documenting_method_ids[$method_name])
                             || (string) $storage->documenting_method_ids[$method_name]
                                 === (string) $declaring_method_id
                         ) {
                             $storage->documenting_method_ids[$method_name] = $declaring_method_id;
-                            $method_storage->inherited_return_type = true;
+                            $inherited_return_type = true;
                         } else {
                             if (in_array(
                                 $storage->documenting_method_ids[$method_name]->fq_class_name,
                                 $declaring_class_storage->parent_interfaces,
                             )) {
                                 $storage->documenting_method_ids[$method_name] = $declaring_method_id;
-                                $method_storage->inherited_return_type = true;
+                                $inherited_return_type = true;
                             } else {
                                 $documenting_class_storage = $declaring_class_storages
                                     [$storage->documenting_method_ids[$method_name]->fq_class_name];
@@ -890,10 +908,14 @@ final class Populator
                                 ) && $documenting_class_storage->is_interface
                                 ) {
                                     unset($storage->documenting_method_ids[$method_name]);
-                                    $method_storage->inherited_return_type = null;
+                                    $inherited_return_type = null;
                                 }
                             }
                         }
+                    }
+
+                    if (!$is_own_method) {
+                        continue;
                     }
 
                     // tell the declaring class it's overridden downstream
@@ -910,6 +932,10 @@ final class Populator
                     ) {
                         $method_storage->throws += $declaring_method_storage->throws;
                     }
+                }
+
+                if ($is_own_method) {
+                    $method_storage->inherited_return_type = $inherited_return_type;
                 }
             }
         }
@@ -1087,19 +1113,6 @@ final class Populator
             $storage->preserve_constructor_signature = true;
         }
 
-        if (($parent_storage->namedMixins || $parent_storage->templatedMixins)
-            && (!$storage->namedMixins || !$storage->templatedMixins)) {
-            $storage->mixin_declaring_fqcln = $parent_storage->mixin_declaring_fqcln;
-
-            if (!$storage->namedMixins) {
-                $storage->namedMixins = $parent_storage->namedMixins;
-            }
-
-            if (!$storage->templatedMixins) {
-                $storage->templatedMixins = $parent_storage->templatedMixins;
-            }
-        }
-
         $storage->pseudo_property_get_types += $parent_storage->pseudo_property_get_types;
         $storage->pseudo_property_set_types += $parent_storage->pseudo_property_set_types;
 
@@ -1190,95 +1203,63 @@ final class Populator
     }
 
     /**
-     * Second populate pass: resolve transitive `@mixin` chains.
-     *
-     * `namedMixins` holds only the mixins a class declares or inherits from its parent, and the analyzers look
-     * members up a single hop deep. This records every named mixin reachable through a mixin's own `@mixin`
-     * chain (depth >= 2) in `transitiveNamedMixins`, so a member of a mixin-of-a-mixin resolves on the host.
-     *
-     * It runs once every class is populated, so each mixin target's `namedMixins` already contains those
-     * inherited from its parent class. `namedMixins` itself is never modified, which keeps the result
-     * independent of population order and leaves declaration-site checks on the declared mixins only.
+     * Second populate pass, once every class is populated: the file of a class inherits from each named mixin class
+     * its `@mixin` lookup (see MixinLookup) can reach, so that a change there invalidates it. A `@mixin T` is skipped,
+     * as the class it names depends on the receiver. They are not its dependent_classlikes, which would make it a
+     * descendant of them.
      */
-    private function populateTransitiveMixins(): void
+    private function registerMixinDependencies(): void
     {
         foreach ($this->classlike_storage_provider->getNew() as $storage) {
-            if ($storage->namedMixins) {
-                $storage->transitiveNamedMixins = $this->resolveTransitiveMixins($storage);
-            }
-        }
-    }
-
-    /**
-     * Breadth-first walk of a host's `@mixin` chain, returning the mixins not already in its `namedMixins`,
-     * deepest hop first and in declaration order within a hop.
-     *
-     * Only named (non-generic) mixins are followed: a generic hop such as `@mixin Collection<T>` needs its
-     * template arguments bound per hop, so it is neither collected nor descended into. A mutual `@mixin`
-     * (A mixes B, B mixes A) terminates via the visited set.
-     *
-     * @return list<TNamedObject>
-     */
-    private function resolveTransitiveMixins(ClassLikeStorage $storage): array
-    {
-        $storage_name_lc = strtolower($storage->name);
-
-        $direct = [];
-        $queue = [];
-        foreach ($storage->namedMixins as $mixin) {
-            $direct[strtolower($this->classlikes->getUnAliasedName($mixin->value))] = true;
-            $queue[] = [$mixin, 1];
-        }
-
-        $visited = [$storage_name_lc => true];
-        $by_depth = [];
-
-        while ($queue) {
-            [$mixin, $depth] = array_shift($queue);
-
-            if ($mixin instanceof TGenericObject) {
+            if (!$storage->location) {
                 continue;
             }
 
-            $mixin_name_lc = strtolower($this->classlikes->getUnAliasedName($mixin->value));
+            $visited = [strtolower($storage->name) => true];
+            $pending = [$storage];
 
-            if (isset($visited[$mixin_name_lc])) {
-                continue;
-            }
+            while ($pending) {
+                $current_storage = array_pop($pending);
 
-            $visited[$mixin_name_lc] = true;
-
-            try {
-                $mixin_storage = $this->classlike_storage_provider->get($mixin_name_lc);
-            } catch (InvalidArgumentException) {
-                // A missing mixin target is reported as UndefinedDocblockClass where it is declared. Unlike a
-                // missing parent it is not recorded as an invalid dependency, which would turn every call on
-                // the host into MixedMethodCall.
-                continue;
-            }
-
-            // A change anywhere in the chain must invalidate the host.
-            $mixin_storage->dependent_classlikes[$storage_name_lc] = true;
-
-            if ($storage->location) {
-                $this->file_reference_provider->addFileInheritanceToClass(
-                    $storage->location->file_path,
-                    $mixin_name_lc,
+                $scopes = MixinLookup::getScopes(
+                    $this->classlike_storage_provider,
+                    $this->classlikes,
+                    $current_storage,
                 );
-            }
 
-            if (!isset($direct[$mixin_name_lc])) {
-                $by_depth[$depth][] = $mixin;
-            }
+                foreach ($scopes as $scope) {
+                    foreach ($scope->getMixins() as $mixin) {
+                        if (!$mixin instanceof TNamedObject) {
+                            continue;
+                        }
 
-            foreach ($mixin_storage->namedMixins as $deeper_mixin) {
-                $queue[] = [$deeper_mixin, $depth + 1];
+                        $mixin_name_lc = strtolower($this->classlikes->getUnAliasedName($mixin->value));
+
+                        if (isset($visited[$mixin_name_lc])) {
+                            continue;
+                        }
+
+                        $visited[$mixin_name_lc] = true;
+
+                        try {
+                            $mixin_storage = $this->classlike_storage_provider->get($mixin_name_lc);
+                        } catch (InvalidArgumentException) {
+                            // A missing mixin target is reported as UndefinedDocblockClass where it is declared.
+                            // Unlike a missing parent it is not recorded as an invalid dependency, which would turn
+                            // every call on the class into MixedMethodCall.
+                            continue;
+                        }
+
+                        $this->file_reference_provider->addFileInheritanceToClass(
+                            $storage->location->file_path,
+                            $mixin_name_lc,
+                        );
+
+                        $pending[] = $mixin_storage;
+                    }
+                }
             }
         }
-
-        krsort($by_depth);
-
-        return array_merge(...$by_depth);
     }
 
     private function populateInterfaceData(

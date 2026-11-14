@@ -40,6 +40,7 @@ use Psalm\Internal\Analyzer\Statements\ReturnAnalyzer;
 use Psalm\Internal\Analyzer\Statements\StaticAnalyzer;
 use Psalm\Internal\Analyzer\Statements\UnsetAnalyzer;
 use Psalm\Internal\Analyzer\Statements\UnusedAssignmentRemover;
+use Psalm\Internal\Codebase\CliOutput;
 use Psalm\Internal\Codebase\CombinedFlowGraph;
 use Psalm\Internal\Codebase\TaintFlowGraph;
 use Psalm\Internal\Codebase\VariableUseGraph;
@@ -175,6 +176,15 @@ final class StatementsAnalyzer extends SourceAnalyzer
     private int $depth = 0;
 
     /**
+     * The first statement of a method guarding the instances of a class with `@psalm-cli-only-instances`, which has to
+     * leave the SAPI narrowed to the command line (see CliOutput::checkInstanceGuard())
+     */
+    public ?PhpParser\Node\Stmt $cli_instance_guard = null;
+
+    /** Whether the context after $cli_instance_guard was narrowed to the command line */
+    public bool $cli_instance_guarded = false;
+
+    /**
      * Tracks bounds for the type variables minted while these statements are
      * analyzed. Shared with the enclosing function-like's statements analyzer
      * (when there is one) so that constraints recorded in nested
@@ -279,6 +289,10 @@ final class StatementsAnalyzer extends SourceAnalyzer
             foreach ($stmts as $stmt) {
                 if (self::analyzeStatement($this, $stmt, $context, $global_context) === false) {
                     return false;
+                }
+
+                if ($stmt === $this->cli_instance_guard) {
+                    $this->cli_instance_guarded = CliOutput::isNarrowedToCli($context);
                 }
             }
 
@@ -1125,8 +1139,10 @@ final class StatementsAnalyzer extends SourceAnalyzer
 
                 $suppressed_issues = $this->unused_var_suppressions[$original_location->getHash()];
 
+                // removing a value that is stored into an array element would leave the store without it
                 if ($codebase->alter_code
                     && $issue instanceof UnusedVariable
+                    && !$this->variable_use_graph->isStoredIntoArrayElement($assignment_node)
                     && !$unused_var_remover->checkIfVarRemoved($var_id, $original_location)
                     && isset($project_analyzer->getIssuesToFix()['UnusedVariable'])
                     && !IssueBuffer::isSuppressed($issue, $suppressed_issues)
