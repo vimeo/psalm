@@ -1190,6 +1190,144 @@ final class SwitchTypeTest extends TestCase
                         return -1;
                     }',
             ],
+            'conditionalBreaksOfACaseThatEndsInAThrowMergeTheTypes' => [
+                'code' => <<<'PHP'
+                    <?php
+                    function f(int $n): void {
+                        switch ($n) {
+                            case 1:
+                                $b = 10;
+                                break;
+                            case 2:
+                                if (rand()) {
+                                    $b = 20;
+                                    break;
+                                }
+
+                                throw new Exception();
+                            default:
+                                throw new Exception();
+                        }
+
+                        /** @psalm-check-type-exact $b = 10|20 */
+                    }
+                    PHP,
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
+            'conditionalBreakOfAnExitingCaseBeforeTheCaseThatDefinesTheVar' => [
+                'code' => <<<'PHP'
+                    <?php
+                    function f(int $n): void {
+                        switch ($n) {
+                            case 2:
+                                if (rand()) {
+                                    $b = 20;
+                                    break;
+                                }
+
+                                throw new Exception();
+                            case 1:
+                                $b = 10;
+                                break;
+                            default:
+                                throw new Exception();
+                        }
+
+                        /** @psalm-check-type-exact $b = 10|20 */
+                    }
+                    PHP,
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
+            'conditionalBreakThenThrowDefinesVar' => [
+                'code' => '<?php
+                    function foo(int $a): int {
+                        switch ($a) {
+                            case 1:
+                                $b = 10;
+                                break;
+                            case 2:
+                                if (rand(1, 10) === 5) {
+                                    $b = 20;
+                                    break;
+                                }
+                                throw new Exception("x");
+                            default:
+                                throw new Exception("y");
+                        }
+
+                        return $b;
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+            ],
+            'conditionalBreakFallingIntoThrowDefinesVar' => [
+                'code' => '<?php
+                    function foo(int $a): int {
+                        switch ($a) {
+                            case 1:
+                                $b = 10;
+                                break;
+                            case 2:
+                                if (rand(1, 10) === 5) {
+                                    $b = 20;
+                                    break;
+                                }
+                            default:
+                                throw new Exception("y");
+                        }
+
+                        return $b;
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+            ],
+            'conditionalBreakInFirstCaseDefinesVar' => [
+                'code' => '<?php
+                    function foo(int $a): int {
+                        switch ($a) {
+                            case 2:
+                                if (rand(1, 10) === 5) {
+                                    $b = 20;
+                                    break;
+                                }
+                                throw new Exception("x");
+                            case 1:
+                                $b = 10;
+                                break;
+                            default:
+                                throw new Exception("y");
+                        }
+
+                        return $b;
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+            ],
+            'conditionalBreakOnTrueSwitch' => [
+                'code' => '<?php
+                    function foo(int $a): int {
+                        switch (true) {
+                            case $a === 1:
+                                $b = 10;
+                                break;
+                            case $a === 2:
+                                if (rand(1, 10) === 5) {
+                                    $b = 20;
+                                    break;
+                                }
+                            default:
+                                throw new Exception("y");
+                        }
+
+                        return $b;
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+            ],
         ];
     }
 
@@ -1200,6 +1338,33 @@ final class SwitchTypeTest extends TestCase
     public static function providerInvalidCodeParse(): iterable
     {
         return [
+            'oneBreakOfACaseThatEndsInAThrowLacksTheVar' => [
+                'code' => <<<'PHP'
+                    <?php
+                    function f(int $n): int {
+                        switch ($n) {
+                            case 2:
+                                if (rand()) {
+                                    $b = 1;
+                                    break;
+                                }
+
+                                if (rand()) {
+                                    break;
+                                }
+
+                                throw new Exception();
+                            default:
+                                $b = 5;
+                        }
+
+                        return $b;
+                    }
+                    PHP,
+                'error_message' => 'PossiblyUndefinedVariable - src' . DIRECTORY_SEPARATOR . 'somefile.php:19:12',
+                'error_levels' => [],
+                'php_version' => '8.1',
+            ],
             'switchTrueCaseThatCannotMatch' => [
                 'code' => '<?php
                     class Foo {}
@@ -1445,6 +1610,66 @@ final class SwitchTypeTest extends TestCase
                         }
 
                         if ($a) {}
+                    }',
+                'error_message' => 'PossiblyUndefinedVariable',
+            ],
+            'conditionalBreakWithoutSettingVarThenThrow' => [
+                'code' => '<?php
+                    function foo(int $a): int {
+                        switch ($a) {
+                            case 1:
+                                $b = 10;
+                                break;
+                            case 2:
+                                if (rand(1, 10) === 5) {
+                                    break;
+                                }
+                                throw new Exception("x");
+                            default:
+                                throw new Exception("y");
+                        }
+
+                        return $b;
+                    }',
+                'error_message' => 'PossiblyUndefinedVariable',
+            ],
+            'conditionalBreakThenFallThroughToNonThrowingCase' => [
+                'code' => '<?php
+                    function foo(int $a): int {
+                        switch ($a) {
+                            case 1:
+                                $b = 10;
+                                break;
+                            case 2:
+                                if (rand(1, 10) === 5) {
+                                    $b = 20;
+                                    break;
+                                }
+                            default:
+                                echo "y";
+                        }
+
+                        return $b;
+                    }',
+                'error_message' => 'PossiblyUndefinedVariable',
+            ],
+            'conditionalBreakThenEndInFirstCaseOtherCaseDoesNotSet' => [
+                'code' => '<?php
+                    function foo(int $a): int {
+                        switch ($a) {
+                            case 2:
+                                if (rand(1, 10) === 5) {
+                                    $b = 20;
+                                    break;
+                                }
+                                throw new Exception("x");
+                            case 1:
+                                break;
+                            default:
+                                throw new Exception("y");
+                        }
+
+                        return $b;
                     }',
                 'error_message' => 'PossiblyUndefinedVariable',
             ],
