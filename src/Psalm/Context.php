@@ -15,6 +15,7 @@ use Psalm\Internal\ReferenceConstraint;
 use Psalm\Internal\Scope\CaseScope;
 use Psalm\Internal\Scope\FinallyScope;
 use Psalm\Internal\Scope\LoopScope;
+use Psalm\Internal\Scope\TryScope;
 use Psalm\Internal\Type\AssertionReconciler;
 use Psalm\Storage\Capabilities;
 use Psalm\Storage\FunctionLikeStorage;
@@ -56,6 +57,12 @@ final class Context
      * native symbols newer than the analysed version use it; it can't clash with a variable name.
      */
     public const PHP_VERSION_ID_VAR_ID = 'PHP_VERSION_ID';
+
+    /**
+     * The pseudo-variable through which comparisons of the PHP_SAPI constant and of php_sapi_name() narrow them, so
+     * a branch knows the SAPI it runs in (e.g. `if (PHP_SAPI === 'cli')`); it can't clash with a variable name.
+     */
+    public const PHP_SAPI_VAR_ID = 'PHP_SAPI';
 
     /**
      * @var array<string, Union>
@@ -265,6 +272,14 @@ final class Context
     public array $phantom_files = [];
 
     /**
+     * The files of phantom_files that were checked in a negated condition (`!file_exists($s)`): a check that holds
+     * where the condition does not
+     *
+     * @var array<string,bool>
+     */
+    public array $negated_phantom_files = [];
+
+    /**
      * A list of clauses in Conjunctive Normal Form
      *
      * @var list<Clause>
@@ -344,6 +359,14 @@ final class Context
     public array $possibly_assigned_var_ids = [];
 
     /**
+     * The variables (and properties) that were assigned as a whole in this context, not only an offset of them and
+     * not by the union of an array into them (`$a += [...]`, which keeps every offset the array had)
+     *
+     * @var array<string, bool>
+     */
+    public array $fully_assigned_var_ids = [];
+
+    /**
      * A list of classes or interfaces that may have been thrown
      *
      * @var array<string, array<array-key, CodeLocation>>
@@ -379,6 +402,8 @@ final class Context
     public ?CaseScope $case_scope = null;
 
     public ?FinallyScope $finally_scope = null;
+
+    public ?TryScope $try_scope = null;
 
     public ?Context $if_body_context = null;
 
@@ -1066,10 +1091,12 @@ final class Context
      * pure or read-globals function, leaves every refinement in place.
      *
      * @param CapabilitySet $callee_capabilities
+     * @param array<string, true> $preserved_methods Memoized results that cannot be affected by this call
      */
     public function removeMutableObjectVars(
         bool $methods_only = false,
         int $callee_capabilities = Capabilities::ALL,
+        array $preserved_methods = [],
     ): void {
         $forget_properties
             = ($callee_capabilities & (Capabilities::WRITE_PROPS | Capabilities::WRITE_THIS_PROPS)) !== 0;
@@ -1082,7 +1109,8 @@ final class Context
         $vars_to_remove = [];
 
         foreach ($this->vars_in_scope as $var_id => $type) {
-            if ($type->has_mutations
+            if (!isset($preserved_methods[$var_id])
+                && $type->has_mutations
                 && (($forget_properties && str_contains($var_id, '->'))
                     || ($forget_statics && (str_contains($var_id, '::') || self::isInSuperGlobal($var_id))))
                 && (!$methods_only || strpos($var_id, '()'))
@@ -1105,7 +1133,8 @@ final class Context
             $abandon_clause = false;
 
             foreach ($clause->possibilities as $key => $_) {
-                if ((($forget_properties && str_contains($key, '->'))
+                if (!isset($preserved_methods[$key])
+                    && (($forget_properties && str_contains($key, '->'))
                         || ($forget_statics && (str_contains($key, '::') || self::isInSuperGlobal($key))))
                     && (!$methods_only || strpos($key, '()'))
                 ) {
@@ -1140,6 +1169,14 @@ final class Context
         $this->check_methods = $this->check_methods && $op_context->check_methods;
         $this->check_functions = $this->check_functions && $op_context->check_functions;
         $this->check_consts = $this->check_consts && $op_context->check_consts;
+
+        // `!defined('A') || !defined('B')`: both are defined where the condition is false
+        foreach ($op_context->constants as $const_name => $const_type) {
+            if (!isset($this->constants[$const_name])) {
+                $this->constants[$const_name] = $const_type;
+                $this->vars_in_scope[$const_name] = $const_type;
+            }
+        }
     }
 
     /**

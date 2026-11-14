@@ -1581,6 +1581,94 @@ final class TraitTest extends TestCase
 
                     test(function(string ...$args): void {});',
             ],
+            'anonymousClassUsingTheTraitThatCreatesIt' => [
+                'code' => '<?php
+                    class Operator {}
+
+                    interface SupportsOperator {
+                        public function operator(): Operator;
+                    }
+
+                    trait NestsOperatorTrait {
+                        public function operator(): Operator&SupportsOperator {
+                            return new class extends Operator implements SupportsOperator {
+                                use NestsOperatorTrait;
+                            };
+                        }
+                    }
+
+                    final class NestingBuilder implements SupportsOperator {
+                        use NestsOperatorTrait;
+                    }
+
+                    echo get_class((new NestingBuilder())->operator());',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
+            'traitReadsAClassConstantWithTheLiteralTheUsingClassesGiveIt' => [
+                'code' => '<?php
+                    /** @param positive-int $i */
+                    function takesPositive(int $i): void {}
+
+                    trait TestTrait {
+                        public function run(): void {
+                            takesPositive(self::VALUE);
+                            takesPositive(static::VALUE);
+                        }
+                    }
+
+                    final class ClassOne {
+                        use TestTrait;
+
+                        public const VALUE = 1;
+                    }
+
+                    final class ClassTwo {
+                        use TestTrait;
+
+                        public const VALUE = 2;
+                    }
+
+                    (new ClassOne())->run();
+                    (new ClassTwo())->run();',
+            ],
+            'traitReadsAClassConstantEachUsingClassDefinesDifferently' => [
+                'code' => '<?php
+                    trait TestTrait {
+                        public function testFunction(): void {
+                            if (self::VALUE) {
+                                echo "True";
+                            } else {
+                                echo "False";
+                            }
+
+                            if (static::VALUE) {
+                                echo "True";
+                            } else {
+                                echo "False";
+                            }
+                        }
+                    }
+
+                    final class ClassOne {
+                        use TestTrait;
+
+                        public const VALUE = true;
+                    }
+
+                    final class ClassTwo {
+                        use TestTrait;
+
+                        public const VALUE = false;
+                    }
+
+                    (new ClassOne())->testFunction();
+                    (new ClassTwo())->testFunction();',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.3',
+            ],
         ];
     }
 
@@ -2060,6 +2148,19 @@ final class TraitTest extends TestCase
                     }
                     ',
                 'error_message' => 'DuplicateProperty',
+            ],
+            'classConstantOutsideATraitKeepsItsLiteralType' => [
+                'code' => '<?php
+                    final class ClassOne {
+                        public const VALUE = true;
+
+                        public function check(): void {
+                            if (self::VALUE) {
+                                echo "True";
+                            }
+                        }
+                    }',
+                'error_message' => 'RedundantCondition',
             ],
         ];
     }

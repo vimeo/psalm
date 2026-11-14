@@ -13,11 +13,14 @@ use Psalm\Internal\Analyzer\Statements\Expression\Call\ArgumentsAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\Call\CallPurityResolver;
 use Psalm\Internal\Analyzer\Statements\Expression\Call\ClassTemplateParamCollector;
 use Psalm\Internal\Analyzer\Statements\Expression\CallAnalyzer;
+use Psalm\Internal\Analyzer\Statements\ExpressionAnalyzer;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\Internal\MethodIdentifier;
+use Psalm\Internal\Type\Comparator\UnionTypeComparator;
 use Psalm\Internal\Type\TemplateResult;
 use Psalm\Internal\Type\TypeExpander;
 use Psalm\Issue\ImpureMethodCall;
+use Psalm\IssueBuffer;
 use Psalm\Node\Expr\VirtualArray;
 use Psalm\Node\Scalar\VirtualString;
 use Psalm\Node\VirtualArg;
@@ -28,11 +31,12 @@ use Psalm\Storage\MethodStorage;
 use Psalm\Type;
 use Psalm\Type\Atomic;
 use Psalm\Type\Atomic\TClosure;
+use Psalm\Type\Atomic\TNamedObject;
+use Psalm\Type\Atomic\TTemplateParam;
 use Psalm\Type\Union;
 
 use function array_map;
 use function array_merge;
-use function array_reverse;
 use function count;
 
 /**
@@ -40,6 +44,10 @@ use function count;
  */
 final class MissingMethodCallHandler
 {
+    /**
+     * @param array{type: TNamedObject, storage: ClassLikeStorage, declared: TNamedObject|TTemplateParam}|null $mixin
+     *     the mixin, bound for the receiver, whose `@method` the call goes to
+     */
     public static function handleMagicMethod(
         StatementsAnalyzer $statements_analyzer,
         Codebase $codebase,
@@ -52,13 +60,17 @@ final class MissingMethodCallHandler
         AtomicMethodCallAnalysisResult $result,
         ?Atomic $lhs_type_part,
         ?string $lhs_var_id,
+        ?array $mixin,
     ): ?AtomicCallContext {
         $fq_class_name = $method_id->fq_class_name;
         $method_name_lc = $method_id->method_name;
 
+        $pseudo_method_class_storage = $mixin['storage'] ?? $class_storage;
+        $mixin_type = $mixin['type'] ?? null;
+
         if ($stmt->isFirstClassCallable()) {
-            $found_method_and_class_storage = isset($class_storage->pseudo_methods[$method_name_lc])
-                ? self::findPseudoMethodAndClassStorages($codebase, $class_storage, $method_name_lc)
+            $found_method_and_class_storage = isset($pseudo_method_class_storage->pseudo_methods[$method_name_lc])
+                ? self::findPseudoMethodAndClassStorages($codebase, $pseudo_method_class_storage, $method_name_lc)
                 : null;
 
             if ($found_method_and_class_storage) {
@@ -72,8 +84,8 @@ final class MissingMethodCallHandler
                     $method_id,
                     $found_method_and_class_storage[0],
                     $found_method_and_class_storage[1],
-                    $class_storage,
-                    $lhs_type_part,
+                    $pseudo_method_class_storage,
+                    $mixin_type ?? $lhs_type_part,
                 );
             } else {
                 $result->non_existent_magic_method_ids[] = $method_id->__toString();
@@ -85,7 +97,7 @@ final class MissingMethodCallHandler
 
         $found_method_and_class_storage = self::findPseudoMethodAndClassStorages(
             $codebase,
-            $class_storage,
+            $pseudo_method_class_storage,
             $method_name_lc,
         );
 
@@ -144,13 +156,25 @@ final class MissingMethodCallHandler
 
             [$pseudo_method_storage, $defining_class_storage] = $found_method_and_class_storage;
 
+            $pseudo_method_storage = self::selectOverload(
+                $statements_analyzer,
+                $codebase,
+                $stmt->getArgs(),
+                $context,
+                $defining_class_storage->pseudo_method_overloads[$method_name_lc] ?? null,
+                $pseudo_method_storage,
+            );
+
+            // the templates of a mixin's `@method` are those of the mixin, `$this` and static stay the class
             $found_generic_params = ClassTemplateParamCollector::collect(
                 $codebase,
                 $defining_class_storage,
-                $class_storage,
+                $pseudo_method_class_storage,
                 $method_name_lc,
-                $lhs_type_part,
-                !$statements_analyzer->isStatic() && $method_id->fq_class_name === $context->self,
+                $mixin_type ?? $lhs_type_part,
+                $mixin_type === null
+                    && !$statements_analyzer->isStatic()
+                    && $method_id->fq_class_name === $context->self,
             );
 
             // the pseudo-method's own templates are the purity templates of its `_` params
@@ -564,6 +588,156 @@ final class MissingMethodCallHandler
     }
 
     /**
+     * The first `@method` of a name declared more than once whose parameters accept the arguments of the call,
+     * the last declared one when none does (its issues are reported)
+     *
+     * @param list<PhpParser\Node\Arg> $args
+     * @param non-empty-list<MethodStorage>|null $overloads
+     */
+    public static function selectOverload(
+        StatementsAnalyzer $statements_analyzer,
+        Codebase $codebase,
+        array $args,
+        Context $context,
+        ?array $overloads,
+        MethodStorage $default,
+    ): MethodStorage {
+        if ($overloads === null) {
+            return $default;
+        }
+
+        $arg_types = self::getArgTypes($statements_analyzer, $args, $context);
+
+        foreach ($overloads as $overload) {
+            if (self::overloadAcceptsArgs($codebase, $overload, $args, $arg_types)) {
+                return $overload;
+            }
+        }
+
+        return $default;
+    }
+
+    /**
+     * The types of the arguments, from a trial analysis that leaves the context, the node types and the issues alone
+     *
+     * @param list<PhpParser\Node\Arg> $args
+     * @return list<?Union>
+     */
+    private static function getArgTypes(
+        StatementsAnalyzer $statements_analyzer,
+        array $args,
+        Context $context,
+    ): array {
+        $trial_context = clone $context;
+        $trial_context->inside_call = true;
+
+        $old_node_data = $statements_analyzer->node_data;
+        $statements_analyzer->node_data = clone $old_node_data;
+
+        IssueBuffer::startRecording();
+
+        $types = [];
+
+        foreach ($args as $arg) {
+            ExpressionAnalyzer::analyze($statements_analyzer, $arg->value, $trial_context);
+            $types[] = $statements_analyzer->node_data->getType($arg->value);
+        }
+
+        IssueBuffer::clearRecordingLevel();
+        IssueBuffer::stopRecording();
+
+        $statements_analyzer->node_data = $old_node_data;
+
+        return $types;
+    }
+
+    /**
+     * Whether the arguments, placed on the parameters by position and by name, fit the overload: each parameter
+     * gets at most one argument of an accepted type, and every required one gets one. The arguments from an
+     * unpacked one on can't be placed, so they are left out.
+     *
+     * @param list<PhpParser\Node\Arg> $args
+     * @param list<?Union> $arg_types
+     */
+    private static function overloadAcceptsArgs(
+        Codebase $codebase,
+        MethodStorage $overload,
+        array $args,
+        array $arg_types,
+    ): bool {
+        $params = $overload->params;
+        $last_offset = count($params) - 1;
+        $variadic = $last_offset >= 0 && $params[$last_offset]->is_variadic;
+
+        $bound = [];
+        $has_unpack = false;
+
+        foreach ($args as $offset => $arg) {
+            if ($arg->unpack) {
+                $has_unpack = true;
+                break;
+            }
+
+            if ($arg->name) {
+                $param_offset = null;
+
+                foreach ($params as $candidate_offset => $candidate) {
+                    if ($candidate->name === $arg->name->name && !$candidate->is_variadic) {
+                        $param_offset = $candidate_offset;
+                        break;
+                    }
+                }
+
+                if ($param_offset === null) {
+                    if (!$variadic) {
+                        return false;
+                    }
+
+                    // a name that no parameter has is collected by the variadic one, which types it
+                    $param_type = $params[$last_offset]->type;
+
+                    if ($param_type && $arg_types[$offset]
+                        && !UnionTypeComparator::isContainedBy($codebase, $arg_types[$offset], $param_type)
+                    ) {
+                        return false;
+                    }
+
+                    continue;
+                }
+
+                if (isset($bound[$param_offset])) {
+                    return false;
+                }
+            } elseif (isset($params[$offset])) {
+                $param_offset = $offset;
+            } elseif ($variadic) {
+                $param_offset = $last_offset;
+            } else {
+                return false;
+            }
+
+            $bound[$param_offset] = true;
+            $param_type = $params[$param_offset]->type;
+
+            if ($param_type && $arg_types[$offset]
+                && !UnionTypeComparator::isContainedBy($codebase, $arg_types[$offset], $param_type)
+            ) {
+                return false;
+            }
+        }
+
+        if (!$has_unpack) {
+            for ($required = 0; $required < $overload->required_param_count; $required++) {
+                if (!isset($bound[$required])) {
+                    return false;
+                }
+            }
+        }
+
+        return true;
+    }
+
+    /**
      * Try to find matching pseudo method over ancestors (including interfaces).
      *
      * Returns the pseudo method if exists, with its defining class storage.
@@ -571,10 +745,10 @@ final class MissingMethodCallHandler
      *
      * @param ClassLikeStorage $static_class_storage The called class
      * @param lowercase-string $method_name_lc
-     * @return array{MethodStorage, ClassLikeStorage}
+     * @return array{MethodStorage, ClassLikeStorage}|null
      * @psalm-mutation-free
      */
-    private static function findPseudoMethodAndClassStorages(
+    public static function findPseudoMethodAndClassStorages(
         Codebase $codebase,
         ClassLikeStorage $static_class_storage,
         string $method_name_lc,
@@ -592,20 +766,7 @@ final class MissingMethodCallHandler
             return [$pseudo_method_storage, $static_class_storage];
         }
 
-        $ancestors = $static_class_storage->class_implements;
-        // First match wins here, so the nearest mixins come first.
-        $named_mixins = [
-            ...$static_class_storage->namedMixins,
-            ...array_reverse($static_class_storage->transitiveNamedMixins),
-        ];
-        foreach ($named_mixins as $namedObject) {
-            $type = $namedObject->value;
-            if ($type) {
-                $ancestors[$type] = true;
-            }
-        }
-
-        foreach ($ancestors as $fq_class_name => $_) {
+        foreach ($static_class_storage->class_implements as $fq_class_name => $_) {
             $class_storage = $codebase->classlikes->getStorageFor($fq_class_name);
 
             if ($class_storage && isset($class_storage->pseudo_methods[$method_name_lc])) {
