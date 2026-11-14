@@ -1,13 +1,16 @@
 # ImplicitFloatToIntCast
 
-Emitted when a float whose value is known to lose something is an operand of a bitwise operation (`|`, `&`, `^`, `<<`, `>>`, `~`), which converts it to an int
+Emitted when a float whose value is known to lose something is an operand of a bitwise or modulo operation (`|`, `&`, `^`, `<<`, `>>`, `~`, `%`), which converts it to an int
 
 ```php
 <?php
 
 function setFlag(): int {
-    return 1.5 | 1;
+    return 1.5 | 1; // ImplicitFloatToIntCast
 }
+
+echo 5.5 % 2; // ImplicitFloatToIntCast
+echo 6.0 % 4; // no issue
 ```
 
 ## Why this is bad

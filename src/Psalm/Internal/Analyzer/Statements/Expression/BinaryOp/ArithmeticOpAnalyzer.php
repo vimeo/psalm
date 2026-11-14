@@ -206,9 +206,11 @@ final class ArithmeticOpAnalyzer
                 }
             }
 
-            if ($statements_source && self::isBitwiseOperation($parent)) {
-                self::reportFloatOperand($statements_source, $left, $left_type, 'Left');
-                self::reportFloatOperand($statements_source, $right, $right_type, 'Right');
+            $int_operation = self::getNameOfAnOperationOnInts($parent);
+
+            if ($statements_source && $int_operation !== null) {
+                self::reportFloatOperand($statements_source, $left, $left_type, 'Left', $int_operation);
+                self::reportFloatOperand($statements_source, $right, $right_type, 'Right', $int_operation);
             }
 
             $bitwise_result_type = self::getBitwiseResultOfNonNegativeLiterals($parent, $left_type, $right_type);
@@ -1152,32 +1154,41 @@ final class ArithmeticOpAnalyzer
     }
 
     /**
+     * The name of an operation that converts its operands to ints, null for any other
+     *
      * @psalm-pure
      */
-    private static function isBitwiseOperation(PhpParser\Node $operation): bool
+    private static function getNameOfAnOperationOnInts(PhpParser\Node $operation): ?string
     {
+        if ($operation instanceof PhpParser\Node\Expr\BinaryOp\Mod) {
+            return 'a modulo operation';
+        }
+
         return $operation instanceof PhpParser\Node\Expr\BinaryOp\BitwiseOr
             || $operation instanceof PhpParser\Node\Expr\BinaryOp\BitwiseAnd
             || $operation instanceof PhpParser\Node\Expr\BinaryOp\BitwiseXor
             || $operation instanceof PhpParser\Node\Expr\BinaryOp\ShiftLeft
-            || $operation instanceof PhpParser\Node\Expr\BinaryOp\ShiftRight;
+            || $operation instanceof PhpParser\Node\Expr\BinaryOp\ShiftRight
+                ? 'a bitwise operation'
+                : null;
     }
 
     /**
-     * A bitwise operation converts its operands to ints, dropping the fraction of a float: reported when the value is
-     * known to lose something, not when a float of unknown value might
+     * A bitwise or modulo operation converts its operands to ints, dropping the fraction of a float: reported when the
+     * value is known to lose something, not when a float of unknown value might
      */
     private static function reportFloatOperand(
         StatementsSource $statements_source,
         PhpParser\Node\Expr $operand,
         Union $operand_type,
         string $side,
+        string $operation,
     ): void {
         foreach ($operand_type->getAtomicTypes() as $atomic_type) {
             if ($atomic_type instanceof TLiteralFloat && !self::isExactInt($atomic_type->value)) {
                 IssueBuffer::maybeAdd(
                     new ImplicitFloatToIntCast(
-                        $side . ' operand of a bitwise operation is converted to an int, got ' . $operand_type->getId(),
+                        $side . ' operand of ' . $operation . ' is converted to an int, got ' . $operand_type->getId(),
                         new CodeLocation($statements_source, $operand),
                     ),
                     $statements_source->getSuppressedIssues(),
