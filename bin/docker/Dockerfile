@@ -182,14 +182,15 @@ RUN set -eux; \
 # smoke test
 	php --version
 
+# Above the lines that invalidate the cache on every commit, so that the extensions aren't compiled on every build
+RUN pecl install igbinary zstd
+
 COPY bin/docker/docker-php-* /usr/local/bin/
 ADD https://raw.githubusercontent.com/php/php-src/refs/heads/PHP-8.4/.gdbinit /root/.gdbinit
 
 # This line invalidates cache when master branch changes
 ADD https://github.com/vimeo/psalm/commits/master.atom /dev/null
 ADD https://github.com/vimeo/psalm/commits/6.x.atom /dev/null
-
-RUN pecl install igbinary
 
 RUN apt-get update && apt-get -y --no-install-recommends install ssh git unzip libjemalloc2 && apt-get clean && rm -rf /var/lib/apt/lists/*
 
