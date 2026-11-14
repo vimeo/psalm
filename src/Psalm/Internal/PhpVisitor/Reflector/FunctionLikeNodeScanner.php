@@ -1012,9 +1012,14 @@ final class FunctionLikeNodeScanner
             $storage = null;
 
             if (isset($classlike_storage->methods[$method_name_lc])) {
-                if (!$this->codebase->register_stub_files) {
-                    $duplicate_method_storage = $classlike_storage->methods[$method_name_lc];
+                $duplicate_method_storage = $classlike_storage->methods[$method_name_lc];
 
+                // A regular file scanned while stubs are registered (see Scanner::scanAPath()) may refine a stub's
+                // method, but not a method of its own class.
+                $refines_stub_method = $duplicate_method_storage->stubbed
+                    && $this->codebase->scanner->isRegisteringStubs();
+
+                if (!$this->codebase->register_stub_files && !$refines_stub_method) {
                     IssueBuffer::maybeAdd(
                         new DuplicateMethod(
                             'Method ' . $function_id . ' has already been defined'
