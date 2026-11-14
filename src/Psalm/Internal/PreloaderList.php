@@ -861,6 +861,7 @@ final class PreloaderList {
         \Psalm\Internal\LanguageServer\Server\Workspace::class,
         \Psalm\Internal\Lz4Serializer::class,
         \Psalm\Internal\MethodIdentifier::class,
+        \Psalm\Internal\Overlay\ReferenceIndex::class,
         \Psalm\Internal\PhpTraverser\CustomTraverser::class,
         \Psalm\Internal\PhpVisitor\AssignmentMapVisitor::class,
         \Psalm\Internal\PhpVisitor\CheckTrivialExprVisitor::class,
