@@ -29,6 +29,82 @@ final class ValueTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'stringThatIsNeitherEmptyNorZeroIsNonFalsyInEveryOrder' => [
+                'code' => <<<'PHP'
+                    <?php
+                    function emptyFirst(string $s): void {
+                        if ($s !== '' && $s !== '0') {
+                            /** @psalm-check-type-exact $s = non-falsy-string */
+                        }
+                    }
+
+                    function zeroFirst(string $s): void {
+                        if ($s !== '0' && $s !== '') {
+                            /** @psalm-check-type-exact $s = non-falsy-string */
+                        }
+                    }
+
+                    function earlyReturnsZeroFirst(string $s): void {
+                        if ('0' === $s) {
+                            return;
+                        }
+
+                        if ('' === $s) {
+                            return;
+                        }
+
+                        /** @psalm-check-type-exact $s = non-falsy-string */
+                    }
+
+                    function earlyReturnsEmptyFirst(string $s): void {
+                        if ('' === $s) {
+                            return;
+                        }
+
+                        if ('0' === $s) {
+                            return;
+                        }
+
+                        /** @psalm-check-type-exact $s = non-falsy-string */
+                    }
+
+                    function onlyZeroExcluded(string $s): void {
+                        if ($s !== '0') {
+                            /** @psalm-check-type-exact $s = string */
+                        }
+                    }
+                    PHP,
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
+            'nonEmptyStringNotZeroIsNonFalsy' => [
+                'code' => '<?php
+                    /** @var non-empty-string $s */
+                    $s = $_GET["s"];
+                    if ($s === "0") { throw new Exception(""); }',
+                'assertions' => [
+                    '$s===' => 'non-falsy-string',
+                ],
+            ],
+            'nonEmptyStringLooselyNotZeroIsNonFalsy' => [
+                'code' => '<?php
+                    /** @var non-empty-string $s */
+                    $s = $_GET["s"];
+                    if ($s == "0") { throw new Exception(""); }',
+                'assertions' => [
+                    '$s===' => 'non-falsy-string',
+                ],
+            ],
+            'nonEmptyStringNotAnotherLiteralStaysNonEmpty' => [
+                'code' => '<?php
+                    /** @var non-empty-string $s */
+                    $s = $_GET["s"];
+                    if ($s === "a") { throw new Exception(""); }',
+                'assertions' => [
+                    '$s===' => 'non-empty-string',
+                ],
+            ],
             'whileCountUpdate' => [
                 'code' => '<?php
                     $array = [1, 2, 3];
