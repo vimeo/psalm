@@ -145,6 +145,12 @@ final class OrAnalyzer
                 ...$left_context->assigned_var_ids,
             ];
 
+            // as in the shallower case, where the left operand is analysed in the outer context
+            $context->assigned_var_ids = [
+                ...$context->assigned_var_ids,
+                ...$left_assigned_var_ids,
+            ];
+
             $left_referenced_var_ids = array_diff_key($left_referenced_var_ids, $left_assigned_var_ids);
         }
 

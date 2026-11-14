@@ -26,6 +26,7 @@ use Psalm\Type;
 use Psalm\Type\Reconciler;
 
 use function array_diff;
+use function array_fill_keys;
 use function array_filter;
 use function array_intersect;
 use function array_intersect_key;
@@ -55,8 +56,11 @@ final class TernaryAnalyzer
         $negated_phantom_classes_before_cond = $context->negated_phantom_classes;
 
         try {
+            $reassigned_var_ids = FormulaGenerator::getVarsAssignedByOredRightSides($stmt->cond, $context->self);
+
             // the else of an `||` is analysed again from where the condition started, not from where it ended
-            $pre_condition_context = $stmt->cond instanceof PhpParser\Node\Expr\BinaryOp\BooleanOr
+            $pre_condition_context = $reassigned_var_ids
+                || $stmt->cond instanceof PhpParser\Node\Expr\BinaryOp\BooleanOr
                 || $stmt->cond instanceof PhpParser\Node\Expr\BinaryOp\LogicalOr
                     ? clone $context
                     : null;
@@ -186,6 +190,12 @@ final class TernaryAnalyzer
             }
         }
 
+        $if_scope->negated_clauses = FormulaGenerator::withoutClausesOfReassignedVars(
+            $if_scope->negated_clauses,
+            $stmt->cond,
+            $context->self,
+        );
+
         $if_scope->negated_types = Algebra::getTruthsFromFormula(
             Algebra::simplifyCNF(
                 [...$context->clauses, ...$if_scope->negated_clauses],
@@ -224,13 +234,16 @@ final class TernaryAnalyzer
         $t_else_context->promoteNegatedPhantomClasses($negated_phantom_classes_before_cond);
 
         // the else runs when every operand of an `||` was evaluated and falsy, so what they assigned is known there
-        if (array_filter($assigned_in_conditional_var_ids) !== [] && $pre_condition_context !== null) {
+        $else_rederived_var_ids = array_fill_keys(array_keys($reassigned_var_ids), 1)
+            + array_filter($assigned_in_conditional_var_ids);
+
+        if ($else_rederived_var_ids !== [] && $pre_condition_context !== null) {
             IfAnalyzer::addConditionallyAssignedVarsToContext(
                 $statements_analyzer,
                 $stmt->cond,
                 $pre_condition_context,
                 $t_else_context,
-                $assigned_in_conditional_var_ids,
+                $else_rederived_var_ids,
             );
         }
 

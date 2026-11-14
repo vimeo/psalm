@@ -671,7 +671,7 @@ final class TypeVariableTest extends TestCase
                         });
                     }',
                 'assertions' => [],
-                'ignored_issues' => ['MixedArgumentTypeCoercion', 'MixedReturnStatement', 'MixedInferredReturnType'],
+                'ignored_issues' => ['MixedArgumentTypeCoercion', 'MixedReturnStatement'],
             ],
             'contravariantClosureParamIsAnUpperBound' => [
                 // the closure must accept whatever the collection holds: that
