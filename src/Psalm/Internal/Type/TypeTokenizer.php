@@ -18,6 +18,7 @@ use function in_array;
 use function is_numeric;
 use function preg_match;
 use function preg_replace;
+use function str_contains;
 use function str_split;
 use function strlen;
 use function strpos;
@@ -365,7 +366,12 @@ final class TypeTokenizer
 
         $depth = 0;
 
-        foreach ($type_tokens as [$type_token]) {
+        foreach ($type_tokens as $i => [$type_token]) {
+            // the text of an inline tag like `{@see ...}` is no type, ParseTreeCreator skips it
+            if ($type_token === '{' && str_contains($type_tokens[$i + 1][0] ?? '', '@')) {
+                return;
+            }
+
             if ($type_token === '<' || $type_token === '{' || $type_token === '(') {
                 ++$depth;
             } elseif ($type_token === '>' || $type_token === '}' || $type_token === ')') {

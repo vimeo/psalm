@@ -213,6 +213,28 @@ final class AnnotationTest extends TestCase
                 'ignored_issues' => [],
                 'php_version' => '8.1',
             ],
+            'spacesInTheTextOfAnInlineTagAfterAType' => [
+                'code' => '<?php
+                    /**
+                     * @return non-empty-string {@see the list of names}
+                     */
+                    function f(): string {
+                        return "a";
+                    }
+
+                    /** @return bool {@link https://example.com the docs} */
+                    function g(): bool {
+                        return true;
+                    }
+
+                    $a = f();
+                    $b = g();
+                    echo $a, (int) $b;',
+                'assertions' => [
+                    '$a===' => 'non-empty-string',
+                    '$b===' => 'bool',
+                ],
+            ],
             'optionalShapeKeysNamedLikeScalarAliases' => [
                 'code' => '<?php
                     /** @var array{double?: string, integer?: int, boolean?: bool, real?: float} $a */
@@ -2974,6 +2996,16 @@ final class AnnotationTest extends TestCase
                      */
                     function f(array $a): void {}',
                 'error_message' => 'Unexpected space after Foo\\Bar, in a type name',
+            ],
+            'missingCommaBeforeAnInlineTag' => [
+                'code' => '<?php
+                    /**
+                     * @return array<int string> {@see g()}
+                     */
+                    function f() {
+                        return [];
+                    }',
+                'error_message' => 'Unexpected space after int, in a type name',
             ],
             'keyOfImportedTypeAliasOfANonArrayIsInvalid' => [
                 'code' => '<?php
