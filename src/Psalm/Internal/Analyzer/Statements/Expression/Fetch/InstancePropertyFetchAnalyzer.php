@@ -341,7 +341,7 @@ final class InstancePropertyFetchAnalyzer
             && !$stmt_type->ignore_isset
             && self::isLeftUninitialized($codebase, $stmt_var_type, $prop_name)
         ) {
-            $stmt_type = $stmt_type->setProperties(['ignore_isset' => true]);
+            $stmt_type = $stmt_type->setProperties(['ignore_isset' => true, 'initialized' => false]);
             $statements_analyzer->node_data->setType($stmt, $stmt_type);
         }
 

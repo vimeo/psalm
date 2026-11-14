@@ -4123,6 +4123,67 @@ final class PropertyTypeTest extends TestCase
                         }
                     }',
             ],
+            'aTypedPropertyThatNoConstructorSetsIsNotNullableAfterACoalesce' => [
+                'code' => '<?php
+                    final class Meta {
+                        public string $name;
+                    }
+
+                    function e(Meta $m): int {
+                        $label = $m->name ?? "default";
+                        return strlen($m->name) + strlen($label);
+                    }',
+                'assertions' => [],
+                'ignored_issues' => ['PropertyNotSetInConstructor', 'MissingConstructor'],
+            ],
+            'aTypedPropertyThatNoConstructorSetsIsNotNullableAfterAnIssetTernary' => [
+                'code' => '<?php
+                    final class Meta {
+                        public string $name;
+                    }
+
+                    function f(Meta $m): int {
+                        $x = isset($m->name) ? 1 : 0;
+                        return strlen($m->name) + $x;
+                    }',
+                'assertions' => [],
+                'ignored_issues' => ['PropertyNotSetInConstructor', 'MissingConstructor'],
+            ],
+            'aTypedPropertyThatNoConstructorSetsIsNotNullableInATruthyCoalesce' => [
+                'code' => '<?php
+                    abstract class Gen {}
+
+                    final class M2 {
+                        public Gen $g;
+
+                        public function set(Gen $g): void {
+                            $this->g = $g;
+                        }
+                    }
+
+                    function h(M2 $a, M2 $b): void {
+                        if ($b->g ?? null) {
+                            $a->set($b->g);
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => ['PropertyNotSetInConstructor', 'MissingConstructor'],
+            ],
+            'aTypedPropertyThatNoConstructorSetsHasItsTypeAfterACoalesce' => [
+                'code' => '<?php
+                    final class Meta {
+                        public string $name;
+                    }
+
+                    $m = new Meta();
+                    $label = $m->name ?? "default";
+                    $name = $m->name;',
+                'assertions' => [
+                    '$label===' => 'string',
+                    '$name===' => 'string',
+                ],
+                'ignored_issues' => ['PropertyNotSetInConstructor', 'MissingConstructor'],
+            ],
             'emptyOnATypedPropertyThatNoConstructorSetsAllowsAnArrayAppend' => [
                 'code' => '<?php
                     final class Builder {
