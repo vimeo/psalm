@@ -55,6 +55,53 @@ final class UnusedVariableTest extends TestCase
                         return $result;
                     }',
             ],
+            'arrowFunctionParamNamedLikeAVariableOfAPreviousIterationDoesNotUseIt' => [
+                'code' => '<?php
+                    /** @param list<string> $names */
+                    function f(array $names, array $xs): int {
+                        $n = 0;
+                        foreach ($xs as $_) {
+                            $found = array_filter($names, static fn(string $name): bool => $name !== "");
+                            $n += count($found);
+                            $name = "x";
+                            echo $name;
+                        }
+
+                        return $n;
+                    }',
+            ],
+            'closureParamInAnArrowFunctionNamedLikeAVariableOfAPreviousIterationDoesNotUseIt' => [
+                'code' => '<?php
+                    function f(array $xs): ?Closure {
+                        $r = null;
+                        foreach ($xs as $_) {
+                            $r = fn(): Closure => function (int $x): int {
+                                return $x + 1;
+                            };
+                            $x = 1;
+                            echo $x;
+                        }
+
+                        return $r;
+                    }',
+            ],
+            'variableOfAPreviousIterationReadInAnArrowFunctionIsUsed' => [
+                'code' => '<?php
+                    function f(array $xs): mixed {
+                        $r = null;
+                        foreach ($xs as $_) {
+                            /** @psalm-suppress PossiblyUndefinedVariable */
+                            $f = fn() => $x;
+                            $r = $f();
+                            $x = 1;
+                        }
+
+                        return $r;
+                    }',
+                'assertions' => [],
+                'ignored_issues' => ['MissingClosureReturnType'],
+                'php_version' => '8.0',
+            ],
             'assignmentUsedAfterBreakTwoFromSwitchInInfiniteWhile' => [
                 'code' => '<?php
                     final class Step {
