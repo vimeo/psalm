@@ -58,6 +58,19 @@ final class TypeAlgebraTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'aFunctionExistsCheckOfANewerNativeFunctionDoesNotNarrowThePhpVersion' => [
+                'code' => '<?php
+                    function f(): void {
+                        if (function_exists("array_first")) {
+                            if (PHP_VERSION_ID < 8_05_00) {
+                                echo "polyfill";
+                            }
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.4',
+            ],
             'twoClausesThatAreNotReconcilableAreBothKeptOfOneCondition' => [
                 'code' => '<?php
                     function f(?string $a, ?string $b, string $haystack): void {

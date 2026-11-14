@@ -1217,12 +1217,6 @@
       <code><![CDATA[$var_id]]></code>
     </RiskyTruthyFalsyComparison>
   </file>
-  <file src="src/Psalm/Internal/Analyzer/Statements/Expression/Fetch/VariableFetchAnalyzer.php">
-    <RiskyTruthyFalsyComparison>
-      <code><![CDATA[$branch_point]]></code>
-      <code><![CDATA[$branch_point]]></code>
-    </RiskyTruthyFalsyComparison>
-  </file>
   <file src="src/Psalm/Internal/Analyzer/Statements/Expression/IncDecExpressionAnalyzer.php">
     <RiskyTruthyFalsyComparison>
       <code><![CDATA[$var_id]]></code>
