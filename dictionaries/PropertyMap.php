@@ -128,16 +128,16 @@ return [
     ],
     'domdocumentfragment' => [
         'childElementCount' => 'int',
-        'firstelementChild' => 'DOMElement|null',
-        'lastelementChild' => 'DOMElement|null',
+        'firstElementChild' => 'DOMElement|null',
+        'lastElementChild' => 'DOMElement|null',
     ],
     'domdocumenttype' => [
         'entities' => 'DOMNamedNodeMap',
-        'internalsubset' => 'string|null',
+        'internalSubset' => 'string|null',
         'name' => 'string',
         'notations' => 'DOMNamedNodeMap',
-        'publicid' => 'string',
-        'systemid' => 'string',
+        'publicId' => 'string',
+        'systemId' => 'string',
     ],
     'domelement' => [
         'childElementCount' => 'int',
@@ -152,8 +152,8 @@ return [
         'actualEncoding' => 'string|null',
         'encoding' => 'string|null',
         'notationName' => 'string|null',
-        'publicid' => 'string|null',
-        'systemid' => 'string|null',
+        'publicId' => 'string|null',
+        'systemId' => 'string|null',
         'version' => 'string|null',
     ],
     'domexception' => [
@@ -239,7 +239,7 @@ return [
         'wtimeout' => 'integer',
     ],
     'mongocursor' => [
-        'slaveokay' => 'boolean',
+        'slaveOkay' => 'boolean',
         'timeout' => 'integer',
     ],
     'mongodb' => [
@@ -247,13 +247,13 @@ return [
         'wtimeout' => 'integer',
     ],
     'mongodb\\driver\\exception\\commandexception' => [
-        'resultdocument' => 'object',
+        'resultDocument' => 'object',
     ],
     'mongodb\\driver\\exception\\runtimeexception' => [
-        'errorlabels' => 'array|null',
+        'errorLabels' => 'array|null',
     ],
     'mongodb\\driver\\exception\\writeexception' => [
-        'writeresult' => 'MongoDB\\Driver\\WriteResult',
+        'writeResult' => 'MongoDB\\Driver\\WriteResult',
     ],
     'mongoid' => [
         'id' => 'string',
@@ -338,7 +338,7 @@ return [
     ],
     'parle\\parser' => [
         'action' => 'int',
-        'reduceid' => 'int',
+        'reduceId' => 'int',
     ],
     'parle\\rlexer' => [
         'bol' => 'bool',
@@ -349,7 +349,7 @@ return [
     ],
     'parle\\rparser' => [
         'action' => 'int',
-        'reduceid' => 'int',
+        'reduceId' => 'int',
     ],
     'parle\\stack' => [
         'empty' => 'bool',
