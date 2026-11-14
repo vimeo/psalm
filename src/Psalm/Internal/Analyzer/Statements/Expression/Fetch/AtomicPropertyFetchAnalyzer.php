@@ -163,7 +163,10 @@ final class AtomicPropertyFetchAnalyzer
         // Hack has a similar issue: https://github.com/facebook/hhvm/issues/5164
         if ($lhs_type_part instanceof TObject
             || (
-                $statements_analyzer->getCodebase()->classlikes->isUniversalObjectCrate($lhs_type_part->value)
+                $statements_analyzer->getCodebase()->classlikes->isUniversalObjectCrate(
+                    $lhs_type_part->value,
+                    $prop_name,
+                )
                 && $intersection_types === []
             )
         ) {

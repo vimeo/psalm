@@ -732,6 +732,39 @@ final class PropertyTypeTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'declaredPropertyOfAStdClassSubclassKeepsItsTypeAndAnUndeclaredOneStaysDynamic' => [
+                'code' => '<?php
+                    final class Item extends stdClass {
+                        /** @var list<string> */
+                        public array $tags = [];
+
+                        public int $count = 0;
+
+                        public ?string $note = null;
+                    }
+
+                    function write(Item $item): void {
+                        $item->tags = ["a"];
+                        $item->count = 2;
+                        $item->extra = "x";
+                    }
+
+                    function read(Item $item): void {
+                        $tags = $item->tags;
+                        $count = $item->count;
+                        $note = $item->note;
+                        $extra = $item->extra;
+
+                        /** @psalm-check-type-exact $tags = list<string> */
+                        /** @psalm-check-type-exact $count = int */
+                        /** @psalm-check-type-exact $note = null|string */
+                        /** @psalm-check-type-exact $extra = mixed */
+                        echo count($tags), $count, $note;
+                    }',
+                'assertions' => [],
+                'ignored_issues' => ['MixedAssignment'],
+                'php_version' => '8.1',
+            ],
             'staticOfTheCallerIsNotTheStaticPropertyOfAnotherClassOfTheSameName' => [
                 'code' => '<?php
                     final class Other {
@@ -4100,6 +4133,30 @@ final class PropertyTypeTest extends TestCase
     public static function providerInvalidCodeParse(): iterable
     {
         return [
+            'declaredPropertyOfAStdClassSubclassRejectsAWrongValue' => [
+                'code' => '<?php
+                    final class Item extends stdClass {
+                        public int $count = 0;
+                    }
+
+                    $item = new Item();
+                    $item->count = "three";',
+                'error_message' => 'InvalidPropertyAssignmentValue',
+            ],
+            'declaredPropertyOfAStdClassSubclassHasItsTypeWhenRead' => [
+                'code' => '<?php
+                    final class Item extends stdClass {
+                        public string $label = "";
+                    }
+
+                    function takesInt(int $n): int {
+                        return $n;
+                    }
+
+                    $item = new Item();
+                    takesInt($item->label);',
+                'error_message' => 'InvalidScalarArgument',
+            ],
             'staticPropertyOfATraitIsSharedWithTheSubclassesOfTheUsingClass' => [
                 'code' => '<?php
                     trait Holder {
