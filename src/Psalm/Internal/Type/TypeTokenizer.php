@@ -18,6 +18,7 @@ use function in_array;
 use function is_numeric;
 use function preg_match;
 use function preg_replace;
+use function str_contains;
 use function str_split;
 use function strlen;
 use function strpos;
@@ -331,6 +332,10 @@ final class TypeTokenizer
                 continue;
             }
 
+            if ($was_space) {
+                self::assertNoSpaceInName($type_tokens, $char);
+            }
+
             $type_tokens[$rtc][0] .= $char;
             $was_char = false;
             $was_space = false;
@@ -340,6 +345,43 @@ final class TypeTokenizer
         self::$memoized_tokens[$string_type] = $type_tokens;
 
         return $type_tokens;
+    }
+
+    /**
+     * A space can't be inside a name within `<>`, `{}` or `()`: `array<int string>` is a missing comma, not `intstring`
+     *
+     * @param array<int, array{0: string, 1: int}> $type_tokens
+     * @throws TypeParseTreeException
+     * @psalm-pure
+     */
+    private static function assertNoSpaceInName(array $type_tokens, string $next_char): void
+    {
+        $token = $type_tokens[count($type_tokens) - 1][0] ?? '';
+
+        if (!preg_match('/[a-zA-Z0-9_\x7f-\xff\\\\]$/', $token)
+            || !preg_match('/[a-zA-Z0-9_\x7f-\xff\\\\]/', $next_char)
+        ) {
+            return;
+        }
+
+        $depth = 0;
+
+        foreach ($type_tokens as $i => [$type_token]) {
+            // the text of an inline tag like `{@see ...}` is no type, ParseTreeCreator skips it
+            if ($type_token === '{' && str_contains($type_tokens[$i + 1][0] ?? '', '@')) {
+                return;
+            }
+
+            if ($type_token === '<' || $type_token === '{' || $type_token === '(') {
+                ++$depth;
+            } elseif ($type_token === '>' || $type_token === '}' || $type_token === ')') {
+                --$depth;
+            }
+        }
+
+        if ($depth > 0) {
+            throw new TypeParseTreeException('Unexpected space after ' . $token . ', in a type name');
+        }
     }
 
     /**

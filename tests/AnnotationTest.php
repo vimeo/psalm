@@ -184,6 +184,57 @@ final class AnnotationTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'spacesInTypesThatAreNotNames' => [
+                'code' => '<?php
+                    class Foo {}
+
+                    /**
+                     * @param array{a: int, b: string|int, \'c d\': ?Foo} $a
+                     * @param callable(Foo $x, string ...$rest): void $b
+                     * @param Closure(int): (int|string) $c
+                     * @param array<int, string> $d
+                     * @param array< int , string > $e
+                     */
+                    function f(array $a, callable $b, Closure $c, array $d, array $e): void {
+                        echo count($a), count($d), count($e);
+                        $b(new Foo());
+                        $c(1);
+                    }
+
+                    /**
+                     * @template T
+                     * @param T $x
+                     * @return (T is null ? int : string)
+                     */
+                    function g($x) {
+                        return $x === null ? 1 : "a";
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
+            'spacesInTheTextOfAnInlineTagAfterAType' => [
+                'code' => '<?php
+                    /**
+                     * @return non-empty-string {@see the list of names}
+                     */
+                    function f(): string {
+                        return "a";
+                    }
+
+                    /** @return bool {@link https://example.com the docs} */
+                    function g(): bool {
+                        return true;
+                    }
+
+                    $a = f();
+                    $b = g();
+                    echo $a, (int) $b;',
+                'assertions' => [
+                    '$a===' => 'non-empty-string',
+                    '$b===' => 'bool',
+                ],
+            ],
             'optionalShapeKeysNamedLikeScalarAliases' => [
                 'code' => '<?php
                     /** @var array{double?: string, integer?: int, boolean?: bool, real?: float} $a */
@@ -2901,6 +2952,60 @@ final class AnnotationTest extends TestCase
                     /** @var string $title */
                     global $title;',
                 'error_message' => 'InvalidGlobal',
+            ],
+            'spaceInsideTypeName' => [
+                'code' => '<?php
+                    /**
+                     * @return array<s t r i n g>
+                     */
+                    function f() {
+                        return ["hello"];
+                    }',
+                'error_message' => 'Unexpected space after s, in a type name',
+            ],
+            'missingCommaBetweenGenericParams' => [
+                'code' => '<?php
+                    /**
+                     * @return array<int string>
+                     */
+                    function f() {
+                        return [];
+                    }',
+                'error_message' => 'Unexpected space after int, in a type name',
+            ],
+            'missingCommaInAShape' => [
+                'code' => '<?php
+                    /**
+                     * @param array{a: int string} $a
+                     */
+                    function f(array $a): void {}',
+                'error_message' => 'Unexpected space after int, in a type name',
+            ],
+            'missingCommaInACallableSignature' => [
+                'code' => '<?php
+                    /**
+                     * @param callable(int string): void $a
+                     */
+                    function f(callable $a): void {}',
+                'error_message' => 'Unexpected space after int, in a type name',
+            ],
+            'spaceInsideNamespacedTypeName' => [
+                'code' => '<?php
+                    /**
+                     * @param array<Foo\\Bar Baz> $a
+                     */
+                    function f(array $a): void {}',
+                'error_message' => 'Unexpected space after Foo\\Bar, in a type name',
+            ],
+            'missingCommaBeforeAnInlineTag' => [
+                'code' => '<?php
+                    /**
+                     * @return array<int string> {@see g()}
+                     */
+                    function f() {
+                        return [];
+                    }',
+                'error_message' => 'Unexpected space after int, in a type name',
             ],
             'keyOfImportedTypeAliasOfANonArrayIsInvalid' => [
                 'code' => '<?php
