@@ -130,7 +130,7 @@ final class InheritedMethodTaints
             $statements_analyzer->getRootFilePath(),
             $statements_analyzer->getRootFileName(),
         );
-        $file_analyzer->populateCheckers($codebase->getStatementsForFile($file_analyzer->getFilePath()));
+        $file_analyzer->populateCheckers($codebase->getStatementsForFile($file_analyzer->getFilePath()), false);
 
         $class_analyzer = $file_analyzer->class_analyzers_to_analyze[strtolower($declaring_class)] ?? null;
 

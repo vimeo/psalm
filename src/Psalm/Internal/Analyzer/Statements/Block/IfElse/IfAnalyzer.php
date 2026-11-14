@@ -156,6 +156,7 @@ final class IfAnalyzer
         $assigned_var_ids = $if_context->assigned_var_ids;
         $possibly_assigned_var_ids = $if_context->possibly_assigned_var_ids;
         $if_context->assigned_var_ids = [];
+        $if_context->fully_assigned_var_ids = [];
         $if_context->possibly_assigned_var_ids = [];
 
         if ($statements_analyzer->analyze(
@@ -247,6 +248,16 @@ final class IfAnalyzer
         } else {
             if (!$has_break_statement) {
                 $if_scope->reasonable_clauses = [];
+            }
+
+            // unlike its assignments, the constants a `defined()` of the condition recorded exist after it
+            if ($if_scope->post_leaving_if_context) {
+                foreach ($outer_context->constants as $const_name => $const_type) {
+                    if (!isset($if_scope->post_leaving_if_context->constants[$const_name])) {
+                        $if_scope->post_leaving_if_context->constants[$const_name] = $const_type;
+                        $if_scope->post_leaving_if_context->vars_in_scope[$const_name] = $const_type;
+                    }
+                }
             }
 
             // If we're assigning inside
@@ -483,6 +494,7 @@ final class IfAnalyzer
         }
 
         $if_scope->possibly_assigned_var_ids += $possibly_assigned_var_ids;
+        $if_scope->reassigned_var_ids += $if_context->fully_assigned_var_ids;
 
         if ($if_scope->redefined_vars === null) {
             $if_scope->redefined_vars = $redefined_vars;
