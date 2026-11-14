@@ -38,6 +38,7 @@ use Psalm\Internal\Codebase\CodeUseGraph;
 use Psalm\Internal\Codebase\Functions;
 use Psalm\Internal\Codebase\InternalCallMapHandler;
 use Psalm\Internal\Codebase\Methods;
+use Psalm\Internal\Codebase\MixinLookup;
 use Psalm\Internal\Codebase\Populator;
 use Psalm\Internal\Codebase\Properties;
 use Psalm\Internal\Codebase\Reflection;
@@ -876,6 +877,7 @@ final class Codebase
         $this->file_reference_provider->loadReferenceCache(false);
 
         FunctionLikeAnalyzer::clearCache();
+        $project_analyzer->clearStatementsForMutations();
 
         if ($force || !$this->statements_provider->parser_cache_provider) {
             $diff_files = $candidate_files;
@@ -2464,18 +2466,46 @@ final class Codebase
                     }
 
                     if ($gap === '->') {
-                        foreach ($class_storage->namedMixins as $mixin) {
-                            if (in_array($mixin->value, $ignore_fq_class_names)) {
-                                continue;
+                        // members of the mixins of the class, its traits and parent classes, in lookup order; a member
+                        // already listed is not added again
+                        $ignore_fq_class_names = [$type_string, ...$ignore_fq_class_names];
+                        $member_keys = [];
+
+                        foreach ($completion_items as $completion_item) {
+                            $member_keys[$completion_item->kind . ' ' . $completion_item->label] = true;
+                        }
+
+                        foreach (MixinLookup::getScopes(
+                            $this->classlike_storage_provider,
+                            $this->classlikes,
+                            $class_storage,
+                        ) as $scope) {
+                            foreach ($scope->getMixins() as $mixin) {
+                                if (!$mixin instanceof TNamedObject
+                                    || in_array($mixin->value, $ignore_fq_class_names)
+                                ) {
+                                    continue;
+                                }
+
+                                $ignore_fq_class_names[] = $mixin->value;
+
+                                $mixin_completion_items = $this->getCompletionItemsForClassishThing(
+                                    $mixin->value,
+                                    $gap,
+                                    $snippets_supported,
+                                    [ClassLikeAnalyzer::VISIBILITY_PUBLIC],
+                                    $ignore_fq_class_names,
+                                );
+
+                                foreach ($mixin_completion_items as $completion_item) {
+                                    $member_key = $completion_item->kind . ' ' . $completion_item->label;
+
+                                    if (!isset($member_keys[$member_key])) {
+                                        $member_keys[$member_key] = true;
+                                        $completion_items[] = $completion_item;
+                                    }
+                                }
                             }
-                            $mixin_completion_items = $this->getCompletionItemsForClassishThing(
-                                $mixin->value,
-                                $gap,
-                                $snippets_supported,
-                                [ClassLikeAnalyzer::VISIBILITY_PUBLIC],
-                                [$type_string, ...$ignore_fq_class_names],
-                            );
-                            $completion_items = [...$completion_items, ...$mixin_completion_items];
                         }
                     }
                 } catch (Exception $e) {
