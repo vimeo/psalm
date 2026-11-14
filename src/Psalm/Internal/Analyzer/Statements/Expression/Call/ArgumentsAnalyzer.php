@@ -1435,8 +1435,14 @@ final class ArgumentsAnalyzer
 
             $arg_value_type = $statements_analyzer->node_data->getType($arg->value);
 
+            // the docblock in front of the argument also covers what the check of the argument reports
+            $argument_suppressed_issues = ExpressionAnalyzer::addDocblockSuppressions(
+                $statements_analyzer,
+                $arg->value,
+            );
+
             foreach ($arg_function_params[$argument_offset] as $i => $function_param) {
-                if (ArgumentAnalyzer::checkArgumentMatches(
+                $argument_matches = ArgumentAnalyzer::checkArgumentMatches(
                     $statements_analyzer,
                     $cased_method_id,
                     $method_id instanceof MethodIdentifier ? $method_id : null,
@@ -1456,10 +1462,16 @@ final class ArgumentsAnalyzer
                     $specialize_taint,
                     $in_call_map,
                     $static_is_called_class,
-                ) === false) {
+                );
+
+                if ($argument_matches === false) {
+                    $statements_analyzer->removeSuppressedIssues($argument_suppressed_issues);
+
                     return false;
                 }
             }
+
+            $statements_analyzer->removeSuppressedIssues($argument_suppressed_issues);
         }
 
         if ($statements_analyzer->taint_flow_graph

@@ -1998,6 +1998,21 @@ final class AnnotationTest extends TestCase
                         );
                     }',
             ],
+            'suppressDocblockInFrontOfAnArgumentCoversTheCheckOfTheArgument' => [
+                'code' => <<<'PHP'
+                    <?php
+                    function take(int $i, string $s): void {
+                        echo $i, $s;
+                    }
+
+                    function f(mixed $m): void {
+                        take(/** @psalm-suppress MixedArgument */ $m, 'a');
+                    }
+                    PHP,
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
             'keyOfAndValueOfOfImportedTypeAlias' => [
                 'code' => '<?php
                     /**
@@ -2038,6 +2053,21 @@ final class AnnotationTest extends TestCase
     public static function providerInvalidCodeParse(): iterable
     {
         return [
+            'suppressDocblockInFrontOfAnArgumentDoesNotCoverTheNextArgumentCheck' => [
+                'code' => <<<'PHP'
+                    <?php
+                    function take(int $i, int $j): void {
+                        echo $i, $j;
+                    }
+
+                    function f(mixed $m, mixed $n): void {
+                        take(/** @psalm-suppress MixedArgument */ $m, $n);
+                    }
+                    PHP,
+                'error_message' => 'MixedArgument - src' . DIRECTORY_SEPARATOR . 'somefile.php:7:51 - Argument 2 of take cannot be mixed',
+                'error_levels' => [],
+                'php_version' => '8.1',
+            ],
             'removedSelfAccessingCallableWithParamsIsInvalid' => [
                 'code' => <<<'PHP'
                     <?php

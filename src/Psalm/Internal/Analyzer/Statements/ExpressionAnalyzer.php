@@ -529,7 +529,7 @@ final class ExpressionAnalyzer
      *
      * @return array<int, string>
      */
-    private static function addDocblockSuppressions(
+    public static function addDocblockSuppressions(
         StatementsAnalyzer $statements_analyzer,
         PhpParser\Node\Expr $stmt,
     ): array {
