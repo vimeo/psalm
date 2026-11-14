@@ -16,14 +16,17 @@ use Psalm\Storage\FunctionLikeParameter;
 use Psalm\Type;
 use Psalm\Type\Atomic\TArray;
 use Psalm\Type\Atomic\TCallable;
+use Psalm\Type\Atomic\TKeyedArray;
 use Psalm\Type\Atomic\TNull;
 use Psalm\Type\Atomic\TString;
 use Psalm\Type\Union;
 
+use const PREG_OFFSET_CAPTURE;
 use const PREG_UNMATCHED_AS_NULL;
 
 /**
- * With PREG_UNMATCHED_AS_NULL the groups that didn't match are null in the array the callback gets
+ * With PREG_UNMATCHED_AS_NULL the groups that didn't match are null in the array the callback gets, and with
+ * PREG_OFFSET_CAPTURE each of them is a pair of the text and its offset
  *
  * @internal
  */
@@ -69,13 +72,22 @@ final class PregReplaceCallbackParamsProvider implements FunctionParamsProviderI
             }
         }
 
-        if ($flags_arg === null || !self::hasUnmatchedAsNull($event, $statements_source, $flags_arg)) {
+        $flags = $flags_arg !== null ? self::getFlags($event, $statements_source, $flags_arg) : null;
+
+        if ($flags === null || ($flags & (PREG_UNMATCHED_AS_NULL | PREG_OFFSET_CAPTURE)) === 0) {
             return $params;
         }
 
-        $matches = new Union([
-            new TArray([Type::getArrayKey(), new Union([new TString(), new TNull()])]),
-        ]);
+        // a group that did not match is null, and with PREG_OFFSET_CAPTURE each group is a pair of the text and its
+        // offset
+        $group_text = ($flags & PREG_UNMATCHED_AS_NULL) !== 0
+            ? new Union([new TString(), new TNull()])
+            : Type::getString();
+        $group = ($flags & PREG_OFFSET_CAPTURE) !== 0
+            ? new Union([TKeyedArray::make([$group_text, Type::getInt()], null, null, true)])
+            : $group_text;
+
+        $matches = new Union([new TArray([Type::getArrayKey(), $group])]);
 
         foreach ($params as $position => $param) {
             if ($param->name !== 'callback' || !$param->type) {
@@ -105,11 +117,14 @@ final class PregReplaceCallbackParamsProvider implements FunctionParamsProviderI
         return $params;
     }
 
-    private static function hasUnmatchedAsNull(
+    /**
+     * The flags, when they are an int literal
+     */
+    private static function getFlags(
         FunctionParamsProviderEvent $event,
         StatementsAnalyzer $statements_source,
         Arg $flags_arg,
-    ): bool {
+    ): ?int {
         $flags_type = SimpleTypeInferer::infer(
             $statements_source->getCodebase(),
             $statements_source->node_data,
@@ -127,8 +142,8 @@ final class PregReplaceCallbackParamsProvider implements FunctionParamsProviderI
             );
         }
 
-        return $flags_type !== null
-            && $flags_type->isSingleIntLiteral()
-            && ($flags_type->getSingleIntLiteral()->value & PREG_UNMATCHED_AS_NULL) !== 0;
+        return $flags_type !== null && $flags_type->isSingleIntLiteral()
+            ? $flags_type->getSingleIntLiteral()->value
+            : null;
     }
 }

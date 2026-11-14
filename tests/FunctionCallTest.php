@@ -3264,12 +3264,23 @@ final class FunctionCallTest extends TestCase
                     $b = preg_replace_callback(
                         "#^([a-z]+)$|^([0-9]+)$#",
                         function (array $m): string {
-                            return $m[1] === null ? "1" : "a";
+                            return $m[1][0] === null ? "1" : "a";
                         },
                         "1234567890",
                         -1,
                         $count,
                         PREG_OFFSET_CAPTURE | PREG_UNMATCHED_AS_NULL,
+                    );
+
+                    $c = preg_replace_callback(
+                        "#^([a-z]+)$|^([0-9]+)$#",
+                        function (array $m): string {
+                            return $m[1][0] . $m[1][1];
+                        },
+                        "1234567890",
+                        -1,
+                        $count,
+                        PREG_OFFSET_CAPTURE,
                     );',
                 'assertions' => [],
                 'ignored_issues' => ['PossiblyUndefinedIntArrayOffset'],
@@ -3297,6 +3308,19 @@ final class FunctionCallTest extends TestCase
     public static function providerInvalidCodeParse(): iterable
     {
         return [
+            'pregReplaceCallbackWithOffsetCaptureGivesPairsNotStrings' => [
+                'code' => '<?php
+                    preg_replace_callback(
+                        "#^([a-z]+)$|^([0-9]+)$#",
+                        fn ($m) => strtoupper($m[1]),
+                        "1234567890",
+                        1,
+                        $count,
+                        PREG_OFFSET_CAPTURE,
+                    );',
+                'error_message' => 'InvalidArgument',
+                'error_levels' => ['PossiblyUndefinedIntArrayOffset'],
+            ],
             'streamSelectDoesNotTakeAContextBeforePhp86' => [
                 'code' => '<?php
                     $read = [STDIN];
@@ -4480,7 +4504,7 @@ final class FunctionCallTest extends TestCase
                         "1234567890",
                         1,
                         $count,
-                        PREG_OFFSET_CAPTURE,
+                        0,
                     );',
                 'error_message' => 'DocblockTypeContradiction',
                 'error_levels' => ['PossiblyUndefinedIntArrayOffset'],
