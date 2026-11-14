@@ -4123,6 +4123,107 @@ final class PropertyTypeTest extends TestCase
                         }
                     }',
             ],
+            'emptyOnATypedPropertyThatNoConstructorSetsAllowsAnArrayAppend' => [
+                'code' => '<?php
+                    final class Builder {
+                        public ?array $orders;
+                    }
+
+                    function append(Builder $q): void {
+                        if (empty($q->orders)) {
+                            $q->orders[] = 1;
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => ['MissingConstructor', 'RiskyTruthyFalsyComparison'],
+                'php_version' => '8.0',
+            ],
+            'issetOnATypedPropertyDoesNotMakeAFollowingReadPossiblyUndefined' => [
+                'code' => '<?php
+                    final class Book {
+                        public string $name;
+                    }
+
+                    function viaVariable(Book $book): string {
+                        $has = isset($book->name);
+
+                        if ($has) {
+                            return $book->name;
+                        }
+
+                        return "";
+                    }
+
+                    function viaAssignment(Book $book): string {
+                        $set = isset($book->name);
+                        $name = $book->name;
+
+                        return $name;
+                    }
+
+                    function viaArgument(Book $book): int {
+                        $set = isset($book->name);
+
+                        return strlen($book->name);
+                    }',
+                'assertions' => [],
+                'ignored_issues' => ['MissingConstructor', 'UnusedVariable'],
+                'php_version' => '8.0',
+            ],
+            'issetOnATypedPropertyAsTheLeftOfAndChecksWhetherItWasSet' => [
+                'code' => '<?php
+                    final class Book {
+                        public string $name;
+                    }
+
+                    function hasName(Book $book): bool {
+                        return isset($book->name) && $book->name !== "";
+                    }',
+                'assertions' => [],
+                'ignored_issues' => ['MissingConstructor'],
+                'php_version' => '8.0',
+            ],
+            'issetOnATypedPropertyThatNoConstructorSetsChecksWhetherItWasSet' => [
+                'code' => '<?php
+                    final class Book {
+                        public string $name;
+
+                        public function __construct() {
+                        }
+                    }
+
+                    function title(Book $book): string {
+                        return $book->name ?? "untitled";
+                    }',
+                'assertions' => [],
+                'ignored_issues' => ['PropertyNotSetInConstructor'],
+                'php_version' => '8.0',
+            ],
+            'issetOnATypedPropertyOfAClassWithoutAConstructorChecksWhetherItWasSet' => [
+                'code' => '<?php
+                    final class Book {
+                        public string $name;
+                    }
+
+                    function title(Book $book): string {
+                        return $book->name ?? throw new \\Exception("Give the book a name first");
+                    }
+
+                    function hasName(Book $book): bool {
+                        return isset($book->name);
+                    }
+
+                    function describe(Book $book): string {
+                        if (!isset($book->name)) {
+                            return "nameless";
+                        }
+
+                        return $book->name;
+                    }',
+                'assertions' => [],
+                'ignored_issues' => ['MissingConstructor'],
+                'php_version' => '8.0',
+            ],
         ];
     }
 
@@ -5967,6 +6068,124 @@ final class PropertyTypeTest extends TestCase
                         }
                     }',
                 'error_message' => 'PropertyNotSetInConstructor - src' . DIRECTORY_SEPARATOR . 'somefile.php:20:27 - Property B::$prop is not defined in constructor of B',
+            ],
+            'issetOnATypedPropertyThatAParentConstructorSetsIsRedundantInTheChild' => [
+                'code' => '<?php
+                    class Base {
+                        public string $name;
+
+                        public function __construct() {
+                            $this->name = "x";
+                        }
+                    }
+
+                    final class Child extends Base {
+                        public function __construct() {
+                            parent::__construct();
+                        }
+                    }
+
+                    function hasName(Child $child): bool {
+                        if (isset($child->name)) {
+                            return true;
+                        }
+
+                        return false;
+                    }',
+                'error_message' => 'RedundantCondition',
+                'error_levels' => [],
+                'php_version' => '8.0',
+            ],
+            'nullCoalescingOnATypedPropertyThatNoConstructorSetsKeepsTheNullableConcatenation' => [
+                'code' => '<?php
+                    final class Box {
+                        public ?string $tag;
+
+                        public function __construct() {
+                        }
+                    }
+
+                    function tag(Box $box): void {
+                        $t = $box->tag ?? null;
+                        $box->tag .= "x";
+                    }',
+                'error_message' => 'PossiblyNullOperand',
+                'error_levels' => ['MissingConstructor', 'PropertyNotSetInConstructor'],
+                'php_version' => '8.0',
+            ],
+            'issetOnADocblockTypedPropertyIsRedundant' => [
+                'code' => '<?php
+                    final class Book {
+                        /** @var string */
+                        public $name = "x";
+                    }
+
+                    function hasName(Book $book): bool {
+                        if (isset($book->name)) {
+                            return true;
+                        }
+
+                        return false;
+                    }',
+                'error_message' => 'RedundantConditionGivenDocblockType',
+                'error_levels' => [],
+                'php_version' => '8.0',
+            ],
+            'issetOnATypedPropertyWithADefaultIsRedundant' => [
+                'code' => '<?php
+                    final class Book {
+                        public string $name = "x";
+                    }
+
+                    function hasName(Book $book): bool {
+                        if (isset($book->name)) {
+                            return true;
+                        }
+
+                        return false;
+                    }',
+                'error_message' => 'RedundantCondition',
+                'error_levels' => [],
+                'php_version' => '8.0',
+            ],
+            'issetOnAPromotedPropertyIsRedundant' => [
+                'code' => '<?php
+                    final class Book {
+                        public function __construct(public string $name) {
+                        }
+                    }
+
+                    function hasName(Book $book): bool {
+                        if (isset($book->name)) {
+                            return true;
+                        }
+
+                        return false;
+                    }',
+                'error_message' => 'RedundantCondition',
+                'error_levels' => [],
+                'php_version' => '8.0',
+            ],
+            'issetOnATypedPropertyThatAConstructorSetsIsRedundant' => [
+                'code' => '<?php
+                    final class Book {
+                        public string $name;
+
+                        public function __construct() {
+                            $this->name = "x";
+                        }
+                    }
+
+                    function hasName(Book $book): bool {
+                        if (isset($book->name)) {
+                            return true;
+                        }
+
+                        return false;
+                    }',
+                'error_message' => 'RedundantCondition - src' . DIRECTORY_SEPARATOR . 'somefile.php:11:29 - Type string for $book->name is always isset',
+                'error_levels' => [],
+                'php_version' => '8.0',
             ],
         ];
     }

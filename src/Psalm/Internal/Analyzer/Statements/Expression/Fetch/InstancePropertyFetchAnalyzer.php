@@ -335,6 +335,16 @@ final class InstancePropertyFetchAnalyzer
             );
         }
 
+        // a typed property of a class that has no constructor starts uninitialized, so isset() on it asks something
+        if ($context->inside_isset
+            && ($stmt_type = $statements_analyzer->node_data->getType($stmt))
+            && !$stmt_type->ignore_isset
+            && self::isLeftUninitialized($codebase, $stmt_var_type, $prop_name)
+        ) {
+            $stmt_type = $stmt_type->setProperties(['ignore_isset' => true]);
+            $statements_analyzer->node_data->setType($stmt, $stmt_type);
+        }
+
         if ($invalid_fetch_types) {
             $lhs_type_part = $invalid_fetch_types[0];
 
@@ -364,6 +374,62 @@ final class InstancePropertyFetchAnalyzer
                     && self::isUndeclaredInterfaceProperty($codebase, $stmt_var_type, $stmt->name->name)))
         ) {
             $context->vars_in_scope[$var_id] = $statements_analyzer->node_data->getType($stmt) ?? Type::getMixed();
+        }
+
+        return true;
+    }
+
+    /**
+     * Whether a typed property may be read before anything set it: it has no default, is not promoted, and no
+     * constructor of the class or its parents assigns it
+     *
+     * @psalm-capabilities read-props|write-this-props|write-props|write-refs
+     */
+    private static function isLeftUninitialized(
+        Codebase $codebase,
+        Union $object_type,
+        ?string $property_name,
+    ): bool {
+        if ($property_name === null || !$object_type->isSingle()) {
+            return false;
+        }
+
+        $object_atomic = $object_type->getSingleAtomic();
+
+        if (!$object_atomic instanceof TNamedObject || !$codebase->classExists($object_atomic->value)) {
+            return false;
+        }
+
+        $storage = $codebase->classlike_storage_provider->get($object_atomic->value);
+
+        if (!isset($storage->declaring_property_ids[$property_name])) {
+            return false;
+        }
+
+        $property = $codebase->classlike_storage_provider->get($storage->declaring_property_ids[$property_name])
+            ->properties[$property_name] ?? null;
+
+        if ($property === null
+            || $property->signature_type === null
+            || $property->has_default
+            || $property->is_promoted
+            || $property->is_static
+        ) {
+            return false;
+        }
+
+        $class_storages = [$storage];
+
+        foreach ($storage->parent_classes as $parent_class) {
+            if ($codebase->classlike_storage_provider->has($parent_class)) {
+                $class_storages[] = $codebase->classlike_storage_provider->get($parent_class);
+            }
+        }
+
+        foreach ($class_storages as $class_storage) {
+            if (isset($class_storage->methods['__construct']->this_property_mutations[$property_name])) {
+                return false;
+            }
         }
 
         return true;

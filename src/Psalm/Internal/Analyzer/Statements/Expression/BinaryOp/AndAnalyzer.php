@@ -27,6 +27,7 @@ use function array_values;
 use function count;
 use function in_array;
 use function spl_object_id;
+use function str_contains;
 use function str_starts_with;
 
 /**
@@ -88,7 +89,12 @@ final class AndAnalyzer
         );
 
         foreach ($left_context->vars_in_scope as $var_id => $type) {
-            if (isset($left_context->assigned_var_ids[$var_id])) {
+            if (isset($left_context->assigned_var_ids[$var_id])
+                // the property of an isset() that asks whether it was set (see InstancePropertyFetchAnalyzer)
+                || ($type->ignore_isset
+                    && !isset($context->vars_in_scope[$var_id])
+                    && str_contains($var_id, '->'))
+            ) {
                 $context->vars_in_scope[$var_id] = $type;
             }
         }
