@@ -988,10 +988,6 @@ class Reconciler
                         }
 
                         if ($existing_key_type_part instanceof TArray) {
-                            if ($has_empty && $new_base_key !== $key) {
-                                return null;
-                            }
-
                             $new_base_type_candidate = $existing_key_type_part->type_params[1];
 
                             if ($new_base_type_candidate->isMixed()

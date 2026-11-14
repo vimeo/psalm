@@ -660,6 +660,17 @@ final class ArrayAccessTest extends TestCase
                 ],
                 'ignored_issues' => ['RiskyTruthyFalsyComparison'],
             ],
+            'emptyNestedOffsetOfArrayKeepsValueType' => [
+                'code' => '<?php
+                    /** @var array<string, array<string, int>> $arr */
+                    $arr = [];
+
+                    $v = empty($arr["x"]["y"]) ? $arr["x"]["y"] : 0;',
+                'assertions' => [
+                    '$v' => 'int',
+                ],
+                'ignored_issues' => ['RiskyTruthyFalsyComparison'],
+            ],
             'coalesceOnAnIntKeyThatMayBeMissingKeepsTheFoundType' => [
                 'code' => '<?php
                     $a = [1 => "Hello"];
