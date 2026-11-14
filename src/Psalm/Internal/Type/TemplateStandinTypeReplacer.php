@@ -121,35 +121,53 @@ final class TemplateStandinTypeReplacer
 
         $original_atomic_types = $union_type->getAtomicTypes();
 
-        // here we want to subtract atomic types from the input type
-        // when they're also in the union type, so those shared atomic
-        // types will never be inferred as part of the generic type
+        // input atoms that share a key with a union atom are matched by that atom, so they
+        // never become part of the type inferred for the other atoms, e.g. `null` for `T|null`
+        $other_input_type = $input_type;
+
         if ($input_type && !$input_type->isSingle()) {
             $new_input_type = $input_type->getBuilder();
+            $has_template_atom = false;
 
-            foreach ($original_atomic_types as $key => $_) {
+            foreach ($original_atomic_types as $key => $atomic_type) {
+                $has_template_atom = $has_template_atom || $atomic_type instanceof TTemplateParam;
+
                 if ($new_input_type->hasType($key)) {
                     $new_input_type->removeType($key);
                 }
             }
 
-            if (!$new_input_type->isUnionEmpty()) {
-                $input_type = $new_input_type->freeze();
-            } else {
-                return $union_type;
+            $other_input_type = $new_input_type->isUnionEmpty() ? null : $new_input_type->freeze();
+
+            // a bare template keeps the subtraction for every atom: its bounds would otherwise
+            // compete by depth with the deeper bounds a matched container atom adds
+            if ($has_template_atom) {
+                if (!$other_input_type) {
+                    return $union_type;
+                }
+
+                $input_type = $other_input_type;
             }
         }
 
         $had_template = false;
 
         foreach ($original_atomic_types as $key => $atomic_type) {
+            $matches_input_key = $input_type && $input_type->hasType($key);
+
+            // nothing is left to infer the other atoms from, so keep them as they are
+            if (!$matches_input_key && $input_type && !$other_input_type) {
+                $atomic_types[] = $atomic_type;
+                continue;
+            }
+
             $atomic_types = [...$atomic_types, ...self::handleAtomicStandin(
                 $atomic_type,
                 $key,
                 $template_result,
                 $codebase,
                 $statements_analyzer,
-                $input_type,
+                $matches_input_key ? $input_type : $other_input_type,
                 $input_arg_offset,
                 $calling_class,
                 $calling_function,
@@ -162,6 +180,7 @@ final class TemplateStandinTypeReplacer
             )];
         }
 
+        // the result keeps the parent nodes: this also runs on argument types, whose data flow must survive
         if ($replace) {
             if (array_values($original_atomic_types) === $atomic_types) {
                 return $union_type;
@@ -180,6 +199,7 @@ final class TemplateStandinTypeReplacer
                     'ignore_falsable_issues' => $union_type->ignore_falsable_issues,
                     'possibly_undefined' => $union_type->possibly_undefined,
                     'had_template' => $had_template,
+                    'parent_nodes' => $union_type->parent_nodes,
                 ]);
             }
 
@@ -188,6 +208,7 @@ final class TemplateStandinTypeReplacer
                 'ignore_falsable_issues' => $union_type->ignore_falsable_issues,
                 'possibly_undefined' => $union_type->possibly_undefined,
                 'had_template' => $had_template,
+                'parent_nodes' => $union_type->parent_nodes,
             ]);
         }
 

@@ -40,9 +40,12 @@ use Psalm\Type\Atomic\TClassConstant;
 use Psalm\Type\Atomic\TGenericObject;
 use Psalm\Type\Atomic\TGlobalConstant;
 use Psalm\Type\Atomic\TIntersection;
+use Psalm\Type\Atomic\TKeyOf;
 use Psalm\Type\Atomic\TNamedObject;
 use Psalm\Type\Atomic\TResource;
 use Psalm\Type\Atomic\TTemplateParam;
+use Psalm\Type\Atomic\TTypeAlias;
+use Psalm\Type\Atomic\TValueOf;
 use Psalm\Type\MutableUnion;
 use Psalm\Type\TypeNode;
 use Psalm\Type\TypeVisitor;
@@ -67,6 +70,19 @@ use function strtolower;
 final class TypeChecker extends TypeVisitor
 {
     private bool $has_errors = false;
+
+    /**
+     * Whether the result of the check holds wherever the type is: not when a phantom class (a class_exists() check
+     * around the code) let a class pass
+     */
+    private bool $context_free = true;
+
+    /**
+     * The types this checker marked as checked, for check() to unmark when the result can't be kept
+     *
+     * @var list<Atomic|Union|MutableUnion>
+     */
+    private array $checked_types = [];
 
     /**
      * Whether the node being visited is in an invariant type param of a generic object, where entering a
@@ -133,8 +149,7 @@ final class TypeChecker extends TypeVisitor
                 $this->prevent_template_covariance = $outer_prevents_covariance;
                 $this->in_invariant_position = $outer_in_invariant_position;
 
-                /** @psalm-suppress InaccessibleProperty Doesn't affect anything else */
-                $type->checked = true;
+                $this->markChecked($type);
 
                 return self::DONT_TRAVERSE_CHILDREN;
             }
@@ -148,10 +163,11 @@ final class TypeChecker extends TypeVisitor
             $this->checkResource($type);
         } elseif ($type instanceof TIntersection) {
             $this->checkIntersection($type);
+        } elseif ($type instanceof TKeyOf || $type instanceof TValueOf) {
+            $this->checkKeyOrValueOfAlias($type);
         }
 
-        /** @psalm-suppress InaccessibleProperty Doesn't affect anything else */
-        $type->checked = true;
+        $this->markChecked($type);
 
         return null;
     }
@@ -189,9 +205,36 @@ final class TypeChecker extends TypeVisitor
         return $result;
     }
 
-    public function hasErrors(): bool
+    /**
+     * Checks the type, and marks it and the types in it as checked only if that raised no issue (a suppressed one
+     * included) and holds wherever the type is, so that checking it again elsewhere reports the same issues
+     *
+     * @return bool whether the type has no errors
+     * @psalm-external-mutation-free
+     */
+    public function check(Union|MutableUnion $type): bool
     {
-        return $this->has_errors;
+        $issue_count = IssueBuffer::getAcceptedIssueCount();
+
+        $this->traverse($type);
+
+        if ($this->context_free && IssueBuffer::getAcceptedIssueCount() === $issue_count) {
+            return true;
+        }
+
+        foreach ($this->checked_types as $checked_type) {
+            /** @psalm-suppress InaccessibleProperty, ImpurePropertyAssignment `checked` only memoises the check */
+            $checked_type->checked = false;
+        }
+
+        return !$this->has_errors;
+    }
+
+    private function markChecked(Atomic|Union|MutableUnion $type): void
+    {
+        /** @psalm-suppress InaccessibleProperty Doesn't affect anything else */
+        $type->checked = true;
+        $this->checked_types[] = $type;
     }
 
     /**
@@ -244,6 +287,8 @@ final class TypeChecker extends TypeVisitor
                 $this->has_errors = true;
                 return null;
             }
+        } else {
+            $this->context_free = false;
         }
 
         $fq_class_name_lc = strtolower($atomic->value);
@@ -491,6 +536,40 @@ final class TypeChecker extends TypeVisitor
                 $this->source->getSuppressedIssues(),
             );
         }
+    }
+
+    /**
+     * An imported type alias is only known once the class is populated, so what the parser accepted of it is
+     * checked here, as it is for a type the parser could resolve itself
+     */
+    private function checkKeyOrValueOfAlias(TKeyOf|TValueOf $atomic): void
+    {
+        if (!array_any(
+            $atomic->type->getAtomicTypes(),
+            static fn(Atomic $part): bool => $part instanceof TTypeAlias,
+        )) {
+            return;
+        }
+
+        $expanded_type = TypeExpander::expandUnion($this->source->getCodebase(), $atomic->type, null, null, null);
+
+        if ($atomic instanceof TKeyOf
+            ? TKeyOf::isViableTemplateType($expanded_type)
+            : TValueOf::isViableTemplateType($expanded_type)
+        ) {
+            return;
+        }
+
+        IssueBuffer::maybeAdd(
+            new InvalidDocblock(
+                'Untemplated ' . ($atomic instanceof TKeyOf ? 'key-of' : 'value-of') . ' param '
+                    . $expanded_type->getId(false) . ' should be an array',
+                $this->code_location,
+            ),
+            $this->suppressed_issues,
+        );
+
+        $this->has_errors = true;
     }
 
     private function checkGlobalConstant(TGlobalConstant $atomic): void

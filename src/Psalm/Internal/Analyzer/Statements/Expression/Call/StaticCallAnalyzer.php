@@ -452,7 +452,7 @@ final class StaticCallAnalyzer extends CallAnalyzer
             $removed_taints = $codebase->config->eventDispatcher->dispatchRemoveTaints($event);
         }
 
-        if ($conditionally_removed_taints) {
+        if ($conditionally_removed_taints || $added_taints !== 0 || $removed_taints !== 0) {
             // a node of this call's own: what it removes depends on its arguments, and $method_source may be
             // shared with the other calls, the last call deciding for all
             $assignment_node = DataFlowNode::getForAssignment($method_id . '-escaped', $node_location);

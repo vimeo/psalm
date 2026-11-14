@@ -2754,9 +2754,11 @@ final class SimpleAssertionReconciler extends Reconciler
                 && $codebase->methodExists($type->value . '::__invoke')
             ) {
                 $callable_types[] = $type;
-            } elseif ($type::class === TString::class
-                || $type::class === TNonEmptyString::class
-                || $type::class === TNonFalsyString::class
+            } elseif ($type instanceof TString
+                && !$type instanceof TLiteralString
+                // the name of a function is never numeric, but it can be lowercase and a literal
+                && ($string_refinements = StringRefinement::get($type)) !== null
+                && ($string_refinements & StringRefinement::NUMERIC) === 0
             ) {
                 $callable_types[] = new TCallableString();
                 $redundant = false;
