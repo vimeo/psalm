@@ -9,7 +9,6 @@ use Psalm\CodeLocation;
 use Psalm\Exception\ComplicatedExpressionException;
 use Psalm\Internal\Algebra;
 use Psalm\Internal\Algebra\FormulaGenerator;
-use Psalm\Internal\Analyzer\Statements\Expression\ExpressionIdentifier;
 use Psalm\Internal\Clause;
 use Psalm\Issue\ParadoxicalCondition;
 use Psalm\Issue\RedundantCondition;
@@ -240,15 +239,17 @@ final class AlgebraAnalyzer
             return;
         }
 
-        // an operand reads the variables the condition assigns as assigned, not as they were established before it
-        $assigned_var_ids = self::getAssignedVarIds($stmt, $statements_analyzer->getFQCLN());
+        $assigned_var_ids = [];
 
-        if ($assigned_var_ids !== []) {
-            $formula_1 = array_values(array_filter(
+        foreach ($operand_formulas as [$operand, $negated_operand_formula]) {
+            // an operand reads the variables it and the operands before it assign as assigned, not as established
+            $assigned_var_ids += FormulaGenerator::getAssignedVarIds($operand, $statements_analyzer->getFQCLN());
+
+            $operand_formula_1 = $assigned_var_ids === [] ? $formula_1 : array_values(array_filter(
                 $formula_1,
                 static function (Clause $clause) use ($assigned_var_ids): bool {
                     foreach ($clause->possibilities as $key => $_) {
-                        foreach ($assigned_var_ids as $assigned_var_id) {
+                        foreach (array_keys($assigned_var_ids) as $assigned_var_id) {
                             if (preg_match('/^' . preg_quote($assigned_var_id, '/') . '(\[|-|$)/', $key)) {
                                 return false;
                             }
@@ -258,10 +259,8 @@ final class AlgebraAnalyzer
                     return true;
                 },
             ));
-        }
 
-        foreach ($operand_formulas as [$operand, $negated_operand_formula]) {
-            $operand_implication = self::findImplication($formula_1, $negated_operand_formula);
+            $operand_implication = self::findImplication($operand_formula_1, $negated_operand_formula);
 
             if ($operand_implication !== null) {
                 self::reportParadox($statements_analyzer, $operand, $operand_implication[0], $operand_implication[1]);
@@ -291,52 +290,6 @@ final class AlgebraAnalyzer
         }
 
         return $operands;
-    }
-
-    /**
-     * The root ids of the variables the expression assigns, as of `$a = …`, `$a[] = …`, `[$a, $b] = …`, `$a++`
-     *
-     * @return list<string>
-     */
-    private static function getAssignedVarIds(PhpParser\Node $expr, ?string $this_class_name): array
-    {
-        $assigned_var_ids = [];
-
-        foreach ((new PhpParser\NodeFinder())->findInstanceOf($expr, PhpParser\Node\Expr::class) as $assignment) {
-            if (!$assignment instanceof PhpParser\Node\Expr\Assign
-                && !$assignment instanceof PhpParser\Node\Expr\AssignRef
-                && !$assignment instanceof PhpParser\Node\Expr\AssignOp
-                && !$assignment instanceof PhpParser\Node\Expr\PreInc
-                && !$assignment instanceof PhpParser\Node\Expr\PreDec
-                && !$assignment instanceof PhpParser\Node\Expr\PostInc
-                && !$assignment instanceof PhpParser\Node\Expr\PostDec
-            ) {
-                continue;
-            }
-
-            $assigned_vars = $assignment->var instanceof PhpParser\Node\Expr\List_
-                || $assignment->var instanceof PhpParser\Node\Expr\Array_
-                ? $assignment->var->items
-                : [$assignment->var];
-
-            foreach ($assigned_vars as $assigned_var) {
-                if ($assigned_var instanceof PhpParser\Node\ArrayItem) {
-                    $assigned_var = $assigned_var->value;
-                }
-
-                if ($assigned_var === null) {
-                    continue;
-                }
-
-                $assigned_var_id = ExpressionIdentifier::getRootVarId($assigned_var, $this_class_name);
-
-                if ($assigned_var_id !== null) {
-                    $assigned_var_ids[] = $assigned_var_id;
-                }
-            }
-        }
-
-        return $assigned_var_ids;
     }
 
     /**

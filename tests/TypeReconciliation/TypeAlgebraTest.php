@@ -2074,6 +2074,40 @@ final class TypeAlgebraTest extends TestCase
                     }',
                 'error_message' => 'ParadoxicalCondition - src' . DIRECTORY_SEPARATOR . 'somefile.php:8:64',
             ],
+            'deadOperandBeforeAnOperandAssigningItsVariableIsParadoxical' => [
+                'code' => '<?php
+                    function h(): string {
+                        return rand(0, 1) ? "a" : "b";
+                    }
+
+                    function pick(string $m, bool $flag): int {
+                        if ($m !== "a") {
+                            if ($flag || $m === "a" || ($m = h()) === "b") {
+                                return 1;
+                            }
+                        }
+
+                        return 0;
+                    }',
+                'error_message' => 'ParadoxicalCondition - src' . DIRECTORY_SEPARATOR . 'somefile.php:8:42',
+            ],
+            'deadOperandNextToAnArrowFunctionAssigningItsVariableIsParadoxical' => [
+                'code' => '<?php
+                    function accepts(callable $c): bool {
+                        return (bool) $c();
+                    }
+
+                    function pick(string $m, bool $flag): int {
+                        if ($m !== "a") {
+                            if ($flag || accepts(static fn(): string => $m = "a") || $m === "a") {
+                                return 1;
+                            }
+                        }
+
+                        return 0;
+                    }',
+                'error_message' => 'ParadoxicalCondition - src' . DIRECTORY_SEPARATOR . 'somefile.php:8:86',
+            ],
             'conditionOfOnlyValuesAnEarlierConditionExcludedIsParadoxical' => [
                 'code' => '<?php
                     function test(string $value): int {
