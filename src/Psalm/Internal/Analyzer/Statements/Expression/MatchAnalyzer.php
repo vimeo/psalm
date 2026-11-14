@@ -81,6 +81,9 @@ final class MatchAnalyzer
 
         $match_condition = $stmt->cond;
 
+        $is_match_true = $stmt->cond instanceof PhpParser\Node\Expr\ConstFetch
+            && $stmt->cond->name->toString() === 'true';
+
         if (!$switch_var_id) {
             if ($stmt->cond instanceof PhpParser\Node\Expr\FuncCall
                 && $stmt->cond->name instanceof PhpParser\Node\Name
@@ -122,9 +125,7 @@ final class MatchAnalyzer
                 && $stmt->cond->name->toString() === 'class'
             ) {
                 // do nothing
-            } elseif ($stmt->cond instanceof PhpParser\Node\Expr\ConstFetch
-                && $stmt->cond->name->toString() === 'true'
-            ) {
+            } elseif ($is_match_true) {
                 // do nothing
             } else {
                 $switch_var_id = '$__tmp_switch__' . (int) $stmt->cond->getAttribute('startFilePos');
@@ -147,6 +148,12 @@ final class MatchAnalyzer
         foreach ($arms as $arm) {
             if ($arm->conds === null) {
                 $last_arm = $arm;
+                continue;
+            }
+
+            // analysed once per condition, the body would see only that condition's narrowing
+            if ($is_match_true) {
+                $flattened_arms[] = $arm;
                 continue;
             }
 
@@ -185,7 +192,12 @@ final class MatchAnalyzer
             $ternary = $last_arm->body;
         } else {
             $ternary = new VirtualTernary(
-                self::convertCondsToConditional($last_arm->conds, $match_condition, $last_arm->getAttributes()),
+                self::convertCondsToConditional(
+                    $last_arm->conds,
+                    $match_condition,
+                    $last_arm->getAttributes(),
+                    $is_match_true,
+                ),
                 $last_arm->body,
                 new VirtualThrow(
                     new VirtualNew(
@@ -207,7 +219,7 @@ final class MatchAnalyzer
             }
 
             $ternary = new VirtualTernary(
-                self::convertCondsToConditional($arm->conds, $match_condition, $arm->getAttributes()),
+                self::convertCondsToConditional($arm->conds, $match_condition, $arm->getAttributes(), $is_match_true),
                 $arm->body,
                 $ternary,
                 $arm->getAttributes(),
@@ -281,6 +293,7 @@ final class MatchAnalyzer
                     $all_conds,
                     $match_condition,
                     $match_condition->getAttributes(),
+                    false,
                 );
             }
 
@@ -415,7 +428,24 @@ final class MatchAnalyzer
         array $conds,
         PhpParser\Node\Expr $match_condition,
         array $attributes,
+        bool $is_match_true,
     ): PhpParser\Node\Expr {
+        // in_array() narrows only its needle, and the needle of `match (true)` is a constant: its conditions narrow
+        // only in an `||` chain, where each keeps its own location and clause key
+        if ($is_match_true) {
+            $conditional = null;
+
+            foreach ($conds as $cond) {
+                $cond_identical = new VirtualIdentical($match_condition, $cond, $cond->getAttributes());
+
+                $conditional = $conditional
+                    ? new VirtualBooleanOr($conditional, $cond_identical, $attributes)
+                    : $cond_identical;
+            }
+
+            return $conditional;
+        }
+
         if (count($conds) === 1) {
             return new VirtualIdentical(
                 $match_condition,

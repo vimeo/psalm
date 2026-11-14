@@ -438,7 +438,6 @@ final class AssertAnnotationTest extends TestCase
                         }
                     }',
                 'assertions' => [],
-                'ignored_issues' => ['MissingOverrideAttribute'],
             ],
             'assertIfTrueAndFalseKeepEveryAlternativeOfAUnionOnAProperty' => [
                 'code' => '<?php
@@ -2364,7 +2363,7 @@ final class AssertAnnotationTest extends TestCase
                         }
                     }',
                 'assertions' => [],
-                'ignored_issues' => ['ClassMustBeFinal'],
+                'ignored_issues' => [],
                 'php_version' => '8.0',
             ],
             'withHasTypeCall' => [
@@ -4175,6 +4174,44 @@ final class AssertAnnotationTest extends TestCase
                 'ignored_issues' => [],
                 'php_version' => '8.2',
             ],
+            'assertedPropertyNamedLikeTheArgumentIndexIsKept' => [
+                'code' => '<?php
+                    final class A {
+                        public function __construct(public readonly ?int $p0, public readonly ?int $p1) {}
+                    }
+
+                    /** @psalm-assert-if-true int $a->p0 */
+                    function ifTrue(A $a): bool { return $a->p0 !== null; }
+
+                    /** @psalm-assert-if-false int $a->p0 */
+                    function ifFalse(A $a): bool { return $a->p0 === null; }
+
+                    /** @psalm-assert-if-true int $b->p1 */
+                    function second(int $x, A $b): bool { return $b->p1 !== null; }
+
+                    function g(A $x): int { if (ifTrue($x)) { return $x->p0; } return 0; }
+
+                    function h(A $x): int { if (!ifFalse($x)) { return $x->p0; } return 0; }
+
+                    function j(A $y): int { if (second(1, $y)) { return $y->p1; } return 0; }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
+            'assertedPropertyNamedLikeTheArgumentIndexIsKeptByAssert' => [
+                'code' => '<?php
+                    final class A {
+                        public function __construct(public readonly ?int $p0) {}
+                    }
+
+                    /** @psalm-assert int $a->p0 */
+                    function always(A $a): void { assert($a->p0 !== null); }
+
+                    function i(A $x): int { always($x); return $x->p0; }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
         ];
     }
 
@@ -4228,18 +4265,18 @@ final class AssertAnnotationTest extends TestCase
                 'code' => '<?php
                     interface Comparable {
                         /** @psalm-assert-if-true static $object */
-                        public function equals(Comparable $object): bool;
+                        public function equals(object $object): bool;
                     }
 
                     final class Money implements Comparable {
                         public int $amount = 0;
 
-                        public function equals(Comparable $object): bool {
+                        public function equals(object $object): bool {
                             return true;
                         }
                     }
 
-                    function total(Comparable $left, Comparable $right): int {
+                    function total(Comparable $left, object $right): int {
                         if ($left->equals($right)) {
                             return $right->amount;
                         }

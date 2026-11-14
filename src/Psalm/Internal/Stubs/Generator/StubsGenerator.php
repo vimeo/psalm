@@ -312,8 +312,7 @@ final class StubsGenerator
     }
 
     /**
-     * @return PhpParser\Node\Identifier|PhpParser\Node\Name\FullyQualified|PhpParser\Node\NullableType
-     *     |PhpParser\Node\UnionType|null
+     * @return PhpParser\Node\Identifier|PhpParser\Node\Name\FullyQualified|PhpParser\Node\NullableType|PhpParser\Node\UnionType|null
      */
     public static function getParserTypeFromPsalmType(Union $type): ?PhpParser\NodeAbstract
     {
@@ -342,18 +341,12 @@ final class StubsGenerator
             ) {
                 $identifier_string = $atomic_type->toPhpString(null, [], null, 8_00_00);
 
-                if ($identifier_string === null) {
-                    throw new UnexpectedValueException(
-                        $atomic_type->getId() . ' could not be converted to an identifier'
-                    );
+                if ($identifier_string !== null) {
+                    $nodes[$identifier_string] = new VirtualIdentifier($identifier_string);
+
+                    continue;
                 }
-
-                $nodes[$identifier_string] = new VirtualIdentifier($identifier_string);
-
-                continue;
-            }
-
-            if ($atomic_type instanceof TNamedObject) {
+            } elseif ($atomic_type instanceof TNamedObject) {
                 $nodes[$atomic_type->value] = new VirtualFullyQualified($atomic_type->value);
 
                 continue;
