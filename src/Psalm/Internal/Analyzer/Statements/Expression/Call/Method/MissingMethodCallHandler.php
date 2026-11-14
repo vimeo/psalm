@@ -36,6 +36,7 @@ use Psalm\Type\Union;
 use function array_map;
 use function array_merge;
 use function count;
+use function strtolower;
 
 /**
  * @internal
@@ -58,9 +59,14 @@ final class MissingMethodCallHandler
         $fq_class_name = $method_id->fq_class_name;
         $method_name_lc = $method_id->method_name;
 
+        // the method id names the mixin whose `@method` the call goes to
+        $pseudo_method_class_storage = strtolower($fq_class_name) === strtolower($class_storage->name)
+            ? $class_storage
+            : $codebase->classlikes->getStorageFor($fq_class_name) ?? $class_storage;
+
         if ($stmt->isFirstClassCallable()) {
-            $found_method_and_class_storage = isset($class_storage->pseudo_methods[$method_name_lc])
-                ? self::findPseudoMethodAndClassStorages($codebase, $class_storage, $method_name_lc)
+            $found_method_and_class_storage = isset($pseudo_method_class_storage->pseudo_methods[$method_name_lc])
+                ? self::findPseudoMethodAndClassStorages($codebase, $pseudo_method_class_storage, $method_name_lc)
                 : null;
 
             if ($found_method_and_class_storage) {
@@ -87,7 +93,7 @@ final class MissingMethodCallHandler
 
         $found_method_and_class_storage = self::findPseudoMethodAndClassStorages(
             $codebase,
-            $class_storage,
+            $pseudo_method_class_storage,
             $method_name_lc,
         );
 
@@ -722,6 +728,20 @@ final class MissingMethodCallHandler
         }
 
         return true;
+    }
+
+    /**
+     * Whether the class, one of its parent classes or one of its interfaces declares the `@method`
+     *
+     * @param lowercase-string $method_name_lc
+     * @psalm-mutation-free
+     */
+    public static function hasPseudoMethod(
+        Codebase $codebase,
+        ClassLikeStorage $class_storage,
+        string $method_name_lc,
+    ): bool {
+        return self::findPseudoMethodAndClassStorages($codebase, $class_storage, $method_name_lc) !== null;
     }
 
     /**

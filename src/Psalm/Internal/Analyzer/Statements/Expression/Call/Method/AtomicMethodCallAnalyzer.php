@@ -386,8 +386,8 @@ final class AtomicMethodCallAnalyzer extends CallAnalyzer
 
             $naive_method_exists = false;
 
-            // a `@method` of the class wins over its mixins
-            if (!isset($class_storage->pseudo_methods[$method_name_lc])) {
+            // a `@method` of the class or of its interfaces wins over its mixins
+            if (!MissingMethodCallHandler::hasPseudoMethod($codebase, $class_storage, $method_name_lc)) {
                 $mixin_method_exists = false;
 
                 $mixin = MixinLookup::findMember(
@@ -424,14 +424,16 @@ final class AtomicMethodCallAnalyzer extends CallAnalyzer
                 );
 
                 if ($mixin !== null) {
-                    $mixin_user_class = $fq_class_name;
-                    [$lhs_type_part, $class_storage] = $mixin;
-                    $method_id = new MethodIdentifier($class_storage->name, $method_name_lc);
-                    $naive_method_exists = $mixin_method_exists;
+                    // for a `@method` of the mixin only the method id moves: the call goes through the __call() of
+                    // the class, with `$this` the class
+                    $method_id = new MethodIdentifier($mixin[1]->name, $method_name_lc);
 
-                    if ($naive_method_exists) {
-                        $fq_class_name = $class_storage->name;
+                    if ($mixin_method_exists) {
+                        $mixin_user_class = $fq_class_name;
                         $mixin_method_id = $method_id;
+                        [$lhs_type_part, $class_storage] = $mixin;
+                        $fq_class_name = $class_storage->name;
+                        $naive_method_exists = true;
                     }
                 }
             }

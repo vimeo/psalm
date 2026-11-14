@@ -8,8 +8,12 @@ use Attribute;
 use Override;
 use PhpParser\Node\Stmt\Trait_;
 use Psalm\Aliases;
+use Psalm\CodeLocation;
 use Psalm\Context;
+use Psalm\Internal\Type\TypeExpander;
 use Psalm\Type;
+use Psalm\Type\Atomic\TNamedObject;
+use Psalm\Type\Union;
 
 use function assert;
 
@@ -98,5 +102,24 @@ final class TraitAnalyzer extends ClassLikeAnalyzer
             $storage,
             $storage->suppressed_issues + $statements_analyzer->getSuppressedIssues(),
         );
+
+        $mixins = $storage->getMixins();
+
+        if ($mixins) {
+            $union = TypeExpander::expandUnion(
+                $codebase,
+                new Union($mixins),
+                $storage->name,
+                new TNamedObject($storage->name, true),
+                null,
+            );
+
+            /** @psalm-suppress UnusedMethodCall This call actually has the side effect of creating issues */
+            $union->check(
+                $statements_analyzer,
+                new CodeLocation($statements_analyzer, $stmt->name, null, true),
+                $storage->suppressed_issues + $statements_analyzer->getSuppressedIssues(),
+            );
+        }
     }
 }

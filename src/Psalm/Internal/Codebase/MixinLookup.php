@@ -72,8 +72,9 @@ final class MixinLookup
         bool $self_call = false,
     ): ?array {
         $visited = [];
+        $seen_scopes = [];
 
-        return self::find($codebase, $storage, $receiver, $has_member, $self_call, $visited);
+        return self::find($codebase, $storage, $receiver, $has_member, $self_call, $visited, $seen_scopes);
     }
 
     /**
@@ -130,6 +131,7 @@ final class MixinLookup
     /**
      * @param Closure(ClassLikeStorage): bool $has_member
      * @param array<lowercase-string, true> $visited
+     * @param array<lowercase-string, true> $seen_scopes
      * @return array{TNamedObject, ClassLikeStorage}|null
      */
     private static function find(
@@ -139,6 +141,7 @@ final class MixinLookup
         Closure $has_member,
         bool $self_call,
         array &$visited,
+        array &$seen_scopes,
     ): ?array {
         // the members and mixins of the class and of its parent classes are the receiver's already
         $visited[strtolower($storage->name)] = true;
@@ -147,10 +150,26 @@ final class MixinLookup
             $visited[$parent_class_lc] = true;
         }
 
-        $scopes = self::getScopes($codebase->classlike_storage_provider, $codebase->classlikes, $storage);
+        // a class or trait shared with a class looked up before keeps its mixins bound to that class
+        $scopes = [];
+
+        foreach (self::getScopes($codebase->classlike_storage_provider, $codebase->classlikes, $storage) as $scope) {
+            $scope_name_lc = strtolower($scope->name);
+
+            if (!isset($seen_scopes[$scope_name_lc])) {
+                $seen_scopes[$scope_name_lc] = true;
+                $scopes[] = $scope;
+            }
+        }
 
         foreach ($scopes as $scope) {
             foreach ($scope->getMixins() as $mixin) {
+                if ($mixin instanceof TNamedObject
+                    && isset($visited[strtolower($codebase->classlikes->getUnAliasedName($mixin->value))])
+                ) {
+                    continue;
+                }
+
                 $bound_mixin = self::bind($codebase, $mixin, $scope, $storage, $receiver, $self_call);
 
                 if ($bound_mixin === null) {
@@ -173,7 +192,15 @@ final class MixinLookup
                     return [$bound_mixin, $mixin_storage];
                 }
 
-                $found = self::find($codebase, $mixin_storage, $bound_mixin, $has_member, false, $visited);
+                $found = self::find(
+                    $codebase,
+                    $mixin_storage,
+                    $bound_mixin,
+                    $has_member,
+                    false,
+                    $visited,
+                    $seen_scopes,
+                );
 
                 if ($found !== null) {
                     return $found;
@@ -233,7 +260,7 @@ final class MixinLookup
         $bound_mixin = TypeExpander::expandUnion(
             $codebase,
             $bound_mixin,
-            $declaring_storage->is_trait ? $storage->name : $declaring_storage->name,
+            $declaring_storage->name,
             $receiver instanceof TGenericObject ? $receiver : $storage->name,
             $declaring_storage->parent_class,
             true,

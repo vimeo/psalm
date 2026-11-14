@@ -451,7 +451,7 @@ final class AtomicStaticCallAnalyzer
                     $statements_analyzer->getFilePath(),
                     true,
                     $context->insideUse(),
-                ) || isset($mixin_storage->pseudo_methods[$method_name_lc]),
+                ),
             );
 
             if ($mixin !== null) {

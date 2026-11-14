@@ -524,35 +524,6 @@ final class MixinAnnotationTest extends TestCase
                 'ignored_issues' => [],
                 'php_version' => '8.0',
             ],
-            'pseudoMethodOfAMixinCalledStatically' => [
-                'code' => '<?php
-                    /** @method int pseudo() */
-                    final class Target
-                    {
-                        /** @param list<mixed> $args */
-                        public function __call(string $name, array $args): mixed
-                        {
-                            return null;
-                        }
-                    }
-
-                    /** @mixin Target */
-                    final class Host
-                    {
-                        /** @param list<mixed> $args */
-                        public static function __callStatic(string $name, array $args): mixed
-                        {
-                            return null;
-                        }
-                    }
-
-                    $a = Host::pseudo();',
-                'assertions' => [
-                    '$a===' => 'int',
-                ],
-                'ignored_issues' => [],
-                'php_version' => '8.0',
-            ],
             'propertyOfAGenericMixinIsBound' => [
                 'code' => '<?php
                     /** @template TValue */
@@ -702,6 +673,70 @@ final class MixinAnnotationTest extends TestCase
                     $a = $host->get();',
                 'assertions' => [
                     '$a===' => 'Host<string>',
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'mixinOfASubclassOfTheParentKeepsStaticTheClass' => [
+                'code' => '<?php
+                    /** @template TModel */
+                    final class Builder
+                    {
+                        /** @return TModel */
+                        public function first(): mixed
+                        {
+                            throw new RuntimeException();
+                        }
+                    }
+
+                    /** @mixin Builder<static> */
+                    abstract class Model
+                    {
+                        /** @param list<mixed> $args */
+                        public function __call(string $name, array $args): mixed
+                        {
+                            return null;
+                        }
+                    }
+
+                    class Eloquent extends Model {}
+
+                    /** @mixin Eloquent */
+                    final class User extends Model {}
+
+                    $a = (new User())->first();',
+                'assertions' => [
+                    '$a===' => 'User',
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'pseudoMethodOfAnInterfaceWinsOverTheMixins' => [
+                'code' => '<?php
+                    final class Delegate
+                    {
+                        public function foo(): string
+                        {
+                            return "";
+                        }
+                    }
+
+                    /** @method int foo() */
+                    interface HasFoo {}
+
+                    /** @mixin Delegate */
+                    final class Host implements HasFoo
+                    {
+                        /** @param list<mixed> $args */
+                        public function __call(string $name, array $args): mixed
+                        {
+                            return null;
+                        }
+                    }
+
+                    $a = (new Host())->foo();',
+                'assertions' => [
+                    '$a===' => 'int',
                 ],
                 'ignored_issues' => [],
                 'php_version' => '8.0',
@@ -2184,6 +2219,12 @@ final class MixinAnnotationTest extends TestCase
     public static function providerInvalidCodeParse(): iterable
     {
         return [
+            'undefinedMixinOfATrait' => [
+                'code' => '<?php
+                    /** @mixin Missing */
+                    trait ForwardsCalls {}',
+                'error_message' => 'UndefinedDocblockClass',
+            ],
             'mixinCallDoesNotSuppressTheMixinCheckOfTheMixinTarget' => [
                 'code' => '<?php
                     /** @mixin Target */

@@ -1203,14 +1203,18 @@ final class Populator
     }
 
     /**
-     * Second populate pass, once every class is populated: a class depends on each class its `@mixin` lookup
-     * (see MixinLookup) can reach, so that a change there invalidates it.
+     * Second populate pass, once every class is populated: the file of a class inherits from each class its
+     * `@mixin` lookup (see MixinLookup) can reach, so that a change there invalidates it. They are not its
+     * dependent_classlikes, which would make it a descendant of them.
      */
     private function registerMixinDependencies(): void
     {
         foreach ($this->classlike_storage_provider->getNew() as $storage) {
-            $storage_name_lc = strtolower($storage->name);
-            $visited = [$storage_name_lc => true];
+            if (!$storage->location) {
+                continue;
+            }
+
+            $visited = [strtolower($storage->name) => true];
             $queue = [$storage];
 
             while ($queue) {
@@ -1245,14 +1249,10 @@ final class Populator
                             continue;
                         }
 
-                        $mixin_storage->dependent_classlikes[$storage_name_lc] = true;
-
-                        if ($storage->location) {
-                            $this->file_reference_provider->addFileInheritanceToClass(
-                                $storage->location->file_path,
-                                $mixin_name_lc,
-                            );
-                        }
+                        $this->file_reference_provider->addFileInheritanceToClass(
+                            $storage->location->file_path,
+                            $mixin_name_lc,
+                        );
 
                         $queue[] = $mixin_storage;
                     }
