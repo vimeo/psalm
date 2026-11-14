@@ -994,15 +994,15 @@ final class MixinAnnotationTest extends TestCase
                 'ignored_issues' => [],
                 'php_version' => '8.0',
             ],
-            'staticCallThroughAMixinIsTheInstanceCall' => [
+            'staticOfAMixinIsTheClassCalledByName' => [
                 'code' => '<?php
                     /** @template TModel of Model */
-                    class Builder
+                    final class Builder
                     {
-                        /** @return $this */
-                        public function where(): static
+                        /** @return TModel|null */
+                        public function first(): ?Model
                         {
-                            return $this;
+                            return null;
                         }
                     }
 
@@ -1010,25 +1010,17 @@ final class MixinAnnotationTest extends TestCase
                     abstract class Model
                     {
                         /** @param list<mixed> $args */
-                        public function __call(string $name, array $args): mixed
-                        {
-                            return null;
-                        }
-
-                        /** @param list<mixed> $args */
                         public static function __callStatic(string $name, array $args): mixed
                         {
                             return null;
                         }
                     }
 
-                    final class Customer extends Model {}
+                    class Customer extends Model {}
 
-                    $a = Customer::where();
-                    $b = (new Customer())->where();',
+                    $a = Customer::first();',
                 'assertions' => [
-                    '$a===' => 'Customer',
-                    '$b===' => 'Customer',
+                    '$a===' => 'Customer|null',
                 ],
                 'ignored_issues' => [],
                 'php_version' => '8.0',

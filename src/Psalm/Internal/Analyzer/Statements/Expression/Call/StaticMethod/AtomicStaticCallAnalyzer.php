@@ -454,15 +454,14 @@ final class AtomicStaticCallAnalyzer
                     true,
                     $context->insideUse(),
                 ),
+                false,
+                // called on its name, the class is no subclass: `static` in a mixin is the class itself
+                !$lhs_type_part instanceof TNamedObject || !$lhs_type_part->is_static,
             );
 
-            // the call is that of an instance of the class, which finds the method on the same mixin
             if ($mixin !== null) {
                 $mixin_context = clone $context;
-                $mixin_context->vars_in_scope['$__tmp_mixin_var__'] = new Union([
-                    $lhs_type_part instanceof TNamedObject ? $lhs_type_part : new TNamedObject($fq_class_name),
-                ]);
-
+                $mixin_context->vars_in_scope['$__tmp_mixin_var__'] = new Union([$mixin[0]]);
                 return self::forwardCallToInstanceMethod(
                     $statements_analyzer,
                     $stmt,
