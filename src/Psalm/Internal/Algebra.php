@@ -164,6 +164,7 @@ final class Algebra
                             }
 
                             $cloned_clauses[$clause_a->hash] = $clause_a;
+                            $clause_a_hash = $clause_a->hash;
                             $clause_a_keys = array_keys($clause_a->possibilities);
                         }
                     }
