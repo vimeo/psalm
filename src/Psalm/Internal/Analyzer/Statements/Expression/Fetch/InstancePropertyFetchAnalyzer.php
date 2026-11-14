@@ -31,9 +31,11 @@ use Psalm\Type;
 use Psalm\Type\Atomic\TNamedObject;
 use Psalm\Type\Atomic\TNull;
 use Psalm\Type\Atomic\TTemplateParam;
+use Psalm\Type\Union;
 
 use function array_merge;
 use function array_shift;
+use function array_values;
 use function rtrim;
 use function strtolower;
 
@@ -258,6 +260,7 @@ final class InstancePropertyFetchAnalyzer
 
         $invalid_fetch_types = [];
         $has_valid_fetch_type = false;
+        $missing_in_isset = false;
 
         $var_atomic_types = $stmt_var_type->getAtomicTypes();
 
@@ -280,10 +283,22 @@ final class InstancePropertyFetchAnalyzer
                 $has_valid_fetch_type,
                 $invalid_fetch_types,
                 $is_static_access,
+                $missing_in_isset,
             );
         }
 
         $stmt_type = $statements_analyzer->node_data->getType($stmt);
+
+        // a member of the union that has no such property gives null to isset(), whatever the others give
+        if ($missing_in_isset
+            && !$stmt_var_type->isSingle()
+            && $stmt_type
+            && !$stmt_type->isNullable()
+            && !$stmt_type->hasMixed()
+        ) {
+            $stmt_type = $stmt_type->getBuilder()->addType(new TNull)->freeze();
+            $statements_analyzer->node_data->setType($stmt, $stmt_type);
+        }
 
         $short_circuit_null = $receiver_state !== NullsafeChainState::None && $stmt_var_type->isNullable();
 
@@ -339,11 +354,58 @@ final class InstancePropertyFetchAnalyzer
             }
         }
 
-        if ($var_id) {
+        // a fetch that was reported as a property of an interface does not make the property known: only isset() does
+        if ($var_id
+            && ($context->inside_isset
+                || !($stmt->name instanceof PhpParser\Node\Identifier
+                    && self::isUndeclaredInterfaceProperty($codebase, $stmt_var_type, $stmt->name->name)))
+        ) {
             $context->vars_in_scope[$var_id] = $statements_analyzer->node_data->getType($stmt) ?? Type::getMixed();
         }
 
         return true;
+    }
+
+    /**
+     * Whether the type is an interface, intersected only with interfaces, that none of declares the property
+     */
+    private static function isUndeclaredInterfaceProperty(
+        Codebase $codebase,
+        Union $object_type,
+        string $property_name,
+    ): bool {
+        foreach ($object_type->getAtomicTypes() as $atomic_type) {
+            if (!$atomic_type instanceof TNamedObject) {
+                continue;
+            }
+
+            $has_interface = false;
+            $declares_property = false;
+
+            foreach ([$atomic_type, ...array_values($atomic_type->getIntersectionTypes() ?: [])] as $part) {
+                if (!$part instanceof TNamedObject) {
+                    continue;
+                }
+
+                if ($codebase->classExists($part->value)) {
+                    $declares_property = true;
+                } elseif ($codebase->interfaceExists($part->value)) {
+                    $has_interface = true;
+
+                    if (isset($codebase->classlike_storage_provider->get($part->value)
+                        ->declaring_property_ids[$property_name])
+                    ) {
+                        $declares_property = true;
+                    }
+                }
+            }
+
+            if ($has_interface && !$declares_property) {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     private static function handleScopedProperty(
