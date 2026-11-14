@@ -740,6 +740,43 @@ final class CacheTest extends TestCase
         self::assertSame([], $errors);
     }
 
+    public function testReadOnlyCacheCreatesNothing(): void
+    {
+        $config = $this->newConfig();
+        $config->cache_read_only = true;
+
+        self::assertSame($this->cache_directory, $config->getCacheDirectory());
+
+        /** @var Cache<string> $cache */
+        $cache = new Cache($config, 'test');
+        $cache->saveItem(self::KEY, 'contents', 'hash');
+        $cache->consolidate();
+
+        self::assertSame('contents', $cache->getItem(self::KEY, 'hash'));
+        self::assertDirectoryDoesNotExist($this->cache_directory);
+    }
+
+    public function testReadOnlyCacheReadsEntriesAndWritesNone(): void
+    {
+        $this->newCache()->saveItem(self::KEY, 'written', 'hash');
+        $files_before = scandir($this->entryDirectory());
+
+        $config = $this->newConfig();
+        $config->cache_read_only = true;
+        /** @var Cache<string> $cache */
+        $cache = new Cache($config, 'test');
+
+        self::assertSame('written', $cache->getItem(self::KEY, 'hash'));
+
+        $cache->saveItem(self::KEY, 'kept in memory', 'other hash');
+        $cache->saveItem('src/B.php', 'kept in memory');
+        $cache->consolidate();
+
+        self::assertSame($files_before, scandir($this->entryDirectory()));
+        self::assertSame('written', $this->newCache()->getItem(self::KEY, 'hash'));
+        self::assertSame('kept in memory', $cache->getItem('src/B.php'));
+    }
+
     /**
      * @return iterable<string, list{
      *     list<array{

@@ -39,6 +39,7 @@ use function hash_init;
 use function hash_update;
 use function intdiv;
 use function is_dir;
+use function is_file;
 use function iterator_to_array;
 use function min;
 use function mkdir;
@@ -117,6 +118,9 @@ final class Cache
 
     private readonly bool $arrayCache;
 
+    /** Entries are read but never written, see {@see Config::$cache_read_only} */
+    private readonly bool $read_only;
+
     public function __construct(
         Config $config,
         string $subdir,
@@ -126,6 +130,7 @@ final class Cache
         $this->serializer = $config->getCacheSerializer();
         $this->consolidated_serializer = $this->serializer;
         $this->arrayCache = $config->array_cache;
+        $this->read_only = $config->cache_read_only;
         if (!$persistent) {
             return;
         }
@@ -146,21 +151,30 @@ final class Cache
         $dir .= DIRECTORY_SEPARATOR . hash_final($hash);
 
         $this->dir = $dir.DIRECTORY_SEPARATOR;
-        if (!is_dir($this->dir)) {
-            error_clear_last();
-            // Another process may create the directory between the check and mkdir() (#4483)
-            if (!@mkdir($this->dir, 0777, true) && !is_dir($this->dir)) {
-                $reason = error_get_last()['message'] ?? null;
-                throw new RuntimeException(
-                    'Failed to create ' . $this->dir . ' cache directory' . ($reason !== null ? ": $reason" : ''),
-                );
+        if ($this->read_only) {
+            // the lock of a cache that exists keeps consolidate() from replacing the data file under the reader
+            $lock = is_file($this->dir . 'lock') ? fopen($this->dir . 'lock', 'r') : false;
+            if ($lock !== false) {
+                flock($lock, LOCK_SH);
+                $this->lock = $lock;
             }
-        }
+        } else {
+            if (!is_dir($this->dir)) {
+                error_clear_last();
+                // Another process may create the directory between the check and mkdir() (#4483)
+                if (!@mkdir($this->dir, 0777, true) && !is_dir($this->dir)) {
+                    $reason = error_get_last()['message'] ?? null;
+                    throw new RuntimeException(
+                        'Failed to create ' . $this->dir . ' cache directory' . ($reason !== null ? ": $reason" : ''),
+                    );
+                }
+            }
 
-        $lock = fopen($this->dir.'lock', 'c');
-        assert($lock !== false);
-        flock($lock, LOCK_SH);
-        $this->lock = $lock;
+            $lock = fopen($this->dir.'lock', 'c');
+            assert($lock !== false);
+            flock($lock, LOCK_SH);
+            $this->lock = $lock;
+        }
 
         $index = file_exists($this->dir . self::CONSOLIDATED_INDEX)
             ? @file_get_contents($this->dir . self::CONSOLIDATED_INDEX)
@@ -195,7 +209,7 @@ final class Cache
      */
     public function consolidate(): void
     {
-        if ($this->lock === null) {
+        if ($this->lock === null || $this->read_only) {
             return;
         }
 
@@ -497,7 +511,7 @@ final class Cache
         ) {
             return;
         }
-        if ($this->persistent) {
+        if ($this->persistent && !$this->read_only) {
             $payload = $this->serializer->serialize($item);
             self::writeEntry(
                 $this->dir . hash('xxh128', $key),
@@ -507,7 +521,7 @@ final class Cache
         }
         // Without a disk cache the array is the only copy. With one, keep it only if arrayCache is on,
         // otherwise a cold run holds every parsed AST and storage object in memory for nothing.
-        if (!$this->persistent || $this->arrayCache) {
+        if (!$this->persistent || $this->read_only || $this->arrayCache) {
             $this->cache[$key] = [$hash, $item];
         }
     }

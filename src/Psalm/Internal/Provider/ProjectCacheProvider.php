@@ -75,9 +75,10 @@ class ProjectCacheProvider
      */
     public function saveCustomTaints(array $data): void
     {
-        $cache_directory = Config::getInstance()->getCacheDirectory();
+        $config = Config::getInstance();
+        $cache_directory = $config->getCacheDirectory();
 
-        if ($cache_directory === null) {
+        if ($cache_directory === null || $config->cache_read_only) {
             return;
         }
 
@@ -96,9 +97,10 @@ class ProjectCacheProvider
 
     public function processSuccessfulRun(float $start_time, string $psalm_version): void
     {
-        $cache_directory = Config::getInstance()->getCacheDirectory();
+        $config = Config::getInstance();
+        $cache_directory = $config->getCacheDirectory();
 
-        if ($cache_directory === null) {
+        if ($cache_directory === null || $config->cache_read_only) {
             return;
         }
 
