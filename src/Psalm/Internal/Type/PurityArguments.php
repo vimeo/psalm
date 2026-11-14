@@ -122,7 +122,7 @@ final class PurityArguments
 
         $i = 0;
 
-        foreach ($storage->template_types ?? [] as $type_map) {
+        foreach ($storage->template_types ?? [] as $template_name => $type_map) {
             if ($i++ < count($type_args)) {
                 continue;
             }
@@ -133,24 +133,27 @@ final class PurityArguments
                 break;
             }
 
-            $type_args[] = self::getOmittedArgument($bound);
+            $type_args[] = self::getOmittedArgument($storage, $template_name, $bound);
         }
 
         return [...$type_args, ...$purity_args];
     }
 
     /**
-     * What a template argument left out of a use of the class stands for: its bound. A use of a
-     * class whose templates have no bounds but purity bounds is no more specific than a use without
-     * arguments, which any instance fits: those bounds stand for whatever the instance binds the
-     * templates to, and are not compared invariantly. The bound of a bounded type template
-     * (`@template T as object`) is still the argument, as it is without purity templates.
+     * What a template argument left out of a use of the class stands for: its bound. An unbounded template's
+     * (`mixed`), a purity template's, and that of a template the class never writes (see
+     * ClassLikeStorage::$write_free_templates) is no more specific than a use without arguments, which any instance
+     * fits: it stands for whatever the instance binds the template to, and is not compared invariantly. The bound of
+     * a bounded template that code could write a value of into the instance (`@template T as object` with a
+     * `setT(T $t)`) is still the argument: an instance bound to a narrower type would take a value it does not allow.
      *
      * @psalm-mutation-free
      */
-    public static function getOmittedArgument(Union $bound): Union
+    public static function getOmittedArgument(ClassLikeStorage $storage, string $template_name, Union $bound): Union
     {
-        return $bound->isMixed() || Capabilities::isPurityType($bound)
+        return $bound->isMixed()
+            || Capabilities::isPurityType($bound)
+            || isset($storage->write_free_templates[$template_name])
             ? $bound->setProperties(['had_template' => true])
             : $bound;
     }
