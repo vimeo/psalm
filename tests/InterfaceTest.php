@@ -143,6 +143,37 @@ final class InterfaceTest extends TestCase
                         return 0;
                     }',
             ],
+            'propertyDeclaredByAnInterfaceWinsOverItsMixinWhenRemembered' => [
+                'code' => '<?php
+                    final class Data {
+                        /** @deprecated */
+                        public int $foo = 0;
+                    }
+
+                    /** @mixin Data */
+                    interface J {
+                        public int $foo { get; }
+                    }
+
+                    function f(J $x): int {
+                        $a = $x->foo;
+
+                        return $a + $x->foo;
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.4',
+            ],
+            'unsetOfAPropertyOfAnInterfaceAnIssetFound' => [
+                'code' => '<?php
+                    interface I {}
+
+                    function f(I $x): void {
+                        if (isset($x->foo)) {
+                            unset($x->foo);
+                        }
+                    }',
+            ],
             'issetOfAPropertyOfAnInterfaceIsNotAnInterfaceProperty' => [
                 'code' => '<?php
                     interface Shape {}

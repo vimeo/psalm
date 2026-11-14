@@ -111,7 +111,17 @@ final class InstancePropertyFetchAnalyzer
             $statements_analyzer,
         );
 
-        if ($var_id && $context->hasVariable($var_id)) {
+        // the property unset() removes is written, so it is checked as a property that is not known yet, unless it is
+        // a property of an interface only isset() found
+        $unset_var_type = UnsetAnalyzer::isTarget($context, $stmt)
+            ? $statements_analyzer->node_data->getType($stmt->var)
+            : null;
+        $is_checked_unset_target = UnsetAnalyzer::isTarget($context, $stmt)
+            && !($stmt->name instanceof PhpParser\Node\Identifier
+                && $unset_var_type !== null
+                && self::isUndeclaredInterfaceProperty($codebase, $unset_var_type, $stmt->name->name));
+
+        if ($var_id && $context->hasVariable($var_id) && !$is_checked_unset_target) {
             self::handleScopedProperty(
                 $context,
                 $var_id,
@@ -523,8 +533,10 @@ final class InstancePropertyFetchAnalyzer
             foreach ($stmt_var_type->getAtomicTypes() as $lhs_type_part) {
                 if ($lhs_type_part instanceof TNamedObject) {
                     if (!$codebase->classExists($lhs_type_part->value, null, $context)) {
-                        // the property of an interface is the one of its mixin
+                        // the property of an interface that does not declare it is the one of its mixin
                         if (!$codebase->interfaceExists($lhs_type_part->value, null, $context)
+                            || isset($codebase->classlike_storage_provider->get($lhs_type_part->value)
+                                ->declaring_property_ids[$stmt->name->name])
                             || !($lhs_type_part = AtomicPropertyFetchAnalyzer::findMixinWithProperty(
                                 $codebase,
                                 $lhs_type_part,

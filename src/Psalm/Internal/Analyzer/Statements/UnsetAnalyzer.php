@@ -58,6 +58,14 @@ final class UnsetAnalyzer
     }
 
     /**
+     * Whether $stmt is the expression unset() removes
+     */
+    public static function isTarget(Context $context, PhpParser\Node\Expr $stmt): bool
+    {
+        return $context->inside_unset && $stmt->getAttribute(self::TARGET_ATTRIBUTE) === true;
+    }
+
+    /**
      * Whether unsetting writes the property the expression fetches: when it's the expression unset() removes, or
      * holds the array an element is removed from. An element of an object (an ArrayAccess) is removed by its
      * offsetUnset(), charged as that call, and the property keeps holding the same object
