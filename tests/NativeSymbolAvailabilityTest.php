@@ -145,6 +145,23 @@ final class NativeSymbolAvailabilityTest extends TestCase
             'php_version' => '7.4',
         ];
 
+        yield 'closureCreatedUnderAPhpVersionIdGuard' => [
+            'code' => '<?php
+                function a(): ?Closure {
+                    if (PHP_VERSION_ID >= 80000) {
+                        return function (): object {
+                            return new WeakMap();
+                        };
+                    }
+
+                    return null;
+                }
+            ',
+            'assertions' => [],
+            'ignored_issues' => [],
+            'php_version' => '7.4',
+        ];
+
         yield 'guardedByClassExists' => [
             'code' => '<?php
                 function a(): ?object {
