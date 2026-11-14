@@ -1052,9 +1052,9 @@ final class ClassAnalyzer extends ClassLikeAnalyzer
                     ) {
                         IssueBuffer::maybeAdd(
                             new MismatchingDocblockPropertyType(
-                                'Parameter '
+                                'Property '
                                     . $property_class_name . '::$' . $property_name
-                                    . ' has wrong type \'' . $fleshed_out_type .
+                                    . ' has wrong type \'' . $fleshed_out_type->getId() .
                                     '\', should be \'' . $signature_type->getId() . '\'',
                                 $property_type_location,
                             ),
