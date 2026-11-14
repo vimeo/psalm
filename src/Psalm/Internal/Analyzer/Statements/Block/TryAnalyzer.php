@@ -22,6 +22,7 @@ use Psalm\Type\Atomic\TNamedObject;
 use Psalm\Type\Union;
 use UnexpectedValueException;
 
+use function array_filter;
 use function array_intersect_key;
 use function array_map;
 use function array_merge;
@@ -176,6 +177,17 @@ final class TryAnalyzer
         // the try was applied
         $original_context = clone $try_context;
 
+        foreach ($try_scope->overwritten_parent_nodes as $try_var_id => $overwritten_parent_nodes) {
+            foreach (array_filter([$original_context, $try_context->finally_scope]) as $try_exit_context) {
+                if (isset($try_exit_context->vars_in_scope[$try_var_id])) {
+                    $try_exit_context->vars_in_scope[$try_var_id] = $try_exit_context->vars_in_scope[$try_var_id]
+                        ->setParentNodes(
+                            $try_exit_context->vars_in_scope[$try_var_id]->parent_nodes + $overwritten_parent_nodes,
+                        );
+                }
+            }
+        }
+
         // what the throwing branches assigned reaches the code after the try only through a catch that goes on, so the
         // catches take it from their own throws (above), not from the types the try context is built from
         foreach ($try_scope->post_try_parent_nodes as $try_var_id => $try_parent_nodes) {
@@ -198,9 +210,7 @@ final class TryAnalyzer
         ];
 
         $definitely_newly_assigned_var_ids = $newly_assigned_var_ids;
-
-        // the variables a catch of a try that always exits gave the context: the next catches add to them
-        $vars_set_by_catches = [];
+        $has_continuing_catch = false;
 
         /** @var int $i */
         foreach ($stmt->catches as $i => $catch) {
@@ -443,12 +453,28 @@ final class TryAnalyzer
                     $definitely_newly_assigned_var_ids,
                 );
 
+                // when the try block always ends, the first catch that goes on gives the variables, and the other
+                // ones are combined with it
+                $is_first_continuing_catch = $try_block_control_actions === [ScopeAnalyzer::ACTION_END]
+                    && !$has_continuing_catch;
+
+                if ($try_block_control_actions === [ScopeAnalyzer::ACTION_END] && $has_continuing_catch) {
+                    foreach ($context->vars_in_scope as $var_id => $type) {
+                        if (!isset($catch_context->vars_in_scope[$var_id])) {
+                            $context->vars_in_scope[$var_id] = $type->setPossiblyUndefined(true, true);
+                        }
+                    }
+                }
+
+                $has_continuing_catch = true;
+
                 foreach ($catch_context->vars_in_scope as $var_id => $type) {
-                    if ($try_block_control_actions === [ScopeAnalyzer::ACTION_END]) {
-                        $context->vars_in_scope[$var_id] = isset($vars_set_by_catches[$var_id])
+                    if ($is_first_continuing_catch) {
+                        $context->vars_in_scope[$var_id] = $type;
+                    } elseif ($try_block_control_actions === [ScopeAnalyzer::ACTION_END]) {
+                        $context->vars_in_scope[$var_id] = isset($context->vars_in_scope[$var_id])
                             ? Type::combineUnionTypes($context->vars_in_scope[$var_id], $type)
-                            : $type;
-                        $vars_set_by_catches[$var_id] = true;
+                            : $type->setPossiblyUndefined(true, true);
                     } elseif (isset($context->vars_in_scope[$var_id])) {
                         $context->vars_in_scope[$var_id] = Type::combineUnionTypes(
                             $context->vars_in_scope[$var_id],

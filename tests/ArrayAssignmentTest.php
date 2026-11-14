@@ -3033,7 +3033,6 @@ final class ArrayAssignmentTest extends TestCase
 
                     barBar([1, "2"]);',
                 'error_message' => 'MixedArgumentTypeCoercion',
-                'error_levels' => ['MixedAssignment'],
             ],
             'arrayPropertyAssignment' => [
                 'code' => '<?php
