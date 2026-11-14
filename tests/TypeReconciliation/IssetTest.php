@@ -549,6 +549,38 @@ final class IssetTest extends TestCase
                         return $arr;
                     }',
             ],
+            'unsetOfTheOffsetAnIssetCheckedInALoopMakesANonEmptyArrayPossiblyEmpty' => [
+                'code' => '<?php
+                    /** @param non-empty-array<string, int> $first */
+                    function removeInALoop(array $first): void {
+                        foreach (["bad", "worse"] as $key) {
+                            if (isset($first[$key])) {
+                                unset($first[$key]);
+                            }
+                        }
+
+                        if (empty($first)) {
+                            echo "empty";
+                        }
+                    }',
+            ],
+            'typeOfAnArrayAfterAnUnsetOfTheOffsetAnIssetChecked' => [
+                'code' => '<?php
+                    /** @var non-empty-array<string, int> $data */
+                    $data = ["a" => 1];
+
+                    /** @var string $key */
+                    $key = "a";
+
+                    if (isset($data[$key])) {
+                        unset($data[$key]);
+                    }
+
+                    $after = $data;',
+                'assertions' => [
+                    '$after===' => 'array<string, int>',
+                ],
+            ],
             'arrayAccessAfterOneIsset' => [
                 'code' => '<?php
                     $arr = [];
