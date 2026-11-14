@@ -1586,6 +1586,24 @@ final class UnusedVariableTest extends TestCase
                         echo $b;
                     }',
             ],
+            'referenceToAnItemReboundInALoopStillWritesToTheArrayAfterIt' => [
+                'code' => '<?php
+                    /**
+                     * @param array<string, mixed> $data
+                     * @param list<string> $path
+                     */
+                    function set(array &$data, array $path, string $value): void {
+                        $cursor = &$data["root"];
+
+                        foreach ($path as $key) {
+                            $cursor = &$cursor[$key];
+                        }
+
+                        $cursor = $value;
+                    }',
+                'assertions' => [],
+                'ignored_issues' => ['MixedArrayAccess', 'ReferenceReusedFromConfusingScope'],
+            ],
             'tryWithWhile' => [
                 'code' => '<?php
                     function foo(): void {

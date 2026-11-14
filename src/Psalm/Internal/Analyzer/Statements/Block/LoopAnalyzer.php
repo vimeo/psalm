@@ -467,12 +467,7 @@ final class LoopAnalyzer
         $does_sometimes_break = in_array(ScopeAnalyzer::ACTION_BREAK, $loop_scope->final_actions, true);
         $does_always_break = $loop_scope->final_actions === [ScopeAnalyzer::ACTION_BREAK];
 
-        $loop_parent_context->detachReferencesReboundIn(
-            $loop_context->references_in_scope,
-            $statements_analyzer,
-            $stmts,
-        );
-
+        // the body is analysed in the continue context: the loop context does not get what it rebinds
         if (!$does_always_break) {
             $loop_parent_context->detachReferencesReboundIn(
                 $continue_context->references_in_scope,
