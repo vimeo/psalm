@@ -1581,6 +1581,40 @@ final class TraitTest extends TestCase
                 'ignored_issues' => [],
                 'php_version' => '8.1',
             ],
+            'traitMethodTemplatePassedThroughAClosureParam' => [
+                'code' => '<?php
+                    class Service
+                    {
+                        /**
+                         * @template T
+                         * @param class-string<T> $type
+                         * @param Closure(T): void $callback
+                         */
+                        public function run(string $type, Closure $callback): void
+                        {
+                            echo $type;
+                            echo $callback::class;
+                        }
+                    }
+
+                    trait SomeTrait
+                    {
+                        /**
+                         * @template T
+                         * @param class-string<T> $type
+                         * @param Closure(T): void $callback
+                         */
+                        protected function bar(string $type, Closure $callback): void
+                        {
+                            (new Service())->run($type, $callback);
+                        }
+                    }
+
+                    class Bar
+                    {
+                        use SomeTrait;
+                    }',
+            ],
             'traitReadsAClassConstantWithTheLiteralTheUsingClassesGiveIt' => [
                 'code' => '<?php
                     /** @param positive-int $i */
