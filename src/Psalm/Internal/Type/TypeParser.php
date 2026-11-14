@@ -138,6 +138,21 @@ use const PHP_INT_MAX;
  */
 final class TypeParser
 {
+    private const PLAIN_TYPES = [
+        TNamedObject::class => true,
+        TString::class => true,
+        TLiteralString::class => true,
+        TInt::class => true,
+        TLiteralInt::class => true,
+        TFloat::class => true,
+        TLiteralFloat::class => true,
+        TBool::class => true,
+        TTrue::class => true,
+        TFalse::class => true,
+        TNull::class => true,
+        TNever::class => true,
+    ];
+
     /**
      * Parses a string type representation
      *
@@ -2787,12 +2802,22 @@ final class TypeParser
                     $codebase,
                 );
 
-                if ($new_type === null) {
-                    throw new TypeParseTreeException(
-                        'Incompatible intersection types for "' . $property . '", '
-                        . $properties[$property] . ' and ' . $property_type
-                        . ' provided',
-                    );
+                if ($new_type === null || $new_type->isNever()) {
+                    if (!$properties[$property]->possibly_undefined
+                        || !$property_type->possibly_undefined
+                        || ($new_type === null
+                            && (!self::isMadeOfPlainTypes($properties[$property])
+                                || !self::isMadeOfPlainTypes($property_type)))
+                    ) {
+                        throw new TypeParseTreeException(
+                            'Incompatible intersection types for "' . $property . '", '
+                            . $properties[$property] . ' and ' . $property_type
+                            . ' provided',
+                        );
+                    }
+
+                    // an optional key of incompatible types can only be absent
+                    $new_type = Type::getNever()->setPossiblyUndefined(true);
                 }
                 $properties[$property] = $new_type;
             }
@@ -2820,6 +2845,23 @@ final class TypeParser
             false,
             $from_docblock,
         );
+    }
+
+    /**
+     * Whether no intersection with another such type means that they have no value in common: the intersection of
+     * arrays, generic objects or refined strings (class-string<A> and class-string<B>) isn't always computed
+     *
+     * @psalm-pure
+     */
+    private static function isMadeOfPlainTypes(Union $type): bool
+    {
+        foreach ($type->getAtomicTypes() as $atomic_type) {
+            if (!isset(self::PLAIN_TYPES[$atomic_type::class])) {
+                return false;
+            }
+        }
+
+        return true;
     }
 
     /**

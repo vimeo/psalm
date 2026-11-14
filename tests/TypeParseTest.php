@@ -340,6 +340,45 @@ final class TypeParseTest extends TestCase
         Type::parseString('array{a: string}&array{a: int}');
     }
 
+    public function testIntersectionOfTKeyedArrayWithConflictingOptionalProperties(): void
+    {
+        $this->assertSame(
+            'array{a: int, b?: never}',
+            (string) Type::parseString('array{a: int, b?: int}&array{b?: string}'),
+        );
+    }
+
+    public function testIntersectionOfTKeyedArrayWithOnlyConflictingOptionalProperties(): void
+    {
+        $this->assertSame(
+            'array<never, never>',
+            (string) Type::parseString('array{a?: bool, b?: bool}&array{a?: int, b?: int}'),
+        );
+    }
+
+    public function testIntersectionOfTKeyedArrayWithConflictingRequiredAndOptionalProperties(): void
+    {
+        $this->expectException(TypeParseTreeException::class);
+        Type::parseString('array{a: int}&array{a?: string}');
+    }
+
+    public function testIntersectionOfTKeyedArrayWithConflictingOptionalPropertiesThenARequiredOne(): void
+    {
+        $this->expectException(TypeParseTreeException::class);
+        Type::parseString('array{a?: int}&array{a?: string}&array{a: bool}');
+    }
+
+    public function testIntersectionOfTKeyedArrayWithOptionalShapePropertiesIsNotAssumedEmpty(): void
+    {
+        $this->expectException(TypeParseTreeException::class);
+        Type::parseString('array{a?: array{x: int|bool}}&array{a?: array{x: int|string}}');
+    }
+
+    public function testTKeyedArrayWithOnlyNeverProperties(): void
+    {
+        $this->assertSame('array<never, never>', (string) Type::parseString('array{a?: never, b?: never}'));
+    }
+
     public function testIntersectionOfTwoRegularArrays(): void
     {
         $this->assertSame(

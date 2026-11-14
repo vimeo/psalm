@@ -22,6 +22,7 @@ use Psalm\Type\Atomic;
 use Psalm\Type\Atomic\TArray;
 use Psalm\Type\Atomic\TArrayKey;
 use Psalm\Type\Atomic\TBool;
+use Psalm\Type\Atomic\TCallable;
 use Psalm\Type\Atomic\TCallableObject;
 use Psalm\Type\Atomic\TCapabilities;
 use Psalm\Type\Atomic\TClassString;
@@ -1032,7 +1033,8 @@ abstract class Type
                 $comparison_result_2_in_1 = new TypeComparisonResult();
                 $comparison_result_1_in_2 = new TypeComparisonResult();
 
-                // an object that is only castable to string is not contained by string
+                // an object that is only castable to string is not contained by string; a cast in the items of an
+                // array or a callable is kept, or those whose items only partly overlap would have no intersection
                 if (AtomicTypeComparator::isContainedBy(
                     $codebase,
                     $type_2_atomic,
@@ -1040,7 +1042,8 @@ abstract class Type
                     $allow_interface_equality,
                     $allow_float_int_equality,
                     $comparison_result_2_in_1,
-                ) && !$comparison_result_2_in_1->to_string_cast) {
+                ) && !($comparison_result_2_in_1->to_string_cast && !self::holdsTypes($type_1_atomic))
+                ) {
                     $intersection_atomic = $type_2_atomic;
                     $wider_type = $type_1_atomic;
                     $intersection_performed = true;
@@ -1051,7 +1054,8 @@ abstract class Type
                     $allow_interface_equality,
                     $allow_float_int_equality,
                     $comparison_result_1_in_2,
-                ) && !$comparison_result_1_in_2->to_string_cast) {
+                ) && !($comparison_result_1_in_2->to_string_cast && !self::holdsTypes($type_2_atomic))
+                ) {
                     $intersection_atomic = $type_1_atomic;
                     $wider_type = $type_2_atomic;
                     $intersection_performed = true;
@@ -1236,6 +1240,20 @@ abstract class Type
     private static function hasIntersection(Atomic $type): bool
     {
         return self::isIntersectionType($type) && $type->extra_types;
+    }
+
+    /**
+     * Whether a __toString cast found comparing a type with this container is one of the types it holds
+     *
+     * @psalm-pure
+     */
+    private static function holdsTypes(Atomic $container): bool
+    {
+        return $container instanceof TArray
+            || $container instanceof TKeyedArray
+            || $container instanceof TIterable
+            || $container instanceof TCallable
+            || $container instanceof TClosure;
     }
 
     /**
