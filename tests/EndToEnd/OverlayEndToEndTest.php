@@ -12,14 +12,20 @@ use RecursiveDirectoryIterator;
 use RecursiveIteratorIterator;
 use SplFileInfo;
 use Symfony\Component\Filesystem\Path;
+use Symfony\Component\Process\InputStream;
+use Symfony\Component\Process\Process;
 
 use function array_column;
+use function array_fill;
 use function array_keys;
 use function assert;
+use function count;
+use function explode;
 use function fclose;
 use function file_put_contents;
 use function getenv;
 use function hash_file;
+use function implode;
 use function is_dir;
 use function is_resource;
 use function json_decode;
@@ -27,11 +33,14 @@ use function json_encode;
 use function ksort;
 use function microtime;
 use function mkdir;
+use function preg_replace;
 use function proc_close;
 use function proc_open;
 use function realpath;
 use function rmdir;
 use function sort;
+use function str_contains;
+use function str_repeat;
 use function str_replace;
 use function stream_get_contents;
 use function substr;
@@ -40,6 +49,7 @@ use function tempnam;
 use function time;
 use function touch;
 use function unlink;
+use function usleep;
 
 use const JSON_THROW_ON_ERROR;
 use const PHP_BINARY;
@@ -87,6 +97,9 @@ final class OverlayEndToEndTest extends TestCase
     private const USE_FN = '<?php namespace App; final class UseFn { public function f(): int { return helper(1); } }';
 
     private string $project;
+
+    /** What the server wrote after the last message read */
+    private string $server_output = '';
 
     #[Override]
     public function setUp(): void
@@ -158,6 +171,74 @@ final class OverlayEndToEndTest extends TestCase
             $this->overlay($overlay),
             $this->overlay($overlay, ['PSALM_OVERLAY_NO_FORK' => '1']),
         );
+    }
+
+    public function testServerAnswersLikeTheCommand(): void
+    {
+        $this->writeFiles(['A.php' => self::A, 'B.php' => self::B]);
+        $this->recordReferences();
+        $overlay = ['src/A.php' => str_replace('public function', 'private function', self::A)];
+        [, $expected] = $this->overlay($overlay);
+        $params = ['overlays' => [['path' => 'src/A.php', 'contents' => $overlay['src/A.php']]]];
+
+        $input = new InputStream();
+        $server = self::newProcess(
+            [PHP_BINARY, $this->psalm, '--overlay-server', '--threads=2', '--no-progress'],
+            $this->project,
+            self::agentEnvVarsToUnset(),
+        );
+        $server->setInput($input);
+        $server->start();
+
+        $ask = function (array $message) use ($input, $server): array {
+            $input->write(json_encode(['jsonrpc' => '2.0', ...$message], JSON_THROW_ON_ERROR) . "\n");
+
+            return $this->readMessage($server);
+        };
+
+        $initialized = $ask(['id' => 1, 'method' => 'initialize', 'params' => ['protocol' => 1]]);
+        $this->assertSame(1, $initialized['result']['protocol'] ?? null, json_encode($initialized, JSON_THROW_ON_ERROR));
+
+        $this->assertSame($expected, $ask(['id' => 2, 'method' => 'analyze', 'params' => $params])['result'] ?? null);
+
+        // a new snapshot answers from then on, the same way
+        $this->assertSame([], $ask(['id' => 3, 'method' => 'projectChanged', 'params' => []])['result'] ?? null);
+        $this->assertSame($expected, $ask(['id' => 4, 'method' => 'analyze', 'params' => $params])['result'] ?? null);
+
+        $deleted = $ask(['id' => 5, 'method' => 'analyze', 'params' => [
+            'overlays' => [['path' => 'src/A.php', 'deleted' => true]],
+        ]]);
+        $this->assertSame('unsupported', $deleted['error']['data']['kind'] ?? null);
+
+        // an id still in flight is not taken again
+        $analyze = ['id' => 7, 'method' => 'analyze', 'params' => $params];
+        $input->write(self::encodeMessage($analyze) . self::encodeMessage($analyze));
+        $this->assertSame('invalid_request', $this->readMessage($server)['error']['data']['kind'] ?? null);
+        $this->assertSame($expected, $this->readMessage($server)['result'] ?? null);
+
+        $ask(['id' => 6, 'method' => 'shutdown']);
+        $input->close();
+        $server->wait();
+        $this->assertSame(0, $server->getExitCode(), $server->getErrorOutput());
+    }
+
+    /**
+     * The next message of the server
+     *
+     * @return array{id?: int|string|null, result?: array<array-key, mixed>, error?: array{data: array{kind: string}}}
+     */
+    private function readMessage(Process $server): array
+    {
+        $deadline = microtime(true) + 120.0;
+        while (!str_contains($this->server_output, "\n") && microtime(true) < $deadline) {
+            $this->server_output .= $server->getIncrementalOutput();
+            usleep(10_000);
+        }
+
+        [$line, $this->server_output] = explode("\n", $this->server_output, 2) + ['', ''];
+
+        /** @var array{id?: int|string|null, result?: array<array-key, mixed>, error?: array{data: array{kind: string}}} */
+        return json_decode($line, true, 512, JSON_THROW_ON_ERROR);
     }
 
     public function testVisibilityChangeAnalysesTheReferencesOfTheMember(): void
@@ -278,6 +359,13 @@ final class OverlayEndToEndTest extends TestCase
             ['InvalidReturnStatement', 'InvalidReturnType'],
             array_column(self::summarize($envelope), 0),
         );
+
+        // relative paths name the same files on every transport
+        [$server, $input] = $this->startServer([...$command, '--overlay-server']);
+        $this->ask($server, $input, ['id' => 1, 'method' => 'initialize', 'params' => ['protocol' => 1]]);
+        $answer = $this->ask($server, $input, ['id' => 2, 'method' => 'analyze', 'params' => $params]);
+        $this->assertSame($envelope, $answer['result'] ?? $answer);
+        $this->stopServer($server, $input);
     }
 
     public function testDeadlineCountsFromTheStart(): void
@@ -300,6 +388,55 @@ final class OverlayEndToEndTest extends TestCase
         $this->assertLessThan(0.25 + 0.5, $elapsed);
     }
 
+    public function testServerAnswersPipelinedRequestsLargerThanThePipes(): void
+    {
+        $methods = '';
+        for ($i = 0; $i < 300; $i++) {
+            $methods .= "    public function m$i(): int { return $i; }\n";
+        }
+        $a = "<?php\nnamespace App;\n\nfinal class A\n{\n" . $methods . "}\n";
+        $this->writeFiles(['A.php' => $a]);
+        $this->recordReferences();
+
+        // each answer has 600 issues, each request a comment of 200 KB
+        $overlay = (string) preg_replace('/return (\d+);/', 'return "$1";', $a) . '// ' . str_repeat('x', 200_000);
+        $requests = 8;
+        [$server, $input] = $this->startServer([PHP_BINARY, $this->psalm, '--overlay-server', '--threads=2']);
+        $lines = self::encodeMessage(['id' => 0, 'method' => 'initialize', 'params' => ['protocol' => 1]]);
+        for ($id = 1; $id <= $requests; $id++) {
+            $lines .= self::encodeMessage(['id' => $id, 'method' => 'analyze', 'params' => [
+                'overlays' => [['path' => 'src/A.php', 'contents' => $overlay]],
+            ]]);
+        }
+        $input->write($lines);
+
+        $answered = [];
+        for ($i = 0; $i <= $requests; $i++) {
+            $message = $this->readMessage($server);
+            $answered[(int) ($message['id'] ?? -1)] = count((array) ($message['result']['new_issues'] ?? []));
+        }
+        ksort($answered);
+
+        $this->assertSame([0, ...array_fill(1, $requests, 600)], $answered);
+        $this->stopServer($server, $input);
+    }
+
+    public function testServerAnswersWithTheConfigErrorOfTheSnapshot(): void
+    {
+        $this->writeFiles(['A.php' => self::A]);
+        file_put_contents($this->project . '/psalm.xml', '<?xml version="1.0"?><psalm><notAnOption /></psalm>');
+
+        [$server, $input] = $this->startServer([PHP_BINARY, $this->psalm, '--overlay-server']);
+        $initialized = $this->ask($server, $input, ['id' => 1, 'method' => 'initialize', 'params' => ['protocol' => 1]]);
+        $this->assertSame('config', $initialized['error']['data']['kind'] ?? null);
+
+        $analyzed = $this->ask($server, $input, ['id' => 2, 'method' => 'analyze', 'params' => [
+            'overlays' => [['path' => 'src/A.php', 'contents' => self::A]],
+        ]]);
+        $this->assertSame('config', $analyzed['error']['data']['kind'] ?? null);
+        $this->stopServer($server, $input);
+    }
+
     public function testNotCheckedListsWhatTheConfigRuns(): void
     {
         file_put_contents($this->project . '/psalm.xml', str_replace(
@@ -313,6 +450,114 @@ final class OverlayEndToEndTest extends TestCase
         [, $envelope] = $this->overlay(['src/A.php' => str_replace('public function', 'private function', self::A)]);
 
         $this->assertSame([], $envelope['not_checked']);
+    }
+
+    public function testServerDeadlineCountsWhileTheSnapshotStarts(): void
+    {
+        $this->writeSlowProject();
+        $this->recordReferences();
+
+        [$server, $input] = $this->startServer([PHP_BINARY, $this->psalm, '--overlay-server'], 'all');
+        $start = microtime(true);
+        $answer = $this->ask($server, $input, ['id' => 1, 'method' => 'analyze', 'params' => [
+            'overlays' => [['path' => 'src/UseFn.php', 'contents' => self::USE_FN]],
+            'timeout_ms' => 100,
+        ]]);
+
+        $this->assertSame('timeout', $answer['error']['data']['kind'] ?? null);
+        $this->assertLessThan(0.1 + 0.5, microtime(true) - $start);
+        $this->stopServer($server, $input);
+    }
+
+    public function testServerDeadlineCountsWhileTheRequestWaits(): void
+    {
+        $this->writeSlowProject();
+        $this->recordReferences();
+
+        [$server, $input] = $this->startServer([PHP_BINARY, $this->psalm, '--overlay-server', '--threads=1'], 'fresh');
+        $this->ask($server, $input, ['id' => 1, 'method' => 'initialize', 'params' => ['protocol' => 1]]);
+
+        // a new function signature takes a fresh process, which starts slowly, and the only thread
+        $input->write(self::encodeMessage(['id' => 2, 'method' => 'analyze', 'params' => [
+            'overlays' => [['path' => 'src/functions.php', 'contents' => self::slowFunctions('string')]],
+        ]]));
+        $start = microtime(true);
+        $answer = $this->ask($server, $input, ['id' => 3, 'method' => 'analyze', 'params' => [
+            'overlays' => [['path' => 'src/UseFn.php', 'contents' => self::USE_FN]],
+            'timeout_ms' => 100,
+        ]]);
+
+        $this->assertSame(3, $answer['id'] ?? null);
+        $this->assertSame('timeout', $answer['error']['data']['kind'] ?? null);
+        $this->assertLessThan(0.1 + 0.5, microtime(true) - $start);
+        $this->readMessage($server);
+        $this->stopServer($server, $input);
+    }
+
+    public function testServerAnswersAReusedIdWithItsOwnAnswer(): void
+    {
+        $this->writeSlowProject();
+        $this->recordReferences();
+
+        [$server, $input] = $this->startServer([PHP_BINARY, $this->psalm, '--overlay-server'], 'all');
+        $timed_out = $this->ask($server, $input, ['id' => 7, 'method' => 'analyze', 'params' => [
+            'overlays' => [['path' => 'src/UseFn.php', 'contents' => self::USE_FN]],
+            'timeout_ms' => 50,
+        ]]);
+        $this->assertSame('timeout', $timed_out['error']['data']['kind'] ?? null);
+
+        // the id has its answer: a new request may take it, and the late answer to the first one is not its answer
+        $answer = $this->ask($server, $input, ['id' => 7, 'method' => 'analyze', 'params' => [
+            'overlays' => [['path' => 'src/UseFn.php', 'contents' => self::USE_FN]],
+        ]]);
+
+        $this->assertSame(7, $answer['id'] ?? null);
+        $this->assertSame([], $answer['result']['new_issues'] ?? null, json_encode($answer, JSON_THROW_ON_ERROR));
+        $this->stopServer($server, $input);
+    }
+
+    public function testServerCancellationStopsTheFreshProcess(): void
+    {
+        $this->writeSlowProject();
+        $this->recordReferences();
+
+        // the configuration given by its absolute path, so that the processes of the request can be found
+        $config = $this->project . '/psalm.xml';
+        [$server, $input] = $this->startServer(
+            [PHP_BINARY, $this->psalm, '-c', $config, '--overlay-server', '--threads=1'],
+            'fresh',
+        );
+        $this->ask($server, $input, ['id' => 1, 'method' => 'initialize', 'params' => ['protocol' => 1]]);
+
+        $input->write(self::encodeMessage(['id' => 2, 'method' => 'analyze', 'params' => [
+            'overlays' => [['path' => 'src/functions.php', 'contents' => self::slowFunctions('string')]],
+            'timeout_ms' => 30_000,
+        ]]));
+        // once the fresh process runs, and is still starting
+        $deadline = microtime(true) + 10.0;
+        while (!str_contains($this->getProcessesOf($config), '--overlays-from=-') && microtime(true) < $deadline) {
+            // the request reaches the server while its output is read
+            $this->server_output .= $server->getIncrementalOutput();
+            usleep(50_000);
+        }
+        $this->assertStringContainsString('--overlays-from=-', $this->getProcessesOf($config));
+        $cancelled = $this->ask($server, $input, ['method' => '$/cancel', 'params' => ['id' => 2]]);
+        $this->assertSame('cancelled', $cancelled['error']['data']['kind'] ?? null);
+
+        usleep(200_000);
+        $this->assertStringNotContainsString('--overlays-from=-', $this->getProcessesOf($config));
+        $this->stopServer($server, $input);
+    }
+
+    /**
+     * The command lines of the processes that name the needle
+     */
+    private function getProcessesOf(string $needle): string
+    {
+        $ps = self::newProcess(['ps', '-axww', '-o', 'command='], $this->project);
+        $ps->mustRun();
+
+        return self::grepLines($ps->getOutput(), $needle);
     }
 
     public function testAnAnswerThatCannotBeWrittenExits255(): void
@@ -339,6 +584,21 @@ final class OverlayEndToEndTest extends TestCase
         fclose($pipes[2]);
 
         $this->assertSame(255, proc_close($process), $stderr);
+    }
+
+    /**
+     * @psalm-pure
+     */
+    private static function grepLines(string $text, string $needle): string
+    {
+        $lines = [];
+        foreach (explode("\n", $text) as $line) {
+            if (str_contains($line, $needle)) {
+                $lines[] = $line;
+            }
+        }
+
+        return implode("\n", $lines);
     }
 
     public function testDeadlineStopsTheFreshProcess(): void
@@ -396,6 +656,53 @@ final class OverlayEndToEndTest extends TestCase
             }
             function helper(int $i): ' . $return_type . ' { return ' . ($return_type === 'int' ? '$i' : '(string) $i')
             . '; }';
+    }
+
+    /**
+     * @param list<string> $command
+     * @param string|null $slow see writeSlowProject()
+     * @return array{Process, InputStream}
+     */
+    private function startServer(array $command, ?string $slow = null): array
+    {
+        $input = new InputStream();
+        $server = self::newProcess(
+            [...$command, '--no-progress'],
+            $this->project,
+            [...self::agentEnvVarsToUnset(), 'PSALM_TEST_SLOW' => $slow ?? false],
+        );
+        $server->setInput($input);
+        $server->start();
+
+        return [$server, $input];
+    }
+
+    /**
+     * @param array<string, mixed> $message
+     * @return array{id?: int|string|null, result?: array<array-key, mixed>, error?: array{data: array{kind: string}}}
+     */
+    private function ask(Process $server, InputStream $input, array $message): array
+    {
+        $input->write(self::encodeMessage($message));
+
+        return $this->readMessage($server);
+    }
+
+    private function stopServer(Process $server, InputStream $input): void
+    {
+        $this->ask($server, $input, ['id' => 'stop', 'method' => 'shutdown']);
+        $input->close();
+        $server->wait();
+        $this->assertSame(0, $server->getExitCode(), $server->getErrorOutput());
+    }
+
+    /**
+     * @param array<string, mixed> $message
+     * @psalm-pure
+     */
+    private static function encodeMessage(array $message): string
+    {
+        return json_encode(['jsonrpc' => '2.0', ...$message], JSON_THROW_ON_ERROR) . "\n";
     }
 
     /**

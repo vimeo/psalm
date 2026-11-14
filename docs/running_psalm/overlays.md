@@ -55,7 +55,7 @@ Every new issue is listed with its `severity`. The exit status looks at `error` 
 | `2` | at least one |
 | `255` | no answer: a config error, a missing or out of date reference index, an invalid overlay, a timeout, a crash |
 
-With `--output-format=json` a failure prints `{"protocol":1,"error":{"kind":"...","message":"..."}}`. The kinds are `invalid_request`, `invalid_overlay`, `unsupported`, `references_not_recorded`, `references_stale`, `worker_failed`, `timeout` and `config`.
+With `--output-format=json` a failure prints `{"protocol":1,"error":{"kind":"...","message":"..."}}`. The kinds are `invalid_request`, `invalid_overlay`, `unsupported`, `references_not_recorded`, `references_stale`, `project_changed`, `worker_failed`, `timeout`, `cancelled` and `config`.
 
 ## Which files are analysed
 
@@ -70,14 +70,14 @@ vendor/bin/psalm --overlay=src/A.php=/tmp/A.php
 
 ## Several files, inline contents
 
-`--overlays-from=FILE` (or `-` for standard input) takes a JSON request:
+`--overlays-from=FILE` (or `-` for standard input) takes the same request as the server:
 
 ```bash
 echo '{"overlays": [{"path": "src/A.php", "contents": "<?php ..."}, {"path": "src/B.php", "replacement": "/tmp/B.php"}]}' \
   | vendor/bin/psalm --overlays-from=- --output-format=json
 ```
 
-Relative paths are relative to the directory Psalm runs in.
+Relative paths are relative to the directory Psalm runs in, on every transport: `--overlay`, `--overlays-from` and the server.
 
 Overlays of files that do not exist yet, and `{"path": "...", "deleted": true}`, answer `unsupported` for now. Overlays of the config, the baseline, `composer.json`, `composer.lock` and stub files (preloaded or not) are `invalid_overlay`.
 
@@ -85,10 +85,29 @@ Overlays of files that do not exist yet, and `{"path": "...", "deleted": true}`,
 
 `--overlay-timeout=SECONDS` stops the analysis and exits with `255` (kind `timeout`). It counts from the start of the process: loading the config and scanning the project count too, and the processes the run starts stop with it. For Infection, set it below Infection's own timeout, and count `0` as escaped, `2` as killed and anything else as not killed.
 
-`"timeout_ms"` in a request read with `--overlays-from` counts from the start of the process as well, and stops the analysis from the moment the request is read.
+`"timeout_ms"` in a request read with `--overlays-from` counts from the start of the process as well, and stops the analysis from the moment the request is read. In the server, `timeout_ms` counts from when the server receives the request: the time the server takes to start and the time the request waits for a free thread count.
 
 Without pcntl (Windows), the deadline is PHP's time limit, which counts whole seconds: a run may take up to a second longer than its timeout.
 
 ## Protocol versions
 
-The envelope and the issues in it can gain keys without a new `protocol` number. Clients must ignore keys they do not know. A change that removes or redefines a key raises `protocol`.
+The envelope, the issues in it and the server's answers can gain keys without a new `protocol` number. Clients must ignore keys they do not know. A change that removes or redefines a key raises `protocol`.
+
+## Server (experimental)
+
+`psalm --overlay-server [--threads=N]` reads JSON-RPC 2.0 requests from standard input, one per line, and writes the answers to standard output. The protocol may still change. Linux and macOS only.
+
+```text
+→ {"jsonrpc":"2.0","id":1,"method":"initialize","params":{"protocol":1}}
+← {"jsonrpc":"2.0","id":1,"result":{"protocol":1,"psalm_version":"...","root":"...","capabilities":{"whole_project":true,"new_files":false,"deleted_files":false,"cancel":true}}}
+→ {"jsonrpc":"2.0","id":2,"method":"analyze","params":{"overlays":[{"path":"src/A.php","contents":"<?php ..."}]}}
+← {"jsonrpc":"2.0","id":2,"result":{"protocol":1,"new_issues":[...],"analyzed_files":[...],"not_checked":[...]}}
+→ {"jsonrpc":"2.0","id":3,"method":"projectChanged","params":{}}
+← {"jsonrpc":"2.0","id":3,"result":{}}
+→ {"jsonrpc":"2.0","method":"$/cancel","params":{"id":2}}
+→ {"jsonrpc":"2.0","id":4,"method":"shutdown"}
+```
+
+Up to `--threads` requests run at once, and answers may come out of order. The id of a request must not be the id of another one that has no answer yet: such a request is answered with `invalid_request`. After files change on disk, send `projectChanged`.
+
+When the snapshot process cannot start (a config error, for example), every request is answered with the kind of the failure (`config`), and the server tries again after a few seconds, or at once after `projectChanged`. Without pcntl the server answers every request with `unsupported`.

@@ -72,7 +72,7 @@ final class OverlayExitGuard
         'init',
         'i',
     ];
-    private const OVERLAY_OPTIONS = ['--overlay', '--overlays-from', '--overlay-timeout'];
+    private const OVERLAY_OPTIONS = ['--overlay', '--overlays-from', '--overlay-server', '--overlay-timeout'];
 
     /** Set for the process that answers a request with fresh runs of the overlays, see Strategy::FRESH */
     public const FRESH_ENV = 'PSALM_OVERLAY_FRESH';
@@ -128,6 +128,7 @@ final class OverlayExitGuard
     public static function installIfRequested(array $argv): bool
     {
         $overlay = false;
+        $server = false;
         $timeout = null;
         foreach ($argv as $i => $arg) {
             foreach (self::OVERLAY_OPTIONS as $option) {
@@ -136,7 +137,9 @@ final class OverlayExitGuard
                 }
             }
 
-            if (str_starts_with($arg, '--overlay-timeout=')) {
+            if ($arg === '--overlay-server') {
+                $server = true;
+            } elseif (str_starts_with($arg, '--overlay-timeout=')) {
                 $timeout = substr($arg, 18);
             } elseif ($arg === '--overlay-timeout') {
                 $timeout = $argv[$i + 1] ?? null;
@@ -162,6 +165,11 @@ final class OverlayExitGuard
             if (!posix_setpgid(0, 0)) {
                 @fwrite(STDERR, 'The overlay process could not start a process group of its own' . PHP_EOL);
             }
+        }
+
+        if ($server) {
+            // each request has a deadline of its own
+            return true;
         }
 
         $started = getenv(self::STARTED_ENV);
@@ -196,11 +204,15 @@ final class OverlayExitGuard
      */
     public static function rejectOptions(array $options): void
     {
+        if (isset($options['overlay-server']) && (isset($options['overlay']) || isset($options['overlays-from']))) {
+            self::fail('invalid_request', '--overlay-server takes its overlays as requests');
+        }
+
         if (isset($options['overlay']) && isset($options['overlays-from'])) {
             self::fail('invalid_request', '--overlay and --overlays-from exclude each other');
         }
 
-        if (!isset($options['overlay']) && !isset($options['overlays-from'])) {
+        if (!isset($options['overlay']) && !isset($options['overlays-from']) && !isset($options['overlay-server'])) {
             self::fail('invalid_request', 'No overlay given: use --overlay or --overlays-from');
         }
 
@@ -405,6 +417,19 @@ final class OverlayExitGuard
     private static function report(string $kind, string $message): void
     {
         @fwrite(STDERR, 'Overlay analysis failed (' . $kind . '): ' . $message . PHP_EOL);
+
+        if (getenv(OverlayServer::ROLE_ENV) === OverlayServer::ROLE_SNAPSHOT) {
+            // what the supervisor answers in its place
+            @fwrite(STDOUT, json_encode(
+                ['jsonrpc' => '2.0', 'method' => OverlayServer::SNAPSHOT_FAILED, 'params' => [
+                    'kind' => $kind,
+                    'message' => $message,
+                ]],
+                JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE | JSON_INVALID_UTF8_SUBSTITUTE | JSON_THROW_ON_ERROR,
+            ) . "\n");
+
+            return;
+        }
 
         if (self::$json) {
             // a message that is not valid UTF-8 is still an answer; the output may be what failed

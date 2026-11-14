@@ -18,6 +18,7 @@ use Psalm\Internal\Overlay\OverlayFailure;
 use Psalm\Internal\Overlay\Protocol;
 use Psalm\Internal\Overlay\ReferenceIndex;
 use Psalm\Internal\Overlay\Request;
+use Psalm\Internal\Overlay\SnapshotServer;
 use Psalm\Internal\Overlay\Strategy;
 use Psalm\Internal\Provider\ClassLikeStorageProvider;
 use Psalm\IssueBuffer;
@@ -151,6 +152,49 @@ final class OverlayCommand
                 exit(2);
             }
         }
+
+        exit(0);
+    }
+
+    /**
+     * The snapshot process of `psalm --overlay-server`, see OverlayServer
+     *
+     * @param array<int, string> $argv
+     * @param string $cwd where the server started: relative overlay paths are relative to it
+     * @param Closure(): ProjectAnalyzer $rebootstrap
+     * @param array<string, array<string, array{o: int, s: array<int, string>}>> $baseline
+     * @param positive-int $threads
+     */
+    public static function serve(
+        array $argv,
+        string $cwd,
+        ProjectAnalyzer $project_analyzer,
+        Closure $rebootstrap,
+        IncludeCollector $include_collector,
+        array $baseline,
+        int $threads,
+    ): never {
+        $engine = null;
+        $failure = null;
+
+        try {
+            $engine = self::createEngine($project_analyzer, $rebootstrap, $include_collector, $baseline);
+        } catch (OverlayFailure $e) {
+            $failure = $e;
+        }
+
+        OverlayExitGuard::setPhase(OverlayFailure::WORKER_FAILED);
+
+        (new SnapshotServer(
+            $engine,
+            $failure,
+            $cwd,
+            $threads,
+            static fn(Request $request, ?float $deadline): array
+                => self::startFreshProcess($request, $argv, $cwd, $deadline),
+        ))->run();
+
+        OverlayExitGuard::answered();
 
         exit(0);
     }
@@ -351,7 +395,7 @@ final class OverlayCommand
         $env[self::FRESH_ENV] = '1';
         // killed on the deadline: a process the restarter would leave behind is not
         $env['PSALM_ALLOW_XDEBUG'] = '1';
-        unset($env[OverlayExitGuard::DEADLINE_ENV], $env[OverlayExitGuard::GROUP_ENV]);
+        unset($env[OverlayServer::ROLE_ENV], $env[OverlayExitGuard::DEADLINE_ENV], $env[OverlayExitGuard::GROUP_ENV]);
         if ($deadline !== null) {
             // from its start, as long as it takes to start
             $env[OverlayExitGuard::DEADLINE_ENV] = (string) $deadline;
@@ -386,7 +430,8 @@ final class OverlayCommand
      */
     public static function getAnalysisArguments(array $argv): array
     {
-        $request_options = ['--overlay', '--overlays-from', '--overlay-timeout', '--output-format', '--threads'];
+        $request_options = ['--overlay', '--overlays-from', '--overlay-timeout', '--output-format', '--threads',
+            '--overlay-server'];
         $arguments = [];
         $skip_value = false;
 
@@ -398,7 +443,7 @@ final class OverlayCommand
 
             foreach ($request_options as $option) {
                 if ($argument === $option) {
-                    $skip_value = true;
+                    $skip_value = $option !== '--overlay-server';
                     continue 2;
                 }
 

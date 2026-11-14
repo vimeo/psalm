@@ -106,6 +106,8 @@ require_once __DIR__ . '/../../IssueBuffer.php';
 require_once __DIR__ . '/../../Report.php';
 require_once __DIR__ . '/IdeDetector.php';
 require_once __DIR__ . '/OverlayExitGuard.php';
+require_once __DIR__ . '/OverlayServer.php';
+require_once __DIR__ . '/OverlaySnapshotProcess.php';
 
 /**
  * @internal
@@ -187,6 +189,7 @@ final class Psalm
         'overlay:',
         'overlays-from:',
         'overlay-timeout:',
+        'overlay-server',
     ];
 
     /**
@@ -467,6 +470,18 @@ final class Psalm
             };
 
             InternalCallMapHandler::getCallMap();
+
+            if (isset($options['overlay-server'])) {
+                OverlayCommand::serve(
+                    $argv,
+                    $overlay_cwd,
+                    $project_analyzer,
+                    $rebootstrap,
+                    $include_collector,
+                    ProjectBootstrap::readBaseline($options, $config),
+                    $threads,
+                );
+            }
 
             OverlayCommand::run(
                 $options,
@@ -1144,6 +1159,10 @@ final class Psalm
             exit;
         }
 
+        if (isset($options['overlay-server']) && getenv(OverlayServer::ROLE_ENV) !== OverlayServer::ROLE_SNAPSHOT) {
+            OverlayServer::run($argv);
+        }
+
         if (isset($options['language-server'])) {
             require_once __DIR__ . '/LanguageServer.php';
             LanguageServer::run($argv);
@@ -1531,6 +1550,9 @@ final class Psalm
 
             --overlay-timeout=SECONDS
                 Give up SECONDS after the start, bootstrap and scan included (exit 255)
+
+            --overlay-server
+                Answer overlay requests as JSON-RPC lines on standard input (experimental)
 
         Miscellaneous:
             -h, --help
