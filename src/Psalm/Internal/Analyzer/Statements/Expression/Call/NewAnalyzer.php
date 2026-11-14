@@ -53,6 +53,7 @@ use Psalm\IssueBuffer;
 use Psalm\Plugin\EventHandler\Event\AddRemoveTaintsEvent;
 use Psalm\Storage\Capabilities;
 use Psalm\Storage\ClassLikeStorage;
+use Psalm\Storage\FunctionLikeStorage;
 use Psalm\Storage\MethodStorage;
 use Psalm\Storage\Possibilities;
 use Psalm\Type;
@@ -551,6 +552,75 @@ final class NewAnalyzer extends CallAnalyzer
     }
 
     /**
+     * The `@psalm-overload` of the constructor that the arguments select, null when it has none
+     */
+    private static function getConstructorOverload(
+        StatementsAnalyzer $statements_analyzer,
+        MethodIdentifier $method_id,
+        PhpParser\Node\Expr\New_ $stmt,
+        Context $context,
+    ): ?FunctionLikeStorage {
+        $codebase = $statements_analyzer->getCodebase();
+        $declaring_method_id = $codebase->methods->getDeclaringMethodId($method_id);
+        $overloads = $declaring_method_id ? $codebase->methods->getStorage($declaring_method_id)->overloads : [];
+
+        return $overloads !== []
+            ? OverloadSelector::select($statements_analyzer, $codebase, $stmt->getArgs(), $context, $overloads)
+            : null;
+    }
+
+    private static function applyConstructorAssertions(
+        StatementsAnalyzer $statements_analyzer,
+        Codebase $codebase,
+        Context $context,
+        PhpParser\Node\Expr\New_ $stmt,
+        MethodStorage $method_storage,
+        TemplateResult $template_result,
+    ): void {
+        if ($method_storage->assertions && $stmt->class instanceof PhpParser\Node\Name) {
+            self::applyAssertionsToContext(
+                $stmt->class,
+                null,
+                self::getAssertionsOnArgs($method_storage->assertions, $method_storage, $stmt->getArgs()),
+                $stmt->getArgs(),
+                $template_result,
+                $context,
+                $statements_analyzer,
+            );
+        }
+
+        if ($method_storage->if_true_assertions) {
+            $statements_analyzer->node_data->setIfTrueAssertions(
+                $stmt,
+                array_map(
+                    static fn(Possibilities $assertion): Possibilities
+                        => $assertion->getUntemplatedCopy($template_result, null, $codebase),
+                    self::getAssertionsOnArgs(
+                        $method_storage->if_true_assertions,
+                        $method_storage,
+                        $stmt->getArgs(),
+                    ),
+                ),
+            );
+        }
+
+        if ($method_storage->if_false_assertions) {
+            $statements_analyzer->node_data->setIfFalseAssertions(
+                $stmt,
+                array_map(
+                    static fn(Possibilities $assertion): Possibilities
+                        => $assertion->getUntemplatedCopy($template_result, null, $codebase),
+                    self::getAssertionsOnArgs(
+                        $method_storage->if_false_assertions,
+                        $method_storage,
+                        $stmt->getArgs(),
+                    ),
+                ),
+            );
+        }
+    }
+
+    /**
      * Reports the instantiation of a class deprecated, internal to other code, or only running from the command line
      */
     private static function checkInstantiationProhibitions(
@@ -660,6 +730,8 @@ final class NewAnalyzer extends CallAnalyzer
                 $context,
                 new CodeLocation($statements_analyzer->getSource(), $stmt),
                 $statements_analyzer,
+                false,
+                self::getConstructorOverload($statements_analyzer, $method_id, $stmt, $context),
             ) !== false;
 
             if ($from_static) {
@@ -714,47 +786,14 @@ final class NewAnalyzer extends CallAnalyzer
                     $can_extend,
                 );
 
-                if ($method_storage->assertions && $stmt->class instanceof PhpParser\Node\Name) {
-                    self::applyAssertionsToContext(
-                        $stmt->class,
-                        null,
-                        self::getAssertionsOnArgs($method_storage->assertions, $method_storage, $stmt->getArgs()),
-                        $stmt->getArgs(),
-                        $template_result,
-                        $context,
-                        $statements_analyzer,
-                    );
-                }
-
-                if ($method_storage->if_true_assertions) {
-                    $statements_analyzer->node_data->setIfTrueAssertions(
-                        $stmt,
-                        array_map(
-                            static fn(Possibilities $assertion): Possibilities
-                                => $assertion->getUntemplatedCopy($template_result, null, $codebase),
-                            self::getAssertionsOnArgs(
-                                $method_storage->if_true_assertions,
-                                $method_storage,
-                                $stmt->getArgs(),
-                            ),
-                        ),
-                    );
-                }
-
-                if ($method_storage->if_false_assertions) {
-                    $statements_analyzer->node_data->setIfFalseAssertions(
-                        $stmt,
-                        array_map(
-                            static fn(Possibilities $assertion): Possibilities
-                                => $assertion->getUntemplatedCopy($template_result, null, $codebase),
-                            self::getAssertionsOnArgs(
-                                $method_storage->if_false_assertions,
-                                $method_storage,
-                                $stmt->getArgs(),
-                            ),
-                        ),
-                    );
-                }
+                self::applyConstructorAssertions(
+                    $statements_analyzer,
+                    $codebase,
+                    $context,
+                    $stmt,
+                    $method_storage,
+                    $template_result,
+                );
             }
 
             $generic_param_types = null;
