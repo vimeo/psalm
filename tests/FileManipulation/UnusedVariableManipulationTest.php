@@ -38,6 +38,44 @@ final class UnusedVariableManipulationTest extends FileManipulationTestCase
                 'issues_to_fix' => ['UnusedVariable'],
                 'safe_types' => true,
             ],
+            'dontRemoveAnAssignmentWhoseValueIsStoredInAnUnusedArray' => [
+                'input' => '<?php
+                    $array = [
+                        "foo" => "hello",
+                    ];
+
+                    $bar = $array["foo"];
+                    unset($array["foo"]);
+                    $array["bar"] = $bar;',
+                'output' => '<?php
+                    $array = [
+                        "foo" => "hello",
+                    ];
+
+                    $bar = $array["foo"];
+                    unset($array["foo"]);
+                    $array["bar"] = $bar;',
+                'php_version' => '7.1',
+                'issues_to_fix' => ['UnusedVariable'],
+                'safe_types' => true,
+            ],
+            'removeUnusedVariablesStoredIntoAnArrayLiteral' => [
+                'input' => '<?php
+                    class A {
+                        public function foo() : void {
+                            $x = 1;
+                            $y = [$x];
+                        }
+                    }',
+                'output' => '<?php
+                    class A {
+                        public function foo() : void {
+                        }
+                    }',
+                'php_version' => '7.1',
+                'issues_to_fix' => ['UnusedVariable'],
+                'safe_types' => true,
+            ],
             'dontRemoveAssignmentReadAfterPossiblyUndefinedFix' => [
                 'input' => '<?php
                     function foo(int $i): void {

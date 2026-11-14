@@ -41,6 +41,8 @@ use Psalm\Type\Union;
 
 use function in_array;
 use function is_string;
+use function str_starts_with;
+use function strpbrk;
 
 /**
  * @internal
@@ -225,6 +227,25 @@ final class VariableFetchAnalyzer
             $context->inside_general_use = true;
             $expr_result = ExpressionAnalyzer::analyze($statements_analyzer, $stmt->name, $context);
             $context->inside_general_use = $was_inside_general_use;
+
+            // any variable assigned so far may be the one fetched
+            if ($statements_analyzer->data_flow_graph) {
+                foreach ($context->vars_in_scope as $scope_var_id => $scope_var_type) {
+                    if (!str_starts_with($scope_var_id, '$')
+                        || strpbrk($scope_var_id, '->[:') !== false
+                    ) {
+                        continue;
+                    }
+
+                    foreach ($scope_var_type->parent_nodes as $parent_node) {
+                        $statements_analyzer->data_flow_graph->addPath(
+                            $parent_node,
+                            DataFlowNode::getForVariableUse(),
+                            'variable-use',
+                        );
+                    }
+                }
+            }
 
             return $expr_result;
         }

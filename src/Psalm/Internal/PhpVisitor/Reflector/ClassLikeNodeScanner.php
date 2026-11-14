@@ -833,6 +833,8 @@ final class ClassLikeNodeScanner
                 }
             }
 
+            $psalm_tagged_pseudo_methods = ['static' => [], 'instance' => []];
+
             foreach ($docblock_info->methods as $method) {
                 $functionlike_node_scanner = new FunctionLikeNodeScanner(
                     $this->codebase,
@@ -854,13 +856,35 @@ final class ClassLikeNodeScanner
                     ...$pseudo_method_storage->docblock_issues,
                 ];
 
+                $is_psalm_tag = (bool) $method->getAttribute('psalm_tag');
+
                 if ($pseudo_method_storage->is_static) {
+                    [$overloads, $psalm_tagged_pseudo_methods['static']] = self::addPseudoMethodOverload(
+                        $storage->pseudo_static_method_overloads,
+                        $storage->pseudo_static_methods,
+                        $psalm_tagged_pseudo_methods['static'],
+                        $lc_method_name,
+                        $pseudo_method_storage,
+                        $is_psalm_tag,
+                    );
+                    $storage->pseudo_static_method_overloads = $overloads;
+
                     $storage->pseudo_static_methods[$lc_method_name] = $pseudo_method_storage;
                     $storage->declaring_pseudo_static_method_ids[$lc_method_name] = new MethodIdentifier(
                         $fq_classlike_name,
                         $lc_method_name,
                     );
                 } else {
+                    [$overloads, $psalm_tagged_pseudo_methods['instance']] = self::addPseudoMethodOverload(
+                        $storage->pseudo_method_overloads,
+                        $storage->pseudo_methods,
+                        $psalm_tagged_pseudo_methods['instance'],
+                        $lc_method_name,
+                        $pseudo_method_storage,
+                        $is_psalm_tag,
+                    );
+                    $storage->pseudo_method_overloads = $overloads;
+
                     $storage->pseudo_methods[$lc_method_name] = $pseudo_method_storage;
                     $storage->declaring_pseudo_method_ids[$lc_method_name] = new MethodIdentifier(
                         $fq_classlike_name,
@@ -940,14 +964,14 @@ final class ClassLikeNodeScanner
 
                     if ($mixin_type instanceof TNamedObject) {
                         $storage->namedMixins[] = $mixin_type;
+                        $storage->declaredMixins[] = $mixin_type;
                     }
 
                     if ($mixin_type instanceof TTemplateParam) {
                         $storage->templatedMixins[] = $mixin_type;
+                        $storage->declaredMixins[] = $mixin_type;
                     }
                 }
-
-                $storage->mixin_declaring_fqcln = $storage->name;
             }
 
             $deferred_capabilities = [];
@@ -992,6 +1016,17 @@ final class ClassLikeNodeScanner
             // the `@psalm-pure` and `@psalm-mutation-free` they spell
             $storage->taint_specialize = $docblock_info->taint_specialize;
             $storage->cli_only = $docblock_info->cli_only;
+
+            if ($docblock_info->cli_only_instances) {
+                if ($node instanceof PhpParser\Node\Stmt\Class_) {
+                    $storage->cli_only_instances = true;
+                } else {
+                    $storage->docblock_issues[] = new InvalidDocblock(
+                        '@psalm-cli-only-instances is only allowed on a class, not on ' . $fq_classlike_name,
+                        $name_location ?? $class_location,
+                    );
+                }
+            }
             $storage->taint_property_bag = $docblock_info->taint_property_bag;
             $storage->specialize_instance = $docblock_info->taint_specialize
                 || ($docblock_info->has_mutations_annotation
@@ -1827,6 +1862,17 @@ final class ClassLikeNodeScanner
                 $fq_classlike_name,
             );
 
+            if ($case_type
+                && $stmt->expr instanceof PhpParser\Node\Expr\ClassConstFetch
+                && $stmt->expr->name instanceof PhpParser\Node\Identifier
+                && ($constant_storage = $storage->constants[$stmt->expr->name->name] ?? null)
+                && $case_type === $constant_storage->type
+                && $constant_storage->inferred_type
+            ) {
+                // the case holds the value of the constant, not the type it is annotated with
+                $case_type = $constant_storage->inferred_type;
+            }
+
             if ($case_type) {
                 if ($case_type->isSingleIntLiteral()) {
                     $enum_value = $case_type->getSingleIntLiteral();
@@ -2017,7 +2063,14 @@ final class ClassLikeNodeScanner
         foreach ($stmt->props as $property) {
             $doc_var_location = null;
 
-            if (isset($storage->properties[$property->name->name])) {
+            $existing_property = $storage->properties[$property->name->name] ?? null;
+
+            // only a property declared in the same file is a duplicate; stubs refine properties from reflection and
+            // other stubs
+            if ($existing_property
+                && $existing_property->location
+                && $existing_property->location->file_path === $this->file_path
+            ) {
                 $this->file_storage->scan_issues[] = new DuplicateProperty(
                     'Property ' . $fq_classlike_name . '::$' . $property->name->name . ' has already been defined',
                     new CodeLocation($this->file_scanner, $stmt, null, true),
@@ -2713,6 +2766,38 @@ final class ClassLikeNodeScanner
         }
 
         return $referenced_names;
+    }
+
+    /**
+     * `@psalm-method` replaces the `@method`s of its name; the `@method`s (or `@psalm-method`s) of one name are the
+     * overloads of the method
+     *
+     * @param array<lowercase-string, non-empty-list<MethodStorage>> $overloads
+     * @param array<lowercase-string, MethodStorage> $declared
+     * @param array<lowercase-string, true> $psalm_tagged the names a `@psalm-method` was seen for
+     * @param lowercase-string $name
+     * @return array{array<lowercase-string, non-empty-list<MethodStorage>>, array<lowercase-string, true>}
+     * @psalm-pure
+     */
+    private static function addPseudoMethodOverload(
+        array $overloads,
+        array $declared,
+        array $psalm_tagged,
+        string $name,
+        MethodStorage $method,
+        bool $is_psalm_tag,
+    ): array {
+        if (!isset($declared[$name]) || ($is_psalm_tag && !isset($psalm_tagged[$name]))) {
+            unset($overloads[$name]);
+        } else {
+            $overloads[$name] = [...($overloads[$name] ?? [$declared[$name]]), $method];
+        }
+
+        if ($is_psalm_tag) {
+            $psalm_tagged[$name] = true;
+        }
+
+        return [$overloads, $psalm_tagged];
     }
 
     /**
