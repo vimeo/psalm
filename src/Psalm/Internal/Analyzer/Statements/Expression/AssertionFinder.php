@@ -906,7 +906,7 @@ final class AssertionFinder
 
         $native_symbol_guard = self::getNativeSymbolGuardAssertion($expr, $source, $codebase, $first_var_type);
         if ($native_symbol_guard !== null) {
-            $if_types[Context::PHP_VERSION_ID_VAR_ID] = [[$native_symbol_guard]];
+            $if_types[Context::PHP_SYMBOL_GUARD_VAR_ID] = [[$native_symbol_guard]];
         }
 
         return $if_types ? [$if_types] : [];

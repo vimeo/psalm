@@ -408,7 +408,11 @@ final class ClosureAnalyzer extends FunctionLikeAnalyzer
         }
 
         // a closure runs on the PHP version and in the SAPI of the code creating it
-        foreach ([Context::PHP_VERSION_ID_VAR_ID, Context::PHP_SAPI_VAR_ID] as $var_id) {
+        foreach ([
+            Context::PHP_VERSION_ID_VAR_ID,
+            Context::PHP_SYMBOL_GUARD_VAR_ID,
+            Context::PHP_SAPI_VAR_ID,
+        ] as $var_id) {
             if (isset($context->vars_in_scope[$var_id])) {
                 $use_context->vars_in_scope[$var_id] = $context->vars_in_scope[$var_id];
             }
