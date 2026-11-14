@@ -64,6 +64,87 @@ final class MagicPropertyTest extends TestCase
         $this->analyzeFile('somefile.php', new Context());
     }
 
+    public function testPhpDocPropertyAssignmentWithoutSetInheritedFromParent(): void
+    {
+        Config::getInstance()->use_phpdoc_property_without_magic_or_parent = true;
+
+        $this->addFile(
+            'somefile.php',
+            '<?php
+                /** @property string $b */
+                abstract class A {
+                    public string $a = "";
+                }
+
+                class B extends A {
+                    public function init(): void {
+                        $this->b = "init";
+                    }
+                }
+
+                $b = new B();
+                $b->a = "a";
+                $b->b = "b";',
+        );
+
+        $this->analyzeFile('somefile.php', new Context());
+    }
+
+    public function testPhpDocPropertyAssignmentWithoutSetChecksTheType(): void
+    {
+        Config::getInstance()->use_phpdoc_property_without_magic_or_parent = true;
+
+        $this->addFile(
+            'somefile.php',
+            '<?php
+                /** @property string $b */
+                class A {}
+
+                $a = new A();
+                $a->b = 1;',
+        );
+
+        $this->expectException(CodeException::class);
+        $this->expectExceptionMessage('InvalidPropertyAssignmentValue');
+        $this->analyzeFile('somefile.php', new Context());
+    }
+
+    public function testPhpDocPropertyReadIsNotAssignableWithoutSet(): void
+    {
+        Config::getInstance()->use_phpdoc_property_without_magic_or_parent = true;
+
+        $this->addFile(
+            'somefile.php',
+            '<?php
+                /** @property-read string $b */
+                class A {}
+
+                $a = new A();
+                $a->b = "b";',
+        );
+
+        $this->expectException(CodeException::class);
+        $this->expectExceptionMessage('UndefinedPropertyAssignment');
+        $this->analyzeFile('somefile.php', new Context());
+    }
+
+    public function testPhpDocPropertyAssignmentWithoutSetNeedsTheConfigOption(): void
+    {
+        $this->addFile(
+            'somefile.php',
+            '<?php
+                /** @property string $b */
+                class A {}
+
+                $a = new A();
+                $a->b = "b";',
+        );
+
+        $this->expectException(CodeException::class);
+        $this->expectExceptionMessage('UndefinedPropertyAssignment');
+        $this->analyzeFile('somefile.php', new Context());
+    }
+
     /**
      * @psalm-pure
      */
