@@ -327,6 +327,32 @@ function checkDirRegression(): int
         $this->assertGreaterThan(0, IssueBuffer::getErrorCount());
     }
 
+    public function testCanReportIssuesWithoutCheckMethod(): void
+    {
+        // A tool that embeds Psalm and drives the analysis itself never calls a check method,
+        // so nothing narrows the reportable files to the ones being checked.
+        $this->project_analyzer = $this->getProjectAnalyzerWithConfig(
+            Config::loadFromXML(
+                (string)getcwd(),
+                '<?xml version="1.0"?>
+                <psalm>
+                    <projectFiles>
+                        <directory name="tests/fixtures/DummyProject" />
+                    </projectFiles>
+                </psalm>',
+            ),
+            false,
+        );
+
+        $project_dir = (string) getcwd()
+            . DIRECTORY_SEPARATOR . 'tests'
+            . DIRECTORY_SEPARATOR . 'fixtures'
+            . DIRECTORY_SEPARATOR . 'DummyProject';
+
+        $this->assertTrue($this->project_analyzer->canReportIssues($project_dir . DIRECTORY_SEPARATOR . 'Bar.php'));
+        $this->assertFalse($this->project_analyzer->canReportIssues((string) getcwd() . DIRECTORY_SEPARATOR . 'psalm'));
+    }
+
     public function testCheck(): void
     {
         $this->project_analyzer = $this->getProjectAnalyzerWithConfig(

@@ -329,7 +329,7 @@ final class MethodCallTest extends TestCase
                         $result = $query->where("x", Holder::$count);
                     }',
                 'assertions' => [],
-                'ignored_issues' => ['MixedMethodCall', 'MixedAssignment', 'UnusedVariable'],
+                'ignored_issues' => ['MixedMethodCall', 'MixedAssignment'],
             ],
             'privateConstructorOfAParentWithCallStaticStillInitializesTheProperties' => [
                 'code' => '<?php
@@ -348,7 +348,6 @@ final class MethodCallTest extends TestCase
 
                     final class Child extends Base {}',
                 'assertions' => [],
-                'ignored_issues' => ['ClassMustBeFinal'],
             ],
             'inaccessibleStaticMethodForwardedToCallStaticHasItsReturnType' => [
                 'code' => '<?php
@@ -383,7 +382,6 @@ final class MethodCallTest extends TestCase
 
                     $made = Child::make();',
                 'assertions' => ['$made===' => 'Base'],
-                'ignored_issues' => ['ClassMustBeFinal'],
             ],
             'inaccessibleStaticMethodForwardedToAnInheritedCallStaticResolvesStaticToTheCalledClass' => [
                 'code' => '<?php
@@ -405,7 +403,6 @@ final class MethodCallTest extends TestCase
 
                     $made = Child::make();',
                 'assertions' => ['$made===' => 'Child&static'],
-                'ignored_issues' => ['ClassMustBeFinal'],
             ],
             'staticCallOfInaccessibleMethodGoesToCallStatic' => [
                 'code' => <<<'PHP'
@@ -544,7 +541,6 @@ final class MethodCallTest extends TestCase
                         use Chain;
                     }',
                 'assertions' => [],
-                'ignored_issues' => ['MissingOverrideAttribute'],
             ],
             'selfStaticAndParentCallsKeepTheTypeArgumentsOfAStaticReturnType' => [
                 'code' => '<?php
@@ -584,7 +580,6 @@ final class MethodCallTest extends TestCase
                         }
                     }',
                 'assertions' => [],
-                'ignored_issues' => ['ClassMustBeFinal'],
             ],
             'parentSelfAndStaticCallsReturnTheStaticTypeOfTheCallingClass' => [
                 'code' => '<?php
@@ -625,7 +620,6 @@ final class MethodCallTest extends TestCase
                         }
                     }',
                 'assertions' => [],
-                'ignored_issues' => ['MissingOverrideAttribute'],
             ],
             'mysqliGetWarningsMayReturnFalse' => [
                 'code' => <<<'PHP'
@@ -2213,10 +2207,6 @@ final class MethodCallTest extends TestCase
 
                     $a->barBar();',
                 'error_message' => 'MixedMethodCall',
-                'error_levels' => [
-                    'MissingPropertyType',
-                    'MixedAssignment',
-                ],
             ],
             'invalidMethodCall' => [
                 'code' => '<?php
@@ -2282,7 +2272,7 @@ final class MethodCallTest extends TestCase
                         }
                     }',
                 'error_message' => 'LessSpecificReturnStatement',
-                'error_levels' => ['MixedReturnStatement', 'MixedMethodCall'],
+                'error_levels' => ['MixedMethodCall'],
             ],
             'undefinedVariableStaticCall' => [
                 'code' => '<?php
