@@ -16,6 +16,7 @@ use function count;
 use function implode;
 use function in_array;
 use function is_string;
+use function preg_replace;
 use function strtolower;
 
 /**
@@ -119,6 +120,18 @@ final class ExpressionIdentifier
         }
 
         return null;
+    }
+
+    /**
+     * What the messages call the object: its variable id, or else its code on one line
+     */
+    public static function getNameForMessage(?string $var_id, PhpParser\Node\Expr $expr): string
+    {
+        return $var_id ?? (string) preg_replace(
+            '/\s+/',
+            ' ',
+            (new PhpParser\PrettyPrinter\Standard())->prettyPrintExpr($expr),
+        );
     }
 
     public static function getExtendedVarId(

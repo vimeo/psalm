@@ -5907,6 +5907,32 @@ final class PropertyTypeTest extends TestCase
                 'error_levels' => [],
                 'php_version' => '8.0',
             ],
+            'nullObjectOfPropertyFetchIsNamed' => [
+                'code' => '<?php
+                    function f(): null { return null; }
+                    echo f()->name;',
+                'error_message' => 'NullPropertyFetch - src' . DIRECTORY_SEPARATOR . 'somefile.php:3:26 - Cannot get property on null variable f',
+            ],
+            'possiblyNullObjectOfPropertyFetchIsNamed' => [
+                'code' => '<?php
+                    function f(): ?stdClass { return null; }
+                    echo f()->name;',
+                'error_message' => 'PossiblyNullPropertyFetch - src' . DIRECTORY_SEPARATOR . 'somefile.php:3:26 - Cannot get property on possibly null variable f() of type',
+            ],
+            'invalidObjectOfMethodCallIsNamed' => [
+                'code' => '<?php
+                    function f(): int { return 1; }
+                    f()->m();',
+                'error_message' => 'InvalidMethodCall - src' . DIRECTORY_SEPARATOR . 'somefile.php:3:26 - Cannot call method on int variable f',
+            ],
+            'possiblyInvalidObjectOfMethodCallIsNamed' => [
+                'code' => '<?php
+                    function f(): int|stdClass { return 1; }
+                    f()->m();',
+                'error_message' => 'PossiblyInvalidMethodCall - src' . DIRECTORY_SEPARATOR . 'somefile.php:3:26 - Cannot call method on possible int variable f',
+                'error_levels' => [],
+                'php_version' => '8.0',
+            ],
             'notSetWhenTheChildOverridesTheMethodOfAParentClass' => [
                 'code' => '<?php
                     abstract class Event {

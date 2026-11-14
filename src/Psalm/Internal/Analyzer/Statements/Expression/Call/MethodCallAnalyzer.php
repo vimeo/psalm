@@ -284,7 +284,8 @@ final class MethodCallAnalyzer extends CallAnalyzer
             if ($result->has_valid_method_call_type || $result->has_mixed_method_call) {
                 IssueBuffer::maybeAdd(
                     new PossiblyInvalidMethodCall(
-                        'Cannot call method on possible ' . $invalid_class_type . ' variable ' . $lhs_var_id,
+                        'Cannot call method on possible ' . $invalid_class_type . ' variable '
+                            . ExpressionIdentifier::getNameForMessage($lhs_var_id, $stmt->var),
                         new CodeLocation($source, $stmt->name),
                     ),
                     $statements_analyzer->getSuppressedIssues(),
@@ -292,7 +293,8 @@ final class MethodCallAnalyzer extends CallAnalyzer
             } else {
                 IssueBuffer::maybeAdd(
                     new InvalidMethodCall(
-                        'Cannot call method on ' . $invalid_class_type . ' variable ' . $lhs_var_id,
+                        'Cannot call method on ' . $invalid_class_type . ' variable '
+                            . ExpressionIdentifier::getNameForMessage($lhs_var_id, $stmt->var),
                         new CodeLocation($source, $stmt->name),
                     ),
                     $statements_analyzer->getSuppressedIssues(),
