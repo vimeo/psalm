@@ -314,6 +314,9 @@ final class TernaryAnalyzer
             return self::setResultType($statements_analyzer, $stmt, $context);
         }
 
+        $context->detachReferencesReboundIn($if_context, $statements_analyzer, $stmt->if ? [$stmt->if] : []);
+        $context->detachReferencesReboundIn($t_else_context, $statements_analyzer, [$stmt->else]);
+
         $assign_var_ifs = $if_context->assigned_var_ids;
         $assign_var_else = $t_else_context->assigned_var_ids;
         $assign_all = array_intersect_key($assign_var_ifs, $assign_var_else);

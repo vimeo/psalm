@@ -356,6 +356,7 @@ final class ForeachAnalyzer
         ) {
             // TODO support references with destructuring
             $foreach_context->references_to_external_scope['$' . $stmt->valueVar->name] = true;
+            $foreach_context->forgetReferencesPossiblyBound('$' . $stmt->valueVar->name);
         }
 
         // PHP evaluates the iterated expression once, before it assigns the value and then a key of the same name

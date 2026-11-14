@@ -1267,6 +1267,7 @@ final class AssignmentAnalyzer
                 $return_type,
             );
             FunctionLikeAnalyzer::unbindByRefParam($statements_analyzer->getCodebase(), $context, $lhs_var_id);
+            $context->forgetReferencesPossiblyBound($lhs_var_id);
 
             if (isset($context->references_in_scope[$lhs_var_id])) {
                 $context->decrementReferenceCount($lhs_var_id);
@@ -1326,6 +1327,7 @@ final class AssignmentAnalyzer
         }
 
         FunctionLikeAnalyzer::unbindByRefParam($statements_analyzer->getCodebase(), $context, $lhs_var_id);
+        $context->forgetReferencesPossiblyBound($lhs_var_id);
 
         if ($rhs_var_id === '$GLOBALS[\'' . substr($lhs_var_id, 1) . '\']') {
             $context->bound_globals[$lhs_var_id] = VariableFetchAnalyzer::getGlobalType(
@@ -2331,6 +2333,7 @@ final class AssignmentAnalyzer
 
                 $context->vars_in_scope[$var_id] = $assign_value_type;
                 $context->vars_possibly_in_scope[$var_id] = true;
+                $context->writeToReferencesPossiblyBound($var_id, $assign_value_type, $codebase);
 
                 $location = new CodeLocation($statements_analyzer, $assign_var);
 

@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Psalm;
 
 use InvalidArgumentException;
+use PhpParser;
 use Psalm\Internal\Analyzer\ConstructorExits;
 use Psalm\Internal\Analyzer\Statements\Expression\Assignment\InstancePropertyAssignmentAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\Fetch\VariableFetchAnalyzer;
@@ -26,19 +27,24 @@ use Psalm\Type\Atomic\TObjectWithProperties;
 use Psalm\Type\Union;
 use RuntimeException;
 
+use function array_filter;
 use function array_keys;
+use function array_map;
 use function array_search;
 use function array_shift;
 use function array_values;
 use function assert;
 use function count;
 use function in_array;
+use function is_array;
 use function is_int;
+use function is_string;
 use function preg_match;
 use function preg_quote;
 use function preg_replace;
 use function serialize;
 use function str_contains;
+use function str_starts_with;
 use function strcspn;
 use function strpos;
 use function strrpos;
@@ -168,6 +174,14 @@ final class Context
      * @var array<string, CodeLocation>
      */
     public array $references_possibly_from_confusing_scope = [];
+
+    /**
+     * The variables a variable may still be bound to by reference: those it was bound to before a block that rebound
+     * one of them, where the block did not run. A write to the variable is combined into their types.
+     *
+     * @var array<string, array<string, true>>
+     */
+    public array $references_possibly_bound_to = [];
 
     /**
      * Whether or not we're inside the conditional of an if/where etc.
@@ -593,6 +607,174 @@ final class Context
     }
 
     /**
+     * A reference and the variable it is bound to are no longer known to be the same variable after a block which goes
+     * on after it and bound either of them to another variable (or released it): what is written to one after the
+     * block must not be written to the other, and writing to the rebound one is reported as the reuse of a reference
+     * from a confusing scope.
+     *
+     * Only a binding the block's code makes counts: the reconciliation of an assertion on the referenced variable
+     * also drops the reference from the block's context, but leaves the variable bound at runtime.
+     *
+     * @param array<PhpParser\Node> $block_nodes
+     */
+    public function detachReferencesReboundIn(
+        Context $block_context,
+        StatementsAnalyzer $statements_analyzer,
+        array $block_nodes,
+    ): void {
+        $rebindings = [];
+        $was_reference = [];
+
+        foreach ($this->references_in_scope as $reference_id => $referenced_id) {
+            foreach ([$reference_id, $referenced_id] as $var_id) {
+                if (!isset($rebindings[$var_id])
+                    && ($block_context->references_in_scope[$var_id] ?? null)
+                        !== ($this->references_in_scope[$var_id] ?? null)
+                    && ($rebinding = self::findReferenceRebinding($block_nodes, $var_id)) !== null
+                ) {
+                    $rebindings[$var_id] = $rebinding;
+                    $was_reference[$var_id] = isset($this->references_in_scope[$var_id])
+                        || isset($this->references_to_external_scope[$var_id]);
+                }
+            }
+        }
+
+        foreach ($this->references_in_scope as $reference_id => $referenced_id) {
+            if (!isset($rebindings[$reference_id]) && !isset($rebindings[$referenced_id])) {
+                continue;
+            }
+
+            if (isset($this->referenced_counts[$referenced_id])) {
+                $this->decrementReferenceCount($reference_id);
+            }
+
+            // references_to_external_scope is kept: where the block didn't run, the variable is still bound there
+            unset($this->references_in_scope[$reference_id]);
+            $this->references_possibly_bound_to[$reference_id][$referenced_id] = true;
+            $this->references_possibly_bound_to[$referenced_id][$reference_id] = true;
+
+            if (isset($this->vars_in_scope[$reference_id])) {
+                // the entry is a PHP reference to the one of the variable it was bound to
+                $type = $this->vars_in_scope[$reference_id];
+                unset($this->vars_in_scope[$reference_id]);
+                $this->vars_in_scope[$reference_id] = $type;
+            }
+        }
+
+        foreach ($rebindings as $var_id => $rebinding) {
+            // a variable that was a reference before the block is used as one after it
+            if (!$was_reference[$var_id]) {
+                $this->references_possibly_from_confusing_scope[$var_id] ??=
+                    new CodeLocation($statements_analyzer, $rebinding);
+            }
+        }
+    }
+
+    /**
+     * What is written to the variable may be written to the variables it is possibly still bound to: their types get
+     * it besides their own, and what was known of their offsets and properties is forgotten
+     *
+     * @psalm-capabilities read-props|write-this-props|write-refs
+     */
+    public function writeToReferencesPossiblyBound(string $var_id, Union $type, Codebase $codebase): void
+    {
+        foreach ($this->references_possibly_bound_to[$var_id] ?? [] as $target_id => $_) {
+            if (!isset($this->vars_in_scope[$target_id])) {
+                continue;
+            }
+
+            $this->vars_in_scope[$target_id] = Type::combineUnionTypes(
+                $this->vars_in_scope[$target_id],
+                $type,
+                $codebase,
+            );
+
+            foreach ($this->vars_in_scope as $descendant_id => $_type) {
+                if (str_starts_with($descendant_id, $target_id . '[')
+                    || str_starts_with($descendant_id, $target_id . '->')
+                ) {
+                    unset($this->vars_in_scope[$descendant_id]);
+                }
+            }
+        }
+    }
+
+    /**
+     * The variable is bound to something else or released: what it was possibly still bound to is no longer
+     *
+     * @psalm-capabilities read-props|write-this-props|write-refs
+     */
+    public function forgetReferencesPossiblyBound(string $var_id): void
+    {
+        foreach ($this->references_possibly_bound_to[$var_id] ?? [] as $target_id => $_) {
+            unset($this->references_possibly_bound_to[$target_id][$var_id]);
+
+            if (!$this->references_possibly_bound_to[$target_id]) {
+                unset($this->references_possibly_bound_to[$target_id]);
+            }
+        }
+
+        unset($this->references_possibly_bound_to[$var_id]);
+    }
+
+    /**
+     * The first node of the given code (closures, functions and classes excluded) that binds the variable to
+     * something else or releases it: `$var = &...`, `[&$var] = ...`, `foreach (... as &$var)`, `unset($var)`,
+     * `global $var`, `static $var`
+     *
+     * @param array<mixed> $nodes
+     */
+    private static function findReferenceRebinding(array $nodes, string $var_id): ?PhpParser\Node
+    {
+        $is_var = static fn(mixed $node): bool => $node instanceof PhpParser\Node\Expr\Variable
+            && is_string($node->name)
+            && '$' . $node->name === $var_id;
+
+        foreach ($nodes as $node) {
+            if (is_array($node)) {
+                $rebinding = self::findReferenceRebinding($node, $var_id);
+
+                if ($rebinding !== null) {
+                    return $rebinding;
+                }
+
+                continue;
+            }
+
+            if (!$node instanceof PhpParser\Node
+                || $node instanceof PhpParser\Node\Expr\Closure
+                || $node instanceof PhpParser\Node\Expr\ArrowFunction
+                || $node instanceof PhpParser\Node\Stmt\Function_
+                || $node instanceof PhpParser\Node\Stmt\ClassLike
+            ) {
+                continue;
+            }
+
+            if (($node instanceof PhpParser\Node\Expr\AssignRef && $is_var($node->var))
+                || ($node instanceof PhpParser\Node\ArrayItem && $node->byRef && $is_var($node->value))
+                || ($node instanceof PhpParser\Node\Stmt\Foreach_ && $node->byRef && $is_var($node->valueVar))
+                || ($node instanceof PhpParser\Node\Stmt\Unset_ && array_filter($node->vars, $is_var))
+                || ($node instanceof PhpParser\Node\Stmt\Global_ && array_filter($node->vars, $is_var))
+                || ($node instanceof PhpParser\Node\Stmt\Static_
+                    && array_filter($node->vars, static fn(PhpParser\Node\StaticVar $v): bool => $is_var($v->var)))
+            ) {
+                return $node;
+            }
+
+            $rebinding = self::findReferenceRebinding(
+                array_map(static fn(string $name): mixed => $node->$name, $node->getSubNodeNames()),
+                $var_id,
+            );
+
+            if ($rebinding !== null) {
+                return $rebinding;
+            }
+        }
+
+        return null;
+    }
+
+    /**
      * @param array<string, Union> $new_vars_in_scope
      * @return array<string, Union>
      * @psalm-mutation-free
@@ -738,6 +920,7 @@ final class Context
         if (isset($this->references_in_scope[$remove_var_id])) {
             $this->decrementReferenceCount($remove_var_id);
         }
+        $this->forgetReferencesPossiblyBound($remove_var_id);
         unset(
             $this->vars_in_scope[$remove_var_id],
             $this->cond_referenced_var_ids[$remove_var_id],
