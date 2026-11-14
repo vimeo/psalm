@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Psalm\Tests;
 
+use ErrorException;
 use Override;
 use PHPUnit\Framework\TestCase as BaseTestCase;
 use Psalm\Config;
@@ -26,6 +27,7 @@ use function array_filter;
 use function count;
 use function define;
 use function defined;
+use function error_reporting;
 use function getcwd;
 use function implode;
 use function ini_set;
@@ -37,6 +39,7 @@ use function set_error_handler;
 
 use const ARRAY_FILTER_USE_KEY;
 use const DIRECTORY_SEPARATOR;
+use const E_ALL;
 
 class TestCase extends BaseTestCase
 {
@@ -268,6 +271,32 @@ class TestCase extends BaseTestCase
             $operation();
         } finally {
             restore_error_handler();
+        }
+    }
+
+    /**
+     * Runs the operation with PHP errors not silenced with @ thrown, as Psalm's error handler does
+     * (PHPUnit lowers the reporting level while a test runs)
+     *
+     * @template T
+     * @param callable():T $operation
+     * @return T
+     */
+    protected function withErrorsThrown(callable $operation): mixed
+    {
+        $error_reporting = error_reporting(E_ALL);
+        set_error_handler(static function (int $error_code, string $error_message): bool {
+            if ($error_code & error_reporting()) {
+                throw new ErrorException($error_message, 0, $error_code);
+            }
+
+            return false;
+        });
+        try {
+            return $operation();
+        } finally {
+            restore_error_handler();
+            error_reporting($error_reporting);
         }
     }
 }

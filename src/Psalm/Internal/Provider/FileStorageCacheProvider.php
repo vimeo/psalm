@@ -77,4 +77,15 @@ final class FileStorageCacheProvider
     {
         return $this->cache->getItem(strtolower($file_path), hash('xxh128', $file_contents));
     }
+
+    /**
+     * Whether the storage cached for the file is for its contents, which are only read if there is an entry. Only the
+     * header of the entry is read, so getItem() may still find its payload unusable.
+     */
+    public function hasEntry(string $file_path, FileProvider $file_provider): bool
+    {
+        $hash = $this->cache->getHash(strtolower($file_path));
+
+        return $hash !== null && $hash === $file_provider->getContentsHash($file_path);
+    }
 }
