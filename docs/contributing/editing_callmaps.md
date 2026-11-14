@@ -38,21 +38,66 @@ older signature, edit the `old` side of the entry in that delta.
 ## Regenerating the reflected callmaps
 
 `bin/stubs/gen_callmap.sh` (`composer gen_callmap`, part of `composer build`) runs
-`bin/stubs/gen_base_callmap.php` inside one Docker image per PHP version
-(`ghcr.io/<owner>/psalm:internal_stubs_<version>`), then `gen_callmap.php`.
-`bin/stubs/build_docker.php` builds those images and generates their Dockerfile on
-the fly.
+`bin/stubs/gen_base_callmap.php` inside one Docker image per PHP version, then
+`gen_callmap.php`. `bin/stubs/build_docker.php` generates the Dockerfile of each image
+from `bin/stubs/image_lock.php`, which pins every input of the images:
+
+```php
+'installer' => '2.13.2@sha256:27fa…',           // the install-php-extensions release
+'phpstorm-stubs' => '813c2107…',                // the commit gen_base_callmap.php downloads stubs from
+'versions' => [
+    '8.4' => [
+        'php' => '8.4.27@sha256:d878…',         // php:8.4-alpine, by digest
+        'extensions' => [
+            'apcu' => 'pie@apcu/apcu:v5.1.28',  // installed with PIE
+            'event' => 'pecl@3.2.0',            // installed with install-php-extensions
+            'zmq' => 'git@616b6c64…:1.1.3',     // installed from a commit
+        ],
+    ],
+],
+```
+
+An image fails to build unless PHP and each of these extensions report their locked
+version. Its tag is `internal_stubs_<version>-<hash of its Dockerfile>`.
+
+`dictionaries/autogen/CallMapInputs.php` stamps the reflected callmap of each version
+with the inputs it comes from. `gen_callmap.sh` only reflects the versions whose stamp
+doesn't match (`php bin/stubs/build_docker.php --stale-plain` lists them):
+
+| Change | Versions reflected again |
+| --- | --- |
+| `dictionaries/override/`, `src/`, `gen_callmap.php` | none (`composer build` needs no Docker) |
+| a new or changed `PINS['8.4']`, or an extension added to `INCLUDES['8.4']` | 8.4 |
+| `gen_base_callmap.php`, or an extension added to `EXTENSIONS` | all |
+| a hand edit of `dictionaries/autogen/CallMap_84.php` | 8.4 |
 
 To add the types of an extension, add it to `EXTENSIONS` in `bin/stubs/build_docker.php`
 (or to `INCLUDES`, for some PHP versions only) with its version source in `SOURCES`.
-`PIE_PACKAGES` lists the extensions installed with PIE, and `EXCLUDES` the ones that
-don't build on a PHP version yet.
+`PIE_PACKAGES` lists the extensions installed with PIE, `EXCLUDES` the ones that
+don't build on a PHP version yet, and `PINS` the versions held back. Removing a `PINS`
+entry keeps the pinned version until a refresh finds a newer one.
 
-Every push runs the "Build docker image for stubs" workflow: it builds the images,
-runs `composer build`, and when a committed file is out of date, commits the difference
-to the pushed branch and uploads it as the `composer-build-patch` artifact. Pull before
+Every push runs the "Build docker image for stubs" workflow. It adds the inputs the lock
+lacks (the newest version of an added extension), builds the images of the stale
+versions under `ghcr.io/<owner>/psalm` of the repository it runs in (your fork for a
+fork), runs `composer build`, and commits the difference to the pushed branch. Pull before
 pushing again. If the commit can't be pushed, `bin/ci/apply-composer-build-patch.sh`
-applies the artifact to your checkout (set `PSALM_REPO=<you>/psalm` for a run on your fork).
+applies the patch to your checkout (set `PSALM_REPO=<you>/psalm` for a run on your fork).
+To reflect locally, point `gen_callmap.sh` at the images the workflow built:
+`STUBS_IMAGE_OWNER=<you> composer gen_callmap`. The `Check PHP syntax` CI job fails
+while a stamp doesn't match.
+
+New releases of PHP, the extensions and install-php-extensions reach the lock only in a
+refresh: the weekly scheduled run of the workflow, or a manual run with `refresh`
+checked. It resolves every input again and opens a pull request from
+`stubs-refresh/<branch>` with the lock and callmap changes. A refresh never lowers a
+version install-php-extensions picked (the PECL CDN can lag behind a release); to go back
+to an older one, add a `PINS` entry.
+On master (and on 6.x once it
+gets this flow), any lock or reflected callmap change goes to that pull request instead of
+being pushed. Opening it
+needs "Allow GitHub Actions to create and approve pull requests" in the repository
+settings; otherwise the run fails with a link to open it by hand.
 
 ## Checking a callmap against reflection
 
