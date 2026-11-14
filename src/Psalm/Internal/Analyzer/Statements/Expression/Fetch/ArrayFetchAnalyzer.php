@@ -929,8 +929,10 @@ final class ArrayFetchAnalyzer
             );
         }
 
-        // PHP turns a false offset into 0
+        // PHP turns a false offset of an array into 0: an object (ArrayAccess) gets the offset as it is, and a string
+        // offset is reported on its own
         if (!$context->inside_isset
+            && $array_type->isArray()
             && !$offset_type->ignore_falsable_issues
             && isset($offset_type->getAtomicTypes()['false'])
         ) {
@@ -939,11 +941,12 @@ final class ArrayFetchAnalyzer
             IssueBuffer::maybeAdd(
                 $is_only_false
                     ? new InvalidArrayOffset(
-                        'Cannot access value on variable ' . $extended_var_id . ' using a false offset, which is 0',
+                        'Cannot access value on variable ' . self::describeArrayVar($extended_var_id, $stmt)
+                            . ' using a false offset, which is 0',
                         new CodeLocation($statements_analyzer->getSource(), $stmt),
                     )
                     : new PossiblyInvalidArrayOffset(
-                        'Cannot access value on variable ' . $extended_var_id
+                        'Cannot access value on variable ' . self::describeArrayVar($extended_var_id, $stmt)
                             . ' using possibly false offset ' . $offset_type->getId() . ', which is 0',
                         new CodeLocation($statements_analyzer->getSource(), $stmt),
                     ),
