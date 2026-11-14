@@ -8,6 +8,8 @@ use Override;
 use Psalm\Tests\Traits\InvalidCodeAnalysisTestTrait;
 use Psalm\Tests\Traits\ValidCodeAnalysisTestTrait;
 
+use const DIRECTORY_SEPARATOR;
+
 final class IfThisIsTest extends TestCase
 {
     use ValidCodeAnalysisTestTrait;
@@ -294,7 +296,7 @@ final class IfThisIsTest extends TestCase
     }
 
     /**
-     * @return array<string, array{code: string, error_message: string}>
+     * @return array<string, array{code: string, error_message: string, error_levels?: list<string>, php_version?: string}>
      * @psalm-pure
      */
     #[Override]
@@ -312,6 +314,38 @@ final class IfThisIsTest extends TestCase
                     $a->s(null);
                     ',
                 'error_message' => 'InvalidDocblock',
+            ],
+            'ifThisIsWithEnumCaseTemplateArgument' => [
+                'code' => '<?php
+                    enum EnumA: string {
+                        case FOO = "foo";
+                        case BAR = "bar";
+                    }
+
+                    /**
+                     * @template T of EnumA
+                     */
+                    final class C {
+                        /** @var T */
+                        public $data;
+
+                        /** @param T $data */
+                        public function __construct($data) {
+                            $this->data = $data;
+                        }
+
+                        /**
+                         * @psalm-if-this-is self<EnumA::FOO>
+                         */
+                        public function doSomething(): void {
+                            /** @psalm-trace $data */
+                            $data = $this->data;
+                        }
+                    }
+                ',
+                'error_message' => 'Trace - src' . DIRECTORY_SEPARATOR . 'somefile.php:24:29 - $data: enum(EnumA::FOO',
+                'error_levels' => [],
+                'php_version' => '8.1',
             ],
             'failsWithWrongTemplate1' => [
                 'code' => '<?php
