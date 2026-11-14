@@ -1668,7 +1668,7 @@ final class ArgumentsAnalyzer
      * it bind
      *
      * @param array<array-key, PhpParser\Node\Arg> $args
-     * @psalm-pure
+     * @psalm-capabilities read-props
      */
     private static function hasOutTypeOfLaterArguments(
         FunctionLikeParameter $param,
