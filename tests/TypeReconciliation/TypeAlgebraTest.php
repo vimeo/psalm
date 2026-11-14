@@ -58,6 +58,22 @@ final class TypeAlgebraTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'twoClausesThatAreNotReconcilableAreBothKeptOfOneCondition' => [
+                'code' => '<?php
+                    function f(?string $a, ?string $b, string $haystack): void {
+                        if (($a === null || !str_contains($haystack, $a))
+                            && ($b === null || !str_contains($haystack, $b))
+                        ) {
+                            echo "if";
+                        } else {
+                            /** @psalm-check-type-exact $b = null|string */
+                            echo get_debug_type($b);
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
             'simplifyingThreeClausesDoesNotMakeAUnitClauseOfAReducedOne' => [
                 'code' => '<?php
                     function f(mixed $a, mixed $x, mixed $y): void {

@@ -91,8 +91,8 @@ final class Clause implements Stringable
         public bool $generated = false,
         public array $redefined_vars = [],
     ) {
-        if ($wedge || !$reconcilable) {
-            $this->hash = ($wedge ? 'w' : '') . $creating_object_id;
+        if ($wedge) {
+            $this->hash = 'w' . $creating_object_id;
         } else {
             ksort($possibilities);
 
@@ -106,7 +106,10 @@ final class Clause implements Stringable
             }
 
             $data = serialize($possibility_strings);
-            $this->hash = hash('xxh128', $data);
+
+            // a clause that is not reconcilable is not the same as one with the same possibilities from another
+            // condition: it also holds what the condition says about its other disjuncts
+            $this->hash = ($reconcilable ? '' : 'u' . $creating_object_id . ':') . hash('xxh128', $data);
         }
 
         $this->possibilities = $possibilities;
