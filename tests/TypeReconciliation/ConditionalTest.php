@@ -3391,16 +3391,6 @@ final class ConditionalTest extends TestCase
                 'ignored_issues' => [],
                 'php_version' => '8.0',
             ],
-            'negatedInstanceofOfANonFinalClassKeepsIt' => [
-                'code' => '<?php
-                    class Open {}
-
-                    function f(Open $o): void {
-                        if (!$o instanceof Open) {
-                            /** @psalm-check-type-exact $o = Open */
-                        }
-                    }',
-            ],
             'nullsafePropertyComparedToNullKeepsTheReceiverAndPropertyNotNull' => [
                 'code' => '<?php
                     final class RangeInfo {
@@ -4885,6 +4875,17 @@ final class ConditionalTest extends TestCase
     public static function providerInvalidCodeParse(): iterable
     {
         return [
+            'negatedInstanceofOfANonFinalClassOfItself' => [
+                'code' => '<?php
+                    class Open {}
+
+                    function f(Open $o): void {
+                        if (!$o instanceof Open) {
+                            echo 1;
+                        }
+                    }',
+                'error_message' => 'TypeDoesNotContainType - src' . DIRECTORY_SEPARATOR . 'somefile.php:5:30 - Type Open for $o',
+            ],
             'notIterableOfATraversableObjectIsImpossible' => [
                 'code' => '<?php
                     function f(ArrayObject $a): void {

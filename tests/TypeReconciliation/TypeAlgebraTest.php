@@ -1760,6 +1760,33 @@ final class TypeAlgebraTest extends TestCase
                         return A::$x->y;
                     }',
             ],
+            'traitExistsWithoutAutoloadNarrowsTheName' => [
+                'code' => '<?php
+                    function checkTrait(string $name): void {
+                        if (!trait_exists($name, false)) {
+                            return;
+                        }
+
+                        /** @psalm-check-type-exact $name = trait-string */
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.2',
+            ],
+            'negatedTraitExistsWithAutoloadKeepsATraitStringParam' => [
+                'code' => '<?php
+                    /** @param trait-string $name */
+                    function checkTrait(string $name, bool $autoload = true): string {
+                        if (!trait_exists($name, $autoload)) {
+                            throw new Exception($name);
+                        }
+
+                        return $name;
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.2',
+            ],
             'offsetKnownFromTheConditionIsForgottenWhenTheArrayIsReassignedAndThenAnOffsetIsWritten' => [
                 'code' => '<?php
                     $a = ["test" => rand(0, 1) ? null : "x"];
@@ -1862,6 +1889,18 @@ final class TypeAlgebraTest extends TestCase
     public static function providerInvalidCodeParse(): iterable
     {
         return [
+            'instanceofAfterIsObjectInTheSameOrConditionIsImpossible' => [
+                'code' => '<?php
+                    final class Bar {}
+
+                    /** @param Bar|false $bar */
+                    function check($bar): void {
+                        if (!is_object($bar) || !$bar instanceof Bar) {
+                            echo 1;
+                        }
+                    }',
+                'error_message' => 'DocblockTypeContradiction - src' . DIRECTORY_SEPARATOR . 'somefile.php:6:49 - Docblock-defined type Bar for $bar is always Bar',
+            ],
             'instanceofStoredInVariableIsForgottenWhenTheVariableIsReassigned' => [
                 'code' => '<?php
                     interface Foo {}
@@ -2288,6 +2327,25 @@ final class TypeAlgebraTest extends TestCase
                     foobar($list);
                 ',
                 'error_message' => 'InvalidArgument',
+            ],
+            'negationOfAConjunctionKeepsAClauseThatSaysNothingWhenFalse' => [
+                'code' => '<?php
+                    class A {}
+                    class B {}
+
+                    /** @param A|B|stdClass $x */
+                    function test(object $x, string $needle): A {
+                        if (!$x instanceof A
+                            && !($x instanceof B && !str_contains($needle, "a"))
+                        ) {
+                            throw new Exception("x");
+                        }
+
+                        return $x;
+                    }',
+                'error_message' => 'InvalidReturnStatement',
+                'error_levels' => [],
+                'php_version' => '8.0',
             ],
         ];
     }

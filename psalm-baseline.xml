@@ -503,7 +503,6 @@
       <code><![CDATA[$switch_scope->possibly_redefined_vars]]></code>
       <code><![CDATA[$switch_scope->possibly_redefined_vars]]></code>
       <code><![CDATA[$switch_scope->redefined_vars]]></code>
-      <code><![CDATA[$switch_var_id]]></code>
     </RiskyTruthyFalsyComparison>
   </file>
   <file src="src/Psalm/Internal/Analyzer/Statements/Block/SwitchCaseAnalyzer.php">

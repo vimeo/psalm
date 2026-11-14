@@ -1190,6 +1190,47 @@ final class SwitchTypeTest extends TestCase
                         return -1;
                     }',
             ],
+            'switchTrueOverAUnionOfFinalClassesIsExhaustive' => [
+                'code' => '<?php
+                    final class Bar {}
+                    final class Baz {}
+
+                    function test(Bar|Baz $instance): string {
+                        switch (true) {
+                            case $instance instanceof Bar:
+                                return "bar";
+                            case $instance instanceof Baz:
+                                return "baz";
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'switchTrueOverAClassAndItsOwnInstanceofIsExhaustive' => [
+                'code' => '<?php
+                    class Open {}
+
+                    function test(Open $instance): string {
+                        switch (true) {
+                            case $instance instanceof Open:
+                                return "open";
+                        }
+                    }',
+            ],
+            'negatedInstanceofOfADynamicClassKeepsTheType' => [
+                'code' => '<?php
+                    class Open {}
+
+                    /** @param class-string<Open> $class */
+                    function test(Open $instance, string $class): string {
+                        if (!$instance instanceof $class) {
+                            return "other";
+                        }
+
+                        return "same";
+                    }',
+            ],
         ];
     }
 
@@ -1514,6 +1555,42 @@ final class SwitchTypeTest extends TestCase
                         }
                     }',
                 'error_message' => 'UndefinedMethod',
+            ],
+            'switchTrueOverASubclassIsNotExhaustive' => [
+                'code' => '<?php
+                    class Open {}
+                    class Sub extends Open {}
+
+                    function test(Open $instance): string {
+                        switch (true) {
+                            case $instance instanceof Sub:
+                                return "sub";
+                        }
+                    }',
+                'error_message' => 'InvalidReturnType',
+            ],
+            'switchTrueOverUnrelatedConditionsIsNotExhaustive' => [
+                'code' => '<?php
+                    function test(int $a, int $b): string {
+                        switch (true) {
+                            case $a > 1:
+                                return "a";
+                            case $b > 1:
+                                return "b";
+                        }
+                    }',
+                'error_message' => 'InvalidReturnType',
+            ],
+            'negatedInstanceofOfTheSameClassIsImpossible' => [
+                'code' => '<?php
+                    final class Baz {}
+
+                    function test(Baz $instance): void {
+                        if (!$instance instanceof Baz) {
+                            echo "never";
+                        }
+                    }',
+                'error_message' => 'TypeDoesNotContainType',
             ],
         ];
     }

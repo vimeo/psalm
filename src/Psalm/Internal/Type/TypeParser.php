@@ -1542,10 +1542,6 @@ final class TypeParser
                 continue;
             }
 
-            if (!$type instanceof Atomic) {
-                throw new TypeParseTreeException('Invalid intersection member');
-            }
-
             $member_types[] = new Union([$type], ['from_docblock' => $from_docblock]);
 
             if (!self::isObjectIntersectionMember($type)

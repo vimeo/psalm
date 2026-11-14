@@ -36,6 +36,7 @@ use Psalm\Type\Atomic\TNonEmptyString;
 use Psalm\Type\Atomic\TNonspecificLiteralString;
 use Psalm\Type\Atomic\TString;
 use Psalm\Type\Atomic\TTemplateParam;
+use Psalm\Type\Atomic\TTraitString;
 use Psalm\Type\Reconciler;
 use Psalm\Type\Union;
 
@@ -207,16 +208,22 @@ final class NegatedAssertionReconciler extends Reconciler
             // do nothing
         } elseif ($assertion instanceof IsClassNotEqual) {
             // do nothing
-        } elseif ($assertion_type instanceof TClassString && $assertion_type->is_loaded) {
-            // do nothing
-        } elseif ($existing_var_type->isSingle()
+        } elseif ($assertion instanceof IsNotType
+            && $assertion->upper_bound_only
+            && $assertion_type instanceof TTraitString
+        ) {
+            // the name of a trait that has not been loaded
+        } elseif ($assertion instanceof IsNotType
+            && $assertion->upper_bound_only
+            && $existing_var_type->isSingle()
             && $existing_var_type->hasNamedObjectType()
             && $assertion_type instanceof TNamedObject
             && isset($existing_var_type->getAtomicTypes()[$assertion_type->getKey()])
             && !self::isEnum($codebase, $assertion_type->value)
         ) {
-            // checking if two types share a common parent is not enough to guarantee children are instanceof each other
-            // fall through
+            // the value may be an instance of a subclass of the asserted type
+        } elseif ($assertion_type instanceof TClassString && $assertion_type->is_loaded) {
+            // do nothing
         } elseif ($existing_var_type->isArray()
             && ($assertion->getAtomicType() instanceof TArray
                 || $assertion->getAtomicType() instanceof TKeyedArray)

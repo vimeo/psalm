@@ -845,7 +845,7 @@ final class AssertionFinder
                 if ($class_exists_check_type === 2) {
                     $if_types[$first_var_name] = [[new IsType(new TTraitString())]];
                 } else {
-                    $if_types[$first_var_name] = [[new IsIdentical(new TTraitString())]];
+                    $if_types[$first_var_name] = [[new IsType(new TTraitString(), true)]];
                 }
             }
         } elseif (self::hasEnumExistsCheck($expr)) {
