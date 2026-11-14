@@ -126,6 +126,38 @@ final class ArrayAssignmentTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'assignWithAnOffsetThatIsNotAKeyDoesNotPutItInTheKeysOfTheArray' => [
+                'code' => '<?php
+                    /**
+                     * @param array-key|float|DateTime $key
+                     */
+                    function f($key): void {
+                        $arr = [];
+                        $arr[$key] = 1;
+                        /** @psalm-check-type-exact $arr = non-empty-array<array-key, 1> */
+                        echo count($arr);
+                    }
+
+                    function g(float|null $key): void {
+                        $arr = [];
+                        $arr[$key] = 1;
+                        /** @psalm-check-type-exact $arr = non-empty-array<""|int, 1> */
+                        echo count($arr);
+                    }',
+                'assertions' => [],
+                'ignored_issues' => ['PossiblyInvalidArrayOffset', 'PossiblyNullArrayOffset'],
+                'php_version' => '8.1',
+            ],
+            'assignWithKeyTypesThatAreCastToKeys' => [
+                'code' => '<?php
+                    /**
+                     * @param int|string|bool $key
+                     */
+                    function f(array $arr, $key): array {
+                        $arr[$key] = 1;
+                        return $arr;
+                    }',
+            ],
             'assignToTheItemOfAnArrayAFunctionReturnsByReference' => [
                 'code' => '<?php
                     function &ensureArray(array &$what): array {
@@ -2886,6 +2918,39 @@ final class ArrayAssignmentTest extends TestCase
     public static function providerInvalidCodeParse(): iterable
     {
         return [
+            'pushWithFloatOrStringKey' => [
+                'code' => '<?php
+                    /**
+                     * @param string|float $key
+                     */
+                    function f(array $arr, $key): array {
+                        $arr[$key][] = 1;
+                        return $arr;
+                    }',
+                'error_message' => 'PossiblyInvalidArrayOffset',
+            ],
+            'assignWithObjectOrStringKey' => [
+                'code' => '<?php
+                    /**
+                     * @param string|DateTime $key
+                     */
+                    function f(array $arr, $key): array {
+                        $arr[$key] = 1;
+                        return $arr;
+                    }',
+                'error_message' => 'PossiblyInvalidArrayOffset',
+            ],
+            'assignWithFloatOrStringKey' => [
+                'code' => '<?php
+                    /**
+                     * @param string|float $key
+                     */
+                    function f(array $arr, $key): array {
+                        $arr[$key] = 1;
+                        return $arr;
+                    }',
+                'error_message' => 'PossiblyInvalidArrayOffset',
+            ],
             'assignToTheItemOfAnArrayAFunctionReturnsByValue' => [
                 'code' => '<?php
                     function getArray(array $what): array {
