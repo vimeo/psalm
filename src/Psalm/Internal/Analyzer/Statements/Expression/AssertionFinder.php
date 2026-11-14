@@ -1652,7 +1652,7 @@ final class AssertionFinder
 
             if ($left_type && $left_type->isSingle()) {
                 foreach ($left_type->getAtomicTypes() as $type_part) {
-                    if ($type_part instanceof TClassString) {
+                    if ($type_part instanceof TClassString || $type_part instanceof TLiteralClassString) {
                         $left_class_string_t = true;
                         break;
                     }
@@ -1686,7 +1686,7 @@ final class AssertionFinder
 
             if ($right_type && $right_type->isSingle()) {
                 foreach ($right_type->getAtomicTypes() as $type_part) {
-                    if ($type_part instanceof TClassString) {
+                    if ($type_part instanceof TClassString || $type_part instanceof TLiteralClassString) {
                         $right_class_string_t = true;
                         break;
                     }
@@ -3584,6 +3584,11 @@ final class AssertionFinder
                                 $type_part->defining_class,
                             )),
                         ]];
+                    } elseif ($type->isSingle() && $type_part instanceof TLiteralClassString) {
+                        $if_types[$var_name] = [[new IsClassEqual($type_part->value)]];
+                    } elseif ($type->isSingle() && $type_part instanceof TClassString && $type_part->as_type) {
+                        // the class of the object is the class-string, so the object is one of its bound
+                        $if_types[$var_name] = [[new IsType($type_part->as_type)]];
                     }
                 }
             }

@@ -154,6 +154,27 @@ final class ConditionalTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'getClassComparedToAClassStringConstantNarrowsToItsBound' => [
+                'code' => <<<'PHP'
+                    <?php
+                    final class Foo {}
+                    final class Bar {}
+
+                    final class Holder {
+                        /** @var class-string<Bar> */
+                        public const TYPE = Bar::class;
+
+                        public function check(Foo|Bar $x): void {
+                            if (get_class($x) === static::TYPE) {
+                                /** @psalm-check-type-exact $x = Bar */
+                            }
+                        }
+                    }
+                    PHP,
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
             'notIterableDropsTheObjectsThatAreTraversable' => [
                 'code' => '<?php
                     function f(Throwable $e): void {
@@ -4479,12 +4500,12 @@ final class ConditionalTest extends TestCase
 
                         public function check(object $bar): void {
                             assert($bar::class === static::TYPE);
-                            /** @psalm-check-type-exact $bar = object */
+                            /** @psalm-check-type-exact $bar = Bar */
                         }
 
                         public function checkSelf(object $bar): void {
                             if (self::TYPE === $bar::class) {
-                                /** @psalm-check-type-exact $bar = object */
+                                /** @psalm-check-type-exact $bar = Bar */
                             }
                         }
                     }',
