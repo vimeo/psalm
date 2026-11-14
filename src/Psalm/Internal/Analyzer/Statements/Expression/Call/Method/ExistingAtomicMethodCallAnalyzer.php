@@ -9,11 +9,14 @@ use Psalm\CodeLocation;
 use Psalm\Codebase;
 use Psalm\Context;
 use Psalm\FileManipulation;
+use Psalm\Internal\Analyzer\ClassLikeAnalyzer;
 use Psalm\Internal\Analyzer\FunctionLikeAnalyzer;
+use Psalm\Internal\Analyzer\Statements\Expression\Call\ArgumentAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\Call\ArgumentMapPopulator;
 use Psalm\Internal\Analyzer\Statements\Expression\Call\CallPurityResolver;
 use Psalm\Internal\Analyzer\Statements\Expression\Call\ClassTemplateParamCollector;
 use Psalm\Internal\Analyzer\Statements\Expression\Call\FunctionCallAnalyzer;
+use Psalm\Internal\Analyzer\Statements\Expression\Call\StaticCallAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\CallAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\ExpressionIdentifier;
 use Psalm\Internal\Analyzer\Statements\ExpressionAnalyzer;
@@ -42,6 +45,7 @@ use Psalm\IssueBuffer;
 use Psalm\Node\Expr\VirtualFuncCall;
 use Psalm\Plugin\EventHandler\Event\AfterMethodCallAnalysisEvent;
 use Psalm\Storage\Capabilities;
+use Psalm\Storage\MethodStorage;
 use Psalm\Storage\Possibilities;
 use Psalm\Type;
 use Psalm\Type\Atomic;
@@ -287,6 +291,15 @@ final class ExistingAtomicMethodCallAnalyzer extends CallAnalyzer
         }
 
         $is_first_class_callable = $stmt->isFirstClassCallable();
+
+        // set for each class of the object, as the method of another may not be private; a call of static::, which
+        // forwards to this analysis, runs the override
+        $is_private = $stmt->getAttribute(StaticCallAnalyzer::FORWARDED_STATIC_CALL_ATTRIBUTE) !== true
+            && self::isPrivate($codebase, $method_id, $method_storage);
+
+        foreach ($args as $arg) {
+            $arg->value->setAttribute(ArgumentAnalyzer::PRIVATE_METHOD_CALL_ATTRIBUTE, $is_private);
+        }
 
         if (!$is_first_class_callable && self::checkMethodArgs(
             $method_id,
@@ -601,6 +614,24 @@ final class ExistingAtomicMethodCallAnalyzer extends CallAnalyzer
         }
 
         return $return_type_candidate ?? Type::getMixed();
+    }
+
+    /**
+     * Whether the method is private as the class it appears in has it: a trait method can be made public by an alias
+     *
+     * @psalm-capabilities read-props
+     */
+    private static function isPrivate(Codebase $codebase, MethodIdentifier $method_id, ?MethodStorage $storage): bool
+    {
+        $visibility = $storage?->visibility;
+        $appearing_method_id = $codebase->methods->getAppearingMethodId($method_id);
+
+        if ($appearing_method_id) {
+            $visibility = $codebase->classlike_storage_provider->get($appearing_method_id->fq_class_name)
+                ->trait_visibility_map[$appearing_method_id->method_name] ?? $visibility;
+        }
+
+        return $visibility === ClassLikeAnalyzer::VISIBILITY_PRIVATE;
     }
 
     /**

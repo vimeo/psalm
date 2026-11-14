@@ -1271,6 +1271,77 @@ final class TaintTest extends TestCase
                         $receiver->go(...["sink" => "", "other" => (string) $_GET["x"]]);
                     }',
             ],
+            'guardAPrivateMethodCalledOnAnObjectRunsNoOverrideOfAClassExtendingIt' => [
+                'code' => '<?php // --taint-analysis
+                    class Base {
+                        private function v(string ...$rest): void {}
+
+                        private function f(string $sink): void {}
+
+                        public function run(self $other): void {
+                            $this->v(sink: (string) $_GET["x"]);
+                            $this->f((string) $_GET["x"]);
+                            $other->f((string) $_GET["x"]);
+                            self::f((string) $_GET["x"]);
+                        }
+                    }
+
+                    class Child extends Base {
+                        public function v(string $sink = "", string ...$rest): void {
+                            echo $sink;
+                        }
+
+                        public function f(string $sink): void {
+                            echo $sink;
+                        }
+                    }',
+            ],
+            'guardAPrivateMethodCalledOnAnObjectWithTheNullsafeOperatorRunsNoOverride' => [
+                'code' => '<?php // --taint-analysis
+                    class Base {
+                        private function f(string $sink): void {}
+
+                        public function run(?self $other): void {
+                            $other?->f((string) $_GET["x"]);
+                        }
+                    }
+
+                    class Child extends Base {
+                        public function f(string $sink): void {
+                            echo $sink;
+                        }
+                    }',
+            ],
+            'guardUnpackedCallResultOfUntaintedTextIntoAVariadicParameter' => [
+                'code' => '<?php // --taint-analysis
+                    function show(string ...$parts): void {
+                        echo $parts[0];
+                    }
+
+                    show(...explode(",", "a,b"));
+                    show(...explode(",", htmlspecialchars((string) $_GET["a"], ENT_QUOTES)));',
+            ],
+            'guardUnpackedArrayShapeTakesTheTaintOfTheItemOfItsParameterOnly' => [
+                'code' => '<?php // --taint-analysis
+                    function show(string $safe, string $other): void {
+                        echo $safe;
+                    }
+
+                    show(...["safe" => "text", "other" => (string) $_GET["a"]]);',
+            ],
+            'guardUnpackedOpenArrayShapeTakesTheTaintOfTheKnownItemOfItsParameterOnly' => [
+                'code' => '<?php // --taint-analysis
+                    function show(string $safe, string $other = ""): void {
+                        echo $safe;
+                    }
+
+                    /** @param array{safe: string, ...<string, string>} $items */
+                    function spread(array $items): void {
+                        show(...$items);
+                    }
+
+                    spread(["safe" => "text", "other" => (string) $_GET["a"]]);',
+            ],
             'taintSourceUnderAKeyOfTheReturnOnly' => [
                 'code' => '<?php // --taint-analysis
                     /**
@@ -6270,6 +6341,44 @@ final class TaintTest extends TestCase
                         public static function s(string $sink = "", string ...$rest): void {
                             echo $sink;
                         }
+                    }',
+                'error_message' => 'TaintedHtml',
+            ],
+            'taintAnOverrideParameterWithANamedArgumentOfAPrivateInstanceVariadicThroughStatic' => [
+                'code' => '<?php // --taint-analysis
+                    class Base {
+                        private function p(string ...$rest): void {}
+
+                        public function run(): void {
+                            static::p(sink: (string) $_GET["x"]);
+                        }
+                    }
+
+                    class Child extends Base {
+                        public function p(string $sink = "", string ...$rest): void {
+                            echo $sink;
+                        }
+                    }',
+                'error_message' => 'TaintedHtml',
+            ],
+            'taintAnOverrideParameterThroughAPrivateMethodAPublicAliasOfATraitMakesPublic' => [
+                'code' => '<?php // --taint-analysis
+                    trait T {
+                        private function p(string $sink): void {}
+                    }
+
+                    class Base {
+                        use T { p as public; }
+                    }
+
+                    class Child extends Base {
+                        public function p(string $sink): void {
+                            echo $sink;
+                        }
+                    }
+
+                    function viaParent(Base $receiver): void {
+                        $receiver->p((string) $_GET["x"]);
                     }',
                 'error_message' => 'TaintedHtml',
             ],
@@ -14392,6 +14501,68 @@ final class TaintTest extends TestCase
                     foreach ([...explode(",", (string) $_GET["a"])] as $v) {
                         echo $v;
                     }',
+                'error_message' => 'TaintedHtml',
+            ],
+            'taintThroughUnpackedCallResultIntoAVariadicParameter' => [
+                'code' => '<?php // --taint-analysis
+                    function show(string ...$parts): void {
+                        echo $parts[0];
+                    }
+
+                    show(...explode(",", (string) $_GET["a"]));',
+                'error_message' => 'TaintedHtml',
+            ],
+            'taintThroughUnpackedVariableIntoAFixedParameter' => [
+                'code' => '<?php // --taint-analysis
+                    function show(string $first, string $second): void {
+                        echo $second;
+                    }
+
+                    $parts = explode(",", (string) $_GET["a"]);
+                    show(...$parts);',
+                'error_message' => 'TaintedHtml',
+            ],
+            'taintThroughUnpackedArrayAFunctionReturns' => [
+                'code' => '<?php // --taint-analysis
+                    /** @return list<string> */
+                    function words(string $text): array {
+                        return [$text];
+                    }
+
+                    function show(string $word): void {
+                        echo $word;
+                    }
+
+                    show(...words((string) $_GET["a"]));',
+                'error_message' => 'TaintedHtml',
+            ],
+            'taintThroughUnpackedArrayIntoAMethodVariadic' => [
+                'code' => '<?php // --taint-analysis
+                    final class Printer {
+                        public function show(string ...$parts): void {
+                            echo $parts[0];
+                        }
+                    }
+
+                    (new Printer())->show(...explode(",", (string) $_GET["a"]));',
+                'error_message' => 'TaintedHtml',
+            ],
+            'taintThroughUnpackedItemsWithIntegerKeysThatDoNotStartAtZero' => [
+                'code' => '<?php // --taint-analysis
+                    function show(string $sink = "", string ...$rest): void {
+                        echo $sink;
+                    }
+
+                    show(...[5 => (string) $_GET["a"], 6 => ""]);',
+                'error_message' => 'TaintedHtml',
+            ],
+            'taintThroughUnpackedItemsWithIntegerKeysIntoALaterParameter' => [
+                'code' => '<?php // --taint-analysis
+                    function show(string $first = "", string $sink = ""): void {
+                        echo $sink;
+                    }
+
+                    show(...[5 => "", 6 => (string) $_GET["a"]]);',
                 'error_message' => 'TaintedHtml',
             ],
             'taintThroughReferenceToArrayItem' => [

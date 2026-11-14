@@ -44,6 +44,12 @@ use function strtolower;
  */
 final class StaticCallAnalyzer extends CallAnalyzer
 {
+    /**
+     * Set on a call written with `::`, which may be analyzed as a method call on `$this`. Unlike a method call on an
+     * object, that one may run an override of a private method, if it is of static::
+     */
+    public const FORWARDED_STATIC_CALL_ATTRIBUTE = 'forwardedStaticCall';
+
     public static function analyze(
         StatementsAnalyzer $statements_analyzer,
         PhpParser\Node\Expr\StaticCall $stmt,
@@ -58,6 +64,8 @@ final class StaticCallAnalyzer extends CallAnalyzer
         $lhs_type = null;
 
         $codebase = $statements_analyzer->getCodebase();
+
+        $stmt->setAttribute(self::FORWARDED_STATIC_CALL_ATTRIBUTE, true);
 
         // unlike static::, a class it names (parent::, self::, A::) has the call run that method, and no override
         if ($stmt->class instanceof PhpParser\Node\Name
