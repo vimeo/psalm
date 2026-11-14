@@ -367,56 +367,63 @@ final class InstancePropertyFetchAnalyzer
         return true;
     }
 
-    /**
-     * Whether the type is an interface, intersected only with interfaces, that none of declares the property, or
-     * gives it with a shape or a mixin
-     */
     private static function isUndeclaredInterfaceProperty(
         Codebase $codebase,
         Union $object_type,
         string $property_name,
     ): bool {
         foreach ($object_type->getAtomicTypes() as $atomic_type) {
-            if (!$atomic_type instanceof TNamedObject) {
-                continue;
-            }
-
-            $has_interface = false;
-            $declares_property = false;
-
-            foreach ([$atomic_type, ...array_values($atomic_type->getIntersectionTypes() ?: [])] as $part) {
-                if ($part instanceof TObjectWithProperties) {
-                    if (isset($part->properties[$property_name])) {
-                        $declares_property = true;
-                    }
-
-                    continue;
-                }
-
-                if (!$part instanceof TNamedObject) {
-                    continue;
-                }
-
-                if ($codebase->classExists($part->value)) {
-                    $declares_property = true;
-                } elseif ($codebase->interfaceExists($part->value)) {
-                    $has_interface = true;
-
-                    if (isset($codebase->classlike_storage_provider->get($part->value)
-                            ->declaring_property_ids[$property_name])
-                        || AtomicPropertyFetchAnalyzer::hasMixinProperty($codebase, $part, $property_name)
-                    ) {
-                        $declares_property = true;
-                    }
-                }
-            }
-
-            if ($has_interface && !$declares_property) {
+            if ($atomic_type instanceof TNamedObject
+                && self::isUndeclaredInterfacePropertyOf($codebase, $atomic_type, $property_name)
+            ) {
                 return true;
             }
         }
 
         return false;
+    }
+
+    /**
+     * Whether the type is an interface, intersected only with interfaces, none of which declares the property or
+     * gives it with a shape or a mixin
+     */
+    public static function isUndeclaredInterfacePropertyOf(
+        Codebase $codebase,
+        TNamedObject $object_type,
+        string $property_name,
+    ): bool {
+        $has_interface = false;
+
+        foreach ([$object_type, ...array_values($object_type->getIntersectionTypes() ?: [])] as $part) {
+            if ($part instanceof TObjectWithProperties) {
+                if (isset($part->properties[$property_name])) {
+                    return false;
+                }
+
+                continue;
+            }
+
+            if (!$part instanceof TNamedObject) {
+                continue;
+            }
+
+            if ($codebase->classExists($part->value)) {
+                return false;
+            }
+
+            if ($codebase->interfaceExists($part->value)) {
+                $has_interface = true;
+
+                if (isset($codebase->classlike_storage_provider->get($part->value)
+                        ->declaring_property_ids[$property_name])
+                    || AtomicPropertyFetchAnalyzer::findMixinWithProperty($codebase, $part, $property_name) !== null
+                ) {
+                    return false;
+                }
+            }
+        }
+
+        return $has_interface;
     }
 
     private static function handleScopedProperty(
@@ -516,7 +523,17 @@ final class InstancePropertyFetchAnalyzer
             foreach ($stmt_var_type->getAtomicTypes() as $lhs_type_part) {
                 if ($lhs_type_part instanceof TNamedObject) {
                     if (!$codebase->classExists($lhs_type_part->value, null, $context)) {
-                        continue;
+                        // the property of an interface is the one of its mixin
+                        if (!$codebase->interfaceExists($lhs_type_part->value, null, $context)
+                            || !($lhs_type_part = AtomicPropertyFetchAnalyzer::findMixinWithProperty(
+                                $codebase,
+                                $lhs_type_part,
+                                $stmt->name->name,
+                            ))
+                            || !$codebase->classExists($lhs_type_part->value, null, $context)
+                        ) {
+                            continue;
+                        }
                     }
 
                     $property_id = $lhs_type_part->value . '::$' . $stmt->name->name;

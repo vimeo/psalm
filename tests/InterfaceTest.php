@@ -1300,6 +1300,54 @@ final class InterfaceTest extends TestCase
                     }',
                 'error_message' => 'NoInterfaceProperties',
             ],
+            'assignmentToAPropertyOfAnInterfaceGivenByAMixinAfterAFetch' => [
+                'code' => '<?php
+                    final class Data {
+                        public int $foo = 0;
+                    }
+
+                    /** @mixin Data */
+                    interface J {}
+
+                    function f(J $x): int {
+                        $old = $x->foo;
+                        $x->foo = "bad";
+
+                        return $old;
+                    }',
+                'error_message' => 'NoInterfaceProperties',
+            ],
+            'assignmentToAPropertyOfAnInterfaceGivenByAShapeAfterAFetch' => [
+                'code' => '<?php
+                    interface I {}
+
+                    /** @param I&object{foo: int} $x */
+                    function f($x): int {
+                        $old = $x->foo;
+                        $x->foo = "bad";
+
+                        return $old;
+                    }',
+                'error_message' => 'NoInterfaceProperties',
+            ],
+            'unsetOfAPropertyOfAnInterfaceGivenByAMixinAfterAFetchWritesIt' => [
+                'code' => '<?php
+                    final class Data {
+                        public int $foo = 0;
+                    }
+
+                    /** @mixin Data */
+                    interface J {}
+
+                    /** @psalm-capabilities read-props */
+                    function f(J $x): int {
+                        $old = $x->foo;
+                        unset($x->foo);
+
+                        return $old;
+                    }',
+                'error_message' => 'ImpurePropertyAssignment',
+            ],
             'interfaceExtendsUndefinedInterface' => [
                 'code' => '<?php
                     interface Foo extends Bar {}',
