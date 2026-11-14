@@ -11,6 +11,7 @@ use Psalm\Internal\Codebase\Methods;
 use Psalm\Internal\Type\Comparator\CallableTypeComparator;
 use Psalm\Internal\Type\Comparator\KeyedArrayComparator;
 use Psalm\Internal\Type\Comparator\UnionTypeComparator;
+use Psalm\Internal\TypeVisitor\TemplateTypeCollector;
 use Psalm\Internal\TypeVisitor\TypeVariableResolver;
 use Psalm\Storage\Capabilities;
 use Psalm\Type;
@@ -550,7 +551,17 @@ final class TemplateStandinTypeReplacer
                         ? TemplateInferredTypeReplacer::replace(new Union([$atomic_type]), $template_result, $codebase)
                         : null;
 
-                if ($inferred_type !== null && $inferred_type->isSingle() && !$inferred_type->hasTemplate()) {
+                $template_collector = new TemplateTypeCollector(true);
+
+                if ($inferred_type !== null) {
+                    // also through `key-of<T>`, `value-of<T>`, `properties-of<T>` and `T[K]`, at any depth
+                    $template_collector->traverseArray($inferred_type->getAtomicTypes());
+                }
+
+                if ($inferred_type !== null
+                    && $inferred_type->isSingle()
+                    && $template_collector->getTemplateTypes() === []
+                ) {
                     $replaced_atomic_type = $inferred_type->getSingleAtomic();
                 } else {
                     $had_template = true;

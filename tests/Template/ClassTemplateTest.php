@@ -6135,6 +6135,33 @@ final class ClassTemplateTest extends TestCase
                     $cb = function (int $i): void {};
                     f($cb);',
             ],
+            'keyOfTemplateNestedInACovariantGenericParamAcceptsASubtype' => [
+                'code' => '<?php
+                    /**
+                     * @template K
+                     * @template-covariant V
+                     */
+                    class Map {}
+
+                    /** @template T */
+                    class A {}
+
+                    /**
+                     * @template T
+                     * @extends A<T>
+                     */
+                    class ChildA extends A {}
+
+                    /**
+                     * @template T of array<int, string>
+                     * @param Map<int, A<key-of<T>>> $m
+                     */
+                    function f(Map $m): void {}
+
+                    /** @var Map<int, ChildA<int>> $map */
+                    $map = new Map();
+                    f($map);',
+            ],
         ];
     }
 
