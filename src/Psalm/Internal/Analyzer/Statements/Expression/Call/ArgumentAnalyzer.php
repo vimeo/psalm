@@ -113,6 +113,12 @@ final class ArgumentAnalyzer
      */
     public const NON_VIRTUAL_CALL_ATTRIBUTE = 'nonVirtualCallArgument';
 
+    /**
+     * Set to whether the method of the call is private on the arguments of a call on an object: PHP runs the private
+     * method of the class that makes the call, not the override of a class extending it
+     */
+    public const PRIVATE_METHOD_CALL_ATTRIBUTE = 'privateMethodCallArgument';
+
     private const PHP_NATIVE_NON_PUBLIC_CB = [
         ...ArgumentsAnalyzer::ARRAY_FILTERLIKE,
         'array_diff_uassoc',
@@ -2160,6 +2166,7 @@ final class ArgumentAnalyzer
             && $method_id->method_name !== '__construct'
             // a call naming its class (parent::, self::, A::) runs that method only (see StaticCallAnalyzer)
             && $expr->getAttribute(self::NON_VIRTUAL_CALL_ATTRIBUTE) !== true
+            && $expr->getAttribute(self::PRIVATE_METHOD_CALL_ATTRIBUTE) !== true
                 ? self::getDispatchRoutes(
                     $statements_analyzer,
                     $taint_flow_graph,
