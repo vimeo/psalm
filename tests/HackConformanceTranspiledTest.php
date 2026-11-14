@@ -48,7 +48,6 @@ final class HackConformanceTranspiledTest extends TestCase
         );
 
         if ($exitCode !== 0 && $exitCode !== 3) {
-            /** @var list<string> $output */
             self::fail(implode("\n", $output));
         }
     }

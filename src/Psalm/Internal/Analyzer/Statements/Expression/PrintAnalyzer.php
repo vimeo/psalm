@@ -48,7 +48,7 @@ final class PrintAnalyzer
                     | TaintKind::INPUT_HAS_QUOTES
                     | TaintKind::USER_SECRET
                     | TaintKind::SYSTEM_SECRET)
-                & ~(CliOutput::isInCliOnlyCode($statements_analyzer) ? CliOutput::HTML_TAINTS : 0),
+                & ~(CliOutput::isInCliOnlyCode($statements_analyzer, $context) ? CliOutput::HTML_TAINTS : 0),
             );
 
             $statements_analyzer->taint_flow_graph->addSink($print_param_sink);

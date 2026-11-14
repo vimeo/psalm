@@ -28,6 +28,7 @@ use Psalm\Internal\Analyzer\Statements\Expression\Call\CallPurityResolver;
 use Psalm\Internal\Analyzer\Statements\Expression\Call\FunctionCallReturnTypeFetcher;
 use Psalm\Internal\Analyzer\Statements\Expression\DestructorAnalyzer;
 use Psalm\Internal\Analyzer\Statements\ExpressionAnalyzer;
+use Psalm\Internal\Codebase\CliOutput;
 use Psalm\Internal\Codebase\CodeUseGraph;
 use Psalm\Internal\Codebase\TaintStore;
 use Psalm\Internal\DataFlow\DataFlowNode;
@@ -692,7 +693,9 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
             );
         }
 
-        if (!$check_stmts) {
+        // a signature that fails the check skips the body, but what the body initialises or mutates still counts:
+        // its regular analysis reports the signature
+        if (!$check_stmts && !$context->collect_initializations && !$context->collect_mutations) {
             return false;
         }
 
@@ -733,7 +736,21 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
             $statements_analyzer->addSuppressedIssues(['NoValue']);
         }
 
+        $cli_instance_guard = $this->function instanceof ClassMethod
+            && $storage instanceof MethodStorage
+            && CliOutput::isInstanceGuard($codebase, $storage, $context)
+                ? $this->function
+                : null;
+
+        if ($cli_instance_guard !== null) {
+            $statements_analyzer->cli_instance_guard = $function_stmts[0] ?? null;
+        }
+
         $statements_analyzer->analyze($function_stmts, $context, $global_context);
+
+        if ($cli_instance_guard !== null) {
+            CliOutput::checkInstanceGuard($statements_analyzer, $cli_instance_guard);
+        }
 
         // the objects created here that are still held when the function-like ends die with it
         $param_ids = [];
@@ -1051,7 +1068,6 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
             && !$context->collect_initializations
             && !$context->collect_mutations
             && $codebase->find_unused_variables
-            && $context->check_variables
         ) {
             $this->checkParamReferences(
                 $statements_analyzer,
@@ -1308,7 +1324,10 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
     ): void {
         $codebase = $statements_analyzer->getCodebase();
 
-        $unused_params = $this->detectUnusedParameters($statements_analyzer, $storage, $context);
+        // after `eval`, `extract` or an include the uses of the params are unknown
+        $unused_params = $context->check_variables
+            ? $this->detectUnusedParameters($statements_analyzer, $storage, $context)
+            : [];
 
         if (!$storage instanceof MethodStorage
             || !$storage->cased_name
@@ -1604,7 +1623,7 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
     /**
      * Checks the classes of the `@global` types, like those of the `@param` types
      *
-     * @psalm-capabilities read-props|write-this-props|write-refs
+     * @psalm-capabilities read-props
      */
     private function checkGlobalTypes(FunctionLikeStorage $storage, Context $context): bool
     {
@@ -1893,8 +1912,8 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
 
                     IssueBuffer::maybeAdd(
                         new MismatchingDocblockParamType(
-                            'Parameter ' . $function_param_id . ' has wrong type \'' . $param_type .
-                                '\', should be \'' . $signature_type . '\'',
+                            'Parameter ' . $function_param_id . ' has wrong type \'' . $param_type->getId() .
+                                '\', should be \'' . $signature_type->getId() . '\'',
                             $function_param->type_location,
                         ),
                         $storage->suppressed_issues,
@@ -3029,8 +3048,24 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
                 $closure_return_type = Type::getMixed();
             }
 
+            // `self` in the signature is the class the closure is written in (the using class, in a trait), wherever
+            // the closure is called from
+            $closure_params = [];
+
+            foreach ($storage->params as $param) {
+                $closure_params[] = $param->type
+                    ? $param->setType(TypeExpander::expandUnion(
+                        $codebase,
+                        $param->type,
+                        $context->self,
+                        null,
+                        $this->getParentFQCLN(),
+                    ))
+                    : $param;
+            }
+
             $closure_type = new TClosure(
-                $storage->params,
+                $closure_params,
                 $closure_return_type,
                 $storage->capabilities,
                 $storage instanceof FunctionStorage ? $storage->byref_uses : [],
