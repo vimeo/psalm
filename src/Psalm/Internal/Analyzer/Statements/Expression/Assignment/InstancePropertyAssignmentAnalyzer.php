@@ -565,6 +565,64 @@ final class InstancePropertyAssignmentAnalyzer
         return $can_set_readonly_property;
     }
 
+    /** Checks a write that bypasses analyze() (unset(), string `++`, by-reference `foreach`) to a readonly property. */
+    public static function trackReadonlyWrite(
+        StatementsAnalyzer $statements_analyzer,
+        PhpParser\Node\Expr\PropertyFetch $stmt,
+        string $property_id,
+        Context $context,
+    ): void {
+        $codebase = $statements_analyzer->getCodebase();
+        $properties = $codebase->properties;
+
+        // a receiver typed by an undefined docblock class has no storage
+        if ($codebase->classlike_storage_provider->has(explode('::', $property_id)[0])
+            && $properties->hasStorage($property_id)
+            && ($property_storage = $properties->getStorage($property_id))->readonly
+        ) {
+            $receiver_type = $statements_analyzer->node_data->getType($stmt->var);
+
+            self::checkReadonlyPropertyWrite(
+                $statements_analyzer,
+                $stmt,
+                $property_id,
+                $property_storage,
+                $context,
+                $receiver_type !== null && $receiver_type->reference_free && $receiver_type->allow_mutations,
+            );
+        }
+    }
+
+    /** Checks a write that bypasses analyze() (string `++`, by-reference `foreach`) to a property of a fetch. */
+    public static function trackReadonlyPropertyWrite(
+        StatementsAnalyzer $statements_analyzer,
+        PropertyFetch $fetch,
+        Context $context,
+    ): void {
+        $receiver_type = $statements_analyzer->node_data->getType($fetch->var);
+
+        if (!$fetch->name instanceof PhpParser\Node\Identifier || !$receiver_type) {
+            return;
+        }
+
+        $atomic_types = $receiver_type->getAtomicTypes();
+
+        while ($atomic_types) {
+            $atomic_type = array_pop($atomic_types);
+
+            if ($atomic_type instanceof TTemplateParam) {
+                $atomic_types = array_merge($atomic_types, $atomic_type->as->getAtomicTypes());
+            } elseif ($atomic_type instanceof TNamedObject) {
+                self::trackReadonlyWrite(
+                    $statements_analyzer,
+                    $fetch,
+                    $atomic_type->value . '::$' . $fetch->name->name,
+                    $context,
+                );
+            }
+        }
+    }
+
     public static function analyzeStatement(
         StatementsAnalyzer $statements_analyzer,
         PhpParser\Node\Stmt\Property $stmt,
