@@ -86,6 +86,35 @@ final class EnumTest extends TestCase
         );
     }
 
+    public function testEnumCaseValueOfANamespacedConstantBeatsTheGlobalOneOfAnotherFile(): void
+    {
+        $this->testConfig->throw_exception = false;
+        $this->project_analyzer->setPhpVersion('8.1', 'tests');
+        $global_file = self::$src_dir_path . 'a_global.php';
+        $namespaced_file = self::$src_dir_path . 'z_namespaced.php';
+
+        $this->addFile($global_file, '<?php const OTHER = "global";');
+        $this->addFile(
+            $namespaced_file,
+            '<?php
+                namespace A;
+
+                const OTHER = "namespaced";
+
+                enum Letter: string {
+                    case X = OTHER;
+                }
+
+                /** @psalm-check-type-exact $value = "namespaced" */
+                $value = Letter::X->value;',
+        );
+
+        $this->project_analyzer->getCodebase()->scanFiles();
+        $this->analyzeFile($namespaced_file, new Context());
+
+        self::assertSame([], IssueBuffer::getIssuesDataForFile($namespaced_file));
+    }
+
     /**
      * @psalm-pure
      */
@@ -1184,6 +1213,45 @@ final class EnumTest extends TestCase
     public static function providerInvalidCodeParse(): iterable
     {
         return [
+            'enumCaseValueFromABoolConstantIsInvalid' => [
+                'code' => <<<'PHP'
+                    <?php
+                    const IS_ON = true;
+
+                    enum Flag: string {
+                        case On = IS_ON;
+                    }
+                    PHP,
+                'error_message' => 'InvalidEnumCaseValue - src' . DIRECTORY_SEPARATOR . 'somefile.php:5:5 - Case of a backed enum should have either string or int value',
+                'error_levels' => [],
+                'php_version' => '8.1',
+            ],
+            'enumCaseValueFromAFloatConstantIsInvalid' => [
+                'code' => <<<'PHP'
+                    <?php
+                    const RATIO = 1.5;
+
+                    enum Flag: string {
+                        case On = RATIO;
+                    }
+                    PHP,
+                'error_message' => 'InvalidEnumCaseValue - src' . DIRECTORY_SEPARATOR . 'somefile.php:5:5 - Case of a backed enum should have either string or int value',
+                'error_levels' => [],
+                'php_version' => '8.1',
+            ],
+            'enumCaseValueFromAnUndefinedConstantIsInvalid' => [
+                'code' => <<<'PHP'
+                    <?php
+                    
+
+                    enum Flag: string {
+                        case On = NOT_DEFINED;
+                    }
+                    PHP,
+                'error_message' => 'InvalidEnumCaseValue - src' . DIRECTORY_SEPARATOR . 'somefile.php:5:5 - Case of a backed enum should have either string or int value',
+                'error_levels' => [],
+                'php_version' => '8.1',
+            ],
             'methodOfABackedEnumIsUnknownOnAnEnumString' => [
                 'code' => '<?php
                     /** @param enum-string $string */

@@ -27,6 +27,7 @@ use Psalm\Internal\FileManipulation\FileManipulationBuffer;
 use Psalm\Internal\FileManipulation\PropertyDocblockManipulator;
 use Psalm\Internal\MethodIdentifier;
 use Psalm\Internal\Provider\NodeDataProvider;
+use Psalm\Internal\Scanner\UnresolvedConstantComponent;
 use Psalm\Internal\Type\Comparator\GenericTypeComparator;
 use Psalm\Internal\Type\Comparator\TypeComparisonResult;
 use Psalm\Internal\Type\Comparator\UnionTypeComparator;
@@ -2741,7 +2742,9 @@ final class ClassAnalyzer extends ClassLikeAnalyzer
             } elseif ($case_value === null && $storage->enum_type !== null) {
                 IssueBuffer::maybeAdd(
                     new InvalidEnumCaseValue(
-                        'Case of a backed enum should have a value',
+                        $case_storage->value instanceof UnresolvedConstantComponent
+                            ? 'Case of a backed enum should have either string or int value'
+                            : 'Case of a backed enum should have a value',
                         $case_storage->stmt_location,
                         $storage->name,
                     ),

@@ -80,8 +80,9 @@ final class ConstantTypeResolver
             array_unshift($names, $c->namespace . '\\' . $c->name);
         }
 
-        foreach (FileStorageProvider::getAll() as $file_storage) {
-            foreach ($names as $name) {
+        // PHP resolves `A\SOME` of any file before the global `SOME`
+        foreach ($names as $name) {
+            foreach (FileStorageProvider::getAll() as $file_storage) {
                 if (isset($file_storage->unresolved_constants[$name])) {
                     return self::resolve(
                         $classlikes,

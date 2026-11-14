@@ -10,7 +10,6 @@ use Psalm\Internal\Codebase\ConstantTypeResolver;
 use Psalm\Internal\Scanner\UnresolvedConstantComponent;
 use Psalm\Type\Atomic\TLiteralInt;
 use Psalm\Type\Atomic\TLiteralString;
-use UnexpectedValueException;
 
 /**
  * @psalm-immutable
@@ -40,10 +39,11 @@ final class EnumCaseStorage
                 $case_value,
             );
 
+            // a constant that is undefined, from a file that is not scanned, or not an int or a string has no value
             if (!$case_value instanceof TLiteralString
                 && !$case_value instanceof TLiteralInt
             ) {
-                throw new UnexpectedValueException('Failed to infer case value');
+                return null;
             }
         }
 
