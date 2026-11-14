@@ -10,20 +10,28 @@ use PHPUnit\Framework\TestCase as BaseTestCase;
 use PhpParser\Comment\Doc;
 use PhpParser\Node\Scalar\String_;
 use Psalm\CodeLocation;
+use Psalm\CodeLocation\Raw;
 use Psalm\Internal\Analyzer\FileAnalyzer;
 use Psalm\Internal\Analyzer\ProjectAnalyzer;
 use Psalm\Internal\Provider\FakeFileProvider;
 use Psalm\Internal\Provider\Providers;
 use Psalm\Internal\RuntimeCaches;
 use Psalm\Tests\Internal\Provider\FakeParserCacheProvider;
+use ReflectionClass;
+use ReflectionProperty;
 
+use function extension_loaded;
+use function igbinary_serialize;
+use function igbinary_unserialize;
 use function mb_check_encoding;
 use function restore_error_handler;
+use function serialize;
 use function set_error_handler;
 use function str_repeat;
 use function strlen;
 use function strpos;
 use function substr;
+use function unserialize;
 
 final class CodeLocationTest extends BaseTestCase
 {
@@ -79,6 +87,119 @@ final class CodeLocationTest extends BaseTestCase
 
         $this->assertSame($expected, $location->getSnippet());
         $this->assertSame('$a', $location->getSelectedText());
+    }
+
+    /**
+     * @return iterable<string, array{bool}>
+     * @psalm-pure
+     */
+    public static function provideSnippetStates(): iterable
+    {
+        yield 'snippet not computed' => [false];
+        yield 'snippet computed' => [true];
+    }
+
+    /**
+     * Workers send their locations to the parent, which must get back what they had: the lazily computed
+     * properties only when they were computed, and the previous location of one.
+     *
+     * The location is restored through __unserialize() rather than unserialize(): its file path comes
+     * from FileSource::getFilePath(), which Psalm's taint analysis treats as user input.
+     */
+    #[DataProvider('provideSnippetStates')]
+    public function testSerializationRoundTrip(bool $computed): void
+    {
+        $contents = "<?php\n// Grüße\n\$a = 'x' . \$b;\n";
+        $previous = $this->locate($contents, '$b', 3);
+
+        $start = strlen("<?php\n// Grüße\n\$a = ");
+        $node = new String_('x', ['startFilePos' => $start, 'endFilePos' => $start + 2, 'startLine' => 3]);
+        $location = new CodeLocation($this->file_analyzer, $node, $previous, true, null, null, 7);
+
+        if ($computed) {
+            $this->assertNotSame('', $location->getSnippet());
+        }
+
+        $copy = (new ReflectionClass(CodeLocation::class))->newInstanceWithoutConstructor();
+        $copy->__unserialize($location->__serialize());
+
+        $this->assertEquals($location, $copy);
+        $this->assertSame($location->getSelectedText(), $copy->getSelectedText());
+        $this->assertSame($location->getSnippet(), $copy->getSnippet());
+        $this->assertSame($location->getLineNumber(), $copy->getLineNumber());
+        $this->assertSame($location->getEndLineNumber(), $copy->getEndLineNumber());
+        $this->assertSame($location->getSelectionBounds(), $copy->getSelectionBounds());
+        $this->assertSame($location->getColumn(), $copy->getColumn());
+        $this->assertEquals($previous, $copy->previous_location);
+    }
+
+    /**
+     * @return iterable<string, array{bool, bool}>
+     * @psalm-pure
+     */
+    public static function provideSerializersAndSnippetStates(): iterable
+    {
+        yield 'native, snippet not computed' => [false, false];
+        yield 'native, snippet computed' => [false, true];
+        yield 'igbinary, snippet not computed' => [true, false];
+        yield 'igbinary, snippet computed' => [true, true];
+    }
+
+    /**
+     * The round trip a worker's result goes through. Every property has a value of its own, so one restored into
+     * another fails the comparison.
+     *
+     * The properties are set directly rather than through the constructor: it reads the path of a FileSource, which
+     * Psalm's own taint analysis treats as user input, so a location it built would be reported as user input
+     * reaching unserialize().
+     */
+    #[DataProvider('provideSerializersAndSnippetStates')]
+    public function testEveryPropertySurvivesEncodingAndDecoding(bool $igbinary, bool $computed): void
+    {
+        if ($igbinary && !extension_loaded('igbinary')) {
+            $this->markTestSkipped('igbinary is not loaded');
+        }
+
+        $properties = [
+            'file_path' => '/project/src/a.php',
+            'file_name' => 'src/a.php',
+            'raw_line_number' => 3,
+            'raw_file_start' => 21,
+            'raw_file_end' => 22,
+            'file_start' => 27,
+            'file_end' => 29,
+            'single_line' => true,
+            'preview_start' => 15,
+            'docblock_start' => 5,
+            'docblock_start_line_number' => 2,
+            'docblock_line_number' => 4,
+            'regex_type' => CodeLocation::FUNCTION_PHPDOC_METHOD,
+            'text' => 'selected',
+            'previous_location' => new Raw("<?php\n\$b;\n", 'previous.php', 'previous.php', 6, 7),
+        ];
+
+        if ($computed) {
+            $properties += [
+                'have_recalculated' => true,
+                'end_line_number' => 6,
+                'preview_end' => 31,
+                'selection_start' => 23,
+                'selection_end' => 24,
+                'column_from' => 12,
+                'column_to' => 14,
+                'snippet' => 'snippet',
+            ];
+        }
+
+        $location = (new ReflectionClass(CodeLocation::class))->newInstanceWithoutConstructor();
+        foreach ($properties as $name => $value) {
+            (new ReflectionProperty(CodeLocation::class, $name))->setValue($location, $value);
+        }
+
+        $serialized = $igbinary ? igbinary_serialize($location) : serialize($location);
+        $this->assertIsString($serialized);
+
+        $this->assertEquals($location, $igbinary ? igbinary_unserialize($serialized) : unserialize($serialized));
     }
 
     public function testSnippetOfASelectionEndingTheFile(): void

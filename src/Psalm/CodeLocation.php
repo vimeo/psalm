@@ -35,6 +35,24 @@ use function trim;
 use const PREG_OFFSET_CAPTURE;
 
 /**
+ * @psalm-type SerializedLocation = array{
+ *     0: string,
+ *     1: string,
+ *     2: int,
+ *     3: int,
+ *     4: int,
+ *     5: int,
+ *     6: int,
+ *     7: bool,
+ *     8: int,
+ *     9: ?int,
+ *     10: ?int,
+ *     11: ?int,
+ *     12: ?int,
+ *     13: ?string,
+ *     14: ?CodeLocation,
+ *     15?: array{int, int, int, int, int, int, string},
+ * }
  * @psalm-immutable
  * @api
  */
@@ -97,32 +115,6 @@ class CodeLocation
     public const CATCH_VAR = 6;
     public const FUNCTION_PHPDOC_METHOD = 7;
 
-    private const PROPERTY_KEYS_FOR_UNSERIALIZE = [
-        'file_path' => 'file_path',
-        'file_name' => 'file_name',
-        'raw_line_number' => 'raw_line_number',
-        "\0" . self::class . "\0" . 'end_line_number' => 'end_line_number',
-        'raw_file_start' => 'raw_file_start',
-        'raw_file_end' => 'raw_file_end',
-        "\0*\0" . 'file_start' => 'file_start',
-        "\0*\0" . 'file_end' => 'file_end',
-        "\0*\0" . 'single_line' => 'single_line',
-        "\0*\0" . 'preview_start' => 'preview_start',
-        "\0" . self::class . "\0" . 'preview_end' => 'preview_end',
-        "\0" . self::class . "\0" . 'selection_start' => 'selection_start',
-        "\0" . self::class . "\0" . 'selection_end' => 'selection_end',
-        "\0" . self::class . "\0" . 'column_from' => 'column_from',
-        "\0" . self::class . "\0" . 'column_to' => 'column_to',
-        "\0" . self::class . "\0" . 'snippet' => 'snippet',
-        "\0" . self::class . "\0" . 'text' => 'text',
-        'docblock_start' => 'docblock_start',
-        "\0" . self::class . "\0" . 'docblock_start_line_number' => 'docblock_start_line_number',
-        "\0*\0" . 'docblock_line_number' => 'docblock_line_number',
-        "\0" . self::class . "\0" . 'regex_type' => 'regex_type',
-        "\0" . self::class . "\0" . 'have_recalculated' => 'have_recalculated',
-        'previous_location' => 'previous_location',
-    ];
-
     /**
      * The classes of the locations getCompactState() describes: those with no state of their own
      */
@@ -170,16 +162,83 @@ class CodeLocation
     }
 
     /**
-     * Suppresses memory usage when unserializing objects.
+     * @return SerializedLocation
+     * @psalm-mutation-free
+     */
+    public function __serialize(): array
+    {
+        $properties = [
+            $this->file_path,
+            $this->file_name,
+            $this->raw_line_number,
+            $this->raw_file_start,
+            $this->raw_file_end,
+            $this->file_start,
+            $this->file_end,
+            $this->single_line,
+            $this->preview_start,
+            $this->docblock_start,
+            $this->docblock_start_line_number,
+            $this->docblock_line_number,
+            $this->regex_type,
+            $this->text,
+            $this->previous_location,
+        ];
+
+        // Only a location asked for its end line, snippet, selection or columns has the computed ones set (see
+        // calculateRealLocation()). Most are not, so they stay out: forked workers send many of these locations.
+        if ($this->have_recalculated) {
+            $properties[] = [
+                $this->end_line_number,
+                $this->preview_end,
+                $this->selection_start,
+                $this->selection_end,
+                $this->column_from,
+                $this->column_to,
+                $this->snippet,
+            ];
+        }
+
+        return $properties;
+    }
+
+    /**
+     * Mirrors __serialize().
      *
-     * @see \Psalm\Storage\UnserializeMemoryUsageSuppressionTrait
+     * @param SerializedLocation $properties
      * @psalm-external-mutation-free
      */
     public function __unserialize(array $properties): void
     {
-        foreach (self::PROPERTY_KEYS_FOR_UNSERIALIZE as $key => $property_name) {
-            /** @psalm-suppress PossiblyUndefinedStringArrayOffset */
-            $this->$property_name = $properties[$key];
+        [
+            $this->file_path,
+            $this->file_name,
+            $this->raw_line_number,
+            $this->raw_file_start,
+            $this->raw_file_end,
+            $this->file_start,
+            $this->file_end,
+            $this->single_line,
+            $this->preview_start,
+            $this->docblock_start,
+            $this->docblock_start_line_number,
+            $this->docblock_line_number,
+            $this->regex_type,
+            $this->text,
+            $this->previous_location,
+        ] = $properties;
+
+        if (isset($properties[15])) {
+            $this->have_recalculated = true;
+            [
+                $this->end_line_number,
+                $this->preview_end,
+                $this->selection_start,
+                $this->selection_end,
+                $this->column_from,
+                $this->column_to,
+                $this->snippet,
+            ] = $properties[15];
         }
     }
 

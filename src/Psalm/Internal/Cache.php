@@ -81,8 +81,11 @@ use const LOCK_UN;
  */
 final class Cache
 {
-    /** Changing the format of the records or the consolidated files requires changing this. */
-    private const LAYOUT_VERSION = '3';
+    /**
+     * Changing the format of the records, of the consolidated files, or of objects they store whose class the
+     * dependencies of an entry don't cover (CodeLocation::__serialize()) requires changing this.
+     */
+    private const LAYOUT_VERSION = '4';
     private const RECORD_PREFIX_LENGTH = 28;
     private const CONSOLIDATED_INDEX = 'consolidated';
     private const TEMP_SUFFIX = '.tmp';
