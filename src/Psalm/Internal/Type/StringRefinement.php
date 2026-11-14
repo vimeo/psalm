@@ -4,6 +4,9 @@ declare(strict_types=1);
 
 namespace Psalm\Internal\Type;
 
+use Psalm\Type\Atomic;
+use Psalm\Type\Atomic\TCallableString;
+use Psalm\Type\Atomic\TClassString;
 use Psalm\Type\Atomic\TDecimalIntString;
 use Psalm\Type\Atomic\TLiteralString;
 use Psalm\Type\Atomic\TLowercaseNumericString;
@@ -18,6 +21,7 @@ use Psalm\Type\Atomic\TNonFalsyString;
 use Psalm\Type\Atomic\TNonspecificLiteralString;
 use Psalm\Type\Atomic\TNumericString;
 use Psalm\Type\Atomic\TString;
+use Psalm\Type\Atomic\TTraitString;
 
 use function is_numeric;
 use function strtolower;
@@ -124,6 +128,51 @@ final class StringRefinement
         }
 
         return self::getType($refinements_1 | $refinements_2, $from_docblock);
+    }
+
+    /**
+     * The string type that a string of one type being asserted to be of the other has, where neither contains the
+     * other: the intersection of the refinements, or for the name of a class, a callable or a trait (which can be
+     * lowercase and a literal, but never numeric) and a refined string, the name string, as Psalm has no type
+     * for the intersection of the two
+     *
+     * @psalm-pure
+     */
+    public static function intersectAsserted(Atomic $type_1, Atomic $type_2): ?TString
+    {
+        if (!$type_1 instanceof TString || !$type_2 instanceof TString) {
+            return null;
+        }
+
+        $refined = self::intersect($type_1, $type_2);
+
+        if ($refined !== null) {
+            return $refined;
+        }
+
+        if (self::isNameString($type_2)) {
+            [$type_1, $type_2] = [$type_2, $type_1];
+        }
+
+        if (!self::isNameString($type_1) || $type_2 instanceof TLiteralString) {
+            return null;
+        }
+
+        $refinements = self::get($type_2);
+
+        return $refinements !== null
+            && ($refinements & (self::LOWERCASE | self::LITERAL)) !== 0
+            && ($refinements & self::NUMERIC) === 0
+                ? $type_1
+                : null;
+    }
+
+    /**
+     * @psalm-pure
+     */
+    private static function isNameString(TString $type): bool
+    {
+        return $type instanceof TCallableString || $type instanceof TClassString || $type instanceof TTraitString;
     }
 
     /**

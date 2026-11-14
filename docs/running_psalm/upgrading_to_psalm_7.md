@@ -18,6 +18,7 @@ The rest of this page covers what some projects will notice. The complete list o
 - **Taint analysis runs by default**, in the same run as type checking, and is faster than a separate `--taint-analysis` run (see the [release notes](https://github.com/vimeo/psalm/releases/tag/7.0.0)). To run type checking only, set `runTaintAnalysis="false"`.
 - **New security findings.** If taint analysis reports more than you want to deal with at once, you have these tools ([docs](https://psalm.dev/docs/security_analysis/avoiding_false_positives/)):
     - `@psalm-cli-only` on a function, method or class, or a `PHP_SAPI === 'cli'` check: what that code prints is not reported as `TaintedHtml`;
+    - `@psalm-cli-only-instances` on a class whose instances only exist in command-line processes: the same holds for its instance methods and the function-likes taking an instance of it;
     - `<taintAnalysis><ignoreFiles>` in `psalm.xml`: taint paths through the listed files and directories (tests, for example) are not reported;
     - `@psalm-taint-specialize`: each call of a function or each instance of a class is tracked separately;
     - `runTaintAnalysis="false"`: turn it off.

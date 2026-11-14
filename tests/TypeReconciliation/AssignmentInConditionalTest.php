@@ -924,7 +924,7 @@ final class AssignmentInConditionalTest extends TestCase
                         return 0;
                     }',
                 'error_message' => 'PossiblyInvalidArgument',
-                'error_levels' => ['RiskyTruthyFalsyComparison'],
+                'error_levels' => [],
                 'php_version' => '8.0',
             ],
             'assignmentInAnAndInsideACastMayBeSkipped' => [
@@ -943,7 +943,7 @@ final class AssignmentInConditionalTest extends TestCase
                         return 0;
                     }',
                 'error_message' => 'PossiblyInvalidArgument',
-                'error_levels' => ['RiskyTruthyFalsyComparison'],
+                'error_levels' => [],
                 'php_version' => '8.0',
             ],
             'assignmentInTheRightOfACoalesceInsideAComparisonMayBeSkipped' => [
@@ -962,7 +962,7 @@ final class AssignmentInConditionalTest extends TestCase
                         return 0;
                     }',
                 'error_message' => 'PossiblyInvalidArgument',
-                'error_levels' => ['RiskyTruthyFalsyComparison'],
+                'error_levels' => [],
                 'php_version' => '8.0',
             ],
             'assignmentInAMatchArmMayBeSkipped' => [
@@ -981,7 +981,7 @@ final class AssignmentInConditionalTest extends TestCase
                         return 0;
                     }',
                 'error_message' => 'PossiblyInvalidArgument',
-                'error_levels' => ['RiskyTruthyFalsyComparison'],
+                'error_levels' => [],
                 'php_version' => '8.0',
             ],
             'assignmentInAnArgumentOfANullsafeCallMayBeSkipped' => [
