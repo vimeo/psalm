@@ -16,6 +16,7 @@ use Psalm\Internal\Codebase\TaintFlowGraph;
 use Psalm\Internal\DataFlow\DataFlowNode;
 use Psalm\Internal\MethodIdentifier;
 use Psalm\Internal\ReferenceConstraint;
+use Psalm\Internal\Type\TypeExpander;
 use Psalm\Issue\ImpureGlobalVariable;
 use Psalm\Issue\InvalidGlobal;
 use Psalm\IssueBuffer;
@@ -113,7 +114,14 @@ final class GlobalAnalyzer
                     $context->vars_in_scope[$var_id] =
                         VariableFetchAnalyzer::getGlobalType($var_id, $codebase->analysis_php_version_id);
                 } elseif (isset($function_storage->global_types[$var_id])) {
-                    $context->vars_in_scope[$var_id] = $function_storage->global_types[$var_id];
+                    // `self` and `static` of a `@global` tag are the class the function is in
+                    $context->vars_in_scope[$var_id] = TypeExpander::expandUnion(
+                        $codebase,
+                        $function_storage->global_types[$var_id],
+                        $context->self,
+                        $context->self,
+                        $statements_analyzer->getParentFQCLN(),
+                    );
                     $context->vars_possibly_in_scope[$var_id] = true;
                 } else {
                     $context->vars_in_scope[$var_id] =

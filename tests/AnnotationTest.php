@@ -184,6 +184,44 @@ final class AnnotationTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'selfAndStaticOfAGlobalTagAreTheClassOfTheMethod' => [
+                'code' => '<?php
+                    final class K {
+                        public function me(): int {
+                            return 1;
+                        }
+
+                        /**
+                         * @global static $k
+                         * @global self $s
+                         */
+                        public function g(): int {
+                            global $k, $s;
+
+                            /** @psalm-check-type-exact $k = K&static */
+                            /** @psalm-check-type-exact $s = K */
+
+                            return $k->me() + $s->me();
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
+            'globalDocblockStaticTypeDoesNotCrashAMethodCall' => [
+                'code' => '<?php
+                    class Foo {
+                        /**
+                         * @global static $bar
+                         * @return void
+                         */
+                        public function instance() {
+                            global $bar;
+
+                            $bar->instance();
+                        }
+                    }',
+            ],
             'optionalShapeKeysNamedLikeScalarAliases' => [
                 'code' => '<?php
                     /** @var array{double?: string, integer?: int, boolean?: bool, real?: float} $a */
