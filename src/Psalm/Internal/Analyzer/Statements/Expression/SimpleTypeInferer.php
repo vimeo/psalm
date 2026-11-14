@@ -14,7 +14,9 @@ use Psalm\Internal\Analyzer\ClassLikeAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\BinaryOp\ArithmeticOpAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\Fetch\ConstFetchAnalyzer;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
+use Psalm\Internal\Codebase\InternalCallMapHandler;
 use Psalm\Internal\Provider\NodeDataProvider;
+use Psalm\Internal\Type\Comparator\UnionTypeComparator;
 use Psalm\Internal\Type\TypeCombiner;
 use Psalm\StatementsSource;
 use Psalm\Storage\ClassConstantStorage;
@@ -33,9 +35,11 @@ use Psalm\Type\Atomic\TString;
 use Psalm\Type\Union;
 use ReflectionProperty;
 
+use function array_filter;
 use function array_merge;
 use function array_values;
 use function count;
+use function in_array;
 use function is_string;
 use function strtolower;
 
@@ -527,6 +531,56 @@ final class SimpleTypeInferer
             return new Union([
                 new Type\Atomic\TNamedObject($resolved_class_name),
             ]);
+        }
+
+        // ArrayFilterParamsProvider and ArrayMultisortParamsProvider rely on calls inferring to null (#8905).
+        if ($file_source === null
+            && $stmt instanceof PhpParser\Node\Expr\FuncCall
+            && $stmt->name instanceof PhpParser\Node\Name
+            && !$stmt->isFirstClassCallable()
+        ) {
+            $name = strtolower($stmt->name->toString());
+            $callables = strtolower($aliases->functions[$name] ?? $name) === $name
+                ? InternalCallMapHandler::getCallablesFromCallMap($name)
+                : null;
+            if (!$callables) {
+                return null;
+            }
+            if (count($callables) === 1) {
+                return $callables[0]->return_type;
+            }
+
+            $arg_types = [];
+            foreach ($stmt->getArgs() as $arg) {
+                $value = $arg->value;
+                $is_literal = !$arg->unpack && !$arg->name
+                    && ($value instanceof PhpParser\Node\Scalar\Int_
+                        || $value instanceof PhpParser\Node\Scalar\Float_
+                        || ($value instanceof PhpParser\Node\Expr\ConstFetch
+                            && !$value->name->isRelative()
+                            && in_array(strtolower($value->name->toString()), ['true', 'false'], true)));
+                $arg_types[] = $is_literal ? self::infer($codebase, $nodes, $value, $aliases) : null;
+            }
+
+            // Unique match only: the first compatible variant is wrong for `bool` params (e.g. gettimeofday).
+            $matches = [];
+            foreach ($callables as $callable) {
+                $params = $callable->params ?? [];
+                $required = count(array_filter($params, static fn($p): bool => !$p->is_optional && !$p->is_variadic));
+                $last = $params ? $params[count($params) - 1] : null;
+                if (count($arg_types) < $required || (count($arg_types) > count($params) && !$last?->is_variadic)) {
+                    continue;
+                }
+                foreach ($arg_types as $i => $arg_type) {
+                    $type = ($params[$i] ?? $last)?->type;
+                    if (!$arg_type || ($type && !UnionTypeComparator::isContainedBy($codebase, $arg_type, $type))) {
+                        continue 2;
+                    }
+                }
+                $matches[] = $callable;
+            }
+
+            return count($matches) === 1 ? $matches[0]->return_type : null;
         }
 
         return null;
