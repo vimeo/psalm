@@ -263,6 +263,20 @@ class Reconciler
                 throw new InvalidArgumentException('Union::$types cannot be empty after get value for ' . $key);
             }
 
+            // a variable that is not set reads as null: only isset() and empty() tell it from one set to null
+            $undefined_reads_as_null = $result_type
+                && $result_type->possibly_undefined
+                && !$has_isset
+                && !$has_inverted_isset
+                && !$has_empty
+                && $key[0] === '$'
+                && strpbrk($key, '[-:') === false;
+
+            if ($undefined_reads_as_null) {
+                $result_type = Type::combineUnionTypes($result_type, Type::getNull(), $codebase)
+                    ->setPossiblyUndefined(true);
+            }
+
             $before_adjustment = $result_type;
 
             $failed_reconciliation = self::RECONCILIATION_OK;
@@ -388,6 +402,11 @@ class Reconciler
 
             if (!$result_type) {
                 throw new UnexpectedValueException('$result_type should not be null');
+            }
+
+            if ($undefined_reads_as_null) {
+                // where the value cannot be null the variable is set
+                $result_type = $result_type->setPossiblyUndefined($result_type->isNullable(), false);
             }
 
             if ($has_inverted_key_exists || $has_inverted_isset) {
