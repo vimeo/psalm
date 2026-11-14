@@ -20,6 +20,49 @@ final class ReferenceConstraintTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'paramOutOfAByRefParamWhoseTemplateItsOwnArgumentBindsIsNotHandledAgain' => [
+                'code' => '<?php
+                    function run(string $command): string {
+                        exec($command, $output, $exitCode);
+
+                        return implode(" ", $output) . $exitCode;
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
+            'paramOutOfAByRefParamBeforeTheArgumentThatBindsItsTemplate' => [
+                'code' => '<?php
+                    /**
+                     * @template TFlags as int
+                     * @param TFlags $flags
+                     * @param-out (TFlags is 256 ? "M256" : "M0") $matches
+                     */
+                    function before(mixed &$matches = [], int $flags = 0): void {}
+
+                    before($m, 256);',
+                'assertions' => [
+                    '$m===' => "'M256'",
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'paramOutOfAByRefParamAfterTheArgumentThatBindsItsTemplate' => [
+                'code' => '<?php
+                    /**
+                     * @template TFlags as int
+                     * @param TFlags $flags
+                     * @param-out (TFlags is 256 ? "M256" : "M0") $matches
+                     */
+                    function after(int $flags, mixed &$matches = []): void {}
+
+                    after(0, $m);',
+                'assertions' => [
+                    '$m===' => "'M0'",
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
             'paramOutOfAClassTemplateReplacesAMixedVariable' => [
                 'code' => '<?php
                     /** @template T of int */
