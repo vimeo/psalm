@@ -586,9 +586,10 @@ final class Context
     }
 
     /**
-     * A reference that a block which goes on after it bound to another variable (or released) is no longer known to
-     * be the variable it was bound to before the block: what is written to it after the block must not be written
-     * to that variable, and writing to it is reported as the reuse of a reference from a confusing scope.
+     * A reference and the variable it is bound to are no longer known to be the same variable after a block which goes
+     * on after it and bound either of them to another variable (or released it): what is written to one after the
+     * block must not be written to the other, and writing to the rebound one is reported as the reuse of a reference
+     * from a confusing scope.
      *
      * @param array<string, string> $block_references_in_scope the references where the block goes on
      * @param array<PhpParser\Node\Stmt> $block_stmts
@@ -598,8 +599,18 @@ final class Context
         StatementsAnalyzer $statements_analyzer,
         array $block_stmts,
     ): void {
+        $rebound_ids = [];
+
         foreach ($this->references_in_scope as $reference_id => $referenced_id) {
-            if (($block_references_in_scope[$reference_id] ?? null) === $referenced_id) {
+            foreach ([$reference_id, $referenced_id] as $var_id) {
+                if (($block_references_in_scope[$var_id] ?? null) !== ($this->references_in_scope[$var_id] ?? null)) {
+                    $rebound_ids[$var_id] = true;
+                }
+            }
+        }
+
+        foreach ($this->references_in_scope as $reference_id => $referenced_id) {
+            if (!isset($rebound_ids[$reference_id]) && !isset($rebound_ids[$referenced_id])) {
                 continue;
             }
 
@@ -615,12 +626,14 @@ final class Context
                 unset($this->vars_in_scope[$reference_id]);
                 $this->vars_in_scope[$reference_id] = $type;
             }
+        }
 
-            $reference_location = $statements_analyzer->getFirstAppearance($reference_id)
-                ?? self::getReferenceAssignmentLocation($statements_analyzer, $block_stmts, $reference_id);
+        foreach ($rebound_ids as $var_id => $_) {
+            $reference_location = $statements_analyzer->getFirstAppearance($var_id)
+                ?? self::getReferenceAssignmentLocation($statements_analyzer, $block_stmts, $var_id);
 
             if ($reference_location !== null) {
-                $this->references_possibly_from_confusing_scope[$reference_id] ??= $reference_location;
+                $this->references_possibly_from_confusing_scope[$var_id] ??= $reference_location;
             }
         }
     }
