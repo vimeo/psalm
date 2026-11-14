@@ -23,6 +23,27 @@ final class ArrayKeyExistsTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'arrayKeyExistsOfAKeyThatIsNotAnIntOrAStringKeepsItsType' => [
+                'code' => '<?php
+                    function ofMixed(mixed $key): void {
+                        $items = [971 => "x", 972 => "y"];
+
+                        if (array_key_exists($key, $items)) {
+                            /** @psalm-check-type-exact $key = mixed */
+                        }
+                    }
+
+                    function ofFloatOrString(float|string $key): void {
+                        $items = [971 => "x", 972 => "y"];
+
+                        if (array_key_exists($key, $items)) {
+                            /** @psalm-check-type-exact $key = float|string */
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => ['MixedArgument', 'InvalidScalarArgument'],
+                'php_version' => '8.1',
+            ],
             'arrayKeyExistsOfAStringInAnArrayOfIntKeysNarrowsItToTheKeysAsStrings' => [
                 'code' => '<?php
                     final class Codes {

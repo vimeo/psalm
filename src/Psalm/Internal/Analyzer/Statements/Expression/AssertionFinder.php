@@ -90,6 +90,7 @@ use Psalm\Type\Atomic\TClosedResource;
 use Psalm\Type\Atomic\TEnumCase;
 use Psalm\Type\Atomic\TFalse;
 use Psalm\Type\Atomic\TGenericObject;
+use Psalm\Type\Atomic\TInt;
 use Psalm\Type\Atomic\TKeyedArray;
 use Psalm\Type\Atomic\TLiteralClassString;
 use Psalm\Type\Atomic\TLiteralFloat;
@@ -101,6 +102,7 @@ use Psalm\Type\Atomic\TNull;
 use Psalm\Type\Atomic\TObject;
 use Psalm\Type\Atomic\TObjectWithProperties;
 use Psalm\Type\Atomic\TResource;
+use Psalm\Type\Atomic\TString;
 use Psalm\Type\Atomic\TTemplateParam;
 use Psalm\Type\Atomic\TTemplateParamClass;
 use Psalm\Type\Atomic\TTraitString;
@@ -3890,13 +3892,24 @@ final class AssertionFinder
 
     /**
      * What a key that exists in an array as an int is: the int, or the string that PHP casts to it, whichever the type
-     * of the value looked up can be
+     * of the value looked up can be. A value that is not an int or a string (`true`, `1.0`) matches it too, so any
+     * other type keeps the loose comparison
      *
      * @return list<Assertion>
      * @psalm-pure
      */
     private static function getIntKeyAssertions(int $key, Union $looked_up_type): array
     {
+        foreach ($looked_up_type->getAtomicTypes() as $atomic_type) {
+            if ($atomic_type instanceof TTemplateParam) {
+                $atomic_type = $atomic_type->as->isSingle() ? $atomic_type->as->getSingleAtomic() : $atomic_type;
+            }
+
+            if (!$atomic_type instanceof TInt && !$atomic_type instanceof TString) {
+                return [new IsLooselyEqual(new TLiteralInt($key))];
+            }
+        }
+
         $assertions = [];
 
         if (!$looked_up_type->isString(true)) {
