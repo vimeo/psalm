@@ -2175,6 +2175,41 @@ final class BinaryOperationTest extends TestCase
                 'ignored_issues' => ['TypeDoesNotContainType', 'RedundantCondition'],
                 'php_version' => '8.1',
             ],
+            'comparisonNarrowsTheBoundOfATemplateInTheTypeOfTheVariable' => [
+                'code' => '<?php
+                    /** @param int<1, max> $n */
+                    function positive(int $n): void {}
+
+                    /** @param int<min, 0> $n */
+                    function nonPositive(int $n): void {}
+
+                    /** @param int<min, 4> $n */
+                    function belowFive(int $n): void {}
+
+                    /** @param int<5, max> $n */
+                    function fiveOrMore(int $n): void {}
+
+                    /**
+                     * @template T of int
+                     * @param T $n
+                     */
+                    function f(int $n): void {
+                        if ($n > 0) {
+                            positive($n);
+                        } else {
+                            nonPositive($n);
+                        }
+
+                        if ($n < 5) {
+                            belowFive($n);
+                        } else {
+                            fiveOrMore($n);
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
             'comparisonNarrowsTheBoundOfATemplate' => [
                 'code' => '<?php
                     /**
