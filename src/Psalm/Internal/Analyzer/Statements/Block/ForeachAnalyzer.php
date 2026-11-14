@@ -92,6 +92,7 @@ use function is_string;
 use function reset;
 use function stripos;
 use function strtolower;
+use function substr;
 
 use const ARRAY_FILTER_USE_BOTH;
 
@@ -546,6 +547,8 @@ final class ForeachAnalyzer
 
         $written_type = $written_type->setProperties(['by_ref' => false, 'parent_nodes' => []]);
 
+        $written_keys = self::getKeysWrittenToTheItem($stmt->stmts, substr($value_var_id, 1));
+
         $array_type = $context->vars_in_scope[$array_var_id];
 
         $atomic_types = [];
@@ -557,7 +560,7 @@ final class ForeachAnalyzer
                 foreach ($atomic_type->properties as $key => $property) {
                     $properties[$key] = Type::combineUnionTypes(
                         $property,
-                        self::withoutKeysOfNarrowing($written_type, $property),
+                        self::withoutKeysOfNarrowing($written_type, $property, $written_keys),
                         $codebase,
                     )->setPossiblyUndefined($property->possibly_undefined);
                 }
@@ -569,7 +572,11 @@ final class ForeachAnalyzer
                         $atomic_type->fallback_params[0],
                         Type::combineUnionTypes(
                             $atomic_type->fallback_params[1],
-                            self::withoutKeysOfNarrowing($written_type, $atomic_type->fallback_params[1]),
+                            self::withoutKeysOfNarrowing(
+                                $written_type,
+                                $atomic_type->fallback_params[1],
+                                $written_keys,
+                            ),
                             $codebase,
                         ),
                     ],
@@ -581,7 +588,7 @@ final class ForeachAnalyzer
                     $atomic_type->type_params[0],
                     Type::combineUnionTypes(
                         $atomic_type->type_params[1],
-                        self::withoutKeysOfNarrowing($written_type, $atomic_type->type_params[1]),
+                        self::withoutKeysOfNarrowing($written_type, $atomic_type->type_params[1], $written_keys),
                         $codebase,
                     ),
                 ]);
@@ -597,10 +604,16 @@ final class ForeachAnalyzer
     /**
      * What an iteration may have written to an item is not the keys that a test of the variable added to its shape:
      * `isset($row['name'])` makes `name?: mixed` part of the type of `$row`, but nothing wrote it into the item. Such a
-     * key is possibly undefined, of an unknown type, and not one of the keys the items have.
+     * key is possibly undefined, of an unknown type, not one of the keys the items have, and not assigned in the loop.
+     *
+     * @param array<int|string, true>|null $written_keys the keys the loop assigns, null when it may assign any
      */
-    private static function withoutKeysOfNarrowing(Union $written_type, Union $item_type): Union
+    private static function withoutKeysOfNarrowing(Union $written_type, Union $item_type, ?array $written_keys): Union
     {
+        if ($written_keys === null) {
+            return $written_type;
+        }
+
         $item_keys = [];
 
         foreach ($item_type->getAtomicTypes() as $item_atomic_type) {
@@ -619,6 +632,7 @@ final class ForeachAnalyzer
                 $properties = array_filter(
                     $written_atomic_type->properties,
                     static fn(Union $property, int|string $key): bool => isset($item_keys[$key])
+                        || isset($written_keys[$key])
                         || !$property->possibly_undefined
                         || !$property->isMixed(),
                     ARRAY_FILTER_USE_BOTH,
@@ -634,6 +648,56 @@ final class ForeachAnalyzer
         }
 
         return $changed ? $written_type->setTypes($atomic_types) : $written_type;
+    }
+
+    /**
+     * The keys that the statements assign in the array held by the variable (`$row['name'] = ...`, also as the start of
+     * a longer path), null when one is not a literal (`$row[$k] = ...`, `$row[] = ...`)
+     *
+     * @param array<PhpParser\Node\Stmt> $stmts
+     * @return array<int|string, true>|null
+     */
+    private static function getKeysWrittenToTheItem(array $stmts, string $var_name): ?array
+    {
+        $keys = [];
+
+        $assignments = (new NodeFinder())->find(
+            $stmts,
+            static fn(PhpParser\Node $node): bool => $node instanceof PhpParser\Node\Expr\Assign
+                || $node instanceof PhpParser\Node\Expr\AssignOp
+                || $node instanceof PhpParser\Node\Expr\AssignRef,
+        );
+
+        foreach ($assignments as $assignment) {
+            assert(
+                $assignment instanceof PhpParser\Node\Expr\Assign
+                || $assignment instanceof PhpParser\Node\Expr\AssignOp
+                || $assignment instanceof PhpParser\Node\Expr\AssignRef,
+            );
+
+            $target = $assignment->var;
+            $dim = null;
+
+            while ($target instanceof PhpParser\Node\Expr\ArrayDimFetch) {
+                $dim = $target->dim;
+                $target = $target->var;
+            }
+
+            if (!$target instanceof PhpParser\Node\Expr\Variable
+                || $target->name !== $var_name
+                || $assignment->var === $target
+            ) {
+                continue;
+            }
+
+            if (!$dim instanceof PhpParser\Node\Scalar\String_ && !$dim instanceof PhpParser\Node\Scalar\Int_) {
+                return null;
+            }
+
+            $keys[$dim->value] = true;
+        }
+
+        return $keys;
     }
 
     /**

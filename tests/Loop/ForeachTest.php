@@ -23,6 +23,51 @@ final class ForeachTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'aConditionalWriteOfAMixedValueInAForeachByReferenceKeepsTheKey' => [
+                'code' => '<?php
+                    /** @param list<string> $labels */
+                    function assigned(array $labels, mixed $value): void {
+                        $rows = [];
+
+                        foreach ($labels as $l) {
+                            $rows[] = ["label" => $l];
+                        }
+
+                        foreach ($rows as &$row) {
+                            if (rand(0, 1)) {
+                                $row["extra"] = $value;
+                            }
+                        }
+
+                        unset($row);
+
+                        /** @psalm-check-type-exact $rows = list<array{extra?: mixed, label: string}> */
+                        echo count($rows);
+                    }
+
+                    /** @param list<string> $labels */
+                    function nested(array $labels, mixed $value): void {
+                        $rows = [];
+
+                        foreach ($labels as $l) {
+                            $rows[] = ["label" => $l];
+                        }
+
+                        foreach ($rows as &$row) {
+                            if (rand(0, 1)) {
+                                $row["extra"]["x"] = $value;
+                            }
+                        }
+
+                        unset($row);
+
+                        /** @psalm-check-type-exact $rows = list<array{extra?: array{x: mixed}, label: string}> */
+                        echo count($rows);
+                    }',
+                'assertions' => [],
+                'ignored_issues' => ['MixedAssignment'],
+                'php_version' => '8.1',
+            ],
             'issetOfAKeyTheItemsDoNotHaveInAForeachByReferenceDoesNotAddItToThem' => [
                 'code' => '<?php
                     /** @param list<string> $labels */
