@@ -174,7 +174,7 @@ final class ArrayAnalyzer
                 ) {
                     IssueBuffer::maybeAdd(
                         new InvalidArrayOffset(
-                            'Cannot create offset of type ' . $item_key_type->getKey() . ', expecting array-key',
+                            'Cannot create offset of type ' . $item_key_type->getId() . ', expecting array-key',
                             new CodeLocation($statements_analyzer->getSource(), $stmt),
                         ),
                         $statements_analyzer->getSuppressedIssues(),

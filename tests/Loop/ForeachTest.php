@@ -2148,6 +2148,48 @@ final class ForeachTest extends TestCase
                 PHP,
                 'error_message' => 'InvalidIterator',
             ],
+            'possiblyNullIteratorMessageShowsExactType' => [
+                'code' => '<?php
+                    /** @param list<non-empty-string>|null $a */
+                    function f(?array $a): void {
+                        foreach ($a as $v) {
+                            echo $v;
+                        }
+                    }',
+                'error_message' => 'PossiblyNullIterator - src' . DIRECTORY_SEPARATOR . 'somefile.php:4:34'
+                    . ' - Cannot iterate over nullable var list<non-empty-string>|null',
+            ],
+            'possiblyFalseIteratorMessageShowsExactType' => [
+                'code' => '<?php
+                    /** @param list<non-empty-string>|false $a */
+                    function f(array|false $a): void {
+                        foreach ($a as $v) {
+                            echo $v;
+                        }
+                    }',
+                'error_message' => 'PossiblyFalseIterator - src' . DIRECTORY_SEPARATOR . 'somefile.php:4:34'
+                    . ' - Cannot iterate over falsable var false|list<non-empty-string',
+                'error_levels' => [],
+                'php_version' => '8.0',
+            ],
+            'invalidIteratorMessageShowsExactScalarType' => [
+                'code' => '<?php
+                    /** @param non-empty-string $s */
+                    function f(string $s): void {
+                        foreach ($s as $v) {}
+                    }',
+                'error_message' => 'InvalidIterator - src' . DIRECTORY_SEPARATOR . 'somefile.php:4:34'
+                    . ' - Cannot iterate over non-empty-string',
+            ],
+            'invalidIteratorMessageShowsExactGeneratorType' => [
+                'code' => '<?php
+                    /** @param Generator<int, \'a\', non-empty-string, void> $g */
+                    function f(Generator $g): void {
+                        foreach ($g as $v) {}
+                    }',
+                'error_message' => 'InvalidIterator - src' . DIRECTORY_SEPARATOR . 'somefile.php:4:34'
+                    . ' - Cannot iterate over generator with non-null send() type Generator<int, \'a\', non-empty-string, void',
+            ],
         ];
     }
 }

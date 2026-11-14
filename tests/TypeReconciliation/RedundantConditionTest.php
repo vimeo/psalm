@@ -2302,6 +2302,49 @@ final class RedundantConditionTest extends TestCase
                     }',
                 'error_message' => 'TypeDoesNotContainType - src' . DIRECTORY_SEPARATOR . 'somefile.php:3:32 - list{3} cannot be identical to list{1, 2',
             ],
+            'redundantIsStringOnLiteralMessageShowsExactType' => [
+                'code' => '<?php
+                    function f(): bool {
+                        return is_string("abc");
+                    }',
+                'error_message' => 'RedundantCondition - src' . DIRECTORY_SEPARATOR . 'somefile.php:3:32'
+                    . ' - \'abc\' always contains string',
+            ],
+            'redundantNullCheckMessageShowsExactDocblockType' => [
+                'code' => '<?php
+                    /** @param \'a\'|\'b\' $s */
+                    function f(string $s): void {
+                        if ($s !== null) {}
+                    }',
+                'error_message' => 'RedundantConditionGivenDocblockType - src' . DIRECTORY_SEPARATOR . 'somefile.php:4:29'
+                    . ' - Docblock-defined type \'a\'|\'b\' can never contain null',
+            ],
+            'nullCheckOnDocblockTypeMessageShowsExactType' => [
+                'code' => '<?php
+                    /** @param \'a\'|\'b\' $s */
+                    function f(string $s): void {
+                        if ($s === null) {}
+                    }',
+                'error_message' => 'DocblockTypeContradiction - src' . DIRECTORY_SEPARATOR . 'somefile.php:4:29'
+                    . ' - \'a\'|\'b\' does not contain null',
+            ],
+            'nullCheckOnLiteralMessageShowsExactType' => [
+                'code' => '<?php
+                    function f(): void {
+                        $t = "abc";
+                        if ($t === null) {}
+                    }',
+                'error_message' => 'TypeDoesNotContainNull - src' . DIRECTORY_SEPARATOR . 'somefile.php:4:29'
+                    . ' - \'abc\' does not contain null',
+            ],
+            'negatedIsStringOnLiteralMessageShowsExactType' => [
+                'code' => '<?php
+                    function f(): bool {
+                        return !is_string("abc");
+                    }',
+                'error_message' => 'TypeDoesNotContainType - src' . DIRECTORY_SEPARATOR . 'somefile.php:3:33'
+                    . ' - !\'abc\' does not contain string',
+            ],
         ];
     }
 }

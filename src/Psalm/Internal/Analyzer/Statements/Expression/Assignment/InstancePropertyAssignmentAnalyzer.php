@@ -284,8 +284,8 @@ final class InstancePropertyAssignmentAnalyzer
             if ($union_comparison_results->to_string_cast) {
                 IssueBuffer::maybeAdd(
                     new ImplicitToStringCast(
-                        $var_id . ' expects \'' . $class_property_type . '\', '
-                            . '\'' . $assignment_type . '\' provided with a __toString method',
+                        $var_id . ' expects \'' . $class_property_type->getId() . '\', '
+                            . '\'' . $assignment_type->getId() . '\' provided with a __toString method',
                         new CodeLocation(
                             $statements_analyzer->getSource(),
                             $assignment_value ?? $stmt,
@@ -319,8 +319,8 @@ final class InstancePropertyAssignmentAnalyzer
                 ) {
                     if (IssueBuffer::accepts(
                         new PossiblyNullPropertyAssignmentValue(
-                            $var_id . ' with non-nullable declared type \'' . $class_property_type .
-                                '\' cannot be assigned nullable type \'' . $assignment_type . '\'',
+                            $var_id . ' with non-nullable declared type \'' . $class_property_type->getId() .
+                                '\' cannot be assigned nullable type \'' . $assignment_type->getId() . '\'',
                             new CodeLocation(
                                 $statements_analyzer->getSource(),
                                 $assignment_value ?? $stmt,
@@ -341,8 +341,8 @@ final class InstancePropertyAssignmentAnalyzer
                 ) {
                     if (IssueBuffer::accepts(
                         new PossiblyFalsePropertyAssignmentValue(
-                            $var_id . ' with non-falsable declared type \'' . $class_property_type .
-                                '\' cannot be assigned possibly false type \'' . $assignment_type . '\'',
+                            $var_id . ' with non-falsable declared type \'' . $class_property_type->getId() .
+                                '\' cannot be assigned possibly false type \'' . $assignment_type->getId() . '\'',
                             new CodeLocation(
                                 $statements_analyzer->getSource(),
                                 $assignment_value ?? $stmt,
@@ -1064,7 +1064,7 @@ final class InstancePropertyAssignmentAnalyzer
         if ($lhs_type->isNullable() && !$lhs_type->ignore_nullable_issues) {
             IssueBuffer::maybeAdd(
                 new PossiblyNullPropertyAssignment(
-                    $lhs_var_id . ' with possibly null type \'' . $lhs_type . '\' cannot be assigned to',
+                    $lhs_var_id . ' with possibly null type \'' . $lhs_type->getId() . '\' cannot be assigned to',
                     new CodeLocation($statements_analyzer->getSource(), $stmt->var),
                 ),
                 $statements_analyzer->getSuppressedIssues(),

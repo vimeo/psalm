@@ -115,7 +115,7 @@ final class ArithmeticOpAnalyzer
                 if ($statements_source) {
                     IssueBuffer::maybeAdd(
                         new PossiblyNullOperand(
-                            'Left operand cannot be nullable, got ' . $left_type,
+                            'Left operand cannot be nullable, got ' . $left_type->getId(),
                             new CodeLocation($statements_source, $left),
                         ),
                         $statements_source->getSuppressedIssues(),
@@ -142,7 +142,7 @@ final class ArithmeticOpAnalyzer
                 if ($statements_source) {
                     IssueBuffer::maybeAdd(
                         new PossiblyNullOperand(
-                            'Right operand cannot be nullable, got ' . $right_type,
+                            'Right operand cannot be nullable, got ' . $right_type->getId(),
                             new CodeLocation($statements_source, $right),
                         ),
                         $statements_source->getSuppressedIssues(),
@@ -168,7 +168,7 @@ final class ArithmeticOpAnalyzer
                 if ($statements_source) {
                     IssueBuffer::maybeAdd(
                         new PossiblyFalseOperand(
-                            'Left operand cannot be falsable, got ' . $left_type,
+                            'Left operand cannot be falsable, got ' . $left_type->getId(),
                             new CodeLocation($statements_source, $left),
                         ),
                         $statements_source->getSuppressedIssues(),
@@ -194,7 +194,7 @@ final class ArithmeticOpAnalyzer
                 if ($statements_source) {
                     IssueBuffer::maybeAdd(
                         new PossiblyFalseOperand(
-                            'Right operand cannot be falsable, got ' . $right_type,
+                            'Right operand cannot be falsable, got ' . $right_type->getId(),
                             new CodeLocation($statements_source, $right),
                         ),
                         $statements_source->getSuppressedIssues(),

@@ -1066,8 +1066,8 @@ final class MethodComparator
                             'Argument ' . ($i + 1) . ' of '
                                 . $cased_implementer_method_id
                                 . ' has wrong type \''
-                                . $implementer_param_signature_type . '\', expecting \''
-                                . $guide_param_signature_type . '\' as defined by '
+                                . $implementer_param_signature_type->getId() . '\', expecting \''
+                                . $guide_param_signature_type?->getId() . '\' as defined by '
                                 . $cased_guide_method_id,
                             $implementer_method_storage->params[$i]->location
                                 && $config->isInProjectDirs(
@@ -1084,8 +1084,8 @@ final class MethodComparator
                             'Argument ' . ($i + 1) . ' of '
                                 . $cased_implementer_method_id
                                 . ' has wrong type \''
-                                . $implementer_param_signature_type . '\', expecting \''
-                                . $guide_param_signature_type . '\' as defined by '
+                                . $implementer_param_signature_type->getId() . '\', expecting \''
+                                . $guide_param_signature_type?->getId() . '\' as defined by '
                                 . $cased_guide_method_id,
                             $implementer_method_storage->params[$i]->location
                                 && $config->isInProjectDirs(
@@ -1101,8 +1101,8 @@ final class MethodComparator
                 IssueBuffer::maybeAdd(
                     new TraitMethodSignatureMismatch(
                         'Argument ' . ($i + 1) . ' of ' . $cased_implementer_method_id . ' has wrong type \'' .
-                            $implementer_param_signature_type . '\', expecting \'' .
-                            $guide_param_signature_type . '\' as defined by ' .
+                            $implementer_param_signature_type->getId() . '\', expecting \'' .
+                            $guide_param_signature_type?->getId() . '\' as defined by ' .
                             $cased_guide_method_id,
                         $implementer_method_storage->params[$i]->location
                             && $config->isInProjectDirs(
@@ -1381,8 +1381,8 @@ final class MethodComparator
                         'Method ' . $cased_implementer_method_id . ' with return type \''
                             . ($implementer_signature_return_type === null
                                 ? 'mixed'
-                                : (string) $implementer_signature_return_type)
-                            . '\' is different to return type \'' . $guide_signature_return_type
+                                : $implementer_signature_return_type->getId())
+                            . '\' is different to return type \'' . $guide_signature_return_type->getId()
                             . '\' of inherited method ' . $cased_guide_method_id,
                         $code_location,
                     ),
@@ -1394,8 +1394,8 @@ final class MethodComparator
                         'Method ' . $cased_implementer_method_id . ' with return type \''
                             . ($implementer_signature_return_type === null
                                 ? 'mixed'
-                                : (string) $implementer_signature_return_type)
-                            . '\' is different to return type \'' . $guide_signature_return_type
+                                : $implementer_signature_return_type->getId())
+                            . '\' is different to return type \'' . $guide_signature_return_type->getId()
                             . '\' of inherited method ' . $cased_guide_method_id,
                         $code_location,
                     ),

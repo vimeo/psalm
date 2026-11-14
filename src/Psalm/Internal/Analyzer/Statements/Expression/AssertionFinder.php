@@ -1053,7 +1053,7 @@ final class AssertionFinder
             if ($first_var_type->from_docblock) {
                 IssueBuffer::maybeAdd(
                     new RedundantConditionGivenDocblockType(
-                        'Docblock type ' . $first_var_type . ' always contains ' . $expected_type,
+                        'Docblock type ' . $first_var_type->getId() . ' always contains ' . $expected_type->getId(),
                         new CodeLocation($source, $expr),
                         $first_var_type . ' ' . $expected_type,
                     ),
@@ -1062,7 +1062,7 @@ final class AssertionFinder
             } else {
                 IssueBuffer::maybeAdd(
                     new RedundantCondition(
-                        $first_var_type . ' always contains ' . $expected_type,
+                        $first_var_type->getId() . ' always contains ' . $expected_type->getId(),
                         new CodeLocation($source, $expr),
                         $first_var_type . ' ' . $expected_type,
                     ),
@@ -1073,7 +1073,7 @@ final class AssertionFinder
             if ($first_var_type->from_docblock) {
                 IssueBuffer::maybeAdd(
                     new DocblockTypeContradiction(
-                        'Docblock type !' . $first_var_type . ' does not contain ' . $expected_type,
+                        'Docblock type !' . $first_var_type->getId() . ' does not contain ' . $expected_type->getId(),
                         new CodeLocation($source, $expr),
                         $first_var_type . ' ' . $expected_type,
                     ),
@@ -1082,7 +1082,7 @@ final class AssertionFinder
             } else {
                 IssueBuffer::maybeAdd(
                     new TypeDoesNotContainType(
-                        '!' . $first_var_type . ' does not contain ' . $expected_type,
+                        '!' . $first_var_type->getId() . ' does not contain ' . $expected_type->getId(),
                         new CodeLocation($source, $expr),
                         $first_var_type . ' ' . $expected_type,
                     ),
@@ -2252,7 +2252,7 @@ final class AssertionFinder
                     if ($var_type->from_docblock) {
                         IssueBuffer::maybeAdd(
                             new RedundantConditionGivenDocblockType(
-                                'Docblock-defined type ' . $var_type . ' can never contain null',
+                                'Docblock-defined type ' . $var_type->getId() . ' can never contain null',
                                 new CodeLocation($source, $conditional),
                                 $var_type->getId() . ' null',
                             ),
@@ -2261,7 +2261,7 @@ final class AssertionFinder
                     } else {
                         IssueBuffer::maybeAdd(
                             new RedundantCondition(
-                                $var_type . ' can never contain null',
+                                $var_type->getId() . ' can never contain null',
                                 new CodeLocation($source, $conditional),
                                 $var_type->getId() . ' null',
                             ),
@@ -2374,7 +2374,7 @@ final class AssertionFinder
                 if ($var_type->from_docblock) {
                     IssueBuffer::maybeAdd(
                         new RedundantConditionGivenDocblockType(
-                            'Docblock-defined type ' . $var_type . ' can never contain false',
+                            'Docblock-defined type ' . $var_type->getId() . ' can never contain false',
                             new CodeLocation($source, $conditional),
                             $var_type->getId() . ' false',
                         ),
@@ -2383,7 +2383,7 @@ final class AssertionFinder
                 } else {
                     IssueBuffer::maybeAdd(
                         new RedundantCondition(
-                            $var_type . ' can never contain false',
+                            $var_type->getId() . ' can never contain false',
                             new CodeLocation($source, $conditional),
                             $var_type->getId() . ' false',
                         ),
@@ -2529,7 +2529,7 @@ final class AssertionFinder
                     if ($var_type->from_docblock) {
                         IssueBuffer::maybeAdd(
                             new RedundantConditionGivenDocblockType(
-                                'Docblock-defined type ' . $var_type . ' can never contain true',
+                                'Docblock-defined type ' . $var_type->getId() . ' can never contain true',
                                 new CodeLocation($source, $conditional),
                                 $var_type->getId() . ' true',
                             ),
@@ -2538,7 +2538,7 @@ final class AssertionFinder
                     } else {
                         IssueBuffer::maybeAdd(
                             new RedundantCondition(
-                                $var_type . ' can never contain ' . $true_type,
+                                $var_type->getId() . ' can never contain ' . $true_type->getId(),
                                 new CodeLocation($source, $conditional),
                                 $var_type->getId() . ' true',
                             ),
@@ -2977,7 +2977,7 @@ final class AssertionFinder
                 if ($var_type->from_docblock) {
                     IssueBuffer::maybeAdd(
                         new DocblockTypeContradiction(
-                            $var_type . ' does not contain null',
+                            $var_type->getId() . ' does not contain null',
                             new CodeLocation($source, $conditional),
                             $var_type . ' null',
                         ),
@@ -2986,7 +2986,7 @@ final class AssertionFinder
                 } else {
                     IssueBuffer::maybeAdd(
                         new TypeDoesNotContainNull(
-                            $var_type . ' does not contain null',
+                            $var_type->getId() . ' does not contain null',
                             new CodeLocation($source, $conditional),
                             $var_type->getId(),
                         ),
@@ -3106,7 +3106,7 @@ final class AssertionFinder
                 if ($var_type->from_docblock) {
                     IssueBuffer::maybeAdd(
                         new DocblockTypeContradiction(
-                            $var_type . ' does not contain true',
+                            $var_type->getId() . ' does not contain true',
                             new CodeLocation($source, $conditional),
                             $var_type . ' true',
                         ),
@@ -3115,7 +3115,7 @@ final class AssertionFinder
                 } else {
                     IssueBuffer::maybeAdd(
                         new TypeDoesNotContainType(
-                            $var_type . ' does not contain true',
+                            $var_type->getId() . ' does not contain true',
                             new CodeLocation($source, $conditional),
                             $var_type . ' true',
                         ),
@@ -3260,7 +3260,7 @@ final class AssertionFinder
                     if ($var_type->from_docblock) {
                         IssueBuffer::maybeAdd(
                             new DocblockTypeContradiction(
-                                $var_type . ' does not contain false',
+                                $var_type->getId() . ' does not contain false',
                                 new CodeLocation($source, $conditional),
                                 $var_type . ' false',
                             ),
@@ -3269,7 +3269,7 @@ final class AssertionFinder
                     } else {
                         IssueBuffer::maybeAdd(
                             new TypeDoesNotContainType(
-                                $var_type . ' does not contain false',
+                                $var_type->getId() . ' does not contain false',
                                 new CodeLocation($source, $conditional),
                                 $var_type . ' false',
                             ),
@@ -3334,7 +3334,7 @@ final class AssertionFinder
                 if ($var_type->from_docblock) {
                     IssueBuffer::maybeAdd(
                         new DocblockTypeContradiction(
-                            $var_type . ' does not contain an empty array',
+                            $var_type->getId() . ' does not contain an empty array',
                             new CodeLocation($source, $conditional),
                             $var_type . ' !== []',
                         ),
@@ -3343,7 +3343,7 @@ final class AssertionFinder
                 } else {
                     IssueBuffer::maybeAdd(
                         new TypeDoesNotContainType(
-                            $var_type . ' does not contain empty array',
+                            $var_type->getId() . ' does not contain empty array',
                             new CodeLocation($source, $conditional),
                             $var_type . ' !== []',
                         ),

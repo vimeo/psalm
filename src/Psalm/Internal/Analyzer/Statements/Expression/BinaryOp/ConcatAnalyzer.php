@@ -535,7 +535,7 @@ final class ConcatAnalyzer
         if ($operand_type->isNull()) {
             IssueBuffer::maybeAdd(
                 new NullOperand(
-                    'Cannot concatenate with a ' . $operand_type,
+                    'Cannot concatenate with a ' . $operand_type->getId(),
                     new CodeLocation($statements_analyzer->getSource(), $operand),
                 ),
                 $statements_analyzer->getSuppressedIssues(),
@@ -547,7 +547,7 @@ final class ConcatAnalyzer
         if ($operand_type->isFalse()) {
             IssueBuffer::maybeAdd(
                 new FalseOperand(
-                    'Cannot concatenate with a ' . $operand_type,
+                    'Cannot concatenate with a ' . $operand_type->getId(),
                     new CodeLocation($statements_analyzer->getSource(), $operand),
                 ),
                 $statements_analyzer->getSuppressedIssues(),
@@ -559,7 +559,7 @@ final class ConcatAnalyzer
         if ($operand_type->isNullable() && !$operand_type->ignore_nullable_issues) {
             IssueBuffer::maybeAdd(
                 new PossiblyNullOperand(
-                    'Cannot concatenate with a possibly null ' . $operand_type,
+                    'Cannot concatenate with a possibly null ' . $operand_type->getId(),
                     new CodeLocation($statements_analyzer->getSource(), $operand),
                 ),
                 $statements_analyzer->getSuppressedIssues(),
@@ -569,7 +569,7 @@ final class ConcatAnalyzer
         if ($operand_type->isFalsable() && !$operand_type->ignore_falsable_issues) {
             IssueBuffer::maybeAdd(
                 new PossiblyFalseOperand(
-                    'Cannot concatenate with a possibly false ' . $operand_type,
+                    'Cannot concatenate with a possibly false ' . $operand_type->getId(),
                     new CodeLocation($statements_analyzer->getSource(), $operand),
                 ),
                 $statements_analyzer->getSuppressedIssues(),
@@ -634,7 +634,8 @@ final class ConcatAnalyzer
             if ($comparison_result->to_string_cast && $config->strict_binary_operands) {
                 IssueBuffer::maybeAdd(
                     new ImplicitToStringCast(
-                        "$side side of concat op expects string, '$operand_type' provided with a __toString method",
+                        "$side side of concat op expects string, '" . $operand_type->getId()
+                            . "' provided with a __toString method",
                         new CodeLocation($statements_analyzer->getSource(), $operand),
                     ),
                     $statements_analyzer->getSuppressedIssues(),
@@ -695,7 +696,7 @@ final class ConcatAnalyzer
             if ($has_valid_operand) {
                 IssueBuffer::maybeAdd(
                     new PossiblyInvalidOperand(
-                        'Cannot concatenate with a ' . $operand_type,
+                        'Cannot concatenate with a ' . $operand_type->getId(),
                         new CodeLocation($statements_analyzer->getSource(), $operand),
                     ),
                     $statements_analyzer->getSuppressedIssues(),
@@ -703,7 +704,7 @@ final class ConcatAnalyzer
             } else {
                 IssueBuffer::maybeAdd(
                     new InvalidOperand(
-                        'Cannot concatenate with a ' . $operand_type,
+                        'Cannot concatenate with a ' . $operand_type->getId(),
                         new CodeLocation($statements_analyzer->getSource(), $operand),
                     ),
                     $statements_analyzer->getSuppressedIssues(),

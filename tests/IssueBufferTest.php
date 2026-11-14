@@ -8,6 +8,7 @@ use Closure;
 use PHPUnit\Framework\Attributes\DataProvider;
 use Psalm\Codebase;
 use Psalm\Config;
+use Psalm\Context;
 use Psalm\Internal\Analyzer\IssueData;
 use Psalm\Internal\Analyzer\ProjectAnalyzer;
 use Psalm\Internal\Codebase\Analyzer;
@@ -16,6 +17,9 @@ use Psalm\IssueBuffer;
 use Psalm\Report;
 use Psalm\Report\ReportOptions;
 
+use function array_filter;
+use function array_map;
+use function in_array;
 use function ksort;
 use function microtime;
 use function ob_get_clean;
@@ -139,6 +143,91 @@ final class IssueBufferTest extends TestCase
         $output = (string) ob_get_clean();
         $this->assertStringContainsString('No errors found!', $output, 'all issues baselined');
         IssueBuffer::clear();
+    }
+
+    /**
+     * Messages render types exactly, so one location analysed with different exact types (a trait method per
+     * using class, a call on a union of receivers) reports each distinct type once.
+     */
+    public function testIssuesWithDistinctExactTypesAtOneLocationAreAllReported(): void
+    {
+        $this->testConfig->throw_exception = false;
+        $file_path = self::$src_dir_path . 'somefile.php';
+
+        $this->addFile(
+            $file_path,
+            '<?php
+                trait HasTable {
+                    abstract protected function table(): ?string;
+
+                    public function q(): string {
+                        return "select * from " . $this->table();
+                    }
+                }
+
+                final class Users {
+                    use HasTable;
+
+                    /** @return non-empty-string|null */
+                    protected function table(): ?string {
+                        return rand(0, 1) ? "users" : null;
+                    }
+                }
+
+                final class Ids {
+                    use HasTable;
+
+                    /** @return numeric-string|null */
+                    protected function table(): ?string {
+                        return rand(0, 1) ? "1" : null;
+                    }
+                }
+
+                interface MarkerOne {}
+
+                interface MarkerTwo {}
+
+                /** @template T as string */
+                class Takes {
+                    /** @param T $s */
+                    public function f(string $s): void {}
+                }
+
+                /** @param (Takes<numeric-string>&MarkerOne)|(Takes<non-empty-string>&MarkerTwo) $t */
+                function checkUnionReceiver($t): void {
+                    $t->f(json_decode("null"));
+                }',
+        );
+
+        $this->analyzeFile($file_path, new Context());
+
+        $issues = array_map(
+            static fn(IssueData $issue): array => [
+                $issue->line_from,
+                $issue->column_from,
+                $issue->type,
+                $issue->message,
+            ],
+            array_filter(
+                IssueBuffer::getIssuesDataForFile($file_path),
+                static fn(IssueData $issue): bool => in_array(
+                    $issue->type,
+                    ['PossiblyNullOperand', 'MixedArgument'],
+                    true,
+                ),
+            ),
+        );
+        sort($issues);
+
+        self::assertSame(
+            [
+                [6, 51, 'PossiblyNullOperand', 'Cannot concatenate with a possibly null non-empty-string|null'],
+                [6, 51, 'PossiblyNullOperand', 'Cannot concatenate with a possibly null null|numeric-string'],
+                [40, 27, 'MixedArgument', 'Argument 1 of Takes::f cannot be mixed, expecting non-empty-string'],
+                [40, 27, 'MixedArgument', 'Argument 1 of Takes::f cannot be mixed, expecting numeric-string'],
+            ],
+            $issues,
+        );
     }
 
     public function testPrintSuccessMessageWorks(): void

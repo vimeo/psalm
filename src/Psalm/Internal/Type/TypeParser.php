@@ -993,7 +993,7 @@ final class TypeParser
                     continue;
                 }
 
-                throw new TypeParseTreeException('Invalid array key type ' . $atomic_type->getKey());
+                throw new TypeParseTreeException('Invalid array key type ' . $atomic_type->getId());
             }
 
             return $generic_type_value === 'array'
@@ -1181,7 +1181,7 @@ final class TypeParser
 
             if (!TKeyOf::isViableTemplateType($generic_params[0])) {
                 throw new TypeParseTreeException(
-                    'Untemplated key-of param ' . $param_name . ' should be an array',
+                    'Untemplated key-of param ' . $generic_params[0]->getId() . ' should be an array',
                 );
             }
 
@@ -1204,7 +1204,7 @@ final class TypeParser
 
             if (!TValueOf::isViableTemplateType($generic_params[0])) {
                 throw new TypeParseTreeException(
-                    'Untemplated value-of param ' . $param_name . ' should be an array',
+                    'Untemplated value-of param ' . $generic_params[0]->getId() . ' should be an array',
                 );
             }
 
@@ -2790,7 +2790,7 @@ final class TypeParser
                 if ($new_type === null) {
                     throw new TypeParseTreeException(
                         'Incompatible intersection types for "' . $property . '", '
-                        . $properties[$property] . ' and ' . $property_type
+                        . $properties[$property]->getId() . ' and ' . $property_type->getId()
                         . ' provided',
                     );
                 }

@@ -8,6 +8,8 @@ use Override;
 use Psalm\Tests\Traits\InvalidCodeAnalysisTestTrait;
 use Psalm\Tests\Traits\ValidCodeAnalysisTestTrait;
 
+use const DIRECTORY_SEPARATOR;
+
 final class ReferenceConstraintTest extends TestCase
 {
     use InvalidCodeAnalysisTestTrait;
@@ -499,6 +501,28 @@ final class ReferenceConstraintTest extends TestCase
                     }
                 ',
                 'error_message' => 'PossiblyInvalidPropertyAssignmentValue',
+            ],
+            'referenceConstraintViolationMessageShowsExactType' => [
+                'code' => '<?php
+                    final class A {
+                        /** @var non-empty-string */
+                        private string $foo;
+                        /** @param non-empty-string $foo */
+                        public function __construct(string &$foo) {
+                            $this->foo = &$foo;
+                        }
+                        public function get(): string {
+                            return $this->foo;
+                        }
+                    }
+                    function f(): void {
+                        $bar = "a";
+                        $a = new A($bar);
+                        $bar = 5;
+                        echo $a->get();
+                    }',
+                'error_message' => 'ReferenceConstraintViolation - src' . DIRECTORY_SEPARATOR . 'somefile.php:16:25'
+                    . ' - Variable $bar is limited to values of type non-empty-string because it is passed by reference, 5 type found',
             ],
         ];
     }

@@ -225,7 +225,7 @@ final class ForeachAnalyzer
                     } else {
                         IssueBuffer::maybeAdd(
                             new UnnecessaryVarAnnotation(
-                                'The @var ' . $comment_type . ' annotation for '
+                                'The @var ' . $comment_type->getId() . ' annotation for '
                                 . $var_comment->var_id . ' is unnecessary',
                                 $type_location,
                             ),
@@ -812,7 +812,7 @@ final class ForeachAnalyzer
 
             IssueBuffer::maybeAdd(
                 new PossiblyNullIterator(
-                    'Cannot iterate over nullable var ' . $iterator_type,
+                    'Cannot iterate over nullable var ' . $iterator_type->getId(),
                     new CodeLocation($statements_analyzer->getSource(), $expr),
                 ),
                 $statements_analyzer->getSuppressedIssues(),
@@ -826,7 +826,7 @@ final class ForeachAnalyzer
 
             IssueBuffer::maybeAdd(
                 new PossiblyFalseIterator(
-                    'Cannot iterate over falsable var ' . $iterator_type,
+                    'Cannot iterate over falsable var ' . $iterator_type->getId(),
                     new CodeLocation($statements_analyzer->getSource(), $expr),
                 ),
                 $statements_analyzer->getSuppressedIssues(),
@@ -918,7 +918,7 @@ final class ForeachAnalyzer
 
                 $has_valid_iterator = true;
             } elseif ($iterator_atomic_type instanceof Scalar || $iterator_atomic_type instanceof TVoid) {
-                $invalid_iterator_types[] = $iterator_atomic_type->getKey();
+                $invalid_iterator_types[] = $iterator_atomic_type->getId();
 
                 $value_type = Type::getMixed();
             } elseif ($iterator_atomic_type instanceof TObject ||
@@ -1339,7 +1339,7 @@ final class ForeachAnalyzer
                         && !$type_params[2]->isVoid()
                         && !$type_params[2]->isMixed()
                     ) {
-                        $invalid_iterator_types[] = $iterator_atomic_type->getKey();
+                        $invalid_iterator_types[] = $iterator_atomic_type->getId();
                     } else {
                         $has_valid_iterator = true;
                     }

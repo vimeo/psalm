@@ -690,7 +690,7 @@ final class ExistingAtomicMethodCallAnalyzer extends CallAnalyzer
                             IssueBuffer::maybeAdd(
                                 new MixedPropertyTypeCoercion(
                                     $prop_name . ' expects \'' . $pseudo_set_type->getId() . '\', '
-                                        . ' parent type `' . $second_arg_type . '` provided',
+                                        . ' parent type `' . $second_arg_type->getId() . '` provided',
                                     new CodeLocation($statements_analyzer->getSource(), $stmt),
                                     $property_id,
                                 ),
@@ -700,7 +700,7 @@ final class ExistingAtomicMethodCallAnalyzer extends CallAnalyzer
                             IssueBuffer::maybeAdd(
                                 new PropertyTypeCoercion(
                                     $prop_name . ' expects \'' . $pseudo_set_type->getId() . '\', '
-                                        . ' parent type `' . $second_arg_type . '` provided',
+                                        . ' parent type `' . $second_arg_type->getId() . '` provided',
                                     new CodeLocation($statements_analyzer->getSource(), $stmt),
                                     $property_id,
                                 ),
@@ -718,8 +718,9 @@ final class ExistingAtomicMethodCallAnalyzer extends CallAnalyzer
                             IssueBuffer::maybeAdd(
                                 new PossiblyInvalidPropertyAssignmentValue(
                                     $prop_name . ' with declared type \''
-                                    . $pseudo_set_type
-                                    . '\' cannot be assigned possibly different type \'' . $second_arg_type . '\'',
+                                    . $pseudo_set_type->getId()
+                                    . '\' cannot be assigned possibly different type \''
+                                    . $second_arg_type->getId() . '\'',
                                     new CodeLocation($statements_analyzer->getSource(), $stmt),
                                     $property_id,
                                 ),
@@ -729,8 +730,8 @@ final class ExistingAtomicMethodCallAnalyzer extends CallAnalyzer
                             IssueBuffer::maybeAdd(
                                 new InvalidPropertyAssignmentValue(
                                     $prop_name . ' with declared type \''
-                                    . $pseudo_set_type
-                                    . '\' cannot be assigned type \'' . $second_arg_type . '\'',
+                                    . $pseudo_set_type->getId()
+                                    . '\' cannot be assigned type \'' . $second_arg_type->getId() . '\'',
                                     new CodeLocation($statements_analyzer->getSource(), $stmt),
                                     $property_id,
                                 ),

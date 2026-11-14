@@ -5014,6 +5014,18 @@ final class ArrayFunctionCallTest extends TestCase
                     array_unique($values);',
                 'error_message' => 'PossiblyInvalidArgument',
             ],
+            'arrayReduceItemTypeMessageShowsExactType' => [
+                'code' => '<?php
+                    /** @param list<\'a\'> $l */
+                    function f(array $l): int {
+                        return array_reduce($l, function (int $c, int $i): int {
+                            return $c + $i;
+                        }, 0);
+                    }',
+                'error_message' => 'InvalidArgument - src' . DIRECTORY_SEPARATOR . 'somefile.php:4:67'
+                    . ' - The second param of the closure passed to array_reduce must take \'a\' but only accepts int',
+                'error_levels' => ['InvalidScalarArgument'],
+            ],
         ];
     }
 }

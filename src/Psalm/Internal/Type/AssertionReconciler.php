@@ -531,7 +531,7 @@ final class AssertionReconciler extends Reconciler
                         IssueBuffer::maybeAdd(
                             new DocblockTypeContradiction(
                                 'Cannot resolve types for ' . $key . ' - docblock-defined type '
-                                    . $existing_var_type . ' does not contain null',
+                                    . $existing_var_type->getId() . ' does not contain null',
                                 $code_location,
                                 $existing_var_type->getId() . ' null',
                             ),
@@ -540,7 +540,7 @@ final class AssertionReconciler extends Reconciler
                     } else {
                         IssueBuffer::maybeAdd(
                             new TypeDoesNotContainNull(
-                                'Cannot resolve types for ' . $key . ' - ' . $existing_var_type
+                                'Cannot resolve types for ' . $key . ' - ' . $existing_var_type->getId()
                                     . ' does not contain null',
                                 $code_location,
                                 $existing_var_type->getId(),

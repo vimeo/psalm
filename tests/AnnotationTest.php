@@ -2970,6 +2970,51 @@ final class AnnotationTest extends TestCase
                     Bar::set("str");',
                 'error_message' => 'InvalidArgument',
             ],
+            'keyOfNonArrayMessageShowsExactType' => [
+                'code' => '<?php
+                    /** @param key-of<non-empty-string> $key */
+                    function f($key): void {}',
+                'error_message' => 'InvalidDocblock - src' . DIRECTORY_SEPARATOR . 'somefile.php:2:32'
+                    . ' - Untemplated key-of param non-empty-string should be an array',
+            ],
+            'valueOfNonArrayMessageShowsExactType' => [
+                'code' => '<?php
+                    /** @param value-of<numeric-string> $value */
+                    function f($value): void {}',
+                'error_message' => 'InvalidDocblock - src' . DIRECTORY_SEPARATOR . 'somefile.php:2:32'
+                    . ' - Untemplated value-of param numeric-string should be an array',
+            ],
+            'keyOfTypeAliasOfANonArrayMessageShowsExactType' => [
+                'code' => '<?php
+                    /**
+                     * @psalm-type NAME=non-empty-string
+                     */
+                    class Foo {}
+
+                    /**
+                     * @psalm-import-type NAME from Foo
+                     */
+                    class Bar {
+                        /** @param key-of<NAME> $key */
+                        public static function set($key): void {}
+                    }',
+                'error_message' => 'InvalidDocblock - src' . DIRECTORY_SEPARATOR . 'somefile.php:11:36'
+                    . ' - Untemplated key-of param non-empty-string should be an array',
+            ],
+            'incompatibleIntersectionMessageShowsExactTypes' => [
+                'code' => '<?php
+                    /** @param array{a: non-empty-string}&array{a: int} $o */
+                    function f(array $o): void {}',
+                'error_message' => 'InvalidDocblock - src' . DIRECTORY_SEPARATOR . 'somefile.php:2:32'
+                    . ' - Incompatible intersection types for "a", non-empty-string and int provided',
+            ],
+            'invalidArrayKeyTypeMessageShowsExactType' => [
+                'code' => '<?php
+                    /** @param array<list<\'a\'>, int> $x */
+                    function f(array $x): void {}',
+                'error_message' => 'InvalidDocblock - src' . DIRECTORY_SEPARATOR . 'somefile.php:2:32'
+                    . ' - Invalid array key type list<\'a',
+            ],
         ];
     }
 }

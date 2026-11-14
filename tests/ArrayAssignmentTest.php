@@ -11,6 +11,8 @@ use Psalm\Tests\Traits\InvalidCodeAnalysisTestTrait;
 use Psalm\Tests\Traits\ValidCodeAnalysisTestTrait;
 use Psalm\Type;
 
+use const DIRECTORY_SEPARATOR;
+
 final class ArrayAssignmentTest extends TestCase
 {
     use InvalidCodeAnalysisTestTrait;
@@ -3436,6 +3438,24 @@ final class ArrayAssignmentTest extends TestCase
                     }
                 ',
                 'error_message' => 'InvalidOperand',
+            ],
+            'possiblyNullArrayAssignmentMessageShowsExactType' => [
+                'code' => '<?php
+                    /** @param array<\'k\', \'v\'>|null $a */
+                    function f(?array $a): void {
+                        $a["k"]["j"] = "v";
+                        echo count($a);
+                    }',
+                'error_message' => 'PossiblyNullArrayAssignment - src' . DIRECTORY_SEPARATOR . 'somefile.php:4:25'
+                    . ' - Cannot access array value on possibly null variable $a[\'k\'] of type array<\'k\', \'v\'>|null',
+            ],
+            'invalidArrayOffsetMessageShowsExactKeyType' => [
+                'code' => '<?php
+                    function f(): array {
+                        return [1.5 => true];
+                    }',
+                'error_message' => 'InvalidArrayOffset - src' . DIRECTORY_SEPARATOR . 'somefile.php:3:32'
+                    . ' - Cannot create offset of type float(1.5), expecting array-key',
             ],
         ];
     }

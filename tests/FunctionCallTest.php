@@ -4417,6 +4417,24 @@ final class FunctionCallTest extends TestCase
                 'error_levels' => [],
                 'php_version' => '7.4',
             ],
+            'redundantArrayValuesMessageShowsExactDocblockType' => [
+                'code' => '<?php
+                    /** @param list<\'a\'> $l */
+                    function f($l): array {
+                        return array_values($l);
+                    }',
+                'error_message' => 'RedundantFunctionCallGivenDocblockType - src' . DIRECTORY_SEPARATOR . 'somefile.php:4:32'
+                    . ' - The call to array_values is unnecessary given the list docblock type list<\'a',
+            ],
+            'redundantArrayValuesMessageShowsExactType' => [
+                'code' => '<?php
+                    function f(): array {
+                        $l = ["a"];
+                        return array_values($l);
+                    }',
+                'error_message' => 'RedundantFunctionCall - src' . DIRECTORY_SEPARATOR . 'somefile.php:4:32'
+                    . ' - The call to array_values is unnecessary, list{\'a\'} is already a list',
+            ],
         ];
     }
 

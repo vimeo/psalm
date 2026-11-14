@@ -597,7 +597,8 @@ final class NamedFunctionCallHandler
                 if ($first_arg_type->from_docblock) {
                     IssueBuffer::maybeAdd(
                         new RedundantFunctionCallGivenDocblockType(
-                            "The call to $function_id is unnecessary given the list docblock type $first_arg_type",
+                            "The call to $function_id is unnecessary given the list docblock type "
+                                . $first_arg_type->getId(),
                             new CodeLocation($statements_analyzer, $function_name),
                         ),
                         $statements_analyzer->getSuppressedIssues(),
@@ -605,7 +606,7 @@ final class NamedFunctionCallHandler
                 } else {
                     IssueBuffer::maybeAdd(
                         new RedundantFunctionCall(
-                            "The call to $function_id is unnecessary, $first_arg_type is already a list",
+                            "The call to $function_id is unnecessary, {$first_arg_type->getId()} is already a list",
                             new CodeLocation($statements_analyzer, $function_name),
                         ),
                         $statements_analyzer->getSuppressedIssues(),

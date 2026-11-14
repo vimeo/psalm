@@ -197,7 +197,7 @@ final class AtomicStaticCallAnalyzer
             if (!$fq_class_name) {
                 IssueBuffer::maybeAdd(
                     new UndefinedClass(
-                        'Type ' . $lhs_type_part->as . ' cannot be called as a class',
+                        'Type ' . $lhs_type_part->as->getId() . ' cannot be called as a class',
                         new CodeLocation($statements_analyzer->getSource(), $stmt),
                         (string) $lhs_type_part,
                     ),

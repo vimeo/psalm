@@ -279,8 +279,8 @@ final class StaticPropertyAssignmentAnalyzer
             if ($union_comparison_results->to_string_cast) {
                 IssueBuffer::maybeAdd(
                     new ImplicitToStringCast(
-                        ($var_id ?? $property_id) . ' expects \'' . $class_property_type . '\', '
-                            . '\'' . $assignment_value_type . '\' provided with a __toString method',
+                        ($var_id ?? $property_id) . ' expects \'' . $class_property_type->getId() . '\', '
+                            . '\'' . $assignment_value_type->getId() . '\' provided with a __toString method',
                         new CodeLocation(
                             $statements_analyzer->getSource(),
                             $assignment_value ?? $stmt,

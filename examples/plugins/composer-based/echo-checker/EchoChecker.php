@@ -30,7 +30,7 @@ final class EchoChecker implements AfterStatementAnalysisInterface
                 if (!$expr_type || $expr_type->hasMixed()) {
                     IssueBuffer::maybeAdd(
                         new ArgumentTypeCoercion(
-                            'Echo requires an unescaped string, ' . $expr_type . ' provided',
+                            'Echo requires an unescaped string, ' . $expr_type?->getId() . ' provided',
                             new CodeLocation($statements_source, $expr),
                             'echo',
                         ),
@@ -47,7 +47,7 @@ final class EchoChecker implements AfterStatementAnalysisInterface
                     ) {
                         IssueBuffer::maybeAdd(
                             new ArgumentTypeCoercion(
-                                'Echo requires an unescaped string, ' . $expr_type . ' provided',
+                                'Echo requires an unescaped string, ' . $expr_type->getId() . ' provided',
                                 new CodeLocation($statements_source, $expr),
                                 'echo',
                             ),
