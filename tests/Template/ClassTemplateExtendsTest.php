@@ -23,6 +23,30 @@ final class ClassTemplateExtendsTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'templatedParentMethodWithAParamImplementsAnInterfaceOfTheChild' => [
+                'code' => '<?php
+                    /** @template T of object */
+                    interface DomainRepository
+                    {
+                        /** @param T $entity */
+                        public function add(object $entity): void;
+                    }
+
+                    class Foo {}
+
+                    /** @template-extends DomainRepository<Foo> */
+                    interface FooRepositoryInterface extends DomainRepository {}
+
+                    /** @template B of object */
+                    abstract class BaseRepository
+                    {
+                        /** @param B $entity */
+                        public function add(object $entity): void {}
+                    }
+
+                    /** @template-extends BaseRepository<Foo> */
+                    final class FooRepository extends BaseRepository implements FooRepositoryInterface {}',
+            ],
             'templatedParentMethodImplementsAnInterfaceOfTheChild' => [
                 'code' => '<?php
                     /** @template T of object */
@@ -5405,6 +5429,32 @@ final class ClassTemplateExtendsTest extends TestCase
     public static function providerInvalidCodeParse(): iterable
     {
         return [
+            'templatedParentMethodWithAParamDoesNotImplementTheInterfaceOfTheChildWithAnotherType' => [
+                'code' => '<?php
+                    /** @template T of object */
+                    interface DomainRepository
+                    {
+                        /** @param T $entity */
+                        public function add(object $entity): void;
+                    }
+
+                    class Foo {}
+                    class Bar {}
+
+                    /** @template-extends DomainRepository<Foo> */
+                    interface FooRepositoryInterface extends DomainRepository {}
+
+                    /** @template B of object */
+                    abstract class BaseRepository
+                    {
+                        /** @param B $entity */
+                        public function add(object $entity): void {}
+                    }
+
+                    /** @template-extends BaseRepository<Bar> */
+                    final class BadRepository extends BaseRepository implements FooRepositoryInterface {}',
+                'error_message' => 'ImplementedParamTypeMismatch - src' . DIRECTORY_SEPARATOR . 'somefile.php:19:52 - Argument 1 of BaseRepository::add has wrong type',
+            ],
             'templatedParentMethodDoesNotImplementTheInterfaceOfTheChildWithAnotherType' => [
                 'code' => '<?php
                     /** @template T of object */
