@@ -149,10 +149,11 @@ final class ProjectAnalyzer
     public array $check_paths_files = [];
 
     /**
-     * @psalm-suppress PropertyNotSetInConstructor Intentional to throw if accessed before initialization
-     * @var array<string,string>
+     * Null until initProjectFiles() or a check method chooses the files
+     *
+     * @var array<string,string>|null
      */
-    private array $project_files;
+    private ?array $project_files = null;
 
     /**
      * @psalm-suppress PropertyNotSetInConstructor Intentional to throw if accessed before initialization
@@ -299,13 +300,14 @@ final class ProjectAnalyzer
 
     /**
      * @internal
+     * @return array<string,string>
      */
-    public function initProjectFiles(): void
+    public function initProjectFiles(): array
     {
-        if ($this->project_files_initialized) {
-            return;
+        if ($this->project_files_initialized && $this->project_files !== null) {
+            return $this->project_files;
         }
-        $this->project_files = [];
+        $project_files = [];
         $file_extensions = $this->config->getFileExtensions();
         foreach ($this->config->getProjectDirectories() as $dir_name) {
             $file_paths = $this->file_provider->getFilesInDir(
@@ -315,14 +317,16 @@ final class ProjectAnalyzer
             );
 
             foreach ($file_paths as $file_path) {
-                $this->project_files[$file_path] = $file_path;
+                $project_files[$file_path] = $file_path;
             }
         }
 
         foreach ($this->config->getProjectFiles() as $file_path) {
-            $this->project_files[$file_path] = $file_path;
+            $project_files[$file_path] = $file_path;
         }
         $this->project_files_initialized = true;
+
+        return $this->project_files = $project_files;
     }
 
     /**
@@ -401,6 +405,11 @@ final class ProjectAnalyzer
     /** @psalm-mutation-free */
     public function canReportIssues(string $file_path): bool
     {
+        // a caller that runs the analysis itself, without a check method, reports issues in every project file
+        if ($this->project_files === null) {
+            return $this->config->isInProjectDirs($file_path);
+        }
+
         $list = $this->project_files;
         return isset($list[$file_path]);
     }
@@ -464,7 +473,7 @@ final class ProjectAnalyzer
         $this->progress->write($this->generatePHPVersionMessage());
         $this->progress->startPhase(Phase::SCAN, $this->scanThreads);
 
-        $this->initProjectFiles();
+        $project_files = $this->initProjectFiles();
         $this->initExtraFiles();
 
         $diff_files = null;
@@ -501,8 +510,8 @@ final class ProjectAnalyzer
             $this->visitAutoloadFiles();
 
             $this->codebase->scanner->addFilesToShallowScan($this->extra_files);
-            $this->codebase->scanner->addFilesToDeepScan($this->project_files);
-            $this->codebase->analyzer->addFilesToAnalyze($this->project_files);
+            $this->codebase->scanner->addFilesToDeepScan($project_files);
+            $this->codebase->analyzer->addFilesToAnalyze($project_files);
 
             $this->codebase->scanFiles($this->scanThreads);
 
@@ -512,7 +521,7 @@ final class ProjectAnalyzer
             $this->progress->debug(count($diff_files) . ' changed files: ' . PHP_EOL);
             $this->progress->debug('    ' . implode(PHP_EOL."    ", $diff_files) . PHP_EOL);
 
-            $this->codebase->analyzer->addFilesToShowResults($this->project_files);
+            $this->codebase->analyzer->addFilesToShowResults($project_files);
 
             if ($diff_files) {
                 $file_list = $this->getReferencedFilesFromDiff($diff_files);
@@ -958,11 +967,9 @@ final class ProjectAnalyzer
         if (!$this->parser_cache_provider || !$this->project_cache_provider) {
             throw new UnexpectedValueException('Parser cache provider cannot be null here');
         }
-        $this->initProjectFiles();
-
         $diff_files = [];
 
-        foreach ($this->project_files as $file_path) {
+        foreach ($this->initProjectFiles() as $file_path) {
             if ($this->parser_cache_provider->hasChanged(
                 $file_path,
                 $this->file_provider->getContents($file_path),
@@ -1472,7 +1479,7 @@ final class ProjectAnalyzer
 
         $stmts = $this->getStatementsForMutations($file_analyzer->getFilePath());
 
-        $file_analyzer->populateCheckers($stmts);
+        $file_analyzer->populateCheckers($stmts, false);
 
         if (!$this_context->self) {
             $this_context->self = $fq_class_name;
