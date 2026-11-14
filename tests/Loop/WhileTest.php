@@ -21,35 +21,42 @@ final class WhileTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
-            'variableAssignedInTheConditionIsDefinedAfterTheLoop' => [
+            'variableDefinedBeforeTheLoopAndAssignedInTheConditionHasWhatTheConditionLeaves' => [
                 'code' => '<?php
                     $result = 1;
                     while ($result = random_int(0, 6)) {
                         echo "again";
-                    }
-                    /** @psalm-check-type-exact $result = 0 */;
-
-                    $fresh = 1;
-                    unset($fresh);
-                    while ($next = random_int(0, 6)) {
+                    }',
+                'assertions' => [
+                    '$result===' => '0',
+                ],
+            ],
+            'variableDefinedBeforeALoopThatAlsoBreaksKeepsWhatTheBreakLeaves' => [
+                'code' => '<?php
+                    $result = 1;
+                    while ($result = random_int(0, 6)) {
+                        if (random_int(0, 1)) {
+                            break;
+                        }
+                    }',
+                'assertions' => [
+                    '$result===' => 'int<0, 6>',
+                ],
+            ],
+            'variableAssignedInACastConditionIsDefinedAfterTheLoop' => [
+                'code' => '<?php
+                    $a = 1;
+                    while ((bool) ($a = random_int(0, 6))) {
                         echo "again";
                     }
-                    /** @psalm-check-type-exact $next = 0 */;
 
-                    while (6 !== $dice = random_int(1, 6)) {
+                    while ((bool) ($b = random_int(0, 6))) {
                         echo "again";
-                    }
-                    echo $dice;
-
-                    for (; 6 !== $roll = random_int(1, 6);) {
-                        echo "again";
-                    }
-                    echo $roll;
-
-                    while (($first = random_int(0, 3)) && random_int(0, 1)) {
-                        echo "again";
-                    }
-                    echo $first;',
+                    }',
+                'assertions' => [
+                    '$a===' => '0',
+                    '$b===' => '0',
+                ],
             ],
             'variableAssignedInANegatedWhileConditionIsWhatTheConditionLeavesOfItAfterTheLoop' => [
                 'code' => '<?php

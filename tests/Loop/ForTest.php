@@ -44,6 +44,16 @@ final class ForTest extends TestCase
                     '$value===' => 'false',
                 ],
             ],
+            'variableDefinedBeforeAForAndAssignedInALaterConditionHasWhatTheLastConditionLeaves' => [
+                'code' => '<?php
+                    $value = "a";
+                    for (; print("x"), $value = random_int(0, 3);) {
+                        echo "again";
+                    }',
+                'assertions' => [
+                    '$value===' => 'int<0, 3>',
+                ],
+            ],
             'variableAssignedInALaterCommaSeparatedForConditionIsDefinedAfterTheLoop' => [
                 'code' => '<?php
                     function next_int(): int {
