@@ -45,7 +45,6 @@ final class Possibilities
         ?string $this_var_id,
         ?Codebase $codebase,
         ?Atomic $static_type = null,
-        ?string $self_class = null,
     ): self {
         $assertion_rules = [];
 
@@ -67,12 +66,6 @@ final class Possibilities
                         && ($atomic_type->is_static || strtolower($atomic_type->value) === 'static')
                     ) {
                         $atomic_type = $static_type;
-                    } elseif ($self_class !== null
-                        && $atomic_type instanceof TNamedObject
-                        && strtolower($atomic_type->value) === 'self'
-                    ) {
-                        // `self` written in a trait method means the class using the trait
-                        $atomic_type = new TNamedObject($self_class);
                     }
 
                     $assertion = $assertion->setAtomicType($atomic_type);

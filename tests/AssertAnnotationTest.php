@@ -251,6 +251,59 @@ final class AssertAnnotationTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'selfOfATraitAssertionIsTheClassUsingTheTraitEverywhere' => [
+                'code' => '<?php
+                    trait Comparable {
+                        /** @psalm-assert-if-true self $other */
+                        public function equals(object $other): bool {
+                            return $other instanceof self;
+                        }
+
+                        /** @psalm-assert-if-true list<self> $others */
+                        public function allEqual(array $others): bool {
+                            return true;
+                        }
+
+                        /** @psalm-assert-if-true self $other */
+                        public static function isOne(object $other): bool {
+                            return $other instanceof self;
+                        }
+
+                        /** @psalm-assert self $other */
+                        public function mustBe(object $other): void {}
+                    }
+
+                    class Foo {
+                        use Comparable;
+                    }
+
+                    class Bar extends Foo {}
+
+                    /** @param list<object> $xs */
+                    function check(Bar $bar, object $a, array $xs, object $b, object $c, object $d): void {
+                        if ($bar->equals($a)) {
+                            /** @psalm-check-type-exact $a = Foo */
+                            echo 1;
+                        }
+
+                        if ($bar->allEqual($xs)) {
+                            /** @psalm-check-type-exact $xs = list<Foo> */
+                            echo 2;
+                        }
+
+                        if (Bar::isOne($b)) {
+                            /** @psalm-check-type-exact $b = Foo */
+                            echo 3;
+                        }
+
+                        $bar->mustBe($c);
+                        /** @psalm-check-type-exact $c = Foo */
+                        echo 4;
+                    }',
+                'assertions' => [],
+                'ignored_issues' => ['ClassMustBeFinal', 'UnusedParam'],
+                'php_version' => '8.1',
+            ],
             'assertObjectShapeOnObject' => [
                 'code' => '<?php
                     /** @psalm-assert object{a: int} $obj */
