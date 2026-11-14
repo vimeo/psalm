@@ -88,6 +88,62 @@ final class ExtProtobufStubTest extends TestCase
                 'ignored_issues' => [],
                 'php_version' => '8.1',
             ],
+            'protobufGeneratedMessageUsesTheProtectedHelpers' => [
+                'code' => <<<'PHP'
+                    <?php
+                    final class Choice extends \Google\Protobuf\Internal\Message
+                    {
+                        public function getName(): string
+                        {
+                            return (string) $this->readOneof(1);
+                        }
+
+                        public function hasName(): bool
+                        {
+                            return $this->hasOneof(1);
+                        }
+
+                        public function setName(string $var): static
+                        {
+                            $this->writeOneof(1, $var);
+                            return $this;
+                        }
+
+                        public function getKind(): string
+                        {
+                            return $this->whichOneof('kind');
+                        }
+
+                        public function getLimit(): ?int
+                        {
+                            $value = $this->readWrapperValue('limit');
+                            return is_int($value) ? $value : null;
+                        }
+
+                        public function setLimit(?int $var): static
+                        {
+                            $this->writeWrapperValue('limit', $var);
+                            return $this;
+                        }
+
+                        public function merge(): static
+                        {
+                            $this->mergeFromArray(['name' => 'a']);
+                            return $this;
+                        }
+                    }
+
+                    $choice = (new Choice())->setName('a')->setLimit(1);
+                    $has = $choice->hasName();
+                    $kind = $choice->getKind();
+                    PHP,
+                'assertions' => [
+                    '$has===' => 'bool',
+                    '$kind===' => 'string',
+                ],
+                'ignored_issues' => ['MixedAssignment'],
+                'php_version' => '8.1',
+            ],
         ];
     }
 
@@ -113,6 +169,19 @@ final class ExtProtobufStubTest extends TestCase
                     (new \Google\Protobuf\Duration())->setMinutes(1);
                     PHP,
                 'error_message' => 'UndefinedMethod',
+                'error_levels' => [],
+                'php_version' => '8.1',
+            ],
+            'protobufProtectedHelperCalledFromOutside' => [
+                'code' => <<<'PHP'
+                    <?php
+                    final class Choice extends \Google\Protobuf\Internal\Message
+                    {
+                    }
+
+                    (new Choice())->readOneof(1);
+                    PHP,
+                'error_message' => 'InaccessibleMethod',
                 'error_levels' => [],
                 'php_version' => '8.1',
             ],

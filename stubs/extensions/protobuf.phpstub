@@ -2,8 +2,8 @@
 
 /**
  * The protobuf extension (https://github.com/protocolbuffers/protobuf-php), whose classes have no types of their own
- * when PHP reflects them: the public API of Message and of the well-known types Timestamp and Duration, with the types
- * of the google/protobuf package 5.36
+ * when PHP reflects them: the public API of Message and of the well-known types Timestamp and Duration, plus the
+ * protected helpers generated message classes call, with the types of the google/protobuf package 5.36
  */
 
 namespace Google\Protobuf\Internal {
@@ -61,6 +61,50 @@ namespace Google\Protobuf\Internal {
          * @return string Serialized json protobuf data.
          */
         public function serializeToJsonString($options = 0) {}
+
+        /**
+         * @param string $member Name of a field of a wrapper type (Int32Value, StringValue, ...).
+         * @return mixed The wrapped value, null when the wrapper is not set.
+         */
+        protected function readWrapperValue($member) {}
+
+        /**
+         * @param string $member Name of a field of a wrapper type (Int32Value, StringValue, ...).
+         * @param mixed $value
+         * @return void
+         */
+        protected function writeWrapperValue($member, $value) {}
+
+        /**
+         * @param int $number Field number.
+         * @return mixed The value of the field when it is the one set in its oneof, its default otherwise.
+         */
+        protected function readOneof($number) {}
+
+        /**
+         * @param int $number Field number.
+         * @return bool
+         */
+        protected function hasOneof($number) {}
+
+        /**
+         * @param int $number Field number.
+         * @param mixed $value Null clears the oneof.
+         * @return void
+         */
+        protected function writeOneof($number, $value) {}
+
+        /**
+         * @param string $oneof_name
+         * @return string Name of the field set in the oneof, "" when none is.
+         */
+        protected function whichOneof($oneof_name) {}
+
+        /**
+         * @param array<array-key, mixed> $array Message properties and values.
+         * @return null
+         */
+        protected function mergeFromArray(array $array) {}
     }
 }
 
