@@ -28,6 +28,7 @@ use Psalm\Internal\Analyzer\Statements\Expression\Call\CallPurityResolver;
 use Psalm\Internal\Analyzer\Statements\Expression\Call\FunctionCallReturnTypeFetcher;
 use Psalm\Internal\Analyzer\Statements\Expression\DestructorAnalyzer;
 use Psalm\Internal\Analyzer\Statements\ExpressionAnalyzer;
+use Psalm\Internal\Codebase\CliOutput;
 use Psalm\Internal\Codebase\CodeUseGraph;
 use Psalm\Internal\Codebase\TaintStore;
 use Psalm\Internal\DataFlow\DataFlowNode;
@@ -458,6 +459,27 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
             }
 
             $statements_analyzer->setByRefUses($byref_uses);
+        } elseif ($this instanceof ClosureAnalyzer
+            && $this->function instanceof ArrowFunction
+            && $this->source instanceof StatementsAnalyzer
+        ) {
+            $param_var_ids = [];
+
+            foreach ($this->function->params as $param) {
+                if ($param->var instanceof PhpParser\Node\Expr\Variable && is_string($param->var->name)) {
+                    $param_var_ids['$' . $param->var->name] = true;
+                }
+            }
+
+            // an arrow function reads the variables of the enclosing scope, possibly undefined ones included
+            foreach ($context->vars_in_scope as $var_id => $type) {
+                if (!isset($param_var_ids[$var_id])
+                    && ($type->possibly_undefined || $type->possibly_undefined_from_try)
+                    && ($first_appearance = $this->source->getFirstAppearance($var_id))
+                ) {
+                    $statements_analyzer->registerEnclosingVariable($var_id, $first_appearance);
+                }
+            }
         }
 
         if ($storage->template_types) {
@@ -692,7 +714,9 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
             );
         }
 
-        if (!$check_stmts) {
+        // a signature that fails the check skips the body, but what the body initialises or mutates still counts:
+        // its regular analysis reports the signature
+        if (!$check_stmts && !$context->collect_initializations && !$context->collect_mutations) {
             return false;
         }
 
@@ -733,7 +757,21 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
             $statements_analyzer->addSuppressedIssues(['NoValue']);
         }
 
+        $cli_instance_guard = $this->function instanceof ClassMethod
+            && $storage instanceof MethodStorage
+            && CliOutput::isInstanceGuard($codebase, $storage, $context)
+                ? $this->function
+                : null;
+
+        if ($cli_instance_guard !== null) {
+            $statements_analyzer->cli_instance_guard = $function_stmts[0] ?? null;
+        }
+
         $statements_analyzer->analyze($function_stmts, $context, $global_context);
+
+        if ($cli_instance_guard !== null) {
+            CliOutput::checkInstanceGuard($statements_analyzer, $cli_instance_guard);
+        }
 
         // the objects created here that are still held when the function-like ends die with it
         $param_ids = [];
@@ -1606,7 +1644,7 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
     /**
      * Checks the classes of the `@global` types, like those of the `@param` types
      *
-     * @psalm-capabilities read-props|write-this-props|write-refs
+     * @psalm-capabilities read-props
      */
     private function checkGlobalTypes(FunctionLikeStorage $storage, Context $context): bool
     {
@@ -1695,6 +1733,13 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
             $signature_type = $function_param->signature_type;
             $signature_type_location = $function_param->signature_type_location;
 
+            // the property type a promoted parameter inherits is checked where it is written, the native type here
+            $inherited_type = $function_param->promoted_property
+                && $storage instanceof MethodStorage
+                && $storage->defining_fqcln !== null
+                && ($codebase->classlike_storage_provider->get($storage->defining_fqcln)
+                    ->properties[$function_param->name]->inherited_type ?? false);
+
             if ($signature_type && $signature_type_location && $signature_type->hasObjectType()) {
                 $referenced_type = $signature_type;
                 if ($referenced_type->isNullable()) {
@@ -1765,7 +1810,7 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
             if ($function_param->type) {
                 $param_type = $function_param->type;
 
-                if ($function_param->type_location) {
+                if ($function_param->type_location && !$inherited_type) {
                     TypeChecker::checkDeferredIntersections(
                         $param_type,
                         $this,
@@ -1790,7 +1835,7 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
                         true,
                     );
                 } catch (UnresolvableConstantException $e) {
-                    if ($function_param->type_location !== null) {
+                    if ($function_param->type_location !== null && !$inherited_type) {
                         IssueBuffer::maybeAdd(
                             new UnresolvableConstant(
                                 "Could not resolve constant {$e->class_name}::{$e->const_name}",
@@ -1802,7 +1847,7 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
                     }
                 }
 
-                if ($function_param->type_location) {
+                if ($function_param->type_location && !$inherited_type) {
                     if ($param_type->check(
                         $this,
                         $function_param->type_location,
@@ -1873,7 +1918,7 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
                 continue;
             }
 
-            if ($signature_type) {
+            if ($signature_type && !$inherited_type) {
                 $union_comparison_result = new TypeComparisonResult();
 
                 if (!UnionTypeComparator::isContainedBy(
@@ -1895,8 +1940,8 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
 
                     IssueBuffer::maybeAdd(
                         new MismatchingDocblockParamType(
-                            'Parameter ' . $function_param_id . ' has wrong type \'' . $param_type .
-                                '\', should be \'' . $signature_type . '\'',
+                            'Parameter ' . $function_param_id . ' has wrong type \'' . $param_type->getId() .
+                                '\', should be \'' . $signature_type->getId() . '\'',
                             $function_param->type_location,
                         ),
                         $storage->suppressed_issues,
@@ -1962,7 +2007,7 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
                 }
             }
 
-            if ($has_template_types) {
+            if ($has_template_types && !$inherited_type) {
                 if ($param_type->check(
                     $this->source,
                     $function_param->type_location,
@@ -1972,7 +2017,7 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
                 ) === false) {
                     $check_stmts = false;
                 }
-            } else {
+            } elseif (!$inherited_type) {
                 if ($param_type->isVoid()) {
                     IssueBuffer::maybeAdd(
                         new ParadoxicalCondition(
@@ -2004,10 +2049,11 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
                 }
             }
 
-            if ($function_param->type_location !== $function_param->signature_type_location
+            if (($inherited_type
+                    || ($function_param->type_location !== $function_param->signature_type_location
+                        && $function_param->type?->getId() !== $function_param->signature_type?->getId()))
                 && $function_param->signature_type_location
                 && $function_param->signature_type
-                && $function_param->type?->getId() !== $function_param->signature_type->getId()
             ) {
                 // only the classes: the docblock type replaces the native one everywhere else
                 $signature_classes = array_filter(

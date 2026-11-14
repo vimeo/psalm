@@ -22,6 +22,18 @@ final class UnresolvableIncludeTest extends TestCase
         $this->analyzeFile('somefile.php', $context);
     }
 
+    public function testIncludeOfDeprecatedBuiltInConstant(): void
+    {
+        // PHP 8.4+ reports ASSERT_ACTIVE as deprecated when its value is read
+        $this->addFile('somefile.php', '<?php
+            include ASSERT_ACTIVE;
+        ');
+
+        $this->expectException(CodeException::class);
+        $this->expectExceptionMessage('UnresolvableInclude - somefile.php:2:');
+
+        $this->withErrorsThrown(fn() => $this->analyzeFile('somefile.php', new Context()));
+    }
 
     /**
      * @return array<string,array{code:string,expectedExceptionLine:int}>
