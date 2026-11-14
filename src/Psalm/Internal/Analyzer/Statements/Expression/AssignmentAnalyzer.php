@@ -2324,6 +2324,11 @@ final class AssignmentAnalyzer
         if (is_string($assign_var->name)) {
             if ($var_id) {
                 $original_type = $context->vars_in_scope[$var_id] ?? null;
+
+                if ($original_type !== null) {
+                    self::keepOverwrittenNodesForCatches($context, $var_id, $original_type);
+                }
+
                 $context->vars_in_scope[$var_id] = $assign_value_type;
                 $context->vars_possibly_in_scope[$var_id] = true;
 
@@ -2501,15 +2506,30 @@ final class AssignmentAnalyzer
             $assignment_node->id => $assignment_node,
         ];
 
-        if ($context->inside_try) {
-            // Copy previous assignment's parent nodes inside a try. Since an exception could be thrown at any
-            // point this is a workaround to ensure that use of a variable also uses all previous assignments.
-            if ($extended_var_id !== null && isset($context->vars_in_scope[$extended_var_id])) {
-                $parent_nodes += $context->vars_in_scope[$extended_var_id]->parent_nodes;
-            }
+        if ($extended_var_id !== null && isset($context->vars_in_scope[$extended_var_id])) {
+            self::keepOverwrittenNodesForCatches($context, $extended_var_id, $context->vars_in_scope[$extended_var_id]);
         }
 
         return $assign_value_type->setParentNodes($parent_nodes);
+    }
+
+    /**
+     * An exception could be thrown at any point of a try body, so a catch or the finally of a try the assignment is in
+     * uses all the previous assignments (see TryAnalyzer)
+     *
+     * @psalm-capabilities read-props|write-props
+     */
+    private static function keepOverwrittenNodesForCatches(
+        Context $context,
+        string $var_id,
+        Union $overwritten_type,
+    ): void {
+        for ($try_scope = $context->try_scope; $try_scope !== null; $try_scope = $try_scope->outer) {
+            $try_scope->overwritten_parent_nodes[$var_id] = [
+                ...($try_scope->overwritten_parent_nodes[$var_id] ?? []),
+                ...$overwritten_type->parent_nodes,
+            ];
+        }
     }
 
     private static function analyzeAssignValueDataFlow(

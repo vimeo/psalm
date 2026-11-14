@@ -515,7 +515,7 @@ final class ReturnTypeTest extends TestCase
                         }
                     }',
                 'assertions' => [],
-                'ignored_issues' => ['MissingThrowsDocblock'],
+                'ignored_issues' => [],
                 'php_version' => '8.1',
             ],
             'intFunctionWithAnEmptyInfiniteLoop' => [
@@ -864,6 +864,50 @@ final class ReturnTypeTest extends TestCase
                                 default:
                                     throw new \Exception("badness");
                             }
+                        }
+                    }',
+            ],
+            'switchWhoseCasesFallThroughIntoADefaultThatEnds' => [
+                'code' => '<?php
+                    function toEnd(int $value): int {
+                        switch ($value) {
+                            case 0:
+                                echo "zero";
+                            default:
+                                return 2;
+                        }
+                    }
+
+                    function toThrow(int $value): int {
+                        switch ($value) {
+                            case 0:
+                                return 1;
+                            case 1:
+                                echo "one";
+                            default:
+                                throw new Exception();
+                        }
+                    }',
+            ],
+            'switchWithADefaultInTheMiddleThatFallsThroughIntoAnEndingCase' => [
+                'code' => '<?php
+                    function defaultFirst(int $x): int {
+                        switch ($x) {
+                            default:
+                                echo "x";
+                            case 1:
+                                return 1;
+                        }
+                    }
+
+                    function defaultBetween(int $x): int {
+                        switch ($x) {
+                            case 0:
+                                return 0;
+                            default:
+                                echo "x";
+                            case 1:
+                                throw new Exception();
                         }
                     }',
             ],
@@ -2294,7 +2338,6 @@ final class ReturnTypeTest extends TestCase
                         return $s->n;
                     }',
                 'assertions' => [],
-                'ignored_issues' => ['MissingThrowsDocblock'],
             ],
             'finalClassOverridesAGenericStaticReturnType' => [
                 'code' => <<<'PHP'
@@ -2372,6 +2415,70 @@ final class ReturnTypeTest extends TestCase
     public static function providerInvalidCodeParse(): iterable
     {
         return [
+            'switchWithADefaultInTheMiddleThatFallsThroughIntoACaseThatDoesNotEnd' => [
+                'code' => '<?php
+                    function classify(int $x): int {
+                        switch ($x) {
+                            default:
+                                echo "x";
+                            case 1:
+                                echo "one";
+                        }
+                    }',
+                'error_message' => 'InvalidReturnType',
+            ],
+            'switchWithADefaultInTheMiddleFollowedByABreak' => [
+                'code' => '<?php
+                    function classify(int $x): int {
+                        switch ($x) {
+                            default:
+                                echo "x";
+                            case 1:
+                                return 1;
+                            case 2:
+                                break;
+                        }
+                    }',
+                'error_message' => 'InvalidReturnType',
+            ],
+            'switchDefaultThatFallsThroughWithoutReturning' => [
+                'code' => '<?php
+                    function classify(int $value): int {
+                        switch ($value) {
+                            case 0:
+                                return 1;
+                            default:
+                                echo "Other value";
+                        }
+                    }',
+                'error_message' => 'InvalidReturnType',
+            ],
+            'switchCaseThatFallsThroughIntoADefaultWithoutReturning' => [
+                'code' => '<?php
+                    function classify(int $value): int {
+                        switch ($value) {
+                            case 0:
+                                return 1;
+                            case 1:
+                                echo "one";
+                            default:
+                                echo "other";
+                        }
+                    }',
+                'error_message' => 'InvalidReturnType',
+            ],
+            'switchDefaultThatBreaksWithoutReturning' => [
+                'code' => '<?php
+                    function classify(int $value): int {
+                        switch ($value) {
+                            case 0:
+                                return 1;
+                            default:
+                                break;
+                        }
+                    }',
+                'error_message' => 'InvalidReturnType',
+            ],
             'finalMethodOfASubclassableClassKeepsItsStaticReturnType' => [
                 'code' => <<<'PHP'
                     <?php
@@ -3212,46 +3319,68 @@ final class ReturnTypeTest extends TestCase
                 'error_levels' => [],
                 'php_version' => '8.3',
             ],
-            'invalidNullableReturnTypeMessageShowsExactTypes' => [
+            'notAllCodePathsReturnShowsExactDocblockType' => [
                 'code' => '<?php
                     /** @return non-empty-string */
-                    function f(bool $b): string {
-                        return $b ? "a" : null;
-                    }',
-                'error_message' => 'InvalidNullableReturnType - src' . DIRECTORY_SEPARATOR . 'somefile.php:2:33'
-                    . ' - The declared return type \'non-empty-string\' for f is not nullable,'
-                    . ' but \'\'a\'|null\' contains null',
-                'error_levels' => ['NullableReturnStatement'],
+                    function r1(): string {}',
+                'error_message' => 'Not all code paths of r1 end in a return statement, return type'
+                    . ' non-empty-string expected',
             ],
-            'invalidReturnTypeMessageShowsExactType' => [
+            'noReturnStatementsShowsExactDocblockType' => [
                 'code' => '<?php
-                    /** @return non-empty-string */
-                    function f(bool $b): string {
-                        if ($b) {
-                            return "a";
+                    abstract class T2 {
+                        /** @return numeric-string */
+                        public function m(): string {
+                            /** nothing */
                         }
                     }',
-                'error_message' => 'InvalidReturnType - src' . DIRECTORY_SEPARATOR . 'somefile.php:2:33'
-                    . ' - Not all code paths of f end in a return statement, return type non-empty-string expected',
+                'error_message' => "No return statements were found for method T2::m but return type"
+                    . " 'numeric-string' was expected",
             ],
-            'falsableReturnStatementMessageShowsExactTypes' => [
+            'invalidNullableReturnTypeShowsExactDocblockType' => [
                 'code' => '<?php
-                    /** @return non-empty-string */
-                    function f(bool $b): string {
-                        return $b ? "a" : false;
+                    /**
+                     * @psalm-suppress NullableReturnStatement
+                     * @return non-empty-string
+                     */
+                    function r4(): string {
+                        return rand(0, 1) ? "1" : null;
                     }',
-                'error_message' => 'FalsableReturnStatement - src' . DIRECTORY_SEPARATOR . 'somefile.php:4:32'
-                    . ' - The declared return type \'non-empty-string\' for f does not allow false, but the function returns \'\'a\'|false',
+                'error_message' => "The declared return type 'non-empty-string' for r4 is not nullable,"
+                    . " but ''1'|null' contains null",
             ],
-            'invalidFalsableReturnTypeMessageShowsExactTypes' => [
+            'invalidFalsableReturnTypeShowsExactDocblockType' => [
                 'code' => '<?php
-                    /** @return non-empty-string */
-                    function f(bool $b): string {
-                        return $b ? "a" : false;
+                    /**
+                     * @psalm-suppress FalsableReturnStatement
+                     * @return numeric-string
+                     */
+                    function r3(): string {
+                        return rand(0, 1) ? "1" : false;
                     }',
-                'error_message' => 'InvalidFalsableReturnType - src' . DIRECTORY_SEPARATOR . 'somefile.php:2:33'
-                    . ' - The declared return type \'non-empty-string\' for f does not allow false, but \'\'a\'|false\' contains false',
-                'error_levels' => ['FalsableReturnStatement'],
+                'error_message' => "The declared return type 'numeric-string' for r3 does not allow false,"
+                    . " but ''1'|false' contains false",
+            ],
+            'falsableReturnStatementShowsExactDocblockType' => [
+                'code' => '<?php
+                    /**
+                     * @psalm-suppress InvalidFalsableReturnType
+                     * @return numeric-string
+                     */
+                    function r3(): string {
+                        return rand(0, 1) ? "1" : false;
+                    }',
+                'error_message' => "The declared return type 'numeric-string' for r3 does not allow false,"
+                    . " but the function returns ''1'|false",
+            ],
+            'invalidToStringShowsExactInferredType' => [
+                'code' => '<?php
+                    class S1 {
+                        public function __toString() {
+                            return 5;
+                        }
+                    }',
+                'error_message' => '__toString methods must return a string, 5 returned',
             ],
         ];
     }

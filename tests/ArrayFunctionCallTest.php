@@ -4507,7 +4507,6 @@ final class ArrayFunctionCallTest extends TestCase
                         1
                     );',
                 'error_message' => 'InvalidArgument',
-                'error_levels' => ['MixedTypeCoercion'],
             ],
             'arrayReduceInvalidItemType' => [
                 'code' => '<?php
@@ -4521,7 +4520,6 @@ final class ArrayFunctionCallTest extends TestCase
                         1
                     );',
                 'error_message' => 'InvalidArgument',
-                'error_levels' => ['MissingClosureReturnType'],
             ],
             'arrayReduceInvalidCarryType' => [
                 'code' => '<?php
@@ -4535,7 +4533,6 @@ final class ArrayFunctionCallTest extends TestCase
                         1
                     );',
                 'error_message' => 'InvalidArgument',
-                'error_levels' => ['MissingClosureReturnType'],
             ],
             'arrayReduceInvalidCarryOutputType' => [
                 'code' => '<?php

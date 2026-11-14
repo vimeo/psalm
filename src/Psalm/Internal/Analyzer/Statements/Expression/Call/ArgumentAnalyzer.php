@@ -979,8 +979,8 @@ final class ArgumentAnalyzer
             IssueBuffer::maybeAdd(
                 new MixedArgument(
                     'Argument ' . ($argument_offset + 1) . $method_identifier
-                        . ' cannot be ' . $input_type->getId() . ', expecting ' .
-                        $param_type->getId(),
+                        . ' cannot be ' . $input_type->getId() . ', expecting '
+                        . $param_type->getId(),
                     $arg_location,
                     $cased_method_id,
                     $origin_location,
