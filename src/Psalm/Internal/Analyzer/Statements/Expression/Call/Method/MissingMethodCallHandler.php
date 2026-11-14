@@ -34,6 +34,7 @@ use Psalm\Type\Union;
 use function array_map;
 use function array_merge;
 use function array_reverse;
+use function array_values;
 use function count;
 
 /**
@@ -606,9 +607,15 @@ final class MissingMethodCallHandler
         }
 
         $ancestors = $static_class_storage->class_implements;
-        // First match wins here, so the nearest mixins come first.
+        // First match wins here, so the nearest mixins come first: those of the class, then those of its parent, and
+        // so on, each class's in declaration order.
+        $named_mixins_by_declaring_class = [];
+        foreach ($static_class_storage->namedMixins as $named_mixin) {
+            $named_mixins_by_declaring_class[$static_class_storage->getNamedMixinDeclaringClass($named_mixin)][]
+                = $named_mixin;
+        }
         $named_mixins = [
-            ...$static_class_storage->namedMixins,
+            ...array_merge(...array_reverse(array_values($named_mixins_by_declaring_class))),
             ...array_reverse($static_class_storage->transitiveNamedMixins),
         ];
         foreach ($named_mixins as $namedObject) {

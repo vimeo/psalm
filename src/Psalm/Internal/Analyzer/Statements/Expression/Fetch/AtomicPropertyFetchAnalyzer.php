@@ -100,6 +100,7 @@ final class AtomicPropertyFetchAnalyzer
         bool &$has_valid_fetch_type,
         array &$invalid_fetch_types,
         bool $is_static_access = false,
+        bool &$missing_in_isset = false,
     ): void {
         if ($lhs_type_part instanceof TNull) {
             return;
@@ -204,6 +205,7 @@ final class AtomicPropertyFetchAnalyzer
                 $interface_exists,
                 $fq_class_name,
                 $override_property_visibility,
+                $context->inside_isset,
             );
 
             if (!$class_exists && !$interface_exists) {
@@ -256,6 +258,7 @@ final class AtomicPropertyFetchAnalyzer
                     $has_magic_getter,
                     $var_id,
                     $has_valid_fetch_type,
+                    $missing_in_isset,
                 );
             }
 
@@ -382,6 +385,7 @@ final class AtomicPropertyFetchAnalyzer
                         $has_valid_fetch_type,
                         $invalid_fetch_types,
                         $is_static_access,
+                        $missing_in_isset,
                     );
 
                     if ($has_valid_fetch_type) {
@@ -468,6 +472,7 @@ final class AtomicPropertyFetchAnalyzer
                 $has_magic_getter,
                 $var_id,
                 $has_valid_fetch_type,
+                $missing_in_isset,
             );
 
             return;
@@ -1303,8 +1308,12 @@ final class AtomicPropertyFetchAnalyzer
         string $property_id,
         bool $has_magic_getter,
         ?string $var_id,
+        bool &$missing_in_isset,
     ): void {
         if ($context->inside_isset || $context->collect_initializations) {
+            // isset() sees null where the object doesn't have the property
+            $missing_in_isset = $missing_in_isset || ($context->inside_isset && !$has_magic_getter);
+
             $statements_analyzer->signalMutation(
                 Capabilities::READ_PROPS, // Strange but matches previous code
                 $context,
@@ -1370,6 +1379,7 @@ final class AtomicPropertyFetchAnalyzer
         bool &$interface_exists,
         string &$fq_class_name,
         bool &$override_property_visibility,
+        bool $inside_isset,
     ): void {
         if ($codebase->interfaceExists($lhs_type_part->value)) {
             $interface_exists = true;
@@ -1445,7 +1455,8 @@ final class AtomicPropertyFetchAnalyzer
                 $lhs_type_part = $hook_interface;
                 $fq_class_name = $hook_interface->value;
             } elseif (!$is_enum_interface && !$intersects_with_shape_property) {
-                if (IssueBuffer::accepts(
+                // isset() and ?? only test whether the property is there
+                if (!$inside_isset && IssueBuffer::accepts(
                     new NoInterfaceProperties(
                         'Interfaces cannot have properties',
                         new CodeLocation($statements_analyzer->getSource(), $stmt),
@@ -1585,6 +1596,7 @@ final class AtomicPropertyFetchAnalyzer
         bool $has_magic_getter,
         ?string $var_id,
         bool &$has_valid_fetch_type,
+        bool &$missing_in_isset,
     ): void {
         if (($config->use_phpdoc_property_without_magic_or_parent
             || $class_storage->hasAttributeIncludingParents('AllowDynamicProperties', $codebase))
@@ -1648,6 +1660,7 @@ final class AtomicPropertyFetchAnalyzer
             $property_id,
             $has_magic_getter,
             $var_id,
+            $missing_in_isset,
         );
     }
 

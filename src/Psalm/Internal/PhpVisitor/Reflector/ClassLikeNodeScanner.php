@@ -1016,6 +1016,17 @@ final class ClassLikeNodeScanner
             // the `@psalm-pure` and `@psalm-mutation-free` they spell
             $storage->taint_specialize = $docblock_info->taint_specialize;
             $storage->cli_only = $docblock_info->cli_only;
+
+            if ($docblock_info->cli_only_instances) {
+                if ($node instanceof PhpParser\Node\Stmt\Class_) {
+                    $storage->cli_only_instances = true;
+                } else {
+                    $storage->docblock_issues[] = new InvalidDocblock(
+                        '@psalm-cli-only-instances is only allowed on a class, not on ' . $fq_classlike_name,
+                        $name_location ?? $class_location,
+                    );
+                }
+            }
             $storage->taint_property_bag = $docblock_info->taint_property_bag;
             $storage->specialize_instance = $docblock_info->taint_specialize
                 || ($docblock_info->has_mutations_annotation
@@ -1850,6 +1861,17 @@ final class ClassLikeNodeScanner
                 $storage->constants,
                 $fq_classlike_name,
             );
+
+            if ($case_type
+                && $stmt->expr instanceof PhpParser\Node\Expr\ClassConstFetch
+                && $stmt->expr->name instanceof PhpParser\Node\Identifier
+                && ($constant_storage = $storage->constants[$stmt->expr->name->name] ?? null)
+                && $case_type === $constant_storage->type
+                && $constant_storage->inferred_type
+            ) {
+                // the case holds the value of the constant, not the type it is annotated with
+                $case_type = $constant_storage->inferred_type;
+            }
 
             if ($case_type) {
                 if ($case_type->isSingleIntLiteral()) {

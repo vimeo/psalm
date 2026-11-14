@@ -285,6 +285,7 @@ final class AtomicStaticCallAnalyzer
                                 $codebase,
                                 $declaring_method_id,
                                 $codebase->methods->getStorage($declaring_method_id),
+                                $statements_analyzer,
                             );
                             $self_fq_class_name = $stmt->class instanceof PhpParser\Node\Name
                                 && $stmt->class->getParts() === ['parent']
@@ -484,7 +485,7 @@ final class AtomicStaticCallAnalyzer
                         }
 
                         $mixin_declaring_class_storage = $codebase->classlike_storage_provider->get(
-                            $class_storage->mixin_declaring_fqcln,
+                            $class_storage->getNamedMixinDeclaringClass($tGenericMixin),
                         );
 
                         $new_mixin_candidate_type = AtomicPropertyFetchAnalyzer::localizePropertyType(
