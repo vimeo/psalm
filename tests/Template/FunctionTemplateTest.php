@@ -2908,6 +2908,40 @@ final class FunctionTemplateTest extends TestCase
                     '$r===' => 'int|null',
                 ],
             ],
+            'templateOrObjectIsNotBoundToAnObject' => [
+                'code' => '<?php
+                    /**
+                     * @template T
+                     * @param T|object $arg
+                     * @return T
+                     */
+                    function notObject($arg) { throw new Exception(); }
+
+                    /** @var stdClass|array<string, int> $a */
+                    $a = new stdClass();
+                    $r = notObject($a);',
+                'assertions' => [
+                    '$r===' => 'array<string, int>',
+                ],
+            ],
+            'templateOrIntIsNotBoundToAnIntLiteralOfAMixedInput' => [
+                'code' => '<?php
+                    /**
+                     * @template T
+                     * @param T|int $arg
+                     * @return T
+                     */
+                    function notInt($arg) { throw new Exception(); }
+
+                    /** @var "x"|5 $b */
+                    $b = 5;
+                    $r = notInt($b);
+                    $single = notInt("lit");',
+                'assertions' => [
+                    '$r===' => '\'x\'',
+                    '$single===' => '\'lit\'',
+                ],
+            ],
             'templateOrStringIsBoundToTheLiteralStringsWhenNothingElseIsLeft' => [
                 'code' => '<?php
                     /**

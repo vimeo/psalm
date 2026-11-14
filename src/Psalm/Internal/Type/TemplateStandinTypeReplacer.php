@@ -142,9 +142,11 @@ final class TemplateStandinTypeReplacer
 
             $other_input_type = $new_input_type->isUnionEmpty() ? null : $new_input_type->freeze();
 
-            // a literal or a more specific type of one the union has, `'a'` for `string`, is not the template's
-            // either, unless it is all that is left or it binds a template inside a type, as `class-string<T>` or
-            // `iterable<T>` do
+            // an input atom contained by a template-free atom of the union, `'a'` for `string`, is that atom's and
+            // not the template's, unless
+            // - it is also contained by an atom that holds a template (`class-string<T>`, `iterable<T>`), which it
+            //   binds, or
+            // - it is all that is left (`notString("only")` binds `'only'`)
             if ($other_input_type) {
                 $template_free_input_type = $other_input_type->getBuilder();
 
@@ -152,7 +154,10 @@ final class TemplateStandinTypeReplacer
                 $templated_atomic_types = [];
 
                 foreach ($original_atomic_types as $original_atomic_type) {
-                    if (!(new Union([$original_atomic_type]))->getTemplateTypes()) {
+                    $template_collector = new TemplateTypeCollector();
+                    $template_collector->traverseArray([$original_atomic_type]);
+
+                    if (!$template_collector->getTemplateTypes()) {
                         $template_free_atomic_types[] = $original_atomic_type;
                     } elseif ($original_atomic_type instanceof TTemplateParamClass) {
                         $templated_atomic_types[] = new TClassString(
