@@ -1190,6 +1190,44 @@ final class SwitchTypeTest extends TestCase
                         return -1;
                     }',
             ],
+            'variableDefinedByTheBreaksOfACaseFallingThroughToAThrowingDefault' => [
+                'code' => '<?php
+                    function f(int $a): int {
+                        switch ($a) {
+                            case 1:
+                                $b = 10;
+                                break;
+                            case 2:
+                                if (rand(1, 10) === 5) {
+                                    $b = 20;
+                                    break;
+                                }
+                            default:
+                                throw new Exception("unexpected");
+                        }
+
+                        return $b;
+                    }',
+            ],
+            'variableDefinedByTheBreaksOfACaseFallingThroughToAReturningDefault' => [
+                'code' => '<?php
+                    function f(int $a): int {
+                        switch ($a) {
+                            case 1:
+                                $b = 10;
+                                break;
+                            case 2:
+                                if (rand(1, 10) === 5) {
+                                    $b = 20;
+                                    break;
+                                }
+                            default:
+                                return 0;
+                        }
+
+                        return $b;
+                    }',
+            ],
         ];
     }
 
@@ -1514,6 +1552,25 @@ final class SwitchTypeTest extends TestCase
                         }
                     }',
                 'error_message' => 'UndefinedMethod',
+            ],
+            'variableNotDefinedByEveryBreakOfACaseFallingThroughToAThrowingDefault' => [
+                'code' => '<?php
+                    function f(int $a): int {
+                        switch ($a) {
+                            case 1:
+                                $b = 10;
+                                break;
+                            case 2:
+                                if (rand(1, 10) === 5) {
+                                    break;
+                                }
+                            default:
+                                throw new Exception("unexpected");
+                        }
+
+                        return $b;
+                    }',
+                'error_message' => 'PossiblyUndefinedVariable',
             ],
         ];
     }
