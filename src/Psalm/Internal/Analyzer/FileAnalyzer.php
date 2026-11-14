@@ -24,6 +24,7 @@ use Psalm\Internal\Type\TypeTokenizer;
 use Psalm\Issue\InvalidTypeImport;
 use Psalm\Issue\UncaughtThrowInGlobalScope;
 use Psalm\IssueBuffer;
+use Psalm\Node\Stmt\VirtualNop;
 use Psalm\NodeTypeProvider;
 use Psalm\Plugin\EventHandler\Event\AfterFileAnalysisEvent;
 use Psalm\Plugin\EventHandler\Event\BeforeFileAnalysisEvent;
@@ -51,7 +52,7 @@ class FileAnalyzer extends SourceAnalyzer
     private ?string $root_file_name = null;
 
     /**
-     * @var array<string, bool>
+     * @var array<string, bool> file => whether it was only required from command-line code
      */
     private array $required_file_paths = [];
 
@@ -93,6 +94,9 @@ class FileAnalyzer extends SourceAnalyzer
     public ?Context $context = null;
 
     public Codebase $codebase;
+
+    /** Whether the top-level code of the file, and the closures in it, only run from the command line */
+    public bool $cli_only = false;
 
     private int $first_statement_offset = -1;
 
@@ -157,8 +161,9 @@ class FileAnalyzer extends SourceAnalyzer
             return;
         }
 
-        $event = new BeforeFileAnalysisEvent($this, $this->context, $file_storage, $codebase, $stmts);
+        $event = new BeforeFileAnalysisEvent($this, $this->context, $file_storage, $codebase, $stmts, $this->cli_only);
         $codebase->config->eventDispatcher->dispatchBeforeFileAnalysis($event);
+        $this->cli_only = $event->isFileCliOnly();
 
         if ($codebase->alter_code) {
             foreach ($stmts as $stmt) {
@@ -170,6 +175,9 @@ class FileAnalyzer extends SourceAnalyzer
         }
 
         $leftover_stmts = $this->populateCheckers($stmts);
+
+        // statements outside a namespace (a shebang line) come before it, so its return or exit doesn't affect them
+        $this->context->has_returned = false;
 
         $this->node_data = new NodeDataProvider();
         $statements_analyzer = new StatementsAnalyzer($this, $this->node_data, true);
@@ -259,6 +267,20 @@ class FileAnalyzer extends SourceAnalyzer
                         continue;
                     }
 
+                    if ($alias->as_fq_classlike_name !== null
+                        && $codebase->classlikes->classOrInterfaceOrEnumExists($alias->as_fq_classlike_name)
+                    ) {
+                        IssueBuffer::maybeAdd(
+                            new InvalidTypeImport(
+                                'Type alias ' . $alias->alias_name
+                                . ' imported from ' . $fq_source_classlike
+                                . ' is named like the class ' . $alias->as_fq_classlike_name
+                                . ', use `as` to rename it',
+                                $location,
+                            ),
+                        );
+                    }
+
                     $referenced_class_storage = $codebase->classlike_storage_provider->get(
                         $codebase->classlikes->getUnAliasedName($fq_source_classlike),
                     );
@@ -285,9 +307,12 @@ class FileAnalyzer extends SourceAnalyzer
 
     /**
      * @param  array<int, PhpParser\Node\Stmt>  $stmts
+     * @param  bool $analyze_namespace_statements false when the file is loaded for another file's analysis: the
+     *              statements outside the classes of its namespaces are then left to the file's own analysis, as
+     *              the statements outside a namespace, which are returned, are
      * @return list<PhpParser\Node\Stmt>
      */
-    public function populateCheckers(array $stmts): array
+    public function populateCheckers(array $stmts, bool $analyze_namespace_statements = true): array
     {
         $leftover_stmts = [];
 
@@ -300,17 +325,24 @@ class FileAnalyzer extends SourceAnalyzer
                 $namespace_name = $stmt->name ? $stmt->name->toString() : '';
 
                 $namespace_analyzer = new NamespaceAnalyzer($stmt, $this);
-                $namespace_analyzer->collectAnalyzableInformation();
+                $namespace_analyzer->collectAnalyzableInformation($analyze_namespace_statements);
 
                 $this->namespace_aliased_classes[$namespace_name] = $namespace_analyzer->getAliases()->uses;
                 $this->namespace_aliased_classes_flipped[$namespace_name] =
                     $namespace_analyzer->getAliasedClassesFlipped();
                 $this->namespace_aliased_classes_flipped_replaceable[$namespace_name] =
                     $namespace_analyzer->getAliasedClassesFlippedReplaceable();
-            } elseif ($stmt instanceof PhpParser\Node\Stmt\Use_) {
-                $this->visitUse($stmt);
-            } elseif ($stmt instanceof PhpParser\Node\Stmt\GroupUse) {
-                $this->visitGroupUse($stmt);
+            } elseif ($stmt instanceof PhpParser\Node\Stmt\Use_ || $stmt instanceof PhpParser\Node\Stmt\GroupUse) {
+                if ($stmt instanceof PhpParser\Node\Stmt\Use_) {
+                    $this->visitUse($stmt);
+                } else {
+                    $this->visitGroupUse($stmt);
+                }
+
+                // the docblock before a `use` documents the file (`@var` of the variables it is included into)
+                if ($stmt->getDocComment() !== null) {
+                    $leftover_stmts[] = new VirtualNop($stmt->getAttributes());
+                }
             } else {
                 if ($stmt instanceof PhpParser\Node\Stmt\If_) {
                     foreach ($stmt->stmts as $if_stmt) {
@@ -399,6 +431,7 @@ class FileAnalyzer extends SourceAnalyzer
                     $this_context,
                     $this->getRootFilePath(),
                     $this->getRootFileName(),
+                    $this,
                 );
             }
 
@@ -555,9 +588,10 @@ class FileAnalyzer extends SourceAnalyzer
     /**
      * @psalm-external-mutation-free
      */
-    public function addRequiredFilePath(string $file_path): void
+    public function addRequiredFilePath(string $file_path, bool $from_cli_only_code = false): void
     {
-        $this->required_file_paths[$file_path] = true;
+        $this->required_file_paths[$file_path] = $from_cli_only_code
+            && ($this->required_file_paths[$file_path] ?? true);
     }
 
     /**
@@ -566,6 +600,22 @@ class FileAnalyzer extends SourceAnalyzer
     public function addParentFilePath(string $file_path): void
     {
         $this->parent_file_paths[$file_path] = true;
+    }
+
+    /**
+     * The files this one is analysed from, for a file analysed because of a call from this one
+     */
+    public function passIncludeChainTo(self $other): void
+    {
+        $other->parent_file_paths[$this->file_path] = true;
+
+        foreach ($this->parent_file_paths as $parent_file_path => $_) {
+            $other->parent_file_paths[$parent_file_path] = true;
+        }
+
+        foreach ($this->required_file_paths as $required_file_path => $from_cli_only_code) {
+            $other->addRequiredFilePath($required_file_path, $from_cli_only_code);
+        }
     }
 
     /** @psalm-mutation-free */
@@ -583,12 +633,22 @@ class FileAnalyzer extends SourceAnalyzer
     }
 
     /**
+     * Whether the file was only required from command-line code, so its code was analyzed as such
+     *
      * @psalm-mutation-free
-     * @return list<string>
+     */
+    public function isRequiredOnlyFromCliOnlyCode(string $file_path): bool
+    {
+        return $this->required_file_paths[$file_path] ?? false;
+    }
+
+    /**
+     * @psalm-mutation-free
+     * @return array<string, bool> file => whether it was only required from command-line code
      */
     public function getRequiredFilePaths(): array
     {
-        return array_keys($this->required_file_paths);
+        return $this->required_file_paths;
     }
 
     /**
