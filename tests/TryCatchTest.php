@@ -20,6 +20,28 @@ final class TryCatchTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'propertyFetchedInTryKeepsItsTypeAfterIt' => [
+                'code' => <<<'PHP'
+                    <?php
+                    final class Entity {
+                        public function __construct(public string $id) {}
+                    }
+
+                    function foo(Entity $entity): string {
+                        try {
+                            echo $entity->id;
+                        } catch (Exception) {
+                        }
+
+                        /** @psalm-check-type-exact $entity->id = string */
+
+                        return "x" . $entity->id;
+                    }
+                    PHP,
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
             'propertyFetchedInTryIsNotPossiblyUndefinedInArrayShape' => [
                 'code' => '<?php
                     /**
