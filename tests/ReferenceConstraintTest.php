@@ -20,6 +20,17 @@ final class ReferenceConstraintTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'paramOutOfAByRefParamWhoseTemplateItsOwnArgumentBindsIsNotHandledAgain' => [
+                'code' => '<?php
+                    function run(string $command): string {
+                        exec($command, $output, $exitCode);
+
+                        return implode(" ", $output) . $exitCode;
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
             'paramOutOfAByRefParamBeforeTheArgumentThatBindsItsTemplate' => [
                 'code' => '<?php
                     /**
