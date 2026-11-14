@@ -16,6 +16,7 @@ use Psalm\Internal\Codebase\TaintFlowGraph;
 use Psalm\Internal\DataFlow\DataFlowNode;
 use Psalm\Internal\MethodIdentifier;
 use Psalm\Internal\ReferenceConstraint;
+use Psalm\Internal\Type\TypeExpander;
 use Psalm\Issue\ImpureGlobalVariable;
 use Psalm\Issue\InvalidGlobal;
 use Psalm\IssueBuffer;
@@ -104,6 +105,17 @@ final class GlobalAnalyzer
                 );
             }
 
+            // `self` and `static` of a `@global` tag are the class the function is in
+            $global_type = isset($function_storage->global_types[$var_id])
+                ? TypeExpander::expandUnion(
+                    $codebase,
+                    $function_storage->global_types[$var_id],
+                    $context->self,
+                    $context->self,
+                    $statements_analyzer->getParentFQCLN(),
+                )
+                : null;
+
             if ($comment_type) {
                 $context->vars_in_scope[$var_id] = $comment_type;
                 $context->vars_possibly_in_scope[$var_id] = true;
@@ -112,8 +124,8 @@ final class GlobalAnalyzer
                 if ($var->name === 'argv' || $var->name === 'argc') {
                     $context->vars_in_scope[$var_id] =
                         VariableFetchAnalyzer::getGlobalType($var_id, $codebase->analysis_php_version_id);
-                } elseif (isset($function_storage->global_types[$var_id])) {
-                    $context->vars_in_scope[$var_id] = $function_storage->global_types[$var_id];
+                } elseif ($global_type !== null) {
+                    $context->vars_in_scope[$var_id] = $global_type;
                     $context->vars_possibly_in_scope[$var_id] = true;
                 } else {
                     $context->vars_in_scope[$var_id] =
@@ -156,7 +168,7 @@ final class GlobalAnalyzer
             }
 
             $context->bound_globals[$var_id] = $comment_type
-                ?? $function_storage->global_types[$var_id]
+                ?? $global_type
                 ?? VariableFetchAnalyzer::getGlobalType($var_id, $codebase->analysis_php_version_id);
             $context->references_to_external_scope[$var_id] = true;
 
