@@ -23,6 +23,209 @@ final class ForeachTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'aConditionalWriteOfAMixedValueInAForeachByReferenceKeepsTheKey' => [
+                'code' => '<?php
+                    /** @param list<string> $labels */
+                    function assigned(array $labels, mixed $value): void {
+                        $rows = [];
+
+                        foreach ($labels as $l) {
+                            $rows[] = ["label" => $l];
+                        }
+
+                        foreach ($rows as &$row) {
+                            if (rand(0, 1)) {
+                                $row["extra"] = $value;
+                            }
+                        }
+
+                        unset($row);
+
+                        /** @psalm-check-type-exact $rows = list<array{extra?: mixed, label: string}> */
+                        echo count($rows);
+                    }
+
+                    /** @param list<string> $labels */
+                    function nested(array $labels, mixed $value): void {
+                        $rows = [];
+
+                        foreach ($labels as $l) {
+                            $rows[] = ["label" => $l];
+                        }
+
+                        foreach ($rows as &$row) {
+                            if (rand(0, 1)) {
+                                $row["extra"]["x"] = $value;
+                            }
+                        }
+
+                        unset($row);
+
+                        /** @psalm-check-type-exact $rows = list<array{extra?: array{x: mixed}, label: string}> */
+                        echo count($rows);
+                    }',
+                'assertions' => [],
+                'ignored_issues' => ['MixedAssignment'],
+                'php_version' => '8.1',
+            ],
+            'aTestedKeyTheItemsDoNotHaveIsNotAddedToThemWhateverItsTypeOrTheItems' => [
+                'code' => '<?php
+                    /** @param list<string> $labels */
+                    function stringKey(array $labels): void {
+                        $rows = [];
+
+                        foreach ($labels as $l) {
+                            $rows[] = ["label" => $l, "value" => ""];
+                        }
+
+                        foreach ($rows as &$row) {
+                            /** @psalm-suppress InvalidArrayOffset */
+                            if (isset($row["name"]) && is_string($row["name"])) {
+                                $row["value"] = "y";
+                            }
+                        }
+
+                        unset($row);
+
+                        /** @psalm-check-type-exact $rows = list<array{label: string, value: "y"|""}> */
+                        echo count($rows);
+                    }
+
+                    /** @param list<array{label: string, value: ""}|null> $rows */
+                    function nullableItems(array $rows): void {
+                        foreach ($rows as &$row) {
+                            /** @psalm-suppress InvalidArrayOffset */
+                            if ($row !== null && isset($row["name"])) {
+                                $row["value"] = "y";
+                            }
+                        }
+
+                        unset($row);
+
+                        /** @psalm-check-type-exact $rows = list<array{label: string, value: "y"|""}|null> */
+                        echo count($rows);
+                    }
+
+                    /** @param list<array{label: string, value: ""}> $rows */
+                    function byValueCall(array $rows): void {
+                        foreach ($rows as &$row) {
+                            /** @psalm-suppress InvalidArrayOffset */
+                            if (isset($row["name"]) && strlen($row["name"]) > 1) {
+                                $row["value"] = "y";
+                            }
+                        }
+
+                        unset($row);
+
+                        /** @psalm-check-type-exact $rows = list<array{label: string, value: "y"|""}> */
+                        echo count($rows);
+                    }',
+                'assertions' => [],
+                'ignored_issues' => ['MixedArgument'],
+                'php_version' => '8.1',
+            ],
+            'aKeyPassedByReferenceThroughANamedArgumentCountsAsWrittenInAForeachByReference' => [
+                'code' => '<?php
+                    function setNamed(int $a = 0, mixed &$out = null): void {
+                        echo $a;
+                        $out = 1;
+                    }
+
+                    /** @param list<array{label: string}> $rows */
+                    function namedArg(array $rows): void {
+                        foreach ($rows as &$row) {
+                            if (rand(0, 1)) {
+                                setNamed(out: $row["extra"]);
+                            }
+                        }
+
+                        unset($row);
+
+                        if ($rows) {
+                            echo $rows[0]["extra"];
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => ['PossiblyUndefinedArrayOffset', 'MixedArgument'],
+                'php_version' => '8.1',
+            ],
+            'aKeyPassedByReferenceOrAReassignedItemCountsAsWrittenInAForeachByReference' => [
+                'code' => '<?php
+                    /** @param list<array{label: string}> $rows */
+                    function passedByReference(array $rows): void {
+                        foreach ($rows as &$row) {
+                            preg_match("/a/", "a", $row["match"]);
+                        }
+
+                        unset($row);
+
+                        /** @psalm-check-type-exact $rows = list<array{label: string, match?: array<array-key, string>}> */
+                        echo count($rows);
+                    }
+
+                    /** @param list<array{label: string}> $rows */
+                    function reassigned(array $rows): void {
+                        foreach ($rows as &$row) {
+                            if (rand(0, 1)) {
+                                $row = ["label" => "a", "extra" => 1];
+                            }
+                        }
+
+                        unset($row);
+
+                        /** @psalm-check-type-exact $rows = list<array{extra?: 1, label: string}> */
+                        echo count($rows);
+                    }',
+                'assertions' => [],
+                'ignored_issues' => ['MixedAssignment'],
+                'php_version' => '8.1',
+            ],
+            'issetOfAKeyTheItemsDoNotHaveInAForeachByReferenceDoesNotAddItToThem' => [
+                'code' => '<?php
+                    /** @param list<string> $labels */
+                    function tested(array $labels): void {
+                        $rows = [];
+
+                        foreach ($labels as $l) {
+                            $rows[] = ["label" => $l, "value" => ""];
+                        }
+
+                        foreach ($rows as &$row) {
+                            /** @psalm-suppress InvalidArrayOffset */
+                            if (isset($row["name"])) {
+                                $row["value"] = "y";
+                            }
+                        }
+
+                        unset($row);
+
+                        /** @psalm-check-type-exact $rows = list<array{label: string, value: "y"|""}> */
+                        echo count($rows);
+                    }
+
+                    /** @param list<string> $labels */
+                    function assigned(array $labels): void {
+                        $rows = [];
+
+                        foreach ($labels as $l) {
+                            $rows[] = ["label" => $l];
+                        }
+
+                        foreach ($rows as &$row) {
+                            if (rand(0, 1)) {
+                                $row["extra"] = 1;
+                            }
+                        }
+
+                        unset($row);
+
+                        /** @psalm-check-type-exact $rows = list<array{extra?: 1, label: string}> */
+                        echo count($rows);
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
             'foreachOverListKeepsTheEmptyStringOfAnEmptyOrNumericString' => [
                 'code' => '<?php
                     /** @var list<array{foo: ""|numeric-string}> $rows */
@@ -1809,6 +2012,33 @@ final class ForeachTest extends TestCase
     public static function providerInvalidCodeParse(): iterable
     {
         return [
+            'issetOfAKeyTheItemsDoNotHaveInAForeachByReferenceKeepsTheLaterReadInvalid' => [
+                'code' => '<?php
+                    /** @param list<string> $labels */
+                    function dump(array $labels): void {
+                        $rows = [];
+
+                        foreach ($labels as $l) {
+                            $rows[] = ["label" => $l, "value" => ""];
+                        }
+
+                        foreach ($rows as &$row) {
+                            /** @psalm-suppress InvalidArrayOffset */
+                            if (isset($row["name"])) {
+                                $row["value"] = "y";
+                            }
+                        }
+
+                        unset($row);
+
+                        foreach ($rows as $item) {
+                            echo $item["name"];
+                        }
+                    }',
+                'error_message' => 'InvalidArrayOffset - src' . DIRECTORY_SEPARATOR . 'somefile.php:20:34',
+                'error_levels' => [],
+                'php_version' => '8.1',
+            ],
             'iteratorCurrentNullStaysWhenTheTemplateValueIsNullable' => [
                 'code' => '<?php
                     class Foo {
