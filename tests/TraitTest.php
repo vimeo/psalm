@@ -47,6 +47,58 @@ final class TraitTest extends TestCase
                 'ignored_issues' => [],
                 'php_version' => '8.0',
             ],
+            'parentReturnOfTraitMethodIsTheParentOfTheClassUsingTheTrait' => [
+                'code' => <<<'PHP'
+                    <?php
+                    class A {}
+
+                    class C extends A {}
+
+                    trait B {
+                        public function get(): parent {
+                            return new C();
+                        }
+                    }
+
+                    class D extends C {
+                        use B;
+                    }
+
+                    class E extends D {
+                        #[\Override]
+                        public function get(): C {
+                            return new C();
+                        }
+                    }
+                    PHP,
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.3',
+            ],
+            'nullableStaticReturnOfTraitMethodOverriddenByChild' => [
+                'code' => <<<'PHP'
+                    <?php
+                    trait B {
+                        public function get(): ?static {
+                            return null;
+                        }
+                    }
+
+                    class D {
+                        use B;
+                    }
+
+                    class E extends D {
+                        #[\Override]
+                        public function get(): ?static {
+                            return null;
+                        }
+                    }
+                    PHP,
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.3',
+            ],
             'selfReturnOfTraitMethodIsTheClassUsingTheTrait' => [
                 'code' => <<<'PHP'
                     <?php
@@ -1702,7 +1754,7 @@ final class TraitTest extends TestCase
                     class D extends C {
                         use B;
                     }',
-                'error_message' => 'MethodSignatureMismatch',
+                'error_message' => "Method B::get with return type 'Foo' is different to return type",
                 'error_levels' => [],
                 'php_version' => '8.0',
             ],
