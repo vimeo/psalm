@@ -79,17 +79,21 @@ use Psalm\Type\Atomic\TVoid;
 use Psalm\Type\Union;
 use UnexpectedValueException;
 
+use function array_filter;
 use function array_keys;
 use function array_map;
 use function array_pop;
 use function array_search;
 use function array_values;
 use function assert;
+use function count;
 use function implode;
 use function is_string;
 use function reset;
 use function stripos;
 use function strtolower;
+
+use const ARRAY_FILTER_USE_BOTH;
 
 /**
  * @internal
@@ -551,8 +555,11 @@ final class ForeachAnalyzer
                 $properties = [];
 
                 foreach ($atomic_type->properties as $key => $property) {
-                    $properties[$key] = Type::combineUnionTypes($property, $written_type, $codebase)
-                        ->setPossiblyUndefined($property->possibly_undefined);
+                    $properties[$key] = Type::combineUnionTypes(
+                        $property,
+                        self::withoutKeysOfNarrowing($written_type, $property),
+                        $codebase,
+                    )->setPossiblyUndefined($property->possibly_undefined);
                 }
 
                 $atomic_type = TKeyedArray::make(
@@ -560,7 +567,11 @@ final class ForeachAnalyzer
                     $atomic_type->class_strings,
                     $atomic_type->fallback_params === null ? null : [
                         $atomic_type->fallback_params[0],
-                        Type::combineUnionTypes($atomic_type->fallback_params[1], $written_type, $codebase),
+                        Type::combineUnionTypes(
+                            $atomic_type->fallback_params[1],
+                            self::withoutKeysOfNarrowing($written_type, $atomic_type->fallback_params[1]),
+                            $codebase,
+                        ),
                     ],
                     $atomic_type->is_list,
                     $atomic_type->from_docblock,
@@ -568,7 +579,11 @@ final class ForeachAnalyzer
             } elseif ($atomic_type instanceof TArray && !$atomic_type->isEmptyArray()) {
                 $atomic_type = $atomic_type->setTypeParams([
                     $atomic_type->type_params[0],
-                    Type::combineUnionTypes($atomic_type->type_params[1], $written_type, $codebase),
+                    Type::combineUnionTypes(
+                        $atomic_type->type_params[1],
+                        self::withoutKeysOfNarrowing($written_type, $atomic_type->type_params[1]),
+                        $codebase,
+                    ),
                 ]);
             }
 
@@ -577,6 +592,48 @@ final class ForeachAnalyzer
 
         $context->vars_in_scope[$array_var_id] = $array_type->setTypes($atomic_types);
         $context->removeDescendents($array_var_id, $array_type, null, $statements_analyzer);
+    }
+
+    /**
+     * What an iteration may have written to an item is not the keys that a test of the variable added to its shape:
+     * `isset($row['name'])` makes `name?: mixed` part of the type of `$row`, but nothing wrote it into the item. Such a
+     * key is possibly undefined, of an unknown type, and not one of the keys the items have.
+     */
+    private static function withoutKeysOfNarrowing(Union $written_type, Union $item_type): Union
+    {
+        $item_keys = [];
+
+        foreach ($item_type->getAtomicTypes() as $item_atomic_type) {
+            if (!$item_atomic_type instanceof TKeyedArray) {
+                return $written_type;
+            }
+
+            $item_keys += $item_atomic_type->properties;
+        }
+
+        $atomic_types = [];
+        $changed = false;
+
+        foreach ($written_type->getAtomicTypes() as $written_atomic_type) {
+            if ($written_atomic_type instanceof TKeyedArray) {
+                $properties = array_filter(
+                    $written_atomic_type->properties,
+                    static fn(Union $property, int|string $key): bool => isset($item_keys[$key])
+                        || !$property->possibly_undefined
+                        || !$property->isMixed(),
+                    ARRAY_FILTER_USE_BOTH,
+                );
+
+                if ($properties !== [] && count($properties) !== count($written_atomic_type->properties)) {
+                    $written_atomic_type = $written_atomic_type->setProperties($properties);
+                    $changed = true;
+                }
+            }
+
+            $atomic_types[] = $written_atomic_type;
+        }
+
+        return $changed ? $written_type->setTypes($atomic_types) : $written_type;
     }
 
     /**

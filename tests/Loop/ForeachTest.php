@@ -23,6 +23,52 @@ final class ForeachTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'issetOfAKeyTheItemsDoNotHaveInAForeachByReferenceDoesNotAddItToThem' => [
+                'code' => '<?php
+                    /** @param list<string> $labels */
+                    function tested(array $labels): void {
+                        $rows = [];
+
+                        foreach ($labels as $l) {
+                            $rows[] = ["label" => $l, "value" => ""];
+                        }
+
+                        foreach ($rows as &$row) {
+                            /** @psalm-suppress InvalidArrayOffset */
+                            if (isset($row["name"])) {
+                                $row["value"] = "y";
+                            }
+                        }
+
+                        unset($row);
+
+                        /** @psalm-check-type-exact $rows = list<array{label: string, value: "y"|""}> */
+                        echo count($rows);
+                    }
+
+                    /** @param list<string> $labels */
+                    function assigned(array $labels): void {
+                        $rows = [];
+
+                        foreach ($labels as $l) {
+                            $rows[] = ["label" => $l];
+                        }
+
+                        foreach ($rows as &$row) {
+                            if (rand(0, 1)) {
+                                $row["extra"] = 1;
+                            }
+                        }
+
+                        unset($row);
+
+                        /** @psalm-check-type-exact $rows = list<array{extra?: 1, label: string}> */
+                        echo count($rows);
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
             'foreachOverListKeepsTheEmptyStringOfAnEmptyOrNumericString' => [
                 'code' => '<?php
                     /** @var list<array{foo: ""|numeric-string}> $rows */
@@ -1809,6 +1855,33 @@ final class ForeachTest extends TestCase
     public static function providerInvalidCodeParse(): iterable
     {
         return [
+            'issetOfAKeyTheItemsDoNotHaveInAForeachByReferenceKeepsTheLaterReadInvalid' => [
+                'code' => '<?php
+                    /** @param list<string> $labels */
+                    function dump(array $labels): void {
+                        $rows = [];
+
+                        foreach ($labels as $l) {
+                            $rows[] = ["label" => $l, "value" => ""];
+                        }
+
+                        foreach ($rows as &$row) {
+                            /** @psalm-suppress InvalidArrayOffset */
+                            if (isset($row["name"])) {
+                                $row["value"] = "y";
+                            }
+                        }
+
+                        unset($row);
+
+                        foreach ($rows as $item) {
+                            echo $item["name"];
+                        }
+                    }',
+                'error_message' => 'InvalidArrayOffset - src' . DIRECTORY_SEPARATOR . 'somefile.php:20:34',
+                'error_levels' => [],
+                'php_version' => '8.1',
+            ],
             'iteratorCurrentNullStaysWhenTheTemplateValueIsNullable' => [
                 'code' => '<?php
                     class Foo {
