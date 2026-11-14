@@ -574,17 +574,18 @@ final class FunctionCallReturnTypeFetcher
                     }
                     if (count($call_args) < 2) {
                         return $returnType;
-                    } else {
-                        $second_arg_type = $statements_analyzer->node_data->getType($call_args[1]->value);
-                        if ($second_arg_type && $second_arg_type->isNull()) {
-                            return $returnType;
-                        }
                     }
+
+                    $second_arg_type = $statements_analyzer->node_data->getType($call_args[1]->value);
+                    if ($second_arg_type && $second_arg_type->isNull()) {
+                        return $returnType;
+                    }
+
                     if ($string_arg_type !== null && $string_arg_type->isNonEmptyString()) {
                         return Type::getNonEmptyString();
-                    } else {
-                        return Type::getString();
                     }
+
+                    return Type::getString();
             }
         }
 

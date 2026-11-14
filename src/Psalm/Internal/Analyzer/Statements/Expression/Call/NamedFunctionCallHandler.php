@@ -275,10 +275,19 @@ final class NamedFunctionCallHandler
                             $validated_var_ids[] = $var_id;
 
                             if (isset($context->vars_in_scope[$var_id]) && $flag_value === EXTR_SKIP) {
-                                continue;
-                            }
+                                $existing_type = $context->vars_in_scope[$var_id];
 
-                            if (!isset($context->vars_in_scope[$var_id]) && $type->possibly_undefined === true) {
+                                if (!$existing_type->possibly_undefined) {
+                                    continue;
+                                }
+
+                                // it is skipped where it is set, extracted where it is not
+                                $type = Type::combineUnionTypes(
+                                    $existing_type->setPossiblyUndefined(false, false),
+                                    $type,
+                                    $codebase,
+                                );
+                            } elseif (!isset($context->vars_in_scope[$var_id]) && $type->possibly_undefined === true) {
                                 $context->possibly_assigned_var_ids[$var_id] = true;
                             } elseif (isset($context->vars_in_scope[$var_id])
                                 && $type->possibly_undefined === true
