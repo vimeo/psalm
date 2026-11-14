@@ -60,10 +60,12 @@ use function file_put_contents;
 use function fwrite;
 use function implode;
 use function in_array;
+use function intdiv;
 use function is_dir;
 use function is_int;
 use function is_string;
 use function ksort;
+use function max;
 use function memory_get_peak_usage;
 use function microtime;
 use function mkdir;
@@ -128,6 +130,27 @@ final class IssueBuffer
     /** @var array<array-key,mixed> */
     private static array $server = [];
 
+    /** The group of the issues being added, see setIssueGroup() */
+    private static ?string $issue_group = null;
+
+    /**
+     * The issue reported for each group, by issue type, group and message
+     *
+     * @var array<string, IssueData>
+     */
+    private static array $grouped_issues = [];
+
+    /**
+     * By file, the issues of a group that one at an earlier location is reported for. They go to the cache and
+     * the worker merge, where an analysis that no longer adds that one (its file changed) reports one of them.
+     *
+     * @var array<string, list<IssueData>>
+     */
+    private static array $held_back_issues = [];
+
+    /** How many issues accepts() was given, suppressed ones included */
+    private static int $accepted_issue_count = 0;
+
     /**
      * This will add an issue to be emitted if it's not suppressed and return if it has been added
      *
@@ -135,6 +158,9 @@ final class IssueBuffer
      */
     public static function accepts(CodeIssue $e, array $suppressed_issues = [], bool $is_fixable = false): bool
     {
+        ++self::$accepted_issue_count;
+        $e->group_key ??= self::$issue_group;
+
         $config = Config::getInstance();
         $project_analyzer = ProjectAnalyzer::getInstance();
         $codebase = $project_analyzer->getCodebase();
@@ -360,9 +386,9 @@ final class IssueBuffer
             . ' ' . ($e->dupe_key ?? $e->message);
 
         if ($reporting_level === Config::REPORT_INFO) {
-            if ($is_tainted || !self::alreadyEmitted($emitted_key)) {
-                self::$issues_data[$e->getFilePath()][] = $e->toIssueData(IssueData::SEVERITY_INFO);
-
+            if (($is_tainted || !self::alreadyEmitted($emitted_key))
+                && self::addIssueData($e->getFilePath(), $e->toIssueData(IssueData::SEVERITY_INFO))
+            ) {
                 if ($is_fixable) {
                     self::addFixableIssue($issue_type);
                 }
@@ -388,9 +414,10 @@ final class IssueBuffer
             );
         }
 
-        if ($is_tainted || !self::alreadyEmitted($emitted_key)) {
+        if (($is_tainted || !self::alreadyEmitted($emitted_key))
+            && self::addIssueData($e->getFilePath(), $e->toIssueData(IssueData::SEVERITY_ERROR))
+        ) {
             ++self::$error_count;
-            self::$issues_data[$e->getFilePath()][] = $e->toIssueData(IssueData::SEVERITY_ERROR);
 
             if ($is_fixable) {
                 self::addFixableIssue($issue_type);
@@ -398,6 +425,78 @@ final class IssueBuffer
         }
 
         return true;
+    }
+
+    /**
+     * @return bool whether the issue adds to the issues: not one held back for its group, or one that replaces the
+     *              issue reported for its group
+     * @psalm-capabilities read-props|read-globals|write-globals
+     */
+    private static function addIssueData(string $file_path, IssueData $issue): bool
+    {
+        if ($issue->group_key === null) {
+            self::$issues_data[$file_path][] = $issue;
+
+            return true;
+        }
+
+        $group = $issue->type . ' ' . $issue->group_key . ' ' . $issue->message;
+        $reported = self::$grouped_issues[$group] ?? null;
+
+        if ($reported !== null
+            && [$issue->file_path, $issue->line_from, $issue->column_from]
+                >= [$reported->file_path, $reported->line_from, $reported->column_from]
+        ) {
+            self::$held_back_issues[$file_path][] = $issue;
+
+            return false;
+        }
+
+        self::$grouped_issues[$group] = $issue;
+        self::$issues_data[$file_path][] = $issue;
+
+        if ($reported === null) {
+            return true;
+        }
+
+        $position = array_search($reported, self::$issues_data[$reported->file_path], true);
+
+        if ($position !== false) {
+            array_splice(self::$issues_data[$reported->file_path], $position, 1);
+
+            if (self::$issues_data[$reported->file_path] === []) {
+                unset(self::$issues_data[$reported->file_path]);
+            }
+        }
+
+        self::$held_back_issues[$reported->file_path][] = $reported;
+
+        return false;
+    }
+
+    /**
+     * Puts the issues added until the next call in a group that is reported once, at its issue with the earliest
+     * location (by file path, line and column), whichever order the files are analysed in
+     *
+     * @internal
+     * @return ?string the group before, to restore
+     * @psalm-capabilities read-globals|write-globals
+     */
+    public static function setIssueGroup(?string $group_key): ?string
+    {
+        $previous_group_key = self::$issue_group;
+        self::$issue_group = $group_key;
+
+        return $previous_group_key;
+    }
+
+    /**
+     * @internal
+     * @psalm-capabilities read-globals
+     */
+    public static function getAcceptedIssueCount(): int
+    {
+        return self::$accepted_issue_count;
     }
 
     /**
@@ -477,6 +576,24 @@ final class IssueBuffer
     public static function getIssuesDataForFile(string $file_path): array
     {
         return self::$issues_data[$file_path] ?? [];
+    }
+
+    /**
+     * The issues, and those held back for their group: for the cache and the worker merge
+     *
+     * @internal
+     * @return array<string, list<IssueData>>
+     * @psalm-capabilities read-props|read-globals
+     */
+    public static function getAllIssuesData(): array
+    {
+        $issues_data = self::$issues_data;
+
+        foreach (self::$held_back_issues as $file_path => $file_issues) {
+            $issues_data[$file_path] = [...$issues_data[$file_path] ?? [], ...$file_issues];
+        }
+
+        return $issues_data;
     }
 
     /**
@@ -604,7 +721,7 @@ final class IssueBuffer
                     . ' ' . ($issue->dupe_key ?? $issue->message);
 
                 if (!self::alreadyEmitted($emitted_key)) {
-                    self::$issues_data[$file_path][] = $issue;
+                    self::addIssueData($file_path, $issue);
                 }
             }
         }
@@ -830,10 +947,19 @@ final class IssueBuffer
             );
         }
 
-        if (in_array(
+        $prints_to_console = in_array(
             $project_analyzer->stdout_report_options->format,
             [Report::TYPE_CONSOLE, Report::TYPE_PHP_STORM, Report::TYPE_GITHUB_ACTIONS],
-        )) {
+        );
+
+        if ($prints_to_console && $codebase->alter_code && !$error_count) {
+            self::printAlterSummary(
+                $codebase->analyzer->getChangedFilesCount(),
+                $project_analyzer->dry_run,
+                $project_analyzer->stdout_report_options->use_color,
+                $start_time,
+            );
+        } elseif ($prints_to_console) {
             echo str_repeat('-', 30) . "\n";
 
             if ($error_count) {
@@ -880,8 +1006,7 @@ final class IssueBuffer
             echo str_repeat('-', 30) . "\n" . "\n";
 
             if ($start_time) {
-                echo 'Checks took ' . number_format(microtime(true) - $start_time, 2) . ' seconds';
-                echo ' and used ' . number_format(memory_get_peak_usage() / (1_024 * 1_024), 3) . 'MB of memory' . "\n";
+                self::printTiming($start_time);
 
                 $analysis_summary = $codebase->analyzer->getTypeInferenceSummary($codebase);
                 echo $analysis_summary . "\n";
@@ -942,6 +1067,14 @@ final class IssueBuffer
         ) {
             exit(2);
         }
+
+        // like Rector, a dry run that would change files exits with an error so it can gate CI
+        if ($codebase->alter_code
+            && $project_analyzer->dry_run
+            && $codebase->analyzer->getChangedFilesCount() > 0
+        ) {
+            exit(2);
+        }
     }
 
     /**
@@ -959,26 +1092,55 @@ final class IssueBuffer
         return false;
     }
 
+    private static function printAlterSummary(
+        int $changed_files_count,
+        bool $dry_run,
+        bool $use_color,
+        float $start_time,
+    ): void {
+        if ($changed_files_count === 0) {
+            $message = 'No changes';
+        } else {
+            $message = $changed_files_count . ($changed_files_count === 1 ? ' file ' : ' files ')
+                . ($dry_run ? 'would be changed (dry run)' : 'changed');
+        }
+
+        echo str_repeat('-', 30) . "\n";
+        self::printResultBlock($message, $use_color);
+        echo str_repeat('-', 30) . "\n\n";
+
+        if ($start_time) {
+            self::printTiming($start_time);
+        }
+    }
+
+    private static function printTiming(float $start_time): void
+    {
+        echo 'Checks took ' . number_format(microtime(true) - $start_time, 2) . ' seconds';
+        echo ' and used ' . number_format(memory_get_peak_usage() / (1_024 * 1_024), 3) . 'MB of memory' . "\n";
+    }
+
     public static function printSuccessMessage(ProjectAnalyzer $project_analyzer): void
     {
         if (!$project_analyzer->stdout_report_options) {
             throw new UnexpectedValueException('Cannot print success message without stdout report options');
         }
 
-        // this message will be printed
-        $message = "No errors found!";
+        self::printResultBlock('No errors found!', $project_analyzer->stdout_report_options->use_color);
+    }
 
-        // color block will contain this amount of characters
-        $blockSize = 30;
+    private static function printResultBlock(string $message, bool $use_color): void
+    {
+        // color block will contain at least this amount of characters
+        $blockSize = max(30, strlen($message) + 14);
 
         // message with prepended and appended whitespace to be same as $blockSize
-        $messageWithPadding = str_repeat(' ', 7) . $message . str_repeat(' ', 7);
+        $leftPadding = intdiv($blockSize - strlen($message), 2);
+        $messageWithPadding = str_repeat(' ', $leftPadding) . $message
+            . str_repeat(' ', $blockSize - strlen($message) - $leftPadding);
 
-        // top side of the color block
-        $paddingTop = str_repeat(' ', $blockSize);
-
-        // bottom side of the color block
-        $paddingBottom = str_repeat(' ', $blockSize);
+        // top and bottom sides of the color block
+        $paddingTop = $paddingBottom = str_repeat(' ', $blockSize);
 
         // background color, 42 = green
         $background = "42";
@@ -989,7 +1151,7 @@ final class IssueBuffer
         // text style, 1 = bold
         $style = "2";
 
-        if ($project_analyzer->stdout_report_options->use_color) {
+        if ($use_color) {
             echo "\e[{$background};{$style}m{$paddingTop}\e[0m" . "\n";
             echo "\e[{$background};{$foreground};{$style}m{$messageWithPadding}\e[0m" . "\n";
             echo "\e[{$background};{$style}m{$paddingBottom}\e[0m" . "\n";
@@ -1136,6 +1298,8 @@ final class IssueBuffer
     public static function clearCache(): void
     {
         self::$issues_data = [];
+        self::$grouped_issues = [];
+        self::$held_back_issues = [];
         self::$emitted = [];
         self::$error_count = 0;
         self::$recording_level = 0;
@@ -1152,6 +1316,8 @@ final class IssueBuffer
     {
         $current_data = self::$issues_data;
         self::$issues_data = [];
+        self::$grouped_issues = [];
+        self::$held_back_issues = [];
         self::$emitted = [];
 
         return $current_data;

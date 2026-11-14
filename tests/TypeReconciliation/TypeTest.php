@@ -36,7 +36,7 @@ final class TypeTest extends TestCase
                         }
                     }',
                 'assertions' => [],
-                'ignored_issues' => ['ClassMustBeFinal'],
+                'ignored_issues' => [],
                 'php_version' => '8.0',
             ],
             'closedResourceIsTruthyLikeAnyResource' => [

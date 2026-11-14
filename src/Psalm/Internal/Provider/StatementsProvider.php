@@ -41,9 +41,10 @@ use function ini_set;
 use function max;
 use function md5;
 use function serialize;
+use function str_contains;
+use function str_replace;
 use function str_starts_with;
 use function strlen;
-use function strpos;
 use function unserialize;
 
 /**
@@ -126,7 +127,8 @@ final class StatementsProvider
         $config = Config::getInstance();
 
         if (!$this->parser_cache_provider
-            || (!$config->isInProjectDirs($file_path) && strpos($file_path, 'vendor'))
+            || (!$config->isInProjectDirs($file_path)
+                && str_contains('/' . str_replace('\\', '/', $config->shortenFileName($file_path)), '/vendor/'))
         ) {
             // ProjectAnalyzer::getMethodMutations() asks for the same vendor parent classes over and over. Without a
             // parser cache provider every project file comes this way too, and keeping all of them is what made the

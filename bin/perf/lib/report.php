@@ -30,8 +30,10 @@ const TABLE_LEGEND = "<details><summary>How to read this table</summary>\n\n"
     . 'else *improved* if one is green, else *unchanged*. Its icon is the check result: ❌ fail · ⚠️ warn · '
     . "✅ pass; the icon next to each project is that project's result, 💥 = not comparable: base crashed or "
     . "timed out (counts as ⚠️).\n"
-    . '- **Issues** (heading): the total weighted change, *increased* · *decreased* · *unchanged*. '
-    . "Informational, never fails the check.\n\n"
+    . '- **Issues** (heading): the total weighted change, *increased* · *decreased* · *unchanged*, followed by the '
+    . 'issues added and removed across the projects, e.g. *increased (+175 −128)*. If the weighted total is zero '
+    . 'but issues were added or removed (those weighted 0 changed, or changes offset), it reads *changed (+175 −128, '
+    . "weighted unchanged)*. Informational, never fails the check.\n\n"
     . '</details>';
 
 /** Signed relative change; 'n/a' for null, '<0.01 %' when a non-zero change rounds to zero. */
@@ -266,7 +268,8 @@ function performanceWord(array $projects): string
 }
 
 /**
- * Direction of the total weighted change; null when no project has issue lists on both sides.
+ * Direction of the total weighted change plus the raw added and removed counts when non-zero, so that a small weighted
+ * change cannot hide many issues (feature-specific ones weigh 0); null when no project has issue lists on both sides.
  *
  * @param array<string, array<string, mixed>> $projects
  */
@@ -280,9 +283,19 @@ function issuesWord(array $projects): ?string
         return null;
     }
 
-    $sum = array_sum($deltas);
+    $added = $removed = 0;
+    foreach ($projects as $p) {
+        $added += $p['issues']['added'] ?? 0;
+        $removed += $p['issues']['removed'] ?? 0;
+    }
 
-    return $sum > 0 ? 'increased' : ($sum < 0 ? 'decreased' : 'unchanged');
+    $sum = array_sum($deltas);
+    $raw = sprintf('+%s −%s', fmtInt($added), fmtInt($removed));
+    if ($added === 0 && $removed === 0) {
+        return $sum > 0 ? 'increased' : ($sum < 0 ? 'decreased' : 'unchanged');
+    }
+
+    return $sum > 0 ? "increased ({$raw})" : ($sum < 0 ? "decreased ({$raw})" : "changed ({$raw}, weighted unchanged)");
 }
 
 /**

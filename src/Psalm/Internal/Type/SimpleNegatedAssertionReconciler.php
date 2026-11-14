@@ -69,6 +69,7 @@ use Psalm\Type\Union;
 use function assert;
 use function max;
 use function str_contains;
+use function strpbrk;
 use function strtolower;
 
 /**
@@ -96,7 +97,10 @@ final class SimpleNegatedAssertionReconciler extends Reconciler
 
         if ($assertion instanceof IsNotIsset) {
             if ($existing_var_type->possibly_undefined) {
-                return Type::getNever();
+                // a variable that is not set reads as null, an offset or a property that is not set has no value
+                return $key !== null && $key[0] === '$' && strpbrk($key, '[-:') === false
+                    ? Type::getNull()
+                    : Type::getNever();
             }
 
             if (!$existing_var_type->isNullable()
@@ -1682,7 +1686,7 @@ final class SimpleNegatedAssertionReconciler extends Reconciler
         }
 
         if ($non_string_types) {
-            return new Union($non_string_types, [
+            return TypeCombiner::combine($non_string_types)->setProperties([
                 'ignore_falsable_issues' => $existing_var_type->ignore_falsable_issues,
                 'ignore_nullable_issues' => $existing_var_type->ignore_nullable_issues,
                 'from_docblock' => $existing_var_type->from_docblock,
@@ -1782,7 +1786,7 @@ final class SimpleNegatedAssertionReconciler extends Reconciler
         }
 
         if ($non_array_types) {
-            return new Union($non_array_types, [
+            return TypeCombiner::combine($non_array_types)->setProperties([
                 'ignore_falsable_issues' => $existing_var_type->ignore_falsable_issues,
                 'ignore_nullable_issues' => $existing_var_type->ignore_nullable_issues,
                 'from_docblock' => $existing_var_type->from_docblock,

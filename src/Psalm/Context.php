@@ -6,6 +6,7 @@ namespace Psalm;
 
 use InvalidArgumentException;
 use Psalm\Internal\Analyzer\ConstructorExits;
+use Psalm\Internal\Analyzer\Statements\Expression\Assignment\InstancePropertyAssignmentAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\Fetch\VariableFetchAnalyzer;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\Internal\Clause;
@@ -14,17 +15,21 @@ use Psalm\Internal\ReferenceConstraint;
 use Psalm\Internal\Scope\CaseScope;
 use Psalm\Internal\Scope\FinallyScope;
 use Psalm\Internal\Scope\LoopScope;
+use Psalm\Internal\Scope\TryScope;
 use Psalm\Internal\Type\AssertionReconciler;
 use Psalm\Storage\Capabilities;
 use Psalm\Storage\FunctionLikeStorage;
 use Psalm\Type\Atomic\DependentType;
 use Psalm\Type\Atomic\TIntRange;
 use Psalm\Type\Atomic\TNull;
+use Psalm\Type\Atomic\TObjectWithProperties;
 use Psalm\Type\Union;
 use RuntimeException;
 
+use function array_keys;
 use function array_search;
 use function array_shift;
+use function array_values;
 use function assert;
 use function count;
 use function in_array;
@@ -36,6 +41,7 @@ use function serialize;
 use function str_contains;
 use function strcspn;
 use function strpos;
+use function strrpos;
 use function strtolower;
 use function substr;
 
@@ -51,6 +57,12 @@ final class Context
      * native symbols newer than the analysed version use it; it can't clash with a variable name.
      */
     public const PHP_VERSION_ID_VAR_ID = 'PHP_VERSION_ID';
+
+    /**
+     * The pseudo-variable through which comparisons of the PHP_SAPI constant and of php_sapi_name() narrow them, so
+     * a branch knows the SAPI it runs in (e.g. `if (PHP_SAPI === 'cli')`); it can't clash with a variable name.
+     */
+    public const PHP_SAPI_VAR_ID = 'PHP_SAPI';
 
     /**
      * @var array<string, Union>
@@ -260,6 +272,14 @@ final class Context
     public array $phantom_files = [];
 
     /**
+     * The files of phantom_files that were checked in a negated condition (`!file_exists($s)`): a check that holds
+     * where the condition does not
+     *
+     * @var array<string,bool>
+     */
+    public array $negated_phantom_files = [];
+
+    /**
      * A list of clauses in Conjunctive Normal Form
      *
      * @var list<Clause>
@@ -339,6 +359,14 @@ final class Context
     public array $possibly_assigned_var_ids = [];
 
     /**
+     * The variables (and properties) that were assigned as a whole in this context, not only an offset of them and
+     * not by the union of an array into them (`$a += [...]`, which keeps every offset the array had)
+     *
+     * @var array<string, bool>
+     */
+    public array $fully_assigned_var_ids = [];
+
+    /**
      * A list of classes or interfaces that may have been thrown
      *
      * @var array<string, array<array-key, CodeLocation>>
@@ -374,6 +402,8 @@ final class Context
     public ?CaseScope $case_scope = null;
 
     public ?FinallyScope $finally_scope = null;
+
+    public ?TryScope $try_scope = null;
 
     public ?Context $if_body_context = null;
 
@@ -490,6 +520,16 @@ final class Context
         foreach ($start_context->vars_in_scope as $var_id => $old_type) {
             // this is only true if there was some sort of type negation
             if (in_array($var_id, $vars_to_update, true)) {
+                // a block that stays in the scope and forgot the variable (a call that may change what a
+                // memoized call or a property holds, not an unset()): nothing is known of it after the block
+                // but what it was before
+                if (!$has_leaving_statements
+                    && !$end_context->hasVariable($var_id)
+                    && isset($end_context->vars_possibly_in_scope[$var_id])
+                ) {
+                    continue;
+                }
+
                 // if we're leaving, we're effectively deleting the possibility of the if types
                 $new_type = !$has_leaving_statements && $end_context->hasVariable($var_id)
                     ? $end_context->vars_in_scope[$var_id]
@@ -605,9 +645,57 @@ final class Context
         return $redefined_var_ids;
     }
 
+    /**
+     * `isset($foo->bar)` on an `object{bar?: string}` makes `$foo` an `object{bar: string}`. What is known of
+     * `$foo->bar` is gone after an unset, an assignment or a call that makes the context forget properties,
+     * and so is the narrowed property of the shape.
+     */
+    public function forgetNarrowedShapeProperty(string $property_var_id): void
+    {
+        $divider = strrpos($property_var_id, '->');
+
+        if ($divider === false) {
+            return;
+        }
+
+        $var_id = substr($property_var_id, 0, $divider);
+        $property_name = substr($property_var_id, $divider + 2);
+
+        if (!isset($this->vars_in_scope[$var_id])) {
+            return;
+        }
+
+        $type = $this->vars_in_scope[$var_id];
+        $atomic_types = [];
+        $changed = false;
+
+        foreach ($type->getAtomicTypes() as $atomic_type) {
+            if ($atomic_type instanceof TObjectWithProperties
+                && isset($atomic_type->narrowed_from[$property_name])
+            ) {
+                $properties = $atomic_type->properties;
+                $properties[$property_name] = $atomic_type->narrowed_from[$property_name];
+                $narrowed_from = $atomic_type->narrowed_from;
+                unset($narrowed_from[$property_name]);
+                $atomic_type = $atomic_type->setProperties($properties)->setNarrowedFrom($narrowed_from);
+                $changed = true;
+            }
+
+            $atomic_types[] = $atomic_type;
+        }
+
+        if ($changed) {
+            $this->vars_in_scope[$var_id] = $type->getBuilder()->setTypes($atomic_types)->freeze();
+        }
+
+        // the shapes of the objects the object is a property of have it narrowed as well
+        $this->forgetNarrowedShapeProperty($var_id);
+    }
+
     public function remove(string $remove_var_id, bool $removeDescendents = true): void
     {
         if (isset($this->vars_in_scope[$remove_var_id])) {
+            $this->forgetNarrowedShapeProperty($remove_var_id);
             $existing_type = $this->vars_in_scope[$remove_var_id];
             unset($this->vars_in_scope[$remove_var_id]);
 
@@ -829,16 +917,196 @@ final class Context
     }
 
     /**
+     * Resets the static properties a callee assigns directly to their declared types
+     *
+     * @param array<string, bool> $mutations MethodStorage::$static_property_mutations
+     * @param string $called_class the class the method is called on: what `static` stands for
+     * @param string $appearing_class the class the method appears in, as its own or through a trait it uses: what
+     *                                `self` stands for
+     */
+    public function resetMutatedStaticProperties(
+        array $mutations,
+        string $called_class,
+        string $appearing_class,
+        Codebase $codebase,
+    ): void {
+        $self_class = $appearing_class;
+
+        // the classes a mutated property can belong to, by its name
+        $mutated_classes = [];
+
+        foreach ($mutations as $mutation => $_) {
+            $separator = strpos($mutation, '::$');
+
+            if ($separator === false) {
+                continue;
+            }
+
+            $mutation_class = substr($mutation, 0, $separator);
+            $property_name = substr($mutation, $separator + 3);
+
+            if ($mutation_class === 'self') {
+                $class_names = [$self_class];
+            } elseif ($mutation_class === 'static') {
+                $class_names = [$called_class];
+            } elseif ($mutation_class === 'parent') {
+                // `parent::$p` is the property of the parent: what a class further up has of its own is another one
+                $parent_class = $codebase->classlike_storage_provider->has($self_class)
+                    ? $codebase->classlike_storage_provider->get($self_class)->parent_class
+                    : null;
+                $class_names = $parent_class !== null ? [$parent_class] : [];
+            } else {
+                $class_names = [$mutation_class];
+            }
+
+            foreach ($class_names as $class_name) {
+                $mutated_classes[$property_name][strtolower($class_name)] = true;
+            }
+        }
+
+        $var_ids = array_keys($this->vars_in_scope);
+
+        foreach ($this->clauses as $clause) {
+            $var_ids = [...$var_ids, ...array_keys($clause->possibilities)];
+        }
+
+        foreach ($var_ids as $var_id) {
+            $root_id = substr($var_id, 0, strcspn($var_id, '[-'));
+            $class_length = (int) strpos($root_id, '::');
+            $class_name = self::resolveClassOfStaticPropertyId(
+                $codebase,
+                substr($root_id, 0, $class_length),
+                $this->self,
+            );
+            $property_name = substr($root_id, $class_length + 3);
+
+            if (!isset($mutated_classes[$property_name])
+                || !self::isMutatedStaticPropertyClass(
+                    $codebase,
+                    $class_name,
+                    $property_name,
+                    $mutated_classes[$property_name],
+                )
+            ) {
+                continue;
+            }
+
+            $declared_type = null;
+
+            if ($root_id === $var_id && $codebase->classlike_storage_provider->has($class_name)) {
+                $declared_type = InstancePropertyAssignmentAnalyzer::getExpandedPropertyType(
+                    $codebase,
+                    $class_name,
+                    substr($root_id, $class_length + 3),
+                    $codebase->classlike_storage_provider->get($class_name),
+                );
+            }
+
+            $this->remove($var_id);
+            $this->removeVarFromConflictingClauses($var_id);
+            $this->possibly_assigned_var_ids[$var_id] = true;
+
+            if ($declared_type !== null && isset($this->vars_in_scope[$var_id]) === false) {
+                $this->vars_in_scope[$var_id] = $declared_type;
+            }
+        }
+    }
+
+    /**
+     * @param array<string, true> $mutated_class_names lowercased
+     */
+    private static function isMutatedStaticPropertyClass(
+        Codebase $codebase,
+        string $class_name,
+        string $property_name,
+        array $mutated_class_names,
+    ): bool {
+        $class_name_lc = strtolower($class_name);
+
+        // a `self`, `static` or `parent` of a caller whose class isn't known can be the property of any of them
+        if (in_array($class_name_lc, ['self', 'static', 'parent'], true)) {
+            return true;
+        }
+
+        $declaring_class = self::getStaticPropertyDeclaringClass($codebase, $class_name, $property_name);
+
+        foreach ($mutated_class_names as $mutated_class_name => $_) {
+            // a class that redeclares the property has a property of its own
+            if (self::getStaticPropertyDeclaringClass($codebase, $mutated_class_name, $property_name)
+                === $declaring_class
+            ) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    /**
+     * The class a `self::`, `static::` or `parent::` of the code the context is of stands for
+     *
+     * @psalm-capabilities read-props
+     */
+    private static function resolveClassOfStaticPropertyId(
+        Codebase $codebase,
+        string $class_name,
+        ?string $context_self,
+    ): string {
+        $class_name_lc = strtolower($class_name);
+
+        if ($context_self === null || !in_array($class_name_lc, ['self', 'static', 'parent'], true)) {
+            return $class_name;
+        }
+
+        if ($class_name_lc !== 'parent') {
+            return $context_self;
+        }
+
+        return $codebase->classlike_storage_provider->has($context_self)
+            ? $codebase->classlike_storage_provider->get($context_self)->parent_class ?? $class_name
+            : $class_name;
+    }
+
+    private static function getStaticPropertyDeclaringClass(
+        Codebase $codebase,
+        string $class_name,
+        string $property_name,
+    ): string {
+        $declaring_class = $codebase->classOrInterfaceExists($class_name)
+            ? $codebase->properties->getDeclaringClassForProperty($class_name . '::$' . $property_name, true)
+            : null;
+
+        // every class using a trait has a property of its own, which its subclasses share
+        if ($declaring_class !== null
+            && $codebase->classlike_storage_provider->get($declaring_class)->is_trait
+        ) {
+            $class_storage = $codebase->classlike_storage_provider->get($class_name);
+
+            foreach ([$class_name, ...array_values($class_storage->parent_classes)] as $candidate) {
+                if (isset($codebase->classlike_storage_provider->get($candidate)->used_traits[
+                    strtolower($declaring_class)
+                ])) {
+                    return strtolower($candidate);
+                }
+            }
+        }
+
+        return strtolower($declaring_class ?? $class_name);
+    }
+
+    /**
      * Forgets what is known about property, static property and superglobal expressions after a call, since
      * the callee may have changed them: property expressions when the callee may write properties, static
      * property and superglobal expressions when it may write globals. A callee that may do neither, e.g. a
      * pure or read-globals function, leaves every refinement in place.
      *
      * @param CapabilitySet $callee_capabilities
+     * @param array<string, true> $preserved_methods Memoized results that cannot be affected by this call
      */
     public function removeMutableObjectVars(
         bool $methods_only = false,
         int $callee_capabilities = Capabilities::ALL,
+        array $preserved_methods = [],
     ): void {
         $forget_properties
             = ($callee_capabilities & (Capabilities::WRITE_PROPS | Capabilities::WRITE_THIS_PROPS)) !== 0;
@@ -851,7 +1119,8 @@ final class Context
         $vars_to_remove = [];
 
         foreach ($this->vars_in_scope as $var_id => $type) {
-            if ($type->has_mutations
+            if (!isset($preserved_methods[$var_id])
+                && $type->has_mutations
                 && (($forget_properties && str_contains($var_id, '->'))
                     || ($forget_statics && (str_contains($var_id, '::') || self::isInSuperGlobal($var_id))))
                 && (!$methods_only || strpos($var_id, '()'))
@@ -866,6 +1135,8 @@ final class Context
 
         foreach ($vars_to_remove as $var_id) {
             $this->remove($var_id, false);
+            // forgotten, not unset: Context::update() tells the two apart
+            $this->vars_possibly_in_scope[$var_id] = true;
         }
 
         $clauses_to_keep = [];
@@ -874,7 +1145,8 @@ final class Context
             $abandon_clause = false;
 
             foreach ($clause->possibilities as $key => $_) {
-                if ((($forget_properties && str_contains($key, '->'))
+                if (!isset($preserved_methods[$key])
+                    && (($forget_properties && str_contains($key, '->'))
                         || ($forget_statics && (str_contains($key, '::') || self::isInSuperGlobal($key))))
                     && (!$methods_only || strpos($key, '()'))
                 ) {
@@ -909,6 +1181,14 @@ final class Context
         $this->check_methods = $this->check_methods && $op_context->check_methods;
         $this->check_functions = $this->check_functions && $op_context->check_functions;
         $this->check_consts = $this->check_consts && $op_context->check_consts;
+
+        // `!defined('A') || !defined('B')`: both are defined where the condition is false
+        foreach ($op_context->constants as $const_name => $const_type) {
+            if (!isset($this->constants[$const_name])) {
+                $this->constants[$const_name] = $const_type;
+                $this->vars_in_scope[$const_name] = $const_type;
+            }
+        }
     }
 
     /**
