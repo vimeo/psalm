@@ -15,7 +15,6 @@ use Psalm\CodeLocation;
 use Psalm\Codebase;
 use Psalm\Internal\Analyzer\ClassLikeAnalyzer;
 use Psalm\Issue\ParseError;
-use Psalm\IssueBuffer;
 use Psalm\Storage\ClassLikeStorage;
 use Psalm\Storage\FileStorage;
 use Psalm\Type;
@@ -69,13 +68,13 @@ final class TypeHintResolver
                 );
 
                 if ($type !== null) {
+                    $seen_types = $type->getAtomicTypes();
+
                     foreach ($resolved_type->getAtomicTypes() as $resolved_key => $_) {
-                        if (isset($type->getAtomicTypes()[$resolved_key])) {
-                            IssueBuffer::maybeAdd(
-                                new ParseError(
-                                    'Duplicate type ' . $resolved_key . ' is redundant',
-                                    $code_location,
-                                ),
+                        if (isset($seen_types[$resolved_key])) {
+                            $file_storage->scan_issues[] = new ParseError(
+                                'Duplicate type ' . $resolved_key . ' is redundant',
+                                $code_location,
                             );
                         }
                     }

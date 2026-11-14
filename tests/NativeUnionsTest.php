@@ -22,6 +22,20 @@ final class NativeUnionsTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'legalNativeUnionsAreNotReportedAsDuplicates' => [
+                'code' => <<<'PHP'
+                    <?php
+                    final class A {}
+                    final class B {}
+
+                    function f(int|string|null $a, A|B $b, ?A $c, int|float|bool $d): void {
+                        echo gettype($a), gettype($b), gettype($c), gettype($d);
+                    }
+                    PHP,
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
             'nativeTypeUnionInConstructor' => [
                 'code' => '<?php
                     interface A {
