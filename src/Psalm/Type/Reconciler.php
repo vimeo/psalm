@@ -267,6 +267,7 @@ class Reconciler
             // a variable that is not set reads as null: only isset() and empty() tell it from one set to null
             $undefined_reads_as_null = $result_type
                 && $result_type->possibly_undefined
+                && !$result_type->possibly_undefined_from_try
                 && !$has_isset
                 && !$has_inverted_isset
                 && !$has_empty
