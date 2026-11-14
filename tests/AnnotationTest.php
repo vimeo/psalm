@@ -184,6 +184,65 @@ final class AnnotationTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'selfAndStaticOfAGlobalTagAreTheClassOfTheMethod' => [
+                'code' => '<?php
+                    final class K {
+                        public function me(): int {
+                            return 1;
+                        }
+
+                        /**
+                         * @global static $k
+                         * @global self $s
+                         */
+                        public function g(): int {
+                            global $k, $s;
+
+                            /** @psalm-check-type-exact $k = K&static */
+                            /** @psalm-check-type-exact $s = K */
+
+                            return $k->me() + $s->me();
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
+            'staticOfAGlobalTagIsTheClassOfTheMethodAfterACallThatMayWriteTheGlobal' => [
+                'code' => '<?php
+                    class Foo {
+                        /** @return static */
+                        public function me() {
+                            return $this;
+                        }
+
+                        /** @global static $q */
+                        public function c(): Foo {
+                            global $q;
+
+                            $q->c();
+                            $x = $q->me();
+
+                            /** @psalm-check-type-exact $x = Foo&static */
+
+                            return $x;
+                        }
+                    }',
+            ],
+            'globalDocblockStaticTypeDoesNotCrashAMethodCall' => [
+                'code' => '<?php
+                    class Foo {
+                        /**
+                         * @global static $bar
+                         * @return void
+                         */
+                        public function instance() {
+                            global $bar;
+
+                            $bar->instance();
+                        }
+                    }',
+            ],
             'optionalShapeKeysNamedLikeScalarAliases' => [
                 'code' => '<?php
                     /** @var array{double?: string, integer?: int, boolean?: bool, real?: float} $a */
@@ -2343,7 +2402,6 @@ final class AnnotationTest extends TestCase
                         public function foo($a): void {}
                     }',
                 'error_message' => 'MissingParamType',
-                'error_levels' => ['MethodSignatureMismatch'],
             ],
             'psalmInvalidVar' => [
                 'code' => '<?php
@@ -2456,6 +2514,27 @@ final class AnnotationTest extends TestCase
                     /** @param ArrayIterator|string[] $i */
                     function takesArrayIteratorOfString(ArrayIterator $i): void {}',
                 'error_message' => 'MismatchingDocblockParamType',
+            ],
+            'mismatchingDocblockParamTypeShowsExactType' => [
+                'code' => '<?php
+                    /** @param numeric-string $a */
+                    function f(int $a): void {
+                        echo $a;
+                    }',
+                'error_message' => 'MismatchingDocblockParamType - src' . DIRECTORY_SEPARATOR . 'somefile.php:2:32'
+                    . ' - Parameter $a has wrong type \'numeric-string\', should be \'int',
+            ],
+            'mismatchingDocblockParamTypeShowsTemplateBound' => [
+                'code' => '<?php
+                    /**
+                     * @template T of string
+                     * @param T $s
+                     */
+                    function f(int $s): void {
+                        echo $s;
+                    }',
+                'error_message' => 'MismatchingDocblockParamType - src' . DIRECTORY_SEPARATOR . 'somefile.php:4:31'
+                    . ' - Parameter $s has wrong type \'T:fn-f as string\', should be \'int',
             ],
             'noPhpStormAnnotationsPossiblyInvalid' => [
                 'code' => '<?php
@@ -2660,7 +2739,6 @@ final class AnnotationTest extends TestCase
                     /**
                      * @param string &...$s
                      * @psalm-suppress UnusedParam
-                     * @psalm-mutation-free
                      */
                     function foo(&...$s) : void {}
 
@@ -2673,7 +2751,6 @@ final class AnnotationTest extends TestCase
                     /**
                      * @param string ...&$s
                      * @psalm-suppress UnusedParam
-                     * @psalm-mutation-free
                      */
                     function foo(&...$s) : void {}
 
@@ -2686,7 +2763,6 @@ final class AnnotationTest extends TestCase
                     /**
                      * @param string[] &$s
                      * @psalm-suppress UnusedParam
-                     * @psalm-mutation-free
                      */
                     function foo(&...$s) : void {}
 

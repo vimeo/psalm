@@ -586,7 +586,7 @@ final class EmptyTest extends TestCase
                     }
                     PHP,
                 'assertions' => [
-                    '$x===' => 'string', // perhaps this should be improved in future
+                    '$x===' => '\'\'',
                 ],
             ],
             'issue-9205-3' => [
@@ -762,7 +762,7 @@ final class EmptyTest extends TestCase
                         }
                     }',
                 'error_message' => 'RedundantCondition',
-                'error_levels' => ['MixedAssignment', 'MissingParamType'],
+                'error_levels' => ['MixedAssignment'],
             ],
             'preventEmptyOnBool' => [
                 'code' => '<?php

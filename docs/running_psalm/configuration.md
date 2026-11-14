@@ -204,7 +204,12 @@ Setting this to `false` means that function calls will cause Psalm to forget wha
   allowStringToStandInForClass="[bool]"
 >
 ```
-When `true`, strings can be used as classes, meaning `$some_string::someMethod()` is allowed. If `false`, only class constant strings (of the form `Foo\Bar::class`) can stand in for classes, otherwise an `InvalidStringClass` issue is emitted. Defaults to `false`.
+When `true`, string literals naming existing, compatible classes are accepted in `class-string`
+arguments and return values, dynamic class expressions, and comparisons against class strings.
+When `false`, prefer `Foo\Bar::class` to a literal class name. Class expressions and
+comparisons emit `InvalidStringClass`; type-checked class-string arguments and returns
+emit the usual type diagnostics. Ordinary strings outside class-name contexts are unaffected.
+Defaults to `false`.
 
 #### disableSuppressAll
 
@@ -291,7 +296,7 @@ When `true`, Psalm infers property types from assignments seen in straightforwar
   findUnusedVariablesAndParams="[bool]"
 >
 ```
-When `true`, Psalm will attempt to find all unused variables, the equivalent of running with `--find-unused-variables`. Defaults to `false`.
+When `true`, Psalm will attempt to find all unused variables, the equivalent of running with `--find-unused-variables`. If not given, it takes the value of `findUnusedCode` when that is set; otherwise it is `true` at `errorLevel="1"` (unless `reportMixedIssues="false"`) and `false` at the other levels.
 
 #### findUnusedCode
 ```xml

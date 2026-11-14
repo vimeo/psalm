@@ -390,6 +390,7 @@ final class ElseIfAnalyzer
                 array_merge($new_stmts_assigned_var_ids, $assigned_in_conditional_var_ids),
                 $new_stmts_possibly_assigned_var_ids,
                 $newly_reconciled_var_ids,
+                assigned_in_conditional_var_ids: $assigned_in_conditional_var_ids,
             );
 
             $reasonable_clause_count = count($if_scope->reasonable_clauses);
