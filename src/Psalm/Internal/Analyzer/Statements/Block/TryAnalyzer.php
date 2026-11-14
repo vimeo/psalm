@@ -28,6 +28,7 @@ use function array_map;
 use function array_merge;
 use function in_array;
 use function is_string;
+use function strpos;
 use function strtolower;
 
 /**
@@ -136,7 +137,10 @@ final class TryAnalyzer
             if (!isset($try_context->vars_in_scope[$var_id])) {
                 $try_context->vars_in_scope[$var_id] = $type;
 
-                $context->vars_in_scope[$var_id] = $type->setPossiblyUndefined(true, true);
+                // a property that was fetched in the try is not a variable that may have not been defined
+                $context->vars_in_scope[$var_id] = strpos($var_id, '->') !== false && strpos($var_id, '[') === false
+                    ? $type
+                    : $type->setPossiblyUndefined(true, true);
             } else {
                 $try_context->vars_in_scope[$var_id] = Type::combineUnionTypes(
                     $try_context->vars_in_scope[$var_id],
