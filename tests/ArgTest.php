@@ -968,6 +968,31 @@ final class ArgTest extends TestCase
                 'error_levels' => [],
                 'php_version' => '8.0',
             ],
+            'mixedArgumentShowsExactParamType' => [
+                'code' => '<?php
+                    interface I {
+                        /**
+                         * @param non-empty-string $a
+                         */
+                        public function f(string $a): void;
+                    }
+
+                    function g(I $i, mixed $m): void {
+                        $i->f($m);
+                    }',
+                'error_message' => 'MixedArgument - src' . DIRECTORY_SEPARATOR . 'somefile.php:10:31 - Argument 1 of'
+                    . ' I::f cannot be mixed, expecting non-empty-string',
+                'error_levels' => [],
+                'php_version' => '8.0',
+            ],
+            'mixedArgumentFromUntypedExpressionShowsExactParamType' => [
+                'code' => '<?php
+                    /** @param numeric-string $s */
+                    function f(string $s): void {}
+                    f(eval(\'return "42";\'));',
+                'error_message' => 'MixedArgument - src' . DIRECTORY_SEPARATOR . 'somefile.php:4:23 - Argument 1 of'
+                    . ' f cannot be mixed, expecting numeric-string',
+            ],
             'arrayWithoutAllNamedParametersSuppressMixed' => [
                 'code' => '<?php
                     class User {

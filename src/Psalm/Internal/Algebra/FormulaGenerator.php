@@ -662,7 +662,7 @@ final class FormulaGenerator
      *
      * @return array<string, true>
      */
-    private static function getAssignedVarIds(PhpParser\Node\Expr $expr, ?string $this_class_name): array
+    public static function getAssignedVarIds(PhpParser\Node\Expr $expr, ?string $this_class_name): array
     {
         $visitor = new class extends PhpParser\NodeVisitorAbstract {
             /** @var list<PhpParser\Node\Expr> */
