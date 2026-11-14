@@ -2834,6 +2834,73 @@ final class MixinAnnotationTest extends TestCase
                 'ignored_issues' => [],
                 'php_version' => '8.0',
             ],
+            'propertiesOfTheGenericMixinOfAnInterface' => [
+                'code' => '<?php
+                    /**
+                     * @template TValue
+                     * @property-read Expectation<TValue> $not
+                     */
+                    final class Expectation
+                    {
+                        /** @var TValue */
+                        public mixed $value;
+
+                        /** @param TValue $value */
+                        public function __construct(mixed $value)
+                        {
+                            $this->value = $value;
+                        }
+
+                        public function __get(string $name): mixed
+                        {
+                            return $this;
+                        }
+                    }
+
+                    /** @mixin Expectation<string> */
+                    interface StringExpectation {}
+
+                    function f(StringExpectation $e): void
+                    {
+                        $not = $e->not;
+                        $value = $e->value;
+                        /** @psalm-check-type-exact $not = Expectation<string> */
+                        /** @psalm-check-type-exact $value = string */
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'cycleOfGenericMixinsEnds' => [
+                'code' => '<?php
+                    /**
+                     * @template T
+                     * @mixin Right<T>
+                     */
+                    final class Left {}
+
+                    /**
+                     * @template T
+                     * @mixin Left<T>
+                     */
+                    final class Right
+                    {
+                        /** @return T */
+                        public function get(): mixed
+                        {
+                            throw new Exception();
+                        }
+                    }
+
+                    /** @param Left<int> $left */
+                    function f(Left $left): int
+                    {
+                        return $left->get();
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
         ];
     }
 
