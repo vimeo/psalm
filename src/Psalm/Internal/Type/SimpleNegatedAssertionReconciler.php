@@ -69,6 +69,7 @@ use Psalm\Type\Union;
 use function assert;
 use function max;
 use function str_contains;
+use function strpbrk;
 use function strtolower;
 
 /**
@@ -96,7 +97,11 @@ final class SimpleNegatedAssertionReconciler extends Reconciler
 
         if ($assertion instanceof IsNotIsset) {
             if ($existing_var_type->possibly_undefined) {
-                return Type::getNever();
+                // a variable that is not set reads as null (and may still be undefined), an offset or a property
+                // that is not set has no value
+                return $key !== null && $key[0] === '$' && strpbrk($key, '[-:') === false
+                    ? Type::getNull()->setPossiblyUndefined(true)
+                    : Type::getNever();
             }
 
             if (!$existing_var_type->isNullable()
