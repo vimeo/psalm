@@ -23,17 +23,24 @@ use function array_values;
 use function assert;
 use function dirname;
 use function explode;
+use function file_put_contents;
 use function getcwd;
 use function implode;
+use function rename;
 use function reset;
 use function strlen;
 use function strpos;
 use function substr;
+use function sys_get_temp_dir;
+use function tempnam;
+use function unlink;
 
 use const DIRECTORY_SEPARATOR;
 
 final class StubTest extends DeferredAnalyzerTestCase
 {
+    private ?string $native_function_stub = null;
+
     #[Override]
     public static function setUpBeforeClass(): void
     {
@@ -44,6 +51,17 @@ final class StubTest extends DeferredAnalyzerTestCase
         $argv = [];
 
         new TestConfig();
+    }
+
+    #[Override]
+    public function tearDown(): void
+    {
+        if ($this->native_function_stub !== null) {
+            unlink($this->native_function_stub);
+            $this->native_function_stub = null;
+        }
+
+        parent::tearDown();
     }
 
     private function getProjectAnalyzerWithConfig(Config $config): ProjectAnalyzer
@@ -353,8 +371,20 @@ final class StubTest extends DeferredAnalyzerTestCase
         $this->analyzeFile($file_path, new Context());
     }
 
+    /**
+     * A `.php` stub of a native function: written at run time, since PHP cannot lint a file that redeclares it.
+     */
     private function getProjectAnalyzerWithNativeFunctionStub(): ProjectAnalyzer
     {
+        $stub_path = (string) tempnam(sys_get_temp_dir(), 'psalm_native_function_stub');
+        $this->native_function_stub = $stub_path . '.php';
+        rename($stub_path, $this->native_function_stub);
+        file_put_contents(
+            $this->native_function_stub,
+            '<?php
+                function fdiv(float $num1, float $num2): float {}',
+        );
+
         return $this->getProjectAnalyzerWithConfig(
             TestConfig::loadFromXML(
                 dirname(__DIR__),
@@ -367,7 +397,7 @@ final class StubTest extends DeferredAnalyzerTestCase
                     </projectFiles>
 
                     <stubs>
-                        <file name="tests/fixtures/stubs/native_function.php" />
+                        <file name="' . $this->native_function_stub . '" />
                     </stubs>
                 </psalm>',
             ),
