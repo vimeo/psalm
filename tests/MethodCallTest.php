@@ -289,12 +289,6 @@ final class MethodCallTest extends TestCase
                         if (null !== $b?->test()) {
                             $b->exec();
                         }
-                    }
-
-                    function c(?B $b): void {
-                        if ($b?->test() != null) {
-                            $b->exec();
-                        }
                     }',
                 'assertions' => [],
                 'ignored_issues' => [],
@@ -2159,6 +2153,44 @@ final class MethodCallTest extends TestCase
     public static function providerInvalidCodeParse(): iterable
     {
         return [
+            'nullsafeMethodCallLooselyNotEqualToNullElseBranchKeepsPossiblyNullReceiver' => [
+                'code' => '<?php
+                    final class B {
+                        public function test(): bool {
+                            return false;
+                        }
+
+                        public function exec(): void {}
+                    }
+
+                    function f(?B $b): void {
+                        if ($b?->test() != null) {
+                            return;
+                        }
+
+                        $b->exec();
+                    }',
+                'error_message' => 'PossiblyNullReference',
+                'error_levels' => [],
+                'php_version' => '8.0',
+            ],
+            'nullsafePropertyLooselyEqualToNullKeepsPossiblyNullReceiver' => [
+                'code' => '<?php
+                    final class P {
+                        public int $v = 0;
+
+                        public function exec(): void {}
+                    }
+
+                    function f(?P $p): void {
+                        if ($p?->v == null) {
+                            $p->exec();
+                        }
+                    }',
+                'error_message' => 'PossiblyNullReference',
+                'error_levels' => [],
+                'php_version' => '8.0',
+            ],
             'nullsafeNullableMethodCallNotIdenticalToNullElseBranchKeepsPossiblyNullReceiver' => [
                 'code' => '<?php
                     final class B {

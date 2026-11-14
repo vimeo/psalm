@@ -768,8 +768,12 @@ final class FormulaGenerator
         $receiver_comparison = self::createComparison($conditional, $receiver, $null_operand, $nullsafe_is_left);
 
         // the fetch is null only by short-circuiting: the property is never null itself, so comparing the
-        // fetch to null is comparing the receiver to null, and a comparison of the property would be redundant
-        if (NullsafeChainState::of($nullsafe_fetch) === NullsafeChainState::ShortCircuit) {
+        // fetch to null is comparing the receiver to null, and a comparison of the property would be redundant.
+        // A loose comparison is also true for a falsy property of a receiver that is not null (`0 == null`)
+        if (($conditional instanceof PhpParser\Node\Expr\BinaryOp\Identical
+                || $conditional instanceof PhpParser\Node\Expr\BinaryOp\NotIdentical)
+            && NullsafeChainState::of($nullsafe_fetch) === NullsafeChainState::ShortCircuit
+        ) {
             return $receiver_comparison;
         }
 

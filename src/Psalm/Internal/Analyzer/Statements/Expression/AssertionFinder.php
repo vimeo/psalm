@@ -2253,7 +2253,8 @@ final class AssertionFinder
             $chain_link = $chain_link->var;
         }
 
-        if (count($nullsafe_receivers) === 1) {
+        // `!=` is also false for a falsy value of a receiver that is not null (`false == null`)
+        if (count($nullsafe_receivers) === 1 && $conditional instanceof PhpParser\Node\Expr\BinaryOp\NotIdentical) {
             $nullsafe_var_name = ExpressionIdentifier::getExtendedVarId(
                 $nullsafe_receivers[0],
                 $this_class_name,
