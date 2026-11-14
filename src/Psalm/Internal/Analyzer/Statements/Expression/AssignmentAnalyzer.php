@@ -111,8 +111,8 @@ use function reset;
 use function spl_object_id;
 use function str_contains;
 use function str_starts_with;
-use function strpos;
 use function strncasecmp;
+use function strpos;
 use function strtolower;
 use function substr;
 
