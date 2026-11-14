@@ -239,8 +239,10 @@ final class ArrayFetchAnalyzer
             && !$context->vars_in_scope[$keyed_array_var_id]->possibly_undefined
             && $stmt_var_type
             && !$stmt_var_type->hasClassStringMap()
-            // the item the code remembers says nothing about reading an offset of null
-            && ($context->inside_isset || !$stmt_var_type->isNullable())
+            // what the code remembers may hold null for the offset of a null array: it is not read through then
+            && ($context->inside_isset
+                || !$stmt_var_type->isNullable()
+                || !$context->vars_in_scope[$keyed_array_var_id]->isNullable())
         ) {
             $stmt_type = $context->vars_in_scope[$keyed_array_var_id];
 

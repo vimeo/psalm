@@ -612,6 +612,48 @@ final class ArrayAccessTest extends TestCase
         );
     }
 
+    public function testOffsetOfANullableArrayIsReportedWhereItIsFirstRead(): void
+    {
+        $this->project_analyzer->getConfig()->throw_exception = false;
+        $this->project_analyzer->setPhpVersion('8.1', 'tests');
+        $file_path = self::$src_dir_path . 'somefile.php';
+
+        $this->addFile(
+            $file_path,
+            '<?php
+                /** @param array<string, string>|null $a */
+                function truthy(?array $a): void {
+                    if ($a["k"] && strlen($a["k"]) > 1) { echo 1; }
+                }
+
+                /** @param array<string, string|null>|null $a */
+                function notNull(?array $a): void {
+                    if ($a["k"] !== null && strlen($a["k"]) > 1) { echo 1; }
+                }
+
+                /** @param array<string, list<string>|int>|null $a */
+                function isArr(?array $a): void {
+                    if (is_array($a["k"]) && count($a["k"]) > 0) { echo 1; }
+                }
+
+                /** @param array<string, list<string>>|null $lists */
+                function unguarded(?array $lists): void {
+                    if (isset($lists["codes"]) && is_array($lists["codes"])) { echo 1; }
+                    if (is_array($lists["codes"])) { echo 2; }
+                }',
+        );
+        $this->analyzeFile($file_path, new Context());
+
+        $lines = [];
+        foreach (IssueBuffer::getIssuesDataForFile($file_path) as $issue) {
+            if ($issue->type === 'PossiblyNullArrayAccess') {
+                $lines[] = $issue->line_from;
+            }
+        }
+
+        $this->assertSame([4, 9, 14, 20], $lines);
+    }
+
     /**
      * @psalm-pure
      */
