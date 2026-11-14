@@ -178,6 +178,23 @@ final class IfElseAnalyzer
 
         $entry_clauses = $context->clauses;
 
+        // what the earlier conditions said of a variable the condition assigns is not true of the new value: the
+        // body does not get those clauses (the paradox check below drops them per operand by itself)
+        $body_entry_clauses = [];
+
+        foreach ($entry_clauses as $c) {
+            foreach ($c->possibilities as $key => $_value) {
+                foreach ($assigned_in_conditional_var_ids as $conditional_assigned_var_id => $_) {
+                    if (preg_match('/^' . preg_quote($conditional_assigned_var_id, '/') . '(\[|-|$)/', $key)) {
+                        $c = new Clause([], $cond_object_id, $cond_object_id, true);
+                        break 2;
+                    }
+                }
+            }
+
+            $body_entry_clauses[] = $c;
+        }
+
         // the clauses the condition has already reconciled are not established independently of it
         $already_reconciled_clauses = [
             ...$if_context->reconciled_expression_clauses,
@@ -200,8 +217,8 @@ final class IfElseAnalyzer
 
         $if_clauses = Algebra::simplifyCNF($if_clauses);
 
-        $if_context->clauses = $entry_clauses
-            ? Algebra::simplifyCNF([...$entry_clauses, ...$if_clauses])
+        $if_context->clauses = $body_entry_clauses
+            ? Algebra::simplifyCNF([...$body_entry_clauses, ...$if_clauses])
             : $if_clauses;
 
         if ($if_context->reconciled_expression_clauses) {

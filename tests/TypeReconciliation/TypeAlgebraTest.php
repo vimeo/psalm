@@ -58,6 +58,42 @@ final class TypeAlgebraTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'aCaseOfASwitchTrueAssigningAVariableHasNoClausesOfItsOldValue' => [
+                'code' => '<?php
+                    function f(string $s): int {
+                        switch (true) {
+                            case ($pos = strpos($s, "a")) !== false:
+                                return $pos;
+                            case ($pos = strpos($s, "b")) !== false:
+                                return $pos;
+                        }
+
+                        return -1;
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
+            'anIfConditionAssigningAVariableHasNoClausesOfItsOldValueFromAnEnclosingIf' => [
+                'code' => '<?php
+                    final class A {}
+
+                    function loadNext(): ?A {
+                        return null;
+                    }
+
+                    function f(?A $a, ?A $b, bool $c): void {
+                        if ($a || $b) {
+                            if ($c && !($a = loadNext())) {
+                                /** @psalm-check-type-exact $b = A|null */
+                                echo get_debug_type($b);
+                            }
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
             'aFunctionExistsCheckOfANewerNativeFunctionDoesNotNarrowThePhpVersion' => [
                 'code' => '<?php
                     function f(): void {
@@ -2102,6 +2138,17 @@ final class TypeAlgebraTest extends TestCase
     public static function providerInvalidCodeParse(): iterable
     {
         return [
+            'anIfConditionTestingAVariableBeforeAssigningItIsCheckedAgainstTheEnclosingIf' => [
+                'code' => '<?php
+                    function f(string $m): void {
+                        if ($m !== "a") {
+                            if (($m === "a") || (($m = strtolower($m)) && rand(0, 1))) {
+                                echo 1;
+                            }
+                        }
+                    }',
+                'error_message' => 'ParadoxicalCondition - src' . DIRECTORY_SEPARATOR . 'somefile.php:4:34',
+            ],
             'instanceofStoredInVariableIsForgottenWhenTheVariableIsReassigned' => [
                 'code' => '<?php
                     interface Foo {}
