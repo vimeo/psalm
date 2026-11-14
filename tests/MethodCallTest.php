@@ -205,6 +205,75 @@ final class MethodCallTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'memoizedGetterIsNotNarrowedAfterABranchThatMutatesItsReceiver' => [
+                'code' => '<?php
+                    final class Quote {
+                        public function amount(): int {
+                            return 1;
+                        }
+                    }
+
+                    final class Order {
+                        private int $counter = 0;
+
+                        /**
+                         * @return false|Quote
+                         * @psalm-mutation-free
+                         */
+                        public function quote() {
+                            return $this->counter > 0 ? new Quote() : false;
+                        }
+
+                        public function touch(): void {
+                            $this->counter++;
+                        }
+                    }
+
+                    function f(Order $o): int {
+                        $total = 0;
+
+                        if ($o->quote() instanceof Quote) {
+                            $total += $o->quote()->amount();
+                            $o->touch();
+                        }
+
+                        if ($o->quote() && $o->quote()->amount() > 0) {
+                            $total++;
+                        }
+
+                        return $total;
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'propertyIsNotNarrowedAfterABranchThatCallsAMethodChangingIt' => [
+                'code' => '<?php
+                    final class Quote {
+                        public function amount(): int {
+                            return 1;
+                        }
+                    }
+
+                    final class Holder {
+                        public ?Quote $quote = null;
+
+                        public function reset(): void {
+                            $this->quote = null;
+                        }
+                    }
+
+                    function g(Holder $h): int {
+                        if ($h->quote instanceof Quote) {
+                            $h->reset();
+                        }
+
+                        return $h->quote !== null ? $h->quote->amount() : 0;
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
             'methodCallOnATemplateBoundedByAnotherTemplate' => [
                 'code' => '<?php
                     interface Document {
