@@ -1841,6 +1841,8 @@ function get_defined_constants(bool $categorize = false): array {}
  */
 function is_a($object_or_class, string $class, $allow_string = false): bool{}
 
+// The file tests read the file system, so they are deliberately not `@psalm-pure`: they only assert that the
+// path they found is not empty.
 /**
  * @psalm-assert-if-true =non-empty-string $filename
  */
