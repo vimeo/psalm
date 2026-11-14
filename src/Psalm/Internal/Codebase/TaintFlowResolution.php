@@ -8,6 +8,7 @@ use Psalm\Codebase;
 use Psalm\Config;
 use Psalm\Internal\Analyzer\ProjectAnalyzer;
 use Psalm\Internal\DataFlow\DataFlowNode;
+use Psalm\Internal\DataFlow\NodeTable;
 use Psalm\Internal\DataFlow\Path;
 use Psalm\Progress\Progress;
 use Psalm\Type\TaintKind;
@@ -286,11 +287,18 @@ final class TaintFlowResolution
     private array $unwalked_files = [];
 
     /**
-     * Node id => node, for the nodes not registered in the graph (see getNode())
+     * Node id => row, for the nodes not registered in the graph (see getRow())
      *
-     * @var array<string, ?DataFlowNode>
+     * @var array<string, string|DataFlowNode|null>
      */
     private array $derived_nodes = [];
+
+    /**
+     * Sink id => the taints of the sink
+     *
+     * @var array<string, int>
+     */
+    private array $sink_taints = [];
 
     /** @var array<string, int> */
     private array $path_type_ids = [];
@@ -800,9 +808,9 @@ final class TaintFlowResolution
 
     /**
      * @param array<string, array<string, Path>> $forward_edges
-     * @param array<string, DataFlowNode> $nodes
-     * @param array<string, DataFlowNode> $sources
-     * @param array<string, DataFlowNode> $sinks
+     * @param array<string, string|DataFlowNode> $nodes rows of $table
+     * @param array<string, string|DataFlowNode> $sources rows of $table
+     * @param array<string, string|DataFlowNode> $sinks rows of $table
      * @param array<string, array<string, string>> $specializations
      * @param array<string, true> $specialized_calls
      * @param array<string, true> $despecialized_calls
@@ -819,6 +827,7 @@ final class TaintFlowResolution
         private readonly array $specialized_calls,
         private readonly array $despecialized_calls,
         private readonly array $shared_state,
+        private readonly NodeTable $table,
         private readonly Config $config,
         private readonly ProjectAnalyzer $project_analyzer,
         private readonly Codebase $codebase,
@@ -826,6 +835,10 @@ final class TaintFlowResolution
         // NO_OPEN_ASSIGNMENTS and CALL_OPEN_ASSIGNMENTS
         $this->internOpenAssignments([[], []], [self::NO_CALL, self::NO_CALL]);
         $this->internOpenAssignments([[], []], [0, 0], self::INHERITED_SLOT);
+
+        foreach ($sinks as $id => $row) {
+            $this->sink_taints[$id] = $table->getTaints($row);
+        }
     }
 
     public function resolve(Progress $progress): void
@@ -836,13 +849,15 @@ final class TaintFlowResolution
         ksort($sources);
 
         foreach ($sources as $id => $source) {
-            if (!isset($this->sink_reachable[$id]) || $source->taints === 0) {
+            $source_taints = $this->table->getTaints($source);
+
+            if (!isset($this->sink_reachable[$id]) || $source_taints === 0) {
                 continue;
             }
 
             $open_assignments = self::NO_OPEN_ASSIGNMENTS;
 
-            foreach ($source->path_types as $path_type) {
+            foreach ($source instanceof DataFlowNode ? $source->path_types : [] as $path_type) {
                 $next = $this->getNextOpenAssignments($open_assignments, $this->getPathTypeId($path_type));
 
                 if ($next >= 0) {
@@ -850,7 +865,7 @@ final class TaintFlowResolution
                 }
             }
 
-            $this->reach($id, -1, $open_assignments, 0, $source->taints, -1, 0, -1);
+            $this->reach($id, -1, $open_assignments, 0, $source_taints, -1, 0, -1);
         }
 
         // Each round walks the states reached, or given more taints, in the previous one. The states are
@@ -892,12 +907,12 @@ final class TaintFlowResolution
 
         // Specialization links taken from the unspecialized_id of the nodes, rather than from their ids, as
         // well (see linkSpecialization()). Sinks are registered in $this->nodes too, but sources are not.
-        foreach ($this->nodes as $node) {
-            $this->linkSpecializationByField($node);
+        foreach ($this->nodes as $id => $row) {
+            $this->linkSpecializationByField($id, $row);
         }
 
-        foreach ($this->sources as $node) {
-            $this->linkSpecializationByField($node);
+        foreach ($this->sources as $id => $row) {
+            $this->linkSpecializationByField($id, $row);
         }
 
         // The search runs backwards from the sinks over the forward edges, treating specialization links
@@ -986,14 +1001,16 @@ final class TaintFlowResolution
      *
      * @psalm-external-mutation-free
      */
-    private function linkSpecializationByField(DataFlowNode $node): void
+    private function linkSpecializationByField(string $id, string|DataFlowNode $row): void
     {
-        if ($node->unspecialized_id === null) {
+        $unspecialized_id = $this->table->getUnspecializedId($id, $row);
+
+        if ($unspecialized_id === null) {
             return;
         }
 
-        $this->specialization_links[$node->id][$node->unspecialized_id] = true;
-        $this->specialization_links[$node->unspecialized_id][$node->id] = true;
+        $this->specialization_links[$id][$unspecialized_id] = true;
+        $this->specialization_links[$unspecialized_id][$id] = true;
     }
 
     /**
@@ -1588,22 +1605,23 @@ final class TaintFlowResolution
      */
     private function scopeSlot(int $open_assignments, int $slot, string $node_id): int
     {
-        $node = $this->getNode($node_id);
-        $location = $node?->code_location;
+        $row = $this->getRow($node_id);
 
-        if ($node === null || $location === null) {
+        if ($row === null || !$this->table->hasLocation($row)) {
             $scoped_slot = $slot === self::INHERITED_SLOT ? self::BLOCKED_SLOT : self::NO_SLOT;
         } elseif ($slot >= 0) {
             $foreach_marker = $this->slots[$slot][0];
             [$file_path, $function_start, $function_end, $start, $end, $body_start]
                 = $this->foreach_markers[$foreach_marker] ??= self::parseForeachMarker($foreach_marker);
 
-            $scoped_slot = $location->file_path === $file_path
-                && $location->raw_file_start >= $function_start
-                && $location->raw_file_end <= $function_end
-                && ($location->raw_file_start < $start
-                    || $location->raw_file_end > $end
-                    || ($location->raw_file_start >= $body_start && str_starts_with($node->label, '$')))
+            [$raw_file_start, $raw_file_end] = $this->table->getRawBounds($row);
+
+            $scoped_slot = $this->table->getFilePath($row) === $file_path
+                && $raw_file_start >= $function_start
+                && $raw_file_end <= $function_end
+                && ($raw_file_start < $start
+                    || $raw_file_end > $end
+                    || ($raw_file_start >= $body_start && str_starts_with($this->table->getLabel($row), '$')))
                 ? self::NO_SLOT
                 : $slot;
         } else {
@@ -2063,7 +2081,7 @@ final class TaintFlowResolution
                 && count($this->state_ids[$id]) >= self::CONVERGING_STATES
                 && ($this->isOutsideOfCalls($this->state_contexts[$state])
                     || count($this->call_entries_reaching[$id] ?? []) > 1
-                    || $this->getNode($id)?->code_location === null)
+                    || !$this->hasLocation($id))
             ) {
                 $this->enterConvergence($state, $id);
             } else {
@@ -2073,20 +2091,20 @@ final class TaintFlowResolution
             return;
         }
 
-        $node = $this->getNode($id);
+        $row = $this->getRow($id);
 
         // as through its edges (see walkEdges()), a flow doesn't enter a body or leave one from a node it isn't
         // walked from
-        if ($node === null || !$this->isWalkedFrom($node)) {
+        if ($row === null || !$this->isWalkedFrom($row)) {
             return;
         }
 
-        $specialization_key = $node->specialization_key;
+        $specialization_key = $this->table->getSpecializationKey($id, $row);
 
         if ($specialization_key !== null && isset($this->specialized_calls[$specialization_key])) {
             // A specialized node: de-specialize, entering its shared body.
             /** @var string $unspecialized_id */
-            $unspecialized_id = $node->unspecialized_id;
+            $unspecialized_id = $this->table->getUnspecializedId($id, $row);
 
             if (!isset($this->forward_edges[$unspecialized_id])) {
                 return;
@@ -2175,7 +2193,7 @@ final class TaintFlowResolution
      */
     private function walkEdges(int $state, string $from_id): void
     {
-        $from = $this->getNode($from_id);
+        $from = $this->getRow($from_id);
 
         if ($from !== null && !$this->isWalkedFrom($from)) {
             return;
@@ -2302,9 +2320,9 @@ final class TaintFlowResolution
         // a flow is reported at its sink, or else at the node it reaches the sink from: a plugin can connect a node
         // without a location to a sink
         if (isset($this->sinks[$to_id])
-            && ($this->getNode($from_id)?->code_location !== null || $this->sinks[$to_id]->code_location !== null)
+            && ($this->hasLocation($from_id) || $this->table->hasLocation($this->sinks[$to_id]))
         ) {
-            $sink_taints = $this->sinks[$to_id]->taints;
+            $sink_taints = $this->sink_taints[$to_id];
 
             if ((($kept | $added) & $sink_taints) !== 0) {
                 if ($context === -1) {
@@ -2321,13 +2339,25 @@ final class TaintFlowResolution
     }
 
     /**
-     * The node of id $id. An unspecialized node whose edges a flow takes past a specialized node may not be
-     * registered: it has the label and location of the specialized nodes, which are those of their
-     * unspecialized base.
+     * Whether the node of id $id is known and has a location
      *
      * @psalm-external-mutation-free
      */
-    private function getNode(string $id): ?DataFlowNode
+    private function hasLocation(string $id): bool
+    {
+        $row = $this->getRow($id);
+
+        return $row !== null && $this->table->hasLocation($row);
+    }
+
+    /**
+     * The row (see NodeTable) of the node of id $id. An unspecialized node whose edges a flow takes past a
+     * specialized node may not be registered: it has the label and location of the specialized nodes, which are
+     * those of their unspecialized base.
+     *
+     * @psalm-external-mutation-free
+     */
+    private function getRow(string $id): string|DataFlowNode|null
     {
         if (isset($this->nodes[$id])) {
             return $this->nodes[$id];
@@ -2348,7 +2378,7 @@ final class TaintFlowResolution
                 $linked = $this->nodes[$linked_id] ?? $this->sources[$linked_id] ?? null;
 
                 if ($linked !== null) {
-                    $this->derived_nodes[$id] = $linked->withSpecialization($id, null, null, null);
+                    $this->derived_nodes[$id] = $this->table->withoutSpecialization($id, $linked);
 
                     break;
                 }
@@ -2362,13 +2392,13 @@ final class TaintFlowResolution
      * Whether the resolution follows the flows from a node: not from those in project files where tainted
      * input isn't reported.
      */
-    private function isWalkedFrom(DataFlowNode $node): bool
+    private function isWalkedFrom(string|DataFlowNode $row): bool
     {
-        if ($node->code_location === null) {
+        $file_path = $this->table->getFilePath($row);
+
+        if ($file_path === null) {
             return true;
         }
-
-        $file_path = $node->code_location->file_path;
 
         if (!isset($this->unwalked_files[$file_path])) {
             $this->unwalked_files[$file_path] = $this->project_analyzer->canReportIssues($file_path)
@@ -2698,7 +2728,7 @@ final class TaintFlowResolution
 
             if ($sink_taints !== 0) {
                 foreach ($this->entry_sinks[$entry] as [$sink_id, , $sink_added, $reaches]) {
-                    $sink_added |= $sink_taints | $this->sinks[$sink_id]->taints & self::URL_TAINTS;
+                    $sink_added |= $sink_taints | $this->sink_taints[$sink_id] & self::URL_TAINTS;
 
                     foreach ($reaches as [$state, $link, $kept, $added]) {
                         $kept &= $sink_added | $this->state_added[$state];
@@ -2708,7 +2738,7 @@ final class TaintFlowResolution
             } else {
                 foreach ($this->entry_unshared_sinks[$entry] ?? [] as $sink_key => $_) {
                     [$sink_id, , $sink_added, $reaches] = $this->entry_sinks[$entry][$sink_key];
-                    $sink_added |= $this->sinks[$sink_id]->taints & self::URL_TAINTS;
+                    $sink_added |= $this->sink_taints[$sink_id] & self::URL_TAINTS;
 
                     foreach ($reaches as [$state, $link, $kept, $added]) {
                         $kept &= $sink_added | $this->state_added[$state];
@@ -3619,7 +3649,7 @@ final class TaintFlowResolution
         // A taint the walk also adds may have its source in the walk: that sink is replayed through every call. So are
         // the URL kinds, which reportFlow() drops by each other in a call: they stay in one with its other kinds.
         $unshared_kept = $new_kept
-            & ($sink[2] | $added | $this->state_added[$state] | $this->sinks[$sink_id]->taints & self::URL_TAINTS);
+            & ($sink[2] | $added | $this->state_added[$state] | $this->sink_taints[$sink_id] & self::URL_TAINTS);
         $shared_kept = $new_kept & ~$unshared_kept;
 
         if (!isset($this->entry_sink_origins[$entry])) {
@@ -3733,7 +3763,7 @@ final class TaintFlowResolution
         $this->entry_sinks[$convergence][$sink_key] = [$sink_id, $sink[1] | $new_kept, $sink[2] | $new_added, $reaches];
 
         $taints = ((($this->entry_taints[$convergence] ?? 0) & $new_kept) | $new_added)
-            & $this->sinks[$sink_id]->taints;
+            & $this->sink_taints[$sink_id];
 
         if ($taints !== 0) {
             $this->reportFlow($sink_id, $state, -1, $link, $taints);
@@ -3785,7 +3815,7 @@ final class TaintFlowResolution
 
         foreach ($sinks as [$sink_id, , , $reaches]) {
             foreach ($reaches as [$state, $link, $kept]) {
-                $reported = $new_taints & $kept & $this->sinks[$sink_id]->taints;
+                $reported = $new_taints & $kept & $this->sink_taints[$sink_id];
 
                 if ($reported !== 0) {
                     $this->reportFlow($sink_id, $state, -1, $link, $reported);
@@ -3815,7 +3845,7 @@ final class TaintFlowResolution
         $caller_kept = $this->state_kept[$caller] & $kept;
         $caller_added = ($this->state_added[$caller] & $kept) | $added;
         $context = $this->state_contexts[$caller];
-        $sink_taints = $this->sinks[$sink_id]->taints;
+        $sink_taints = $this->sink_taints[$sink_id];
 
         if ($context === -1) {
             if (($caller_added & $sink_taints) !== 0) {
@@ -3908,7 +3938,7 @@ final class TaintFlowResolution
             $taints &= ~TaintKind::INPUT_URL_PATH;
         }
 
-        $sink = $this->sinks[$sink_id];
+        $sink = $this->table->decode($sink_id, $this->sinks[$sink_id]);
         $predecessor_id = $this->state_nodes[$state];
 
         if ($caller !== -1) {
@@ -3944,11 +3974,13 @@ final class TaintFlowResolution
             $predecessor = null;
 
             foreach ($trace as [$id, $path_type]) {
-                $node = $predecessor === null ? $this->sources[$id] ?? $this->getNode($id) : $this->getNode($id);
+                $row = $predecessor === null ? $this->sources[$id] ?? $this->getRow($id) : $this->getRow($id);
 
-                if ($node === null) {
+                if ($row === null) {
                     continue;
                 }
+
+                $node = $this->table->decode($id, $row);
 
                 $predecessor = $predecessor === null
                     ? $node
