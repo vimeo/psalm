@@ -54,10 +54,16 @@ final class PropertyStorage implements HasAttributesInterface
 
     /**
      * Whether $type comes from the property's own docblock
+     *
+     * @internal
      */
     public bool $has_docblock_type = false;
 
-    /** Whether $type is the docblock type of the overridden property, this one having none */
+    /**
+     * Whether $type is the docblock type of the overridden property, this one having none
+     *
+     * @internal
+     */
     public bool $inherited_type = false;
 
     /**
@@ -82,7 +88,11 @@ final class PropertyStorage implements HasAttributesInterface
 
     public bool $readonly = false;
 
-    /** Declared readonly, or in a readonly class */
+    /**
+     * Declared readonly, or in a readonly class
+     *
+     * @internal
+     */
     public bool $native_readonly = false;
 
     /** Natively readonly with a declared default: from PHP 8.6 the default is its initialising assignment */
