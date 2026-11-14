@@ -551,6 +551,11 @@ final class TemplateInferredTypeReplacer
                     continue;
                 }
 
+                // only a candidate that can't be of the condition is decidably in the else branch
+                if (self::isDisjoint($codebase, $candidate_atomic_type, $conditional_type)) {
+                    continue;
+                }
+
                 $if_part = Type::intersectUnionTypes(
                     $candidate,
                     $conditional_type,
@@ -560,11 +565,8 @@ final class TemplateInferredTypeReplacer
                 );
 
                 if ($if_part === null) {
-                    // only a candidate that can't be of the condition is decidably in the else branch: the
-                    // intersection of some overlapping types is unknown
-                    if (!self::isDisjoint($codebase, $candidate_atomic_type, $conditional_type)) {
-                        $is_decidable = false;
-                    }
+                    // the intersection of some overlapping types is unknown
+                    $is_decidable = false;
 
                     continue;
                 }
