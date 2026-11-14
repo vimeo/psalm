@@ -16,25 +16,6 @@ class AChild extends A {
 }
 ```
 
-A property redeclared without a docblock type has the docblock type of the parent property, when the native types are the same:
-
-```php
-<?php
-
-class B {
-    /** @var non-empty-string */
-    public string $foo = 'hello';
-}
-
-class BChild extends B {
-    public string $foo = 'world'; // no issue, $foo is a non-empty-string
-}
-
-class BOtherChild extends B {
-    public string $foo = ''; // InvalidPropertyAssignmentValue
-}
-```
-
 ## Why this is bad
 
 For non-typed properties, it can cause a type system violation when code written against the parent class reads or writes a value on an object of the child class.
@@ -74,5 +55,26 @@ abstract class A {
 class AChild extends A {
     /** @var string */
     public $foo;
+}
+```
+
+## Redeclaring without a docblock type
+
+A property redeclared without a docblock type has the docblock type of the parent property, when the native types are the same:
+
+```php
+<?php
+
+class B {
+    /** @var non-empty-string */
+    public string $foo = 'hello';
+}
+
+class BChild extends B {
+    public string $foo = 'world'; // no issue, $foo is a non-empty-string
+}
+
+class BOtherChild extends B {
+    public string $foo = ''; // InvalidPropertyAssignmentValue
 }
 ```
