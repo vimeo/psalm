@@ -12,7 +12,9 @@ use Psalm\Tests\TestCase;
 use Psalm\Tests\Traits\InvalidCodeAnalysisTestTrait;
 use Psalm\Tests\Traits\ValidCodeAnalysisTestTrait;
 
+use function array_filter;
 use function array_map;
+use function array_values;
 
 use const DIRECTORY_SEPARATOR;
 
@@ -78,6 +80,92 @@ final class ForeachTest extends TestCase
                     => $issue->type . ' ' . $issue->line_from . ':' . $issue->column_from,
                 IssueBuffer::getIssuesDataForFile($file_path),
             ),
+        );
+    }
+
+    public function testAMixedVariableOfAPreviousIterationIsSetWhereItCannotBeNull(): void
+    {
+        $this->project_analyzer->getConfig()->throw_exception = false;
+
+        $file_path = self::$src_dir_path . 'somefile.php';
+
+        $this->addFile(
+            $file_path,
+            '<?php
+                /** @param mixed $v */
+                function notOne(array $xs, $v): void {
+                    foreach ($xs as $_) {
+                        if ($a !== 1) {
+                            echo gettype($a);
+                        }
+                        $a = $v;
+                    }
+                }
+
+                /** @param mixed $v */
+                function falsy(array $xs, $v): void {
+                    foreach ($xs as $_) {
+                        if (!$b) {
+                            echo gettype($b);
+                        }
+                        $b = $v;
+                    }
+                }
+
+                /** @param mixed $v */
+                function notNull(array $xs, $v): void {
+                    foreach ($xs as $_) {
+                        if ($c !== null) {
+                            echo gettype($c);
+                        }
+                        $c = $v;
+                    }
+                }
+
+                /** @param mixed $v */
+                function truthy(array $xs, $v): void {
+                    foreach ($xs as $_) {
+                        if ($d) {
+                            echo gettype($d);
+                        }
+                        $d = $v;
+                    }
+                }
+
+                /**
+                 * @template T
+                 * @param T $v
+                 */
+                function templateNotNull(array $xs, $v): void {
+                    foreach ($xs as $_) {
+                        if ($e !== null) {
+                            echo gettype($e);
+                        }
+                        $e = $v;
+                    }
+                }',
+        );
+
+        $this->analyzeFile($file_path, new Context());
+
+        self::assertSame(
+            [
+                'PossiblyUndefinedVariable 5:29',
+                'PossiblyUndefinedVariable 6:42',
+                'PossiblyUndefinedVariable 15:30',
+                'PossiblyUndefinedVariable 16:42',
+                'PossiblyUndefinedVariable 25:29',
+                'PossiblyUndefinedVariable 35:29',
+                'PossiblyUndefinedVariable 48:29',
+            ],
+            array_values(array_map(
+                static fn(IssueData $issue): string
+                    => $issue->type . ' ' . $issue->line_from . ':' . $issue->column_from,
+                array_filter(
+                    IssueBuffer::getIssuesDataForFile($file_path),
+                    static fn(IssueData $issue): bool => $issue->type === 'PossiblyUndefinedVariable',
+                ),
+            )),
         );
     }
 

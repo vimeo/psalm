@@ -412,7 +412,20 @@ class Reconciler
 
             if ($undefined_reads_as_null) {
                 // where the value cannot be null the variable is set
-                $result_type = $result_type->setPossiblyUndefined($result_type->isNullable(), false);
+                $result_type = $result_type->setPossiblyUndefined(
+                    $result_type->isNullable()
+                        // a mixed or a template does not tell whether its null was kept
+                        || (($result_type->hasMixed() || $result_type->hasTemplate())
+                            && self::nullPassesAssertions(
+                                $new_type_parts,
+                                $key,
+                                $statements_analyzer,
+                                $inside_loop,
+                                $template_type_map,
+                                $negated,
+                            )),
+                    false,
+                );
             }
 
             if ($has_inverted_key_exists || $has_inverted_isset) {
@@ -1612,6 +1625,61 @@ class Reconciler
         }
 
         return [$key => [[$key_assertions[0][0]->getNegation()]]];
+    }
+
+    /**
+     * @param array<array<int, Assertion>> $new_type_parts
+     * @param array<string, array<string, Union>> $template_type_map
+     */
+    private static function nullPassesAssertions(
+        array $new_type_parts,
+        string $key,
+        StatementsAnalyzer $statements_analyzer,
+        bool $inside_loop,
+        array $template_type_map,
+        bool $negated,
+    ): bool {
+        foreach ($new_type_parts as $new_type_part_parts) {
+            $passes = false;
+
+            foreach ($new_type_part_parts as $new_type_part_part) {
+                // what a nested assertion says of the variable is not known here
+                if ($new_type_part_part instanceof NestedAssertions
+                    || $new_type_part_part instanceof NotNestedAssertions
+                ) {
+                    $passes = true;
+
+                    break;
+                }
+
+                $failed_reconciliation = self::RECONCILIATION_OK;
+
+                $null_candidate = AssertionReconciler::reconcile(
+                    $new_type_part_part,
+                    Type::getNull(),
+                    $key,
+                    $statements_analyzer,
+                    $inside_loop,
+                    $template_type_map,
+                    null,
+                    [],
+                    $failed_reconciliation,
+                    $negated,
+                );
+
+                if (!$null_candidate->isUnionEmpty() && !$null_candidate->isNever()) {
+                    $passes = true;
+
+                    break;
+                }
+            }
+
+            if (!$passes) {
+                return false;
+            }
+        }
+
+        return true;
     }
 
     /**
