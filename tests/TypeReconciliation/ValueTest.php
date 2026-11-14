@@ -29,6 +29,48 @@ final class ValueTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'looseComparisonOfAnObjectOrAStringWithAStringKeepsTheObject' => [
+                'code' => <<<'PHP'
+                    <?php
+                    class Plain {}
+
+                    function anObject(object|string $x): void {
+                        if ($x == 'a') {
+                            /** @psalm-check-type-exact $x = 'a'|object */
+                        }
+                    }
+
+                    function withoutToString(Plain|string $x): void {
+                        if ($x == 'a') {
+                            /** @psalm-check-type-exact $x = 'a' */
+                        }
+                    }
+                    PHP,
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
+            'looseInequalityWithAStringKeepsTheStringableObjectInTheElseBranch' => [
+                'code' => <<<'PHP'
+                    <?php
+                    class A {
+                        public function __toString(): string {
+                            return 'a';
+                        }
+                    }
+
+                    function f(A|string $x): void {
+                        if ($x != 'a') {
+                            /** @psalm-check-type-exact $x = A|string */
+                        } else {
+                            /** @psalm-check-type-exact $x = 'a'|A */
+                        }
+                    }
+                    PHP,
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
             'looseEqualityWithAStringKeepsAStringableObject' => [
                 'code' => '<?php
                     final class A {

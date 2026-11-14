@@ -1466,8 +1466,10 @@ final class AssertionReconciler extends Reconciler
         $atomic_types = $literal_type->getAtomicTypes();
 
         foreach ($existing_var_atomic_types as $atomic_type) {
-            if ($atomic_type instanceof TNamedObject
-                && $codebase->methodExists(new MethodIdentifier($atomic_type->value, '__tostring'))
+            // an `object` may be one with a __toString too
+            if ($atomic_type::class === TObject::class
+                || ($atomic_type instanceof TNamedObject
+                    && $codebase->methodExists(new MethodIdentifier($atomic_type->value, '__tostring')))
             ) {
                 $atomic_types[$atomic_type->getKey()] = $atomic_type;
             }
