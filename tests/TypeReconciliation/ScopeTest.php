@@ -23,6 +23,59 @@ final class ScopeTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'variableUnsetInABranchThatDoesNotReachTheCodeAfterIsDefined' => [
+                'code' => '<?php
+                    function reassigned(bool $c): int {
+                        $x = 1;
+
+                        if ($c) {
+                            unset($x);
+                            $x = 2;
+                        }
+
+                        return $x;
+                    }
+
+                    function returns(bool $c): int {
+                        $x = 1;
+
+                        if ($c) {
+                            unset($x);
+
+                            return 0;
+                        }
+
+                        return $x;
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
+            'variableUnsetInABranchCanBeTestedWithIssetAndCoalesceAfterIt' => [
+                'code' => '<?php
+                    function viaIsset(bool $c): int {
+                        $x = 1;
+
+                        if ($c) {
+                            unset($x);
+                        }
+
+                        return isset($x) ? $x : 0;
+                    }
+
+                    function viaCoalesce(bool $c): int {
+                        $x = 1;
+
+                        if ($c) {
+                            unset($x);
+                        }
+
+                        return $x ?? 0;
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
             'newVarInIf' => [
                 'code' => '<?php
                     if (rand(0,100) === 10) {
@@ -412,6 +465,23 @@ final class ScopeTest extends TestCase
     public static function providerInvalidCodeParse(): iterable
     {
         return [
+            'variableUnsetInACaseThatFallsThroughIsPossiblyUndefined' => [
+                'code' => '<?php
+                    function f(int $i): int {
+                        $x = 1;
+
+                        switch ($i) {
+                            case 1:
+                                unset($x);
+                            case 2:
+                                echo 1;
+                                break;
+                        }
+
+                        return $x;
+                    }',
+                'error_message' => 'PossiblyUndefinedVariable',
+            ],
             'variableUnsetInTheIfIsPossiblyUndefinedAfterIt' => [
                 'code' => '<?php
                     function foo(): void {
