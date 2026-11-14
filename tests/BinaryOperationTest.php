@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Psalm\Tests;
 
+use ErrorException;
 use Override;
 use Psalm\Config;
 use Psalm\Context;
@@ -16,15 +17,58 @@ use Psalm\Tests\Traits\ValidCodeAnalysisTestTrait;
 use function array_map;
 use function implode;
 use function range;
+use function restore_error_handler;
+use function set_error_handler;
 use function sort;
 
 use const DIRECTORY_SEPARATOR;
+use const E_DEPRECATED;
 use const SORT_STRING;
 
 final class BinaryOperationTest extends TestCase
 {
     use InvalidCodeAnalysisTestTrait;
     use ValidCodeAnalysisTestTrait;
+
+    /**
+     * Psalm turns a PHP deprecation into an exception, so a float with a fraction can't go through the operators
+     * that convert it to an int while the literals are evaluated
+     */
+    public function testFractionalFloatLiteralsAreNotEvaluatedByThePhpOperators(): void
+    {
+        set_error_handler(
+            static function (int $errno, string $errstr): never {
+                throw new ErrorException($errstr, 0, $errno);
+            },
+            E_DEPRECATED,
+        );
+
+        try {
+            $this->testValidCode(
+                '<?php
+                    $a = 1.5 | 1;
+                    $b = 1 & 1.5;
+                    $c = 1.5 ^ 1;
+                    $d = 1.5 << 1;
+                    $e = 1 >> 1.5;
+                    $f = ~1.5;
+                    $g = 5.5 % 2;
+                    $h = 7 % 2.5;
+                    $i = 1e30 | 1;
+                    $j = NAN | 1;
+                    $k = 9.2233720368547758E+18 | 1;
+                    $l = -1e30 | 1;
+                    $m = INF | 1;
+                    $n = -1.5 | 1;
+                    $o = 5 % 0.0;',
+                [],
+                ['ImplicitFloatToIntCast', 'NoValue'],
+                '8.1',
+            );
+        } finally {
+            restore_error_handler();
+        }
+    }
 
     public function testGMPOperations(): void
     {
@@ -1008,6 +1052,7 @@ final class BinaryOperationTest extends TestCase
                     '$infiniteNot===' => 'int',
                     '$not===' => '-6',
                 ],
+                'ignored_issues' => ['ImplicitFloatToIntCast'],
             ],
 
             'integerOperatorsGiveIntsWhateverTheOperandsAre' => [
@@ -1041,6 +1086,7 @@ final class BinaryOperationTest extends TestCase
                     '$shiftedBig===' => 'int',
                     '$orOfBig===' => 'int',
                 ],
+                'ignored_issues' => ['ImplicitFloatToIntCast'],
             ],
 
             'regularAddition' => [
@@ -1410,6 +1456,147 @@ final class BinaryOperationTest extends TestCase
                     '$b' => 'int',
                 ],
             ],
+            'bitwiseOperationsOfFloatsAreInts' => [
+                'code' => '<?php
+                    /** @var float $f */
+                    $f = 1.5;
+                    /** @var int $i */
+                    $i = 1;
+                    /** @var int|float $n */
+                    $n = 1;
+
+                    $a = $f | $i;
+                    $b = $i & $f;
+                    $c = $f ^ $i;
+                    $d = $f << $i;
+                    $e = $i >> $f;
+                    $g = $f | $f;
+                    $h = $n | $i;
+                    $j = 1.5 | 1;
+                    $k = ~$f;
+                    $l = $i | $i;
+                    $m = $f % $i;
+                    $o = $i;
+                    $o |= $f;
+                    $p = $f;
+                    $p <<= $i;',
+                'assertions' => [
+                    '$a===' => 'int',
+                    '$b===' => 'int',
+                    '$c===' => 'int',
+                    '$d===' => 'int',
+                    '$e===' => 'int',
+                    '$g===' => 'int',
+                    '$h===' => 'int',
+                    '$j===' => '1',
+                    '$k===' => 'int',
+                    '$l===' => 'int',
+                    '$m===' => 'int',
+                    '$o===' => 'int',
+                    '$p===' => 'int',
+                ],
+                'ignored_issues' => ['ImplicitFloatToIntCast'],
+            ],
+            'bitwiseOperationsOfFloatsOfUnknownValueAreNotReported' => [
+                'code' => <<<'PHP'
+                    <?php
+                    function colors(int $r, int $g, int $b, string $octal, float $x): int {
+                        $a = round($b / 255) << 2 | (round($g / 255) << 1) | round($r / 255);
+                        $f = floor($r / 2) & 1;
+                        $o = octdec($octal) | 2;
+                        $h = hexdec('ff') & 255;
+                        $l = $x | 1;
+                        $m = ~$x;
+
+                        return $a + $f + $o + $h + $l + $m;
+                    }
+                    PHP,
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.3',
+            ],
+            'bitwiseOperationsOfNonNumbersGiveIntsOrStrings' => [
+                'code' => <<<'PHP'
+                    <?php
+                    /** @var array<int|string, mixed> $log */
+                    $log = [];
+                    /** @var string $numeric */
+                    $numeric = "12";
+                    /** @var string $other */
+                    $other = "ab";
+                    /** @var bool $flag */
+                    $flag = true;
+
+                    $levels = 0;
+                    foreach ($log as $type => $_) {
+                        $levels |= $type;
+                    }
+
+                    $all = true;
+                    foreach ($log as $item) {
+                        $all &= empty($item);
+                    }
+
+                    $or = 1 | $numeric;
+                    $shifted = 5 << $numeric;
+                    $strings = $numeric ^ $other;
+                    $bool = $flag | 1;
+                    PHP,
+                'assertions' => [
+                    '$levels===' => 'int',
+                    '$all===' => 'int|true',
+                    '$or===' => 'int',
+                    '$shifted===' => 'int',
+                    '$strings===' => 'string',
+                ],
+                'ignored_issues' => ['MixedAssignment', 'MixedOperand', 'InvalidOperand'],
+                'php_version' => '8.3',
+            ],
+            'bitwiseOperationsOfIntegralFloatsAreNotReported' => [
+                'code' => '<?php
+                    /** @var float $f */
+                    $f = 1.5;
+                    /** @var int $i */
+                    $i = 1;
+
+                    $a = 2.0 | 1;
+                    $b = (int) $f & $i;
+                    $c = $i ^ (int) round($f);
+                    $d = ~4.0;
+                    $e = 8.0 >> 1;
+                    $g = $i << 2;
+                    $h = "a" | "b";',
+                'assertions' => [
+                    '$a' => 'int',
+                    '$d' => 'int',
+                    '$e' => 'int',
+                    '$g' => 'int',
+                    '$h' => 'string',
+                ],
+            ],
+            'bitwiseOperationsOfLiteralFloatsThatAreIntsAreEvaluated' => [
+                'code' => '<?php
+                    $a = 2.0 | 1;
+                    $b = 6 % 4.0;
+                    $c = -9.2233720368547758E+18 | 1;
+                    $d = 12.0 & 10;
+                    $e = 1 << 3.0;
+                    $f = 16.0 >> 2.0;
+                    $g = 5 ^ 1.0;
+                    $h = -0.0 | 1;
+                    $i = 8 % 3;',
+                'assertions' => [
+                    '$a===' => '3',
+                    '$b===' => '2',
+                    '$c===' => '-9223372036854775807',
+                    '$d===' => '8',
+                    '$e===' => '8',
+                    '$f===' => '4',
+                    '$g===' => '4',
+                    '$h===' => '1',
+                    '$i===' => '2',
+                ],
+            ],
             'bitwiseNot' => [
                 'code' => '<?php
                     $a = ~4;
@@ -1422,6 +1609,7 @@ final class BinaryOperationTest extends TestCase
                     '$c' => 'int',
                     '$d' => 'string',
                 ],
+                'ignored_issues' => ['ImplicitFloatToIntCast'],
             ],
             'stringIncrementSuppressed' => [
                 'code' => '<?php
@@ -2424,6 +2612,87 @@ final class BinaryOperationTest extends TestCase
                 'code' => '<?php
                     $a = "x" ^ 1;',
                 'error_message' => 'InvalidOperand',
+            ],
+            'bitwiseOrWithAFloatOnTheLeft' => [
+                'code' => '<?php
+                    $f = 1.5;
+                    $i = 1;
+                    echo $f | $i;',
+                'error_message' => 'ImplicitFloatToIntCast',
+            ],
+            'bitwiseAndWithAFloatOnTheRight' => [
+                'code' => '<?php
+                    $f = 1.5;
+                    $i = 1;
+                    echo $i & $f;',
+                'error_message' => 'ImplicitFloatToIntCast',
+            ],
+            'bitwiseXorWithAFloat' => [
+                'code' => '<?php
+                    $f = 1.5;
+                    $i = 1;
+                    echo $f ^ $i;',
+                'error_message' => 'ImplicitFloatToIntCast',
+            ],
+            'shiftLeftOfAFloat' => [
+                'code' => '<?php
+                    $f = 1.5;
+                    $i = 1;
+                    echo $f << 1;',
+                'error_message' => 'ImplicitFloatToIntCast',
+            ],
+            'shiftRightByAFloat' => [
+                'code' => '<?php
+                    $f = 1.5;
+                    $i = 1;
+                    echo 1 >> $f;',
+                'error_message' => 'ImplicitFloatToIntCast',
+            ],
+            'bitwiseNotOfAFloat' => [
+                'code' => '<?php
+                    $f = 1.5;
+                    $i = 1;
+                    echo ~$f;',
+                'error_message' => 'ImplicitFloatToIntCast',
+            ],
+            'bitwiseOrWithAFractionalLiteral' => [
+                'code' => '<?php
+                    $f = 1.5;
+                    $i = 1;
+                    echo 1.5 | 1;',
+                'error_message' => 'ImplicitFloatToIntCast',
+            ],
+            'bitwiseAssignmentWithAFloat' => [
+                'code' => '<?php
+                    $f = 1.5;
+                    $i = 1;
+                    $x = 1;
+                    $x |= $f;',
+                'error_message' => 'ImplicitFloatToIntCast',
+            ],
+            'shiftAssignmentWithAFloat' => [
+                'code' => '<?php
+                    $f = 1.5;
+                    $i = 1;
+                    $x = 1;
+                    $x <<= $f;',
+                'error_message' => 'ImplicitFloatToIntCast',
+            ],
+            'bitwiseNotOfAFractionalLiteral' => [
+                'code' => '<?php
+                    $f = 1.5;
+                    $i = 1;
+                    echo ~1.5;',
+                'error_message' => 'ImplicitFloatToIntCast',
+            ],
+            'bitwiseAndWithAFractionalLiteralOrAnInt' => [
+                'code' => '<?php
+                    $f = 1.5;
+                    $i = 1;
+                    /** @var 1.5|1 $n */
+                    $n = 1;
+                    echo $n & 1;',
+                'error_message' => 'ImplicitFloatToIntCast',
             ],
             'invalidBitwiseOr' => [
                 'code' => '<?php
