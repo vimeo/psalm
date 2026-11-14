@@ -211,8 +211,7 @@ final class CastAnalyzer
                 return false;
             }
 
-            $permissible_atomic_types = [];
-            $all_permissible = false;
+            $type = Type::getObject();
 
             if ($stmt_expr_type = $statements_analyzer->node_data->getType($stmt->expr)) {
                 $stmt_expr_type = TypeVariableResolver::resolveTopLevel(
@@ -224,31 +223,7 @@ final class CastAnalyzer
                     self::handleRedundantCast($stmt_expr_type, $statements_analyzer, $stmt);
                 }
 
-                $all_permissible = true;
-
-                // what a scalar or a shaped array becomes is an stdClass
-                $std_class = ['stdclass' => new TNamedObject('stdClass')];
-
-                foreach ($stmt_expr_type->getAtomicTypes() as $type) {
-                    if ($type instanceof Scalar) {
-                        $objWithProps = new TObjectWithProperties(['scalar' => new Union([$type])], [], $std_class);
-                        $permissible_atomic_types[] = $objWithProps;
-                    } elseif ($type instanceof TKeyedArray) {
-                        $permissible_atomic_types[] = new TObjectWithProperties($type->properties, [], $std_class);
-                    } else {
-                        $all_permissible = false;
-                        break;
-                    }
-                }
-            }
-
-            if ($permissible_atomic_types && $all_permissible) {
-                // the properties of one shape would be wrong for the other parts of a union
-                $type = count($permissible_atomic_types) === 1
-                    ? new Union($permissible_atomic_types)
-                    : new Union([new TNamedObject('stdClass')]);
-            } else {
-                $type = Type::getObject();
+                $type = self::getObjectCastType($stmt_expr_type);
             }
 
             if ($statements_analyzer->data_flow_graph) {
@@ -1319,6 +1294,33 @@ final class CastAnalyzer
         }
 
         return $result_type->setParentNodes($parent_nodes);
+    }
+
+    /**
+     * What `(object) $x` is: an array, a scalar or null always becomes an stdClass, which has the properties of a
+     * single shaped array
+     *
+     * @psalm-pure
+     */
+    public static function getObjectCastType(Union $operand_type): Union
+    {
+        $std_class = ['stdclass' => new TNamedObject('stdClass')];
+        $object_types = [];
+
+        foreach ($operand_type->getAtomicTypes() as $type) {
+            if ($type instanceof Scalar) {
+                $object_types[] = new TObjectWithProperties(['scalar' => new Union([$type])], [], $std_class);
+            } elseif ($type instanceof TKeyedArray) {
+                $object_types[] = new TObjectWithProperties($type->properties, [], $std_class);
+            } elseif ($type instanceof TArray || $type instanceof TNull) {
+                $object_types[] = new TNamedObject('stdClass');
+            } else {
+                return Type::getObject();
+            }
+        }
+
+        // the properties of one shape would be wrong for the other parts of a union
+        return new Union(count($object_types) === 1 ? $object_types : [new TNamedObject('stdClass')]);
     }
 
     /**

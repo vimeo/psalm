@@ -2357,13 +2357,86 @@ final class ReturnTypeTest extends TestCase
                     '$object' => 'stdClass',
                 ],
             ],
-            'objectCastOfAShapedArrayOrNullIsAnObjectWithoutTheProperties' => [
+            'objectCastOfAShapedArrayOrNullIsAStdClass' => [
                 'code' => '<?php
                     /** @var array{a: int}|null $values */
                     $values = null;
                     $object = (object) $values;',
                 'assertions' => [
-                    '$object' => 'object',
+                    '$object===' => 'stdClass',
+                ],
+            ],
+            'objectCastOfAShapedArrayIsAnArgumentOfItsClassAndOfObject' => [
+                'code' => '<?php
+                    function takesStdClass(stdClass $o): void {}
+                    function takesObject(object $o): void {}
+                    /** @param object{a: int} $o */
+                    function takesShape($o): void {}
+                    /**
+                     * @template T of object
+                     * @param T $o
+                     * @return T
+                     */
+                    function identity($o) {
+                        return $o;
+                    }
+
+                    $o = (object) ["a" => 1];
+                    takesStdClass($o);
+                    takesObject($o);
+                    takesShape($o);
+                    $same = identity($o);',
+                'assertions' => [
+                    '$same===' => 'object{a:1}&stdClass',
+                ],
+            ],
+            'objectCastOfAnUnshapedArrayIsAStdClass' => [
+                'code' => '<?php
+                    /** @param array<string, mixed> $values */
+                    function f(array $values): stdClass {
+                        return (object) $values;
+                    }
+
+                    function g(array $values): stdClass {
+                        return (object) $values;
+                    }
+
+                    /** @param list<int> $values */
+                    function h(array $values): stdClass {
+                        return (object) $values;
+                    }
+
+                    function i(?array $values): stdClass {
+                        return (object) $values;
+                    }
+
+                    function j(): stdClass {
+                        return (object) [];
+                    }
+
+                    function k(): stdClass {
+                        return (object) null;
+                    }',
+            ],
+            'objectCastOfAnArrayOrAnObjectIsAnObject' => [
+                'code' => '<?php
+                    /** @param array<string, int>|object $value */
+                    function f($value): void {
+                        $object = (object) $value;
+                    }
+
+                    /** @var mixed $mixed */
+                    $mixed = 1;
+                    $object = (object) $mixed;',
+                'assertions' => [
+                    '$object===' => 'object',
+                ],
+            ],
+            'objectCastOfAnInlineArrayInAnArrayFilterCallback' => [
+                'code' => '<?php
+                    $e = array_filter([(object) ["a" => 1], null], fn($i) => $i);',
+                'assertions' => [
+                    '$e===' => 'array<int<0, 1>, object{a:1}&stdClass>',
                 ],
             ],
             'objectCastOfAScalarIsAStdClass' => [
@@ -2454,6 +2527,13 @@ final class ReturnTypeTest extends TestCase
     public static function providerInvalidCodeParse(): iterable
     {
         return [
+            'objectCastOfAnArrayIsNotAnotherClass' => [
+                'code' => '<?php
+                    function takesArrayObject(ArrayObject $o): void {}
+
+                    takesArrayObject((object) ["a" => 1]);',
+                'error_message' => 'ArgumentTypeCoercion',
+            ],
             'switchWithADefaultInTheMiddleThatFallsThroughIntoACaseThatDoesNotEnd' => [
                 'code' => '<?php
                     function classify(int $x): int {
