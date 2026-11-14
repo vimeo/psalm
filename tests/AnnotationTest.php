@@ -198,6 +198,135 @@ final class AnnotationTest extends TestCase
                     takesFlags(E_ALL);
                 ',
             ],
+            'intMaskOfAConstantOfTheNamespaceTakesPrecedenceOverTheGlobalOne' => [
+                'code' => '<?php
+                    namespace Foo;
+
+                    const E_ERROR = 4;
+
+                    /**
+                     * @param int-mask<E_ERROR> $y
+                     */
+                    function takesMask(int $y): void {
+                        /** @psalm-check-type-exact $y = 0|4 */
+                        echo $y;
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'intMaskOfConstantsImportedWithUseConst' => [
+                'code' => '<?php
+                    namespace Bar {
+                        const E_ERROR = 4;
+                        const FLAG_A = 8;
+                    }
+
+                    namespace Foo {
+                        use const Bar\E_ERROR;
+                        use const Bar\FLAG_A as AA;
+
+                        /** @param int-mask<E_ERROR> $y */
+                        function f(int $y): void {
+                            echo $y;
+                        }
+
+                        /** @param int-mask<AA, E_ERROR> $y */
+                        function g(int $y): void {
+                            echo $y;
+                        }
+
+                        f(4);
+                        g(12);
+                    }',
+            ],
+            'intMaskOfAnImportedGlobalConstant' => [
+                'code' => '<?php
+                    namespace Foo;
+
+                    use const PHP_INT_MAX;
+
+                    /**
+                     * @param int-mask<PHP_INT_MAX> $y
+                     */
+                    function takesMask(int $y): void {
+                        echo $y;
+                    }
+
+                    takesMask(0);',
+            ],
+            'intMaskOfGlobalConstantsFromANamespace' => [
+                'code' => '<?php
+                    namespace Foo;
+
+                    /**
+                     * @param int-mask<E_ERROR, E_WARNING> $y
+                     */
+                    function takesMask(int $y): void {
+                        echo $y;
+                    }
+
+                    takesMask(E_ERROR);',
+            ],
+            'selfAndStaticOfAGlobalTagAreTheClassOfTheMethod' => [
+                'code' => '<?php
+                    final class K {
+                        public function me(): int {
+                            return 1;
+                        }
+
+                        /**
+                         * @global static $k
+                         * @global self $s
+                         */
+                        public function g(): int {
+                            global $k, $s;
+
+                            /** @psalm-check-type-exact $k = K&static */
+                            /** @psalm-check-type-exact $s = K */
+
+                            return $k->me() + $s->me();
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
+            'staticOfAGlobalTagIsTheClassOfTheMethodAfterACallThatMayWriteTheGlobal' => [
+                'code' => '<?php
+                    class Foo {
+                        /** @return static */
+                        public function me() {
+                            return $this;
+                        }
+
+                        /** @global static $q */
+                        public function c(): Foo {
+                            global $q;
+
+                            $q->c();
+                            $x = $q->me();
+
+                            /** @psalm-check-type-exact $x = Foo&static */
+
+                            return $x;
+                        }
+                    }',
+            ],
+            'globalDocblockStaticTypeDoesNotCrashAMethodCall' => [
+                'code' => '<?php
+                    class Foo {
+                        /**
+                         * @global static $bar
+                         * @return void
+                         */
+                        public function instance() {
+                            global $bar;
+
+                            $bar->instance();
+                        }
+                    }',
+            ],
             'optionalShapeKeysNamedLikeScalarAliases' => [
                 'code' => '<?php
                     /** @var array{double?: string, integer?: int, boolean?: bool, real?: float} $a */
@@ -2000,76 +2129,6 @@ final class AnnotationTest extends TestCase
 
                     echo strlen($title);',
             ],
-            'intMaskOfAConstantOfTheNamespaceTakesPrecedenceOverTheGlobalOne' => [
-                'code' => '<?php
-                    namespace Foo;
-
-                    const E_ERROR = 4;
-
-                    /**
-                     * @param int-mask<E_ERROR> $y
-                     */
-                    function takesMask(int $y): void {
-                        /** @psalm-check-type-exact $y = 0|4 */
-                        echo $y;
-                    }',
-                'assertions' => [],
-                'ignored_issues' => [],
-                'php_version' => '8.0',
-            ],
-            'intMaskOfConstantsImportedWithUseConst' => [
-                'code' => '<?php
-                    namespace Bar {
-                        const E_ERROR = 4;
-                        const FLAG_A = 8;
-                    }
-
-                    namespace Foo {
-                        use const Bar\E_ERROR;
-                        use const Bar\FLAG_A as AA;
-
-                        /** @param int-mask<E_ERROR> $y */
-                        function f(int $y): void {
-                            echo $y;
-                        }
-
-                        /** @param int-mask<AA, E_ERROR> $y */
-                        function g(int $y): void {
-                            echo $y;
-                        }
-
-                        f(4);
-                        g(12);
-                    }',
-            ],
-            'intMaskOfAnImportedGlobalConstant' => [
-                'code' => '<?php
-                    namespace Foo;
-
-                    use const PHP_INT_MAX;
-
-                    /**
-                     * @param int-mask<PHP_INT_MAX> $y
-                     */
-                    function takesMask(int $y): void {
-                        echo $y;
-                    }
-
-                    takesMask(0);',
-            ],
-            'intMaskOfGlobalConstantsFromANamespace' => [
-                'code' => '<?php
-                    namespace Foo;
-
-                    /**
-                     * @param int-mask<E_ERROR, E_WARNING> $y
-                     */
-                    function takesMask(int $y): void {
-                        echo $y;
-                    }
-
-                    takesMask(E_ERROR);',
-            ],
             'keyOfAndValueOfOfImportedTypeAlias' => [
                 'code' => '<?php
                     /**
@@ -2150,6 +2209,42 @@ final class AnnotationTest extends TestCase
                         echo $flags;
                     }',
                 'error_message' => 'InvalidDocblock',
+            ],
+            'intMaskOfAPartiallyQualifiedConstantDoesNotFallBackToTheGlobalOne' => [
+                'code' => '<?php
+                    namespace Foo;
+
+                    /**
+                     * @param int-mask<Sub\\E_ERROR> $y
+                     */
+                    function takesMask(int $y): void {
+                        echo $y;
+                    }',
+                'error_message' => 'UndefinedConstant',
+            ],
+            'intMaskOfAQualifiedConstantDoesNotFallBackToTheGlobalOne' => [
+                'code' => '<?php
+                    namespace Foo;
+
+                    /**
+                     * @param int-mask<\\Foo\\E_ERROR> $y
+                     */
+                    function takesMask(int $y): void {
+                        echo $y;
+                    }',
+                'error_message' => 'UndefinedConstant',
+            ],
+            'intMaskOfAnUndefinedConstantFromANamespace' => [
+                'code' => '<?php
+                    namespace Foo;
+
+                    /**
+                     * @param int-mask<NOT_A_CONSTANT> $y
+                     */
+                    function takesMask(int $y): void {
+                        echo $y;
+                    }',
+                'error_message' => 'UndefinedConstant',
             ],
             'removedSelfAccessingCallableWithParamsIsInvalid' => [
                 'code' => <<<'PHP'
@@ -3027,41 +3122,67 @@ final class AnnotationTest extends TestCase
                     global $title;',
                 'error_message' => 'InvalidGlobal',
             ],
-            'intMaskOfAPartiallyQualifiedConstantDoesNotFallBackToTheGlobalOne' => [
+            'assertionWithOnlyAStarInPlaceOfTheType' => [
                 'code' => '<?php
-                    namespace Foo;
-
                     /**
-                     * @param int-mask<Sub\\E_ERROR> $y
+                     * @psalm-assert * $x
                      */
-                    function takesMask(int $y): void {
-                        echo $y;
+                    function f(int $x): void {
+                        echo $x;
                     }',
-                'error_message' => 'UndefinedConstant',
+                'error_message' => 'Invalid @psalm-assert union type: Type is empty',
             ],
-            'intMaskOfAQualifiedConstantDoesNotFallBackToTheGlobalOne' => [
+            'assertionWithOnlyANegationInPlaceOfTheType' => [
                 'code' => '<?php
-                    namespace Foo;
-
                     /**
-                     * @param int-mask<\\Foo\\E_ERROR> $y
+                     * @psalm-assert ! $x
                      */
-                    function takesMask(int $y): void {
-                        echo $y;
+                    function f(int $x): void {
+                        echo $x;
                     }',
-                'error_message' => 'UndefinedConstant',
+                'error_message' => 'Invalid @psalm-assert union type: Type is empty',
             ],
-            'intMaskOfAnUndefinedConstantFromANamespace' => [
+            'selfOutWithOnlyAStarInPlaceOfTheType' => [
                 'code' => '<?php
-                    namespace Foo;
-
-                    /**
-                     * @param int-mask<NOT_A_CONSTANT> $y
-                     */
-                    function takesMask(int $y): void {
-                        echo $y;
+                    class X {
+                        /**
+                         * @psalm-self-out *
+                         */
+                        public function a(): void {}
                     }',
-                'error_message' => 'UndefinedConstant',
+                'error_message' => 'InvalidDocblock',
+            ],
+            'thisOutWithOnlyAStarInPlaceOfTheType' => [
+                'code' => '<?php
+                    class X {
+                        /**
+                         * @psalm-this-out *
+                         */
+                        public function a(): void {}
+                    }',
+                'error_message' => 'InvalidDocblock',
+            ],
+            'ifThisIsWithOnlyAStarInPlaceOfTheType' => [
+                'code' => '<?php
+                    class X {
+                        /**
+                         * @psalm-if-this-is *
+                         */
+                        public function a(): void {}
+                    }',
+                'error_message' => 'InvalidDocblock',
+            ],
+            'returnTypeWithOnlyAStarInPlaceOfTheType' => [
+                'code' => '<?php
+                    class X {
+                        /**
+                         * @psalm-return      * @return list<int>
+                         */
+                        public static function a(): array {
+                            return [];
+                        }
+                    }',
+                'error_message' => 'InvalidDocblock',
             ],
             'keyOfImportedTypeAliasOfANonArrayIsInvalid' => [
                 'code' => '<?php

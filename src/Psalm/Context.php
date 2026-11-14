@@ -59,6 +59,12 @@ final class Context
     public const PHP_VERSION_ID_VAR_ID = 'PHP_VERSION_ID';
 
     /**
+     * The lowest PHP version a `function_exists()`, `class_exists()` or `method_exists()` check of a native symbol
+     * implies. Not PHP_VERSION_ID: a polyfill makes the symbol exist on an older version too.
+     */
+    public const PHP_SYMBOL_GUARD_VAR_ID = 'PHP_SYMBOL_GUARD';
+
+    /**
      * The pseudo-variable through which comparisons of the PHP_SAPI constant and of php_sapi_name() narrow them, so
      * a branch knows the SAPI it runs in (e.g. `if (PHP_SAPI === 'cli')`); it can't clash with a variable name.
      */
