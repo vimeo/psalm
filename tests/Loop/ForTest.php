@@ -62,6 +62,24 @@ final class ForTest extends TestCase
                         return $value;
                     }',
             ],
+            'postIncrementInConditionHoldsTheValueTheLoopExitsWith' => [
+                'code' => '<?php
+                    for ($i = 0; $i++ < 3;) {
+                        echo $i;
+                    }',
+                'assertions' => [
+                    '$i===' => 'int<4, 4>',
+                ],
+            ],
+            'preDecrementInConditionOfALoopAlwaysEnteredHoldsTheValueTheLoopExitsWith' => [
+                'code' => '<?php
+                    for ($i = 5; --$i > 0;) {
+                        echo $i;
+                    }',
+                'assertions' => [
+                    '$i===' => 'int<0, 0>',
+                ],
+            ],
             'variableAssignedAfterAnInnerLoopThatOnlyBreaksItself' => [
                 'code' => '<?php
                     function f(): int {

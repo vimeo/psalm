@@ -1086,6 +1086,54 @@ final class IntRangeTest extends TestCase
                     '$z' => 'int<min, 9223372036854775807>|null',
                 ],
             ],
+            'postDecrementGreaterThanZeroNarrowsTheDecrementedVar' => [
+                'code' => '<?php
+                    $a = rand(-5, 5);
+                    $r = $a-- > 0 ? $a : null;',
+                'assertions' => [
+                    '$r===' => 'int<0, 4>|null',
+                ],
+            ],
+            'postIncrementSmallerThanZeroNarrowsTheIncrementedVar' => [
+                'code' => '<?php
+                    $a = rand(-5, 5);
+                    $r = $a++ < 0 ? $a : null;',
+                'assertions' => [
+                    '$r===' => 'int<-4, 0>|null',
+                ],
+            ],
+            'preDecrementGreaterThanZeroNarrowsTheDecrementedVar' => [
+                'code' => '<?php
+                    $a = rand(-5, 5);
+                    $r = --$a > 0 ? $a : null;',
+                'assertions' => [
+                    '$r===' => 'int<1, 4>|null',
+                ],
+            ],
+            'postDecrementGreaterOrEqualZeroNarrowsTheDecrementedVar' => [
+                'code' => '<?php
+                    $a = rand(-5, 5);
+                    $r = $a-- >= 0 ? $a : null;',
+                'assertions' => [
+                    '$r===' => 'int<-1, 4>|null',
+                ],
+            ],
+            'literalSmallerThanPostDecrementNarrowsTheDecrementedVar' => [
+                'code' => '<?php
+                    $a = rand(-5, 5);
+                    $r = 0 < $a-- ? $a : null;',
+                'assertions' => [
+                    '$r===' => 'int<0, 4>|null',
+                ],
+            ],
+            'negatedPostDecrementGreaterThanZeroNarrowsTheDecrementedVar' => [
+                'code' => '<?php
+                    $a = rand(-5, 5);
+                    $r = !($a-- > 0) ? $a : null;',
+                'assertions' => [
+                    '$r===' => 'int<-6, -1>|null',
+                ],
+            ],
         ];
     }
 

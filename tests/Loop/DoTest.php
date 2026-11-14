@@ -417,6 +417,26 @@ final class DoTest extends TestCase
                         echo "here";
                     } while ($code === 1);',
             ],
+            'preDecrementInConditionHoldsTheValueTheLoopExitsWith' => [
+                'code' => '<?php
+                    $i = 5;
+                    do {
+                        echo $i;
+                    } while (--$i > 0);',
+                'assertions' => [
+                    '$i===' => 'int<0, 0>',
+                ],
+            ],
+            'postDecrementInConditionHoldsTheValueTheLoopExitsWith' => [
+                'code' => '<?php
+                    $i = 5;
+                    do {
+                        echo $i;
+                    } while ($i-- > 0);',
+                'assertions' => [
+                    '$i===' => 'int<-1, -1>',
+                ],
+            ],
             'doWhileConditionOnVariableIncrementedAfterIt' => [
                 'code' => '<?php
                     $v = 0;
