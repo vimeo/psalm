@@ -464,8 +464,8 @@ final class VariableFetchAnalyzer
                 && !$stmt_type->possibly_undefined_from_try
                 && !$context->inside_isset
                 && !$context->inside_unset
-                // passed by reference, which defines it
-                && (!$context->inside_assignment || $array_assignment)
+                // assigning it by reference defines it
+                && !$assigned_to_reference
                 && ($first_appearance = $statements_analyzer->getFirstAppearance($var_name))
             ) {
                 $issue = $context->is_global
