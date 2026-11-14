@@ -87,6 +87,7 @@ use Psalm\Type\Atomic\TClosure;
 use Psalm\Type\Atomic\TGenericObject;
 use Psalm\Type\Atomic\TMixed;
 use Psalm\Type\Atomic\TNamedObject;
+use Psalm\Type\Atomic\TNull;
 use Psalm\Type\Atomic\TTemplateParam;
 use Psalm\Type\Union;
 use UnexpectedValueException;
@@ -1962,8 +1963,12 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
                     );
                 }
 
+                // a callable parameter defaults to null or, as of PHP 8.5, to a closure
                 if ($default_type
-                    && !$default_type->isNull()
+                    && array_filter(
+                        $default_type->getAtomicTypes(),
+                        static fn(Atomic $atomic): bool => !$atomic instanceof TNull && !$atomic instanceof TClosure,
+                    ) !== []
                     && $param_type->isSingleAndMaybeNullable()
                     && $param_type->getCallableTypes()
                 ) {

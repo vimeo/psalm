@@ -458,6 +458,36 @@ final class CallableTypeComparator
     }
 
     /**
+     * The closure that `$function_id(...)` creates, or null if the function is unknown.
+     *
+     * @param non-empty-string $function_id
+     */
+    public static function getClosureFromFunctionId(
+        Codebase $codebase,
+        string $function_id,
+        ?StatementsAnalyzer $statements_analyzer = null,
+        ?Context $context = null,
+    ): ?TClosure {
+        $callable = self::getCallableFromAtomic(
+            $codebase,
+            Type::getAtomicStringFromLiteral($function_id),
+            null,
+            $statements_analyzer,
+            $context,
+            true,
+        );
+
+        return $callable
+            ? new TClosure(
+                $callable->params,
+                $callable->return_type,
+                $callable->purity,
+                callable_id: strtolower($function_id),
+            )
+            : null;
+    }
+
+    /**
      * The closure a first-class callable of a method is: its signature with `self`, `static` and `parent`, the
      * conditional return type, and the templates generated for its parameters resolved, as for a function
      *
