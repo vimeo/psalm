@@ -1175,23 +1175,26 @@ final class ClassLikeNodeScanner
             $mapped_properties = PropertyMap::getPropertyMap()[strtolower($fq_classlike_name)];
 
             foreach ($mapped_properties as $property_name => $public_mapped_property) {
-                $property_type = Type::parseString($public_mapped_property);
+                $property_storage = $classlike_storage->properties[$property_name] ??= new PropertyStorage();
 
-                /** @psalm-suppress UnusedMethodCall */
-                $property_type->queueClassLikesForScanning($this->codebase, $this->file_storage);
+                // Stubs are curated by hand and win over the map, like they do over the CallMap.
+                // The map still corrects real sources (e.g. vendored php-parser nodes).
+                $property_type = $classlike_storage->stubbed ? $property_storage->type : null;
 
-                if (!isset($classlike_storage->properties[$property_name])) {
-                    $classlike_storage->properties[$property_name] = new PropertyStorage();
+                if ($property_type === null) {
+                    $property_type = Type::parseString($public_mapped_property);
+
+                    /** @psalm-suppress UnusedMethodCall */
+                    $property_type->queueClassLikesForScanning($this->codebase, $this->file_storage);
                 }
 
                 $property_id = $fq_classlike_name . '::$' . $property_name;
 
                 if ($property_id === 'DateInterval::$days') {
-                    /** @psalm-suppress InaccessibleProperty We just parsed this type */
-                    $property_type->ignore_falsable_issues = true;
+                    $property_type = $property_type->setProperties(['ignore_falsable_issues' => true]);
                 }
 
-                $classlike_storage->properties[$property_name]->type = $property_type;
+                $property_storage->type = $property_type;
 
                 $classlike_storage->declaring_property_ids[$property_name] = $fq_classlike_name;
                 $classlike_storage->appearing_property_ids[$property_name] = $property_id;
