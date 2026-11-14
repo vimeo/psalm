@@ -81,6 +81,56 @@ final class IssetTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'negatedIssetOfAConditionallyDefinedVariableIsNullWhereTheLoopMayNotAssignIt' => [
+                'code' => '<?php
+                    /** @param list<string> $values */
+                    function validate(array $values, bool $early, bool $answered): int {
+                        if ($early) {
+                            $status = 401;
+                        }
+
+                        if (!isset($status)) {
+                            if ($answered) {
+                                $status = 409;
+                            }
+
+                            if (!isset($status)) {
+                                foreach ($values as $value) {
+                                    if ($value === "") {
+                                        $status = 400;
+                                        break;
+                                    }
+                                }
+
+                                if (!isset($status)) {
+                                    $status = 201;
+                                }
+                            }
+                        }
+
+                        return (int) $status;
+                    }
+
+                    function nested(bool $a, bool $b): void {
+                        if ($a) {
+                            $s = 409;
+                        }
+
+                        if (!isset($s)) {
+                            if ($b) {
+                                $s = 5;
+                            }
+
+                            if (!isset($s)) {
+                                /** @psalm-check-type-exact $s = null */
+                                echo 1;
+                            }
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => ['MixedReturnStatement', 'PossiblyUndefinedVariable'],
+                'php_version' => '8.0',
+            ],
             'issetOfAnOptionalKeyOfAnUnsealedShapeKeepsTheShape' => [
                 'code' => '<?php
                     /** @var array{name?: string, id: string, ...} $a */
@@ -1666,7 +1716,6 @@ final class IssetTest extends TestCase
 
                     function foo() : void {
                         $arr = returnPossiblyFalseArray();
-                        /** @psalm-suppress PossiblyInvalidArrayAccess */
                         if (!isset($arr["b"])) {}
                         echo $arr["b"];
                     }',

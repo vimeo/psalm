@@ -279,7 +279,7 @@ final class CloneAnalyzer
                         $invalid_clones[] = $clone_type_part->getId();
                     } else {
                         MethodCallProhibitionAnalyzer::analyze(
-                            $codebase,
+                            $statements_analyzer,
                             $context,
                             $clone_method_id,
                             $statements_analyzer->getFullyQualifiedFunctionMethodOrNamespaceName(),
