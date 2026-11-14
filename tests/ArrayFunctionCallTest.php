@@ -4310,6 +4310,178 @@ final class ArrayFunctionCallTest extends TestCase
                     '$popped===' => '1',
                 ],
             ],
+            'arrayPopItemIsWrittenBack' => [
+                'code' => '<?php
+                    $a = [[1, 2, 3]];
+                    array_pop($a[0]);
+                    array_pop($a[0]);',
+                'assertions' => [
+                    '$a===' => 'list{list{1}}',
+                ],
+            ],
+            'arrayShiftItemIsWrittenBack' => [
+                'code' => '<?php
+                    $a = [[1, 2, 3]];
+                    array_shift($a[0]);
+                    array_shift($a[0]);',
+                'assertions' => [
+                    '$a===' => 'list{list{3}}',
+                ],
+            ],
+            'arrayPopItemCanBecomeEmpty' => [
+                'code' => '<?php
+                    function f(): bool {
+                        $a = [[1]];
+                        array_pop($a[0]);
+                        return $a[0] === [];
+                    }',
+            ],
+            'arrayPopNestedItemIsWrittenBack' => [
+                'code' => '<?php
+                    $a = ["x" => ["y" => [1, 2, 3]]];
+                    array_pop($a["x"]["y"]);
+                    array_pop($a["x"]["y"]);',
+                'assertions' => [
+                    '$a===' => 'array{x: array{y: list{1}}}',
+                ],
+            ],
+            'arrayPopItemKeyIsEvaluatedOnce' => [
+                'code' => '<?php
+                    $a = [[1, 2], [3, 4]];
+                    $i = 0;
+                    array_pop($a[$i++]);
+                    $j = 1;
+                    array_shift($a[$j++]);',
+                'assertions' => [
+                    '$i===' => '1',
+                    '$j===' => '2',
+                    '$a===' => 'list{list{1}, list{4}}',
+                ],
+            ],
+            'arrayPopItemOfUnionKeyIsNotWrittenBack' => [
+                'code' => '<?php
+                    $a = [[1, 2], [3, 4]];
+                    $k = rand(0, 1) ? 0 : 1;
+                    array_pop($a[$k]);',
+                'assertions' => [
+                    '$a===' => 'list{list{1, 2}, list{3, 4}}',
+                ],
+            ],
+            'arrayPopItemOfCallResultIsUnchanged' => [
+                'code' => '<?php
+                    /** @return list{list{int, string}} */
+                    function g(): array {
+                        return [[1, "s"]];
+                    }
+
+                    $x = array_pop(g()[0]);
+                    $y = array_pop(g()[0]);',
+                'assertions' => [
+                    '$x===' => 'int|string',
+                    '$y===' => 'int|string',
+                ],
+            ],
+            'arrayPopItemThatMayBeUndefinedBecomesAnArray' => [
+                'code' => '<?php
+                    /** @param array{a?: list<int>} $a */
+                    function f(array $a): int {
+                        /** @psalm-suppress PossiblyNullArgument */
+                        array_pop($a["a"]);
+                        $n = 0;
+                        foreach ($a as $v) {
+                            $n += count($v);
+                        }
+                        return $n;
+                    }',
+            ],
+            'arrayPopItemThatMayBeNullBecomesAnArray' => [
+                'code' => '<?php
+                    /** @param array{a: list<int>|null} $a */
+                    function f(array $a): int {
+                        /** @psalm-suppress PossiblyNullArgument */
+                        array_shift($a["a"]);
+                        $n = 0;
+                        foreach ($a as $v) {
+                            $n += count($v);
+                        }
+                        return $n;
+                    }',
+            ],
+            'arrayPopItemByNonLiteralKeyKeepsTheOuterOffsets' => [
+                'code' => '<?php
+                    /** @param int<0, 1> $i */
+                    function popByRange(int $i): int {
+                        $a = [[1, 2], [3, 4]];
+                        array_pop($a[$i]);
+                        return count($a[1]);
+                    }
+
+                    function shiftByInt(int $i): int {
+                        $a = [[1, 2], [3, 4]];
+                        array_shift($a[$i]);
+                        return count($a[1]);
+                    }',
+            ],
+            'arrayPopItemInByReferenceClosureKeepsTheRemainingElements' => [
+                'code' => '<?php
+                    function f(): void {
+                        $a = [];
+                        $remove = static function () use (&$a): void {
+                            $a = [[1, 2]];
+                            array_pop($a[0]);
+                            $x = array_pop($a[0]);
+                            /** @psalm-check-type $x = 1|2 */
+                        };
+                        $remove();
+                    }',
+            ],
+            'arrayShiftItemInLoopKeepsTheRemainingElements' => [
+                'code' => '<?php
+                    function f(): void {
+                        foreach ([1, 2] as $_) {
+                            $a = [[1, 2]];
+                            array_shift($a[0]);
+                            $x = array_shift($a[0]);
+                            /** @psalm-check-type $x = 1|2 */
+                        }
+                    }',
+            ],
+            'arrayPopItemOfMixedIsUnchanged' => [
+                'code' => '<?php
+                    /** @param array<int, mixed> $a */
+                    function f(array $a): void {
+                        $x = array_pop($a[0]);
+                        /** @psalm-check-type-exact $x = mixed */
+                        /** @psalm-check-type-exact $a = array<int, mixed> */
+                    }',
+                'assertions' => [],
+                'ignored_issues' => ['MixedArgument', 'MixedAssignment'],
+            ],
+            'arrayPopItemOfArrayAccessIsNotExact' => [
+                'code' => '<?php
+                    /** @implements ArrayAccess<int, list{int, string}> */
+                    final class Box implements ArrayAccess {
+                        public function offsetExists(int $offset): bool {
+                            return true;
+                        }
+
+                        /** @return list{int, string} */
+                        public function offsetGet(int $offset): array {
+                            return [1, "s"];
+                        }
+
+                        /** @param list{int, string} $value */
+                        public function offsetSet(int $offset, array $value): void {}
+
+                        public function offsetUnset(int $offset): void {}
+                    }
+
+                    function f(Box $b): void {
+                        array_pop($b[0]);
+                        $x = array_pop($b[0]);
+                        /** @psalm-check-type-exact $x = int|string */
+                    }',
+            ],
             'arrayPopShiftEmptyTemplateArray' => [
                 'code' => '<?php
                     /**
@@ -5375,6 +5547,146 @@ final class ArrayFunctionCallTest extends TestCase
 
                     array_unique($values);',
                 'error_message' => 'PossiblyInvalidArgument',
+            ],
+            'arrayShiftOffsetOfUnionIndex' => [
+                'code' => '<?php
+                    function f(bool $b): int {
+                        $a = [[1, "s"], [2, 3.5]];
+                        $k = $b ? 0 : 1;
+                        array_shift($a[$k]);
+                        return array_shift($a[0]);
+                    }',
+                'error_message' => 'InvalidReturnStatement',
+            ],
+            'arrayPopOffsetOfArrayAccessIsNotExact' => [
+                'code' => '<?php
+                    /** @implements ArrayAccess<int, list{int, string}> */
+                    final class Box implements ArrayAccess {
+                        public function offsetExists(int $offset): bool {
+                            return true;
+                        }
+
+                        /** @return list{int, string} */
+                        public function offsetGet(int $offset): array {
+                            return [1, "s"];
+                        }
+
+                        /** @param list{int, string} $value */
+                        public function offsetSet(?int $offset, array $value): void {}
+
+                        public function offsetUnset(int $offset): void {}
+                    }
+
+                    function f(Box $b): string {
+                        array_pop($b[0]);
+                        return array_pop($b[0]);
+                    }',
+                'error_message' => 'InvalidReturnStatement',
+            ],
+            'arrayPopItemRemovesTheLastOffset' => [
+                'code' => '<?php
+                    function f(): int {
+                        $a = [[1, 2]];
+                        array_pop($a[0]);
+                        return $a[0][1];
+                    }',
+                'error_message' => 'InvalidArrayOffset',
+            ],
+            'arrayShiftItemRemovesTheFirstOffset' => [
+                'code' => '<?php
+                    function f(): int {
+                        $a = [[1, 2]];
+                        array_shift($a[0]);
+                        return $a[0][1];
+                    }',
+                'error_message' => 'InvalidArrayOffset',
+            ],
+            'arrayPopNestedItemOfArrayOrArrayObjectIsNotExact' => [
+                'code' => '<?php
+                    /** @param array{a: array{b: list{int, string}}}|ArrayObject<string, array{b: list{int, string}}> $o */
+                    function f($o): int {
+                        array_pop($o["a"]["b"]);
+                        return array_pop($o["a"]["b"]);
+                    }',
+                'error_message' => 'InvalidReturnStatement - src' . DIRECTORY_SEPARATOR . 'somefile.php:5:32',
+            ],
+            'arrayPopItemOfShapedListByIntKeyIsNotExact' => [
+                'code' => '<?php
+                    /** @param list{list{int, string}, list{string, int}} $l */
+                    function f(array $l, int $k): int {
+                        array_pop($l[$k]);
+                        return array_pop($l[$k]);
+                    }',
+                'error_message' => 'InvalidReturnStatement',
+            ],
+            'arrayPopItemOfParentStaticPropertyIsNotWrittenBack' => [
+                'code' => '<?php
+                    class ParentBox {
+                        /** @var list<list<int|string>> */
+                        public static array $items = [[1, "s"]];
+                    }
+
+                    final class Box extends ParentBox {
+                        /** @var list<list<int|string>> */
+                        public static array $items = [[1, "s"]];
+
+                        public static function f(): int {
+                            self::$items = [[1, "s"]];
+                            array_pop(parent::$items[0]);
+                            return array_pop(self::$items[0]);
+                        }
+                    }',
+                'error_message' => 'InvalidReturnStatement - src' . DIRECTORY_SEPARATOR . 'somefile.php:14:36',
+            ],
+            'arrayPopItemOfTemplateTypeIsNotExact' => [
+                'code' => '<?php
+                    /**
+                     * @template T of list{int, string}
+                     * @param array{T} $a
+                     */
+                    function f(array $a): string {
+                        array_pop($a[0]);
+                        return array_pop($a[0]);
+                    }',
+                'error_message' => 'InvalidReturnStatement - src' . DIRECTORY_SEPARATOR . 'somefile.php:8:32',
+            ],
+            'arrayShiftItemOfTemplateTypeIsNotExact' => [
+                'code' => '<?php
+                    /**
+                     * @template T of list{int, string}
+                     * @param array{T} $a
+                     */
+                    function f(array $a): int {
+                        array_shift($a[0]);
+                        return array_shift($a[0]);
+                    }',
+                'error_message' => 'InvalidReturnStatement - src' . DIRECTORY_SEPARATOR . 'somefile.php:8:32',
+            ],
+            'arrayPopItemOfNarrowedUnionKeyKeepsOtherOffsets' => [
+                'code' => '<?php
+                    function f(bool $b): int {
+                        $a = [null, [1, 2]];
+                        $k = $b ? 0 : 1;
+                        if (!is_array($a[$k])) {
+                            return 0;
+                        }
+                        array_pop($a[$k]);
+                        return count($a[0]);
+                    }',
+                'error_message' => 'NullArgument - src' . DIRECTORY_SEPARATOR . 'somefile.php:9:38',
+            ],
+            'arrayShiftItemOfNarrowedUnionKeyKeepsOtherOffsets' => [
+                'code' => '<?php
+                    function f(bool $b): int {
+                        $a = [null, [1, 2]];
+                        $k = $b ? 0 : 1;
+                        if (!is_array($a[$k])) {
+                            return 0;
+                        }
+                        array_shift($a[$k]);
+                        return count($a[0]);
+                    }',
+                'error_message' => 'NullArgument - src' . DIRECTORY_SEPARATOR . 'somefile.php:9:38',
             ],
         ];
     }

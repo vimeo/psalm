@@ -16505,6 +16505,13 @@ final class TaintTest extends TestCase
                     $c->sortByDesc([(string) $_GET["a"]]);',
                 'error_message' => 'TaintedHtml',
             ],
+            'taintRemainsInAnItemAfterPoppingIt' => [
+                'code' => '<?php // --taint-analysis
+                    $a = [[$_GET["x"], "b", "c"]];
+                    array_pop($a[0]);
+                    echo $a[0][0];',
+                'error_message' => 'TaintedHtml',
+            ],
         ];
     }
 
