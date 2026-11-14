@@ -1996,6 +1996,11 @@ final class Populator
                 }
 
                 $type = TemplateInferredTypeReplacer::replace($type, $template_result, null);
+
+                // a template replaced by its bound, or by `mixed` when the bound is missing, is still a docblock type
+                if ($documenting_property_storage->type->from_docblock) {
+                    $type = $type->setFromDocblock();
+                }
             }
 
             $property_storage->own_type = $property_storage->type;

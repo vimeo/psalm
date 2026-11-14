@@ -586,6 +586,19 @@ final class PropertyTypeInvarianceTest extends TestCase
                     '$next===' => 'ParentClass|null',
                 ],
             ],
+            'inheritedTemplateWithoutParamIsStillADocblockType' => [
+                'code' => '<?php
+                    /** @template T */
+                    class ParentClass {
+                        /** @var T|null */
+                        public $x;
+                    }
+
+                    /** @psalm-suppress MissingTemplateParam */
+                    final class ChildClass extends ParentClass {
+                        public $x;
+                    }',
+            ],
             'inheritedClassStringOfATemplateUnion' => [
                 'code' => '<?php
                     class AA {}
