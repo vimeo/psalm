@@ -895,6 +895,106 @@ final class BinaryOperationTest extends TestCase
                 'ignored_issues' => ['RiskyTruthyFalsyComparison'],
                 'php_version' => '8.0',
             ],
+            'assignmentToStaticPropertyKeepsTheNarrowingOfAnUnrelatedClassOne' => [
+                'code' => '<?php
+                    final class Other
+                    {
+                        public static ?string $value = null;
+                    }
+
+                    final class Holder
+                    {
+                        protected static ?string $value = null;
+
+                        public static function get(): string
+                        {
+                            Other::$value = "a";
+                            static::$value = null;
+
+                            return Other::$value;
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '7.4',
+            ],
+            'staticPropertyOfStaticPassedByReferenceKeepsTheNarrowingOfAnUnrelatedClassOne' => [
+                'code' => '<?php
+                    function clear(?string &$s): void {
+                        $s = null;
+                    }
+
+                    final class Other
+                    {
+                        public static ?string $value = null;
+                    }
+
+                    final class Holder
+                    {
+                        protected static ?string $value = null;
+
+                        public static function get(): string
+                        {
+                            Other::$value = "a";
+                            clear(static::$value);
+
+                            return Other::$value;
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '7.4',
+            ],
+            'assignmentToStaticPropertyKeepsTheNarrowingOfAParentPropertyItRedeclares' => [
+                'code' => '<?php
+                    class Base
+                    {
+                        public static ?string $value = null;
+                    }
+
+                    final class Child extends Base
+                    {
+                        public static ?string $value = null;
+
+                        public static function get(): string
+                        {
+                            Base::$value = "a";
+                            static::$value = null;
+
+                            return Base::$value;
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '7.4',
+            ],
+            'staticPropertyOfStaticPassedByReferenceKeepsTheNarrowingOfAParentPropertyItRedeclares' => [
+                'code' => '<?php
+                    function clear(?string &$s): void {
+                        $s = null;
+                    }
+
+                    class Base
+                    {
+                        public static ?string $value = null;
+                    }
+
+                    final class Child extends Base
+                    {
+                        public static ?string $value = null;
+
+                        public static function get(): string
+                        {
+                            Base::$value = "a";
+                            clear(static::$value);
+
+                            return Base::$value;
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '7.4',
+            ],
             'staticPropertyGuardedByANullCheckIsNotNullAfterIt' => [
                 'code' => '<?php
                     interface Container {}
@@ -2175,6 +2275,176 @@ final class BinaryOperationTest extends TestCase
                 'ignored_issues' => ['TypeDoesNotContainType', 'RedundantCondition'],
                 'php_version' => '8.1',
             ],
+            'stringLengthCallsThatDoNotMeasureTheirFirstArgument' => [
+                'code' => '<?php
+                    /** @var string $s */
+                    $s = getenv("X");
+                    /** @var string $enc */
+                    $enc = getenv("Y");
+                    /** @var array{string} $parts */
+                    $parts = ["a"];
+
+                    $a = mb_strlen(encoding: $enc, str: $s) > 0 ? $enc : "x";
+                    $b = strlen(...$parts) > 0 ? $parts : ["x"];
+                    $c = strlen(...) > 0;',
+                'assertions' => [
+                    '$a===' => 'string',
+                    '$b===' => 'list{string}',
+                    '$c===' => 'bool',
+                ],
+            ],
+            'stringLengthInConditionMatchesANonEmptyReturnType' => [
+                'code' => '<?php
+                    /** @return non-empty-string */
+                    function nonEmptyString(string $str): string {
+                        return strlen($str) > 0 ? $str : "string";
+                    }
+
+                    /** @return non-empty-string */
+                    function nonEmptyMbString(string $str): string {
+                        return mb_strlen($str) > 0 ? $str : "string";
+                    }',
+            ],
+            'stringLengthComparisonsThatKeepAPossiblyEmptyString' => [
+                'code' => '<?php
+                    /** @var string $s */
+                    $s = getenv("X");
+                    /** @var int $n */
+                    $n = 1;
+
+                    $a = strlen($s) >= 0 ? $s : "x";
+                    $b = strlen($s) < 2 ? $s : "x";
+                    $c = strlen($s) !== 1 ? $s : "x";
+                    $d = strlen($s) <= 3 ? $s : "x";
+                    $e = strlen($s) > $n ? $s : "x";
+                    $f = strlen($s) > -1 ? $s : "x";
+                    $g = strlen(trim($s)) > 0 ? $s : "x";
+                    $h = count([$s]) > 0 ? $s : "x";
+                    $i = strlen($s) > 4 ? $s : "x";
+                    $j = strlen($s) > 4 ? "x" : $s;
+                    $k = strlen($s) === 3 ? $s : "x";
+                    $l = strlen($s) === 3 ? "x" : $s;
+                    $m = 3 == strlen($s) ? "x" : $s;
+                    $o = strlen($s) >= 2 ? "x" : $s;
+                    $p = strlen($s) != 1 ? "x" : $s;
+                    $q = strlen($s) < 3 ? "x" : $s;
+                    $r = strlen($s) <= 1 ? "x" : $s;
+                    $t = strlen($s) == 1 ? "x" : $s;',
+                'assertions' => [
+                    '$a===' => 'string',
+                    '$b===' => 'string',
+                    '$c===' => 'string',
+                    '$d===' => 'string',
+                    '$e===' => 'string',
+                    '$f===' => 'string',
+                    '$g===' => 'string',
+                    '$h===' => 'string',
+                    '$i===' => 'string',
+                    '$j===' => 'string',
+                    '$k===' => 'string',
+                    '$l===' => 'string',
+                    '$m===' => 'string',
+                    '$o===' => 'string',
+                    '$p===' => 'string',
+                    '$q===' => 'string',
+                    '$r===' => 'string',
+                    '$t===' => 'string',
+                ],
+            ],
+            'stringLengthOfZeroKeepsTheNullAndFalseOfALooseArgument' => [
+                'code' => '<?php
+                    function nullable(?string $s): void {
+                        if (strlen($s) === 0) {
+                            /** @psalm-check-type-exact $s = null|string */
+                            echo 1;
+                        } else {
+                            /** @psalm-check-type-exact $s = string|null */
+                            echo 2;
+                        }
+                    }
+
+                    function falsable(string|false $s): void {
+                        if (mb_strlen($s) < 1) {
+                            /** @psalm-check-type-exact $s = false|string */
+                            echo 1;
+                        }
+                    }
+
+                    function plain(string $s): void {
+                        if (strlen($s) === 0) {
+                            /** @psalm-check-type-exact $s = "" */
+                            echo 1;
+                        } else {
+                            /** @psalm-check-type-exact $s = non-empty-string */
+                            echo 2;
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => ['PossiblyNullArgument', 'PossiblyFalseArgument'],
+                'php_version' => '8.1',
+            ],
+            'stringLengthOfZeroAssertsAnEmptyString' => [
+                'code' => '<?php
+                    /** @var string $s */
+                    $s = getenv("X");
+
+                    $a = strlen($s) === 0 ? $s : "x";
+                    $b = strlen($s) === 0 ? "x" : $s;
+                    $c = strlen($s) == 0 ? "x" : $s;
+                    $d = strlen($s) <= 0 ? "x" : $s;
+                    $e = strlen($s) < 1 ? "x" : $s;
+                    $f = 0 === strlen($s) ? "x" : $s;
+                    $g = 1 > strlen($s) ? "x" : $s;
+                    $h = 0 >= strlen($s) ? "x" : $s;
+                    $i = mb_strlen($s) === 0 ? "x" : $s;
+                    $j = strlen($s) !== 0 ? "x" : $s;
+                    $k = strlen($s) <= 0 ? $s : "x";
+                    $l = strlen($s) < 1 ? $s : "x";',
+                'assertions' => [
+                    '$a===' => '\'\'|\'x\'',
+                    '$b===' => 'non-empty-string',
+                    '$c===' => 'non-empty-string',
+                    '$d===' => 'non-empty-string',
+                    '$e===' => 'non-empty-string',
+                    '$f===' => 'non-empty-string',
+                    '$g===' => 'non-empty-string',
+                    '$h===' => 'non-empty-string',
+                    '$i===' => 'non-empty-string',
+                    '$j===' => '\'\'|\'x\'',
+                    '$k===' => '\'\'|\'x\'',
+                    '$l===' => '\'\'|\'x\'',
+                ],
+            ],
+            'stringLengthLargerThanZeroAssertsANonEmptyString' => [
+                'code' => '<?php
+                    /** @var string $s */
+                    $s = getenv("X");
+                    /** @var array{k: string} $arr */
+                    $arr = ["k" => ""];
+
+                    $a = strlen($s) > 0 ? $s : "x";
+                    $b = strlen($s) >= 1 ? $s : "x";
+                    $c = strlen($s) !== 0 ? $s : "x";
+                    $d = strlen($s) != 0 ? $s : "x";
+                    $e = 0 < strlen($s) ? $s : "x";
+                    $f = 1 <= strlen($s) ? $s : "x";
+                    $g = mb_strlen($s) > 0 ? $s : "x";
+                    $h = mb_strlen($s, "UTF-8") > 0 ? $s : "x";
+                    $i = STRLEN($s) > 0 ? $s : "x";
+                    $j = strlen($arr["k"]) > 0 ? $arr["k"] : "x";',
+                'assertions' => [
+                    '$a===' => 'non-empty-string',
+                    '$b===' => 'non-empty-string',
+                    '$c===' => 'non-empty-string',
+                    '$d===' => 'non-empty-string',
+                    '$e===' => 'non-empty-string',
+                    '$f===' => 'non-empty-string',
+                    '$g===' => 'non-empty-string',
+                    '$h===' => 'non-empty-string',
+                    '$i===' => 'non-empty-string',
+                    '$j===' => 'non-empty-string',
+                ],
+            ],
             'arithmeticOnATemplateBoundedByIntOrFloat' => [
                 'code' => '<?php
                     /**
@@ -2273,6 +2543,115 @@ final class BinaryOperationTest extends TestCase
 
                             return static::$container;
                         }
+                    }',
+                'error_message' => 'NullableReturnStatement',
+                'error_levels' => [],
+                'php_version' => '7.4',
+            ],
+            'staticPropertyOfStaticPassedByReferenceForgetsTheNarrowingOfSelfOne' => [
+                'code' => '<?php
+                    function clear(?string &$s): void {
+                        $s = null;
+                    }
+
+                    class Holder
+                    {
+                        protected static ?string $value = null;
+
+                        public static function get(): string
+                        {
+                            self::$value = "a";
+                            clear(static::$value);
+
+                            return self::$value;
+                        }
+                    }',
+                'error_message' => 'NullableReturnStatement',
+                'error_levels' => [],
+                'php_version' => '7.4',
+            ],
+            'assignmentToStaticPropertyForgetsTheNarrowingOfAParentClassOne' => [
+                'code' => '<?php
+                    class Base
+                    {
+                        public static ?string $value = null;
+                    }
+
+                    final class Child extends Base
+                    {
+                        public static function get(): string
+                        {
+                            Base::$value = "a";
+                            static::$value = null;
+
+                            return Base::$value;
+                        }
+                    }',
+                'error_message' => 'NullableReturnStatement',
+                'error_levels' => [],
+                'php_version' => '7.4',
+            ],
+            'assignmentToStaticPropertyForgetsTheNarrowingOfAChildClassOne' => [
+                'code' => '<?php
+                    class Base
+                    {
+                        public static ?string $value = null;
+
+                        public static function get(): string
+                        {
+                            Child::$value = "a";
+                            static::$value = null;
+
+                            return Child::$value;
+                        }
+                    }
+
+                    final class Child extends Base {}',
+                'error_message' => 'NullableReturnStatement',
+                'error_levels' => [],
+                'php_version' => '7.4',
+            ],
+            'assignmentToStaticPropertyForgetsTheNarrowingOfASiblingClassOne' => [
+                'code' => '<?php
+                    abstract class Base
+                    {
+                        public static ?string $value = null;
+                    }
+
+                    final class Left extends Base
+                    {
+                        public static function get(): string
+                        {
+                            Right::$value = "a";
+                            static::$value = null;
+
+                            return Right::$value;
+                        }
+                    }
+
+                    final class Right extends Base {}',
+                'error_message' => 'NullableReturnStatement',
+                'error_levels' => [],
+                'php_version' => '7.4',
+            ],
+            'assignmentToStaticPropertyForgetsTheNarrowingOfAChildPropertyStaticMayBe' => [
+                'code' => '<?php
+                    class Base
+                    {
+                        public static ?string $value = null;
+
+                        public static function get(): string
+                        {
+                            Child::$value = "a";
+                            static::$value = null;
+
+                            return Child::$value;
+                        }
+                    }
+
+                    final class Child extends Base
+                    {
+                        public static ?string $value = null;
                     }',
                 'error_message' => 'NullableReturnStatement',
                 'error_levels' => [],
@@ -2477,6 +2856,11 @@ final class BinaryOperationTest extends TestCase
                         return "hello $s1 $s2";
                     }',
                 'error_message' => 'LessSpecificReturnStatement',
+            ],
+            'stringLengthWithoutArguments' => [
+                'code' => '<?php
+                    echo strlen() > 0;',
+                'error_message' => 'TooFewArguments',
             ],
             'arithmeticOnATemplateBoundedByAStringIsStillMixed' => [
                 'code' => '<?php

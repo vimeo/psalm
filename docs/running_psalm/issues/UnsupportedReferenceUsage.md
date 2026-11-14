@@ -4,6 +4,10 @@ Emitted when Psalm encounters a reference that it is not currently able to track
 offset of an array offset: `$foo = &$bar[$baz[0]]`). When an unsupported reference is encountered, Psalm will issue this
 warning and treat the variable as though it wasn't actually a reference.
 
+Assigning a function or method result returned by reference to a local variable (for example,
+`$value = &getReference()`) is supported. Psalm treats writes through that variable as potentially affecting external state, even when it cannot
+identify the returned reference's precise target. More complex reference targets may still trigger this diagnostic.
+
 ## How to fix
 
 This can sometimes be fixed by using a temporary variable:

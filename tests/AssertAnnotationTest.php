@@ -438,7 +438,6 @@ final class AssertAnnotationTest extends TestCase
                         }
                     }',
                 'assertions' => [],
-                'ignored_issues' => ['MissingOverrideAttribute'],
             ],
             'assertIfTrueAndFalseKeepEveryAlternativeOfAUnionOnAProperty' => [
                 'code' => '<?php
@@ -2364,7 +2363,7 @@ final class AssertAnnotationTest extends TestCase
                         }
                     }',
                 'assertions' => [],
-                'ignored_issues' => ['ClassMustBeFinal'],
+                'ignored_issues' => [],
                 'php_version' => '8.0',
             ],
             'withHasTypeCall' => [
