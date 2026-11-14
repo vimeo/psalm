@@ -459,25 +459,26 @@ final class VariableFetchAnalyzer
                         : $stmt_type->setPossiblyUndefined(false)),
             );
 
-            // a variable a loop defines, where an iteration starts (see LoopAnalyzer)
+            // a variable some branches or a loop's previous iterations define
             if ($stmt_type->possibly_undefined
                 && !$stmt_type->possibly_undefined_from_try
                 && !$context->inside_isset
                 && !$context->inside_unset
                 // assigning it by reference defines it
                 && !$assigned_to_reference
-                && ($first_appearance = $statements_analyzer->getFirstAppearance($var_name))
             ) {
+                // extract() defines variables without a first appearance
+                $first_appearance = $statements_analyzer->getFirstAppearance($var_name);
+                $first_seen = $first_appearance ? ', first seen on line ' . $first_appearance->getLineNumber() : '';
+
                 $issue = $context->is_global
                     ? new PossiblyUndefinedGlobalVariable(
-                        'Possibly undefined global variable ' . $var_name . ', first seen on line '
-                            . $first_appearance->getLineNumber(),
+                        'Possibly undefined global variable ' . $var_name . $first_seen,
                         new CodeLocation($statements_analyzer->getSource(), $stmt),
                         $var_name,
                     )
                     : new PossiblyUndefinedVariable(
-                        'Possibly undefined variable ' . $var_name . ', first seen on line '
-                            . $first_appearance->getLineNumber(),
+                        'Possibly undefined variable ' . $var_name . $first_seen,
                         new CodeLocation($statements_analyzer->getSource(), $stmt),
                     );
 

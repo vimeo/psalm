@@ -86,6 +86,34 @@ final class AssignmentInConditionalTest extends TestCase
                 ],
                 'ignored_issues' => ['PossiblyUndefinedGlobalVariable'],
             ],
+            'variableAssignedInAnElseifConditionKeepsTheValuesOfThePathsSkippingTheBranch' => [
+                'code' => '<?php
+                    function f(bool $skip, bool $value, bool $gate): void {
+                        if ($skip) {
+                        } elseif (($a = $value) && $gate) {
+                        }
+
+                        if (isset($a) && $a === false) {
+                            echo "false";
+                        }
+                    }',
+            ],
+            'globalBoundToAVariableSomeBranchesDefineIsNullWhenUnset' => [
+                'code' => '<?php
+                    if (rand(0, 1)) {
+                        $g = 1;
+                    }
+
+                    final class C {
+                        public function m(): ?int {
+                            global $g;
+                            /** @psalm-check-type-exact $g = 1|null */;
+                            return $g;
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => ['MixedReturnStatement', 'MixedInferredReturnType'],
+            ],
             'possiblyUndefinedVariableIsNullWhereItIsFalsy' => [
                 'code' => '<?php
                     function f(bool $flag): void {
@@ -1009,6 +1037,17 @@ final class AssignmentInConditionalTest extends TestCase
 
                     $copy = $missing;',
                 'error_message' => 'UndefinedGlobalVariable',
+            ],
+            'variableAnExtractInABranchDefinesIsPossiblyUndefined' => [
+                'code' => '<?php
+                    function f(bool $flag): void {
+                        if ($flag) {
+                            extract(["a" => 1]);
+                        }
+
+                        echo $a;
+                    }',
+                'error_message' => 'PossiblyUndefinedVariable - src' . DIRECTORY_SEPARATOR . 'somefile.php:7:30',
             ],
             'possiblyUndefinedVariableReadInACastIsReported' => [
                 'code' => '<?php
