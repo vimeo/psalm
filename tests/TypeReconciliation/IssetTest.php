@@ -122,7 +122,7 @@ final class IssetTest extends TestCase
                             }
 
                             if (!isset($s)) {
-                                /** @psalm-check-type-exact $s = null */
+                                /** @psalm-check-type-exact $s? = null */
                                 echo 1;
                             }
                         }

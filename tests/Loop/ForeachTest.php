@@ -5,9 +5,14 @@ declare(strict_types=1);
 namespace Psalm\Tests\Loop;
 
 use Override;
+use Psalm\Context;
+use Psalm\Internal\Analyzer\IssueData;
+use Psalm\IssueBuffer;
 use Psalm\Tests\TestCase;
 use Psalm\Tests\Traits\InvalidCodeAnalysisTestTrait;
 use Psalm\Tests\Traits\ValidCodeAnalysisTestTrait;
+
+use function array_map;
 
 use const DIRECTORY_SEPARATOR;
 
@@ -15,6 +20,66 @@ final class ForeachTest extends TestCase
 {
     use InvalidCodeAnalysisTestTrait;
     use ValidCodeAnalysisTestTrait;
+
+    public function testAVariableOfAPreviousIterationReadsAsNullWhenUndefined(): void
+    {
+        $this->project_analyzer->getConfig()->throw_exception = false;
+
+        $file_path = self::$src_dir_path . 'somefile.php';
+
+        $this->addFile(
+            $file_path,
+            '<?php
+                final class Item {
+                    public function name(): string {
+                        return "i";
+                    }
+                }
+
+                function notNull(array $xs): void {
+                    foreach ($xs as $_) {
+                        if ($item !== null) {
+                            echo $item->name();
+                        }
+                        $item = new Item();
+                    }
+                }
+
+                function falsy(array $xs): void {
+                    foreach ($xs as $_) {
+                        if (!$a) {
+                            /** @psalm-check-type-exact $a? = null */;
+                        }
+                        $a = "s";
+                    }
+                }
+
+                function notIsset(array $xs): void {
+                    foreach ($xs as $_) {
+                        if (!isset($a)) {
+                            /** @psalm-check-type-exact $a? = null */;
+                            echo (string) $a;
+                        }
+                        $a = "s";
+                    }
+                }',
+        );
+
+        $this->analyzeFile($file_path, new Context());
+
+        self::assertSame(
+            [
+                'PossiblyUndefinedVariable 10:29',
+                'PossiblyUndefinedVariable 19:30',
+                'PossiblyUndefinedVariable 30:43',
+            ],
+            array_map(
+                static fn(IssueData $issue): string
+                    => $issue->type . ' ' . $issue->line_from . ':' . $issue->column_from,
+                IssueBuffer::getIssuesDataForFile($file_path),
+            ),
+        );
+    }
 
     /**
      * @psalm-pure
