@@ -746,6 +746,28 @@ final class BinaryOperationTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'shiftOfAnIntRangeInALoopIsNotBounded' => [
+                'code' => <<<'PHP'
+                    <?php
+                    /**
+                     * @param int<1, 2> $x
+                     * @param int<0, 3> $shift
+                     */
+                    function f(int $x, int $shift): void {
+                        $outside = $x << $shift;
+
+                        for ($i = 0; $i < 70; $i++) {
+                            $x <<= 1;
+                        }
+
+                        /** @psalm-check-type-exact $outside = int<1, 16> */
+                        /** @psalm-check-type-exact $x = int */
+                    }
+                    PHP,
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
             'assignmentInTheRightOperandOfAndMayNotHaveRun' => [
                 'code' => '<?php
                     function fetch(): ?float {

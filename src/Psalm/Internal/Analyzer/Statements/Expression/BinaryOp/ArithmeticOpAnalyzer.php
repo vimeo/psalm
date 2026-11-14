@@ -854,6 +854,17 @@ final class ArithmeticOpAnalyzer
                 return null;
             }
 
+            // a loop is analysed a fixed number of times, which is not enough for a value that every pass shifts
+            // further left: its range is not bounded by the one the passes have seen
+            if ($parent instanceof PhpParser\Node\Expr\BinaryOp\ShiftLeft
+                && $context !== null
+                && $context->inside_loop
+                && ($left_type_part instanceof TIntRange || $right_type_part instanceof TIntRange)
+            ) {
+                $result_type = Type::combineUnionTypes(Type::getInt(), $result_type);
+                return null;
+            }
+
             if ($left_type_part instanceof TIntRange && $right_type_part instanceof TIntRange) {
                 self::analyzeOperandsBetweenIntRange($parent, $result_type, $left_type_part, $right_type_part);
                 return null;
