@@ -124,6 +124,31 @@ final class ForeachTest extends TestCase
                 'ignored_issues' => ['MixedArgument'],
                 'php_version' => '8.1',
             ],
+            'aKeyPassedByReferenceThroughANamedArgumentCountsAsWrittenInAForeachByReference' => [
+                'code' => '<?php
+                    function setNamed(int $a = 0, mixed &$out = null): void {
+                        echo $a;
+                        $out = 1;
+                    }
+
+                    /** @param list<array{label: string}> $rows */
+                    function namedArg(array $rows): void {
+                        foreach ($rows as &$row) {
+                            if (rand(0, 1)) {
+                                setNamed(out: $row["extra"]);
+                            }
+                        }
+
+                        unset($row);
+
+                        if ($rows) {
+                            echo $rows[0]["extra"];
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => ['PossiblyUndefinedArrayOffset', 'MixedArgument'],
+                'php_version' => '8.1',
+            ],
             'aKeyPassedByReferenceOrAReassignedItemCountsAsWrittenInAForeachByReference' => [
                 'code' => '<?php
                     /** @param list<array{label: string}> $rows */

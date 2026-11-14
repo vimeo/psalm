@@ -681,7 +681,7 @@ final class ForeachAnalyzer
                 // a key passed to a call may be written through its parameter, the variable itself may be changed
                 foreach ($node->getRawArgs() as $position => $arg) {
                     if (!$arg instanceof PhpParser\Node\Arg
-                        || !self::mayPassByReference($statements_analyzer, $node, $position)
+                        || !self::mayPassByReference($statements_analyzer, $node, $position, $arg)
                     ) {
                         continue;
                     }
@@ -726,15 +726,27 @@ final class ForeachAnalyzer
 
     /**
      * Whether the call may take the argument at the position by reference: false only for a function that is known
-     * and takes it by value
+     * and takes it by value. A named argument is matched by its name, an unpacked one (or one after it) may reach any
+     * parameter.
      */
     private static function mayPassByReference(
         StatementsAnalyzer $statements_analyzer,
         PhpParser\Node\Expr\CallLike $call,
         int $position,
+        PhpParser\Node\Arg $arg,
     ): bool {
         if (!$call instanceof PhpParser\Node\Expr\FuncCall || !$call->name instanceof PhpParser\Node\Name) {
             return true;
+        }
+
+        foreach ($call->getRawArgs() as $other_position => $other_arg) {
+            if ($other_position > $position) {
+                break;
+            }
+
+            if (!$other_arg instanceof PhpParser\Node\Arg || $other_arg->unpack) {
+                return true;
+            }
         }
 
         $functions = $statements_analyzer->getCodebase()->functions;
@@ -751,7 +763,20 @@ final class ForeachAnalyzer
             }
 
             $params = $functions->getStorage($statements_analyzer, $function_id)->params;
-            $param = $params[$position] ?? (($last = end($params)) !== false && $last->is_variadic ? $last : null);
+            $param = null;
+
+            if ($arg->name !== null) {
+                foreach ($params as $named_param) {
+                    if ($named_param->name === $arg->name->name && !$named_param->is_variadic) {
+                        $param = $named_param;
+                        break;
+                    }
+                }
+            } else {
+                $param = $params[$position] ?? null;
+            }
+
+            $param ??= ($last = end($params)) !== false && $last->is_variadic ? $last : null;
 
             return $param === null || $param->by_ref;
         }
