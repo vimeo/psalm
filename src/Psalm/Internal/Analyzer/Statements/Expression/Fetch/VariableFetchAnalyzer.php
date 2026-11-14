@@ -78,7 +78,6 @@ final class VariableFetchAnalyzer
         bool $from_global = false,
         bool $assigned_to_reference = false,
     ): bool {
-        $project_analyzer = $statements_analyzer->getFileAnalyzer()->project_analyzer;
         $codebase = $statements_analyzer->getCodebase();
 
         if ($stmt->name === 'this') {
@@ -337,44 +336,48 @@ final class VariableFetchAnalyzer
 
             if ($first_appearance && !$context->inside_isset && !$context->inside_unset) {
                 if ($context->is_global) {
+                    $issue = new PossiblyUndefinedGlobalVariable(
+                        'Possibly undefined global variable ' . $var_name . ', first seen on line ' .
+                            $first_appearance->getLineNumber(),
+                        new CodeLocation($statements_analyzer->getSource(), $stmt),
+                        $var_name,
+                    );
+
                     if ($codebase->alter_code) {
-                        if (isset($project_analyzer->getIssuesToFix()['PossiblyUndefinedGlobalVariable'])) {
+                        if ($codebase->shouldFixIssue($issue, $statements_analyzer->getSuppressedIssues())) {
                             $branch_point = $statements_analyzer->getBranchPoint($var_name);
 
-                            if ($branch_point) {
+                            if ($branch_point !== null) {
                                 $statements_analyzer->addVariableInitialization($var_name, $branch_point);
                             }
                         }
                     } else {
                         IssueBuffer::maybeAdd(
-                            new PossiblyUndefinedGlobalVariable(
-                                'Possibly undefined global variable ' . $var_name . ', first seen on line ' .
-                                    $first_appearance->getLineNumber(),
-                                new CodeLocation($statements_analyzer->getSource(), $stmt),
-                                $var_name,
-                            ),
+                            $issue,
                             $statements_analyzer->getSuppressedIssues(),
                             (bool) $statements_analyzer->getBranchPoint($var_name),
                         );
                     }
-                } elseif ($codebase->alter_code
-                    && isset($project_analyzer->getIssuesToFix()['PossiblyUndefinedVariable'])
-                ) {
-                    $branch_point = $statements_analyzer->getBranchPoint($var_name);
-
-                    if ($branch_point) {
-                        $statements_analyzer->addVariableInitialization($var_name, $branch_point);
-                    }
                 } else {
-                    IssueBuffer::maybeAdd(
-                        new PossiblyUndefinedVariable(
-                            'Possibly undefined variable ' . $var_name . ', first seen on line ' .
-                                $first_appearance->getLineNumber(),
-                            new CodeLocation($statements_analyzer->getSource(), $stmt),
-                        ),
-                        $statements_analyzer->getSuppressedIssues(),
-                        (bool) $statements_analyzer->getBranchPoint($var_name),
+                    $issue = new PossiblyUndefinedVariable(
+                        'Possibly undefined variable ' . $var_name . ', first seen on line ' .
+                            $first_appearance->getLineNumber(),
+                        new CodeLocation($statements_analyzer->getSource(), $stmt),
                     );
+
+                    if ($codebase->shouldFixIssue($issue, $statements_analyzer->getSuppressedIssues())) {
+                        $branch_point = $statements_analyzer->getBranchPoint($var_name);
+
+                        if ($branch_point !== null) {
+                            $statements_analyzer->addVariableInitialization($var_name, $branch_point);
+                        }
+                    } else {
+                        IssueBuffer::maybeAdd(
+                            $issue,
+                            $statements_analyzer->getSuppressedIssues(),
+                            (bool) $statements_analyzer->getBranchPoint($var_name),
+                        );
+                    }
                 }
 
                 if ($codebase->store_node_types
@@ -456,10 +459,21 @@ final class VariableFetchAnalyzer
                 && (!$context->inside_assignment || $array_assignment)
                 && ($first_appearance = $statements_analyzer->getFirstAppearance($var_name))
             ) {
+                $issue = $context->is_global
+                    ? new PossiblyUndefinedGlobalVariable(
+                        'Possibly undefined global variable ' . $var_name . ', first seen on line '
+                            . $first_appearance->getLineNumber(),
+                        new CodeLocation($statements_analyzer->getSource(), $stmt),
+                        $var_name,
+                    )
+                    : new PossiblyUndefinedVariable(
+                        'Possibly undefined variable ' . $var_name . ', first seen on line '
+                            . $first_appearance->getLineNumber(),
+                        new CodeLocation($statements_analyzer->getSource(), $stmt),
+                    );
+
                 if ($codebase->alter_code) {
-                    if (isset($project_analyzer->getIssuesToFix()[
-                        $context->is_global ? 'PossiblyUndefinedGlobalVariable' : 'PossiblyUndefinedVariable'
-                    ])) {
+                    if ($codebase->shouldFixIssue($issue, $statements_analyzer->getSuppressedIssues())) {
                         $branch_point = $statements_analyzer->getBranchPoint($var_name);
 
                         if ($branch_point !== null) {
@@ -468,18 +482,7 @@ final class VariableFetchAnalyzer
                     }
                 } else {
                     IssueBuffer::maybeAdd(
-                        $context->is_global
-                            ? new PossiblyUndefinedGlobalVariable(
-                                'Possibly undefined global variable ' . $var_name . ', first seen on line '
-                                    . $first_appearance->getLineNumber(),
-                                new CodeLocation($statements_analyzer->getSource(), $stmt),
-                                $var_name,
-                            )
-                            : new PossiblyUndefinedVariable(
-                                'Possibly undefined variable ' . $var_name . ', first seen on line '
-                                    . $first_appearance->getLineNumber(),
-                                new CodeLocation($statements_analyzer->getSource(), $stmt),
-                            ),
+                        $issue,
                         $statements_analyzer->getSuppressedIssues(),
                         (bool) $statements_analyzer->getBranchPoint($var_name),
                     );
