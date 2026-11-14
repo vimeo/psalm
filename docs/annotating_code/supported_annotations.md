@@ -92,8 +92,42 @@ echo $b->b;
 echo $b->a; // works
 ```
 
-Mixins are followed transitively: if `B` mixes in `A` and `C` mixes in `B`, members of `A` are also available on `C`.
-Chains are only followed through non-generic mixins; a generic hop such as `@mixin Collection<T>` is not traversed.
+The members of the class, of its parent classes and of its interfaces, their `@method`s and `@property`s included,
+come first. A member the class lacks is looked up in its mixins in declaration order, then in those of its traits,
+then in those of its parent class, and so on. The mixins of a mixin are looked up right after it, and the first mixin
+with the member wins:
+
+```php
+class Deep { public function a(): int { return 1; } }
+class Near { public function a(): string { return ''; } public function d(): string { return ''; } }
+class Other { public function b(): bool { return true; } }
+class Far { public function b(): float { return 1.0; } public function c(): float { return 1.0; } }
+
+/** @mixin Deep */
+class Middle {}
+
+/** @mixin Other */
+trait Forwards {}
+
+/** @mixin Far */
+abstract class Base { public function __call(string $name, array $args): mixed { return null; } }
+
+/**
+ * @method null d()
+ * @mixin Middle
+ * @mixin Near
+ */
+class Child extends Base { use Forwards; }
+
+$child = new Child();
+$child->a(); // int: Deep, the mixin of Middle, comes before Near
+$child->b(); // bool: the mixin of a trait comes before that of the parent class
+$child->c(); // float
+$child->d(); // null: the class's own `@method` comes first
+```
+
+A mixin's `@method`s are only used through a `__call()`, and its `@property`s through a `__get()`: those of the class,
+or of the mixin when the class is an interface.
 
 
 ## Psalm-specific tags
