@@ -617,7 +617,6 @@ final class IntersectionTypeTest extends TestCase
                     }
                 ',
                 'error_message' => 'InvalidArgument',
-                'error_levels' => ['UnsafeInstantiation', 'MixedMethodCall'],
             ],
             'classStringOfCallableObjectWithInvalidStringArgument' => [
                 'code' => '<?php
