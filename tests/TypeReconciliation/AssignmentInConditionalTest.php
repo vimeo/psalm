@@ -778,6 +778,96 @@ final class AssignmentInConditionalTest extends TestCase
                         if ($a) {}
                     }',
             ],
+            'assignmentInRightOperandOfAndOfAnElseifOrALogicalAndKeepsThePreviousValueWhereTheLeftOneIsFalse' => [
+                'code' => '<?php
+                    function fresh(): ?string {
+                        return null;
+                    }
+
+                    function elseifBranch(bool $flag, ?string $name): void {
+                        if ($flag) {
+                            echo "flag";
+                        } elseif (null === $name && null !== ($name = fresh())) {
+                            echo "assigned";
+                        } else {
+                            /** @psalm-check-type-exact $name = null|string */
+                            echo "else";
+                        }
+                    }
+
+                    function logicalAnd(?string $name): void {
+                        if (null === $name and null !== ($name = fresh())) {
+                            return;
+                        }
+
+                        /** @psalm-check-type-exact $name = null|string */
+                        echo "after";
+                    }',
+                'assertions' => [],
+                'ignored_issues' => ['RedundantCondition'],
+                'php_version' => '8.1',
+            ],
+            'assignmentInRightOperandOfAndKeepsThePreviousValueWhereTheLeftOneIsFalse' => [
+                'code' => '<?php
+                    function fresh(): ?string {
+                        return null;
+                    }
+
+                    function elseBranch(?string $name): void {
+                        if (null === $name && null !== $name = fresh()) {
+                            echo "assigned";
+                        } else {
+                            /** @psalm-check-type-exact $name = null|string */
+                            echo "else";
+                        }
+                    }
+
+                    function afterIf(?string $name): void {
+                        if (null === $name && null !== $name = fresh()) {
+                            return;
+                        }
+
+                        /** @psalm-check-type-exact $name = null|string */
+                        echo "after";
+                    }
+
+                    function ternary(?string $name): string {
+                        $result = null === $name && null !== ($name = fresh()) ? "assigned" : $name;
+                        /** @psalm-check-type-exact $name = null|string */
+
+                        return (string) $result;
+                    }',
+                'assertions' => [],
+                'ignored_issues' => ['RedundantCondition'],
+                'php_version' => '8.1',
+            ],
+            'assignmentInRightOperandOfAndForgetsWhatTheLeftOneTestedOfThePreviousValue' => [
+                'code' => '<?php
+                    function fresh(): ?string {
+                        return null;
+                    }
+
+                    function f(?string $name): string {
+                        if (null === $name && null !== $name = fresh()) {
+                            return $name;
+                        }
+
+                        return "none";
+                    }
+
+                    function g(?string $name): int {
+                        return $name !== null && ($name = trim($name)) !== "" ? strlen($name) : 0;
+                    }
+
+                    function other(): ?array {
+                        return null;
+                    }
+
+                    /** @param array{k?: int}|null $a */
+                    function h(?array $a): int {
+                        return isset($a["k"]) && ($a = other()) !== null ? count($a) : 0;
+                    }',
+            ],
         ];
     }
 
@@ -834,7 +924,7 @@ final class AssignmentInConditionalTest extends TestCase
                         return 0;
                     }',
                 'error_message' => 'PossiblyInvalidArgument',
-                'error_levels' => ['RiskyTruthyFalsyComparison'],
+                'error_levels' => [],
                 'php_version' => '8.0',
             ],
             'assignmentInAnAndInsideACastMayBeSkipped' => [
@@ -853,7 +943,7 @@ final class AssignmentInConditionalTest extends TestCase
                         return 0;
                     }',
                 'error_message' => 'PossiblyInvalidArgument',
-                'error_levels' => ['RiskyTruthyFalsyComparison'],
+                'error_levels' => [],
                 'php_version' => '8.0',
             ],
             'assignmentInTheRightOfACoalesceInsideAComparisonMayBeSkipped' => [
@@ -872,7 +962,7 @@ final class AssignmentInConditionalTest extends TestCase
                         return 0;
                     }',
                 'error_message' => 'PossiblyInvalidArgument',
-                'error_levels' => ['RiskyTruthyFalsyComparison'],
+                'error_levels' => [],
                 'php_version' => '8.0',
             ],
             'assignmentInAMatchArmMayBeSkipped' => [
@@ -891,7 +981,7 @@ final class AssignmentInConditionalTest extends TestCase
                         return 0;
                     }',
                 'error_message' => 'PossiblyInvalidArgument',
-                'error_levels' => ['RiskyTruthyFalsyComparison'],
+                'error_levels' => [],
                 'php_version' => '8.0',
             ],
             'assignmentInAnArgumentOfANullsafeCallMayBeSkipped' => [

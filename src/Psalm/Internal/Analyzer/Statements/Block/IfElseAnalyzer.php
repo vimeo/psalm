@@ -29,6 +29,7 @@ use Psalm\Type\Reconciler;
 use Psalm\Type\Union;
 
 use function array_diff;
+use function array_fill_keys;
 use function array_filter;
 use function array_intersect_key;
 use function array_keys;
@@ -103,8 +104,11 @@ final class IfElseAnalyzer
 
         $pre_cond_reconciled_clauses = $context->reconciled_expression_clauses;
 
+        $reassigned_var_ids = FormulaGenerator::getVarsAssignedByOredRightSides($stmt->cond, $context->self);
+
         // the else of an `||` is analysed again from where the condition started, not from where it ended
-        $pre_condition_context = $stmt->cond instanceof PhpParser\Node\Expr\BinaryOp\BooleanOr
+        $pre_condition_context = $reassigned_var_ids
+            || $stmt->cond instanceof PhpParser\Node\Expr\BinaryOp\BooleanOr
             || $stmt->cond instanceof PhpParser\Node\Expr\BinaryOp\LogicalOr
                 ? clone $context
                 : null;
@@ -222,6 +226,11 @@ final class IfElseAnalyzer
         $if_scope->reasonable_clauses = $if_context->clauses;
 
         try {
+            if (FormulaGenerator::leavesOutClausesOfAssignedVars($stmt->cond, $context->self)) {
+                // the right side of an `&&` that assigns isn't evaluated where the left one is false
+                throw new ComplicatedExpressionException();
+            }
+
             $if_scope->negated_clauses = Algebra::negateFormula($if_clauses);
         } catch (ComplicatedExpressionException) {
             try {
@@ -238,6 +247,12 @@ final class IfElseAnalyzer
                 $if_scope->negated_clauses = [];
             }
         }
+
+        $if_scope->negated_clauses = FormulaGenerator::withoutClausesOfReassignedVars(
+            $if_scope->negated_clauses,
+            $stmt->cond,
+            $context->self,
+        );
 
         $if_scope->negated_types = Algebra::getTruthsFromFormula(
             Algebra::simplifyCNF(
@@ -297,9 +312,14 @@ final class IfElseAnalyzer
         $else_context = clone $scope_to_clone;
 
         // the else runs when every operand of an `||` was evaluated and falsy, so what they assigned is known there
+        $else_rederived_var_ids = array_fill_keys(array_keys($reassigned_var_ids), 1);
+
+        if ($stmt->else || $stmt->elseifs) {
+            $else_rederived_var_ids += array_filter($assigned_in_conditional_var_ids);
+        }
+
         if (!$if_scope->post_leaving_if_context
-            && ($stmt->else || $stmt->elseifs)
-            && array_filter($assigned_in_conditional_var_ids) !== []
+            && $else_rederived_var_ids !== []
             && $pre_condition_context !== null
         ) {
             IfAnalyzer::addConditionallyAssignedVarsToContext(
@@ -307,7 +327,7 @@ final class IfElseAnalyzer
                 $stmt->cond,
                 $pre_condition_context,
                 $else_context,
-                $assigned_in_conditional_var_ids,
+                $else_rederived_var_ids,
             );
         }
         $else_context->clauses = Algebra::simplifyCNF(
@@ -354,10 +374,14 @@ final class IfElseAnalyzer
                 $context->vars_in_scope[$var_id] = $type;
             }
 
+            // the negated clauses leave out what a right side of an `||` reassigns: the else derived its type instead
             self::removeMixedAssignmentsOfNarrowedVars(
                 $statements_analyzer,
                 $post_if_context,
-                $pre_assignment_else_redefined_vars,
+                [
+                    ...$pre_assignment_else_redefined_vars,
+                    ...array_intersect_key($else_context->vars_in_scope, $reassigned_var_ids),
+                ],
             );
         } elseif ($stmt->elseifs
             && !$stmt->else
