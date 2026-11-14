@@ -2091,7 +2091,7 @@ final class MixinAnnotationTest extends TestCase
                     $top = new Top();
                     $result = $top->value();',
                 'assertions' => [
-                    '$result' => 'int',
+                    '$result===' => 'int',
                 ],
             ],
             'nestedMixinDirectShadowsTransitive' => [
@@ -2113,7 +2113,7 @@ final class MixinAnnotationTest extends TestCase
                     $host = new Host();
                     $result = $host->foo();',
                 'assertions' => [
-                    '$result' => 'string',
+                    '$result===' => 'string',
                 ],
             ],
             'mutualMixinsDoNotRecurseInfinitely' => [
@@ -2151,7 +2151,7 @@ final class MixinAnnotationTest extends TestCase
 
                     $result = StaticTop::make();',
                 'assertions' => [
-                    '$result' => 'int',
+                    '$result===' => 'int',
                 ],
             ],
             'nestedMixinPropertyFetch' => [
@@ -2171,7 +2171,7 @@ final class MixinAnnotationTest extends TestCase
                     $top = new PropTop();
                     $result = $top->count;',
                 'assertions' => [
-                    '$result' => 'int',
+                    '$result===' => 'int',
                 ],
             ],
             'templatedMixinPropertyFetchViaThisInSubclass' => [
@@ -2340,7 +2340,7 @@ final class MixinAnnotationTest extends TestCase
                     $w = new PostWrapper();
                     $result = $w->views;',
                 'assertions' => [
-                    '$result' => 'int',
+                    '$result===' => 'int',
                 ],
             ],
             'nestedMixinDiamondResolvesSharedTarget' => [
@@ -2366,7 +2366,7 @@ final class MixinAnnotationTest extends TestCase
                     $d = new Diamond();
                     $result = $d->shared();',
                 'assertions' => [
-                    '$result' => 'int',
+                    '$result===' => 'int',
                 ],
             ],
             'nestedMixinTargetInheritsMixinFromParent' => [
@@ -2388,7 +2388,7 @@ final class MixinAnnotationTest extends TestCase
                     $host = new HostDeclaredFirst();
                     $result = $host->deep();',
                 'assertions' => [
-                    '$result' => 'int',
+                    '$result===' => 'int',
                 ],
             ],
             'nestedMixinOfTheFirstSiblingWins' => [
@@ -2435,7 +2435,7 @@ final class MixinAnnotationTest extends TestCase
 
                     $result = (new PseudoTop())->pseudo();',
                 'assertions' => [
-                    '$result' => 'string',
+                    '$result===' => 'string',
                 ],
             ],
             'PHP81-firstClassCallableStaticCallForwardedThroughMixin' => [
@@ -2866,6 +2866,31 @@ final class MixinAnnotationTest extends TestCase
                         $value = $e->value;
                         /** @psalm-check-type-exact $not = Expectation<string> */
                         /** @psalm-check-type-exact $value = string */
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'pseudoMethodOfTheMixinOfAnInterface' => [
+                'code' => '<?php
+                    /** @method int bar() */
+                    class WithBar
+                    {
+                        /** @param list<mixed> $args */
+                        public function __call(string $name, array $args): mixed
+                        {
+                            return null;
+                        }
+                    }
+
+                    /** @mixin WithBar */
+                    interface HasBar {}
+
+                    function f(HasBar $object): int
+                    {
+                        $result = $object->bar();
+                        /** @psalm-check-type-exact $result = int */
+                        return $result;
                     }',
                 'assertions' => [],
                 'ignored_issues' => [],

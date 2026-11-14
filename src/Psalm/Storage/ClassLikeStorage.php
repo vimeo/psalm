@@ -81,14 +81,16 @@ final class ClassLikeStorage implements HasAttributesInterface
     public array $internal = [];
 
     /**
-     * The `@mixin T` the class declares. See getMixins().
+     * The `@mixin T` the class declares, and those plugins add. Those of its traits and parent classes are not
+     * included.
      *
      * @var TTemplateParam[]
      */
     public array $templatedMixins = [];
 
     /**
-     * The named `@mixin`s the class declares. See getMixins().
+     * The named `@mixin`s the class declares, and those plugins add. Those of its traits and parent classes are not
+     * included.
      *
      * @var list<TNamedObject>
      */
@@ -690,8 +692,8 @@ final class ClassLikeStorage implements HasAttributesInterface
     }
 
     /**
-     * @deprecated Will be removed in psalm-plugin-api 0.5.0. Returns only the named mixins the class declares (and
-     *     those plugins added); use getMixins().
+     * @deprecated Will be removed in psalm-plugin-api 0.5.0; read namedMixins, which now holds only the named mixins
+     *     the class declares (and those plugins added).
      * @return list<TNamedObject>
      * @psalm-mutation-free
      */
@@ -719,7 +721,7 @@ final class ClassLikeStorage implements HasAttributesInterface
     }
 
     /**
-     * @deprecated Will be removed in psalm-plugin-api 0.5.0; use getMixins().
+     * @deprecated Will be removed in psalm-plugin-api 0.5.0; read namedMixins and templatedMixins.
      * @return list<TNamedObject|TTemplateParam>
      * @psalm-mutation-free
      */
@@ -732,6 +734,7 @@ final class ClassLikeStorage implements HasAttributesInterface
      * The mixins the class declares in declaration order, then those plugins added to namedMixins or
      * templatedMixins. Those of its traits and parent classes are not included.
      *
+     * @internal
      * @return list<TNamedObject|TTemplateParam>
      * @psalm-mutation-free
      */

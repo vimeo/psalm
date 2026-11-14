@@ -126,8 +126,8 @@ $child->c(); // float
 $child->d(); // null: the class's own `@method` comes first
 ```
 
-A mixin's `@method`s are only used when the class has `__call()`, and its `@property`s when the class has `__get()`
-or is an interface.
+A mixin's `@method`s are only used when the class has `__call()` or is an interface, and its `@property`s when the
+class has `__get()` or is an interface.
 
 
 ## Psalm-specific tags

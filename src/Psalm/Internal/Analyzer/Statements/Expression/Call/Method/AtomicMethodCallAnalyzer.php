@@ -407,13 +407,18 @@ final class AtomicMethodCallAnalyzer extends CallAnalyzer
                 );
 
                 if ($mixin !== null) {
-                    if ($mixin_method_exists) {
+                    if ($mixin_method_exists || $class_storage->is_interface) {
                         $mixin_user_class = $fq_class_name;
                         ['type' => $lhs_type_part, 'storage' => $class_storage] = $mixin;
                         $fq_class_name = $class_storage->name;
                         $method_id = new MethodIdentifier($fq_class_name, $method_name_lc);
                         $mixin_method_id = $method_id;
-                        $naive_method_exists = true;
+                        $naive_method_exists = $mixin_method_exists;
+
+                        // an interface has no __call(): a `@method` of its mixin goes through the mixin's
+                        if (!$mixin_method_exists) {
+                            $naive_method_id = $method_id;
+                        }
                     } else {
                         // the call goes through the __call() of the class, with `$this` the class
                         $pseudo_method_mixin = $mixin;
@@ -847,7 +852,8 @@ final class AtomicMethodCallAnalyzer extends CallAnalyzer
         bool $self_call,
     ): array {
         $mixin_method_exists = false;
-        $has_magic_call = isset($class_storage->declaring_method_ids['__call']);
+        // an interface has no __call() of its own: the class implementing it forwards the call
+        $has_magic_call = $class_storage->is_interface || isset($class_storage->declaring_method_ids['__call']);
 
         $mixin = MixinLookup::findMember(
             $codebase,
