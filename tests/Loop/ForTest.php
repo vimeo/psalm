@@ -23,6 +23,35 @@ final class ForTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'variableNarrowedAndReassignedByAnIfKeepsTheTypesOfBothBranches' => [
+                'code' => '<?php
+                    function normalize(array|string|int $raw): array {
+                        if (!is_array($raw)) {
+                            $raw = [];
+                        }
+
+                        /** @psalm-check-type-exact $raw = array<array-key, mixed> */
+                        return $raw;
+                    }
+
+                    function toggle(): void {
+                        $flag = true;
+
+                        while (rand(0, 1)) {
+                            if ($flag) {
+                                $flag = false;
+                            } else {
+                                $flag = true;
+                            }
+                        }
+
+                        /** @psalm-check-type-exact $flag = bool */
+                        echo 1;
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
             'flagToggledByAnIfAndAnElseifKeepsBothValuesAfterTheLoop' => [
                 'code' => '<?php
                     function toggle(): void {
@@ -322,6 +351,21 @@ final class ForTest extends TestCase
     public static function providerInvalidCodeParse(): iterable
     {
         return [
+            'flagFalseInEveryBranchThatChangesItIsStillAlwaysFalsy' => [
+                'code' => '<?php
+                    function check(bool $flag, int $i): void {
+                        if ($flag) {
+                            $flag = false;
+                        } elseif ($i > 8) {
+                            $flag = false;
+                        }
+
+                        if ($flag) {
+                            echo 1;
+                        }
+                    }',
+                'error_message' => 'TypeDoesNotContainType',
+            ],
             'variableAssignedAfterAnInnerLoopBreakingTheOuterOneIsPossiblyUndefined' => [
                 'code' => '<?php
                     function f(): void {
