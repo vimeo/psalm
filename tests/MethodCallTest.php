@@ -205,6 +205,77 @@ final class MethodCallTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'psalmOverloadOfAMethodIsChosenByTheArguments' => [
+                'code' => '<?php
+                    interface Query {}
+                    final class LimitedQuery implements Query {}
+                    final class UnlimitedQuery implements Query {}
+                    final class PagedResult {}
+                    final class PlainResult {}
+
+                    class Repository {
+                        /**
+                         * @psalm-overload (LimitedQuery $query): PagedResult
+                         * @psalm-overload (UnlimitedQuery $query): PlainResult
+                         */
+                        public function search(Query $query): object {
+                            return new PlainResult();
+                        }
+                    }
+
+                    final class Child extends Repository {}
+
+                    $repository = new Child();
+
+                    $paged = $repository->search(new LimitedQuery());
+                    $plain = $repository->search(new UnlimitedQuery());',
+                'assertions' => [
+                    '$paged===' => 'PagedResult',
+                    '$plain===' => 'PlainResult',
+                ],
+            ],
+            'psalmOverloadOfAStaticMethodIsChosenByTheArguments' => [
+                'code' => '<?php
+                    final class Registry {
+                        /**
+                         * @psalm-overload (string $id): int
+                         * @psalm-overload (int $id): string
+                         */
+                        public static function find(string|int $id): int|string {
+                            return 0;
+                        }
+                    }
+
+                    $byName = Registry::find("a");
+                    $byId = Registry::find(1);',
+                'assertions' => [
+                    '$byName===' => 'int',
+                    '$byId===' => 'string',
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
+            'psalmOverloadOfAMethodOfAnInterfaceIsChosenByTheArguments' => [
+                'code' => '<?php
+                    interface Finder {
+                        /**
+                         * @psalm-overload (string $id): int
+                         * @psalm-overload (int $id): string
+                         */
+                        public function find(string|int $id): int|string;
+                    }
+
+                    function check(Finder $finder): void {
+                        $byName = $finder->find("a");
+                        $byId = $finder->find(1);
+
+                        /** @psalm-check-type-exact $byName = int */
+                        /** @psalm-check-type-exact $byId = string */
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
             'propertyUnsetInABranchIsNotRestoredAfterIt' => [
                 'code' => '<?php
                     final class Box {
@@ -752,6 +823,77 @@ final class MethodCallTest extends TestCase
                 'assertions' => [],
                 'ignored_issues' => [],
                 'php_version' => '8.1',
+            ],
+            'psalmOverloadOfAMethodReturnsSelfAndStaticOfTheCalledClass' => [
+                'code' => '<?php
+                    class Base {
+                        /**
+                         * @psalm-overload (string $name): self
+                         * @psalm-overload (int $id): static
+                         */
+                        public function with(string|int $argument): static {
+                            return $this;
+                        }
+                    }
+
+                    final class Child extends Base {}
+
+                    $child = new Child();
+
+                    $byName = $child->with("x");
+                    $byId = $child->with(1);',
+                'assertions' => [
+                    '$byName===' => 'Base',
+                    '$byId===' => 'Child',
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
+            'methodWithOverloadsAsAFirstClassCallableKeepsItsOwnSignature' => [
+                'code' => '<?php
+                    final class Picker {
+                        /**
+                         * @psalm-overload (string $a): int
+                         * @psalm-overload (int $a): string
+                         */
+                        public function pick(string|int $a): int|string {
+                            return 0;
+                        }
+                    }
+
+                    $callable = (new Picker())->pick(...);
+                    $result = $callable("a");',
+                'assertions' => [
+                    '$result===' => 'int|string',
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
+            'methodOverridingOneWithOverloadsUsesItsOwnSignature' => [
+                'code' => '<?php
+                    class Base {
+                        /**
+                         * @psalm-overload (string $a): int
+                         * @psalm-overload (int $a): string
+                         */
+                        public function pick(string|int $a): int|string {
+                            return 0;
+                        }
+                    }
+
+                    final class Child extends Base {
+                        #[Override]
+                        public function pick(string|int $a): int|string {
+                            return 1;
+                        }
+                    }
+
+                    $result = (new Child())->pick("a");',
+                'assertions' => [
+                    '$result===' => 'int|string',
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.3',
             ],
             'inheritedThisDocblockKeepsNativeStaticOfSubclass' => [
                 'code' => '<?php
@@ -2181,6 +2323,53 @@ final class MethodCallTest extends TestCase
     public static function providerInvalidCodeParse(): iterable
     {
         return [
+            'psalmOverloadOfAMethodReportsAMethodOfTheOtherResult' => [
+                'code' => '<?php
+                    final class PagedResult {
+                        public function getPageCount(): int {
+                            return 1;
+                        }
+                    }
+
+                    final class PlainResult {
+                        public function getAllRecords(): array {
+                            return [];
+                        }
+                    }
+
+                    final class Repository {
+                        /**
+                         * @psalm-overload (int $page): PagedResult
+                         * @psalm-overload (string $query): PlainResult
+                         */
+                        public function search(int|string $argument): object {
+                            return new PlainResult();
+                        }
+                    }
+
+                    (new Repository())->search(1)->getAllRecords();',
+                'error_message' => 'UndefinedMethod - src' . DIRECTORY_SEPARATOR . 'somefile.php:24:52 - '
+                    . 'Method PagedResult::getAllRecords does not exist',
+                'error_levels' => [],
+                'php_version' => '8.1',
+            ],
+            'psalmOverloadOfAStaticMethodWithoutAMatchingOneReportsTheLastDeclared' => [
+                'code' => '<?php
+                    final class Registry {
+                        /**
+                         * @psalm-overload (string $id): int
+                         * @psalm-overload (int $id): string
+                         */
+                        public static function find(string|int $id): int|string {
+                            return 0;
+                        }
+                    }
+
+                    Registry::find(1.5);',
+                'error_message' => 'InvalidArgument - src' . DIRECTORY_SEPARATOR . 'somefile.php:12:36',
+                'error_levels' => [],
+                'php_version' => '8.1',
+            ],
             'variableUnsetInABranchIsNotRestoredAfterIt' => [
                 'code' => '<?php
                     function unsetThenReturn(?int $x): ?string {

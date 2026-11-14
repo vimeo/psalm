@@ -14,6 +14,7 @@ use Psalm\Internal\Analyzer\Statements\Expression\Call\ArgumentMapPopulator;
 use Psalm\Internal\Analyzer\Statements\Expression\Call\CallPurityResolver;
 use Psalm\Internal\Analyzer\Statements\Expression\Call\ClassTemplateParamCollector;
 use Psalm\Internal\Analyzer\Statements\Expression\Call\FunctionCallAnalyzer;
+use Psalm\Internal\Analyzer\Statements\Expression\Call\OverloadSelector;
 use Psalm\Internal\Analyzer\Statements\Expression\CallAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\ExpressionIdentifier;
 use Psalm\Internal\Analyzer\Statements\ExpressionAnalyzer;
@@ -288,6 +289,18 @@ final class ExistingAtomicMethodCallAnalyzer extends CallAnalyzer
 
         $is_first_class_callable = $stmt->isFirstClassCallable();
 
+        $overload = null;
+
+        if ($method_storage && $method_storage->overloads !== [] && !$is_first_class_callable) {
+            $overload = OverloadSelector::select(
+                $statements_analyzer,
+                $codebase,
+                $args,
+                $context,
+                $method_storage->overloads,
+            );
+        }
+
         if (!$is_first_class_callable && self::checkMethodArgs(
             $method_id,
             $args,
@@ -295,6 +308,8 @@ final class ExistingAtomicMethodCallAnalyzer extends CallAnalyzer
             $context,
             new CodeLocation($source, $stmt_name),
             $statements_analyzer,
+            false,
+            $overload,
         ) === false) {
             return Type::getMixed();
         }
@@ -313,6 +328,7 @@ final class ExistingAtomicMethodCallAnalyzer extends CallAnalyzer
             $args,
             $result,
             $template_result,
+            $overload,
         );
 
         if ($method_storage?->has_yield && !$is_first_class_callable) {

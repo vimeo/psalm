@@ -321,6 +321,38 @@ $searcher->count(1, 2);                                   // string
 $searcher->count(1.5);                                    // InvalidArgument, TooFewArguments
 ```
 
+### `@psalm-overload`
+
+Declares one signature a function or method can be called with, for one whose behaviour depends on the arguments. A call is checked against the first `@psalm-overload` whose parameters accept its arguments (by position and by name), or against the last one when none does. The function's own signature is not used for calls that have overloads, and it still is the one of a first-class callable (`search(...)`). A method that overrides one with overloads has its own signature unless it declares the overloads again. Not supported yet: constructors.
+
+```php
+<?php
+/**
+ * @psalm-overload (LimitedQuery $query): PagedResult
+ * @psalm-overload (UnlimitedQuery $query): PlainResult
+ */
+function search(Query $query): Result {
+    // ...
+}
+
+search(new LimitedQuery())->getPageCount();    // no issue
+search(new LimitedQuery())->getAllRecords();   // UndefinedMethod
+search(new UnlimitedQuery())->getAllRecords(); // no issue
+
+class Repository {
+    /**
+     * @psalm-overload (string $id): int
+     * @psalm-overload (int $id): string
+     */
+    public static function find(string|int $id): int|string {
+        // ...
+    }
+}
+
+Repository::find("a"); // int
+Repository::find(1);   // string
+```
+
 ### `@psalm-seal-methods`, `@psalm-no-seal-methods`, `@seal-methods`, `@no-seal-methods`
 
 If you have a magic method caller, you can use `@psalm-seal-methods` to instruct Psalm to disallow calling any methods not contained in a list of `@method` annotations.
