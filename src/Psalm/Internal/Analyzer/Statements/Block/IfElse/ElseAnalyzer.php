@@ -178,6 +178,12 @@ final class ElseAnalyzer
 
         // if it doesn't end in a return
         if (!$has_leaving_statements) {
+            $outer_context->detachReferencesReboundIn(
+                $else_context->references_in_scope,
+                $statements_analyzer,
+                $else->stmts ?? [],
+            );
+
             IfAnalyzer::updateIfScope(
                 $codebase,
                 $if_scope,

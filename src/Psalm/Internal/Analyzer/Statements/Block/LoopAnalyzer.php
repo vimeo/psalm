@@ -467,6 +467,25 @@ final class LoopAnalyzer
         $does_sometimes_break = in_array(ScopeAnalyzer::ACTION_BREAK, $loop_scope->final_actions, true);
         $does_always_break = $loop_scope->final_actions === [ScopeAnalyzer::ACTION_BREAK];
 
+        $loop_nodes = [...$pre_conditions, ...$stmts, ...$post_expressions];
+
+        // the body is analysed in the continue context: the loop context does not get what it rebinds
+        if (!$does_always_break) {
+            $loop_parent_context->detachReferencesReboundIn(
+                $continue_context->references_in_scope,
+                $statements_analyzer,
+                $loop_nodes,
+            );
+        }
+
+        foreach ($loop_scope->references_in_scope_at_breaks as $references_in_scope_at_break) {
+            $loop_parent_context->detachReferencesReboundIn(
+                $references_in_scope_at_break,
+                $statements_analyzer,
+                $loop_nodes,
+            );
+        }
+
         if ($does_sometimes_break) {
             foreach ($loop_scope->possibly_redefined_loop_parent_vars as $var => $type) {
                 $loop_parent_context->vars_in_scope[$var] = Type::combineUnionTypes(

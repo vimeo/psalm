@@ -224,6 +224,12 @@ final class IfAnalyzer
         }
 
         if (!$has_leaving_statements) {
+            $outer_context->detachReferencesReboundIn(
+                $if_context->references_in_scope,
+                $statements_analyzer,
+                $stmt->stmts,
+            );
+
             self::updateIfScope(
                 $codebase,
                 $if_scope,
