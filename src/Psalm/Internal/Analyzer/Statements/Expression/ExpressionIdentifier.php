@@ -37,6 +37,16 @@ final class ExpressionIdentifier
             return Context::PHP_VERSION_ID_VAR_ID;
         }
 
+        if (($stmt instanceof PhpParser\Node\Expr\ConstFetch && $stmt->name->getParts() === ['PHP_SAPI'])
+            || ($stmt instanceof PhpParser\Node\Expr\FuncCall
+                && $stmt->name instanceof PhpParser\Node\Name
+                && strtolower($stmt->name->toString()) === 'php_sapi_name'
+                && !$stmt->isFirstClassCallable()
+                && !$stmt->getArgs())
+        ) {
+            return Context::PHP_SAPI_VAR_ID;
+        }
+
         if ($stmt instanceof PhpParser\Node\Expr\ConstFetch && $source instanceof StatementsAnalyzer) {
             return ConstFetchAnalyzer::getUndeclaredConstVarId($stmt, $source);
         }

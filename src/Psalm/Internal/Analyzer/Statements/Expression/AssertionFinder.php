@@ -90,6 +90,7 @@ use Psalm\Type\Atomic\TClosedResource;
 use Psalm\Type\Atomic\TEnumCase;
 use Psalm\Type\Atomic\TFalse;
 use Psalm\Type\Atomic\TGenericObject;
+use Psalm\Type\Atomic\TInt;
 use Psalm\Type\Atomic\TKeyedArray;
 use Psalm\Type\Atomic\TLiteralClassString;
 use Psalm\Type\Atomic\TLiteralFloat;
@@ -101,6 +102,7 @@ use Psalm\Type\Atomic\TNull;
 use Psalm\Type\Atomic\TObject;
 use Psalm\Type\Atomic\TObjectWithProperties;
 use Psalm\Type\Atomic\TResource;
+use Psalm\Type\Atomic\TString;
 use Psalm\Type\Atomic\TTemplateParam;
 use Psalm\Type\Atomic\TTemplateParamClass;
 use Psalm\Type\Atomic\TTraitString;
@@ -110,6 +112,7 @@ use Psalm\Type\Union;
 use UnexpectedValueException;
 
 use function array_map;
+use function array_push;
 use function assert;
 use function count;
 use function explode;
@@ -125,6 +128,7 @@ use function str_starts_with;
 use function strlen;
 use function strpos;
 use function strtolower;
+use function strtr;
 use function substr;
 
 /**
@@ -224,6 +228,11 @@ final class AssertionFinder
 
         if ($conditional instanceof PhpParser\Node\Expr\BooleanNot) {
             return [];
+        }
+
+        $string_length_assertions = self::getStringLengthAssertions($conditional, $this_class_name, $source);
+        if ($string_length_assertions) {
+            return $string_length_assertions;
         }
 
         if ($conditional instanceof PhpParser\Node\Expr\BinaryOp\Identical ||
@@ -1159,6 +1168,8 @@ final class AssertionFinder
                     if ($var_id) {
                         $if_types[$var_id] = self::getAlternatives($assertion->rule);
                     }
+                } elseif ($assertion->var_id === Context::PHP_SAPI_VAR_ID) {
+                    $if_types[Context::PHP_SAPI_VAR_ID] = self::getAlternatives($assertion->rule);
                 } elseif (is_string($assertion->var_id) && self::isArrayOffsetAssertionId($assertion->var_id)) {
                     $offset_var_id = self::getArrayOffsetVarId(
                         $assertion->var_id,
@@ -1241,6 +1252,8 @@ final class AssertionFinder
                     if ($var_id) {
                         $if_types[$var_id] = self::getNegatedAlternatives($assertion->rule);
                     }
+                } elseif ($assertion->var_id === Context::PHP_SAPI_VAR_ID) {
+                    $if_types[Context::PHP_SAPI_VAR_ID] = self::getNegatedAlternatives($assertion->rule);
                 } elseif (is_string($assertion->var_id) && self::isArrayOffsetAssertionId($assertion->var_id)) {
                     $offset_var_id = self::getArrayOffsetVarId(
                         $assertion->var_id,
@@ -1423,6 +1436,8 @@ final class AssertionFinder
                 $literal_class_strings = [];
 
                 foreach ($stmt_class_type->getAtomicTypes() as $atomic_type) {
+                    // a class-string only bounds the class: the object may be of any subclass of it, so the
+                    // check isn't redundant, and its negation tells nothing
                     if ($atomic_type instanceof TLiteralClassString) {
                         $literal_class_strings[] = new IsType(new TNamedObject($atomic_type->value));
                     } elseif ($atomic_type instanceof TTemplateParamClass) {
@@ -1434,7 +1449,7 @@ final class AssertionFinder
                             ),
                         );
                     } elseif ($atomic_type instanceof TClassString && $atomic_type->as !== 'object') {
-                        $literal_class_strings[] = new IsType(
+                        $literal_class_strings[] = new IsIdentical(
                             $atomic_type->as_type ?: new TNamedObject($atomic_type->as),
                         );
                     }
@@ -3882,6 +3897,39 @@ final class AssertionFinder
     }
 
     /**
+     * What a key that exists in an array as an int is: the int, or the string that PHP casts to it, whichever the type
+     * of the value looked up can be. A value that is not an int or a string (`true`, `1.0`) matches it too, so any
+     * other type keeps the loose comparison
+     *
+     * @return list<Assertion>
+     * @psalm-pure
+     */
+    private static function getIntKeyAssertions(int $key, Union $looked_up_type): array
+    {
+        foreach ($looked_up_type->getAtomicTypes() as $atomic_type) {
+            if ($atomic_type instanceof TTemplateParam) {
+                $atomic_type = $atomic_type->as->isSingle() ? $atomic_type->as->getSingleAtomic() : $atomic_type;
+            }
+
+            if (!$atomic_type instanceof TInt && !$atomic_type instanceof TString) {
+                return [new IsLooselyEqual(new TLiteralInt($key))];
+            }
+        }
+
+        $assertions = [];
+
+        if (!$looked_up_type->isString(true)) {
+            $assertions[] = new IsIdentical(new TLiteralInt($key));
+        }
+
+        if (!$looked_up_type->isInt(true)) {
+            $assertions[] = new IsIdentical(TLiteralString::make((string) $key));
+        }
+
+        return $assertions;
+    }
+
+    /**
      * @return list<non-empty-array<string, non-empty-list<non-empty-list<Assertion>>>>
      */
     private static function getArrayKeyExistsAssertions(
@@ -3936,12 +3984,18 @@ final class AssertionFinder
                             if ($string_to_int === false) {
                                 $literal_assertions[] = new IsIdentical($array_literal_type);
                             } else {
-                                $literal_assertions[] = new IsLooselyEqual(new TLiteralInt($string_to_int));
+                                array_push(
+                                    $literal_assertions,
+                                    ...self::getIntKeyAssertions($string_to_int, $first_var_type),
+                                );
                             }
                         }
                     } elseif ($key_type->allIntLiterals() && !$key_type->possibly_undefined) {
                         foreach ($key_type->getLiteralInts() as $array_literal_type) {
-                            $literal_assertions[] = new IsLooselyEqual($array_literal_type);
+                            array_push(
+                                $literal_assertions,
+                                ...self::getIntKeyAssertions($array_literal_type->value, $first_var_type),
+                            );
                         }
                     } else {
                         $safe_to_track_literals = false;
@@ -4146,6 +4200,104 @@ final class AssertionFinder
         }
 
         return [];
+    }
+
+    /**
+     * A comparison of strlen() with 0 or 1 that tells whether the string is empty
+     *
+     * @return list<non-empty-array<string, non-empty-list<non-empty-list<Assertion>>>>
+     */
+    private static function getStringLengthAssertions(
+        PhpParser\Node\Expr $conditional,
+        ?string $this_class_name,
+        FileSource $source,
+    ): array {
+        if (!$conditional instanceof BinaryOp) {
+            return [];
+        }
+
+        $operator = match (true) {
+            $conditional instanceof BinaryOp\Identical, $conditional instanceof BinaryOp\Equal => '==',
+            $conditional instanceof BinaryOp\NotIdentical, $conditional instanceof BinaryOp\NotEqual => '!=',
+            $conditional instanceof BinaryOp\Greater => '>',
+            $conditional instanceof BinaryOp\GreaterOrEqual => '>=',
+            $conditional instanceof BinaryOp\Smaller => '<',
+            $conditional instanceof BinaryOp\SmallerOrEqual => '<=',
+            default => null,
+        };
+
+        if ($operator === null) {
+            return [];
+        }
+
+        $left_argument = self::getStringLengthArgument($conditional->left);
+        $right_argument = self::getStringLengthArgument($conditional->right);
+        if ($left_argument && $conditional->right instanceof PhpParser\Node\Scalar\Int_) {
+            $length_argument = $left_argument;
+            $compared_length = $conditional->right->value;
+        } elseif ($right_argument && $conditional->left instanceof PhpParser\Node\Scalar\Int_) {
+            $length_argument = $right_argument;
+            $compared_length = $conditional->left->value;
+            $operator = strtr($operator, '<>', '><');
+        } else {
+            return [];
+        }
+
+        // only a condition that holds exactly when the string is (non-)empty, as its negation holds otherwise
+        $is_non_empty = match ($operator) {
+            '>', '!=' => $compared_length === 0,
+            '>=' => $compared_length === 1,
+            default => false,
+        };
+        $is_empty = match ($operator) {
+            '<' => $compared_length === 1,
+            '<=', '==' => $compared_length === 0,
+            default => false,
+        };
+
+        if (!$is_non_empty && !$is_empty) {
+            return [];
+        }
+
+        $var_name = ExpressionIdentifier::getExtendedVarId(
+            $length_argument,
+            $this_class_name,
+            $source,
+        );
+
+        if ($var_name === null) {
+            return [];
+        }
+
+        // in the non-strict mode the length of null and false is 0 too: only a string is empty exactly when it is
+        $argument_type = $source instanceof StatementsAnalyzer
+            ? $source->node_data->getType($length_argument)
+            : null;
+
+        if ($argument_type === null || !$argument_type->isString(true)) {
+            return [];
+        }
+
+        $empty_string = TLiteralString::make('');
+
+        return [[$var_name => [[$is_non_empty ? new IsNotIdentical($empty_string) : new IsIdentical($empty_string)]]]];
+    }
+
+    private static function getStringLengthArgument(PhpParser\Node\Expr $expr): ?PhpParser\Node\Expr
+    {
+        if (!$expr instanceof PhpParser\Node\Expr\FuncCall
+            || !$expr->name instanceof PhpParser\Node\Name
+            || !in_array(strtolower($expr->name->getFirst()), ['strlen', 'mb_strlen'])
+            || $expr->isFirstClassCallable()
+        ) {
+            return null;
+        }
+
+        $first_argument = $expr->getArgs()[0] ?? null;
+
+        return $first_argument && !$first_argument->unpack && !$first_argument->name
+            ? $first_argument->value
+            : null;
     }
 
     /**
