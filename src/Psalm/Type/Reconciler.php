@@ -12,6 +12,7 @@ use Psalm\Internal\Analyzer\Statements\Expression\ArrayAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\Assignment\ArrayAssignmentAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\Call\ClassTemplateParamCollector;
 use Psalm\Internal\Analyzer\Statements\Expression\Call\Method\MethodCallReturnTypeFetcher;
+use Psalm\Internal\Analyzer\Statements\Expression\ExpressionIdentifier;
 use Psalm\Internal\Analyzer\Statements\Expression\Fetch\ConstFetchAnalyzer;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\Internal\DataFlow\DataFlowNode;
@@ -625,7 +626,7 @@ class Reconciler
                             array_shift($key_parts);
 
                             if ($array_key[0] === '\'' || $array_key[0] === '"') {
-                                $possibly_property_key = substr($array_key, 1, -1);
+                                $possibly_property_key = ExpressionIdentifier::unquoteOffset($array_key);
                                 $string_to_int = ArrayAnalyzer::getLiteralArrayKeyInt($possibly_property_key);
                                 $array_key = $string_to_int === false ? $array_key : $string_to_int;
                             }
@@ -931,7 +932,9 @@ class Reconciler
 
                     if ($array_key[0] === '$' && isset($existing_keys[$array_key])) {
                         if ($existing_keys[$array_key]->isSingleStringLiteral()) {
-                            $lookup_key = '\'' . $existing_keys[$array_key]->getSingleStringLiteral()->value . '\'';
+                            $lookup_key = ExpressionIdentifier::quoteOffset(
+                                $existing_keys[$array_key]->getSingleStringLiteral()->value,
+                            );
                         } elseif ($existing_keys[$array_key]->isSingleIntLiteral()) {
                             $lookup_key = (string) $existing_keys[$array_key]->getSingleIntLiteral()->value;
                         }
@@ -1018,7 +1021,7 @@ class Reconciler
 
                             $key_parts_key = $lookup_key;
                             if ($lookup_key[0] === '\'' || $lookup_key[0] === '"') {
-                                $key_parts_key = substr($lookup_key, 1, -1);
+                                $key_parts_key = ExpressionIdentifier::unquoteOffset($lookup_key);
                             }
 
                             if (!isset($array_properties[$key_parts_key])) {
@@ -1485,7 +1488,7 @@ class Reconciler
         }
 
         if ($array_key[0] === '\'' || $array_key[0] === '"') {
-            $offset = TLiteralString::make(substr($array_key, 1, -1));
+            $offset = TLiteralString::make(ExpressionIdentifier::unquoteOffset($array_key));
         } elseif (preg_match('/^-?[0-9]+$/', $array_key) === 1) {
             $offset = new TLiteralInt((int) $array_key);
         } else {
@@ -1622,7 +1625,7 @@ class Reconciler
                 return;
             }
         } elseif ($array_key[0] === '\'' || $array_key[0] === '"') {
-            $array_key_offsets []= substr($array_key, 1, -1);
+            $array_key_offsets []= ExpressionIdentifier::unquoteOffset($array_key);
         } elseif (preg_match('/^-?[0-9]+$/', $array_key) === 1) {
             $array_key_offsets []= $array_key;
         } else {

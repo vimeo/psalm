@@ -67,7 +67,6 @@ use function spl_object_id;
 use function str_contains;
 use function str_starts_with;
 use function strlen;
-use function strpos;
 use function substr;
 
 /**
@@ -1663,10 +1662,14 @@ final class ArrayAssignmentAnalyzer
 
         for ($i = $position; $i < $length; $i++) {
             if ($var_id[$i] === "'") {
-                // string literals aren't escaped in var ids, so one ends where a quote closes a key
-                $i = strpos($var_id, "']", $i + 1);
+                // a string literal ends at the first quote that isn't escaped
+                for ($i++; $i < $length && $var_id[$i] !== "'"; $i++) {
+                    if ($var_id[$i] === '\\') {
+                        $i++;
+                    }
+                }
 
-                if ($i === false) {
+                if ($i >= $length) {
                     return null;
                 }
             } elseif ($var_id[$i] === '[') {
@@ -1784,7 +1787,7 @@ final class ArrayAssignmentAnalyzer
             if ($string_to_int !== false) {
                 $var_id_addition = '[' . $string_to_int . ']';
             } else {
-                $var_id_addition = '[\'' . $offset_type->value . '\']';
+                $var_id_addition = '[' . ExpressionIdentifier::quoteOffset($offset_type->value) . ']';
             }
 
             return [$offset_type, $var_id_addition, true];
