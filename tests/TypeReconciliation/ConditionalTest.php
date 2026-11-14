@@ -154,6 +154,34 @@ final class ConditionalTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'notIterableDropsTheObjectsThatAreTraversable' => [
+                'code' => '<?php
+                    function f(Throwable $e): void {
+                        if (rand(0, 1)) {
+                            /** @var Throwable&Traversable $e */
+                            $e = $e;
+                        }
+
+                        if (!is_iterable($e)) {
+                            /** @psalm-check-type-exact $e = Throwable */
+                        }
+                    }
+
+                    function g(Countable|Traversable $c): void {
+                        if (!is_iterable($c)) {
+                            /** @psalm-check-type-exact $c = Countable */
+                        }
+                    }
+
+                    function h(object $o): void {
+                        if (!is_iterable($o)) {
+                            /** @psalm-check-type-exact $o = object */
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
             'identicalKeyedArraysWithAnOptionalKeyOfOverlappingTypes' => [
                 'code' => '<?php
                     /** @param array{a?: int|string} $x */
@@ -4857,6 +4885,17 @@ final class ConditionalTest extends TestCase
     public static function providerInvalidCodeParse(): iterable
     {
         return [
+            'notIterableOfATraversableObjectIsImpossible' => [
+                'code' => '<?php
+                    function f(ArrayObject $a): void {
+                        if (!is_iterable($a)) {
+                            echo "never";
+                        }
+                    }',
+                'error_message' => 'TypeDoesNotContainType',
+                'error_levels' => [],
+                'php_version' => '8.1',
+            ],
             'mixedAssignmentInTheRightSideOfAnOrInALoopIsReportedWhenTheElseDoesNotNarrowIt' => [
                 'code' => '<?php
                     /** @param list<array<mixed>> $calls */
