@@ -1046,6 +1046,18 @@ final class ClassTest extends TestCase
                 'assertions' => [],
                 'ignored_issues' => [],
             ],
+            'classOfANegatedClassExistsInAnElseifExistsInItsElse' => [
+                'code' => '<?php
+                    function f(bool $c): void {
+                        if ($c) {
+                            echo 1;
+                        } elseif (!class_exists(Optional::class)) {
+                            echo 2;
+                        } else {
+                            new Optional();
+                        }
+                    }',
+            ],
             'classExistsInAnArgumentOfANegatedCall' => [
                 'code' => '<?php
                     final class Validator {
@@ -1594,6 +1606,17 @@ final class ClassTest extends TestCase
     public static function providerInvalidCodeParse(): iterable
     {
         return [
+            'classOfANegatedClassExistsInAnElseifIsUndefinedInItsBody' => [
+                'code' => '<?php
+                    function f(bool $c): void {
+                        if ($c) {
+                            echo 1;
+                        } elseif (!class_exists(Optional::class)) {
+                            new Optional();
+                        }
+                    }',
+                'error_message' => 'UndefinedClass - src' . DIRECTORY_SEPARATOR . 'somefile.php:6:33 - Class, interface or enum named Optional does not exist',
+            ],
             'classOfANegatedClassExistsIsUndefinedAfterAnUnrelatedNestedIf' => [
                 'code' => '<?php
                     function f(bool $flag): void {

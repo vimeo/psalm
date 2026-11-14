@@ -90,6 +90,7 @@ final class ElseIfAnalyzer
         int $branch_point,
     ): ?bool {
         $pre_conditional_context = clone $else_context;
+        $negated_phantom_classes_before_cond = $else_context->negated_phantom_classes;
 
         try {
             $if_conditional_scope = IfConditionalAnalyzer::analyze(
@@ -99,6 +100,13 @@ final class ElseIfAnalyzer
                 $codebase,
                 $if_scope,
                 $branch_point,
+            );
+
+            // where the condition about a class that was negated is false, the class exists
+            $if_conditional_scope->post_if_context->promoteNegatedPhantomClasses($negated_phantom_classes_before_cond);
+            $else_context->phantom_classes += array_diff_key(
+                $if_conditional_scope->post_if_context->negated_phantom_classes,
+                $negated_phantom_classes_before_cond,
             );
 
             $elseif_context = $if_conditional_scope->if_context;
