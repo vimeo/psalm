@@ -21,6 +21,219 @@ final class EmptyTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'propertyComparedAfterAChildMethodIncrementsIt' => [
+                'code' => '<?php
+                    class Foo
+                    {
+                        public int $n = 0;
+
+                        public function check(): void
+                        {
+                            $this->n = 0;
+
+                            $this->increment();
+
+                            if ($this->n === 0) {
+                                echo "zero";
+                            }
+                        }
+
+                        public function increment(): void
+                        {
+                            $this->n++;
+                        }
+                    }',
+            ],
+            'emptyOnPropertyAChildMethodUnsetsAnOffsetOf' => [
+                'code' => '<?php
+                    class Foo
+                    {
+                        public array $data = [1];
+
+                        public function check(): void
+                        {
+                            $this->data = [1];
+
+                            $this->clear();
+
+                            if (empty($this->data)) {
+                                echo "empty";
+                            }
+                        }
+
+                        public function clear(): void
+                        {
+                            unset($this->data[0]);
+                        }
+                    }',
+            ],
+            'emptyOnPropertyAChildMethodAppendsTo' => [
+                'code' => '<?php
+                    class Foo
+                    {
+                        public array $data = [];
+
+                        public function resetData(): void
+                        {
+                            $this->data = [];
+
+                            $this->changeData();
+
+                            if (empty($this->data)) {
+                                echo "Is empty";
+                            }
+                        }
+
+                        public function changeData(): void
+                        {
+                            if (rand(0, 10) > 5) {
+                                $this->data[] = 1;
+                            }
+                        }
+                    }',
+            ],
+            'emptyArrayComparisonOnPropertyAChildMethodAppendsTo' => [
+                'code' => '<?php
+                    class Foo
+                    {
+                        public array $data = [];
+
+                        public function resetData(): void
+                        {
+                            $this->data = [];
+
+                            $this->changeData();
+
+                            if ($this->data === []) {
+                                echo "Is empty";
+                            }
+                        }
+
+                        public function changeData(): void
+                        {
+                            if (rand(0, 10) > 5) {
+                                $this->data[] = 1;
+                            }
+                        }
+                    }',
+            ],
+            'countOnPropertyAChildMethodAppendsTo' => [
+                'code' => '<?php
+                    class Foo
+                    {
+                        public array $data = [];
+
+                        public function resetData(): void
+                        {
+                            $this->data = [];
+
+                            $this->changeData();
+
+                            if (count($this->data) === 0) {
+                                echo "Is empty";
+                            }
+                        }
+
+                        public function changeData(): void
+                        {
+                            if (rand(0, 10) > 5) {
+                                $this->data[] = 1;
+                            }
+                        }
+                    }',
+            ],
+            'propertyComparedAfterAChildMethodIteratesIntoIt' => [
+                'code' => '<?php
+                    class Foo
+                    {
+                        public int $n = 0;
+
+                        public function check(): void
+                        {
+                            $this->n = 0;
+
+                            $this->fill();
+
+                            if ($this->n === 0) {
+                                echo "zero";
+                            }
+                        }
+
+                        public function fill(): void
+                        {
+                            foreach ([1, 2] as $this->n) {}
+                        }
+                    }',
+            ],
+            'propertyComparedAfterAChildMethodIteratesKeysIntoIt' => [
+                'code' => '<?php
+                    class Foo
+                    {
+                        public int $n = 0;
+
+                        public function check(): void
+                        {
+                            $this->n = 0;
+
+                            $this->fill();
+
+                            if ($this->n === 0) {
+                                echo "zero";
+                            }
+                        }
+
+                        public function fill(): void
+                        {
+                            foreach ([5 => 1] as $this->n => $_v) {}
+                        }
+                    }',
+            ],
+            'propertyComparedAfterAChildMethodDestructuresIntoIt' => [
+                'code' => '<?php
+                    class Foo
+                    {
+                        public int $n = 0;
+
+                        public function check(): void
+                        {
+                            $this->n = 0;
+
+                            $this->fill();
+
+                            if ($this->n === 0) {
+                                echo "zero";
+                            }
+                        }
+
+                        public function fill(): void
+                        {
+                            [$this->n] = [rand(0, 5)];
+                        }
+                    }',
+            ],
+            'propertyComparedAfterAChildMethodIteratesAndDestructuresIntoIt' => [
+                'code' => '<?php
+                    class Foo
+                    {
+                        public int $n = 0;
+
+                        public function check(): void
+                        {
+                            $this->n = 0;
+
+                            $this->fill();
+
+                            if ($this->n === 0) {
+                                echo "zero";
+                            }
+                        }
+
+                        public function fill(): void
+                        {
+                            foreach ([[1], [2]] as [$this->n]) {}
+                        }
+                    }',
+            ],
             'emptyOfAnOffsetWithAKeyThatMayBeAnyString' => [
                 'code' => '<?php
                     function f(string $k): void {
@@ -734,6 +947,31 @@ final class EmptyTest extends TestCase
     public static function providerInvalidCodeParse(): iterable
     {
         return [
+            'propertyComparedAfterAChildMethodDestructuresOutOfIt' => [
+                'code' => '<?php
+                    class Foo
+                    {
+                        public int $n = 0;
+
+                        public function check(): void
+                        {
+                            $this->n = 0;
+
+                            $this->read();
+
+                            if ($this->n === 0) {
+                                echo "zero";
+                            }
+                        }
+
+                        public function read(): void
+                        {
+                            [$a] = [$this->n];
+                            echo $a;
+                        }
+                    }',
+                'error_message' => 'RedundantCondition',
+            ],
             'emptyOfAnOffsetWithALiteralKeyVariable' => [
                 'code' => '<?php
                     $a = ["key" => "test"];
