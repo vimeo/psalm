@@ -619,6 +619,24 @@ final class ArrayAccessTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'offsetOfANullableArrayIsReadInsideTheGuardsThatNarrowIt' => [
+                'code' => '<?php
+                    /** @param array<string, list<string>>|null $lists */
+                    function guarded(?array $lists): int {
+                        if (isset($lists["codes"]) && is_array($lists["codes"])) {
+                            return count($lists["codes"]);
+                        }
+
+                        if ($lists !== null && is_array($lists["codes"] ?? null)) {
+                            return 1;
+                        }
+
+                        return 0;
+                    }',
+                'assertions' => [],
+                'ignored_issues' => ['RedundantConditionGivenDocblockType', 'DocblockTypeContradiction'],
+                'php_version' => '8.1',
+            ],
             'coalesceOnAnIntKeyThatMayBeMissingKeepsTheFoundType' => [
                 'code' => '<?php
                     $a = [1 => "Hello"];
@@ -1637,6 +1655,24 @@ final class ArrayAccessTest extends TestCase
     public static function providerInvalidCodeParse(): iterable
     {
         return [
+            'offsetOfANullableArrayAfterAnIssetGuardIsPossiblyNull' => [
+                'code' => '<?php
+                    /** @param array<string, list<string>>|null $lists */
+                    function unguarded(?array $lists): int {
+                        if (isset($lists["codes"]) && is_array($lists["codes"])) {
+                            echo count($lists["codes"]);
+                        }
+
+                        if (is_array($lists["codes"])) {
+                            return 1;
+                        }
+
+                        return 0;
+                    }',
+                'error_message' => 'PossiblyNullArrayAccess',
+                'error_levels' => ['RedundantConditionGivenDocblockType'],
+                'php_version' => '8.1',
+            ],
             'intRangeOffsetPartlyInsideTheKeysOfAList' => [
                 'code' => '<?php
                     function f(int $i): void {
