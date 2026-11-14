@@ -6378,6 +6378,25 @@ final class ClassTemplateTest extends TestCase
                     }',
                 'error_message' => 'InvalidArgument',
             ],
+            'methodParamOfAReceiverWithoutTypeArgumentsKeepsTheOtherMembersInvariant' => [
+                'code' => '<?php
+                    /** @template T */
+                    interface Validator {}
+
+                    /** @implements Validator<string> */
+                    final class StringValidator implements Validator {}
+
+                    /** @template T */
+                    final class Type {
+                        /** @param Validator<T|int> $v */
+                        public function one(Validator $v): void {}
+                    }
+
+                    function f(Type $t): void {
+                        $t->one(new StringValidator());
+                    }',
+                'error_message' => 'InvalidArgument',
+            ],
             'restrictTemplateInputWithTClassBadInput' => [
                 'code' => '<?php
                     /** @template T */

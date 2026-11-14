@@ -255,6 +255,7 @@ final class TemplateStandinTypeReplacer
                 $add_lower_bound,
                 $bound_equality_classlike,
                 $depth,
+                $was_single,
                 $had_template,
             );
         }
@@ -683,6 +684,7 @@ final class TemplateStandinTypeReplacer
         bool $add_lower_bound,
         ?string $bound_equality_classlike,
         int $depth,
+        bool $was_single,
         bool &$had_template,
     ): array {
         if ($atomic_type->defining_class === $calling_class) {
@@ -826,8 +828,10 @@ final class TemplateStandinTypeReplacer
 
                     // a binding that is only read (class templates fixed by the receiver) is the actual
                     // type, not a stand-in for what the arguments may still infer, unless the receiver
-                    // left the template to its bound
-                    if (!$template_result->readonly || PurityArguments::isOmittedArgument($template_type)) {
+                    // left the template to its bound and it is the whole type (other members stay required)
+                    if (!$template_result->readonly
+                        || ($was_single && PurityArguments::isOmittedArgument($template_type))
+                    ) {
                         $had_template = true;
                     }
                 }
