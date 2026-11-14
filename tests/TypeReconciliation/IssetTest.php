@@ -81,6 +81,38 @@ final class IssetTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'variableAssignedByAnArgumentOfTheLeftCallOfACoalesceIsSetOnTheRight' => [
+                'code' => <<<'PHP'
+                    <?php
+                    final class K {
+                        public function read(?int &$out): ?int {
+                            $out = 1;
+                            return null;
+                        }
+
+                        public static function st(int $n): ?int {
+                            return $n;
+                        }
+                    }
+
+                    function byReference(string $subject): string {
+                        $result = preg_replace('/a/', 'b', $subject, -1, $count) ?? 'z';
+
+                        return $result . (string) $count;
+                    }
+
+                    function method(K $k): int {
+                        return ($k->read($out) ?? 0) + (int) $out;
+                    }
+
+                    function staticCall(): int {
+                        return (K::st($y = 2) ?? 0) + $y;
+                    }
+                    PHP,
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
             'negatedIssetOfAConditionallyDefinedVariableIsNullWhereTheLoopMayNotAssignIt' => [
                 'code' => '<?php
                     /** @param list<string> $values */
