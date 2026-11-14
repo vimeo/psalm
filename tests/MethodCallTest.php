@@ -205,6 +205,29 @@ final class MethodCallTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'nullsafeChainWithPlainLinkNotIdenticalToNullNarrowsReceiver' => [
+                'code' => '<?php
+                    final class P {
+                        public int $v = 0;
+                    }
+
+                    final class Q {
+                        public P $p;
+
+                        public function __construct() {
+                            $this->p = new P();
+                        }
+                    }
+
+                    function a(?Q $q): void {
+                        if ($q?->p->v !== null) {
+                            echo $q->p->v;
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
             'propertyUnsetInABranchIsNotRestoredAfterIt' => [
                 'code' => '<?php
                     final class Box {
@@ -218,6 +241,47 @@ final class MethodCallTest extends TestCase
 
                         return $b->v;
                     }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'nullsafePropertyFetchNotIdenticalToNullNarrowsReceiver' => [
+                'code' => '<?php
+                    final class P {
+                        public int $v = 0;
+                        public ?P $next = null;
+                    }
+
+                    function a(?P $p): int {
+                        if ($p?->v !== null) {
+                            return $p->v;
+                        }
+
+                        return 0;
+                    }
+',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'nullsafePropertyFetchIdenticalToNullOfAPropertyThatIsNeverNull' => [
+                'code' => '<?php
+                    final class P {
+                        public int $v = 0;
+                    }
+
+                    function a(?P $p): int {
+                        if ($p?->v === null) {
+                            return 0;
+                        }
+
+                        return $p->v;
+                    }
+
+                    function b(?P $p): int {
+                        return $p?->v !== null ? $p->v : 0;
+                    }
+',
                 'assertions' => [],
                 'ignored_issues' => [],
                 'php_version' => '8.0',
@@ -290,6 +354,31 @@ final class MethodCallTest extends TestCase
                         }
 
                         return $total;
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'nullsafeMethodCallNotIdenticalToNullNarrowsReceiver' => [
+                'code' => '<?php
+                    final class B {
+                        public function test(): bool {
+                            return true;
+                        }
+
+                        public function exec(): void {}
+                    }
+
+                    function a(?B $b): void {
+                        if ($b?->test() !== null) {
+                            $b->exec();
+                        }
+                    }
+
+                    function b(?B $b): void {
+                        if (null !== $b?->test()) {
+                            $b->exec();
+                        }
                     }',
                 'assertions' => [],
                 'ignored_issues' => [],
@@ -2181,6 +2270,104 @@ final class MethodCallTest extends TestCase
     public static function providerInvalidCodeParse(): iterable
     {
         return [
+            'nullsafeMethodCallLooselyNotEqualToNullElseBranchKeepsPossiblyNullReceiver' => [
+                'code' => '<?php
+                    final class B {
+                        public function test(): bool {
+                            return false;
+                        }
+
+                        public function exec(): void {}
+                    }
+
+                    function f(?B $b): void {
+                        if ($b?->test() != null) {
+                            return;
+                        }
+
+                        $b->exec();
+                    }',
+                'error_message' => 'PossiblyNullReference',
+                'error_levels' => [],
+                'php_version' => '8.0',
+            ],
+            'nullsafePropertyLooselyEqualToNullKeepsPossiblyNullReceiver' => [
+                'code' => '<?php
+                    final class P {
+                        public int $v = 0;
+
+                        public function exec(): void {}
+                    }
+
+                    function f(?P $p): void {
+                        if ($p?->v == null) {
+                            $p->exec();
+                        }
+                    }',
+                'error_message' => 'PossiblyNullReference',
+                'error_levels' => [],
+                'php_version' => '8.0',
+            ],
+            'nullsafeNullableMethodCallNotIdenticalToNullElseBranchKeepsPossiblyNullReceiver' => [
+                'code' => '<?php
+                    final class B {
+                        public function maybe(): ?bool {
+                            return null;
+                        }
+
+                        public function exec(): void {}
+                    }
+
+                    function a(?B $b): void {
+                        if ($b?->maybe() !== null) {
+                            return;
+                        }
+
+                        $b->exec();
+                    }',
+                'error_message' => 'PossiblyNullReference',
+                'error_levels' => [],
+                'php_version' => '8.0',
+            ],
+            'nullsafeMethodCallNotIdenticalToNullElseBranchIsNullReceiver' => [
+                'code' => '<?php
+                    final class B {
+                        public function test(): bool {
+                            return true;
+                        }
+
+                        public function exec(): void {}
+                    }
+
+                    function a(?B $b): void {
+                        if ($b?->test() !== null) {
+                            return;
+                        }
+
+                        $b->exec();
+                    }',
+                'error_message' => 'NullReference',
+                'error_levels' => [],
+                'php_version' => '8.0',
+            ],
+            'nullsafeChainWithSeveralLinksNotIdenticalToNullDoesNotNarrowElseBranch' => [
+                'code' => '<?php
+                    final class P {
+                        public int $v = 0;
+                        public ?P $next = null;
+                    }
+
+                    function a(?P $p): void {
+                        if ($p?->next?->v !== null) {
+                            return;
+                        }
+
+                        echo $p->v;
+                    }',
+                'error_message' => 'PossiblyNullPropertyFetch',
+                'error_levels' => [],
+                'php_version' => '8.0',
+            ],
             'variableUnsetInABranchIsNotRestoredAfterIt' => [
                 'code' => '<?php
                     function unsetThenReturn(?int $x): ?string {
