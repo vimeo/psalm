@@ -220,9 +220,14 @@ final class OrAnalyzer
 
         $right_context = clone $context;
 
-        // the classes the right side is only reached for when they exist
+        // the classes the right side is only reached for when they exist, and those of checks on the left whose
+        // result GuardedClasses doesn't follow, which every check adds
         $right_context->phantom_classes = [
             ...$pre_phantom_classes,
+            ...array_diff_key(
+                array_diff_key($left_context->phantom_classes, $pre_phantom_classes),
+                GuardedClasses::checkedIn($stmt->left),
+            ),
             ...GuardedClasses::unknownWhenResult($stmt->left, false, $codebase),
         ];
 

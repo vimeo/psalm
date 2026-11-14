@@ -161,10 +161,14 @@ final class AndAnalyzer
         }
 
         $right_context->inside_logical_operand = true;
-        // the classes the right side is only reached for when they exist, besides what the left side added
+        // the classes the right side is only reached for when they exist, and those of checks on the left whose
+        // result GuardedClasses doesn't follow (`(bool) class_exists(A::class)`), which every check adds
         $right_context->phantom_classes = [
             ...$context->phantom_classes,
-            ...$right_context->phantom_classes,
+            ...array_diff_key(
+                array_diff_key($right_context->phantom_classes, $context->phantom_classes),
+                GuardedClasses::checkedIn($stmt->left),
+            ),
             ...GuardedClasses::unknownWhenResult($stmt->left, true, $codebase),
         ];
 

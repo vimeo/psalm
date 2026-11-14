@@ -33,6 +33,36 @@ final class FunctionCallTest extends TestCase
                 'ignored_issues' => [],
                 'php_version' => '8.1',
             ],
+            'classExistsComparedWithFalseGuardsTheOperandsOfAndAndOr' => [
+                'code' => '<?php
+                    function check(): bool {
+                        return false !== class_exists(Optional::class) && Optional::available();
+                    }
+
+                    function checkOr(): bool {
+                        return class_exists(Optional::class) === false || Optional::available();
+                    }
+
+                    function checkLoose(): bool {
+                        return class_exists(Optional::class) == true && Optional::available();
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
+            'classExistsInAFormTheOperandsDoNotFollowGuardsTheRightOperandAsBefore' => [
+                'code' => '<?php
+                    function check(): bool {
+                        return (bool) class_exists(Optional::class) && Optional::available();
+                    }
+
+                    function checkOr(): bool {
+                        return !(bool) class_exists(Optional::class) || Optional::available();
+                    }',
+                'assertions' => [],
+                'ignored_issues' => ['RedundantCast'],
+                'php_version' => '8.1',
+            ],
             'classExistsAfterUnrelatedAndOperand' => [
                 'code' => <<<'PHP'
                     <?php
@@ -3297,6 +3327,15 @@ final class FunctionCallTest extends TestCase
     public static function providerInvalidCodeParse(): iterable
     {
         return [
+            'classExistsIdenticalToFalseDoesNotGuardTheRightOperandOfAnd' => [
+                'code' => '<?php
+                    function check(): bool {
+                        return class_exists(Optional::class) === false && Optional::available();
+                    }',
+                'error_message' => 'UndefinedClass',
+                'error_levels' => [],
+                'php_version' => '8.1',
+            ],
             'classExistsInAndDoesNotLeakAfterTheCondition' => [
                 'code' => <<<'PHP'
                     <?php
