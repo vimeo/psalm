@@ -1218,6 +1218,16 @@ final class StatementsAnalyzer extends SourceAnalyzer
     }
 
     /**
+     * A variable of the enclosing scope these statements read without assigning it
+     *
+     * @psalm-external-mutation-free
+     */
+    public function registerEnclosingVariable(string $var_id, CodeLocation $location): void
+    {
+        $this->all_vars[$var_id] = $location;
+    }
+
+    /**
      * @psalm-external-mutation-free
      */
     public function registerVariableAssignment(string $var_id, CodeLocation $location): void

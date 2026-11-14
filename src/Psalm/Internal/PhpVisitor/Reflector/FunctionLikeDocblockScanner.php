@@ -1319,8 +1319,10 @@ final class FunctionLikeDocblockScanner
                     && !$storage->return_type->hasConditional()
                 ) {
                     //don't add null to final type if signature type don't match the docblock type
-                    // however, we can't check for object types at this point (#6931), so we'll assume it's ok
-                    if ($storage->return_type->hasObjectType() ||
+                    // however, we can't check for object types or type aliases (whose class may not be scanned yet)
+                    // at this point (#6931), so we'll assume it's ok
+                    if ($storage->return_type->hasObjectType()
+                        || $storage->return_type->hasTypeAlias() ||
                         UnionTypeComparator::isContainedBy(
                             $codebase,
                             $storage->return_type,

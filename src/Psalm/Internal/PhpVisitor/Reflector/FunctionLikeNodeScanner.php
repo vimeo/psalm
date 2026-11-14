@@ -520,7 +520,15 @@ final class FunctionLikeNodeScanner
                     continue;
                 }
 
-                if (isset($classlike_storage->properties[$param_storage->name]) && $param_storage->location) {
+                $existing_property = $classlike_storage->properties[$param_storage->name] ?? null;
+
+                // only a property declared in the same file clashes; stubs refine properties from reflection and
+                // other stubs
+                if ($existing_property
+                    && $existing_property->location
+                    && $existing_property->location->file_path === $this->file_path
+                    && $param_storage->location
+                ) {
                     IssueBuffer::maybeAdd(
                         new ParseError(
                             'Promoted property ' . $param_storage->name . ' clashes with an existing property',
@@ -600,13 +608,13 @@ final class FunctionLikeNodeScanner
                 $property_storage->signature_type = $param_storage->signature_type;
                 $property_storage->signature_type_location = $param_storage->signature_type_location;
                 $property_storage->type_location = $param_storage->type_location;
+                $property_storage->has_docblock_type = $param_storage->has_docblock_type || $var_comment_type !== null;
                 $property_storage->location = $param_storage->location;
                 $property_storage->stmt_location = new CodeLocation($this->file_scanner, $param);
                 $property_storage->has_default = (bool)$param->default;
-                $param_type_readonly = (bool)($param->flags & Modifiers::READONLY);
-                $property_storage->readonly = $param_type_readonly
-                    || $classlike_storage->readonly
-                    || $var_comment_readonly;
+                $property_storage->native_readonly = ($param->flags & Modifiers::READONLY) !== 0
+                    || $classlike_storage->readonly;
+                $property_storage->readonly = $property_storage->native_readonly || $var_comment_readonly;
                 $property_storage->allow_private_mutation = $var_comment_allow_private_mutation;
                 $property_storage->suppressed_issues = $var_comment_suppressed_issues;
                 $param_storage->promoted_property = true;
