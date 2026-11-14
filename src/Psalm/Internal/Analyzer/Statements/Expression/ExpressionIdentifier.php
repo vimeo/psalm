@@ -17,6 +17,7 @@ use function implode;
 use function in_array;
 use function is_string;
 use function json_encode;
+use function preg_match;
 use function strtolower;
 
 /**
@@ -265,6 +266,16 @@ final class ExpressionIdentifier
         }
 
         return self::getVarId($stmt, $this_class_name, $source);
+    }
+
+    /**
+     * Whether a key of the types of a context is an id made by {@see self::getFunctionCallId()}
+     *
+     * @psalm-pure
+     */
+    public static function isFunctionCallId(string $key): bool
+    {
+        return preg_match('/^[\w\\\\]+\\(.*\\)$/s', $key) === 1;
     }
 
     /**
