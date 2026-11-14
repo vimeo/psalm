@@ -207,6 +207,7 @@ final class AssignmentAnalyzer
         ?PhpParser\Comment\Doc $doc_comment,
         array $not_ignored_docblock_var_ids = [],
         ?PhpParser\Node\Expr $assign_expr = null,
+        bool $assign_value_analyzed = false,
     ): ?Union {
         $var_id = ExpressionIdentifier::getVarId(
             $assign_var,
@@ -389,16 +390,21 @@ final class AssignmentAnalyzer
                 $context->inside_general_use = true;
             }
 
-            // a variable that is read as the value is not an assignment target, so it can't be defined by it
-            // (the keys of an array item or the object of a property that is assigned are evaluated before the value)
-            $context->inside_assignment = $assign_value instanceof PhpParser\Node\Expr\Variable
-                && $assign_var instanceof PhpParser\Node\Expr\Variable
-                ? $was_in_assignment
-                : $context->inside_assignment;
+            if ($assign_value_analyzed) {
+                $analyzed_value = true;
+            } else {
+                // a variable that is read as the value is not an assignment target, so it can't be defined by it
+                // (the keys of an array item or the object of a property that is assigned are evaluated before
+                // the value)
+                $context->inside_assignment = $assign_value instanceof PhpParser\Node\Expr\Variable
+                    && $assign_var instanceof PhpParser\Node\Expr\Variable
+                    ? $was_in_assignment
+                    : $context->inside_assignment;
 
-            $analyzed_value = ExpressionAnalyzer::analyze($statements_analyzer, $assign_value, $context);
+                $analyzed_value = ExpressionAnalyzer::analyze($statements_analyzer, $assign_value, $context);
 
-            $context->inside_assignment = true;
+                $context->inside_assignment = true;
+            }
 
             if ($analyzed_value === false) {
                 $context->inside_general_use = $was_inside_general_use;

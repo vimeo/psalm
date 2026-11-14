@@ -348,6 +348,8 @@ final class ForeachAnalyzer
                 && is_string($stmt->valueVar->name)
                 ? ['$' . $stmt->valueVar->name => true]
                 : [],
+            null,
+            true,
         );
 
         if ($stmt->byRef
