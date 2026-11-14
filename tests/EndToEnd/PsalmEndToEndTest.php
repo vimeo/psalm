@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Psalm\Tests\EndToEnd;
 
 use PHPUnit\Framework\Attributes\DataProvider;
+use PHPUnit\Framework\Attributes\RequiresPhpExtension;
 use Psalm\Tests\Config\Plugin\ReportableFilePlugin;
 use Symfony\Component\Process\Process;
 
@@ -157,6 +158,9 @@ final class PsalmEndToEndTest extends PsalmEndToEndTestCase
         $this->assertSame(2, $result['CODE']);
     }
 
+    // Psalm forks its workers only with these extensions (never on Windows)
+    #[RequiresPhpExtension('pcntl')]
+    #[RequiresPhpExtension('posix')]
     public function testFilesAPluginMakesReportableAtBootAreReportedByEveryWorker(): void
     {
         $this->runPsalmInit(1);
