@@ -467,10 +467,26 @@ final class LoopAnalyzer
         $does_sometimes_break = in_array(ScopeAnalyzer::ACTION_BREAK, $loop_scope->final_actions, true);
         $does_always_break = $loop_scope->final_actions === [ScopeAnalyzer::ACTION_BREAK];
 
-        $loop_parent_context->detachReferencesReboundIn($loop_context, $statements_analyzer, $stmts);
+        $loop_parent_context->detachReferencesReboundIn(
+            $loop_context->references_in_scope,
+            $statements_analyzer,
+            $stmts,
+        );
 
         if (!$does_always_break) {
-            $loop_parent_context->detachReferencesReboundIn($continue_context, $statements_analyzer, $stmts);
+            $loop_parent_context->detachReferencesReboundIn(
+                $continue_context->references_in_scope,
+                $statements_analyzer,
+                $stmts,
+            );
+        }
+
+        foreach ($loop_scope->references_in_scope_at_breaks as $references_in_scope_at_break) {
+            $loop_parent_context->detachReferencesReboundIn(
+                $references_in_scope_at_break,
+                $statements_analyzer,
+                $stmts,
+            );
         }
 
         if ($does_sometimes_break) {

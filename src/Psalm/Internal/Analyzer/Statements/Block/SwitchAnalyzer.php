@@ -16,6 +16,7 @@ use Psalm\Type;
 use Psalm\Type\Reconciler;
 use SplFixedArray;
 
+use function array_diff;
 use function array_merge;
 use function count;
 use function in_array;
@@ -85,7 +86,9 @@ final class SwitchAnalyzer
             );
 
             if (!in_array(ScopeAnalyzer::ACTION_NONE, $case_actions, true)) {
-                if ($case_actions === [ScopeAnalyzer::ACTION_END]) {
+                // a case that only returns, throws or breaks out of a loop around the switch (`break 2`) does not go
+                // on after the switch: what it leaves is seen after that loop (see BreakAnalyzer)
+                if (!array_diff($case_actions, [ScopeAnalyzer::ACTION_END, ScopeAnalyzer::ACTION_BREAK])) {
                     $last_case_exit_type = 'return_throw';
                 } elseif ($case_actions === [ScopeAnalyzer::ACTION_CONTINUE]) {
                     $last_case_exit_type = 'continue';

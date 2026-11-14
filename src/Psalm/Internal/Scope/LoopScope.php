@@ -53,6 +53,13 @@ final class LoopScope
     public array $possibly_redefined_loop_parent_vars = [];
 
     /**
+     * The references where a break leaves the loop: one that a break rebound is not bound as before after the loop
+     *
+     * @var list<array<string, string>>
+     */
+    public array $references_in_scope_at_breaks = [];
+
+    /**
      * @var array<string, Union>
      */
     public array $possibly_defined_loop_parent_vars = [];

@@ -472,7 +472,19 @@ final class SwitchCaseAnalyzer
 
         $statements_analyzer->node_data = $old_node_data;
 
+        foreach ($case_scope->references_in_scope_at_breaks as $references_in_scope_at_break) {
+            $context->detachReferencesReboundIn($references_in_scope_at_break, $statements_analyzer, $case->stmts);
+        }
+
         if ($case_exit_type !== 'return_throw') {
+            if ($case_exit_type !== 'continue') {
+                $context->detachReferencesReboundIn(
+                    $case_context->references_in_scope,
+                    $statements_analyzer,
+                    $case->stmts,
+                );
+            }
+
             if (self::handleNonReturningCase(
                 $statements_analyzer,
                 $switch_var_id,

@@ -590,15 +590,16 @@ final class Context
      * be the variable it was bound to before the block: what is written to it after the block must not be written
      * to that variable, and writing to it is reported as the reuse of a reference from a confusing scope.
      *
+     * @param array<string, string> $block_references_in_scope the references where the block goes on
      * @param array<PhpParser\Node\Stmt> $block_stmts
      */
     public function detachReferencesReboundIn(
-        Context $block_context,
+        array $block_references_in_scope,
         StatementsAnalyzer $statements_analyzer,
         array $block_stmts,
     ): void {
         foreach ($this->references_in_scope as $reference_id => $referenced_id) {
-            if (($block_context->references_in_scope[$reference_id] ?? null) === $referenced_id) {
+            if (($block_references_in_scope[$reference_id] ?? null) === $referenced_id) {
                 continue;
             }
 

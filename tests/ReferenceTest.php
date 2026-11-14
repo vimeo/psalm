@@ -681,6 +681,93 @@ final class ReferenceTest extends TestCase
                 'ignored_issues' => [],
                 'php_version' => '8.0',
             ],
+            'referenceReboundToAnItemBeforeABreakDoesNotWriteToTheArrayItWasBoundTo' => [
+                'code' => '<?php
+                    /**
+                     * @param array<string, mixed> $data
+                     * @param list<string> $path
+                     */
+                    function rebindThenBreak(array &$data, array $path, string $value): void {
+                        $cursor = &$data;
+
+                        foreach ($path as $key) {
+                            if ($key === "stop") {
+                                $cursor = &$cursor[$key];
+                                $cursor = $value;
+                                break;
+                            }
+                        }
+                    }
+
+                    /**
+                     * @param array<string, mixed> $data
+                     * @param list<list<string>> $paths
+                     */
+                    function rebindThenBreakTwoLoops(array &$data, array $paths, string $value): void {
+                        $cursor = &$data;
+
+                        foreach ($paths as $path) {
+                            foreach ($path as $key) {
+                                $cursor = &$cursor[$key];
+                                $cursor = $value;
+                                break 2;
+                            }
+                        }
+                    }
+
+                    /**
+                     * @param array<string, mixed> $data
+                     * @param list<string> $path
+                     */
+                    function rebindThenBreakOutOfASwitchAndALoop(array &$data, array $path, string $value): void {
+                        $cursor = &$data;
+
+                        foreach ($path as $key) {
+                            switch ($key) {
+                                case "stop":
+                                    $cursor = &$cursor[$key];
+                                    $cursor = $value;
+                                    break 2;
+                            }
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'referenceReboundToAnItemInASwitchCaseDoesNotWriteToTheArrayItWasBoundTo' => [
+                'code' => '<?php
+                    /** @param array<string, mixed> $data */
+                    function inACase(array &$data, string $key, string $value): void {
+                        $cursor = &$data;
+
+                        switch ($key) {
+                            case "nested":
+                                $cursor = &$cursor[$key];
+                                $cursor = $value;
+                                break;
+                        }
+                    }
+
+                    /** @param array<string, mixed> $data */
+                    function beforeABreakInACase(array &$data, string $key, string $value, bool $nested): void {
+                        $cursor = &$data;
+
+                        switch ($key) {
+                            case "nested":
+                                if ($nested) {
+                                    $cursor = &$cursor[$key];
+                                    $cursor = $value;
+                                    break;
+                                }
+
+                                echo 1;
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
             'dynamicArrayOffsetReferenceCanBeConditionallySet' => [
                 'code' => <<<'PHP'
                     <?php
@@ -1081,6 +1168,44 @@ final class ReferenceTest extends TestCase
                         $cursor = $value;
                     }',
                 'error_message' => 'ReferenceReusedFromConfusingScope',
+            ],
+            'referenceReboundBeforeABreakIsReusedAfterTheLoop' => [
+                'code' => '<?php
+                    /**
+                     * @param array<string, mixed> $data
+                     * @param list<string> $path
+                     */
+                    function set(array &$data, array $path, string $value): void {
+                        $cursor = &$data;
+
+                        foreach ($path as $key) {
+                            if ($key === "stop") {
+                                $cursor = &$cursor[$key];
+                                break;
+                            }
+                        }
+
+                        $cursor = $value;
+                    }',
+                'error_message' => 'ReferenceReusedFromConfusingScope',
+            ],
+            'referenceNotReboundBeforeABreakStillWritesToTheParameter' => [
+                'code' => '<?php
+                    /**
+                     * @param array<string, mixed> $data
+                     * @param list<string> $path
+                     */
+                    function set(array &$data, array $path, string $value): void {
+                        $cursor = &$data;
+
+                        foreach ($path as $key) {
+                            if ($key === "stop") {
+                                $cursor = $value;
+                                break;
+                            }
+                        }
+                    }',
+                'error_message' => 'ReferenceConstraintViolation',
             ],
             'referenceReuseDeclaredInElseif' => [
                 'code' => '<?php
