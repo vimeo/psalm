@@ -1668,6 +1668,60 @@ final class ForeachTest extends TestCase
                 'ignored_issues' => [],
                 'php_version' => '8.0',
             ],
+            'foreachBreakOfSwitchLeavingAVariableUndefinedIsNotABreakOfTheLoop' => [
+                'code' => '<?php
+                    foreach ([1, 2] as $x) {
+                        if (rand(0, 1)) {
+                            $a = 1;
+                            break;
+                        }
+
+                        $a = 2;
+
+                        switch ($x) {
+                            case 1:
+                                break;
+                        }
+                    }
+
+                    echo $a;',
+            ],
+            'foreachBreakOfSwitchIsNotABreakOfTheLoop' => [
+                'code' => '<?php
+                    foreach ([1, 2] as $x) {
+                        switch ($x) {
+                            case 1:
+                                break;
+                            default:
+                                break;
+                        }
+
+                        $a = 1;
+
+                        if (rand(0, 1)) {
+                            break;
+                        }
+                    }
+
+                    echo $a;',
+            ],
+            'foreachDefinedBeforeEveryBreak' => [
+                'code' => '<?php
+                    foreach ([1, 2, 3, 4] as $_) {
+                        if (rand(0, 1)) {
+                            $car = "Audi";
+                            break;
+                        }
+
+                        $car = "Volvo";
+
+                        if (rand(0, 1)) {
+                            break;
+                        }
+                    }
+
+                    echo $car;',
+            ],
             'incrementInsideAnAssignmentInLoopIsNotFoldedLikeALiteral' => [
                 'code' => <<<'PHP'
                     <?php
@@ -1809,6 +1863,51 @@ final class ForeachTest extends TestCase
     public static function providerInvalidCodeParse(): iterable
     {
         return [
+            'foreachBreakBeforeDefinitionInAFunction' => [
+                'code' => <<<'PHP'
+                    <?php
+                    /** @param list<int> $items */
+                    function f(array $items): void {
+                        foreach ($items as $item) {
+                            if (rand()) {
+                                break;
+                            }
+
+                            $x = $item;
+
+                            if (rand()) {
+                                break;
+                            }
+                        }
+
+                        echo $x;
+                    }
+                    PHP,
+                'error_message' => 'PossiblyUndefinedVariable - src' . DIRECTORY_SEPARATOR . 'somefile.php:16:10',
+                'error_levels' => [],
+                'php_version' => '8.1',
+            ],
+            'foreachBreakOfTheOuterLoopBeforeDefinition' => [
+                'code' => <<<'PHP'
+                    <?php
+                    function f(): void {
+                        for ($i = 0; $i < 3; $i++) {
+                            foreach ([1, 2] as $j) {
+                                if (rand()) {
+                                    break 2;
+                                }
+
+                                $z = 1;
+                            }
+                        }
+
+                        echo $z;
+                    }
+                    PHP,
+                'error_message' => 'PossiblyUndefinedVariable - src' . DIRECTORY_SEPARATOR . 'somefile.php:13:10',
+                'error_levels' => [],
+                'php_version' => '8.1',
+            ],
             'iteratorCurrentNullStaysWhenTheTemplateValueIsNullable' => [
                 'code' => '<?php
                     class Foo {
@@ -2147,6 +2246,23 @@ final class ForeachTest extends TestCase
                     foreach ($gen as $i) {}
                 PHP,
                 'error_message' => 'InvalidIterator',
+            ],
+            'foreachBreakBeforeDefinitionAndBreakAfter' => [
+                'code' => '<?php
+                    foreach ([1, 2, 3, 4] as $_) {
+                        if (rand(0, 1)) {
+                            break;
+                        }
+
+                        $car = "Volvo";
+
+                        if (rand(0, 1)) {
+                            break;
+                        }
+                    }
+
+                    echo $car;',
+                'error_message' => 'PossiblyUndefinedGlobalVariable - src' . DIRECTORY_SEPARATOR . 'somefile.php:14:26',
             ],
         ];
     }

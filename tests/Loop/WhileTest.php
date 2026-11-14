@@ -9,6 +9,8 @@ use Psalm\Tests\TestCase;
 use Psalm\Tests\Traits\InvalidCodeAnalysisTestTrait;
 use Psalm\Tests\Traits\ValidCodeAnalysisTestTrait;
 
+use const DIRECTORY_SEPARATOR;
+
 final class WhileTest extends TestCase
 {
     use InvalidCodeAnalysisTestTrait;
@@ -959,6 +961,28 @@ final class WhileTest extends TestCase
     public static function providerInvalidCodeParse(): iterable
     {
         return [
+            'whileBreakBeforeDefinition' => [
+                'code' => <<<'PHP'
+                    <?php
+                    function f(): void {
+                        while (rand()) {
+                            if (rand()) {
+                                $y = 1;
+                                break;
+                            }
+
+                            if (rand()) {
+                                break;
+                            }
+                        }
+
+                        echo $y;
+                    }
+                    PHP,
+                'error_message' => 'PossiblyUndefinedVariable - src' . DIRECTORY_SEPARATOR . 'somefile.php:14:10',
+                'error_levels' => [],
+                'php_version' => '8.1',
+            ],
             'variableAssignedInTheRightOperandOfAnAndInTheWhileConditionIsPossiblyUndefined' => [
                 'code' => '<?php
                     function next_int(): int {
