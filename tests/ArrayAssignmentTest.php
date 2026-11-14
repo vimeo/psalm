@@ -139,6 +139,38 @@ final class ArrayAssignmentTest extends TestCase
                     '$b===' => "array{x: array{xy: 'x'}}",
                 ],
             ],
+            'keysOfAnArrayItemAreEvaluatedInOrder' => [
+                'code' => '<?php
+                    $i = 0;
+                    $a = [];
+                    $a[$i + 0][$i++] = 42;
+
+                    $j = 0;
+                    $b = [];
+                    $b[$j][$j++] = 42;',
+                'assertions' => [
+                    '$a===' => 'array{0: array{0: 42}}',
+                    // a variable key is only read when the item is written
+                    '$b===' => 'array{1: array{0: 42}}',
+                ],
+            ],
+            'varAnnotationAppliesToTheKeysOfAnArrayItem' => [
+                'code' => '<?php
+                    /**
+                     * @param mixed $i
+                     * @param mixed $v
+                     * @return array<int>
+                     */
+                    function f($i, $v): array {
+                        $a = [];
+                        /** @var int $i */
+                        $a[$i++] = 0;
+                        /** @var int */
+                        $a[$i++] = $v;
+
+                        return $a;
+                    }',
+            ],
             'variableAssignedInTheKeyOfAnArrayItemIsDefinedInTheValue' => [
                 'code' => '<?php
                     function roots(object $node): array {
