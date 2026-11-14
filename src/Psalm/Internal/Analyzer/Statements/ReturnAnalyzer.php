@@ -725,9 +725,9 @@ final class ReturnAnalyzer
                     ) {
                         IssueBuffer::maybeAdd(
                             new FalsableReturnStatement(
-                                'The declared return type \'' . $local_return_type . '\' for '
+                                'The declared return type \'' . $local_return_type->getId() . '\' for '
                                     . $cased_method_id . ' does not allow false, but the function returns \''
-                                        . $inferred_type . '\'',
+                                        . $inferred_type->getId() . '\'',
                                 new CodeLocation($source, $stmt->expr),
                             ),
                             $statements_analyzer->getSuppressedIssues(),
