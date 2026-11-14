@@ -11,6 +11,7 @@ use Psalm\Internal\Codebase\Methods;
 use Psalm\Internal\Type\Comparator\CallableTypeComparator;
 use Psalm\Internal\Type\Comparator\KeyedArrayComparator;
 use Psalm\Internal\Type\Comparator\UnionTypeComparator;
+use Psalm\Internal\TypeVisitor\TemplateTypeCollector;
 use Psalm\Internal\TypeVisitor\TypeVariableResolver;
 use Psalm\Storage\Capabilities;
 use Psalm\Type;
@@ -486,6 +487,42 @@ final class TemplateStandinTypeReplacer
             return [$replaced_atomic_type];
         }
 
+        return self::replaceMatchingAtomicTypes(
+            $atomic_type,
+            $matching_atomic_types,
+            $template_result,
+            $codebase,
+            $statements_analyzer,
+            $input_arg_offset,
+            $calling_class,
+            $calling_function,
+            $replace,
+            $add_lower_bound,
+            $depth,
+            $was_single,
+            $had_template,
+        );
+    }
+
+    /**
+     * @param non-empty-list<Atomic> $matching_atomic_types
+     * @return list<Atomic>
+     */
+    private static function replaceMatchingAtomicTypes(
+        Atomic $atomic_type,
+        array $matching_atomic_types,
+        TemplateResult $template_result,
+        Codebase $codebase,
+        ?StatementsAnalyzer $statements_analyzer,
+        ?int $input_arg_offset,
+        ?string $calling_class,
+        ?string $calling_function,
+        bool $replace,
+        bool $add_lower_bound,
+        int $depth,
+        bool $was_single,
+        bool &$had_template,
+    ): array {
         $atomic_types = [];
 
         foreach ($matching_atomic_types as $matching_atomic_type) {
@@ -504,7 +541,32 @@ final class TemplateStandinTypeReplacer
 
             // not where another alternative stays in the union: what it holds is not given by the inferred template
             if ($was_single && $replaced_atomic_type !== $atomic_type && !$template_result->readonly) {
-                $had_template = true;
+                // a generic object in a type param of another generic is compared invariantly: an argument of a
+                // subclass has to match what it inferred
+                $inferred_type = $replace
+                    && $input_arg_offset !== null
+                    && $depth > 1
+                    && $atomic_type instanceof TGenericObject
+                    && $matching_atomic_type instanceof TNamedObject
+                    && strtolower($matching_atomic_type->value) !== strtolower($atomic_type->value)
+                        ? TemplateInferredTypeReplacer::replace(new Union([$atomic_type]), $template_result, $codebase)
+                        : null;
+
+                $template_collector = new TemplateTypeCollector(true);
+
+                if ($inferred_type !== null) {
+                    // also through `key-of<T>`, `value-of<T>`, `properties-of<T>` and `T[K]`, at any depth
+                    $template_collector->traverseArray($inferred_type->getAtomicTypes());
+                }
+
+                if ($inferred_type !== null
+                    && $inferred_type->isSingle()
+                    && $template_collector->getTemplateTypes() === []
+                ) {
+                    $replaced_atomic_type = $inferred_type->getSingleAtomic();
+                } else {
+                    $had_template = true;
+                }
             }
 
             $atomic_types[] = $replaced_atomic_type;
