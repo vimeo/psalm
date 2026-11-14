@@ -65,6 +65,7 @@ final class LanguageServer
     public static function run(array $argv): void
     {
         CliUtils::checkRuntimeRequirements();
+        CliUtils::ensureFiberStackSize();
         $clientConfiguration = new ClientConfiguration();
         gc_disable();
         ErrorHandler::install($argv);

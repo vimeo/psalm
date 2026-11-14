@@ -331,6 +331,28 @@ return array (
         'data' => 'string',
       ),
     ),
+    'eventhttprequest::gethost' => 
+    array (
+      'old' => 
+      array (
+        0 => 'null|string',
+      ),
+      'new' => 
+      array (
+        0 => 'string',
+      ),
+    ),
+    'eventhttprequest::geturi' => 
+    array (
+      'old' => 
+      array (
+        0 => 'null|string',
+      ),
+      'new' => 
+      array (
+        0 => 'string',
+      ),
+    ),
     'filteriterator::getinneriterator' => 
     array (
       'old' => 
