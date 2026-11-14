@@ -590,19 +590,6 @@ final class AlgebraTest extends TestCase
             ['!$a', '($a is int) || ($b is isset)'],
         ];
 
-        yield 'a clause reduced twice leaves only the last reduction' => [
-            [
-                ['$a' => [new IsType(new TInt())], '$x' => [new IsType(new TInt())], '$y' => [new IsType(new TInt())]],
-                [
-                    '$a' => [(new IsType(new TInt()))->getNegation()],
-                    '$x' => [new IsType(new TInt())],
-                    '$y' => [new IsType(new TInt())],
-                ],
-                ['$x' => [new IsType(new TInt())], '$y' => [(new IsType(new TInt()))->getNegation()]],
-            ],
-            ['$x is int'],
-        ];
-
         yield 'type removes its negation' => [
             [
                 ['$a' => [new IsType(new TInt())]],

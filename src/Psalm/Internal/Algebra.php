@@ -189,17 +189,15 @@ final class Algebra
                     if (isset($clause_var_possibilities[$negated_clause_type_string])) {
                         unset($clause_var_possibilities[$negated_clause_type_string]);
 
+                        unset($cloned_clauses[$clause_b_hash]);
+
                         if (!$clause_var_possibilities) {
                             $updated_clause = $clause_b->removePossibilities($clause_var);
-
-                            unset($cloned_clauses[$clause_b_hash]);
 
                             if ($updated_clause) {
                                 $cloned_clauses[$updated_clause->hash] = $updated_clause;
                             }
                         } else {
-                            unset($cloned_clauses[$clause_b_hash]);
-
                             $updated_clause = $clause_b->addPossibilities(
                                 $clause_var,
                                 $clause_var_possibilities,
