@@ -16,6 +16,7 @@ use Psalm\Internal\Analyzer\MethodAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\Fetch\ConstFetchAnalyzer;
 use Psalm\Internal\Type\Comparator\UnionTypeComparator;
 use Psalm\Internal\Type\PurityArguments;
+use Psalm\Internal\Type\StarProjection;
 use Psalm\Internal\Type\TemplateBound;
 use Psalm\Internal\Type\TemplateDefaults;
 use Psalm\Internal\Type\TemplateInferredTypeReplacer;
@@ -430,6 +431,14 @@ final class TypeChecker extends TypeVisitor
                         $template_result,
                         $codebase,
                     );
+
+                    // `*` fits any bound, and stands for the bound in those of the other templates
+                    if (StarProjection::isStar($type_param)) {
+                        $template_result->lower_bounds[$expected_template_name][$defining_class][]
+                            = new TemplateBound($expected_type_param);
+
+                        continue;
+                    }
 
                     $type_param = TypeExpander::expandUnion(
                         $codebase,

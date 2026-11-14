@@ -9,6 +9,7 @@ use Override;
 use Psalm\Codebase;
 use Psalm\Internal\Analyzer\Statements\Expression\ArrayAnalyzer;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
+use Psalm\Internal\Type\StarProjection;
 use Psalm\Internal\Type\TemplateInferredTypeReplacer;
 use Psalm\Internal\Type\TemplateResult;
 use Psalm\Internal\Type\TemplateStandinTypeReplacer;
@@ -231,6 +232,9 @@ trait GenericTrait
         if ($input_type instanceof TGenericObject
             && ($this instanceof TGenericObject || $this instanceof TIterable)
         ) {
+            // a `*` argument binds a template as the bound of the template it stands for
+            $input_type = StarProjection::readArguments($input_type, $codebase);
+
             $input_object_type_params = TemplateStandinTypeReplacer::getMappedGenericTypeParams(
                 $codebase,
                 $input_type,

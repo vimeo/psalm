@@ -286,7 +286,10 @@ final class TemplateInferredTypeReplacer
         if ($traversed_type) {
             $template_type = $traversed_type;
 
-            if ($template_type->isMixed() && !$atomic_type->as->isMixed()) {
+            // a `*` argument (`Pair<int, *>`) reads as the template's bound, like a mixed one
+            if (StarProjection::isStar($template_type)
+                || ($template_type->isMixed() && !$atomic_type->as->isMixed())
+            ) {
                 $template_type = $atomic_type->as;
             }
 

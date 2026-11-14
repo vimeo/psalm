@@ -22,6 +22,7 @@ use Psalm\Internal\Analyzer\TraitAnalyzer;
 use Psalm\Internal\Codebase\InternalCallMapHandler;
 use Psalm\Internal\DataFlow\DataFlowNode;
 use Psalm\Internal\MethodIdentifier;
+use Psalm\Internal\Type\StarProjection;
 use Psalm\Internal\Type\TemplateResult;
 use Psalm\Internal\Type\TypeExpander;
 use Psalm\Issue\ImpureMethodCall;
@@ -876,7 +877,11 @@ final class AtomicMethodCallAnalyzer extends CallAnalyzer
                 if ($param_position !== false
                     && isset($lhs_type_part->type_params[$param_position])
                 ) {
-                    $current_type_param = $lhs_type_part->type_params[$param_position];
+                    // `@mixin TModel` on a `Proxy<*>` is the template's bound
+                    $current_type_param = StarProjection::read(
+                        $lhs_type_part->type_params[$param_position],
+                        reset($class_storage->template_types[$mixin->param_name]),
+                    );
                     if ($current_type_param->isSingle()) {
                         $lhs_type_part_new = array_values(
                             $current_type_param->getAtomicTypes(),

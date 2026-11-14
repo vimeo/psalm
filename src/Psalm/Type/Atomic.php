@@ -9,6 +9,7 @@ use Override;
 use Psalm\Codebase;
 use Psalm\Exception\TypeParseTreeException;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
+use Psalm\Internal\Type\StarProjection;
 use Psalm\Internal\Type\TemplateResult;
 use Psalm\Internal\Type\TemplateStandinTypeReplacer;
 use Psalm\Internal\Type\TypeAlias;
@@ -551,6 +552,10 @@ abstract class Atomic implements TypeNode, Stringable
                 false,
                 Type::getPure(),
             );
+        }
+        // iterating a `Collection<int, *>` gives the bound of the template a `*` stands for
+        if ($this instanceof TGenericObject && ($read = StarProjection::readArguments($this, $codebase)) !== $this) {
+            return $read->getIterable($codebase);
         }
         if ($this->hasTraversableInterface($codebase)) {
             // the key and value types, and what iterating it may do (TPurity)

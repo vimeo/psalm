@@ -27,6 +27,7 @@ use Psalm\Internal\MethodIdentifier;
 use Psalm\Internal\Type\Comparator\CallableTypeComparator;
 use Psalm\Internal\Type\Comparator\TypeComparisonResult;
 use Psalm\Internal\Type\Comparator\UnionTypeComparator;
+use Psalm\Internal\Type\StarProjection;
 use Psalm\Internal\Type\TemplateBound;
 use Psalm\Internal\Type\TemplateResult;
 use Psalm\Internal\Type\TemplateStandinTypeReplacer;
@@ -1933,7 +1934,11 @@ final class ArgumentAnalyzer
                         ) {
                             $new_type_params = [];
                             foreach ($input_atomic_type->type_params as $i => $type_param) {
-                                if ($type_param->isNever() && isset($param_atomic_type->type_params[$i])) {
+                                // a `*` param says nothing about what the value holds
+                                if ($type_param->isNever()
+                                    && isset($param_atomic_type->type_params[$i])
+                                    && !StarProjection::isStar($param_atomic_type->type_params[$i])
+                                ) {
                                     $input_type_changed = true;
 
                                     $new_type_params[$i] = $param_atomic_type->type_params[$i];

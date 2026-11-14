@@ -70,6 +70,7 @@ use Psalm\Type\Atomic\TTypeVariable;
 use Psalm\Type\Reconciler;
 use Psalm\Type\Union;
 
+use function array_any;
 use function array_diff_key;
 use function array_intersect_key;
 use function array_keys;
@@ -627,7 +628,8 @@ final class AssertionReconciler extends Reconciler
     /**
      * Narrowing a `Parent<A, B>` to a child class whose templates are passed straight to Parent's
      * (`@extends Parent<T, U>`, `@implements Iterator[P]<K, V>`) gives the child those arguments:
-     * `Iterator[pure]<int, string>` narrowed to `Child` is a `Child[pure]<int, string>`.
+     * `Iterator[pure]<int, string>` narrowed to `Child` is a `Child[pure]<int, string>`. With
+     * $unknown_as_star, the other templates are `*` rather than leaving the child without arguments.
      *
      * @psalm-capabilities read-props
      */
@@ -635,6 +637,7 @@ final class AssertionReconciler extends Reconciler
         Codebase $codebase,
         TNamedObject $child,
         TGenericObject $parent,
+        bool $unknown_as_star = false,
     ): TNamedObject {
         if (!$codebase->classlike_storage_provider->has($child->value)
             || !$codebase->classlike_storage_provider->has($parent->value)
@@ -681,8 +684,12 @@ final class AssertionReconciler extends Reconciler
             }
 
             if ($inferred === null) {
-                // a template not passed straight to the parent: nothing is known about it
-                return $child;
+                if (!$unknown_as_star) {
+                    // a template not passed straight to the parent: nothing is known about it
+                    return $child;
+                }
+
+                $inferred = StarProjection::create($child->from_docblock);
             }
 
             $type_params[] = $inferred;
@@ -1139,6 +1146,17 @@ final class AssertionReconciler extends Reconciler
         Codebase $codebase,
         bool $type_coerced,
     ): ?Atomic {
+        if ($type_2_atomic::class === TNamedObject::class
+            && $type_1_atomic instanceof TGenericObject
+            && array_any($type_1_atomic->type_params, StarProjection::isStar(...))
+        ) {
+            // what a `*` leaves unknown stays unknown: `Pair<int, *>` narrowed to `Pair` is still a `Pair<int, *>`,
+            // and narrowed to a `Child` that `@extends Pair<int, T>` is a `Child<*>`, not one of the template's bound
+            return strtolower($type_2_atomic->value) === strtolower($type_1_atomic->value)
+                ? $type_1_atomic
+                : self::inferTemplateParamsFromParent($codebase, $type_2_atomic, $type_1_atomic, true);
+        }
+
         if ($type_coerced
             && $type_2_atomic::class === TNamedObject::class
             && $type_1_atomic instanceof TGenericObject
