@@ -69,9 +69,9 @@ final class IntMaskComparisonAnalyzer
         }
 
         foreach ([[$left_type, $right_type], [$right_type, $left_type]] as [$mask_type, $other_type]) {
-            // two bit sets are compared to tell whether they are the same set
+            // two bit sets are compared for equality to tell whether they are the same set
             if ($mask_type->int_mask_bits !== null
-                && $other_type->int_mask_bits === null
+                && (!$is_equality || $other_type->int_mask_bits === null)
                 && self::isAmbiguous($mask_type, $other_type, $is_equality)
             ) {
                 self::report(

@@ -297,6 +297,17 @@ final class IntMaskComparisonTest extends TestCase
                     }',
                 'error_message' => 'IntMaskComparison',
             ],
+            'twoMasksComparedByOrder' => [
+                'code' => '<?php' . self::FLAG . '
+                    /**
+                     * @param int-mask-of<Flag::*> $a
+                     * @param int-mask-of<Flag::*> $b
+                     */
+                    function before(int $a, int $b): bool {
+                        return $a < $b;
+                    }',
+                'error_message' => 'IntMaskComparison',
+            ],
             'maskAndPlainInt' => [
                 'code' => '<?php' . self::FLAG . '
                     /** @param int-mask-of<Flag::*> $m */
