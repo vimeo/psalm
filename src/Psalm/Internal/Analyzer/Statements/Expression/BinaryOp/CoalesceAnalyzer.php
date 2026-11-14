@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Psalm\Internal\Analyzer\Statements\Expression\BinaryOp;
 
+use Error;
 use PhpParser;
 use Psalm\Context;
 use Psalm\Internal\Analyzer\Statements\Expression\ExpressionIdentifier;
@@ -32,6 +33,23 @@ use function substr;
 final class CoalesceAnalyzer
 {
     private const OFFSET_MARKER = 'left operand of ?? at offset ';
+
+    /**
+     * The code of the operand on one line; the pretty printer has no method for the nodes Psalm makes up (a partial
+     * application), which are named by the operand's position only
+     */
+    private static function printOperand(PhpParser\Node\Expr $operand): string
+    {
+        try {
+            return (string) preg_replace(
+                '/\s+/',
+                ' ',
+                (new PhpParser\PrettyPrinter\Standard())->prettyPrintExpr($operand),
+            );
+        } catch (Error) {
+            return 'left operand of ??';
+        }
+    }
 
     /**
      * The name of a variable as issue messages show it: the temporary variable of a left operand that is not a
@@ -88,11 +106,7 @@ final class CoalesceAnalyzer
             // the offset makes it unique; issue messages show the code of the operand ({@see self::getDisplayName()}),
             // hex encoded as the name of a variable has no `->`, `[` or `(` that would be read as an offset
             $left_var_id = '$<' . self::OFFSET_MARKER . (int) $left_expr->getAttribute('startFilePos')
-                . ' ' . bin2hex((string) preg_replace(
-                    '/\s+/',
-                    ' ',
-                    (new PhpParser\PrettyPrinter\Standard())->prettyPrintExpr($left_expr),
-                )) . '>';
+                . ' ' . bin2hex(self::printOperand($left_expr)) . '>';
 
             // an untracked offset is evaluated unconditionally, so its assignments belong to the real context
             $cloned = $has_untracked_offset ? $context : clone $context;
