@@ -393,9 +393,10 @@ final class ClassLikeDocblockParser
                         if (preg_match('/^ ?: ?(\S.*)$/s', $after_paren, $return_matches)
                             && isset($return_matches[1])
                         ) {
-                            $method_entry .= ':' . CommentAnalyzer::sanitizeDocblockType(
-                                rtrim(CommentAnalyzer::splitDocLine($return_matches[1])[0], ';'),
-                            );
+                            $return_type = rtrim(CommentAnalyzer::splitDocLine($return_matches[1])[0], ';');
+                            if ($return_type !== '') {
+                                $method_entry .= ':' . CommentAnalyzer::sanitizeDocblockType($return_type);
+                            }
                         }
                     }
                 }

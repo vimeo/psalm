@@ -420,6 +420,27 @@ final class MagicMethodAnnotationTest extends TestCase
                     '$url===' => 'string',
                 ],
             ],
+            'emptyReturnTypeAfterParamsWithTrailingSemicolon' => [
+                'code' => '<?php
+                    /**
+                     * @method foo(): ;
+                     * @method bar():
+                     */
+                    final class A {
+                        public function __call(string $name, array $args) {
+                            return null;
+                        }
+                    }
+
+                    $a = new A();
+                    $foo = $a->foo();
+                    $bar = $a->bar();',
+                'assertions' => [
+                    '$foo===' => 'mixed',
+                    '$bar===' => 'mixed',
+                ],
+                'ignored_issues' => ['MixedAssignment'],
+            ],
             'magicMethodOverloadsAreChosenByTheTypeOfTheArgument' => [
                 'code' => '<?php
                     interface Query {}
