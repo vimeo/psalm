@@ -382,7 +382,11 @@ final class ElseIfAnalyzer
 
         // update the parent context as necessary
         if (!$has_leaving_statements) {
-            $outer_context->detachReferencesReboundIn($elseif_context, $statements_analyzer, $elseif->stmts);
+            $outer_context->detachReferencesReboundIn(
+                $elseif_context,
+                $statements_analyzer,
+                [$elseif->cond, ...$elseif->stmts],
+            );
 
             IfAnalyzer::updateIfScope(
                 $codebase,

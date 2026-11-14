@@ -2964,6 +2964,22 @@ final class UnusedVariableTest extends TestCase
                     echo $a;
                 ',
             ],
+            'referenceToAByRefParamReboundInAnIfIsUsedAfterIt' => [
+                'code' => '<?php
+                    /** @param array<string, mixed> $data */
+                    function set(array &$data, string $key, bool $nested): void {
+                        $cursor = &$data;
+
+                        if ($nested) {
+                            $cursor = &$cursor[$key];
+                        }
+
+                        $cursor = [];
+                    }
+                ',
+                'assertions' => [],
+                'ignored_issues' => ['ReferenceReusedFromConfusingScope'],
+            ],
             'referenceUsedInForeach' => [
                 'code' => '<?php
                     foreach ([1, 2, 3] as &$var) {

@@ -719,6 +719,55 @@ final class ReferenceTest extends TestCase
                 'ignored_issues' => [],
                 'php_version' => '8.0',
             ],
+            'referenceToAnItemStaysBoundAfterAnIfAssertingOnTheArray' => [
+                'code' => '<?php
+                    $a = rand(0, 1) ? ["x" => 1] : null;
+                    $r = &$a["x"];
+
+                    if ($a !== null) {
+                        echo 1;
+                    }
+
+                    $r = "s";',
+                'assertions' => [
+                    '$a[\'x\']===' => '\'s\'',
+                ],
+                'ignored_issues' => ['PossiblyNullArrayAccess'],
+            ],
+            'referenceToAnItemStaysBoundAfterAnElseifAssertingOnTheArray' => [
+                'code' => '<?php
+                    $a = rand(0, 1) ? ["x" => 1] : null;
+                    $r = &$a["x"];
+
+                    if (rand(0, 1)) {
+                        echo 1;
+                    } elseif ($a !== null) {
+                        echo 2;
+                    }
+
+                    $r = "s";',
+                'assertions' => [
+                    '$a[\'x\']===' => '\'s\'',
+                ],
+                'ignored_issues' => ['PossiblyNullArrayAccess'],
+            ],
+            'referenceToAnItemStaysBoundAfterAnElseAssertingOnTheArray' => [
+                'code' => '<?php
+                    $a = rand(0, 1) ? ["x" => 1] : null;
+                    $r = &$a["x"];
+
+                    if ($a === null) {
+                        echo 1;
+                    } else {
+                        echo 2;
+                    }
+
+                    $r = "s";',
+                'assertions' => [
+                    '$a[\'x\']===' => '\'s\'',
+                ],
+                'ignored_issues' => ['PossiblyNullArrayAccess'],
+            ],
             'dynamicArrayOffsetReferenceCanBeConditionallySet' => [
                 'code' => <<<'PHP'
                     <?php
