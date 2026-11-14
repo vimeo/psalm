@@ -20,12 +20,16 @@ use Psalm\Storage\Assertion\IsNotType;
 use Psalm\Storage\Assertion\NotInArray;
 use Psalm\Type\Atomic\TNull;
 
+use function array_filter;
 use function array_intersect_key;
 use function array_key_first;
 use function array_keys;
 use function array_unique;
+use function array_values;
 use function count;
 use function implode;
+use function preg_match;
+use function preg_quote;
 use function reset;
 use function sort;
 use function spl_object_id;
@@ -235,8 +239,28 @@ final class AlgebraAnalyzer
             return;
         }
 
+        $assigned_var_ids = [];
+
         foreach ($operand_formulas as [$operand, $negated_operand_formula]) {
-            $operand_implication = self::findImplication($formula_1, $negated_operand_formula);
+            // an operand reads the variables it and the operands before it assign as assigned, not as established
+            $assigned_var_ids += FormulaGenerator::getAssignedVarIds($operand, $statements_analyzer->getFQCLN());
+
+            $operand_formula_1 = $assigned_var_ids === [] ? $formula_1 : array_values(array_filter(
+                $formula_1,
+                static function (Clause $clause) use ($assigned_var_ids): bool {
+                    foreach ($clause->possibilities as $key => $_) {
+                        foreach (array_keys($assigned_var_ids) as $assigned_var_id) {
+                            if (preg_match('/^' . preg_quote($assigned_var_id, '/') . '(\[|-|$)/', $key)) {
+                                return false;
+                            }
+                        }
+                    }
+
+                    return true;
+                },
+            ));
+
+            $operand_implication = self::findImplication($operand_formula_1, $negated_operand_formula);
 
             if ($operand_implication !== null) {
                 self::reportParadox($statements_analyzer, $operand, $operand_implication[0], $operand_implication[1]);
