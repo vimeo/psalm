@@ -1,0 +1,64 @@
+<?php
+
+namespace StubPseudoMethod;
+
+use Closure;
+
+class DB extends Facade
+{
+    /**
+     * @template T
+     * @param Closure(): T $closure
+     * @return T
+     */
+    public static function transaction(Closure $closure)
+    {
+    }
+
+    /**
+     * @template T
+     * @param Closure(): T $closure
+     * @return T
+     */
+    public function run(Closure $closure)
+    {
+    }
+
+    public static function instanceByStatic(): int
+    {
+        return 1;
+    }
+
+    protected static function notPublic(): int
+    {
+        return 1;
+    }
+
+    private function secret(): int
+    {
+        return 1;
+    }
+}
+
+class Cache extends Store
+{
+    /**
+     * @template T
+     * @param Closure(): T $closure
+     * @return T
+     */
+    public static function remember(Closure $closure)
+    {
+    }
+}
+
+/**
+ * @method static string own()
+ */
+class StubWithOwnPseudoMethod extends Facade
+{
+    public static function own(): int
+    {
+        return 1;
+    }
+}
