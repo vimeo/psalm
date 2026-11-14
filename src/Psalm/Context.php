@@ -1067,7 +1067,10 @@ final class Context
             : $class_name;
     }
 
-    private static function getStaticPropertyDeclaringClass(
+    /**
+     * @internal
+     */
+    public static function getStaticPropertyDeclaringClass(
         Codebase $codebase,
         string $class_name,
         string $property_name,
