@@ -25,6 +25,13 @@ final class IfScope
     public array $new_vars_possibly_in_scope = [];
 
     /**
+     * Types of vars that are defined in at least one branch, but not in all of them.
+     *
+     * @var array<string, Union>
+     */
+    public array $possibly_new_vars = [];
+
+    /**
      * @var array<string, Union>|null
      */
     public ?array $redefined_vars = null;
