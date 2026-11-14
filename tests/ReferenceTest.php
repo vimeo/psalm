@@ -666,6 +666,44 @@ final class ReferenceTest extends TestCase
                 'ignored_issues' => [],
                 'php_version' => '8.0',
             ],
+            'variableAReferenceIsBoundToKeepsItsTypeWhenTheVariableIsReboundInALoop' => [
+                'code' => '<?php
+                    /** @param mixed $value */
+                    function accessible($value): bool {
+                        return is_array($value) || $value instanceof ArrayAccess;
+                    }
+
+                    /**
+                     * @param array<array-key, mixed> $array
+                     * @param list<string> $keys
+                     */
+                    function forget(array &$array, array $keys): void {
+                        $original = &$array;
+
+                        foreach ($keys as $key) {
+                            $array = &$original;
+                            /** @psalm-check-type-exact $array = array<array-key, mixed> */
+
+                            $parts = explode(".", $key);
+
+                            while (count($parts) > 1) {
+                                $part = array_shift($parts);
+
+                                if (isset($array[$part]) && accessible($array[$part])) {
+                                    $array = &$array[$part];
+                                } else {
+                                    continue 2;
+                                }
+                            }
+
+                            /** @psalm-check-type-exact $original = array<array-key, mixed> */
+                            unset($array[(string) array_shift($parts)]);
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => ['MixedArrayAccess'],
+                'php_version' => '8.0',
+            ],
             'referenceReboundToAnItemInAnIfDoesNotWriteToTheArrayItWasBoundTo' => [
                 'code' => '<?php
                     /** @param array<string, mixed> $data */
