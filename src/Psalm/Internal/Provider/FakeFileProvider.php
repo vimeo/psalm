@@ -6,6 +6,7 @@ namespace Psalm\Internal\Provider;
 
 use Override;
 
+use function hash;
 use function str_starts_with;
 
 /**
@@ -45,6 +46,16 @@ final class FakeFileProvider extends FileProvider
         }
 
         return $this->fake_files[$file_path] ?? parent::getContents($file_path);
+    }
+
+    #[Override]
+    public function getContentsHash(string $file_path): string
+    {
+        if (!isset($this->temp_files[$file_path]) && isset($this->fake_files[$file_path])) {
+            return hash('xxh128', $this->fake_files[$file_path]);
+        }
+
+        return parent::getContentsHash($file_path);
     }
 
     /**

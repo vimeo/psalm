@@ -37,6 +37,14 @@ abstract class DataFlowGraph
     /** @var array<string, array<string, Path>> */
     protected array $forward_edges = [];
 
+    /**
+     * The paths of the edges, by their fields: a path is immutable, so the edges with the same fields share one. The
+     * graph of a large code base has hundreds of thousands of edges, with a few thousand distinct paths.
+     *
+     * @var array<string, Path>
+     */
+    private array $paths = [];
+
     abstract public function addNode(DataFlowNode $node): void;
 
     /**
@@ -67,7 +75,18 @@ abstract class DataFlowGraph
             $length = abs($to_line - $from_line);
         }
 
-        $this->forward_edges[$from_id][$to_id] = new Path($path_type, $length, $added_taints, $removed_taints);
+        $this->forward_edges[$from_id][$to_id] = $this->getPath($path_type, $length, $added_taints, $removed_taints);
+    }
+
+    /**
+     * The path of this graph with these fields
+     *
+     * @psalm-external-mutation-free
+     */
+    protected function getPath(string $type, int $length, int $added_taints = 0, int $removed_taints = 0): Path
+    {
+        return $this->paths[$type . "\0" . $length . "\0" . $added_taints . "\0" . $removed_taints]
+            ??= new Path($type, $length, $added_taints, $removed_taints);
     }
 
     /**
