@@ -243,7 +243,7 @@ final class ArrayFetchAnalyzer
             && ($context->inside_isset
                 || !$stmt_var_type->isNullable()
                 || !$context->vars_in_scope[$keyed_array_var_id]->isNullable()
-                || isset($context->null_array_offsets_read[$keyed_array_var_id]))
+                || self::wasReadOnThisPath($statements_analyzer, $stmt, $keyed_array_var_id, $context))
         ) {
             $stmt_type = $context->vars_in_scope[$keyed_array_var_id];
 
@@ -459,8 +459,19 @@ final class ArrayFetchAnalyzer
             $context->vars_in_scope[$keyed_array_var_id] = $stmt_type;
             $context->vars_possibly_in_scope[$keyed_array_var_id] = true;
 
-            if ($stmt_var_type && $stmt_var_type->isNullable()) {
-                $context->null_array_offsets_read[$keyed_array_var_id] = true;
+            if ($stmt_var_type
+                && $stmt_var_type->isNullable()
+                && ($array_var_id = ExpressionIdentifier::getExtendedVarId(
+                    $stmt->var,
+                    $statements_analyzer->getFQCLN(),
+                    $statements_analyzer,
+                ))
+                && isset($context->vars_in_scope[$array_var_id])
+            ) {
+                $context->null_array_offsets_read[$keyed_array_var_id] = [
+                    $stmt_type,
+                    $context->vars_in_scope[$array_var_id],
+                ];
             }
 
             // reference the variable too
@@ -468,6 +479,33 @@ final class ArrayFetchAnalyzer
         }
 
         return true;
+    }
+
+    /**
+     * Whether the remembered offset is still the one read earlier from the same array: a branch or loop merge, an
+     * assignment, a mutation or an assertion that replaced either type ends it
+     */
+    private static function wasReadOnThisPath(
+        StatementsAnalyzer $statements_analyzer,
+        PhpParser\Node\Expr\ArrayDimFetch $stmt,
+        string $keyed_array_var_id,
+        Context $context,
+    ): bool {
+        if (!isset($context->null_array_offsets_read[$keyed_array_var_id])) {
+            return false;
+        }
+
+        [$offset_type, $array_type] = $context->null_array_offsets_read[$keyed_array_var_id];
+
+        $array_var_id = ExpressionIdentifier::getExtendedVarId(
+            $stmt->var,
+            $statements_analyzer->getFQCLN(),
+            $statements_analyzer,
+        );
+
+        return $offset_type === $context->vars_in_scope[$keyed_array_var_id]
+            && $array_var_id !== null
+            && ($context->vars_in_scope[$array_var_id] ?? null) === $array_type;
     }
 
     /**

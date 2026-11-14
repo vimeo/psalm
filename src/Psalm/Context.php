@@ -171,9 +171,10 @@ final class Context
 
     /**
      * The array offsets read from a nullable array on a path of this context, whose remembered type holds the null of
-     * that array: their read is not analysed again, as the null was reported where they were first read.
+     * that array, with that type and the type of the array at the read: while both are unchanged, the read is not
+     * analysed again, as the null was reported where it was first read.
      *
-     * @var array<string, true>
+     * @var array<string, array{Union, Union}>
      */
     public array $null_array_offsets_read = [];
 

@@ -17,6 +17,7 @@ use function array_keys;
 use function array_merge;
 use function array_values;
 use function ksort;
+use function sort;
 use function str_contains;
 
 use const DIRECTORY_SEPARATOR;
@@ -679,6 +680,69 @@ final class ArrayAccessTest extends TestCase
         }
 
         $this->assertSame([4], $lines);
+    }
+
+    public function testOffsetOfANullableArrayIsReportedAgainAfterTheArrayChanged(): void
+    {
+        $this->project_analyzer->getConfig()->throw_exception = false;
+        $this->project_analyzer->setPhpVersion('8.1', 'tests');
+        $file_path = self::$src_dir_path . 'somefile.php';
+
+        $this->addFile(
+            $file_path,
+            '<?php
+                /**
+                 * @param list<string>|null $m
+                 * @param list<string>|null $n
+                 */
+                function branch(?array $m, ?array $n): void {
+                    echo $m[0];
+                    if (rand(0, 1)) { $m = $n; }
+                    if (isset($m[0]) && is_string($m[0])) { echo 1; }
+                    echo $m[0];
+                }
+
+                final class P {
+                    /** @var list<string>|null */
+                    public ?array $d = null;
+                    public function mutate(): void { $this->d = null; }
+                    public function f(): void {
+                        echo $this->d[0];
+                        $this->mutate();
+                        if (isset($this->d[0]) && is_string($this->d[0])) { echo 1; }
+                        echo $this->d[0];
+                    }
+                }
+
+                /** @param list<string>|null $m */
+                function loop(?array $m): void {
+                    echo $m[0];
+                    foreach ([1, 2] as $_) {
+                        if (rand(0, 1)) { $m = null; }
+                    }
+                    if (isset($m[0]) && is_string($m[0])) { echo 1; }
+                    echo $m[0];
+                }
+
+                /** @param list<string>|null $m */
+                function unchangedByTheBranch(?array $m): void {
+                    echo $m[0];
+                    if (rand(0, 1)) { echo 2; }
+                    echo $m[0];
+                }',
+        );
+        $this->analyzeFile($file_path, new Context());
+
+        $lines = [];
+        foreach (IssueBuffer::getIssuesDataForFile($file_path) as $issue) {
+            if ($issue->type === 'PossiblyNullArrayAccess') {
+                $lines[] = $issue->line_from;
+            }
+        }
+
+        sort($lines);
+
+        $this->assertSame([7, 10, 18, 21, 27, 32, 37], $lines);
     }
 
     /**
