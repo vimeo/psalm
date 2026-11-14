@@ -28,7 +28,7 @@ final class GithubActionsReport extends Report
             $issue_reference = $issue_data->link ? ' (see ' . $issue_data->link . ')' : '';
             $properties = sprintf(
                 'file=%1$s,line=%2$d,col=%3$d,title=%4$s',
-                $this->escapeProperty($issue_data->file_name),
+                $this->escapeProperty($this->escapeControlCharacters($issue_data->file_name)),
                 $this->escapeProperty($issue_data->line_from),
                 $this->escapeProperty($issue_data->column_from),
                 $this->escapeProperty($issue_data->type),
@@ -36,11 +36,11 @@ final class GithubActionsReport extends Report
 
             $data = $this->escapeData(sprintf(
                 '%1$s:%2$d:%3$d: %4$s: %5$s',
-                $issue_data->file_name,
+                $this->escapeControlCharacters($issue_data->file_name),
                 $issue_data->line_from,
                 $issue_data->column_from,
                 $issue_data->type,
-                $issue_data->message . $issue_reference,
+                $this->escapeControlCharacters($issue_data->message) . $issue_reference,
             ));
 
             $output .= sprintf(
