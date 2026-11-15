@@ -1151,15 +1151,38 @@ final class Context
         StatementsAnalyzer $statements_analyzer,
     ): array {
         foreach ($assigned_var_ids as $var_id => $_) {
-            $clauses = self::filterClauses(
-                $var_id,
-                $clauses,
-                $branch_context->vars_in_scope[$var_id] ?? null,
-                $statements_analyzer,
-            );
+            foreach ([$var_id, ...$branch_context->getVarsBoundTo($var_id)] as $changed_var_id) {
+                $clauses = self::filterClauses(
+                    $changed_var_id,
+                    $clauses,
+                    $branch_context->vars_in_scope[$var_id] ?? null,
+                    $statements_analyzer,
+                );
+            }
         }
 
         return $clauses;
+    }
+
+    /**
+     * The variables bound to it by reference, which change with it
+     *
+     * @return list<string>
+     * @psalm-mutation-free
+     */
+    public function getVarsBoundTo(string $var_id): array
+    {
+        $referenced_var_id = $this->references_in_scope[$var_id] ?? $var_id;
+        $bound_var_ids = [];
+        $references = [$referenced_var_id => $referenced_var_id] + $this->references_in_scope;
+
+        foreach ($references as $reference_id => $target_id) {
+            if ($target_id === $referenced_var_id && $reference_id !== $var_id) {
+                $bound_var_ids[] = $reference_id;
+            }
+        }
+
+        return $bound_var_ids;
     }
 
     public function removeVarFromConflictingClauses(
@@ -1170,15 +1193,9 @@ final class Context
         $this->clauses = self::filterClauses($remove_var_id, $this->clauses, $new_type, $statements_analyzer);
         $this->parent_remove_vars[$remove_var_id] = ++self::$clause_removal_count;
 
-        // the variables bound to it by reference changed with it
-        $referenced_var_id = $this->references_in_scope[$remove_var_id] ?? $remove_var_id;
-        $bound_var_ids = [$referenced_var_id => $referenced_var_id] + $this->references_in_scope;
-
-        foreach ($bound_var_ids as $reference_id => $target_id) {
-            if ($target_id === $referenced_var_id && $reference_id !== $remove_var_id) {
-                $this->clauses = self::filterClauses($reference_id, $this->clauses, $new_type, $statements_analyzer);
-                $this->parent_remove_vars[$reference_id] = ++self::$clause_removal_count;
-            }
+        foreach ($this->getVarsBoundTo($remove_var_id) as $bound_var_id) {
+            $this->clauses = self::filterClauses($bound_var_id, $this->clauses, $new_type, $statements_analyzer);
+            $this->parent_remove_vars[$bound_var_id] = ++self::$clause_removal_count;
         }
     }
 

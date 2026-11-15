@@ -2668,6 +2668,36 @@ final class TypeAlgebraTest extends TestCase
                 'ignored_issues' => [],
                 'php_version' => '8.0',
             ],
+            'clauseIsKeptWhenAMethodCallInANestedScopeNarrowsTheVar' => [
+                'code' => '<?php
+                    final class A {
+                        public function foo(): bool {
+                            return true;
+                        }
+                    }
+
+                    final class B {
+                        public function foo(): bool {
+                            return true;
+                        }
+                    }
+
+                    function takesInt(int $_i): void {}
+
+                    /** @param A|B $o */
+                    function f($o, ?int $b, bool $c): void {
+                        if ($o instanceof B && $b === null) {
+                            return;
+                        }
+
+                        $x = $c ? $o->foo() : false;
+                        echo (int) $x;
+
+                        if ($o instanceof B) {
+                            takesInt($b);
+                        }
+                    }',
+            ],
         ];
     }
 
@@ -3769,6 +3799,91 @@ final class TypeAlgebraTest extends TestCase
                             echo "c";
                         } elseif (($a = load()) !== 2) {
                             echo "a";
+                        }
+
+                        if ($a === null) {
+                            takesInt($b);
+                        }
+                    }',
+                'error_message' => 'PossiblyNullArgument',
+            ],
+            'clauseOnVarReassignedInACatchThatContinuesIsDropped' => [
+                'code' => '<?php
+                    function takesInt(int $_i): void {}
+
+                    function load(): ?int {
+                        return rand(0, 1) ? null : 1;
+                    }
+
+                    /** @param list<int> $list */
+                    function f(?int $a, ?int $b, array $list): void {
+                        if ($a === null && $b === null) {
+                            return;
+                        }
+
+                        foreach ($list as $_) {
+                            try {
+                                if (rand(0, 1)) {
+                                    throw new Exception();
+                                }
+                            } catch (Exception $e) {
+                                $a = load();
+                                continue;
+                            }
+                        }
+
+                        if ($a === null) {
+                            takesInt($b);
+                        }
+                    }',
+                'error_message' => 'PossiblyNullArgument',
+            ],
+            'clauseOnVarIsDroppedWhenAnElseifBodyAssignsItThroughAReference' => [
+                'code' => '<?php
+                    function takesInt(int $_i): void {}
+
+                    function load(): ?int {
+                        return rand(0, 1) ? null : 1;
+                    }
+
+                    function f(?int $a, ?int $b, bool $c, bool $d): void {
+                        $r = &$a;
+
+                        if ($a === null && $b === null) {
+                            return;
+                        }
+
+                        if ($c) {
+                            echo "c";
+                        } elseif ($d) {
+                            $r = load();
+                        } else {
+                            return;
+                        }
+
+                        if ($a === null) {
+                            takesInt($b);
+                        }
+                    }',
+                'error_message' => 'PossiblyNullArgument',
+            ],
+            'clauseOnVarReassignedInTheRightOfAnAndInAnElseifConditionIsDropped' => [
+                'code' => '<?php
+                    function takesInt(int $_i): void {}
+
+                    function load(): ?int {
+                        return rand(0, 1) ? null : 1;
+                    }
+
+                    function f(?int $a, ?int $b, bool $c, bool $d): void {
+                        if ($a === null && $b === null) {
+                            return;
+                        }
+
+                        if ($d) {
+                            echo "d";
+                        } elseif ($c && ($a = load()) !== 5) {
+                            echo "c";
                         }
 
                         if ($a === null) {

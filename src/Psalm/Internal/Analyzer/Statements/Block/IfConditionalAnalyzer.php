@@ -195,9 +195,14 @@ final class IfConditionalAnalyzer
 
             $if_conditional_context->inside_conditional = $was_inside_conditional;
 
-            // what the operands analysed only here changed is dropped by the analyser of the condition once checked
+            // what the operands analysed only here changed is dropped by the analyser of the condition once checked,
+            // and by the scope enclosing an elseif once its body was analysed
             $outer_context->parent_remove_vars = [
                 ...$outer_context->parent_remove_vars,
+                ...$if_conditional_context->parent_remove_vars,
+            ];
+            $if_context->parent_remove_vars = [
+                ...$if_context->parent_remove_vars,
                 ...$if_conditional_context->parent_remove_vars,
             ];
 
