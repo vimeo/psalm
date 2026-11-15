@@ -486,6 +486,54 @@ final class MethodCallTest extends TestCase
                 'ignored_issues' => [],
                 'php_version' => '8.0',
             ],
+            'nullsafeMethodCallIdenticalToNullNarrowsReceiverAfterAnEarlyReturn' => [
+                'code' => '<?php
+                    final class B {
+                        public function test(): int {
+                            return 1;
+                        }
+
+                        public function exec(): void {}
+                    }
+
+                    function a(?B $b): void {
+                        if ($b?->test() === null) {
+                            return;
+                        }
+
+                        $b->exec();
+                    }
+
+                    function b(?B $b): void {
+                        if (null === $b?->test()) {
+                            return;
+                        }
+
+                        $b->exec();
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'nullsafeChainAfterAMixedLinkDoesNotReportTheShortCircuit' => [
+                'code' => '<?php
+                    final class B {
+                        public function m(): mixed {
+                            return null;
+                        }
+                    }
+
+                    function a(?B $b): void {
+                        $b?->m()->exists();
+                    }
+
+                    function c(?B $b): string {
+                        return (string) $b?->m()["uuid"];
+                    }',
+                'assertions' => [],
+                'ignored_issues' => ['MixedMethodCall', 'MixedArrayAccess'],
+                'php_version' => '8.0',
+            ],
             'propertyIsNotNarrowedAfterABranchThatCallsAMethodChangingIt' => [
                 'code' => '<?php
                     final class Quote {
@@ -2541,6 +2589,67 @@ final class MethodCallTest extends TestCase
                         $b->exec();
                     }',
                 'error_message' => 'NullReference',
+                'error_levels' => [],
+                'php_version' => '8.0',
+            ],
+            'nullsafeMethodCallIdenticalToNullIsNullReceiver' => [
+                'code' => '<?php
+                    final class B {
+                        public function test(): int {
+                            return 1;
+                        }
+
+                        public function exec(): void {}
+                    }
+
+                    function a(?B $b): void {
+                        if ($b?->test() === null) {
+                            $b->exec();
+                        }
+                    }',
+                'error_message' => 'NullReference',
+                'error_levels' => [],
+                'php_version' => '8.0',
+            ],
+            'nullsafeMethodCallLooselyEqualToNullKeepsPossiblyNullReceiver' => [
+                'code' => '<?php
+                    final class B {
+                        public function test(): int {
+                            return 0;
+                        }
+
+                        public function exec(): void {}
+                    }
+
+                    function a(?B $b): void {
+                        if ($b?->test() == null) {
+                            return;
+                        }
+
+                        $b->exec();
+                    }',
+                'error_message' => 'PossiblyNullReference',
+                'error_levels' => [],
+                'php_version' => '8.0',
+            ],
+            'nullsafeMethodCallAfterAMixedLinkIdenticalToNullDoesNotNarrowTheReceiver' => [
+                'code' => '<?php
+                    final class B {
+                        public function m(): mixed {
+                            return null;
+                        }
+
+                        public function exec(): void {}
+                    }
+
+                    function a(?B $b): void {
+                        if ($b?->m() === null) {
+                            return;
+                        }
+
+                        $b->exec();
+                    }',
+                'error_message' => 'PossiblyNullReference',
                 'error_levels' => [],
                 'php_version' => '8.0',
             ],

@@ -157,9 +157,7 @@ final class NullsafeAnalyzer
         $chain_state = NullsafeChainState::None;
 
         if ($ternary_type && $ternary_type->isNullable()) {
-            $chain_state = $call_type && NullsafeChainState::canBeNull($call_type)
-                ? NullsafeChainState::ShortCircuitAndNull
-                : NullsafeChainState::ShortCircuit;
+            $chain_state = NullsafeChainState::ShortCircuit->afterLink($call_type);
         }
 
         $chain_state->markOn($stmt);

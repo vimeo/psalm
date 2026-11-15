@@ -2212,6 +2212,44 @@ final class AssertionFinder
     }
 
     /**
+     * A nullsafe chain that is null only by short-circuiting is null exactly when the receiver of its nullsafe link
+     * is, which holds for a single link: with several, a null intermediate value says nothing. A nullsafe property
+     * fetch compared to null is expanded by the FormulaGenerator.
+     */
+    private static function getReceiverOfAChainNullOnlyByShortCircuit(
+        PhpParser\Node\Expr $chain,
+        ?string $this_class_name,
+        FileSource $source,
+    ): ?string {
+        if (NullsafeChainState::of($chain) !== NullsafeChainState::ShortCircuit
+            || $chain instanceof PhpParser\Node\Expr\NullsafePropertyFetch
+        ) {
+            return null;
+        }
+
+        $nullsafe_receivers = [];
+        $chain_link = $chain;
+
+        while ($chain_link instanceof PhpParser\Node\Expr\PropertyFetch
+            || $chain_link instanceof PhpParser\Node\Expr\NullsafePropertyFetch
+            || $chain_link instanceof PhpParser\Node\Expr\MethodCall
+            || $chain_link instanceof PhpParser\Node\Expr\NullsafeMethodCall
+        ) {
+            if ($chain_link instanceof PhpParser\Node\Expr\NullsafePropertyFetch
+                || $chain_link instanceof PhpParser\Node\Expr\NullsafeMethodCall
+            ) {
+                $nullsafe_receivers[] = $chain_link->var;
+            }
+
+            $chain_link = $chain_link->var;
+        }
+
+        return count($nullsafe_receivers) === 1
+            ? ExpressionIdentifier::getExtendedVarId($nullsafe_receivers[0], $this_class_name, $source)
+            : null;
+    }
+
+    /**
      * @param PhpParser\Node\Expr\BinaryOp\NotIdentical|PhpParser\Node\Expr\BinaryOp\NotEqual $conditional
      * @return list<non-empty-array<string, non-empty-list<non-empty-list<Assertion>>>>
      */
@@ -2250,40 +2288,13 @@ final class AssertionFinder
             }
         }
 
-        // a nullsafe chain that is null only by short-circuiting isn't null exactly when the receiver of its
-        // nullsafe link isn't, which holds for a single link: with several, a null intermediate value says nothing
-        $nullsafe_receivers = [];
-        // a nullsafe property fetch compared to null is expanded by the FormulaGenerator
-        $chain_link = NullsafeChainState::of($base_conditional) === NullsafeChainState::ShortCircuit
-            && !$base_conditional instanceof PhpParser\Node\Expr\NullsafePropertyFetch
-            ? $base_conditional
+        // `!=` is also false for a falsy value of a receiver that is not null (`false == null`)
+        $nullsafe_var_name = $conditional instanceof PhpParser\Node\Expr\BinaryOp\NotIdentical
+            ? self::getReceiverOfAChainNullOnlyByShortCircuit($base_conditional, $this_class_name, $source)
             : null;
 
-        while ($chain_link instanceof PhpParser\Node\Expr\PropertyFetch
-            || $chain_link instanceof PhpParser\Node\Expr\NullsafePropertyFetch
-            || $chain_link instanceof PhpParser\Node\Expr\MethodCall
-            || $chain_link instanceof PhpParser\Node\Expr\NullsafeMethodCall
-        ) {
-            if ($chain_link instanceof PhpParser\Node\Expr\NullsafePropertyFetch
-                || $chain_link instanceof PhpParser\Node\Expr\NullsafeMethodCall
-            ) {
-                $nullsafe_receivers[] = $chain_link->var;
-            }
-
-            $chain_link = $chain_link->var;
-        }
-
-        // `!=` is also false for a falsy value of a receiver that is not null (`false == null`)
-        if (count($nullsafe_receivers) === 1 && $conditional instanceof PhpParser\Node\Expr\BinaryOp\NotIdentical) {
-            $nullsafe_var_name = ExpressionIdentifier::getExtendedVarId(
-                $nullsafe_receivers[0],
-                $this_class_name,
-                $source,
-            );
-
-            if ($nullsafe_var_name !== null) {
-                $if_types[$nullsafe_var_name] = [[new IsNotType(new TNull())]];
-            }
+        if ($nullsafe_var_name !== null) {
+            $if_types[$nullsafe_var_name] = [[new IsNotType(new TNull())]];
         }
 
         if ($codebase
@@ -3018,6 +3029,15 @@ final class AssertionFinder
             } else {
                 $if_types[$var_name] = [[new IsLooselyEqual(new TNull())]];
             }
+        }
+
+        // `==` is also true for a falsy value of a receiver that is not null (`false == null`)
+        $nullsafe_var_name = $conditional instanceof PhpParser\Node\Expr\BinaryOp\Identical
+            ? self::getReceiverOfAChainNullOnlyByShortCircuit($base_conditional, $this_class_name, $source)
+            : null;
+
+        if ($nullsafe_var_name !== null) {
+            $if_types[$nullsafe_var_name] = [[new IsType(new TNull())]];
         }
 
         if ($codebase

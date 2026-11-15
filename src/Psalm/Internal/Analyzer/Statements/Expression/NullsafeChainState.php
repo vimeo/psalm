@@ -36,6 +36,12 @@ enum NullsafeChainState
     /** A `?->` short-circuit may have happened, and the node's type has other nulls too. */
     case ShortCircuitAndNull;
 
+    /**
+     * Every null in the node's type is a `?->` short-circuit, but a link's own result is `mixed` or a template that
+     * may hold null: later links don't report the null, and a comparison with null doesn't narrow the receiver.
+     */
+    case ShortCircuitAndPossiblyNull;
+
     private const ATTRIBUTE = 'psalm-nullsafe-chain';
 
     public static function of(Expr $node): self
@@ -65,12 +71,29 @@ enum NullsafeChainState
      * The state of a link (method call, property/array fetch, static call) whose receiver is in this state,
      * which MUST NOT be None.
      *
-     * @param bool $own_nullable whether the link's own result, analysed on the non-null receiver parts, is nullable
+     * @param ?Union $own_type the link's own result, analysed on the non-null receiver parts
+     * @param bool $own_nullable whether that result is nullable for another reason (a possibly undefined offset)
      * @psalm-capabilities read-props
      */
-    public function afterLink(bool $own_nullable): self
+    public function afterLink(?Union $own_type, bool $own_nullable = false): self
     {
-        return $own_nullable ? self::ShortCircuitAndNull : $this;
+        if ($own_nullable || ($own_type && $own_type->isNullable())) {
+            return self::ShortCircuitAndNull;
+        }
+
+        return $this === self::ShortCircuit && $own_type && self::canBeNull($own_type)
+            ? self::ShortCircuitAndPossiblyNull
+            : $this;
+    }
+
+    /**
+     * Whether every null in the node's type is a `?->` short-circuit, which the later links of the chain don't report
+     *
+     * @psalm-capabilities read-props
+     */
+    public function isNullOnlyByShortCircuit(): bool
+    {
+        return $this === self::ShortCircuit || $this === self::ShortCircuitAndPossiblyNull;
     }
 
     /**
