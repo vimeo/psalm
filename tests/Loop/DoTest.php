@@ -23,6 +23,38 @@ final class DoTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'doWhileNullCoalesceOfAVariableAssignedLaterInTheBody' => [
+                'code' => '<?php
+                    function f(): string {
+                        do {
+                            $s = ($s ?? "") . "x";
+                        } while (rand(0, 1));
+
+                        return $s;
+                    }',
+            ],
+            'doWhileVariableAssignedInTheBodyIsDefinedAfterTheLoop' => [
+                'code' => '<?php
+                    function f(): int {
+                        do {
+                            $line = rand(0, 1) ? "a" : false;
+                            $i = isset($i) ? $i + 1 : 0;
+                        } while ($line !== false && $i < 5);
+
+                        return $i;
+                    }',
+            ],
+            'doWhileIntRangeShiftedInAnArrayOffsetIsWidened' => [
+                'code' => '<?php
+                    function f(): int {
+                        $a = ["n" => 0];
+                        do {
+                            $a["n"] += rand(1, 3);
+                        } while ($a["n"] <= 10);
+                        /** @psalm-check-type-exact $a = array{n: int<11, 13>} */;
+                        return $a["n"];
+                    }',
+            ],
             'doWhileIntRangeShiftedByEveryIterationIsWidened' => [
                 'code' => '<?php
                     function f(): int {
@@ -686,6 +718,100 @@ final class DoTest extends TestCase
     public static function providerInvalidCodeParse(): iterable
     {
         return [
+            'doWhilePropertyFetchOnAVariableNullOnlyInTheFirstIteration' => [
+                'code' => <<<'PHP'
+                    <?php
+                    final class A {
+                        public string $p = "";
+                    }
+
+                    function f(): void {
+                        $a = null;
+                        do {
+                            echo $a->p;
+                            $a = new A();
+                        } while (rand(0, 1));
+                    }
+                    PHP,
+                'error_message' => 'PossiblyNullPropertyFetch - src' . DIRECTORY_SEPARATOR . 'somefile.php:9:14',
+            ],
+            'doWhileAnonymousClassPropertyNotSetInConstructor' => [
+                'code' => <<<'PHP'
+                    <?php
+                    function f(): void {
+                        do {
+                            $o = new class {
+                                public int $p;
+                                public function __construct() {}
+                            };
+                            echo $o->p;
+                        } while (rand(0, 1));
+                    }
+
+                    function g(): void {
+                        $a = null;
+                        do {
+                            echo $a?->p;
+                            $a = new A();
+                        } while (rand(0, 1));
+                    }
+
+                    final class A {
+                        public string $p = "";
+                    }
+                    PHP,
+                'error_message' => 'PropertyNotSetInConstructor - src' . DIRECTORY_SEPARATOR . 'somefile.php:5:24',
+                'error_levels' => [],
+                'php_version' => '8.0',
+            ],
+            'doWhileReadBeforeTheAssignmentInTheBody' => [
+                'code' => <<<'PHP'
+                    <?php
+                    function f(): void {
+                        do {
+                            if (rand(0, 1)) {
+                                echo $w;
+                            }
+                            $w = 1;
+                        } while (rand(0, 1));
+                    }
+                    PHP,
+                'error_message' => 'PossiblyUndefinedVariable - src' . DIRECTORY_SEPARATOR . 'somefile.php:5:18',
+            ],
+            'doWhileBodyIssueIsReported' => [
+                'code' => '<?php
+                    $i = 0;
+                    do {
+                        echo $undefined;
+                        $i++;
+                    } while ($i < 3);',
+                'error_message' => 'Cannot find referenced variable $undefined in global scope',
+            ],
+            'doWhileBodyIssueInAFunctionIsReported' => [
+                'code' => '<?php
+                    function f(): void {
+                        $i = 0;
+                        do {
+                            echo $undefined;
+                            $i++;
+                        } while ($i < 3);
+                    }',
+                'error_message' => 'Cannot find referenced variable $undefined',
+            ],
+            'doWhileReadBeforeAReferenceAssignment' => [
+                'code' => <<<'PHP'
+                    <?php
+                    function f(array $arr): void {
+                        do {
+                            if (rand(0, 1)) {
+                                echo $r;
+                            }
+                            $r = &$arr[rand(0, 9)];
+                        } while (rand(0, 1));
+                    }
+                    PHP,
+                'error_message' => 'PossiblyUndefinedVariable - src' . DIRECTORY_SEPARATOR . 'somefile.php:5:18',
+            ],
             'doWhileBreakBeforeDefinition' => [
                 'code' => <<<'PHP'
                     <?php

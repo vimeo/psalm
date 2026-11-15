@@ -107,11 +107,8 @@ final class IfElseAnalyzer
         $pre_cond_clauses = $context->clauses;
         $pre_cond_remove_vars = $context->parent_remove_vars;
 
-        $reassigned_var_ids = FormulaGenerator::getVarsAssignedByOredRightSides($stmt->cond, $context->self);
-
         // the else of an `||` is analysed again from where the condition started, not from where it ended
-        $pre_condition_context = $reassigned_var_ids
-            || $stmt->cond instanceof PhpParser\Node\Expr\BinaryOp\BooleanOr
+        $pre_condition_context = $stmt->cond instanceof PhpParser\Node\Expr\BinaryOp\BooleanOr
             || $stmt->cond instanceof PhpParser\Node\Expr\BinaryOp\LogicalOr
                 ? clone $context
                 : null;
@@ -135,6 +132,12 @@ final class IfElseAnalyzer
         } catch (ScopeAnalysisException) {
             return false;
         }
+
+        $reassigned_var_ids = FormulaGenerator::getVarsAssignedByOredRightSides(
+            $stmt->cond,
+            $context->self,
+            $statements_analyzer->node_data,
+        );
 
         if ($if_scope->post_leaving_if_context) {
             self::applyCalleeEffectsOfCondition(
