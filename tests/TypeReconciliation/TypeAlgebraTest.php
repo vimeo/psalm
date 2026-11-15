@@ -1242,6 +1242,47 @@ final class TypeAlgebraTest extends TestCase
                         return 0;
                     }',
             ],
+            'nullCheckStoredInVariableKeptWhenAnElseLeavesAReassignedVariableAlone' => [
+                'code' => '<?php
+                    function f(?array $l, bool $c): int {
+                        $l = rand(0, 1) ? $l : null;
+                        $notNull = $l !== null;
+
+                        if ($c) {
+                            $l[1] = "x";
+                        } else {
+                            echo "c";
+                        }
+
+                        if ($notNull) {
+                            return count($l);
+                        }
+
+                        return 0;
+                    }',
+            ],
+            'dependentTypeKeptWhenABranchFalsifiesIt' => [
+                'code' => '<?php
+                    class A {
+                        public function isValid() : bool {
+                            return (bool) rand(0, 1);
+                        }
+
+                        public function foo() : void {}
+                    }
+
+                    function takesA(?A $a) : void {
+                        $is_valid_a = $a && $a->isValid();
+
+                        if (rand(0, 1)) {
+                            $is_valid_a = false;
+                        }
+
+                        if ($is_valid_a) {
+                            $a->foo();
+                        }
+                    }',
+            ],
             'notLooselyEqualStoredInVariableIsForgottenWhenABranchAssignsAnEqualValue' => [
                 'code' => '<?php
                     function f(int $x): int {
@@ -3344,6 +3385,98 @@ final class TypeAlgebraTest extends TestCase
                     }',
                 'error_message' => 'PossiblyNullArgument',
             ],
+            'nullCheckStoredInVariableIsForgottenAfterACatchWhenABranchOfTheTryAssignsNull' => [
+                'code' => '<?php
+                    function mayThrow(): void {
+                        if (rand(0, 1)) {
+                            throw new Exception();
+                        }
+                    }
+
+                    function f(?array $l): int {
+                        $notNull = $l !== null;
+
+                        try {
+                            if (rand(0, 1)) {
+                                $l = null;
+                                mayThrow();
+                                $l = [1];
+                            }
+                        } catch (Exception $e) {}
+
+                        if ($notNull) {
+                            return count($l);
+                        }
+
+                        return 0;
+                    }',
+                'error_message' => 'PossiblyNullArgument',
+            ],
+            'nullCheckStoredInVariableIsForgottenInAFinallyWhenABranchOfTheTryAssignsNull' => [
+                'code' => '<?php
+                    function mayThrow(): void {
+                        if (rand(0, 1)) {
+                            throw new Exception();
+                        }
+                    }
+
+                    function f(?array $l): void {
+                        $notNull = $l !== null;
+
+                        try {
+                            if (rand(0, 1)) {
+                                $l = null;
+                                mayThrow();
+                                $l = [1];
+                            }
+                        } finally {
+                            if ($notNull) {
+                                echo count($l);
+                            }
+                        }
+                    }',
+                'error_message' => 'PossiblyNullArgument',
+            ],
+            'callAssertionOnPropertyStoredInVariableIsForgottenWhenThePropertyIsAssigned' => [
+                'code' => '<?php
+                    final class C {
+                        public ?string $s = null;
+
+                        /** @psalm-assert-if-true !null $this->s */
+                        public function has(): bool {
+                            return $this->s !== null;
+                        }
+                    }
+
+                    function f(C $c): int {
+                        $has = $c->has();
+                        $c->s = null;
+
+                        if ($has) {
+                            return strlen($c->s);
+                        }
+
+                        return 0;
+                    }',
+                'error_message' => 'NullArgument',
+            ],
+            'nullCheckStoredInVariableIsForgottenWhenAClosureCapturesItByReference' => [
+                'code' => '<?php
+                    function f(?string $x): int {
+                        $notNull = $x !== null;
+                        $f = function () use (&$x): void {
+                            $x = null;
+                        };
+                        $f();
+
+                        if ($notNull) {
+                            return strlen($x);
+                        }
+
+                        return 0;
+                    }',
+                'error_message' => 'PossiblyNullArgument',
+            ],
             'nullCheckStoredInVariableIsForgottenWhenALoopAssignsNull' => [
                 'code' => '<?php
                     function f(?array $l): int {
@@ -3767,7 +3900,7 @@ final class TypeAlgebraTest extends TestCase
                         $is_valid_a = $a && $a->isValid();
 
                         if (rand(0, 1)) {
-                            $is_valid_a = false;
+                            $is_valid_a = true;
                         }
 
                         if ($is_valid_a) {

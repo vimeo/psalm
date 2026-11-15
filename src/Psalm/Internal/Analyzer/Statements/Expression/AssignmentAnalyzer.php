@@ -655,6 +655,15 @@ final class AssignmentAnalyzer
                 $statements_analyzer,
             );
         } else {
+            // a property never fetched may still be in clauses, from the assertion of a call
+            if ($extended_var_id) {
+                $context->removeVarFromConflictingClauses(
+                    $extended_var_id,
+                    $assign_value_type,
+                    $statements_analyzer,
+                );
+            }
+
             $root_var_id = ExpressionIdentifier::getRootVarId(
                 $assign_var,
                 $statements_analyzer->getFQCLN(),

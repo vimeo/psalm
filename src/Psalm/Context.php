@@ -1215,7 +1215,9 @@ final class Context
         ?StatementsAnalyzer $statements_analyzer = null,
     ): void {
         foreach ($nested_context->parent_remove_vars as $var_id => $stamp) {
-            if (($this->parent_remove_vars[$var_id] ?? null) !== $stamp) {
+            // an older stamp than this context's is one the nested scope was cloned with before a sibling scope
+            // changed the variable (an else after its if), not a change of its own
+            if ($stamp > ($this->parent_remove_vars[$var_id] ?? 0)) {
                 if ($this->inside_conditional) {
                     $this->parent_remove_vars[$var_id] = $stamp;
                 } elseif ($statements_analyzer) {
