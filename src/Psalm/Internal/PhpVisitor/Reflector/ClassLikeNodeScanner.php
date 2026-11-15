@@ -1844,6 +1844,7 @@ final class ClassLikeNodeScanner
 
             if ($this->codebase->analysis_php_version_id >= 8_03_00
                 && !$storage->final
+                && !$stmt->isFinal()
                 && $stmt->type === null
             ) {
                 $missing_type_issue = new MissingClassConstType(

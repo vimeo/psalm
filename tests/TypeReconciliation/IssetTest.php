@@ -81,6 +81,38 @@ final class IssetTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'variableAssignedByAnArgumentOfTheLeftCallOfACoalesceIsSetOnTheRight' => [
+                'code' => <<<'PHP'
+                    <?php
+                    final class K {
+                        public function read(?int &$out): ?int {
+                            $out = 1;
+                            return null;
+                        }
+
+                        public static function st(int $n): ?int {
+                            return $n;
+                        }
+                    }
+
+                    function byReference(string $subject): string {
+                        $result = preg_replace('/a/', 'b', $subject, -1, $count) ?? 'z';
+
+                        return $result . (string) $count;
+                    }
+
+                    function method(K $k): int {
+                        return ($k->read($out) ?? 0) + (int) $out;
+                    }
+
+                    function staticCall(): int {
+                        return (K::st($y = 2) ?? 0) + $y;
+                    }
+                    PHP,
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
             'negatedIssetOfAConditionallyDefinedVariableIsNullWhereTheLoopMayNotAssignIt' => [
                 'code' => '<?php
                     /** @param list<string> $values */
@@ -1502,6 +1534,91 @@ final class IssetTest extends TestCase
                         }
                     }',
             ],
+            'variableAssignedInTheCallOnTheLeftOfACoalesceIsSetOnTheRight' => [
+                'code' => '<?php
+                    function foo(int $limit): ?string {
+                        return random_int(0, $limit) ? "" : null;
+                    }
+
+                    function bar(): string {
+                        return foo($limit = 3) ?? throw new Exception((string) $limit);
+                    }
+
+                    function baz(): string {
+                        $result = foo($limit = 3) ?? (string) $limit;
+                        return $result . $limit;
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'variableAssignedInTheCallOnTheLeftOfACoalesceInALoopHasTheAssignedType' => [
+                'code' => '<?php
+                    function f(int $n): ?int {
+                        return $n ?: null;
+                    }
+
+                    function whileCoalesce(): void {
+                        $x = "a";
+                        while (rand(0, 1)) {
+                            $r = f($x = 5) ?? 0;
+                            /** @psalm-check-type-exact $x = 5 */
+                            echo $x, $r;
+                        }
+                    }
+
+                    function forCoalesce(): void {
+                        $x = "a";
+                        for ($i = 0; $i < 3; $i++) {
+                            $r = f($x = $i) ?? 0;
+                            /** @psalm-check-type-exact $x = int<0, 2> */
+                            echo $x, $r;
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'variableAssignedInTheCallOnTheLeftOfACoalesceLosesTheClausesOfItsOldValue' => [
+                'code' => '<?php
+                    function g(?int $n): ?int {
+                        return $n === 0 ? null : $n;
+                    }
+
+                    function staleClause(?int $x, ?int $y): void {
+                        if ($x !== null || $y !== null) {
+                            $r = g($x = null) ?? 0;
+                            if ($y === null) {
+                                /** @psalm-check-type-exact $x = null */
+                                echo $r;
+                            }
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'objectAssignedInTheCallOnTheLeftOfACoalesceLosesTheTypesOfItsOldProperties' => [
+                'code' => '<?php
+                    final class O {
+                        public ?int $p = null;
+                    }
+
+                    function g(O $o): ?int {
+                        return $o->p;
+                    }
+
+                    function objDesc(O $o, O $o2): void {
+                        $o->p = 5;
+                        $r = g($o = $o2) ?? 0;
+                        $p = $o->p;
+                        /** @psalm-check-type-exact $p = ?int */
+                        echo $p, $r;
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
             'issetOnPropertyOfUnionWhereALaterMemberHasAMagicGetterStillSeesTheMissingOne' => [
                 'code' => '<?php
                     final class A {
@@ -1661,6 +1778,46 @@ final class IssetTest extends TestCase
     public static function providerInvalidCodeParse(): iterable
     {
         return [
+            'variableAssignedInANullsafeCallOnTheLeftOfACoalesceIsPossiblyUndefined' => [
+                'code' => '<?php
+                    final class K {
+                        public function m(int $x): ?int {
+                            return $x ?: null;
+                        }
+                    }
+
+                    function f(?K $k): void {
+                        $r = $k?->m($x = 1) ?? 0;
+                        echo $x, $r;
+                    }',
+                'error_message' => 'PossiblyUndefinedVariable',
+                'error_levels' => [],
+                'php_version' => '8.0',
+            ],
+            'variableAssignedInATernaryOnTheLeftOfACoalesceIsPossiblyUndefined' => [
+                'code' => '<?php
+                    function f(int $n): ?int {
+                        return $n ?: null;
+                    }
+
+                    $r = (rand(0, 1) ? f($x = 1) : null) ?? 0;
+                    echo $x, $r;',
+                'error_message' => 'PossiblyUndefinedGlobalVariable',
+            ],
+            'variableAssignedInAMatchOnTheLeftOfACoalesceIsPossiblyUndefined' => [
+                'code' => '<?php
+                    function f(int $n): ?int {
+                        return $n ?: null;
+                    }
+
+                    function g(int $i): void {
+                        $r = match ($i) { 1 => f($x = 1), default => null } ?? 0;
+                        echo $x, $r;
+                    }',
+                'error_message' => 'PossiblyUndefinedVariable',
+                'error_levels' => [],
+                'php_version' => '8.0',
+            ],
             'issetOnPropertyOfUnionWhoseMembersAllHaveItThroughAnIntersectionIsRedundant' => [
                 'code' => '<?php
                     final class A {
@@ -1987,6 +2144,20 @@ final class IssetTest extends TestCase
                         echo $foo->bar;
                     }',
                 'error_message' => 'InvalidArgument',
+            ],
+            'variableAssignedOnlyOnTheRightOfACoalesceIsNotSetBefore' => [
+                'code' => '<?php
+                    function foo(int $limit): ?string {
+                        return random_int(0, $limit) ? "" : null;
+                    }
+
+                    function bar(): string {
+                        $result = foo(1) ?? ($limit = 3);
+                        return $result . $limit;
+                    }',
+                'error_message' => 'PossiblyUndefinedVariable',
+                'error_levels' => [],
+                'php_version' => '8.0',
             ],
             'issetOnPropertyOfEveryMemberOfUnionStaysRedundant' => [
                 'code' => '<?php

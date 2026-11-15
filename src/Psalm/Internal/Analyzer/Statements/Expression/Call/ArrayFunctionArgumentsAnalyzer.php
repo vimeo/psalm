@@ -162,6 +162,7 @@ final class ArrayFunctionArgumentsAnalyzer
 
         if ($method_id === 'array_push' && !$unpacked_args) {
             $node_data = $statements_analyzer->node_data;
+            $node_data->markWrittenByReference($array_arg);
             // the keys of an item pushed to are evaluated with its first value only
             $evaluated_operands = [];
 
@@ -653,6 +654,8 @@ final class ArrayFunctionArgumentsAnalyzer
         Context $context,
         bool $is_array_shift,
     ): void {
+        $statements_analyzer->node_data->markWrittenByReference($arg->value);
+
         $var_id = ExpressionIdentifier::getExtendedVarId(
             $arg->value,
             $statements_analyzer->getFQCLN(),
@@ -776,6 +779,7 @@ final class ArrayFunctionArgumentsAnalyzer
                 $array_type = TypeCombiner::combine($array_atomic_types, $statements_analyzer->getCodebase());
                 $context->removeDescendents($var_id, $array_type);
                 $context->vars_in_scope[$var_id] = $array_type;
+                $context->possibly_assigned_var_ids[$var_id] = true;
             }
         }
     }

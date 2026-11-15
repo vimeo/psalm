@@ -8,6 +8,7 @@ use PhpParser;
 use Psalm\CodeLocation;
 use Psalm\Context;
 use Psalm\Internal\Algebra;
+use Psalm\Internal\Analyzer\AlgebraAnalyzer;
 use Psalm\Internal\Analyzer\ScopeAnalyzer;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\Internal\Scope\IfScope;
@@ -92,7 +93,12 @@ final class ElseAnalyzer
                 },
             );
 
-            $else_context->clauses = Context::removeReconciledClauses($else_context->clauses, $changed_var_ids)[0];
+            $else_context->clauses = AlgebraAnalyzer::removeReconciledClauses(
+                $else_context->clauses,
+                $changed_var_ids,
+                $else_context->vars_in_scope,
+                $statements_analyzer,
+            )[0];
 
             foreach ($changed_var_ids as $changed_var_id => $_) {
                 foreach ($else_context->vars_in_scope as $var_id => $_) {
@@ -124,7 +130,7 @@ final class ElseAnalyzer
             }
         }
 
-        $outer_context->removeClausesOfVarsChangedIn($else_context);
+        $outer_context->removeClausesOfVarsChangedIn($else_context, $statements_analyzer);
 
         /** @var array<string, int> */
         $new_assigned_var_ids = $else_context->assigned_var_ids;

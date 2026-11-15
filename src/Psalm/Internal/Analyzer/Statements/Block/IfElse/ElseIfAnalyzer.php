@@ -21,7 +21,6 @@ use Psalm\Internal\Scope\IfScope;
 use Psalm\Internal\Type\Comparator\UnionTypeComparator;
 use Psalm\Issue\ConflictingReferenceConstraint;
 use Psalm\IssueBuffer;
-use Psalm\Node\Expr\VirtualBooleanNot;
 use Psalm\Type\Reconciler;
 
 use function array_any;
@@ -47,9 +46,6 @@ use function spl_object_id;
 final class ElseIfAnalyzer
 {
     /**
-     * The negation of the clauses of the condition: made from the negated condition where the clauses leave out what
-     * the left side of an `&&` tested of a variable that its right side assigns (see FormulaGenerator)
-     *
      * @param list<Clause> $elseif_clauses
      * @return list<Clause>
      */
@@ -60,20 +56,13 @@ final class ElseIfAnalyzer
         Context $else_context,
         array $elseif_clauses,
     ): array {
-        if (!FormulaGenerator::leavesOutClausesOfAssignedVars($elseif->cond, $else_context->self)) {
-            return Algebra::negateFormula($elseif_clauses);
-        }
-
-        $elseif_cond_id = spl_object_id($elseif->cond);
-
-        return FormulaGenerator::getFormula(
-            $elseif_cond_id,
-            $elseif_cond_id,
-            new VirtualBooleanNot($elseif->cond),
+        return FormulaGenerator::getNegatedFormula(
+            $elseif_clauses,
+            $elseif->cond,
+            spl_object_id($elseif->cond),
             $else_context->self,
             $statements_analyzer,
             $codebase,
-            false,
         );
     }
 
@@ -173,6 +162,18 @@ final class ElseIfAnalyzer
                 $else_context->vars_in_scope[$var_id] = $post_if_context->vars_in_scope[$var_id];
                 $else_context->vars_possibly_in_scope[$var_id] = true;
                 $if_scope->elseif_cond_assigned_var_ids[$var_id] = $offset;
+            }
+
+            // what the earlier conditions being false said of it is about its previous value
+            $else_context->clauses = Context::filterClauses($var_id, $else_context->clauses);
+            $if_scope->negated_clauses = Context::filterClauses($var_id, $if_scope->negated_clauses);
+
+            foreach ($if_scope->negated_types as $negated_var_id => $_) {
+                if ($negated_var_id === $var_id
+                    || preg_match('/^' . preg_quote($var_id, '/') . '[\[\-]/', $negated_var_id)
+                ) {
+                    unset($if_scope->negated_types[$negated_var_id]);
+                }
             }
         }
 
@@ -326,9 +327,11 @@ final class ElseIfAnalyzer
             );
 
             if ($newly_reconciled_var_ids) {
-                $elseif_context->clauses = Context::removeReconciledClauses(
+                $elseif_context->clauses = AlgebraAnalyzer::removeReconciledClauses(
                     $elseif_context->clauses,
                     $newly_reconciled_var_ids,
+                    $elseif_context->vars_in_scope,
+                    $statements_analyzer,
                 )[0];
 
                 foreach ($newly_reconciled_var_ids as $changed_var_id => $_) {
@@ -358,7 +361,7 @@ final class ElseIfAnalyzer
             return false;
         }
 
-        $outer_context->removeClausesOfVarsChangedIn($elseif_context);
+        $outer_context->removeClausesOfVarsChangedIn($elseif_context, $statements_analyzer);
 
         /** @var array<string, int> */
         $new_stmts_assigned_var_ids = $elseif_context->assigned_var_ids;

@@ -1034,6 +1034,7 @@ final class PreloaderList {
         \Psalm\Internal\Scope\TryScope::class,
         \Psalm\Internal\Stubs\Generator\ClassLikeStubGenerator::class,
         \Psalm\Internal\Stubs\Generator\StubsGenerator::class,
+        \Psalm\Internal\TypeVisitor\AmbiguousTemplateRemover::class,
         \Psalm\Internal\TypeVisitor\CanContainObjectTypeVisitor::class,
         \Psalm\Internal\TypeVisitor\CapturedValueVisitor::class,
         \Psalm\Internal\TypeVisitor\ClasslikeReplacer::class,

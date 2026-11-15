@@ -1072,8 +1072,10 @@ final class MethodCallReturnTypeFetcher
         ?string $parent_class,
         bool $final,
         bool $expand_generic = false,
+        bool $keep_method_templates = false,
     ): Union {
-        $keep_method_templates = $stmt?->getAttribute(self::CALL_ARGUMENT_ATTRIBUTE) === true;
+        $keep_method_templates = $keep_method_templates
+            || $stmt?->getAttribute(self::CALL_ARGUMENT_ATTRIBUTE) === true;
         $bounds_result = new TemplateResult([], []);
         $bounds_result->lower_bounds = $template_result->lower_bounds;
 
