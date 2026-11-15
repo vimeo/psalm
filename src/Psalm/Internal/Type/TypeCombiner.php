@@ -288,6 +288,7 @@ final class TypeCombiner
                     false,
                     $combination->extra_types,
                     $from_docblock,
+                    $combination->object_omitted_params_from[$generic_type] ?? null,
                 );
                 $new_types[] = $generic_object;
 
@@ -784,6 +785,13 @@ final class TypeCombiner
             return null;
         }
 
+        if ($type instanceof TGenericObject && $type->omitted_params_from !== null) {
+            $combination->object_omitted_params_from[$type_key] = min(
+                $type->omitted_params_from,
+                $combination->object_omitted_params_from[$type_key] ?? $type->omitted_params_from,
+            );
+        }
+
         if (($type instanceof TGenericObject && ($type->value === 'Traversable' || $type->value === 'Generator'))
             || ($type instanceof TIterable && $type->has_docblock_params)
             || ($type instanceof TArray && $type_key === 'iterable')
@@ -814,13 +822,6 @@ final class TypeCombiner
                     $type_param,
                     $codebase,
                     $overwrite_empty_array,
-                );
-            }
-
-            if ($type->omitted_params_from !== null) {
-                $combination->object_omitted_params_from[$type_key] = min(
-                    $type->omitted_params_from,
-                    $combination->object_omitted_params_from[$type_key] ?? $type->omitted_params_from,
                 );
             }
 

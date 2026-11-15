@@ -197,12 +197,18 @@ final class StarProjectionTest extends TestCase
 
                     function optional(Pair $p = null): void {}
 
-                    /** @param Pair<int, *> $s */
-                    function f(Pair $s): void {
+                    function nullableGenerator(?Generator $g): void {}
+
+                    /**
+                     * @param Pair<int, *> $s
+                     * @param Generator<*, *, *, *> $gen
+                     */
+                    function f(Pair $s, Generator $gen): void {
                         nullable($s);
                         nativeUnion($s);
                         nestedNullable([$s]);
                         optional($s);
+                        nullableGenerator($gen);
                     }',
                 'assertions' => [],
                 'ignored_issues' => [],
