@@ -18,6 +18,7 @@ use Psalm\Internal\Scope\FinallyScope;
 use Psalm\Internal\Scope\LoopScope;
 use Psalm\Internal\Scope\TryScope;
 use Psalm\Internal\Type\AssertionReconciler;
+use Psalm\Internal\Type\Comparator\UnionTypeComparator;
 use Psalm\Storage\Capabilities;
 use Psalm\Storage\FunctionLikeStorage;
 use Psalm\Type\Atomic\DependentType;
@@ -1274,7 +1275,14 @@ final class Context
                 if (!isset($branch->vars_in_scope[$var_id])) {
                     $this->remove($var_id, false);
                     $this->vars_possibly_in_scope[$var_id] = true;
-                } elseif ($branch->vars_in_scope[$var_id] !== $type) {
+                } elseif ($branch->vars_in_scope[$var_id] === $type) {
+                    continue;
+                } elseif (UnionTypeComparator::isContainedBy($codebase, $branch->vars_in_scope[$var_id], $type)) {
+                    // a narrower type (a mixed argument coerced to its parameter type) adds nothing but its data flow
+                    $this->vars_in_scope[$var_id] = $type->addParentNodes(
+                        $branch->vars_in_scope[$var_id]->parent_nodes,
+                    );
+                } else {
                     $this->vars_in_scope[$var_id] = Type::combineUnionTypes(
                         $type,
                         $branch->vars_in_scope[$var_id],

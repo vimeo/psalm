@@ -1087,6 +1087,35 @@ final class BinaryOperationTest extends TestCase
                         return $loaded;
                     }',
             ],
+            'mixedArgumentCoercedInTheRightOperandOfAndStaysMixed' => [
+                'code' => '<?php
+                    function takesArray(array $_a): bool {
+                        return true;
+                    }
+
+                    /** @param array|null $_a */
+                    function takesNullableArray($_a): void {}
+
+                    /** @param mixed $element */
+                    function f($element, bool $c): void {
+                        $ok = $c && takesArray($element);
+                        if (isset($element["v"])) {
+                            takesNullableArray($element);
+                        }
+                    }
+
+                    /** @param mixed $element */
+                    function g($element, bool $c): void {
+                        if ($c && !takesArray($element)) {
+                            return;
+                        }
+                        if (isset($element["v"])) {
+                            takesNullableArray($element);
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => ['MixedArgument'],
+            ],
             'variableExtractedInTheRightOperandOfAndMayHaveChanged' => [
                 'code' => '<?php
                     function f(bool $c): bool {
