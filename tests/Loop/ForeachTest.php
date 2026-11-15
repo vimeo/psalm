@@ -2088,6 +2088,34 @@ final class ForeachTest extends TestCase
                     '$a===' => "list{'x'|1, 'x'|2}",
                 ],
             ],
+            'foreachByReferenceThatDestructuresByReferenceIntoTheValueVariableKeepsTheItemTypes' => [
+                'code' => '<?php
+                    $a = [1, 2];
+                    $o = [5];
+                    foreach ($a as &$v) {
+                        [&$v] = $o;
+                        $v = "x";
+                    }
+
+                    unset($v);',
+                'assertions' => [
+                    '$a===' => "list{'x'|1, 'x'|2}",
+                ],
+            ],
+            'foreachByReferenceThatDestructuresAKeyByReferenceIntoTheValueVariableKeepsTheItemTypes' => [
+                'code' => '<?php
+                    $a = [1, 2];
+                    $o = ["k" => 5];
+                    foreach ($a as &$v) {
+                        list("k" => &$v) = $o;
+                        $v = "x";
+                    }
+
+                    unset($v);',
+                'assertions' => [
+                    '$a===' => "list{'x'|1, 'x'|2}",
+                ],
+            ],
             'foreachByReferenceWithAGotoKeepsTheItemTypes' => [
                 'code' => '<?php
                     $a = [1, 2];

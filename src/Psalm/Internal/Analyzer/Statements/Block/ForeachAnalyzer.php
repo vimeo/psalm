@@ -759,6 +759,11 @@ final class ForeachAnalyzer
                     return $is_the_variable($node->var) || $is_the_variable($node->expr);
                 }
 
+                // `[&$v] = $a`, `list('k' => &$v) = $a`
+                if ($node instanceof PhpParser\Node\ArrayItem) {
+                    return $node->byRef && $is_the_variable($node->value);
+                }
+
                 if ($node instanceof PhpParser\Node\Stmt\Foreach_) {
                     return $is_the_variable($node->valueVar) || $is_the_variable($node->keyVar);
                 }
