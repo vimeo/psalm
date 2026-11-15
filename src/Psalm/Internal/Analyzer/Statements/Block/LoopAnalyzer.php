@@ -1312,7 +1312,10 @@ final class LoopAnalyzer
 
         // the condition has been analysed: what it compares to (count($a)) has a type now. Only a literal is known
         // to hold in every iteration: the range of anything else is one the loop has not settled on yet
-        if (self::comparesOnlyWithLiteralInts($statements_analyzer, $pre_condition)) {
+        // (a condition that does not decide whether the loop goes on, like a non-last one of a for, has none)
+        if ($pre_condition_clauses !== []
+            && self::comparesOnlyWithLiteralInts($statements_analyzer, $pre_condition)
+        ) {
             $pre_condition_id = spl_object_id($pre_condition);
             $pre_condition_clauses = FormulaGenerator::getFormula(
                 $pre_condition_id,
