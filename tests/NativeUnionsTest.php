@@ -46,6 +46,42 @@ final class NativeUnionsTest extends TestCase
                 'ignored_issues' => [],
                 'php_version' => '8.1',
             ],
+            'classNameAndSelfOrParentInAUnionBeforePhp85AreNotDuplicates' => [
+                'code' => <<<'PHP'
+                    <?php
+                    class P {}
+
+                    final class A extends P {
+                        public function f(): A|self {
+                            return $this;
+                        }
+
+                        public function g(): parent|P {
+                            return $this;
+                        }
+                    }
+                    PHP,
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.4',
+            ],
+            'classNameAndSelfInATraitUnionAreNotDuplicates' => [
+                'code' => <<<'PHP'
+                    <?php
+                    trait T {
+                        public function f(): A|self {
+                            return $this;
+                        }
+                    }
+
+                    final class A {
+                        use T;
+                    }
+                    PHP,
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.5',
+            ],
             'nativeTypeUnionInConstructor' => [
                 'code' => '<?php
                     interface A {
@@ -140,6 +176,39 @@ final class NativeUnionsTest extends TestCase
                         }
                     }',
                 'error_message' => 'ParseError - src' . DIRECTORY_SEPARATOR . 'somefile.php:3:46 - Duplicate type A is redundant',
+                'error_levels' => [],
+                'php_version' => '8.5',
+            ],
+            'parentAndTheParentClassInAReturnUnion' => [
+                'code' => '<?php
+                    class P {}
+
+                    final class A extends P {
+                        public function f(): parent|P {
+                            return $this;
+                        }
+                    }',
+                'error_message' => 'ParseError - src' . DIRECTORY_SEPARATOR . 'somefile.php:5:46 - Duplicate type P is redundant',
+                'error_levels' => [],
+                'php_version' => '8.5',
+            ],
+            'staticTwiceInAReturnUnion' => [
+                'code' => '<?php
+                    class A {
+                        public function f(): static|static {
+                            return $this;
+                        }
+                    }',
+                'error_message' => 'ParseError - src' . DIRECTORY_SEPARATOR . 'somefile.php:3:46 - Duplicate type static is redundant',
+                'error_levels' => [],
+                'php_version' => '8.0',
+            ],
+            'callableTwiceInAParamUnion' => [
+                'code' => '<?php
+                    function f(callable|callable $c): void {
+                        $c();
+                    }',
+                'error_message' => 'ParseError - src' . DIRECTORY_SEPARATOR . 'somefile.php:2:32 - Duplicate type callable is redundant',
                 'error_levels' => [],
                 'php_version' => '8.0',
             ],
