@@ -188,23 +188,25 @@ final class Scanner
 
         if ($this->codebase->classlike_storage_provider->has($fq_classlike_name)
             || !$this->codebase->classlikes->doesClassLikeExist($fq_classlike_name_lc)
-            || (!class_exists($fq_classlike_name, false)
-                && !interface_exists($fq_classlike_name, false)
-                && !enum_exists($fq_classlike_name, false)
-                && !trait_exists($fq_classlike_name, false))
         ) {
             return;
         }
 
-        $reflected_class = new ReflectionClass($fq_classlike_name);
+        // not an early return: trait_exists() without autoloading asserts nothing about the name when false
+        if (class_exists($fq_classlike_name, false)
+            || interface_exists($fq_classlike_name, false)
+            || enum_exists($fq_classlike_name, false)
+            || trait_exists($fq_classlike_name, false)
+        ) {
+            $reflected_class = new ReflectionClass($fq_classlike_name);
 
-        // Only built-in classlikes; a user-defined one loaded in Psalm's own process may differ from the analyzed code
-        if (!$reflected_class->isInternal()) {
-            return;
+            // Only built-in classlikes; a user-defined one loaded in Psalm's own process may differ from the analyzed
+            // code
+            if ($reflected_class->isInternal()) {
+                $this->reflection->registerClass($reflected_class);
+                $this->reflected_classlikes_lc[$fq_classlike_name_lc] = true;
+            }
         }
-
-        $this->reflection->registerClass($reflected_class);
-        $this->reflected_classlikes_lc[$fq_classlike_name_lc] = true;
     }
 
     /**

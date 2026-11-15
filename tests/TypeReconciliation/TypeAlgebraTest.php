@@ -58,6 +58,177 @@ final class TypeAlgebraTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'theElseOfAnAndWithAnOperandThatAssertsNothingWhenFalseDoesNotNarrowTheOtherOperand' => [
+                'code' => '<?php
+                    function f(?int $userId, ?string $filter, string $name): void {
+                        if ($userId !== null && ($filter === null || !str_contains($name, $filter))) {
+                            echo "if";
+                        } else {
+                            /** @psalm-check-type-exact $userId = int|null */
+                            if ($userId !== null) {
+                                /** @psalm-check-type-exact $filter = string */
+                                echo "reached";
+                            }
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'anEarlyReturnOnAnOrWithAnOperandThatAssertsNothingWhenFalseStillNarrows' => [
+                'code' => '<?php
+                    function f(?string $filter, string $name): void {
+                        if ($filter === null || !str_contains($name, $filter)) {
+                            return;
+                        }
+                        /** @psalm-check-type-exact $filter = string */
+                        echo $filter;
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'theElseOfAConditionComparedToFalseDoesNotAssertWhatItsNegationLeftOut' => [
+                'code' => '<?php
+                    function f(?int $a, string $s, string $t): void {
+                        if (($a === null || !($s === $t)) === false) {
+                            echo "if";
+                        } else {
+                            /** @psalm-check-type-exact $a = int|null */
+                            echo "else";
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'pastAnEarlyReturnOnAnOrComparedToFalseItsNonLiteralEqualityIsKept' => [
+                'code' => '<?php
+                    function f(?int $a, string $b, string $c): void {
+                        if (($a === null || $b === $c) === false) {
+                            return;
+                        }
+                        /** @psalm-check-type-exact $a = int|null */
+                        echo "past";
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'theElseOfAnOrWithANonLiteralEqualityStillNarrowsTheOtherOperand' => [
+                'code' => '<?php
+                    function f(?int $a, string $b, string $c): void {
+                        if ($a === null || $b === $c) {
+                            /** @psalm-check-type-exact $a = int|null */
+                            echo "if";
+                        } else {
+                            /** @psalm-check-type-exact $a = int */
+                            echo "else";
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'theNegationOfAConjunctionDoesNotDependOnTheOrderOfItsOperands' => [
+                'code' => '<?php
+                    function f(int|string|null $a, bool $x): void {
+                        if ((is_int($a) || is_string($a)) && (!is_int($a) || $x)) {
+                            echo "if";
+                        } else {
+                            /** @psalm-check-type-exact $a = int|null */
+                            echo "else";
+                        }
+                    }
+
+                    function swapped(int|string|null $a, bool $x): void {
+                        if ((!is_int($a) || $x) && (is_int($a) || is_string($a))) {
+                            echo "if";
+                        } else {
+                            /** @psalm-check-type-exact $a = int|null */
+                            echo "else";
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'anOrAssigningAVariableOnTheRightDoesNotAssertItsNewValueWhereTheLeftIsTrue' => [
+                'code' => '<?php
+                    function load(?int $x): ?int {
+                        return $x;
+                    }
+
+                    function f(?int $a, ?int $p): void {
+                        if ($a === null || ($a = load($p)) !== null) {
+                            /** @psalm-check-type-exact $a = int|null */
+                            echo "if";
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'pastAnEarlyReturnOnAnOrAssigningAVariableOnTheRightItsNewValueIsNarrowed' => [
+                'code' => '<?php
+                    function load(?int $x): ?int {
+                        return $x;
+                    }
+
+                    function f(?int $a, ?int $p): void {
+                        if ($a === null || ($a = load($p)) === null) {
+                            return;
+                        }
+                        /** @psalm-check-type-exact $a = int */
+                        echo $a;
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'theElseOfAnAndWithAnOrTooComplexToCombineDoesNotNarrowTheOtherOperand' => [
+                'code' => '<?php
+                    function g(): bool {
+                        return rand(0, 1) === 1;
+                    }
+
+                    function f(?int $y): void {
+                        if ($y !== null
+                            && (
+                                (g() && g() && g() && g() && g() && g() && g() && g() && g() && g() && g() && g() && g() && g() && g() && g())
+                                || (g() && g() && g() && g() && g() && g() && g() && g() && g() && g() && g() && g() && g() && g() && g() && g())
+                                || (g() && g() && g() && g() && g() && g() && g() && g() && g() && g() && g() && g() && g() && g() && g() && g())
+                                || (g() && g() && g() && g() && g() && g() && g() && g() && g() && g() && g() && g() && g() && g() && g() && g())
+                                || g()
+                            )
+                        ) {
+                            /** @psalm-check-type-exact $y = int */
+                            echo "if";
+                        } else {
+                            /** @psalm-check-type-exact $y = int|null */
+                            echo "else";
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'aConditionWithAnAlternativeThatCanNotBeNegatedIsNoParadox' => [
+                'code' => '<?php
+                    final class A {}
+
+                    function f(?A $a, ?A $b, string $s, string $t): void {
+                        if ($a && $b) {
+                            return;
+                        }
+                        if (($s !== $t || $a) && ($s !== $t || $b)) {
+                            echo "reached";
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
             'aCaseOfASwitchTrueAssigningAVariableHasNoClausesOfItsOldValue' => [
                 'code' => '<?php
                     function f(string $s): int {
