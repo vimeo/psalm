@@ -23,6 +23,78 @@ final class ForTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'forIntRangeShiftedByEveryIterationIsWidened' => [
+                'code' => '<?php
+                    function f(): int {
+                        $total = 0;
+                        for ($i = 0; $i < 100; $i++) {
+                            $total += rand(1, 3);
+                        }
+                        /** @psalm-check-type-exact $total = int<1, max> */;
+                        return $total;
+                    }',
+            ],
+            'forIntRangeShiftedInAnArrayOffsetIsWidened' => [
+                'code' => '<?php
+                    function f(stdClass $o): int {
+                        $a = ["n" => 0, "o" => $o];
+                        for ($i = 0; $i < 100; $i++) {
+                            $a["n"] -= rand(1, 3);
+                        }
+                        /** @psalm-check-type-exact $a = array{n: int<min, -1>, o: stdClass} */;
+                        return $a["n"];
+                    }',
+            ],
+            'forIntRangeComputedFromTheCounterIsNotWidened' => [
+                'code' => '<?php
+                    function f(): int {
+                        $x = 0;
+                        for ($i = 0; $i < 10; $i++) {
+                            $x = $i * 2;
+                        }
+                        /** @psalm-check-type-exact $x = int<0, 18> */;
+                        return $x;
+                    }',
+            ],
+            'forIntRangeShiftedByThePostExpressionOfABodyEndingInAReturnIsWidened' => [
+                'code' => '<?php
+                    function f(): void {
+                        for ($i = 0; ; $i += rand(1, 3)) {
+                            if ($i > 10) {
+                                echo "reachable";
+                            }
+                            if (rand(0, 1)) {
+                                continue;
+                            }
+                            return;
+                        }
+                    }',
+            ],
+            'forIntRangeShiftedByThePostExpressionBeforeAReturnIsWidened' => [
+                'code' => '<?php
+                    function f(): int {
+                        for ($i = 0; ; $i += rand(1, 3)) {
+                            if ($i < 10) {
+                                continue;
+                            }
+                            /** @psalm-check-type-exact $i = int<10, max> */;
+                            return $i;
+                        }
+                    }',
+            ],
+            'forEverVariableIsWhatTheBreaksLeave' => [
+                'code' => '<?php
+                    function f(): void {
+                        for (;;) {
+                            $x = rand(0, 1) ? "s" : null;
+                            if ($x === null) {
+                                continue;
+                            }
+                            break;
+                        }
+                        /** @psalm-check-type-exact $x = "s" */;
+                    }',
+            ],
             'mixedConditionVariableOfAForLoopIsNotNonEmptyAfterIt' => [
                 'code' => '<?php
                     function check(mixed $m): void {

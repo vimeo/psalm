@@ -6,6 +6,7 @@ namespace Psalm\Internal\Type;
 
 use Psalm\CodeLocation;
 use Psalm\Codebase;
+use Psalm\Internal\Analyzer\Statements\Expression\BinaryOp\CoalesceAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\Fetch\VariableFetchAnalyzer;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\Internal\Analyzer\TraitAnalyzer;
@@ -680,7 +681,9 @@ final class AssertionReconciler extends Reconciler
                     if ($existing_var_type->from_docblock) {
                         IssueBuffer::maybeAdd(
                             new DocblockTypeContradiction(
-                                'Cannot resolve types for ' . $key . ' - docblock-defined type '
+                                'Cannot resolve types for '
+                                    . CoalesceAnalyzer::getDisplayName($key, $code_location)
+                                    . ' - docblock-defined type '
                                     . $existing_var_type . ' does not contain null',
                                 $code_location,
                                 $existing_var_type->getId() . ' null',
@@ -690,7 +693,9 @@ final class AssertionReconciler extends Reconciler
                     } else {
                         IssueBuffer::maybeAdd(
                             new TypeDoesNotContainNull(
-                                'Cannot resolve types for ' . $key . ' - ' . $existing_var_type
+                                'Cannot resolve types for '
+                                    . CoalesceAnalyzer::getDisplayName($key, $code_location)
+                                    . ' - ' . $existing_var_type
                                     . ' does not contain null',
                                 $code_location,
                                 $existing_var_type->getId(),
@@ -706,7 +711,9 @@ final class AssertionReconciler extends Reconciler
                     if ($existing_var_type->from_docblock) {
                         IssueBuffer::maybeAdd(
                             new DocblockTypeContradiction(
-                                'Cannot resolve types for ' . $key . ' - docblock-defined type '
+                                'Cannot resolve types for '
+                                    . CoalesceAnalyzer::getDisplayName($key, $code_location)
+                                    . ' - docblock-defined type '
                                     . $existing_var_type->getId() . ' does not contain ' . $new_type_part->getId(),
                                 $code_location,
                                 $existing_var_type->getId() . ' ' . $new_type_part->getId(),
@@ -716,7 +723,9 @@ final class AssertionReconciler extends Reconciler
                     } else {
                         IssueBuffer::maybeAdd(
                             new TypeDoesNotContainType(
-                                'Cannot resolve types for ' . $key . ' - ' . $existing_var_type->getId()
+                                'Cannot resolve types for '
+                                    . CoalesceAnalyzer::getDisplayName($key, $code_location)
+                                    . ' - ' . $existing_var_type->getId()
                                     . ' does not contain ' . $new_type_part->getId(),
                                 $code_location,
                                 $existing_var_type->getId() . ' ' . $new_type_part->getId(),
@@ -2070,7 +2079,8 @@ final class AssertionReconciler extends Reconciler
             if (!$allow_string_comparison && $code_location) {
                 IssueBuffer::maybeAdd(
                     new TypeDoesNotContainType(
-                        'Cannot allow string comparison to object for ' . $key,
+                        'Cannot allow string comparison to object for '
+                            . CoalesceAnalyzer::getDisplayName($key, $code_location),
                         $code_location,
                         "no string comparison to $key",
                     ),

@@ -1299,6 +1299,62 @@ final class ArrayAccessTest extends TestCase
     }
 
     /**
+     * With data flow tracked, the branches of the check redefine the list, and their merge gives its first item a
+     * type that is not from the docblock, unlike its other items.
+     */
+    public function testListOffsetAfterIssetCheckWithTaintAnalysis(): void
+    {
+        $this->project_analyzer->trackTaintedInputs();
+        $this->testValidCode(
+            '<?php
+                /**
+                 * @param list<mixed> $l
+                 * @return mixed
+                 */
+                function f(array $l) {
+                    if (isset($l[0])) {}
+                    return $l[0];
+                }',
+        );
+    }
+
+    public function testListOffsetFromVariableAfterIssetCheckWithTaintAnalysis(): void
+    {
+        $this->project_analyzer->trackTaintedInputs();
+        $this->testValidCode(
+            '<?php
+                /**
+                 * @param list<mixed> $l
+                 * @return mixed
+                 */
+                function g(array $l) {
+                    if (isset($l[0])) {}
+                    $i = 0;
+                    return $l[$i];
+                }',
+        );
+    }
+
+    public function testListOffsetAfterAssignmentInABranchWithTaintAnalysis(): void
+    {
+        $this->project_analyzer->trackTaintedInputs();
+        $this->testValidCode(
+            '<?php
+                /**
+                 * @param list<string> $l
+                 * @param string $s
+                 */
+                function g(array $l, $s): string {
+                    if (rand(0, 1)) {
+                        $l[0] = $s;
+                    }
+                    $i = 0;
+                    return $l[$i];
+                }',
+        );
+    }
+
+    /**
      * @psalm-pure
      */
     #[Override]
@@ -2288,6 +2344,164 @@ final class ArrayAccessTest extends TestCase
                 'assertions' => [],
                 'ignored_issues' => ['PossiblyNullPropertyFetch'],
             ],
+            'nestedUnsetUpdatesRootArray' => [
+                'code' => '<?php
+                    /** @param array{a: int, b: array{c: int}} $a */
+                    function f(array $a): void {
+                        unset($a["b"]["c"]);
+                        /** @psalm-check-type-exact $a = array{a: int, b: array<never, never>} */;
+                    }',
+            ],
+            'nestedUnsetInLoopReachesLoopCondition' => [
+                'code' => '<?php
+                    /** @param array{a: int, b: array{c: int}} $a */
+                    function f(array $a): void {
+                        while ($a["b"]) {
+                            if (rand(0, 1)) {
+                                unset($a["b"]["c"]);
+                            }
+                        }
+                    }',
+            ],
+            'nestedUnsetInBranchUpdatesRootArray' => [
+                'code' => '<?php
+                    /** @param array{a: int, b: array{c: int}} $a */
+                    function f(array $a): void {
+                        if (rand(0, 1)) {
+                            unset($a["b"]["c"]);
+                        }
+                        /** @psalm-check-type-exact $a = array{a: int, b: array{c?: int}} */;
+                    }',
+            ],
+            'deeplyNestedUnsetUpdatesEveryHoldingArray' => [
+                'code' => '<?php
+                    /** @param array{x: array{y: array{z: int, w: int}}} $a */
+                    function f(array $a): void {
+                        unset($a["x"]["y"]["z"]);
+                        /** @psalm-check-type-exact $a = array{x: array{y: array{w: int}}} */;
+                        /** @psalm-check-type-exact $a[\'x\'] = array{y: array{w: int}} */;
+                    }',
+            ],
+            'nestedUnsetUnderPossiblyUndefinedKeyKeepsItPossiblyUndefined' => [
+                'code' => '<?php
+                    /** @param array{a: int, b?: array{c: int, d: string}} $a */
+                    function f(array $a): void {
+                        unset($a["b"]["c"]);
+                        /** @psalm-check-type-exact $a = array{a: int, b?: array{d: string}} */;
+                    }',
+            ],
+            'nestedUnsetFromNullableArray' => [
+                'code' => '<?php
+                    /** @param array{b: array{c: int}}|null $a */
+                    function f(?array $a): void {
+                        unset($a["b"]["c"]);
+                        /** @psalm-check-type-exact $a = array{b: array<never, never>}|null */;
+                    }',
+            ],
+            'nestedUnsetUnderNonLiteralKeyOfGenericArray' => [
+                'code' => '<?php
+                    /** @param array<string, array{c: int, d: int}> $a */
+                    function f(array $a, string $k): void {
+                        unset($a[$k]["c"]);
+                        /** @psalm-check-type-exact $a = array<string, array{c?: int, d: int}> */;
+                    }',
+            ],
+            'nestedUnsetUnderOneOfSeveralLiteralKeys' => [
+                'code' => '<?php
+                    /**
+                     * @param array{x: array{c: int, d: int}, y: array{c: int, d: int}, z: array{c: int}} $a
+                     * @param "x"|"y" $k
+                     */
+                    function f(array $a, string $k): void {
+                        unset($a[$k]["c"]);
+                        /** @psalm-check-type-exact $a = array{x: array{c?: int, d: int}, y: array{c?: int, d: int}, z: array{c: int}} */;
+                    }',
+            ],
+            'nestedUnsetUnderSeveralKeysKeepsTheShapeOfEachElement' => [
+                'code' => '<?php
+                    /**
+                     * @param array{x: array{c: int, d: int}, y: array{c: int, e: string}} $a
+                     * @param "x"|"y" $k
+                     */
+                    function f(array $a, string $k): int {
+                        unset($a[$k]["c"]);
+                        /** @psalm-check-type-exact $a = array{x: array{c?: int, d: int}, y: array{c?: int, e: string}} */;
+                        return $a["x"]["d"];
+                    }',
+            ],
+            'nestedUnsetUnderNonLiteralKeyKeepsTheShapeOfEachElement' => [
+                'code' => '<?php
+                    /** @param array{x: array{c: int, d: int}, z: array{c: int}} $a */
+                    function f(array $a, string $k): void {
+                        unset($a[$k]["c"]);
+                        /** @psalm-check-type-exact $a = array{x: array{c?: int, d: int}, z: array{c?: int}} */;
+                    }',
+            ],
+            'deeplyNestedUnsetUnderSeveralKeysKeepsTheShapeOfEachElement' => [
+                'code' => '<?php
+                    /**
+                     * @param array{x: array{m: array{c: int, d: int}}, y: array{m: array{c: int, e: string}}} $a
+                     * @param "x"|"y" $k
+                     */
+                    function f(array $a, string $k): void {
+                        unset($a[$k]["m"]["c"]);
+                        /** @psalm-check-type-exact $a = array{x: array{m: array{c?: int, d: int}}, y: array{m: array{c?: int, e: string}}} */;
+                    }',
+            ],
+            'nestedUnsetKeepsACallableArrayCallable' => [
+                'code' => '<?php
+                    /** @param callable-list{ArrayAccess<string, int>, "run"} $cb */
+                    function f(array $cb): callable {
+                        unset($cb[0]["x"]);
+                        return $cb;
+                    }',
+            ],
+            'nestedUnsetUnderUndeclaredKeyOfUnsealedArray' => [
+                'code' => '<?php
+                    /** @param array{a: array{c: int, d: int}, ...<string, array{c: int, d: int}>} $a */
+                    function f(array $a): void {
+                        unset($a["other"]["c"]);
+                        /** @psalm-check-type-exact $a = array{a: array{c: int, d: int}, ...<string, array{c?: int, d: int}>} */;
+                    }',
+            ],
+            'nestedUnsetInListKeepsItAList' => [
+                'code' => '<?php
+                    /** @param list{array{c: int, d: int}, array{c: int}} $a */
+                    function f(array $a): void {
+                        unset($a[0]["c"]);
+                        /** @psalm-check-type-exact $a = list{array{d: int}, array{c: int}} */;
+                    }',
+            ],
+            'nestedUnsetUpdatesArrayProperty' => [
+                'code' => '<?php
+                    final class O {
+                        /** @var array{b: array{c: int, d: int}} */
+                        public array $p = ["b" => ["c" => 1, "d" => 2]];
+
+                        public function m(): void {
+                            unset($this->p["b"]["c"]);
+                            /** @psalm-check-type-exact $this->p = array{b: array{d: int}} */;
+                        }
+                    }',
+            ],
+            'nestedUnsetOfAnOptionalKeyKeepsTheShapeOfAByRefParam' => [
+                'code' => '<?php
+                    /** @param array{b: array{c?: int}} $a */
+                    function f(array &$a): void {
+                        unset($a["b"]["c"]);
+                    }',
+            ],
+            'nestedUnsetThroughArrayAccessKeepsTheObject' => [
+                'code' => '<?php
+                    /** @param ArrayAccess<string, array{c: int}>|array{b: array{c: int}} $a */
+                    function f(ArrayAccess|array $a): void {
+                        unset($a["b"]["c"]);
+                        /** @psalm-check-type-exact $a = ArrayAccess<string, array{c: int}>|array{b: array<never, never>} */;
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
             'arrayAssertionShouldNotBeNull' => [
                 'code' => '<?php
                     function foo(?array $arr, string $s) : void {
@@ -2395,6 +2609,142 @@ final class ArrayAccessTest extends TestCase
                         return $foo[bar($key)] ?? $default;
                     }',
             ],
+            'listOffsetAfterIssetCheck' => [
+                'code' => '<?php
+                    /**
+                     * @param list<mixed> $l
+                     * @return mixed
+                     */
+                    function f(array $l) {
+                        if (isset($l[0])) {}
+                        return $l[0];
+                    }',
+            ],
+            'listOffsetAfterCoalesce' => [
+                'code' => '<?php
+                    /**
+                     * @param list<mixed> $l
+                     * @return mixed
+                     */
+                    function f(array $l) {
+                        $x = $l[0] ?? false;
+                        return $l[0];
+                    }',
+                'assertions' => [],
+                'ignored_issues' => ['MixedAssignment'],
+            ],
+            'stringArrayOffsetAfterIssetCheck' => [
+                'code' => '<?php
+                    /**
+                     * @param array<string, mixed> $a
+                     * @return mixed
+                     */
+                    function f(array $a) {
+                        if (isset($a["x"])) {}
+                        return $a["x"];
+                    }',
+            ],
+            'intArrayOffsetAfterIssetCheck' => [
+                'code' => '<?php
+                    /**
+                     * @param array<int, mixed> $a
+                     * @return mixed
+                     */
+                    function f(array $a) {
+                        if (isset($a[0])) {}
+                        return $a[0];
+                    }',
+            ],
+            'listOffsetAfterIssetCheckInACondition' => [
+                'code' => '<?php
+                    /**
+                     * @param list<mixed> $l
+                     * @return mixed
+                     */
+                    function f(array $l, bool $b) {
+                        if (isset($l[0]) && $b) {}
+                        return $l[0];
+                    }',
+            ],
+            'listOffsetAfterIssetCheckInAnElseif' => [
+                'code' => '<?php
+                    /**
+                     * @param list<mixed> $l
+                     * @return mixed
+                     */
+                    function f(array $l, bool $b) {
+                        if ($b) {} elseif (isset($l[0])) {}
+                        return $l[0];
+                    }',
+            ],
+            'offsetCheckedAgainAfterNotEmptyCheck' => [
+                'code' => '<?php
+                    /** @param array{s?: mixed} $o */
+                    function f(array $o): void {
+                        if (!empty($o["s"])) {
+                            echo 1;
+                        }
+                        if (!empty($o["s"])) {
+                            echo 2;
+                        }
+                    }',
+            ],
+            'offsetCheckedAgainInALoopAfterNotEmptyCheck' => [
+                'code' => '<?php
+                    /** @param array{s?: mixed} $o */
+                    function f(array $o): void {
+                        if (!empty($o["s"])) {
+                            echo 1;
+                        }
+                        foreach ([1, 2] as $_) {
+                            if (!empty($o["s"])) {
+                                echo 2;
+                            }
+                        }
+                    }',
+            ],
+            'nestedOffsetInACoalesceAfterIssetCheck' => [
+                'code' => '<?php
+                    function f(array $arr, int $bank, int $code): string {
+                        if (!isset($arr[$bank])) {
+                            echo 1;
+                        }
+                        return (string) ($arr[$bank][$code] ?? "?");
+                    }',
+            ],
+            'listOffsetAfterIssetCheckInASwitch' => [
+                'code' => '<?php
+                    /**
+                     * @param list<mixed> $l
+                     * @return mixed
+                     */
+                    function f(array $l) {
+                        switch (true) {
+                            case isset($l[0]):
+                                break;
+                            default:
+                                break;
+                        }
+                        return $l[0];
+                    }',
+            ],
+            'listOffsetAfterIssetCheckInASwitchCaseFallingToTheEnd' => [
+                'code' => '<?php
+                    /**
+                     * @param list<mixed> $l
+                     * @return mixed
+                     */
+                    function f(array $l) {
+                        switch (true) {
+                            case isset($l[0]):
+                                echo 1;
+                                break;
+                            default:
+                                echo 2;
+                        }
+                        return $l[0];
+                    }',
+            ],
         ];
     }
 
@@ -2435,6 +2785,14 @@ final class ArrayAccessTest extends TestCase
 
                     ["y" => $a] = f();',
                 'error_message' => 'PossiblyNullArrayAccess',
+            ],
+            'nestedUnsetBreaksTheShapeOfAByRefParam' => [
+                'code' => '<?php
+                    /** @param array{b: array{c: int}} $a */
+                    function f(array &$a): void {
+                        unset($a["b"]["c"]);
+                    }',
+                'error_message' => 'ReferenceConstraintViolation',
             ],
             'offsetOfANullableArrayAfterAnIssetGuardIsPossiblyNull' => [
                 'code' => '<?php
@@ -2971,6 +3329,91 @@ final class ArrayAccessTest extends TestCase
                 }
                 PHP,
                 'error_message' => 'NamedArgumentNotAllowed',
+            ],
+            'possiblyUndefinedKeyedArrayOffsetAfterIssetCheck' => [
+                'code' => '<?php
+                    /**
+                     * @param array{a?: mixed} $a
+                     * @return mixed
+                     */
+                    function f(array $a) {
+                        if (isset($a["a"])) {}
+                        return $a["a"];
+                    }',
+                'error_message' => 'PossiblyUndefinedArrayOffset',
+            ],
+            'listOffsetInsideNegatedIssetCheck' => [
+                'code' => '<?php
+                    /**
+                     * @param list<mixed> $l
+                     * @return mixed
+                     */
+                    function f(array $l) {
+                        if (!isset($l[0])) {
+                            return $l[0];
+                        }
+                        return null;
+                    }',
+                'error_message' => 'PossiblyUndefinedArrayOffset',
+            ],
+            'stringArrayOffsetInsideNegatedIssetCheck' => [
+                'code' => '<?php
+                    /**
+                     * @param array<string, mixed> $a
+                     * @return mixed
+                     */
+                    function f(array $a) {
+                        if (!isset($a["x"])) {
+                            return $a["x"];
+                        }
+                        return null;
+                    }',
+                'error_message' => 'PossiblyUndefinedArrayOffset',
+            ],
+            'nestedArrayOffsetInsideNegatedIssetCheck' => [
+                'code' => '<?php
+                    /**
+                     * @param array<string, array> $a
+                     * @return mixed
+                     */
+                    function f(array $a, string $k) {
+                        if (!isset($a[$k]["x"])) {
+                            return $a[$k]["x"];
+                        }
+                        return null;
+                    }',
+                'error_message' => 'PossiblyUndefinedArrayOffset',
+            ],
+            'listOffsetAfterLeavingIssetCheck' => [
+                'code' => '<?php
+                    /**
+                     * @param list<mixed> $l
+                     * @return mixed
+                     */
+                    function f(array $l) {
+                        if (isset($l[0])) {
+                            return null;
+                        }
+                        return $l[0];
+                    }',
+                'error_message' => 'PossiblyUndefinedArrayOffset',
+            ],
+            'listOffsetAfterLeavingIssetCheckInASwitch' => [
+                'code' => '<?php
+                    /**
+                     * @param list<mixed> $l
+                     * @return mixed
+                     */
+                    function f(array $l) {
+                        switch (true) {
+                            case isset($l[0]):
+                                return null;
+                            default:
+                                break;
+                        }
+                        return $l[0];
+                    }',
+                'error_message' => 'PossiblyUndefinedArrayOffset',
             ],
         ];
     }
