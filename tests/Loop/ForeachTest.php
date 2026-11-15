@@ -210,6 +210,58 @@ final class ForeachTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'mixedIteratedByForeachIsNonEmptyInTheBodyAndMixedAfterIt' => [
+                'code' => '<?php
+                    function getMixed(): mixed {
+                        return [];
+                    }
+
+                    $m = getMixed();
+                    $in_body = null;
+                    foreach ($m as $_val) {
+                        $in_body = $m;
+                    }
+
+                    $after = $m;',
+                'assertions' => [
+                    '$in_body===' => 'non-empty-mixed',
+                    '$after===' => 'mixed',
+                ],
+                'ignored_issues' => ['MixedAssignment', 'MixedArgument', 'PossiblyNullIterator', 'PossiblyInvalidIterator', 'MixedAssignment'],
+                'php_version' => '8.0',
+            ],
+            'propertyOfMixedTypeIteratedByForeachIsMixedAfterIt' => [
+                'code' => '<?php
+                    final class Holder {
+                        public mixed $items = null;
+
+                        public function check(): void {
+                            foreach ($this->items as $_item) {
+                            }
+
+                            if (empty($this->items)) {
+                                echo 1;
+                            }
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'mixedIteratedByForeachMayStillBeEmptyAfterIt' => [
+                'code' => '<?php
+                    function check(mixed $vals): void {
+                        foreach ($vals as $_val) {
+                        }
+
+                        if ($vals) {
+                            throw new Exception("asdf");
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
             'aConditionalWriteOfAMixedValueInAForeachByReferenceKeepsTheKey' => [
                 'code' => '<?php
                     /** @param list<string> $labels */
@@ -2058,57 +2110,59 @@ final class ForeachTest extends TestCase
                 'ignored_issues' => [],
                 'php_version' => '8.0',
             ],
-            'mixedIteratedByForeachIsNonEmptyInTheBodyAndMixedAfterIt' => [
+            'foreachBreakOfSwitchLeavingAVariableUndefinedIsNotABreakOfTheLoop' => [
                 'code' => '<?php
-                    function getMixed(): mixed {
-                        return [];
+                    foreach ([1, 2] as $x) {
+                        if (rand(0, 1)) {
+                            $a = 1;
+                            break;
+                        }
+
+                        $a = 2;
+
+                        switch ($x) {
+                            case 1:
+                                break;
+                        }
                     }
 
-                    $m = getMixed();
-                    $in_body = null;
-                    foreach ($m as $_val) {
-                        $in_body = $m;
+                    echo $a;',
+            ],
+            'foreachBreakOfSwitchIsNotABreakOfTheLoop' => [
+                'code' => '<?php
+                    foreach ([1, 2] as $x) {
+                        switch ($x) {
+                            case 1:
+                                break;
+                            default:
+                                break;
+                        }
+
+                        $a = 1;
+
+                        if (rand(0, 1)) {
+                            break;
+                        }
                     }
 
-                    $after = $m;',
-                'assertions' => [
-                    '$in_body===' => 'non-empty-mixed',
-                    '$after===' => 'mixed',
-                ],
-                'ignored_issues' => ['MixedAssignment', 'MixedArgument', 'PossiblyNullIterator', 'PossiblyInvalidIterator', 'MixedAssignment'],
-                'php_version' => '8.0',
+                    echo $a;',
             ],
-            'propertyOfMixedTypeIteratedByForeachIsMixedAfterIt' => [
+            'foreachDefinedBeforeEveryBreak' => [
                 'code' => '<?php
-                    final class Holder {
-                        public mixed $items = null;
-
-                        public function check(): void {
-                            foreach ($this->items as $_item) {
-                            }
-
-                            if (empty($this->items)) {
-                                echo 1;
-                            }
-                        }
-                    }',
-                'assertions' => [],
-                'ignored_issues' => [],
-                'php_version' => '8.0',
-            ],
-            'mixedIteratedByForeachMayStillBeEmptyAfterIt' => [
-                'code' => '<?php
-                    function check(mixed $vals): void {
-                        foreach ($vals as $_val) {
+                    foreach ([1, 2, 3, 4] as $_) {
+                        if (rand(0, 1)) {
+                            $car = "Audi";
+                            break;
                         }
 
-                        if ($vals) {
-                            throw new Exception("asdf");
+                        $car = "Volvo";
+
+                        if (rand(0, 1)) {
+                            break;
                         }
-                    }',
-                'assertions' => [],
-                'ignored_issues' => [],
-                'php_version' => '8.0',
+                    }
+
+                    echo $car;',
             ],
             'incrementInsideAnAssignmentInLoopIsNotFoldedLikeALiteral' => [
                 'code' => <<<'PHP'
@@ -2251,6 +2305,64 @@ final class ForeachTest extends TestCase
     public static function providerInvalidCodeParse(): iterable
     {
         return [
+            'arrayIteratedByForeachIsNotNonEmptyAfterIt' => [
+                'code' => '<?php
+                    /** @param non-empty-array<int> $vals */
+                    function check(array $vals): void {
+                        foreach ($vals as $_val) {
+                        }
+
+                        if ($vals) {
+                            echo 1;
+                        }
+                    }',
+                'error_message' => 'RedundantCondition',
+            ],
+            'foreachBreakBeforeDefinitionInAFunction' => [
+                'code' => <<<'PHP'
+                    <?php
+                    /** @param list<int> $items */
+                    function f(array $items): void {
+                        foreach ($items as $item) {
+                            if (rand()) {
+                                break;
+                            }
+
+                            $x = $item;
+
+                            if (rand()) {
+                                break;
+                            }
+                        }
+
+                        echo $x;
+                    }
+                    PHP,
+                'error_message' => 'PossiblyUndefinedVariable - src' . DIRECTORY_SEPARATOR . 'somefile.php:16:10',
+                'error_levels' => [],
+                'php_version' => '8.1',
+            ],
+            'foreachBreakOfTheOuterLoopBeforeDefinition' => [
+                'code' => <<<'PHP'
+                    <?php
+                    function f(): void {
+                        for ($i = 0; $i < 3; $i++) {
+                            foreach ([1, 2] as $j) {
+                                if (rand()) {
+                                    break 2;
+                                }
+
+                                $z = 1;
+                            }
+                        }
+
+                        echo $z;
+                    }
+                    PHP,
+                'error_message' => 'PossiblyUndefinedVariable - src' . DIRECTORY_SEPARATOR . 'somefile.php:13:10',
+                'error_levels' => [],
+                'php_version' => '8.1',
+            ],
             'issetOfAKeyTheItemsDoNotHaveInAForeachByReferenceKeepsTheLaterReadInvalid' => [
                 'code' => '<?php
                     /** @param list<string> $labels */
@@ -2617,18 +2729,22 @@ final class ForeachTest extends TestCase
                 PHP,
                 'error_message' => 'InvalidIterator',
             ],
-            'arrayIteratedByForeachIsNotNonEmptyAfterIt' => [
+            'foreachBreakBeforeDefinitionAndBreakAfter' => [
                 'code' => '<?php
-                    /** @param non-empty-array<int> $vals */
-                    function check(array $vals): void {
-                        foreach ($vals as $_val) {
+                    foreach ([1, 2, 3, 4] as $_) {
+                        if (rand(0, 1)) {
+                            break;
                         }
 
-                        if ($vals) {
-                            echo 1;
+                        $car = "Volvo";
+
+                        if (rand(0, 1)) {
+                            break;
                         }
-                    }',
-                'error_message' => 'RedundantCondition',
+                    }
+
+                    echo $car;',
+                'error_message' => 'PossiblyUndefinedGlobalVariable - src' . DIRECTORY_SEPARATOR . 'somefile.php:14:26',
             ],
         ];
     }
