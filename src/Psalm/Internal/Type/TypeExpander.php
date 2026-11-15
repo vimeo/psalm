@@ -43,6 +43,7 @@ use Psalm\Type\Atomic\TObjectWithProperties;
 use Psalm\Type\Atomic\TPropertiesOf;
 use Psalm\Type\Atomic\TTemplateParam;
 use Psalm\Type\Atomic\TTypeAlias;
+use Psalm\Type\Atomic\TTypeVariable;
 use Psalm\Type\Atomic\TValueOf;
 use Psalm\Type\Atomic\TVoid;
 use Psalm\Type\Union;
@@ -84,9 +85,11 @@ final class TypeExpander
     ): Union {
         $new_return_type_parts = [];
         $int_mask_bits = $return_type->int_mask_bits;
+        $changed = $int_mask_bits !== null;
 
         foreach ($return_type->getAtomicTypes() as $return_type_part) {
             $is_int_mask = self::isIntMask($codebase, $return_type_part, $self_class);
+            $original_part = $return_type_part;
 
             $parts = self::expandAtomic(
                 $codebase,
@@ -108,10 +111,41 @@ final class TypeExpander
                 $int_mask_bits = ($int_mask_bits ?? 0) | $part_int_mask_bits;
             }
 
-            $new_return_type_parts = [...$new_return_type_parts, ...$parts];
+            if ($is_int_mask || count($parts) !== 1 || $parts[0] !== $original_part) {
+                $changed = true;
+            }
+
+            foreach ($parts as $part) {
+                $new_return_type_parts[] = $part;
+            }
         }
 
-        $fleshed_out_type = TypeCombiner::combine(
+        $fleshed_out_type = null;
+
+        // combining can still simplify the parts, e.g. drop a subclass of another class of the union
+        if (!$changed && count($new_return_type_parts) > 1) {
+            $fleshed_out_type = TypeCombiner::combine($new_return_type_parts, $codebase);
+            $changed = $fleshed_out_type->getAtomicTypes() !== $return_type->getAtomicTypes();
+        }
+
+        // keeps the type, its cached ids and the types that hold it, with what a rebuilt type would reset
+        if (!$changed) {
+            return $return_type->setProperties([
+                'from_calculation' => false,
+                'initialized_class' => null,
+                'failed_reconciliation' => false,
+                'ignore_isset' => false,
+                'from_template_default' => false,
+                'reference_free' => false,
+                'closure_state' => false,
+                'allow_mutations' => true,
+                'has_mutations' => true,
+                'propagate_parent_nodes' => false,
+                'different' => false,
+            ]);
+        }
+
+        $fleshed_out_type ??= TypeCombiner::combine(
             $new_return_type_parts,
             $codebase,
         );
@@ -215,6 +249,11 @@ final class TypeExpander
             return [$return_type];
         }
 
+        // its id follows bounds that keep growing, so the types holding it are rebuilt to drop their cached ids
+        if ($return_type instanceof TTypeVariable) {
+            return [new TTypeVariable($return_type->name, $return_type->bounds, $return_type->from_docblock)];
+        }
+
         if ($return_type instanceof TNamedObject
             || $return_type instanceof TTemplateParam
         ) {
@@ -231,6 +270,7 @@ final class TypeExpander
                         $parent_class,
                         $evaluate_class_constants,
                         $evaluate_conditional_types,
+                        $final,
                         $expand_generic,
                         $expand_templates,
                         $throw_on_unresolvable_constant,
