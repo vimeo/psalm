@@ -1578,11 +1578,10 @@ final class TypeCombiner
         }
 
         if ($type instanceof TLiteralInt) {
-            if ($combination->ints !== null && count($combination->ints) < $literal_limit) {
-                $combination->ints[$type_key] = $type;
-            } else {
-                $combination->ints[$type_key] = $type;
+            $is_below_limit = $combination->ints !== null && count($combination->ints) < $literal_limit;
+            $combination->ints[$type_key] = $type;
 
+            if (!$is_below_limit) {
                 $all_nonnegative = !array_any(
                     $combination->ints,
                     static fn($int): bool => $int->value < 0,
