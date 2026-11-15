@@ -175,6 +175,7 @@ final class OrAnalyzer
                 $context->self,
                 $statements_analyzer,
                 $codebase,
+                true,
             );
         } catch (ComplicatedExpressionException) {
             return false;

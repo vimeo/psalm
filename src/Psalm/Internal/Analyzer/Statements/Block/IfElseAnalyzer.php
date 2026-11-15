@@ -275,6 +275,7 @@ final class IfElseAnalyzer
                 $context->self,
                 $statements_analyzer,
                 $codebase,
+                true,
             );
         } catch (ComplicatedExpressionException) {
             $if_scope->negated_clauses = [];

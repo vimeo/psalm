@@ -961,6 +961,28 @@ final class TypeAlgebraTest extends TestCase
                         echo 1;
                     }',
             ],
+            'anAssertMethodAssigningAPropertyOfThisAssertsItForTheCaller' => [
+                'code' => '<?php
+                    final class Holder {
+                        public ?int $value = null;
+
+                        private function load(): ?int {
+                            return rand(0, 1) ? null : 1;
+                        }
+
+                        public function assertLoaded(): void {
+                            if (($this->value = $this->load()) === null) {
+                                throw new Exception("null");
+                            }
+                        }
+                    }
+
+                    function f(Holder $h): int {
+                        $h->assertLoaded();
+
+                        return $h->value;
+                    }',
+            ],
             'aDoubleNegationIsTheConditionItself' => [
                 'code' => '<?php
                     function f(?int $a): void {

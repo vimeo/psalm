@@ -442,6 +442,7 @@ final class SwitchCaseAnalyzer
                     $context->self,
                     $statements_analyzer,
                     $codebase,
+                    true,
                 );
             } catch (ComplicatedExpressionException) {
                 $negated_case_clauses = [];

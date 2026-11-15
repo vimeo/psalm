@@ -70,9 +70,7 @@ use function is_string;
 use function spl_object_id;
 use function str_contains;
 use function str_starts_with;
-use function strcspn;
 use function strtolower;
-use function substr;
 use function trim;
 
 /**
@@ -198,7 +196,8 @@ final class FunctionLikeNodeScanner
             ) {
                 $var_assertions = [];
 
-                // from where a condition assigns a parameter, what is said of it is no longer about the argument
+                // from where a condition assigns a parameter, what is said of it is no longer about the argument; what
+                // is said of a property of $this still holds for the caller
                 $assigned_var_ids = [];
 
                 foreach ($stmt->stmts as $function_stmt) {
@@ -253,9 +252,7 @@ final class FunctionLikeNodeScanner
                         }
 
                         foreach ($rules as $var_id => $rule) {
-                            if (isset($assigned_var_ids[$var_id])
-                                || isset($assigned_var_ids[substr($var_id, 0, strcspn($var_id, "[-"))])
-                            ) {
+                            if (isset($existing_params[$var_id], $assigned_var_ids[$var_id])) {
                                 continue;
                             }
 

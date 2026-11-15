@@ -738,6 +738,9 @@ final class FormulaGenerator
      * also `!(A && B)`). The negation is then made from the negated condition, where each side is only evaluated where
      * the sides before it let it be.
      *
+     * Otherwise, a formula too big to negate is only made from the negated condition with
+     * $rebuild_when_too_complicated, as its expansion is not bounded the same way.
+     *
      * @param list<Clause> $clauses
      * @return list<Clause>
      * @throws ComplicatedExpressionException
@@ -749,12 +752,15 @@ final class FormulaGenerator
         ?string $this_class_name,
         FileSource $source,
         ?Codebase $codebase,
+        bool $rebuild_when_too_complicated = false,
     ): array {
         if (!self::hasAssigningRightSide($conditional, $this_class_name)) {
             try {
                 return Algebra::negateFormula($clauses);
-            } catch (ComplicatedExpressionException) {
-                // too big to negate: made from the negated condition instead
+            } catch (ComplicatedExpressionException $e) {
+                if (!$rebuild_when_too_complicated) {
+                    throw $e;
+                }
             }
         }
 
