@@ -1095,7 +1095,6 @@
       <code><![CDATA[$calling_class_storage->template_extended_params]]></code>
       <code><![CDATA[$context->self]]></code>
       <code><![CDATA[$context->self]]></code>
-      <code><![CDATA[$context->self]]></code>
       <code><![CDATA[$declaring_class_storage->template_types]]></code>
       <code><![CDATA[$documenting_method_storage->template_types]]></code>
     </RiskyTruthyFalsyComparison>

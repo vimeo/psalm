@@ -536,7 +536,13 @@ final class FunctionCallAnalyzer extends CallAnalyzer
                 self::applyAssertionsToContext(
                     $function_name,
                     null,
-                    self::getAssertionsOnArgs($function_storage->assertions, $function_storage, $stmt->getArgs()),
+                    self::resolveStaticPropertyAssertionClasses(
+                        self::getAssertionsOnArgs($function_storage->assertions, $function_storage, $stmt->getArgs()),
+                        $codebase,
+                        $context,
+                        null,
+                        null,
+                    ),
                     $stmt->getArgs(),
                     $template_result,
                     $context,
