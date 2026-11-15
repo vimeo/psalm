@@ -80,9 +80,8 @@ final class AlgebraAnalyzer
     }
 
     /**
-     * Whether the type of the variable makes the clause certain. Types can't say that an int or a float is not zero,
-     * so only a lone truthiness assertion is known not to be, when its negation is still possible: the negations of
-     * other assertions are not all exact
+     * Whether the types make the clause certain. Only a lone `Truthy`/`Falsy` clause is checked: types can't express
+     * that an int or a float is not zero, and the negations of other assertions are not all exact
      *
      * @param array<string, Union> $vars_in_scope
      */
