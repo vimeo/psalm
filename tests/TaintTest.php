@@ -6198,6 +6198,33 @@ final class TaintTest extends TestCase
                     range(1, 63),
                 )) . ']]);',
             ],
+            'namedCallOfInheritedMethodOnAnotherSubclassKeepsItsObject' => [
+                'code' => '<?php
+                    class A {
+                        public string $p = "";
+                        public function get(): string { return $this->p; }
+                    }
+                    final class B extends A {
+                        public function viaParent(): string { return parent::get(); }
+                        public function viaSelf(): string { return self::get(); }
+                        public function viaName(): string { return A::get(); }
+                    }
+                    final class C extends A {
+                        public function viaParent(): string { return parent::get(); }
+                        public function viaSelf(): string { return self::get(); }
+                        public function viaName(): string { return A::get(); }
+                    }
+
+                    $b = new B();
+                    $b->p = (string) $_GET["a"];
+                    $x = $b->viaParent() . $b->viaSelf() . $b->viaName();
+
+                    $c = new C();
+                    $c->p = "safe";
+                    echo $c->viaParent();
+                    echo $c->viaSelf();
+                    echo $c->viaName();',
+            ],
             'specializedStaticCallThroughSubclassOfInheritedMethodKeepsItsArgument' => [
                 'code' => '<?php
                     class A {
