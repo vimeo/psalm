@@ -2805,6 +2805,20 @@ final class BinaryOperationTest extends TestCase
     public static function providerInvalidCodeParse(): iterable
     {
         return [
+            'comparisonOutsideTheDocblockBoundOfAParamOfAConditionalReturnType' => [
+                'code' => '<?php
+                    /**
+                     * @param int<0, max> $count
+                     * @return ($count is 1 ? string : list<string>)
+                     */
+                    function shift(int $count = 1) {
+                        if ($count < 0) {
+                            throw new InvalidArgumentException("bad");
+                        }
+                        return $count === 1 ? "a" : ["a"];
+                    }',
+                'error_message' => 'DocblockTypeContradiction',
+            ],
             'comparisonOutsideTheBoundOfATemplate' => [
                 'code' => '<?php
                     /**
