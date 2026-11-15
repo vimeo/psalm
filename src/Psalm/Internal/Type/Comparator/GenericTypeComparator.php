@@ -84,13 +84,14 @@ final class GenericTypeComparator
 
             // a param standing for `never` (an empty construction's type
             // variable included) is widened to the container's param: the
-            // value is being handed to code that sees it as the wider type
+            // value is being handed to code that sees it as the wider type.
+            // A `*` param says nothing about what the value holds
             if ($input_param->isNever()
                 || ($input_param->isSingle()
                     && ($input_variable = $input_param->getSingleAtomic()) instanceof TTypeVariable
                     && $input_variable->isNeverBound())
             ) {
-                if ($atomic_comparison_result_type_params !== null) {
+                if ($atomic_comparison_result_type_params !== null && !StarProjection::isStar($container_param)) {
                     $atomic_comparison_result_type_params[$i] = $container_param;
                 }
 
