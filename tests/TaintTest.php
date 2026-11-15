@@ -6198,6 +6198,18 @@ final class TaintTest extends TestCase
                     range(1, 63),
                 )) . ']]);',
             ],
+            'specializedStaticCallThroughSubclassOfInheritedMethodKeepsItsArgument' => [
+                'code' => '<?php
+                    class A {
+                        /** @psalm-taint-specialize */
+                        public static function id(string $s): string { return $s; }
+                    }
+                    final class B extends A {}
+
+                    echo B::id("safe");
+                    $x = B::id((string) $_GET["a"]);
+                    echo A::id("safe");',
+            ],
         ];
     }
 
@@ -16842,6 +16854,117 @@ final class TaintTest extends TestCase
                     /** @var Coll<string> $c */
                     $c = new Coll();
                     $c->sortByDesc([(string) $_GET["a"]]);',
+                'error_message' => 'TaintedHtml',
+            ],
+            'staticCallThroughSubclassOfInheritedMethod' => [
+                'code' => '<?php
+                    class A {
+                        public static function id(string $s): string { return $s; }
+                    }
+                    final class B extends A {}
+
+                    echo B::id((string) $_GET["a"]);',
+                'error_message' => 'TaintedHtml',
+            ],
+            'staticCallThroughSubclassOfInheritedMethodCallingAnOverride' => [
+                'code' => '<?php
+                    class A {
+                        public static function wrap(array $a): array { return $a; }
+                        public static function first(array $a): array { return static::wrap($a); }
+                    }
+                    class B extends A {
+                        public static function wrap(array $a): array { return $a; }
+                    }
+
+                    echo (string) B::first(["safe" => (string) $_GET["a"]])["safe"];',
+                'error_message' => 'TaintedHtml',
+            ],
+            'staticCallThroughSubclassOfInheritedMethodCallingSelf' => [
+                'code' => '<?php
+                    class A {
+                        public static function wrap(array $a): array { return $a; }
+                        public static function first(array $a): array { return self::wrap($a); }
+                    }
+                    final class B extends A {}
+
+                    echo (string) B::first(["safe" => (string) $_GET["a"]])["safe"];',
+                'error_message' => 'TaintedHtml',
+            ],
+            'staticCallThroughSubclassOfInheritedMethodWritingByRef' => [
+                'code' => '<?php
+                    class A {
+                        public static function set(string &$out, string $in): void { $out = $in; }
+                        public static function get(string $in): string {
+                            $o = "";
+                            static::set($o, $in);
+                            return $o;
+                        }
+                    }
+                    final class B extends A {}
+
+                    echo B::get((string) $_GET["a"]);',
+                'error_message' => 'TaintedHtml',
+            ],
+            'staticCallThroughSubclassOfTraitMethod' => [
+                'code' => '<?php
+                    trait T {
+                        public static function id(string $s): string { return $s; }
+                    }
+                    class A {
+                        use T;
+                    }
+                    final class B extends A {}
+
+                    echo B::id((string) $_GET["a"]);',
+                'error_message' => 'TaintedHtml',
+            ],
+            'selfCallOfInheritedStaticMethod' => [
+                'code' => '<?php
+                    class A {
+                        public static function id(string $s): string { return $s; }
+                    }
+                    final class B extends A {
+                        public function run(string $s): void {
+                            echo self::id($s);
+                        }
+                    }
+
+                    (new B())->run((string) $_GET["a"]);',
+                'error_message' => 'TaintedHtml',
+            ],
+            'staticCallOnClassStringOfSubclassOfInheritedMethod' => [
+                'code' => '<?php
+                    class A {
+                        public static function id(string $s): string { return $s; }
+                    }
+                    final class B extends A {}
+
+                    /** @param class-string<B> $c */
+                    function f(string $c): void {
+                        echo $c::id((string) $_GET["a"]);
+                    }',
+                'error_message' => 'TaintedHtml',
+            ],
+            'specializedStaticCallThroughSubclassOfInheritedMethod' => [
+                'code' => '<?php
+                    class A {
+                        /** @psalm-taint-specialize */
+                        public static function id(string $s): string { return $s; }
+                    }
+                    final class B extends A {}
+
+                    echo B::id((string) $_GET["a"]);',
+                'error_message' => 'TaintedHtml',
+            ],
+            'staticCallThroughSubclassOfInheritedTaintSource' => [
+                'code' => '<?php
+                    class A {
+                        /** @psalm-taint-source input */
+                        public static function src(): string { return ""; }
+                    }
+                    final class B extends A {}
+
+                    echo B::src();',
                 'error_message' => 'TaintedHtml',
             ],
         ];
