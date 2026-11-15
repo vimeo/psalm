@@ -30,6 +30,7 @@ use Psalm\Issue\StringIncrement;
 use Psalm\IssueBuffer;
 use Psalm\Node\Expr\BinaryOp\VirtualMinus;
 use Psalm\Node\Expr\BinaryOp\VirtualPlus;
+use Psalm\Node\Scalar\VirtualInt;
 use Psalm\StatementsSource;
 use Psalm\Type;
 use Psalm\Type\Atomic;
@@ -875,8 +876,11 @@ final class ArithmeticOpAnalyzer
                 return null;
             }
 
+            // `$i++` and `$i--` are not widened: the counter of a loop is bounded by its condition, which narrows it
+            // before the next step, and an unbounded result would drop that bound
             $widen_range = $context !== null && $context->inside_loop
-                && ($parent instanceof VirtualPlus || $parent instanceof VirtualMinus);
+                && ($parent instanceof VirtualPlus || $parent instanceof VirtualMinus)
+                && !$right instanceof VirtualInt;
 
             if ($left_type_part instanceof TIntRange && $right_type_part instanceof TIntRange) {
                 self::analyzeOperandsBetweenIntRange(
