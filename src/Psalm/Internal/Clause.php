@@ -6,8 +6,14 @@ namespace Psalm\Internal;
 
 use Override;
 use Psalm\Storage\Assertion;
+use Psalm\Storage\Assertion\InArray;
+use Psalm\Storage\Assertion\IsIdentical;
 use Psalm\Storage\Assertion\IsLooselyEqual;
+use Psalm\Storage\Assertion\IsNotIdentical;
 use Psalm\Storage\Assertion\IsNotLooselyEqual;
+use Psalm\Storage\Assertion\IsNotType;
+use Psalm\Storage\Assertion\IsType;
+use Psalm\Storage\Assertion\NotInArray;
 use Psalm\Storage\ImmutableNonCloneableTrait;
 use Psalm\Type\Atomic\TClassConstant;
 use Psalm\Type\Atomic\TEnumCase;
@@ -151,6 +157,38 @@ final class Clause implements Stringable
     }
 
     /**
+     * The string of the assertion without what only tells comparisons apart: the operand or array it was compared
+     * with, and the whole of a long literal string
+     *
+     * @psalm-mutation-free
+     */
+    public static function getAssertionDisplayString(Assertion $assertion): string
+    {
+        if (($assertion instanceof IsIdentical
+                || $assertion instanceof IsNotIdentical
+                || $assertion instanceof IsLooselyEqual
+                || $assertion instanceof IsNotLooselyEqual)
+            && $assertion->comparand !== null
+        ) {
+            return (string) new ($assertion::class)($assertion->type);
+        }
+
+        if (($assertion instanceof InArray || $assertion instanceof NotInArray) && $assertion->haystack !== null) {
+            return (string) new ($assertion::class)($assertion->type);
+        }
+
+        if ($assertion instanceof IsType) {
+            return $assertion->type->getId();
+        }
+
+        if ($assertion instanceof IsNotType) {
+            return '!' . $assertion->type->getId();
+        }
+
+        return (string) $assertion;
+    }
+
+    /**
      * @psalm-mutation-free
      */
     #[Override]
@@ -165,7 +203,7 @@ final class Clause implements Stringable
 
             $var_id_clauses = [];
             foreach ($values as $value) {
-                $value = (string) $value;
+                $value = self::getAssertionDisplayString($value);
                 if ($value === 'falsy') {
                     $var_id_clauses[] = '!'.$var_id;
                     continue;

@@ -266,7 +266,11 @@ final class AlgebraAnalyzer
 
         foreach ($operand_formulas as [$operand, $negated_operand_formula]) {
             // an operand reads the variables it and the operands before it assign as assigned, not as established
-            $assigned_var_ids += FormulaGenerator::getAssignedVarIds($operand, $statements_analyzer->getFQCLN());
+            $assigned_var_ids += FormulaGenerator::getAssignedVarIds(
+                $operand,
+                $statements_analyzer->getFQCLN(),
+                $statements_analyzer->node_data,
+            );
 
             $operand_formula_1 = $assigned_var_ids === [] ? $formula_1 : array_values(array_filter(
                 $formula_1,

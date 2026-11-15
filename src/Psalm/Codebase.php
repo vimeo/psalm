@@ -917,7 +917,7 @@ final class Codebase
             $file_storage = $this->file_storage_provider->get($referenced_file_path);
 
             foreach ($file_storage->classlikes_in_file as $fq_classlike_name) {
-                $this->classlike_storage_provider->remove($fq_classlike_name);
+                $this->classlike_storage_provider->remove($fq_classlike_name, $referenced_file_path);
                 $this->classlikes->removeClassLike($fq_classlike_name);
             }
 
@@ -1647,7 +1647,7 @@ final class Codebase
     }
 
     /**
-     * @psalm-capabilities read-props|write-this-props|write-props|write-refs
+     * @psalm-capabilities read-props|write-this-props|write-props|write-refs|read-globals|write-globals
      */
     public function invalidateInformationForFile(string $file_path): void
     {
@@ -1660,7 +1660,7 @@ final class Codebase
         }
 
         foreach ($file_storage->classlikes_in_file as $fq_classlike_name) {
-            $this->classlike_storage_provider->remove($fq_classlike_name);
+            $this->classlike_storage_provider->remove($fq_classlike_name, $file_path);
             $this->classlikes->removeClassLike($fq_classlike_name);
         }
 
