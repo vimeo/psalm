@@ -262,10 +262,9 @@ final class IfAnalyzer
                 }
             }
 
-            // If we're assigning inside
-            if ($if_conditional_scope->assigned_in_conditional_var_ids
-                && $if_scope->post_leaving_if_context
-            ) {
+            // the code after the if starts from the context before the condition, where the condition is false: what
+            // evaluating it assigns or changes (a property an impure call resets) is applied there
+            if ($if_scope->post_leaving_if_context) {
                 self::addConditionallyAssignedVarsToContext(
                     $statements_analyzer,
                     $stmt->cond,
@@ -286,15 +285,28 @@ final class IfAnalyzer
             );
 
             // update() replaces the part of the type that enters the if, which is only known when the code skipping
-            // the if cannot see the same values (unlike with `if ($b || $a === null)`)
-            $overlapping_var_ids = array_filter(
+            // the if cannot see the same values (unlike with `if ($b || $a === null)`). Without an else, the type
+            // after the if is then the one at the end of its body or at the start of the implicit else. A mixed
+            // type, which update() cannot split either, and a type the body leaves as it is are left to it.
+            $overlapping_var_ids = $stmt->else || $stmt->elseifs ? [] : array_filter(
                 $vars_to_update,
-                static fn(string $var_id): bool => isset($old_if_context->vars_in_scope[$var_id])
-                    && UnionTypeComparator::canExpressionTypesBeIdentical(
-                        $codebase,
-                        $old_if_context->vars_in_scope[$var_id],
-                        $pre_assignment_else_redefined_vars[$var_id],
-                    ),
+                static function (string $var_id) use (
+                    $old_if_context,
+                    $if_context,
+                    $pre_assignment_else_redefined_vars,
+                    $codebase,
+                ): bool {
+                    $if_type = $old_if_context->vars_in_scope[$var_id] ?? null;
+                    $else_type = $pre_assignment_else_redefined_vars[$var_id];
+
+                    return $if_type !== null
+                        && !($if_context->vars_in_scope[$var_id] ?? null)?->equals($if_type)
+                        && !$if_type->hasMixed()
+                        && !$else_type->hasMixed()
+                        && !$else_type->isNever()
+                        && !$else_type->failed_reconciliation
+                        && UnionTypeComparator::canExpressionTypesBeIdentical($codebase, $if_type, $else_type);
+                },
             );
 
             $outer_context->update(
@@ -365,10 +377,6 @@ final class IfAnalyzer
     ): void {
         // this filters out coercions to expected types in ArgumentAnalyzer
         $assigned_in_conditional_var_ids = array_filter($assigned_in_conditional_var_ids);
-
-        if (!$assigned_in_conditional_var_ids) {
-            return;
-        }
 
         $exprs = self::getDefinitelyEvaluatedOredExpressions($cond);
 

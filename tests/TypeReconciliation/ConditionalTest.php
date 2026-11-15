@@ -400,9 +400,86 @@ final class ConditionalTest extends TestCase
 
                         $width = $streams[0]["width"];
                         /** @psalm-check-type-exact $width = mixed */
+                    }
+
+                    /** @param list<mixed> $l */
+                    function g(array $l): void {
+                        if (!($l[0]["w"] ?? false) || !($l[0]["h"] ?? false)) {
+                            return;
+                        }
+
+                        $w = $l[0]["w"];
                     }',
                 'assertions' => [],
-                'ignored_issues' => ['MixedAssignment'],
+                'ignored_issues' => ['MixedAssignment', 'MixedArrayAccess'],
+            ],
+            'leavingIfAppliesWhatItsConditionCoercesWhereItIsFalse' => [
+                'code' => '<?php
+                    function takes(?string $s): bool {
+                        return true;
+                    }
+
+                    function f(mixed $t): string {
+                        if (!$t || !takes($t)) {
+                            return "";
+                        }
+
+                        /** @psalm-check-type-exact $t = non-falsy-string */
+                        return $t;
+                    }',
+                'assertions' => [],
+                'ignored_issues' => ['MixedArgument'],
+                'php_version' => '8.0',
+            ],
+            'ifWithAMixedVariableKeepsWhatItsBranchesAssign' => [
+                'code' => '<?php
+                    function takesInt(int $i): void {}
+
+                    function f(mixed $a, int $id): void {
+                        if (!is_null($a)) {
+                            echo 1;
+                        } else {
+                            $a = $id;
+                        }
+
+                        takesInt($a);
+                    }
+
+                    interface Job {}
+
+                    function make(): mixed {
+                        return null;
+                    }
+
+                    function worker(): void {
+                        if (!is_null($job = make())) {
+                            echo 1;
+                        }
+
+                        /** @psalm-check-type-exact $job = mixed */
+                    }',
+                'assertions' => [],
+                'ignored_issues' => ['MixedArgument', 'MixedAssignment'],
+                'php_version' => '8.0',
+            ],
+            'ifThatLeavesTheTypeAsItIsKeepsIt' => [
+                'code' => '<?php
+                    /** @param array<string, int> $d */
+                    function f(array $d): void {
+                        $e = ["default" => 1];
+
+                        foreach ($d as $k => $v) {
+                            $e[$k] = $v;
+                        }
+
+                        if (count($e) > 0) {
+                            echo 1;
+                        }
+
+                        /** @psalm-check-type-exact $e = non-empty-array<string, int> */
+                    }',
+                'assertions' => [],
+                'ignored_issues' => ['RedundantCondition'],
             ],
             'notIterableDropsTheObjectsThatAreTraversable' => [
                 'code' => '<?php
