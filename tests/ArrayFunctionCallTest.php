@@ -4557,16 +4557,23 @@ final class ArrayFunctionCallTest extends TestCase
             'arrayMergeAfterAnArrayOfUnknownLengthPutsTheNextElementsInTheRest' => [
                 'code' => '<?php
                     /** @param list{int, ...<string>} $list */
-                    function f(array $list): array {
-                        return array_merge($list, [true]);
-                    }
-
-                    /** @param list{int, ...<string>} $list */
-                    function g(array $list): void {
+                    function f(array $list): void {
                         $merged = array_merge($list, [true]);
+                        /** @psalm-check-type-exact $merged = list{int, ...<string|true>} */
                     }',
-                'assertions' => [],
-                'ignored_issues' => ['UnusedVariable', 'MixedReturnTypeCoercion'],
+            ],
+            'arrayMergeAfterStringKeysKeepsTheOffsetsOfTheNextList' => [
+                'code' => '<?php
+                    /**
+                     * @param array<string, int> $generic
+                     * @param array{a: int, ...<string, int>} $shape
+                     */
+                    function f(array $generic, array $shape): void {
+                        $after_generic = array_merge($generic, ["x"]);
+                        $after_shape = array_merge($shape, ["x"]);
+                        /** @psalm-check-type-exact $after_generic = array{0: "x", ...<string, int>} */
+                        /** @psalm-check-type-exact $after_shape = array{0: "x", a: int, ...<string, int>} */
+                    }',
             ],
             'arrayMergeAfterAnOptionalElementPutsTheNextElementsInTheRest' => [
                 'code' => '<?php

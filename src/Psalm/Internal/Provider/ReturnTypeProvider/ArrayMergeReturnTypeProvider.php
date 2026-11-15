@@ -17,6 +17,7 @@ use Psalm\Type\Atomic\TKeyedArray;
 use Psalm\Type\Atomic\TMixed;
 use Psalm\Type\Atomic\TNonEmptyArray;
 use Psalm\Type\Atomic\TNull;
+use Psalm\Type\Atomic\TString;
 use Psalm\Type\Union;
 
 use function array_merge;
@@ -95,7 +96,7 @@ final class ArrayMergeReturnTypeProvider implements FunctionReturnTypeProviderIn
 
         $max_keyed_array_size = 0;
 
-        // after an array of unknown length, the elements of the next lists land at unknown positions
+        // after an array with an unknown number of int keys, the elements of the next lists land at unknown positions
         $offsets_unknown = false;
 
         foreach ($call_args as $call_arg) {
@@ -218,7 +219,8 @@ final class ArrayMergeReturnTypeProvider implements FunctionReturnTypeProviderIn
                         }
 
                         if ($unpacked_type_part->fallback_params !== null) {
-                            $arg_has_unknown_length = true;
+                            $arg_has_unknown_length = $arg_has_unknown_length
+                                || self::canHoldAnInt($unpacked_type_part->fallback_params[0]);
                             $all_keyed_arrays = false;
                             $inner_value_types = array_merge(
                                 $inner_value_types,
@@ -257,7 +259,8 @@ final class ArrayMergeReturnTypeProvider implements FunctionReturnTypeProviderIn
 
                         $all_keyed_arrays = false;
                         $all_nonempty_lists = false;
-                        $arg_has_unknown_length = true;
+                        $arg_has_unknown_length = $arg_has_unknown_length
+                            || self::canHoldAnInt($unpacked_type_part->type_params[0]);
 
                         if (!$unpacked_type_part->type_params[0]->isInt()) {
                             $all_int_offsets = false;
@@ -353,5 +356,21 @@ final class ArrayMergeReturnTypeProvider implements FunctionReturnTypeProviderIn
         }
 
         return Type::getArray();
+    }
+
+    /**
+     * Whether a key type can hold an int, which moves the offsets of the lists merged after it
+     *
+     * @psalm-pure
+     */
+    private static function canHoldAnInt(Union $key_type): bool
+    {
+        foreach ($key_type->getAtomicTypes() as $atomic_type) {
+            if (!$atomic_type instanceof TString) {
+                return true;
+            }
+        }
+
+        return false;
     }
 }
