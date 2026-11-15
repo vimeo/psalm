@@ -1208,10 +1208,6 @@ final class AssertionFinder
                         }
                     } elseif (!$expr instanceof PhpParser\Node\Expr\FuncCall) {
                         $assertion_var_id = $assertion->var_id;
-
-                        if (str_starts_with($assertion_var_id, 'self::')) {
-                            $assertion_var_id = $this_class_name.'::'.substr($assertion_var_id, 6);
-                        }
                     } else {
                         IssueBuffer::maybeAdd(
                             new InvalidDocblock(
@@ -1296,11 +1292,7 @@ final class AssertionFinder
 
                         $if_types[$assertion_var_id] = self::getNegatedAlternatives($assertion->rule);
                     } elseif (!$expr instanceof PhpParser\Node\Expr\FuncCall) {
-                        $var_id = $assertion->var_id;
-                        if (str_starts_with($var_id, 'self::')) {
-                            $var_id = $this_class_name.'::'.substr($var_id, 6);
-                        }
-                        $if_types[$var_id] = self::getNegatedAlternatives($assertion->rule);
+                        $if_types[$assertion->var_id] = self::getNegatedAlternatives($assertion->rule);
                     } else {
                         IssueBuffer::maybeAdd(
                             new InvalidDocblock(
