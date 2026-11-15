@@ -368,8 +368,33 @@ final class AsymmetricVisibilityTest extends TestCase
 
                     $box = new Box(1);
                     $box->value = "two";',
-                'assertions' => [],
+                'assertions' => ['$box===' => 'Box<`_0:1>'],
                 'ignored_issues' => ['MissingConstructor', 'PropertyNotSetInConstructor'],
+                'php_version' => '8.4',
+            ],
+            'readonlyWithPublicSetCoalesceAssignedFromOutside' => [
+                'code' => '<?php
+                    final class A {
+                        public public(set) readonly ?string $name;
+                    }
+
+                    $a = new A();
+                    $a->name ??= "x";',
+                'assertions' => [],
+                'ignored_issues' => ['MissingConstructor'],
+                'php_version' => '8.4',
+            ],
+            'promotedReadonlyWithPublicSetPinsTemplateAtConstruction' => [
+                'code' => '<?php
+                    /** @template T of int|string */
+                    final class Box {
+                        /** @param T $value */
+                        public function __construct(public public(set) readonly int|string $value) {}
+                    }
+
+                    $box = new Box(1);',
+                'assertions' => ['$box===' => 'Box<1>'],
+                'ignored_issues' => [],
                 'php_version' => '8.4',
             ],
             'readonlyWithPublicSetUnsetOrDestructuredFromOutside' => [
@@ -775,6 +800,44 @@ final class AsymmetricVisibilityTest extends TestCase
                     }',
                 'error_message' => 'OverriddenPropertyAccess',
                 'error_levels' => ['MissingConstructor'],
+                'php_version' => '8.4',
+            ],
+            'readonlyWithPublicSetIncrementedFromOutside' => [
+                'code' => '<?php
+                    final class A {
+                        public public(set) readonly int $count;
+                    }
+
+                    $a = new A();
+                    $a->count++;',
+                'error_message' => 'InaccessibleProperty - src' . DIRECTORY_SEPARATOR . 'somefile.php:7:21 - A::$count is marked readonly',
+                'error_levels' => ['MissingConstructor'],
+                'php_version' => '8.4',
+            ],
+            'readonlyWithPublicSetConcatenatedFromOutside' => [
+                'code' => '<?php
+                    final class A {
+                        public public(set) readonly string $name;
+                    }
+
+                    $a = new A();
+                    $a->name .= "x";',
+                'error_message' => 'InaccessibleProperty - src' . DIRECTORY_SEPARATOR . 'somefile.php:7:21 - A::$name is marked readonly',
+                'error_levels' => ['MissingConstructor'],
+                'php_version' => '8.4',
+            ],
+            'promotedReadonlyWithPublicSetWrittenFromOutside' => [
+                'code' => '<?php
+                    final class A {
+                        public function __construct(
+                            public public(set) readonly int $id = 0,
+                        ) {}
+                    }
+
+                    $a = new A();
+                    $a->id = 1;',
+                'error_message' => 'InaccessibleProperty - src' . DIRECTORY_SEPARATOR . 'somefile.php:9:21 - A::$id is marked readonly',
+                'error_levels' => [],
                 'php_version' => '8.4',
             ],
             'readonlyWithProtectedSetWrittenFromOutside' => [

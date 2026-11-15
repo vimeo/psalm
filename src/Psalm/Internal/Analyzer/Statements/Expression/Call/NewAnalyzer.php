@@ -1880,9 +1880,10 @@ final class NewAnalyzer extends CallAnalyzer
             }
 
             // A `readonly` property cannot be assigned after construction unless it is
-            // `public(set)`, so it is not a channel through which the template can be constrained.
+            // `public(set)` and not promoted, so it is not a channel through which the template can be constrained.
             if ($property_storage->visibility !== ClassLikeAnalyzer::VISIBILITY_PUBLIC
-                || ($property_storage->readonly && !$property_storage->readonly_public_set)
+                || ($property_storage->readonly
+                    && (!$property_storage->readonly_public_set || $property_storage->is_promoted))
             ) {
                 continue;
             }

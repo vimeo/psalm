@@ -100,7 +100,7 @@ final class InstancePropertyAssignmentAnalyzer
     /**
      * @param   PropertyFetch|PropertyItem  $stmt
      * @param   bool                        $direct_assignment whether the variable is assigned explicitly
-     * @param   bool                        $indirect written through a reference or as an array element
+     * @param   bool                        $modifies_value written through a reference or as an array element
      */
     public static function analyze(
         StatementsAnalyzer $statements_analyzer,
@@ -110,7 +110,7 @@ final class InstancePropertyAssignmentAnalyzer
         Union $assignment_value_type,
         Context $context,
         bool $direct_assignment = true,
-        bool $indirect = false,
+        bool $modifies_value = false,
     ): void {
         $codebase = $statements_analyzer->getCodebase();
 
@@ -155,6 +155,12 @@ final class InstancePropertyAssignmentAnalyzer
                 ),
             ];
         } else {
+            // `$a->p .= ...` and `$a->p++` are analysed as an assignment of an operation on that same fetch
+            $modifies_value = $modifies_value
+                || ($assignment_value instanceof PhpParser\Node\Expr\BinaryOp
+                    && !$assignment_value instanceof PhpParser\Node\Expr\BinaryOp\Coalesce
+                    && $assignment_value->left === $stmt);
+
             $assigned_properties = self::analyzeRegularAssignment(
                 $statements_analyzer,
                 $stmt,
@@ -165,7 +171,7 @@ final class InstancePropertyAssignmentAnalyzer
                 $assignment_value_type,
                 $prop_name,
                 $var_id,
-                $indirect,
+                $modifies_value,
             );
         }
 
@@ -409,7 +415,7 @@ final class InstancePropertyAssignmentAnalyzer
     /**
      * Charges writing a property, and returns whether it did (it can't without a receiver variable)
      *
-     * @param bool $indirect written through a reference or as an array element
+     * @param bool $modifies_value written through a reference, as an array element or from its current value
      */
     public static function trackPropertyImpurity(
         StatementsAnalyzer $statements_analyzer,
@@ -419,7 +425,7 @@ final class InstancePropertyAssignmentAnalyzer
         ClassLikeStorage $declaring_class_storage,
         Context $context,
         ?string $lhs_var_id,
-        bool $indirect = false,
+        bool $modifies_value = false,
     ): bool {
         $codebase = $statements_analyzer->getCodebase();
 
@@ -436,7 +442,7 @@ final class InstancePropertyAssignmentAnalyzer
             $property_storage,
             $context,
             $property_var_pure_compatible,
-            $indirect,
+            $modifies_value,
         );
 
         // writing the property of an object reached from global state writes global state
@@ -519,7 +525,7 @@ final class InstancePropertyAssignmentAnalyzer
      * Reports writing a readonly property where PHP forbids it, and returns whether the write is the class
      * initialising its own property: a `public(set)` readonly one written elsewhere is allowed, but still a mutation
      *
-     * @param bool $indirect written through a reference or as an array element, which `public(set)` doesn't allow
+     * @param bool $modifies_value written through a reference, as an array element or from its current value
      */
     public static function checkReadonlyPropertyWrite(
         StatementsAnalyzer $statements_analyzer,
@@ -528,7 +534,7 @@ final class InstancePropertyAssignmentAnalyzer
         PropertyStorage $property_storage,
         Context $context,
         bool $property_var_pure_compatible,
-        bool $indirect,
+        bool $modifies_value,
     ): bool {
         $codebase = $statements_analyzer->getCodebase();
 
@@ -552,7 +558,9 @@ final class InstancePropertyAssignmentAnalyzer
 
             if (!$can_set_readonly_property
                 && $property_storage->readonly
-                && ($indirect || !$property_storage->readonly_public_set)
+                // `public(set)` only lets any scope initialise it: a promoted one is already initialised, and
+                // a modification needs it initialised
+                && ($modifies_value || !$property_storage->readonly_public_set || $property_storage->is_promoted)
             ) {
                 IssueBuffer::maybeAdd(
                     new InaccessibleProperty(
@@ -985,7 +993,7 @@ final class InstancePropertyAssignmentAnalyzer
         Union $assignment_value_type,
         string $prop_name,
         ?string &$var_id,
-        bool $indirect,
+        bool $modifies_value,
     ): array {
         $was_inside_general_use = $context->inside_general_use;
         $context->inside_general_use = true;
@@ -1126,7 +1134,7 @@ final class InstancePropertyAssignmentAnalyzer
                 $lhs_var_id,
                 $has_valid_assignment_type,
                 $has_regular_setter,
-                $indirect,
+                $modifies_value,
             );
 
             if ($assigned_property) {
@@ -1207,7 +1215,7 @@ final class InstancePropertyAssignmentAnalyzer
         ?string $lhs_var_id,
         bool &$has_valid_assignment_type,
         bool &$has_regular_setter,
-        bool $indirect,
+        bool $modifies_value,
     ): ?AssignedProperty {
         if ($lhs_type_part instanceof TNull) {
             return null;
@@ -1729,7 +1737,7 @@ final class InstancePropertyAssignmentAnalyzer
                 $declaring_class_storage,
                 $context,
                 $lhs_var_id,
-                $indirect,
+                $modifies_value,
             )) {
                 $stmt->setAttribute(self::WRITE_CHARGED, true);
             }

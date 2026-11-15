@@ -1594,7 +1594,7 @@ final class AssignmentAnalyzer
                 null,
                 $by_ref_out_type,
                 $context,
-                indirect: true,
+                modifies_value: true,
             );
 
             return;
