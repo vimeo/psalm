@@ -610,6 +610,24 @@ final class OverlayEndToEndTest extends TestCase
             [['MixedReturnStatement', 'src/UseFn.php', 'error'], ['UndefinedConstant', 'src/UseFn.php', 'error']],
         ];
 
+        yield 'constant with a null value removed from an autoloaded file' => [
+            [
+                'functions.php' => '<?php namespace App; const OPTIONAL_LIMIT = null; function helper(): int { return 1; }',
+                'UseFn.php' => '<?php namespace App; final class UseFn { public function f(): ?int { return OPTIONAL_LIMIT; } }',
+            ],
+            ['src/functions.php' => '<?php namespace App; function helper(): int { return 1; }'],
+            [['MixedReturnStatement', 'src/UseFn.php', 'error'], ['UndefinedConstant', 'src/UseFn.php', 'error']],
+        ];
+
+        yield 'constant with a null value renamed in an autoloaded file' => [
+            [
+                'functions.php' => '<?php namespace App; const OPTIONAL_LIMIT = null; function helper(): int { return 1; }',
+                'UseFn.php' => '<?php namespace App; final class UseFn { public function f(): ?int { return OPTIONAL_LIMIT; } }',
+            ],
+            ['src/functions.php' => '<?php namespace App; const OPTIONAL_MAXIMUM = null; function helper(): int { return 1; }'],
+            [['MixedReturnStatement', 'src/UseFn.php', 'error'], ['UndefinedConstant', 'src/UseFn.php', 'error']],
+        ];
+
         // the call is to App\define: PHP_OS stays what PHP defines
         yield 'call removed to a function of the project named define' => [
             [

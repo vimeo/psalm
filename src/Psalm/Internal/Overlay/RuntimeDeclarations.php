@@ -11,6 +11,7 @@ use Psalm\Config;
 use function array_diff_key;
 use function array_filter;
 use function array_flip;
+use function array_key_exists;
 use function array_keys;
 use function array_values;
 use function get_defined_constants;
@@ -100,8 +101,9 @@ final class RuntimeDeclarations
             )),
             array_values(array_filter(
                 $removed['constants'],
-                static fn(string $constant): bool => isset($user_constants[$constant])
-                    || isset($user_constants[self::getRuntimeName($constant)]),
+                // a constant can be null
+                static fn(string $constant): bool => array_key_exists($constant, $user_constants)
+                    || array_key_exists(self::getRuntimeName($constant), $user_constants),
             )),
         );
     }
