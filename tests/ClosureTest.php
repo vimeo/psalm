@@ -1528,7 +1528,7 @@ final class ClosureTest extends TestCase
                 ',
                 'assertions' => [
                     '$closure' => 'Closure[pure](string):int<0, max>',
-                    '$result' => 'int<0, max>',
+                    '$result' => 'int<1, max>',
                 ],
                 'ignored_issues' => [],
                 'php_version' => '8.1',
@@ -1681,9 +1681,9 @@ final class ClosureTest extends TestCase
                     $result = $id("s");',
                 'assertions' => [
                     '$id===' => 'Closure[impure](mixed):mixed',
-                    '$result' => 'mixed',
+                    '$result' => 'string',
                 ],
-                'ignored_issues' => ['MixedAssignment'],
+                'ignored_issues' => [],
                 'php_version' => '8.1',
             ],
             'FirstClassCallable:InstanceMethod:UserDefined' => [
@@ -2232,7 +2232,7 @@ final class ClosureTest extends TestCase
                     '$identity===' => 'Closure[impure](Model):Model',
                     '$model===' => 'Model',
                     '$chained===' => 'Closure[impure](mixed, mixed):list<mixed>',
-                    '$list===' => 'list<mixed>',
+                    '$list===' => 'list<2>',
                 ],
                 'ignored_issues' => [],
                 'php_version' => '8.1',
@@ -2817,11 +2817,11 @@ final class ClosureTest extends TestCase
                     function check(C $c): void {
                         $method = $c->m(...);
                         $viaMethod = $method('a');
-                        /** @psalm-check-type-exact $viaMethod = bool|int */
+                        /** @psalm-check-type-exact $viaMethod = int */
 
                         $static = C::s(...);
                         $viaStatic = $static('a');
-                        /** @psalm-check-type-exact $viaStatic = bool|int */
+                        /** @psalm-check-type-exact $viaStatic = int */
 
                         $fromCallable = Closure::fromCallable([$c, 'm']);
                         $viaFromCallable = $fromCallable('a');

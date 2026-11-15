@@ -430,8 +430,10 @@ final class LoopAnalyzer
 
                 foreach ($always_assigned_before_loop_body_vars as $var_id) {
                     if ((!isset($continue_context->vars_in_scope[$var_id])
-                            || $continue_context->vars_in_scope[$var_id]->getId()
-                                !== $pre_loop_context->vars_in_scope[$var_id]->getId()
+                            || self::differ(
+                                $continue_context->vars_in_scope[$var_id],
+                                $pre_loop_context->vars_in_scope[$var_id],
+                            )
                             || $continue_context->vars_in_scope[$var_id]->from_docblock
                                 !== $pre_loop_context->vars_in_scope[$var_id]->from_docblock
                             // the value of an iteration is not the one the last one ended with
@@ -553,7 +555,7 @@ final class LoopAnalyzer
                 continue;
             }
 
-            if ($loop_context->vars_in_scope[$var_id]->getId() !== $type->getId()) {
+            if (self::differ($loop_context->vars_in_scope[$var_id], $type)) {
                 $loop_parent_context->vars_in_scope[$var_id] = Type::combineUnionTypes(
                     $loop_parent_context->vars_in_scope[$var_id],
                     $loop_context->vars_in_scope[$var_id],
@@ -597,7 +599,7 @@ final class LoopAnalyzer
                     continue;
                 }
 
-                if ($continue_context->vars_in_scope[$var_id]->getId() !== $type->getId()) {
+                if (self::differ($continue_context->vars_in_scope[$var_id], $type)) {
                     $loop_parent_context->vars_in_scope[$var_id] = Type::combineUnionTypes(
                         $loop_parent_context->vars_in_scope[$var_id],
                         $continue_context->vars_in_scope[$var_id],
@@ -1380,5 +1382,17 @@ final class LoopAnalyzer
         }
 
         return $max_depth;
+    }
+
+    /**
+     * Types that read the same may still differ: closures made from different functions or methods do
+     *
+     * @psalm-pure
+     */
+    private static function differ(Union $type, Union $other_type): bool
+    {
+        return $type->getId() !== $other_type->getId()
+            || array_diff_key($type->getAtomicTypes(), $other_type->getAtomicTypes()) !== []
+            || array_diff_key($other_type->getAtomicTypes(), $type->getAtomicTypes()) !== [];
     }
 }
