@@ -1270,16 +1270,21 @@ final class FilterUtils
             case FILTER_SANITIZE_SPECIAL_CHARS:
             case FILTER_SANITIZE_FULL_SPECIAL_CHARS:
             case FILTER_DEFAULT:
-                // only an empty input is null, what the strip flags empty out stays an empty string
+                // only an empty input (null is an empty string first) is null, what the strip flags empty out stays
+                // an empty string
                 $empty_string_is_null = $filter_int_used === FILTER_DEFAULT
                     && self::hasFlag($flags_int_used, FILTER_FLAG_EMPTY_STRING_NULL);
                 $strips = self::hasFlag($flags_int_used, FILTER_FLAG_STRIP_LOW)
                     || self::hasFlag($flags_int_used, FILTER_FLAG_STRIP_HIGH)
                     || self::hasFlag($flags_int_used, FILTER_FLAG_STRIP_BACKTICK);
+                $encodes = self::hasFlag($flags_int_used, FILTER_FLAG_ENCODE_LOW)
+                    || self::hasFlag($flags_int_used, FILTER_FLAG_ENCODE_HIGH)
+                    || self::hasFlag($flags_int_used, FILTER_FLAG_ENCODE_AMP);
 
                 foreach ($input_type->getAtomicTypes() as $atomic_type) {
                     if ($empty_string_is_null
                         && ($atomic_type instanceof TFalse
+                            || $atomic_type instanceof TNull
                             || ($atomic_type instanceof TLiteralString && $atomic_type->value === ''))
                     ) {
                         $filter_types[] = new TNull();
@@ -1292,8 +1297,11 @@ final class FilterUtils
                         continue;
                     }
 
-                    if ($empty_string_is_null && !$strips && $atomic_type instanceof TLiteralString) {
-                        $filter_types[] = $atomic_type;
+                    if ($empty_string_is_null && $atomic_type instanceof TLiteralString) {
+                        // the encode flags rewrite a literal without emptying it
+                        $filter_types[] = $strips
+                            ? new TString()
+                            : ($encodes ? new TNonEmptyString() : $atomic_type);
                         continue;
                     }
 

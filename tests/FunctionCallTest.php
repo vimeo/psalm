@@ -3364,6 +3364,13 @@ final class FunctionCallTest extends TestCase
                         $false = filter_var(false, FILTER_DEFAULT, FILTER_FLAG_EMPTY_STRING_NULL);
                         $bool = filter_var($flag, FILTER_DEFAULT, FILTER_FLAG_EMPTY_STRING_NULL);
                         $unsafe_raw = filter_var($s, FILTER_UNSAFE_RAW, FILTER_FLAG_EMPTY_STRING_NULL);
+                        $encoded_literal = filter_var(
+                            'a&b',
+                            FILTER_DEFAULT,
+                            FILTER_FLAG_EMPTY_STRING_NULL | FILTER_FLAG_ENCODE_AMP,
+                        );
+                        $stripped_literal = filter_var('abc', FILTER_DEFAULT, FILTER_FLAG_EMPTY_STRING_NULL | FILTER_FLAG_STRIP_LOW);
+                        $null = filter_var(null, FILTER_DEFAULT, FILTER_FLAG_EMPTY_STRING_NULL);
 
                         /** @psalm-check-type-exact $stripped = string|null */
                         /** @psalm-check-type-exact $stripped_non_empty = string */
@@ -3371,6 +3378,9 @@ final class FunctionCallTest extends TestCase
                         /** @psalm-check-type-exact $false = null */
                         /** @psalm-check-type-exact $bool = '1'|null */
                         /** @psalm-check-type-exact $unsafe_raw = non-empty-string|null */
+                        /** @psalm-check-type-exact $encoded_literal = non-empty-string */
+                        /** @psalm-check-type-exact $stripped_literal = string */
+                        /** @psalm-check-type-exact $null = null */
                     }
                     PHP,
                 'assertions' => [],
