@@ -508,12 +508,18 @@ final class FormulaGenerator
                 $truthy = new Truthy();
                 $falsy = new Falsy();
 
+                $truthy_clause = new Clause(
+                    [$result_id => [(string) $truthy => $truthy]],
+                    $conditional_object_id,
+                    $creating_object_id,
+                );
+
+                if (self::argumentsMayReassign($nullsafe_call, $receiver_id, $this_class_name, $source)) {
+                    return [$truthy_clause];
+                }
+
                 return [
-                    new Clause(
-                        [$result_id => [(string) $truthy => $truthy]],
-                        $conditional_object_id,
-                        $creating_object_id,
-                    ),
+                    $truthy_clause,
                     new Clause(
                         [$result_id => [(string) $falsy => $falsy], $receiver_id => [(string) $not_null => $not_null]],
                         $conditional_object_id,
@@ -827,7 +833,14 @@ final class FormulaGenerator
         $asserted = $asserted_truthy ? new Truthy() : new Falsy();
         $asserted_key = (string) $asserted;
 
+        // the call may have changed the receiver, so what it was when called says nothing about it afterwards
+        $receiver_may_change = self::argumentsMayReassign($nullsafe_call, $receiver_id, $this_class_name, $source);
+
         if ($negated) {
+            if ($receiver_may_change) {
+                return [new Clause([], $conditional_object_id, $creating_object_id, true)];
+            }
+
             // the result has the asserted character, or the receiver is null (which makes the call null,
             // and null is not identical to either bool literal)
             $null = new IsType(new TNull());
@@ -846,18 +859,73 @@ final class FormulaGenerator
         $opposite_key = (string) $opposite;
         $not_null = new IsNotType(new TNull());
 
+        $asserted_clause = new Clause(
+            [$result_id => [$asserted_key => $asserted]],
+            $conditional_object_id,
+            $creating_object_id,
+        );
+
+        if ($receiver_may_change) {
+            return [$asserted_clause];
+        }
+
         return [
-            new Clause(
-                [$result_id => [$asserted_key => $asserted]],
-                $conditional_object_id,
-                $creating_object_id,
-            ),
+            $asserted_clause,
             new Clause(
                 [$result_id => [$opposite_key => $opposite], $receiver_id => [(string) $not_null => $not_null]],
                 $conditional_object_id,
                 $creating_object_id,
             ),
         ];
+    }
+
+    /**
+     * Whether the arguments of the call can reassign its receiver: by passing it (or what holds it) to a by-reference
+     * parameter, by assigning it, or by capturing it by reference in a closure
+     */
+    private static function argumentsMayReassign(
+        PhpParser\Node\Expr\NullsafeMethodCall $call,
+        string $receiver_id,
+        ?string $this_class_name,
+        FileSource $source,
+    ): bool {
+        if ($call->isFirstClassCallable()) {
+            return false;
+        }
+
+        $targets = [];
+
+        foreach ($call->getArgs() as $arg) {
+            $targets[] = $arg->value;
+
+            foreach ((new PhpParser\NodeFinder())->find($arg->value, static fn(): bool => true) as $node) {
+                if ($node instanceof PhpParser\Node\Expr\Assign
+                    || $node instanceof PhpParser\Node\Expr\AssignRef
+                    || $node instanceof PhpParser\Node\Expr\AssignOp
+                    || $node instanceof PhpParser\Node\Expr\PreInc
+                    || $node instanceof PhpParser\Node\Expr\PreDec
+                    || $node instanceof PhpParser\Node\Expr\PostInc
+                    || $node instanceof PhpParser\Node\Expr\PostDec
+                    || ($node instanceof PhpParser\Node\ClosureUse && $node->byRef)
+                ) {
+                    $targets[] = $node->var;
+                }
+            }
+        }
+
+        foreach ($targets as $target) {
+            $target_id = ExpressionIdentifier::getExtendedVarId($target, $this_class_name, $source);
+
+            if ($target_id !== null
+                && ($target_id === $receiver_id
+                    || str_starts_with($receiver_id, $target_id . '->')
+                    || str_starts_with($receiver_id, $target_id . '['))
+            ) {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     private static function isBoolLiteral(PhpParser\Node\Expr $expr): bool
