@@ -45,6 +45,8 @@ use Psalm\Storage\Assertion\IsLessThan;
 use Psalm\Storage\Assertion\IsLessThanOrEqualTo;
 use Psalm\Storage\Assertion\IsNotIsset;
 use Psalm\Storage\Assertion\IsNotLooselyEqual;
+use Psalm\Storage\Assertion\IsNotType;
+use Psalm\Storage\Assertion\IsType;
 use Psalm\Storage\Assertion\NestedAssertions;
 use Psalm\Storage\Assertion\NonEmpty;
 use Psalm\Storage\Assertion\NonEmptyCountable;
@@ -288,6 +290,12 @@ class Reconciler
             $failed_reconciliation = self::RECONCILIATION_OK;
 
             foreach ($new_type_parts as $offset => $new_type_part_parts) {
+                // truths that say a value is and is not of a type come from a disjunction that was split: the
+                // negative one tells nothing
+                if (self::isContradictedByAnotherTruth($new_type_parts, $offset)) {
+                    continue;
+                }
+
                 $orred_type = null;
                 $report_location = $code_location
                     && isset($referenced_var_ids[$key])
@@ -605,6 +613,36 @@ class Reconciler
         }
 
         return [$existing_types, $existing_references];
+    }
+
+    /**
+     * Whether the assertion at the offset says a value is not of a type that a lone other assertion of the variable
+     * says it is
+     *
+     * @param array<array-key, array<int, Assertion>> $new_type_parts
+     * @psalm-pure
+     */
+    private static function isContradictedByAnotherTruth(array $new_type_parts, int|string $offset): bool
+    {
+        $assertion = $new_type_parts[$offset][0] ?? null;
+
+        if (count($new_type_parts[$offset]) !== 1 || !$assertion instanceof IsNotType) {
+            return false;
+        }
+
+        foreach ($new_type_parts as $other_offset => $other_parts) {
+            $other_assertion = $other_parts[0] ?? null;
+
+            if ($other_offset !== $offset
+                && count($other_parts) === 1
+                && $other_assertion instanceof IsType
+                && $other_assertion->type->getKey() === $assertion->type->getKey()
+            ) {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     /**
