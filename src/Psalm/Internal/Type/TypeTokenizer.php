@@ -9,10 +9,12 @@ use Psalm\Exception\TypeParseTreeException;
 use Psalm\Internal\Type\TypeAlias\InlineTypeAlias;
 use Psalm\Type;
 
+use function array_pop;
 use function array_slice;
 use function array_splice;
 use function array_unshift;
 use function count;
+use function end;
 use function implode;
 use function in_array;
 use function is_numeric;
@@ -405,8 +407,17 @@ final class TypeTokenizer
     ): array {
         $type_tokens = self::tokenize($string_type);
 
+        // for each open `<`, whether it starts the arguments of an `int-mask`
+        $opens_int_mask = [];
+
         for ($i = 0, $l = count($type_tokens); $i < $l; ++$i) {
             $string_type_token = $type_tokens[$i];
+
+            if ($string_type_token[0] === '<') {
+                $opens_int_mask[] = $i > 0 && $type_tokens[$i - 1][0] === 'int-mask';
+            } elseif ($string_type_token[0] === '>') {
+                array_pop($opens_int_mask);
+            }
 
             if (in_array(
                 $string_type_token[0],
@@ -532,6 +543,17 @@ final class TypeTokenizer
                 || $string_type_token[0] === 'PHP_MAJOR_VERSION'
                 || $string_type_token[0] === 'PHP_VERSION_ID'
             ) {
+                continue;
+            }
+
+            // a constant of an `int-mask` imported with `use const` is the imported one, as if written fully
+            // qualified (no fallback to a global constant)
+            if (end($opens_int_mask) === true
+                && isset($aliases->constants[$string_type_token[0]])
+                && (!isset($type_tokens[$i + 1]) || $type_tokens[$i + 1][0] !== '::')
+            ) {
+                $type_tokens[$i][0] = $aliases->constants[$string_type_token[0]];
+                $type_tokens[$i][2] = '\\' . $aliases->constants[$string_type_token[0]];
                 continue;
             }
 

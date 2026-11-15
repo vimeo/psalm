@@ -184,6 +184,90 @@ final class AnnotationTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'intMaskOfGlobalConstantsInNamespace' => [
+                'code' => '<?php
+                    namespace Abc;
+
+                    use const E_ALL;
+
+                    /** @param int-mask<E_ALL, \\E_WARNING> $flags */
+                    function takesFlags(int $flags): void {
+                        echo $flags;
+                    }
+
+                    takesFlags(E_ALL);
+                ',
+            ],
+            'intMaskOfAConstantOfTheNamespaceTakesPrecedenceOverTheGlobalOne' => [
+                'code' => '<?php
+                    namespace Foo;
+
+                    const E_ERROR = 4;
+
+                    /**
+                     * @param int-mask<E_ERROR> $y
+                     */
+                    function takesMask(int $y): void {
+                        /** @psalm-check-type-exact $y = 0|4 */
+                        echo $y;
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'intMaskOfConstantsImportedWithUseConst' => [
+                'code' => '<?php
+                    namespace Bar {
+                        const E_ERROR = 4;
+                        const FLAG_A = 8;
+                    }
+
+                    namespace Foo {
+                        use const Bar\E_ERROR;
+                        use const Bar\FLAG_A as AA;
+
+                        /** @param int-mask<E_ERROR> $y */
+                        function f(int $y): void {
+                            echo $y;
+                        }
+
+                        /** @param int-mask<AA, E_ERROR> $y */
+                        function g(int $y): void {
+                            echo $y;
+                        }
+
+                        f(4);
+                        g(12);
+                    }',
+            ],
+            'intMaskOfAnImportedGlobalConstant' => [
+                'code' => '<?php
+                    namespace Foo;
+
+                    use const PHP_INT_MAX;
+
+                    /**
+                     * @param int-mask<PHP_INT_MAX> $y
+                     */
+                    function takesMask(int $y): void {
+                        echo $y;
+                    }
+
+                    takesMask(0);',
+            ],
+            'intMaskOfGlobalConstantsFromANamespace' => [
+                'code' => '<?php
+                    namespace Foo;
+
+                    /**
+                     * @param int-mask<E_ERROR, E_WARNING> $y
+                     */
+                    function takesMask(int $y): void {
+                        echo $y;
+                    }
+
+                    takesMask(E_ERROR);',
+            ],
             'selfAndStaticOfAGlobalTagAreTheClassOfTheMethod' => [
                 'code' => '<?php
                     final class K {
@@ -2101,6 +2185,83 @@ final class AnnotationTest extends TestCase
     public static function providerInvalidCodeParse(): iterable
     {
         return [
+            'intMaskOfAConstantImportedWithUseConstIsNotTheGlobalOne' => [
+                'code' => '<?php
+                    namespace Bar {
+                        const E_ERROR = 4;
+                    }
+
+                    namespace Foo {
+                        use const Bar\E_ERROR;
+
+                        /** @param int-mask<E_ERROR> $y */
+                        function f(int $y): void {
+                            echo $y;
+                        }
+
+                        f(1);
+                    }',
+                'error_message' => 'InvalidArgument - src' . DIRECTORY_SEPARATOR . 'somefile.php:14:27 - '
+                    . 'Argument 1 of Foo\f expects 0|4, but 1 provided',
+            ],
+            'intMaskOfANonIntegerConstantOfTheNamespace' => [
+                'code' => '<?php
+                    namespace Foo;
+
+                    const NAME = "x";
+
+                    /** @param int-mask<NAME> $flags */
+                    function takesFlags(int $flags): void {
+                        echo $flags;
+                    }',
+                'error_message' => 'InvalidDocblock',
+            ],
+            'intMaskOfNonIntegerGlobalConstantInNamespace' => [
+                'code' => '<?php
+                    namespace Abc;
+
+                    /** @param int-mask<PHP_VERSION> $flags */
+                    function takesFlags(int $flags): void {
+                        echo $flags;
+                    }',
+                'error_message' => 'InvalidDocblock',
+            ],
+            'intMaskOfAPartiallyQualifiedConstantDoesNotFallBackToTheGlobalOne' => [
+                'code' => '<?php
+                    namespace Foo;
+
+                    /**
+                     * @param int-mask<Sub\\E_ERROR> $y
+                     */
+                    function takesMask(int $y): void {
+                        echo $y;
+                    }',
+                'error_message' => 'UndefinedConstant',
+            ],
+            'intMaskOfAQualifiedConstantDoesNotFallBackToTheGlobalOne' => [
+                'code' => '<?php
+                    namespace Foo;
+
+                    /**
+                     * @param int-mask<\\Foo\\E_ERROR> $y
+                     */
+                    function takesMask(int $y): void {
+                        echo $y;
+                    }',
+                'error_message' => 'UndefinedConstant',
+            ],
+            'intMaskOfAnUndefinedConstantFromANamespace' => [
+                'code' => '<?php
+                    namespace Foo;
+
+                    /**
+                     * @param int-mask<NOT_A_CONSTANT> $y
+                     */
+                    function takesMask(int $y): void {
+                        echo $y;
+                    }',
+                'error_message' => 'UndefinedConstant',
+            ],
             'removedSelfAccessingCallableWithParamsIsInvalid' => [
                 'code' => <<<'PHP'
                     <?php

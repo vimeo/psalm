@@ -27,6 +27,7 @@ use UnexpectedValueException;
 
 use function array_diff_key;
 use function array_filter;
+use function array_intersect_key;
 use function array_keys;
 use function array_map;
 use function array_merge;
@@ -156,6 +157,8 @@ final class LoopAnalyzer
             }
 
             $loop_parent_context->vars_possibly_in_scope += $continue_context->vars_possibly_in_scope;
+
+            self::keepNullArrayOffsetsReadOnEveryPath($loop_parent_context, $continue_context, $loop_scope);
         } else {
             $original_parent_context = clone $loop_parent_context;
 
@@ -322,6 +325,8 @@ final class LoopAnalyzer
 
                 $loop_parent_context->vars_possibly_in_scope += $continue_context->vars_possibly_in_scope;
 
+                self::keepNullArrayOffsetsReadOnEveryPath($loop_parent_context, $continue_context, $loop_scope);
+
                 // if there are no changes to the types, no need to re-examine
                 if (!$has_changes && !$force_pass) {
                     break;
@@ -467,6 +472,13 @@ final class LoopAnalyzer
         $does_sometimes_break = in_array(ScopeAnalyzer::ACTION_BREAK, $loop_scope->final_actions, true);
         $does_always_break = $loop_scope->final_actions === [ScopeAnalyzer::ACTION_BREAK];
 
+        $loop_nodes = [...$pre_conditions, ...$stmts, ...$post_expressions];
+
+        // the body is analysed in the continue context: the loop context does not get what it rebinds
+        if (!$does_always_break) {
+            $loop_parent_context->detachReferencesReboundIn($continue_context, $statements_analyzer, $loop_nodes);
+        }
+
         if ($does_sometimes_break) {
             foreach ($loop_scope->possibly_redefined_loop_parent_vars as $var => $type) {
                 $loop_parent_context->vars_in_scope[$var] = Type::combineUnionTypes(
@@ -513,8 +525,15 @@ final class LoopAnalyzer
                         )
                     ;
 
-                    $loop_parent_context->vars_in_scope[$var_id] =
-                        $continue_context->vars_in_scope[$var_id];
+                    // a mixed value the loop condition narrowed (`non-empty-mixed`) is not narrowed where the loop
+                    // is left, so it is combined with the type it had before the loop
+                    $loop_parent_context->vars_in_scope[$var_id] = $loop_parent_context->vars_in_scope[$var_id]
+                        ->hasMixed()
+                        ? Type::combineUnionTypes(
+                            $loop_parent_context->vars_in_scope[$var_id],
+                            $continue_context->vars_in_scope[$var_id],
+                        )
+                        : $continue_context->vars_in_scope[$var_id];
                     $loop_parent_context->removeVarFromConflictingClauses($var_id);
 
                     continue;
@@ -608,6 +627,27 @@ final class LoopAnalyzer
         );
 
         return null;
+    }
+
+    /**
+     * After the loop, an offset was read only if it was read where the loop isn't entered, at the end of the body and
+     * at every `break` and `continue`
+     *
+     * @psalm-capabilities read-props|write-props
+     */
+    private static function keepNullArrayOffsetsReadOnEveryPath(
+        Context $loop_parent_context,
+        Context $continue_context,
+        LoopScope $loop_scope,
+    ): void {
+        $loop_parent_context->intersectNullArrayOffsets($continue_context);
+
+        if ($loop_scope->null_array_offsets_read_at_jumps !== null) {
+            $loop_parent_context->null_array_offsets_read = array_intersect_key(
+                $loop_parent_context->null_array_offsets_read,
+                $loop_scope->null_array_offsets_read_at_jumps,
+            );
+        }
     }
 
     /**
