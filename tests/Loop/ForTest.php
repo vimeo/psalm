@@ -23,6 +23,19 @@ final class ForTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'mixedConditionVariableOfAForLoopIsNotNonEmptyAfterIt' => [
+                'code' => '<?php
+                    function check(mixed $m): void {
+                        for ($i = 0; $i < 3 && $m; $i++) {
+                        }
+
+                        $after = $m;
+                        /** @psalm-check-type-exact $after = mixed */
+                    }',
+                'assertions' => [],
+                'ignored_issues' => ['MixedAssignment'],
+                'php_version' => '8.0',
+            ],
             'variableNarrowedAndReassignedByAnIfKeepsTheTypesOfBothBranches' => [
                 'code' => '<?php
                     function normalize(array|string|int $raw): array {
@@ -371,6 +384,23 @@ final class ForTest extends TestCase
     public static function providerInvalidCodeParse(): iterable
     {
         return [
+            'forBreakBeforeDefinitionAndBreakAfter' => [
+                'code' => '<?php
+                    for ($i = 0; $i < 4; $i++) {
+                        if (rand(0, 1)) {
+                            break;
+                        }
+
+                        $car = "Volvo";
+
+                        if (rand(0, 1)) {
+                            break;
+                        }
+                    }
+
+                    echo $car;',
+                'error_message' => 'PossiblyUndefinedGlobalVariable - src' . DIRECTORY_SEPARATOR . 'somefile.php:14:26',
+            ],
             'flagFalseInEveryBranchThatChangesItIsStillAlwaysFalsy' => [
                 'code' => '<?php
                     function check(bool $flag, int $i): void {

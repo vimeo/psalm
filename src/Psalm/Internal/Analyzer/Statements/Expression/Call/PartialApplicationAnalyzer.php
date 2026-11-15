@@ -594,6 +594,7 @@ final class PartialApplicationAnalyzer
                         $declaring_class_storage->properties[$prop_name],
                         $context,
                         $object_type->reference_free && $object_type->allow_mutations,
+                        true,
                     );
                 }
             }

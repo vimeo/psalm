@@ -116,6 +116,13 @@ final class StatementsAnalyzer extends SourceAnalyzer
     private array $all_vars = [];
 
     /**
+     * The variables a closure of these statements captures by reference: any call may write them from then on
+     *
+     * @var array<string, true>
+     */
+    private array $vars_captured_by_reference = [];
+
+    /**
      * @var array<string, int>
      */
     private array $var_branch_points = [];
@@ -1291,6 +1298,22 @@ final class StatementsAnalyzer extends SourceAnalyzer
         }
 
         return $parent_nodes;
+    }
+
+    /**
+     * @psalm-external-mutation-free
+     */
+    public function markCapturedByReference(string $var_id): void
+    {
+        $this->vars_captured_by_reference[$var_id] = true;
+    }
+
+    /**
+     * @psalm-mutation-free
+     */
+    public function isCapturedByReference(string $var_id): bool
+    {
+        return isset($this->vars_captured_by_reference[$var_id]);
     }
 
     /**
