@@ -24,7 +24,6 @@ use Psalm\Internal\Codebase\VariableUseGraph;
 use Psalm\Internal\Scope\IfScope;
 use Psalm\Internal\Type\Comparator\UnionTypeComparator;
 use Psalm\IssueBuffer;
-use Psalm\Node\Expr\VirtualBooleanNot;
 use Psalm\Type;
 use Psalm\Type\Reconciler;
 use Psalm\Type\Union;
@@ -269,33 +268,18 @@ final class IfElseAnalyzer
         $if_scope->reasonable_clauses = $if_context->clauses;
 
         try {
-            if (FormulaGenerator::leavesOutClausesOfAssignedVars($stmt->cond, $context->self)) {
-                // the right side of an `&&` that assigns isn't evaluated where the left one is false
-                throw new ComplicatedExpressionException();
-            }
-
-            $if_scope->negated_clauses = Algebra::negateFormula($if_clauses);
+            $if_scope->negated_clauses = FormulaGenerator::getNegatedFormula(
+                $if_clauses,
+                $stmt->cond,
+                $cond_object_id,
+                $context->self,
+                $statements_analyzer,
+                $codebase,
+                true,
+            );
         } catch (ComplicatedExpressionException) {
-            try {
-                $if_scope->negated_clauses = FormulaGenerator::getFormula(
-                    $cond_object_id,
-                    $cond_object_id,
-                    new VirtualBooleanNot($stmt->cond),
-                    $context->self,
-                    $statements_analyzer,
-                    $codebase,
-                    false,
-                );
-            } catch (ComplicatedExpressionException) {
-                $if_scope->negated_clauses = [];
-            }
+            $if_scope->negated_clauses = [];
         }
-
-        $if_scope->negated_clauses = FormulaGenerator::withoutClausesOfReassignedVars(
-            $if_scope->negated_clauses,
-            $stmt->cond,
-            $context->self,
-        );
 
         $if_scope->negated_types = Algebra::getTruthsFromFormula(
             Algebra::simplifyCNF(

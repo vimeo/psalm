@@ -755,6 +755,307 @@ final class TypeAlgebraTest extends TestCase
                         }
                     }',
             ],
+            'theElseOfAnElseifAssigningOnTheRightOfAnOrHasNoClausesOfTheOldValue' => [
+                'code' => '<?php
+                    function load(?int $x): ?int {
+                        return $x;
+                    }
+
+                    function f(?int $a, ?int $p, bool $z): void {
+                        if ($z) {
+                        } elseif ($a === null || ($a = load($p))) {
+                        } else {
+                            /** @psalm-check-type-exact $a = 0|null */
+                            echo 1;
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => ['RiskyTruthyFalsyComparison'],
+            ],
+            'aWhileLoopAssigningOnTheRightOfAnOrIsLeftWithoutClausesOfTheOldValue' => [
+                'code' => '<?php
+                    function load(?int $x): ?int {
+                        return $x;
+                    }
+
+                    function f(?int $a, ?int $p): void {
+                        while ($a === null || ($a = load($p))) {
+                            return;
+                        }
+
+                        /** @psalm-check-type-exact $a = 0|null */
+                        echo 1;
+                    }',
+                'assertions' => [],
+                'ignored_issues' => ['RiskyTruthyFalsyComparison'],
+            ],
+            'aWhileLoopAssigningOnTheRightOfAnAndIsLeftWhereEitherSideIsFalse' => [
+                'code' => '<?php
+                    function nextOrNull(int $v): ?int {
+                        return $v > 5 ? null : $v + 1;
+                    }
+
+                    function f(?int $a): void {
+                        while ($a !== null && ($a = nextOrNull($a)) !== null) {
+                            echo 1;
+                        }
+
+                        /** @psalm-check-type-exact $a = null */
+                        echo 1;
+                    }',
+            ],
+            'aDoWhileLoopAssigningOnTheRightOfAnAndIsLeftWhereTheLeftSideIsFalse' => [
+                'code' => '<?php
+                    function nextOrNull(int $v): ?int {
+                        return $v > 5 ? null : $v + 1;
+                    }
+
+                    function f(?int $a): void {
+                        do {
+                            echo 1;
+                        } while ($a !== null && ($a = nextOrNull($a)) === null);
+
+                        /** @psalm-check-type-exact $a = int|null */
+                        echo 1;
+                    }',
+            ],
+            'theDefaultOfASwitchTrueCaseAssigningOnTheRightOfAnAndIsWhereTheLeftSideIsFalse' => [
+                'code' => '<?php
+                    function nextOrNull(int $v): ?int {
+                        return $v > 5 ? null : $v + 1;
+                    }
+
+                    function f(?int $a): void {
+                        switch (true) {
+                            case $a !== null && ($a = nextOrNull($a)) === null:
+                                break;
+                            default:
+                                /** @psalm-check-type-exact $a = int|null */
+                                echo 1;
+                        }
+                    }',
+            ],
+            'aNegatedAndAssigningOnItsRightIsFalseWhereTheRightSideIsTrue' => [
+                'code' => '<?php
+                    function load(?int $x): ?int {
+                        return $x;
+                    }
+
+                    function f(?int $a, ?int $p): void {
+                        if (!($a === null && ($a = load($p)))) {
+                            return;
+                        }
+
+                        /** @psalm-check-type-exact $a = int */
+                        echo 1;
+                    }',
+                'assertions' => [],
+                'ignored_issues' => ['RiskyTruthyFalsyComparison'],
+            ],
+            'aNegatedOrAssigningOnItsRightIsFalseWhereEitherSideIsTrue' => [
+                'code' => '<?php
+                    function load(int $x): ?int {
+                        return $x > 5 ? null : $x;
+                    }
+
+                    function f(?int $a): void {
+                        if (!($a === null || ($a = load(0)) === 0)) {
+                        } else {
+                            /** @psalm-check-type-exact $a = 0|null */
+                            echo 1;
+                        }
+                    }',
+            ],
+            'anAndAssigningOnItsRightIdenticalToFalseIsWhereTheLeftSideIsFalse' => [
+                'code' => '<?php
+                    function nextOrNull(int $v): ?int {
+                        return $v > 5 ? null : $v + 1;
+                    }
+
+                    function f(?int $a): void {
+                        if (($a !== null && ($a = nextOrNull($a)) === null) === false) {
+                            /** @psalm-check-type-exact $a = int|null */
+                            echo 1;
+                        }
+                    }',
+            ],
+            'theRightOperandOfAnOrAfterAnOrAssigningOnItsRightHasNoClausesOfTheOldValue' => [
+                'code' => '<?php
+                    function load(?int $x): ?int {
+                        return $x;
+                    }
+
+                    function f(?int $a, ?int $p): void {
+                        if (($a === null || ($a = load($p))) || $a === null) {
+                            echo 1;
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => ['RiskyTruthyFalsyComparison'],
+            ],
+            'aFalsyAssertionOfAnAndAssigningOnItsRightHoldsWhereTheLeftSideIsFalse' => [
+                'code' => '<?php
+                    function nextOrNull(int $v): ?int {
+                        return $v > 5 ? null : $v + 1;
+                    }
+
+                    /**
+                     * @param mixed $v
+                     * @psalm-assert falsy $v
+                     */
+                    function assertFalsy($v): void {}
+
+                    function f(?int $a): void {
+                        assertFalsy($a !== null && ($a = nextOrNull($a)) === null);
+
+                        /** @psalm-check-type-exact $a = int|null */
+                        echo 1;
+                    }',
+            ],
+            'theElseAfterAnElseifReassigningAVariableHasNoNegatedClausesOfItsOldValue' => [
+                'code' => '<?php
+                    function load(): ?int {
+                        return null;
+                    }
+
+                    function f(?int $a): void {
+                        if ($a === null) {
+                        } elseif ($a = load()) {
+                        } else {
+                            /** @psalm-check-type-exact $a = 0|null */
+                            echo 1;
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => ['RiskyTruthyFalsyComparison'],
+            ],
+            'anAssertFunctionReassigningAParameterAssertsNothingOfItsArgumentFromThere' => [
+                'code' => '<?php
+                    function load(?int $x): ?int {
+                        return $x;
+                    }
+
+                    function assertLoaded(?int $a, ?int $p): void {
+                        if ($a === null && ($a = load($p)) === null) {
+                            throw new Exception("null");
+                        }
+                    }
+
+                    function assertBoth(?int $a, ?int $p): void {
+                        if ($a === null) {
+                            throw new Exception("null");
+                        }
+
+                        if (($a = load($p)) === null) {
+                            throw new Exception("null");
+                        }
+                    }
+
+                    function f(?int $a, ?int $b, ?int $p): void {
+                        assertLoaded($a, $p);
+                        /** @psalm-check-type-exact $a = int|null */
+                        echo 1;
+
+                        assertBoth($b, $p);
+                        /** @psalm-check-type-exact $b = int */
+                        echo 1;
+                    }',
+            ],
+            'anAssertMethodAssigningAPropertyOfThisAssertsItForTheCaller' => [
+                'code' => '<?php
+                    final class Holder {
+                        public ?int $value = null;
+
+                        private function load(): ?int {
+                            return rand(0, 1) ? null : 1;
+                        }
+
+                        public function assertLoaded(): void {
+                            if (($this->value = $this->load()) === null) {
+                                throw new Exception("null");
+                            }
+                        }
+                    }
+
+                    function f(Holder $h): int {
+                        $h->assertLoaded();
+
+                        return $h->value;
+                    }',
+            ],
+            'aDoubleNegationIsTheConditionItself' => [
+                'code' => '<?php
+                    function f(?int $a): void {
+                        if (!!$a) {
+                            /** @psalm-check-type-exact $a = int */
+                            echo 1;
+                        } else {
+                            /** @psalm-check-type-exact $a = 0|null */
+                            echo 1;
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => ['RiskyTruthyFalsyComparison'],
+            ],
+            'aLoopRetryingUntilTheVariableItAssignsIsNotNullIsLeftWithItNotNull' => [
+                'code' => '<?php
+                    function load(): ?int {
+                        return rand(0, 1) ? null : 1;
+                    }
+
+                    function f(?int $a): int {
+                        while ($a === null || ($a = load()) === null) {
+                            echo 1;
+                        }
+
+                        return $a;
+                    }
+
+                    function g(?int $a): int {
+                        do {
+                            echo 1;
+                        } while ($a === null || ($a = load()) === null);
+
+                        return $a;
+                    }',
+            ],
+            'aVariableAssignedOnTheRightOfAnOrIsDefinedWhereTheOrIsFalse' => [
+                'code' => '<?php
+                    function get(int $a): ?string {
+                        return $a > 1 ? "x" : null;
+                    }
+
+                    /**
+                     * @param mixed $v
+                     * @psalm-assert falsy $v
+                     */
+                    function assertFalsy($v): void {}
+
+                    function f(?int $a): string {
+                        do {
+                            echo 1;
+                        } while (!$a || !($b = get($a)));
+
+                        return $b;
+                    }
+
+                    function g(?int $a): string {
+                        switch (true) {
+                            case !$a || !($b = get($a)):
+                                return "";
+                            default:
+                                return $b;
+                        }
+                    }
+
+                    function h(?int $a): string {
+                        assertFalsy(!$a || !($b = get($a)));
+
+                        return $b;
+                    }',
+                'assertions' => [],
+                'ignored_issues' => ['RiskyTruthyFalsyComparison', 'MixedReturnStatement', 'MixedInferredReturnType'],
+            ],
             'aStringThatIsNoTraitOrAnyOtherLoadedSymbolIsLeftByAConditionWithAnUnknownCall' => [
                 'code' => '<?php
                     final class Registry {

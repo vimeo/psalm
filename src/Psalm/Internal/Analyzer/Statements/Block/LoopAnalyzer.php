@@ -19,6 +19,7 @@ use Psalm\Internal\PhpVisitor\AssignmentMapVisitor;
 use Psalm\Internal\PhpVisitor\NodeCleanerVisitor;
 use Psalm\Internal\Scope\LoopScope;
 use Psalm\IssueBuffer;
+use Psalm\Node\Expr\BinaryOp\VirtualBooleanAnd;
 use Psalm\Storage\Assertion;
 use Psalm\Type;
 use Psalm\Type\Reconciler;
@@ -624,8 +625,27 @@ final class LoopAnalyzer
             // if the loop contains an assertion and there are no break statements, we can negate that assertion
             // and apply it to the current context
 
+            $deciding_condition = null;
+
+            foreach ($pre_conditions as $i => $pre_condition) {
+                if (!$only_last_condition_decides || $i === count($pre_conditions) - 1) {
+                    $deciding_condition = $deciding_condition
+                        ? new VirtualBooleanAnd($deciding_condition, $pre_condition, $pre_condition->getAttributes())
+                        : $pre_condition;
+                }
+            }
+
             try {
-                $negated_pre_condition_clauses = Algebra::negateFormula(array_merge(...$pre_condition_clauses));
+                $negated_pre_condition_clauses = $deciding_condition
+                    ? FormulaGenerator::getNegatedFormula(
+                        array_merge(...$pre_condition_clauses),
+                        $deciding_condition,
+                        spl_object_id($deciding_condition),
+                        $loop_context->self,
+                        $statements_analyzer,
+                        $codebase,
+                    )
+                    : [];
             } catch (ComplicatedExpressionException) {
                 $negated_pre_condition_clauses = [];
             }
