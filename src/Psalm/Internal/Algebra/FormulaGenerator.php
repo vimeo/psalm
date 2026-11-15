@@ -636,6 +636,30 @@ final class FormulaGenerator
     }
 
     /**
+     * The clauses that say nothing of the variables the expression assigns, or of an item or property of one: what
+     * they said is about the value the variables had before
+     *
+     * @param list<Clause> $clauses
+     * @return list<Clause>
+     */
+    public static function withoutClausesOfVarsAssignedIn(
+        array $clauses,
+        ?PhpParser\Node\Expr $expr,
+        ?string $this_class_name,
+    ): array {
+        $assigned_var_ids = $expr ? self::getAssignedVarIds($expr, $this_class_name) : [];
+
+        if (!$assigned_var_ids) {
+            return $clauses;
+        }
+
+        return array_values(array_filter(
+            $clauses,
+            static fn(Clause $clause): bool => !self::testsAnyVar($clause, $assigned_var_ids),
+        ));
+    }
+
+    /**
      * Whether the clause tests one of the variables, or an item or property of one
      *
      * @param array<string, mixed> $var_ids

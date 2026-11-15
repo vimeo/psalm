@@ -16,7 +16,10 @@ use Psalm\Type\Atomic;
 final class IsNotLooselyEqual extends Assertion
 {
     use UnserializeMemoryUsageSuppressionTrait;
-    public function __construct(public readonly Atomic $type)
+    /**
+     * @param ?string $comparand what the value is compared with, when its type has more than one value
+     */
+    public function __construct(public readonly Atomic $type, public readonly ?string $comparand = null)
     {
     }
 
@@ -32,7 +35,7 @@ final class IsNotLooselyEqual extends Assertion
     #[Override]
     public function getNegation(): Assertion
     {
-        return new IsLooselyEqual($this->type);
+        return new IsLooselyEqual($this->type, $this->comparand);
     }
 
     /**
@@ -46,7 +49,8 @@ final class IsNotLooselyEqual extends Assertion
 
     public function __toString(): string
     {
-        return '!~' . $this->type->getAssertionString();
+        return '!~' . $this->type->getAssertionString()
+            . ($this->comparand === null ? '' : '@' . $this->comparand);
     }
 
     #[Override]
@@ -57,17 +61,19 @@ final class IsNotLooselyEqual extends Assertion
 
     /**
      * @return static
-     * @psalm-pure
      */
     #[Override]
     public function setAtomicType(Atomic $type): self
     {
-        return new static($type);
+        return new static($type, $this->comparand);
     }
 
     #[Override]
     public function isNegationOf(Assertion $assertion): bool
     {
-        return $assertion instanceof IsLooselyEqual && $this->type->getId() === $assertion->type->getId();
+        return $assertion instanceof IsLooselyEqual
+            && $this->type->getId() === $assertion->type->getId()
+            && $this->type->getAssertionString() === $assertion->type->getAssertionString()
+            && $this->comparand === $assertion->comparand;
     }
 }
