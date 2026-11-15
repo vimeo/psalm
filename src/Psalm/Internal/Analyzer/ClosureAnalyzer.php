@@ -24,11 +24,13 @@ use Psalm\Storage\UnserializeMemoryUsageSuppressionTrait;
 use Psalm\Type;
 use Psalm\Type\Atomic\TArray;
 use Psalm\Type\Atomic\TBool;
+use Psalm\Type\Atomic\TEnumCase;
 use Psalm\Type\Atomic\TFalse;
 use Psalm\Type\Atomic\TFloat;
 use Psalm\Type\Atomic\TGenericObject;
 use Psalm\Type\Atomic\TInt;
 use Psalm\Type\Atomic\TKeyedArray;
+use Psalm\Type\Atomic\TLiteralClassString;
 use Psalm\Type\Atomic\TLiteralFloat;
 use Psalm\Type\Atomic\TLiteralInt;
 use Psalm\Type\Atomic\TLiteralString;
@@ -205,33 +207,52 @@ final class ClosureAnalyzer extends FunctionLikeAnalyzer
     private static function widenLiteralsOfByRefCapture(Union $type): Union
     {
         $widened = [];
+        $changed = false;
 
-        foreach ($type->getAtomicTypes() as $atomic) {
-            if ($atomic instanceof TLiteralInt) {
-                $atomic = new TInt();
+        foreach ($type->getAtomicTypes() as $original) {
+            $atomic = $original;
+
+            if ($atomic instanceof TLiteralClassString) {
+                // a class-string stays one
+            } elseif ($atomic instanceof TLiteralInt) {
+                $atomic = new TInt($atomic->from_docblock);
             } elseif ($atomic instanceof TLiteralFloat) {
-                $atomic = new TFloat();
+                $atomic = new TFloat($atomic->from_docblock);
             } elseif ($atomic instanceof TLiteralString) {
-                $atomic = new TString();
+                $atomic = new TString($atomic->from_docblock);
             } elseif ($atomic instanceof TTrue || $atomic instanceof TFalse) {
-                $atomic = new TBool();
+                $atomic = new TBool($atomic->from_docblock);
+            } elseif ($atomic instanceof TEnumCase) {
+                $atomic = new TNamedObject($atomic->value, false, false, [], $atomic->from_docblock);
             } elseif ($atomic instanceof TKeyedArray) {
                 $properties = [];
+                $properties_changed = false;
 
                 foreach ($atomic->properties as $key => $property) {
                     $properties[$key] = self::widenLiteralsOfByRefCapture($property);
+                    $properties_changed = $properties_changed || $properties[$key] !== $property;
                 }
 
-                $atomic = TKeyedArray::make(
-                    $properties,
-                    $atomic->class_strings,
-                    $atomic->fallback_params === null ? null : [
-                        $atomic->fallback_params[0],
-                        self::widenLiteralsOfByRefCapture($atomic->fallback_params[1]),
-                    ],
-                    $atomic->is_list,
-                    $atomic->from_docblock,
-                );
+                $fallback_params = $atomic->fallback_params;
+
+                if ($fallback_params !== null) {
+                    $fallback_value = self::widenLiteralsOfByRefCapture($fallback_params[1]);
+
+                    if ($fallback_value !== $fallback_params[1]) {
+                        $fallback_params = [$fallback_params[0], $fallback_value];
+                        $properties_changed = true;
+                    }
+                }
+
+                if ($properties_changed) {
+                    $atomic = TKeyedArray::make(
+                        $properties,
+                        $atomic->class_strings,
+                        $fallback_params,
+                        $atomic->is_list,
+                        $atomic->from_docblock,
+                    );
+                }
             } elseif ($atomic instanceof TArray) {
                 $atomic = $atomic->setTypeParams([
                     $atomic->type_params[0],
@@ -239,10 +260,11 @@ final class ClosureAnalyzer extends FunctionLikeAnalyzer
                 ]);
             }
 
+            $changed = $changed || $atomic !== $original;
             $widened[$atomic->getKey()] = $atomic;
         }
 
-        return $type->setTypes($widened);
+        return $changed ? $type->setTypes($widened) : $type;
     }
 
     /**

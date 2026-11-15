@@ -233,6 +233,39 @@ final class ClosureTest extends TestCase
                         $callback();
                     }',
             ],
+            'byRefCapturedClassStringStaysAClassString' => [
+                'code' => '<?php
+                    final class Foo {}
+
+                    function f(): void {
+                        $c = Foo::class;
+                        $cb = function () use (&$c): Foo {
+                            return new $c();
+                        };
+                        $cb();
+                    }',
+            ],
+            'byRefCapturedEnumCaseIsNotItsCaptureTimeLiteral' => [
+                'code' => '<?php
+                    enum E {
+                        case A;
+                        case B;
+                    }
+
+                    function f(): void {
+                        $e = E::A;
+                        $cb = function () use (&$e): void {
+                            if ($e === E::B) {
+                                echo 1;
+                            }
+                        };
+                        $e = E::B;
+                        $cb();
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
             'byRefCapturedBoolIsNotItsCaptureTimeLiteral' => [
                 'code' => '<?php
                     function f(): void {
@@ -2908,6 +2941,33 @@ final class ClosureTest extends TestCase
     public static function providerInvalidCodeParse(): iterable
     {
         return [
+            'byRefCapturedTypeFromAnAssertionKeepsItsDocblockOrigin' => [
+                'code' => '<?php
+                    function f(): void {
+                        \assert((bool) ($trace = \debug_backtrace(\DEBUG_BACKTRACE_IGNORE_ARGS)));
+                        $cb = static function () use (&$trace): void {
+                            if ($trace ?? false) {
+                                echo 1;
+                            }
+                        };
+                        $cb();
+                    }',
+                'error_message' => 'RedundantConditionGivenDocblockType - src' . DIRECTORY_SEPARATOR . 'somefile.php:5:33',
+            ],
+            'byRefCapturedDocblockLiteralIsWidenedWithItsDocblockOrigin' => [
+                'code' => '<?php
+                    function f(): void {
+                        /** @var "a"|"b" $s */
+                        $s = rand(0, 1) ? "a" : "b";
+                        $cb = function () use (&$s): void {
+                            if (is_int($s)) {
+                                echo 1;
+                            }
+                        };
+                        $cb();
+                    }',
+                'error_message' => 'DocblockTypeContradiction - src' . DIRECTORY_SEPARATOR . 'somefile.php:6:33',
+            ],
             'arrowFunctionReadingAVariableDefinedInAnIfIsPossiblyUndefined' => [
                 'code' => '<?php
                     function f(): ?int {
