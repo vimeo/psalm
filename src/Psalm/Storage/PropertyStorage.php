@@ -52,6 +52,27 @@ final class PropertyStorage implements HasAttributesInterface
 
     public ?Union $signature_type = null;
 
+    /**
+     * Whether $type comes from the property's own docblock
+     *
+     * @internal
+     */
+    public bool $has_docblock_type = false;
+
+    /**
+     * Whether $type is the docblock type of the overridden property, this one having none
+     *
+     * @internal
+     */
+    public bool $inherited_type = false;
+
+    /**
+     * The type the property has from its own declaration, when $type is inherited
+     *
+     * @internal
+     */
+    public ?Union $own_type = null;
+
     public ?Union $suggested_type = null;
 
     public bool $has_default = false;
@@ -67,8 +88,22 @@ final class PropertyStorage implements HasAttributesInterface
 
     public bool $readonly = false;
 
+    /**
+     * Declared readonly, or in a readonly class
+     *
+     * @internal
+     */
+    public bool $native_readonly = false;
+
     /** Natively readonly with a declared default: from PHP 8.6 the default is its initialising assignment */
     public bool $readonly_default = false;
+
+    /**
+     * Natively readonly and declared `public(set)`: any scope may initialise it
+     *
+     * @internal
+     */
+    public bool $readonly_public_set = false;
 
     /**
      * Whether or not to allow mutation by internal methods

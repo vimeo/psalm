@@ -21,6 +21,7 @@ use Psalm\Internal\Scope\IfScope;
 use Psalm\Internal\Type\Comparator\UnionTypeComparator;
 use Psalm\Issue\ConflictingReferenceConstraint;
 use Psalm\IssueBuffer;
+use Psalm\Node\Expr\VirtualBooleanNot;
 use Psalm\Type\Reconciler;
 
 use function array_any;
@@ -45,6 +46,37 @@ use function spl_object_id;
  */
 final class ElseIfAnalyzer
 {
+    /**
+     * The negation of the clauses of the condition: made from the negated condition where the clauses leave out what
+     * the left side of an `&&` tested of a variable that its right side assigns (see FormulaGenerator)
+     *
+     * @param list<Clause> $elseif_clauses
+     * @return list<Clause>
+     */
+    private static function getNegatedClauses(
+        StatementsAnalyzer $statements_analyzer,
+        Codebase $codebase,
+        PhpParser\Node\Stmt\ElseIf_ $elseif,
+        Context $else_context,
+        array $elseif_clauses,
+    ): array {
+        if (!FormulaGenerator::leavesOutClausesOfAssignedVars($elseif->cond, $else_context->self)) {
+            return Algebra::negateFormula($elseif_clauses);
+        }
+
+        $elseif_cond_id = spl_object_id($elseif->cond);
+
+        return FormulaGenerator::getFormula(
+            $elseif_cond_id,
+            $elseif_cond_id,
+            new VirtualBooleanNot($elseif->cond),
+            $else_context->self,
+            $statements_analyzer,
+            $codebase,
+            false,
+        );
+    }
+
     /**
      * @return false|null
      */
@@ -80,11 +112,26 @@ final class ElseIfAnalyzer
         // it: what the condition assigns is assigned for the elseifs and the else after it too
         $post_if_context = $if_conditional_scope->post_if_context;
 
-        foreach ($assigned_in_conditional_var_ids as $var_id => $_) {
+        foreach ($assigned_in_conditional_var_ids as $var_id => $offset) {
             if (isset($post_if_context->vars_in_scope[$var_id])) {
                 $else_context->vars_in_scope[$var_id] = $post_if_context->vars_in_scope[$var_id];
                 $else_context->vars_possibly_in_scope[$var_id] = true;
+                $if_scope->elseif_cond_assigned_var_ids[$var_id] = $offset;
             }
+        }
+
+        // the else runs when every operand of an `||` was evaluated and falsy, so what they assigned is known there
+        if (array_filter($assigned_in_conditional_var_ids) !== []
+            && ($elseif->cond instanceof PhpParser\Node\Expr\BinaryOp\BooleanOr
+                || $elseif->cond instanceof PhpParser\Node\Expr\BinaryOp\LogicalOr)
+        ) {
+            IfAnalyzer::addConditionallyAssignedVarsToContext(
+                $statements_analyzer,
+                $elseif->cond,
+                clone $pre_conditional_context,
+                $else_context,
+                $assigned_in_conditional_var_ids,
+            );
         }
 
         $mixed_var_ids = [];
@@ -145,6 +192,16 @@ final class ElseIfAnalyzer
             $entry_clauses[] = $c;
         }
 
+        // the clauses the condition's own assignments added are about the new value
+        $entry_clauses = [
+            ...$entry_clauses,
+            ...IfConditionalAnalyzer::getClausesAddedByCondition(
+                $elseif->cond,
+                $pre_conditional_context->clauses,
+                $elseif_context->clauses,
+            ),
+        ];
+
         // this will see whether any of the clauses in set A conflict with the clauses in set B
         AlgebraAnalyzer::checkForParadox(
             $entry_clauses,
@@ -204,7 +261,7 @@ final class ElseIfAnalyzer
                 $active_elseif_types,
             );
             $negated_elseif_types = Algebra::getTruthsFromFormula(
-                Algebra::negateFormula($elseif_clauses),
+                self::getNegatedClauses($statements_analyzer, $codebase, $elseif, $else_context, $elseif_clauses),
             );
         } catch (ComplicatedExpressionException) {
             $reconcilable_elseif_types = [];
@@ -272,6 +329,7 @@ final class ElseIfAnalyzer
 
         $pre_stmts_assigned_var_ids = $elseif_context->assigned_var_ids;
         $elseif_context->assigned_var_ids = [];
+        $elseif_context->fully_assigned_var_ids = [];
         $pre_stmts_possibly_assigned_var_ids = $elseif_context->possibly_assigned_var_ids;
         $elseif_context->possibly_assigned_var_ids = [];
 
@@ -336,13 +394,15 @@ final class ElseIfAnalyzer
         // update the parent context as necessary
         if (!$has_leaving_statements) {
             IfAnalyzer::updateIfScope(
-                $codebase,
+                $statements_analyzer,
                 $if_scope,
                 $elseif_context,
                 $outer_context,
                 array_merge($new_stmts_assigned_var_ids, $assigned_in_conditional_var_ids),
                 $new_stmts_possibly_assigned_var_ids,
                 $newly_reconciled_var_ids,
+                assigned_in_conditional_var_ids: $assigned_in_conditional_var_ids,
+                branch_nodes: [$elseif->cond, ...$elseif->stmts],
             );
 
             $reasonable_clause_count = count($if_scope->reasonable_clauses);
@@ -423,7 +483,16 @@ final class ElseIfAnalyzer
 
         try {
             $if_scope->negated_clauses = Algebra::simplifyCNF(
-                [...$if_scope->negated_clauses, ...Algebra::negateFormula($elseif_clauses)],
+                [
+                    ...$if_scope->negated_clauses,
+                    ...self::getNegatedClauses(
+                        $statements_analyzer,
+                        $codebase,
+                        $elseif,
+                        $else_context,
+                        $elseif_clauses,
+                    ),
+                ],
             );
         } catch (ComplicatedExpressionException) {
             $if_scope->negated_clauses = [];

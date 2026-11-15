@@ -22,14 +22,33 @@ use Psalm\IssueBuffer;
 use Psalm\Storage\Capabilities;
 use Psalm\Storage\UnserializeMemoryUsageSuppressionTrait;
 use Psalm\Type;
+use Psalm\Type\Atomic\TArray;
+use Psalm\Type\Atomic\TBool;
+use Psalm\Type\Atomic\TEnumCase;
+use Psalm\Type\Atomic\TFalse;
+use Psalm\Type\Atomic\TFloat;
+use Psalm\Type\Atomic\TGenericObject;
+use Psalm\Type\Atomic\TInt;
+use Psalm\Type\Atomic\TKeyedArray;
+use Psalm\Type\Atomic\TLiteralClassString;
+use Psalm\Type\Atomic\TLiteralFloat;
+use Psalm\Type\Atomic\TLiteralInt;
+use Psalm\Type\Atomic\TLiteralString;
+use Psalm\Type\Atomic\TMixed;
 use Psalm\Type\Atomic\TNamedObject;
+use Psalm\Type\Atomic\TNonEmptyMixed;
+use Psalm\Type\Atomic\TNull;
+use Psalm\Type\Atomic\TString;
+use Psalm\Type\Atomic\TTrue;
 use Psalm\Type\Union;
 
 use function in_array;
 use function is_string;
 use function preg_match;
 use function str_starts_with;
+use function strlen;
 use function strtolower;
+use function substr;
 
 /**
  * @internal
@@ -84,6 +103,22 @@ final class ClosureAnalyzer extends FunctionLikeAnalyzer
      * @var array<string, true>
      */
     public array $captured_by_ref_writes = [];
+
+    /**
+     * The types of the variables captured by reference where the closure body returns.
+     *
+     * @var array<string, list<Union>>
+     */
+    public array $captured_by_ref_types_at_return = [];
+
+    /**
+     * The variables captured by reference whose literals the closure body sees widened (and their offsets and
+     * properties), with the types they have in the enclosing scope: what the code after the closure is made of, as the
+     * body may leave them untouched.
+     *
+     * @var array<string, Union>
+     */
+    public array $captured_by_ref_enclosing_types = [];
 
     public function getRecursiveVarId(): ?string
     {
@@ -164,6 +199,107 @@ final class ClosureAnalyzer extends FunctionLikeAnalyzer
     }
 
     /**
+     * The enclosing scope can change a captured reference after the closure is created, so the value it held
+     * at that point says nothing about the value the closure sees.
+     *
+     * @psalm-pure
+     */
+    private static function widenLiteralsOfByRefCapture(Union $type): Union
+    {
+        $widened = [];
+        $changed = false;
+
+        foreach ($type->getAtomicTypes() as $original) {
+            $atomic = $original;
+
+            if ($atomic instanceof TLiteralClassString) {
+                // a class-string stays one
+            } elseif ($atomic instanceof TLiteralInt) {
+                $atomic = new TInt($atomic->from_docblock);
+            } elseif ($atomic instanceof TLiteralFloat) {
+                $atomic = new TFloat($atomic->from_docblock);
+            } elseif ($atomic instanceof TLiteralString) {
+                $atomic = new TString($atomic->from_docblock);
+            } elseif ($atomic instanceof TTrue || $atomic instanceof TFalse) {
+                $atomic = new TBool($atomic->from_docblock);
+            } elseif ($atomic instanceof TEnumCase) {
+                $atomic = new TNamedObject($atomic->value, false, false, [], $atomic->from_docblock);
+            } elseif ($atomic instanceof TKeyedArray) {
+                $properties = [];
+                $properties_changed = false;
+
+                foreach ($atomic->properties as $key => $property) {
+                    $properties[$key] = self::widenLiteralsOfByRefCapture($property);
+                    $properties_changed = $properties_changed || $properties[$key] !== $property;
+                }
+
+                $fallback_params = $atomic->fallback_params;
+
+                if ($fallback_params !== null) {
+                    $fallback_value = self::widenLiteralsOfByRefCapture($fallback_params[1]);
+
+                    if ($fallback_value !== $fallback_params[1]) {
+                        $fallback_params = [$fallback_params[0], $fallback_value];
+                        $properties_changed = true;
+                    }
+                }
+
+                if ($properties_changed) {
+                    $atomic = TKeyedArray::make(
+                        $properties,
+                        $atomic->class_strings,
+                        $fallback_params,
+                        $atomic->is_list,
+                        $atomic->from_docblock,
+                    );
+                }
+            } elseif ($atomic instanceof TArray) {
+                $atomic = $atomic->setTypeParams([
+                    $atomic->type_params[0],
+                    self::widenLiteralsOfByRefCapture($atomic->type_params[1]),
+                ]);
+            }
+
+            $changed = $changed || $atomic !== $original;
+            $widened[$atomic->getKey()] = $atomic;
+        }
+
+        return $changed ? $type->setTypes($widened) : $type;
+    }
+
+    /**
+     * `use ($a)` binds `$a` in the closure, to null when it is undefined
+     *
+     * @psalm-capabilities read-props
+     */
+    private static function getBoundUseType(Union $type): Union
+    {
+        if (!$type->possibly_undefined && !$type->possibly_undefined_from_try) {
+            return $type;
+        }
+
+        $type = $type->setPossiblyUndefined(false, false);
+
+        if ($type->isNullable()) {
+            return $type;
+        }
+
+        foreach ($type->getAtomicTypes() as $atomic) {
+            if ($atomic instanceof TNonEmptyMixed) {
+                return $type->getBuilder()
+                    ->addType(new TMixed($atomic->from_loop_isset, $atomic->from_docblock))
+                    ->freeze();
+            }
+
+            if ($atomic instanceof TMixed) {
+                return $type;
+            }
+        }
+
+        return $type->getBuilder()->addType(new TNull())->freeze();
+    }
+
+    /**
      * The type of a variable captured by a closure, as seen in its body. The value is shared with
      * the enclosing scope, so an object the enclosing scope created is not fresh in the closure:
      * the closure may be called more than once, and writing that object writes state that outlives
@@ -215,7 +351,16 @@ final class ClosureAnalyzer extends FunctionLikeAnalyzer
                 /** @psalm-suppress PossiblyUndefinedStringArrayOffset */
                 $use_context->vars_in_scope['$this'] = $context->vars_in_scope['$this'];
             } elseif ($context->self) {
-                $this_atomic = new TNamedObject($context->self, true);
+                $outer_this_atomic = isset($context->vars_in_scope['$this'])
+                    && $context->vars_in_scope['$this']->isSingle()
+                    ? $context->vars_in_scope['$this']->getSingleAtomic()
+                    : null;
+
+                // keep the template params of the class, so that its methods take the closure's TNode for theirs
+                $this_atomic = $outer_this_atomic instanceof TGenericObject
+                    && strtolower($outer_this_atomic->value) === strtolower($context->self)
+                    ? $outer_this_atomic
+                    : new TNamedObject($context->self, true);
 
                 $use_context->vars_in_scope['$this'] = new Union([$this_atomic]);
             }
@@ -278,15 +423,21 @@ final class ClosureAnalyzer extends FunctionLikeAnalyzer
 
                 $use_context->vars_in_scope[$use_var_id] =
                     $context->hasVariable($use_var_id)
-                    ? self::getCapturedType($context->vars_in_scope[$use_var_id])
+                    ? self::getCapturedType(self::getBoundUseType($context->vars_in_scope[$use_var_id]))
                     : Type::getMixed();
 
                 if ($use->byRef) {
                     $was_by_ref[$use_var_id] = $context->hasVariable($use_var_id)
                         && $context->vars_in_scope[$use_var_id]->by_ref;
 
-                    $use_context->vars_in_scope[$use_var_id] =
-                        $use_context->vars_in_scope[$use_var_id]->setProperties(['by_ref' => true]);
+                    $captured_type = $use_context->vars_in_scope[$use_var_id];
+                    $use_context->vars_in_scope[$use_var_id] = self::widenLiteralsOfByRefCapture(
+                        $captured_type,
+                    )->setProperties(['by_ref' => true]);
+
+                    if ($use_context->vars_in_scope[$use_var_id]->getId() !== $captured_type->getId()) {
+                        $closure_analyzer->captured_by_ref_enclosing_types[$use_var_id] = $captured_type;
+                    }
                     $use_context->references_to_external_scope[$use_var_id] = true;
 
                     if (isset($context->bound_globals[$use_var_id])) {
@@ -302,7 +453,16 @@ final class ClosureAnalyzer extends FunctionLikeAnalyzer
 
                 foreach ($context->vars_in_scope as $var_id => $type) {
                     if (preg_match('/^\$' . $use->var->name . '[\[\-]/', $var_id)) {
-                        $use_context->vars_in_scope[$var_id] = self::getCapturedType($type);
+                        // the enclosing scope can change what a variable captured by reference holds after the
+                        // closure is created, so can it its offsets and properties: their literals are widened too
+                        $captured_type = self::getCapturedType($type);
+                        $use_context->vars_in_scope[$var_id] = $use->byRef
+                            ? self::widenLiteralsOfByRefCapture($captured_type)
+                            : $captured_type;
+
+                        if ($use->byRef && $use_context->vars_in_scope[$var_id]->getId() !== $captured_type->getId()) {
+                            $closure_analyzer->captured_by_ref_enclosing_types[$var_id] = $captured_type;
+                        }
                         $use_context->vars_possibly_in_scope[$var_id] = true;
                     }
                 }
@@ -321,6 +481,21 @@ final class ClosureAnalyzer extends FunctionLikeAnalyzer
                         $context->vars_in_scope[$use_var_id],
                     );
 
+                    // what is known of a readonly property holds in the closure; a deeper path goes through a
+                    // value that may change
+                    foreach ($context->vars_in_scope as $var_id => $type) {
+                        if (str_starts_with($var_id, $use_var_id . '->')
+                            && self::isReadonlyPropertyOf(
+                                $statements_analyzer->getCodebase(),
+                                $context->vars_in_scope[$use_var_id],
+                                substr($var_id, strlen($use_var_id) + 2),
+                            )
+                        ) {
+                            $use_context->vars_in_scope[$var_id] = self::getCapturedType($type);
+                            $use_context->vars_possibly_in_scope[$var_id] = true;
+                        }
+                    }
+
                     if ($statements_analyzer->data_flow_graph) {
                         $parent_nodes = $context->vars_in_scope[$use_var_id]->parent_nodes;
 
@@ -335,6 +510,17 @@ final class ClosureAnalyzer extends FunctionLikeAnalyzer
                 }
 
                 $use_context->vars_possibly_in_scope[$use_var_id] = true;
+            }
+        }
+
+        // a closure runs on the PHP version and in the SAPI of the code creating it
+        foreach ([
+            Context::PHP_VERSION_ID_VAR_ID,
+            Context::PHP_SYMBOL_GUARD_VAR_ID,
+            Context::PHP_SAPI_VAR_ID,
+        ] as $var_id) {
+            if (isset($context->vars_in_scope[$var_id])) {
+                $use_context->vars_in_scope[$var_id] = $context->vars_in_scope[$var_id];
             }
         }
 
@@ -401,6 +587,37 @@ final class ClosureAnalyzer extends FunctionLikeAnalyzer
     }
 
     /**
+     * Whether every class the type can be has the readonly property of that name
+     *
+     * @psalm-capabilities read-props
+     */
+    private static function isReadonlyPropertyOf(Codebase $codebase, Union $type, string $property_name): bool
+    {
+        if (!preg_match('/^[a-zA-Z_\x80-\xff][a-zA-Z0-9_\x80-\xff]*$/', $property_name)) {
+            return false;
+        }
+
+        foreach ($type->getAtomicTypes() as $atomic_type) {
+            if (!$atomic_type instanceof TNamedObject) {
+                return false;
+            }
+
+            $property_id = $atomic_type->value . '::$' . $property_name;
+
+            if (!$codebase->classlike_storage_provider->has($atomic_type->value)
+                || !$codebase->properties->hasStorage($property_id)
+                || !$codebase->properties->getStorage($property_id)->readonly
+                // a private method of the class may still write it
+                || $codebase->properties->getStorage($property_id)->allow_private_mutation
+            ) {
+                return false;
+            }
+        }
+
+        return true;
+    }
+
+    /**
      * @return  false|null
      */
     private static function analyzeClosureUses(
@@ -435,6 +652,10 @@ final class ClosureAnalyzer extends FunctionLikeAnalyzer
                 )) {
                     return false;
                 }
+            }
+
+            if ($use->byRef) {
+                $statements_analyzer->markCapturedByReference($use_var_id);
             }
 
             // capturing by reference defines the variable (as null) in the enclosing scope
@@ -480,6 +701,31 @@ final class ClosureAnalyzer extends FunctionLikeAnalyzer
                     IssueBuffer::maybeAdd(
                         new UndefinedVariable(
                             'Cannot find referenced variable ' . $use_var_id,
+                            new CodeLocation($statements_analyzer->getSource(), $use->var),
+                        ),
+                        $statements_analyzer->getSuppressedIssues(),
+                    );
+                }
+            } elseif (!$use->byRef) {
+                $use_type = $context->vars_in_scope[$use_var_id];
+
+                if ($use_type->possibly_undefined_from_try) {
+                    IssueBuffer::maybeAdd(
+                        new PossiblyUndefinedVariable(
+                            'Possibly undefined variable ' . $use_var_id . ' defined in try block',
+                            new CodeLocation($statements_analyzer->getSource(), $use->var),
+                        ),
+                        $statements_analyzer->getSuppressedIssues(),
+                    );
+                } elseif ($use_type->possibly_undefined) {
+                    // extract() defines variables without a first appearance
+                    $first_appearance = $statements_analyzer->getFirstAppearance($use_var_id);
+
+                    IssueBuffer::maybeAdd(
+                        new PossiblyUndefinedVariable(
+                            'Possibly undefined variable ' . $use_var_id . ($first_appearance
+                                ? ', first seen on line ' . $first_appearance->getLineNumber()
+                                : ''),
                             new CodeLocation($statements_analyzer->getSource(), $use->var),
                         ),
                         $statements_analyzer->getSuppressedIssues(),

@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Psalm\Internal\Scope;
 
 use Psalm\Context;
+use Psalm\Storage\Assertion;
 use Psalm\Type\Union;
 
 /**
@@ -13,6 +14,21 @@ use Psalm\Type\Union;
 final class LoopScope
 {
     public int $iteration_count = 0;
+
+    /**
+     * What the condition being false says of the variables, when the loop has no break
+     *
+     * @var array<string, list<list<Assertion>>>
+     */
+    public array $exit_truths = [];
+
+    /**
+     * The variables the loop (and the loops around it) may assign, written to, or pass to a call, as the root of
+     * what is changed: `$a` for `$a['x']++` and `$a->p = 1`
+     *
+     * @var array<string, bool>
+     */
+    public array $assigned_root_var_ids = [];
 
     /**
      * @var array<string, Union>
@@ -40,6 +56,11 @@ final class LoopScope
      * @var array<string, Union>
      */
     public array $possibly_defined_loop_parent_vars = [];
+
+    /**
+     * The number of break statements seen in the first iteration
+     */
+    public int $break_count = 0;
 
     /**
      * @var array<string, bool>

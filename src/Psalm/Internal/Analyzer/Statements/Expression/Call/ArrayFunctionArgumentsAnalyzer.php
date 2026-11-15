@@ -25,6 +25,7 @@ use Psalm\Internal\Type\TemplateStandinTypeReplacer;
 use Psalm\Internal\Type\TypeCombiner;
 use Psalm\Internal\Type\TypeExpander;
 use Psalm\Issue\ArgumentTypeCoercion;
+use Psalm\Issue\CallableByReferenceMismatch;
 use Psalm\Issue\InvalidArgument;
 use Psalm\Issue\InvalidScalarArgument;
 use Psalm\Issue\MixedArgumentTypeCoercion;
@@ -266,8 +267,10 @@ final class ArrayFunctionArgumentsAnalyzer
                     $new_offset_type = Type::getInt();
                 }
 
-                if (!($arg_value_type = $statements_analyzer->node_data->getType($arg->value))
-                    || $arg_value_type->hasMixed()
+                // a value of unknown type still goes to the front of a list, which stays a list
+                if ((!($arg_value_type = $statements_analyzer->node_data->getType($arg->value))
+                        || $arg_value_type->hasMixed())
+                    && !($objectlike_list && !$arg->unpack)
                 ) {
                     $by_ref_type = Type::combineUnionTypes(
                         $by_ref_type,
@@ -306,7 +309,7 @@ final class ArrayFunctionArgumentsAnalyzer
                 } else {
                     if ($objectlike_list) {
                         $properties = $objectlike_list->properties;
-                        array_unshift($properties, $arg_value_type);
+                        array_unshift($properties, $arg_value_type ?? Type::getMixed());
 
                         $by_ref_type = new Union([$objectlike_list->setProperties($properties)]);
                     } elseif ($array_type instanceof TArray && $array_type->isEmptyArray()) {
@@ -650,7 +653,7 @@ final class ArrayFunctionArgumentsAnalyzer
         Context $context,
         bool $is_array_shift,
     ): void {
-        $var_id = ExpressionIdentifier::getVarId(
+        $var_id = ExpressionIdentifier::getExtendedVarId(
             $arg->value,
             $statements_analyzer->getFQCLN(),
             $statements_analyzer,
@@ -778,7 +781,7 @@ final class ArrayFunctionArgumentsAnalyzer
     }
 
     /**
-     * @param  (TArray|null)[] $array_arg_types
+     * @param  array<int, TArray|null> $array_arg_types
      */
     private static function checkClosureType(
         StatementsAnalyzer $statements_analyzer,
@@ -942,7 +945,7 @@ final class ArrayFunctionArgumentsAnalyzer
 
     /**
      * @param  TClosure|TCallable $closure_type
-     * @param  (TArray|null)[] $array_arg_types
+     * @param  array<int, TArray|null> $array_arg_types
      */
     private static function checkClosureTypeArgs(
         StatementsAnalyzer $statements_analyzer,
@@ -968,9 +971,39 @@ final class ArrayFunctionArgumentsAnalyzer
             if (!$param->is_optional && !$param->is_variadic) {
                 $required_param_count = $i + 1;
             }
+
+            // array_map() has no callable type to compare the callback with, as the other functions do: it calls the
+            // callback with values
+            if ($param->by_ref && $i < $max_closure_param_count && $method_id === 'array_map') {
+                IssueBuffer::maybeAdd(
+                    new CallableByReferenceMismatch(
+                        'The callback of ' . $method_id . ' takes parameter ' . ($i + 1) . ' by reference, but it is'
+                            . ' called with a value',
+                        new CodeLocation($statements_analyzer->getSource(), $closure_arg->value),
+                        $method_id,
+                    ),
+                    $statements_analyzer->getSuppressedIssues(),
+                );
+            }
         }
 
-        if (count($closure_params) < $min_closure_param_count) {
+        // a variadic parameter, or func_get_args(), takes any number of arguments
+        $accepts_any_count = false;
+
+        foreach ($closure_params as $param) {
+            if ($param->is_variadic) {
+                $accepts_any_count = true;
+            }
+        }
+
+        if (!$accepts_any_count && $closure_type instanceof TClosure && $closure_type->callable_id !== null) {
+            $accepts_any_count = FunctionCallReturnTypeFetcher::getClosureStorage(
+                $statements_analyzer,
+                $closure_type->callable_id,
+            )?->variadic === true;
+        }
+
+        if (!$accepts_any_count && count($closure_params) < $min_closure_param_count) {
             $argument_text = $min_closure_param_count === 1 ? 'one argument' : $min_closure_param_count . ' arguments';
 
             IssueBuffer::maybeAdd(
@@ -1007,12 +1040,16 @@ final class ArrayFunctionArgumentsAnalyzer
             return;
         }
 
-        foreach ($closure_params as $i => $closure_param) {
-            if (!isset($array_arg_types[$i])) {
+        $last_closure_param = $closure_params ? $closure_params[count($closure_params) - 1] : null;
+
+        foreach ($array_arg_types as $i => $array_arg_type) {
+            // every array beyond the parameters is passed to the variadic one
+            $closure_param = $closure_params[$i]
+                ?? ($last_closure_param !== null && $last_closure_param->is_variadic ? $last_closure_param : null);
+
+            if ($closure_param === null || $array_arg_type === null) {
                 continue;
             }
-
-            $array_arg_type = $array_arg_types[$i];
 
             $input_type = $array_arg_type->type_params[1];
 

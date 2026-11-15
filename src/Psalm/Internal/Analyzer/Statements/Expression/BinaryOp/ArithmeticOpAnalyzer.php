@@ -11,6 +11,7 @@ use Psalm\Config;
 use Psalm\Context;
 use Psalm\Internal\Analyzer\FunctionLikeAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\Assignment\ArrayAssignmentAnalyzer;
+use Psalm\Internal\Analyzer\Statements\Expression\ExpressionIdentifier;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\Internal\Analyzer\TraitAnalyzer;
 use Psalm\Internal\Provider\NodeDataProvider;
@@ -18,6 +19,7 @@ use Psalm\Internal\Type\LiteralCast;
 use Psalm\Internal\Type\TemplateBound;
 use Psalm\Internal\Type\TypeCombiner;
 use Psalm\Issue\FalseOperand;
+use Psalm\Issue\ImplicitFloatToIntCast;
 use Psalm\Issue\InvalidOperand;
 use Psalm\Issue\MixedOperand;
 use Psalm\Issue\NullOperand;
@@ -53,12 +55,17 @@ use Psalm\Type\Union;
 use function array_diff_key;
 use function array_values;
 use function count;
+use function floor;
 use function is_int;
 use function is_numeric;
 use function max;
 use function min;
 use function preg_match;
+use function strrpos;
 use function strtolower;
+use function substr;
+
+use const PHP_INT_MIN;
 
 /**
  * @internal
@@ -199,6 +206,13 @@ final class ArithmeticOpAnalyzer
                 }
             }
 
+            $int_operation = self::getNameOfAnOperationOnInts($parent);
+
+            if ($statements_source && $int_operation !== null) {
+                self::reportFloatOperand($statements_source, $left, $left_type, 'Left', $int_operation);
+                self::reportFloatOperand($statements_source, $right, $right_type, 'Right', $int_operation);
+            }
+
             $bitwise_result_type = self::getBitwiseResultOfNonNegativeLiterals($parent, $left_type, $right_type);
             if ($bitwise_result_type !== null) {
                 $result_type = $bitwise_result_type;
@@ -212,8 +226,10 @@ final class ArithmeticOpAnalyzer
             $has_valid_right_operand = false;
             $has_string_increment = false;
 
-            foreach ($left_type->getAtomicTypes() as $left_type_part) {
-                foreach ($right_type->getAtomicTypes() as $right_type_part) {
+            $right_type_parts = self::expandNumericTemplates($right_type);
+
+            foreach (self::expandNumericTemplates($left_type) as $left_type_part) {
+                foreach ($right_type_parts as $right_type_part) {
                     $candidate_result_type = self::analyzeOperands(
                         $statements_source,
                         $codebase,
@@ -296,6 +312,43 @@ final class ArithmeticOpAnalyzer
     }
 
     /**
+     * A template whose bound is only ints and floats is the sum of the results for each of them
+     *
+     * @psalm-pure
+     * @return list<Atomic>
+     */
+    private static function expandNumericTemplates(Union $type): array
+    {
+        $parts = [];
+
+        foreach ($type->getAtomicTypes() as $part) {
+            if ($part instanceof TTemplateParam && self::isNumeric($part->as)) {
+                foreach ($part->as->getAtomicTypes() as $bound_part) {
+                    $parts[] = $bound_part;
+                }
+            } else {
+                $parts[] = $part;
+            }
+        }
+
+        return $parts;
+    }
+
+    /**
+     * @psalm-pure
+     */
+    private static function isNumeric(Union $type): bool
+    {
+        foreach ($type->getAtomicTypes() as $part) {
+            if (!$part instanceof TInt && !$part instanceof TFloat) {
+                return false;
+            }
+        }
+
+        return true;
+    }
+
+    /**
      * @psalm-pure
      */
     private static function getNumericalType(int|float $result): Union
@@ -332,10 +385,10 @@ final class ArithmeticOpAnalyzer
         if (($left_type_part instanceof TLiteralInt || $left_type_part instanceof TLiteralFloat)
             && ($right_type_part instanceof TLiteralInt || $right_type_part instanceof TLiteralFloat)
             && (
-                //we don't try to do arithmetics on variables in loops
+                //we don't try to do arithmetics on what a loop can change in loops: variables, items, properties
                 $context === null
                 || $context->inside_loop === false
-                || (!$left instanceof PhpParser\Node\Expr\Variable && !$right instanceof PhpParser\Node\Expr\Variable)
+                || (!self::isChangeableByLoop($left, $context) && !self::isChangeableByLoop($right, $context))
             )
         ) {
             // get_class is fine here because both classes are final.
@@ -1088,6 +1141,98 @@ final class ArithmeticOpAnalyzer
         }
 
         return $calculated_type;
+    }
+
+    /**
+     * Whether converting the number to an int loses nothing: it has no fraction and is in the range of an int
+     *
+     * @psalm-pure
+     */
+    public static function isExactInt(float $number): bool
+    {
+        return floor($number) === $number && $number >= (float) PHP_INT_MIN && $number < -(float) PHP_INT_MIN;
+    }
+
+    /**
+     * The name of an operation that converts its operands to ints, null for any other
+     *
+     * @psalm-pure
+     */
+    private static function getNameOfAnOperationOnInts(PhpParser\Node $operation): ?string
+    {
+        if ($operation instanceof PhpParser\Node\Expr\BinaryOp\Mod) {
+            return 'a modulo operation';
+        }
+
+        return $operation instanceof PhpParser\Node\Expr\BinaryOp\BitwiseOr
+            || $operation instanceof PhpParser\Node\Expr\BinaryOp\BitwiseAnd
+            || $operation instanceof PhpParser\Node\Expr\BinaryOp\BitwiseXor
+            || $operation instanceof PhpParser\Node\Expr\BinaryOp\ShiftLeft
+            || $operation instanceof PhpParser\Node\Expr\BinaryOp\ShiftRight
+                ? 'a bitwise operation'
+                : null;
+    }
+
+    /**
+     * A bitwise or modulo operation converts its operands to ints, dropping the fraction of a float: reported when the
+     * value is known to lose something, not when a float of unknown value might
+     */
+    private static function reportFloatOperand(
+        StatementsSource $statements_source,
+        PhpParser\Node\Expr $operand,
+        Union $operand_type,
+        string $side,
+        string $operation,
+    ): void {
+        foreach ($operand_type->getAtomicTypes() as $atomic_type) {
+            if ($atomic_type instanceof TLiteralFloat && !self::isExactInt($atomic_type->value)) {
+                IssueBuffer::maybeAdd(
+                    new ImplicitFloatToIntCast(
+                        $side . ' operand of ' . $operation . ' is converted to an int, got ' . $operand_type->getId(),
+                        new CodeLocation($statements_source, $operand),
+                    ),
+                    $statements_source->getSuppressedIssues(),
+                );
+
+                return;
+            }
+        }
+    }
+
+    /**
+     * What a loop can change: any variable, and an item or property of one the loop assigns or passes to a call
+     */
+    private static function isChangeableByLoop(PhpParser\Node\Expr $expr, ?Context $context): bool
+    {
+        if ($expr instanceof PhpParser\Node\Expr\Variable) {
+            return true;
+        }
+
+        if (!$expr instanceof PhpParser\Node\Expr\ArrayDimFetch
+            && !$expr instanceof PhpParser\Node\Expr\PropertyFetch
+            && !$expr instanceof PhpParser\Node\Expr\StaticPropertyFetch
+        ) {
+            return false;
+        }
+
+        $root_var_id = $context !== null ? ExpressionIdentifier::getRootVarId($expr, $context->self) : null;
+
+        if ($root_var_id === null || $context?->loop_scope === null) {
+            return true;
+        }
+
+        // passing `$a` to a call or assigning `$a->b` changes what `$a->b->c` reads
+        while (!isset($context->loop_scope->assigned_root_var_ids[$root_var_id])) {
+            $property_separator = strrpos($root_var_id, '->');
+
+            if ($property_separator === false) {
+                return false;
+            }
+
+            $root_var_id = substr($root_var_id, 0, $property_separator);
+        }
+
+        return true;
     }
 
     /**

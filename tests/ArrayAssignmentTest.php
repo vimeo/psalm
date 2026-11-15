@@ -126,6 +126,125 @@ final class ArrayAssignmentTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'appendToANestedElementOfASealedKeyedArray' => [
+                'code' => '<?php
+                    $conditions = ["A" => "B"];
+                    $conditions[]["C"] = [];
+
+                    $pair = ["A" => "B", "C" => "D"];
+                    $pair[]["E"] = 1;
+
+                    echo count($conditions) + count($pair);',
+                'assertions' => [
+                    '$conditions===' => "array{0?: array{C: array<never, never>}, A?: 'B', ...<int<0, max>, array{C: array<never, never>}>}",
+                    '$pair===' => "array{0?: array{E: 1}, A?: 'B', C?: 'D', ...<int<0, max>, array{E: 1}>}",
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'nestedAppendToASealedListFillsTheAppendedItem' => [
+                'code' => '<?php
+                    $l = [1];
+                    $l[]["C"] = [];
+
+                    $m = [1, 2];
+                    $m[][] = "x";',
+                'assertions' => [
+                    '$l===' => 'list{1, array{C: array<never, never>}}',
+                    '$m===' => "list{1, 2, non-empty-list<'x'>}",
+                ],
+            ],
+            'appendedElementsOfAnEmptyArrayHoldOnlyTheirOwnKeys' => [
+                'code' => '<?php
+                    $m = [];
+                    $m[]["C"] = 1;
+                    $m[]["C"] = 2;',
+                'assertions' => [
+                    '$m===' => 'list{array{C: 1}, ...<array{C: 1|2}>}',
+                ],
+            ],
+            'keyOfAnArrayItemIsEvaluatedBeforeTheValue' => [
+                'code' => '<?php
+                    $i = 0;
+                    $a = [];
+                    $a[$i++] = $i;
+
+                    $b = [];
+                    $b[$k = "x"][$k . "y"] = $k;',
+                'assertions' => [
+                    '$a===' => 'array{0: 1}',
+                    '$b===' => "array{x: array{xy: 'x'}}",
+                ],
+            ],
+            'keysOfAnArrayItemAreEvaluatedInOrder' => [
+                'code' => '<?php
+                    $i = 0;
+                    $a = [];
+                    $a[$i + 0][$i++] = 42;
+
+                    $j = 0;
+                    $b = [];
+                    $b[$j][$j++] = 42;',
+                'assertions' => [
+                    '$a===' => 'array{0: array{0: 42}}',
+                    // a variable key is only read when the item is written
+                    '$b===' => 'array{1: array{0: 42}}',
+                ],
+            ],
+            'varAnnotationAppliesToTheKeysOfAnArrayItem' => [
+                'code' => '<?php
+                    /**
+                     * @param mixed $i
+                     * @param mixed $v
+                     * @return array<int>
+                     */
+                    function f($i, $v): array {
+                        $a = [];
+                        /** @var int $i */
+                        $a[$i++] = 0;
+                        /** @var int */
+                        $a[$i++] = $v;
+
+                        return $a;
+                    }',
+            ],
+            'variableAssignedInTheKeyOfAnArrayItemIsDefinedInTheValue' => [
+                'code' => '<?php
+                    function roots(object $node): array {
+                        $roots = [];
+                        $roots[spl_object_id($root = $node)] = $root;
+
+                        return $roots;
+                    }',
+            ],
+            'assignToTheItemOfAnArrayAFunctionReturnsByReference' => [
+                'code' => '<?php
+                    function &ensureArray(array &$what): array {
+                        return $what;
+                    }
+
+                    $f = [];
+                    ensureArray($f)[] = "foobar";',
+            ],
+            'assignToTheItemOfAnArrayAMethodReturnsByReference' => [
+                'code' => '<?php
+                    final class Bag {
+                        private array $items = [];
+
+                        public function &items(): array {
+                            return $this->items;
+                        }
+
+                        public static function &of(array &$what): array {
+                            return $what;
+                        }
+                    }
+
+                    $bag = new Bag();
+                    $bag->items()[] = "foo";
+                    $a = [];
+                    Bag::of($a)["k"] = "bar";',
+            ],
             'coalesceAssignmentOnTwoOptionalKeysOfAnArrayWithAShapeIntersection' => [
                 'code' => '<?php
                     /** @var array{name?: string, age?: int}&array $data */
@@ -2858,6 +2977,16 @@ final class ArrayAssignmentTest extends TestCase
     public static function providerInvalidCodeParse(): iterable
     {
         return [
+            'assignToTheItemOfAnArrayAFunctionReturnsByValue' => [
+                'code' => '<?php
+                    function getArray(array $what): array {
+                        return $what;
+                    }
+
+                    $f = [];
+                    getArray($f)[] = "foobar";',
+                'error_message' => 'InvalidArrayAssignment',
+            ],
             'assignToNestedKeyOfListWithUnrelatedKeyIsNotAList' => [
                 'code' => '<?php
                     /**
@@ -2995,7 +3124,6 @@ final class ArrayAssignmentTest extends TestCase
 
                     barBar([1, "2"]);',
                 'error_message' => 'MixedArgumentTypeCoercion',
-                'error_levels' => ['MixedAssignment'],
             ],
             'arrayPropertyAssignment' => [
                 'code' => '<?php

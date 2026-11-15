@@ -23,6 +23,24 @@ final class DoTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'doWhileConditionOnUnsetPropertyIsNotRedundant' => [
+                'code' => '<?php
+                    class Options {
+                        public bool $foo = false;
+                    }
+
+                    $options = new Options();
+
+                    if (random_int(0, 1)) {
+                        $options->foo = true;
+                    }
+
+                    $i = 0;
+                    do {
+                        echo $i;
+                        $i++;
+                    } while ($options->foo && $i < 3);',
+            ],
             'doWhileConditionAfterContinueBeforeAssignment' => [
                 'code' => '<?php
                     do {
@@ -399,6 +417,29 @@ final class DoTest extends TestCase
                         echo "here";
                     } while ($code === 1);',
             ],
+            'doWhileConditionOnVariableIncrementedAfterIt' => [
+                'code' => '<?php
+                    $v = 0;
+                    do {
+                        $foo = "a";
+                        if ($v > 0) {
+                            $foo .= sprintf("_%02d", $v);
+                        }
+                        $v++;
+                    } while (rand(1, 10) < 5);
+
+                    echo $foo;',
+            ],
+            'doWhileUsesVariableIncrementedAfterTheCondition' => [
+                'code' => '<?php
+                    $i = 0;
+                    do {
+                        if ($i > 0) {
+                            echo $i;
+                        }
+                        $i++;
+                    } while ($i < 10);',
+            ],
         ];
     }
 
@@ -409,6 +450,48 @@ final class DoTest extends TestCase
     public static function providerInvalidCodeParse(): iterable
     {
         return [
+            'doWhileBreakBeforeDefinition' => [
+                'code' => <<<'PHP'
+                    <?php
+                    function f(): void {
+                        do {
+                            if (rand()) {
+                                break;
+                            }
+
+                            $v = 1;
+
+                            try {
+                                if (rand()) {
+                                    break;
+                                }
+                            } finally {
+                                echo "done";
+                            }
+                        } while (rand());
+
+                        echo $v;
+                    }
+                    PHP,
+                'error_message' => 'PossiblyUndefinedVariable - src' . DIRECTORY_SEPARATOR . 'somefile.php:19:10',
+                'error_levels' => [],
+                'php_version' => '8.1',
+            ],
+            'doWhileConditionOnNarrowedPropertyIsRedundant' => [
+                'code' => '<?php
+                    class Options {
+                        public bool $foo = false;
+                    }
+
+                    $options = new Options();
+                    $options->foo = true;
+
+                    $i = 0;
+                    do {
+                        $i++;
+                    } while ($options->foo && $i < 3);',
+                'error_message' => 'RedundantCondition',
+            ],
             'doWhileVarWithPossibleBreakWithoutDefining' => [
                 'code' => '<?php
                     do {

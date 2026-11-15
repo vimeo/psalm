@@ -5,6 +5,9 @@ declare(strict_types=1);
 namespace Psalm\Tests;
 
 use Override;
+use Psalm\Config;
+use Psalm\Context;
+use Psalm\Exception\CodeException;
 use Psalm\Tests\Traits\InvalidCodeAnalysisTestTrait;
 use Psalm\Tests\Traits\ValidCodeAnalysisTestTrait;
 
@@ -15,6 +18,136 @@ final class CallableTest extends TestCase
     use InvalidCodeAnalysisTestTrait;
     use ValidCodeAnalysisTestTrait;
 
+    public function testRequiredClosureParamIsAcceptedForAnOptionalCallableParamByDefault(): void
+    {
+        $this->addFile(
+            'somefile.php',
+            '<?php
+                /** @param callable(string=):string $callable */
+                function map(callable $callable): void {
+                    echo $callable();
+                }
+
+                map(fn(string $a): string => $a);',
+        );
+
+        $this->analyzeFile('somefile.php', new Context());
+    }
+
+    public function testStrictOptionalCallableParamsRejectsARequiredClosureParam(): void
+    {
+        $this->expectException(CodeException::class);
+        $this->expectExceptionMessage('InvalidArgument');
+
+        Config::getInstance()->strict_optional_callable_params = true;
+
+        $this->addFile(
+            'somefile.php',
+            '<?php
+                /** @param callable(string=):string $callable */
+                function map(callable $callable): void {
+                    echo $callable();
+                }
+
+                map(fn(string $a): string => $a);',
+        );
+
+        $this->analyzeFile('somefile.php', new Context());
+    }
+
+    public function testStrictOptionalCallableParamsRejectsARequiredSecondClosureParam(): void
+    {
+        $this->expectException(CodeException::class);
+        $this->expectExceptionMessage('InvalidScalarArgument');
+
+        Config::getInstance()->strict_optional_callable_params = true;
+
+        $this->addFile(
+            'somefile.php',
+            '<?php
+                /** @param callable(string, int=):string $callable */
+                function map(callable $callable): void {
+                    echo $callable("a");
+                }
+
+                map(fn(string $a, int $b): string => $a . $b);',
+        );
+
+        $this->analyzeFile('somefile.php', new Context());
+    }
+
+    public function testStrictOptionalCallableParamsAcceptsAnOptionalClosureParam(): void
+    {
+        Config::getInstance()->strict_optional_callable_params = true;
+
+        $this->addFile(
+            'somefile.php',
+            '<?php
+                /** @param callable(string=):string $callable */
+                function map(callable $callable): void {
+                    echo $callable();
+                }
+
+                map(fn(string $a = "d"): string => $a);',
+        );
+
+        $this->analyzeFile('somefile.php', new Context());
+    }
+
+    public function testStrictOptionalCallableParamsAcceptsAVariadicClosureParam(): void
+    {
+        Config::getInstance()->strict_optional_callable_params = true;
+
+        $this->addFile(
+            'somefile.php',
+            '<?php
+                /** @param callable(string=):string $callable */
+                function map(callable $callable): void {
+                    echo $callable();
+                }
+
+                map(fn(string ...$a): string => "x");',
+        );
+
+        $this->analyzeFile('somefile.php', new Context());
+    }
+
+    public function testStrictOptionalCallableParamsAcceptsAClosureWithoutParams(): void
+    {
+        Config::getInstance()->strict_optional_callable_params = true;
+
+        $this->addFile(
+            'somefile.php',
+            '<?php
+                /** @param callable(string=):string $callable */
+                function map(callable $callable): void {
+                    echo $callable();
+                }
+
+                map(fn(): string => "x");',
+        );
+
+        $this->analyzeFile('somefile.php', new Context());
+    }
+
+    public function testStrictOptionalCallableParamsKeepsARequiredContainerParamStrict(): void
+    {
+        Config::getInstance()->strict_optional_callable_params = true;
+
+        $this->addFile(
+            'somefile.php',
+            '<?php
+                /** @param callable(string):string $callable */
+                function map(callable $callable): void {
+                    echo $callable("a");
+                }
+
+                map(fn(string $a): string => $a);',
+        );
+
+        $this->analyzeFile('somefile.php', new Context());
+    }
+
     /**
      * @psalm-pure
      */
@@ -22,6 +155,154 @@ final class CallableTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'byReferenceCallbackOfArrayWalkIsAccepted' => [
+                'code' => '<?php
+                    /** @param list<int> $numbers */
+                    function bump(array $numbers): void {
+                        array_walk($numbers, function (int &$number): void {
+                            $number++;
+                        });
+                        array_walk_recursive($numbers, function (int &$number): void {
+                            $number++;
+                        });
+                    }',
+            ],
+            'byReferenceCalleeGivenToAByValueCallableCanBeSuppressed' => [
+                'code' => '<?php
+                    /** @param callable(int): void $closure */
+                    function takesClosure(callable $closure): void {}
+
+                    /** @psalm-suppress CallableByReferenceMismatch */
+                    takesClosure(function (int &$i): void {});',
+            ],
+            'byReferenceVariadicCalleeGivenToAByReferenceVariadicCallableIsAccepted' => [
+                'code' => '<?php
+                    function bump(int &...$numbers): void {}
+
+                    /** @param callable(int &...$numbers): void $closure */
+                    function takesRefCallable(callable $closure): void {}
+
+                    takesRefCallable("bump");',
+            ],
+            'byReferenceCalleeIsAcceptedByTheByReferenceAlternativeOfAUnion' => [
+                'code' => '<?php
+                    /** @param callable(int): void|callable(int &$i): void $byValueFirst */
+                    function byValueFirst(callable $byValueFirst): void {}
+
+                    /** @param callable(int &$i): void|callable(int): void $byReferenceFirst */
+                    function byReferenceFirst(callable $byReferenceFirst): void {}
+
+                    function bump(int &$i): void {}
+
+                    byValueFirst("bump");
+                    byReferenceFirst("bump");
+                    byValueFirst(function (int &$i): void {});
+                    byReferenceFirst(function (int &$i): void {});',
+            ],
+            'firstClassCallableOfAMethodKeepsTheInheritedReturnType' => [
+                'code' => <<<'PHP'
+                    <?php
+                    abstract class MyClassBase
+                    {
+                        /**
+                         * @return list<int>
+                         * @psalm-impure
+                         */
+                        abstract public function returnsIntArray(): array;
+                    }
+
+                    final class MyClass extends MyClassBase
+                    {
+                        #[\Override]
+                        public function returnsIntArray(): array
+                        {
+                            return [1, 2, 3];
+                        }
+                    }
+
+                    $callable = (new MyClass())->returnsIntArray(...);
+                    $array = $callable();
+                    PHP,
+                'assertions' => [
+                    '$array' => 'list<int>',
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.3',
+            ],
+            'firstClassCallableOfAnOverrideKeepsItsNarrowerNativeReturnType' => [
+                'code' => <<<'PHP'
+                    <?php
+                    class ParentWithADocblockType
+                    {
+                        /**
+                         * @return int|string
+                         * @psalm-impure
+                         */
+                        public function value()
+                        {
+                            return 1;
+                        }
+                    }
+
+                    final class ChildWithANativeType extends ParentWithADocblockType
+                    {
+                        #[\Override]
+                        public function value(): int
+                        {
+                            return 1;
+                        }
+                    }
+
+                    $callable = (new ChildWithANativeType())->value(...);
+                    $instance = $callable();
+                    PHP,
+                'assertions' => [
+                    '$instance' => 'int',
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.3',
+            ],
+            'byReferenceCallableParamAcceptsByReferenceCallee' => [
+                'code' => '<?php
+                    /** @param callable(int &$i): void $closure */
+                    function takesRefCallable(callable $closure): void {
+                        $v = 1;
+                        $closure($v);
+                    }
+                    function incr(int &$i): void {
+                        ++$i;
+                    }
+                    takesRefCallable("incr");
+                    takesRefCallable(function (int &$i): void {
+                        ++$i;
+                    });',
+                'assertions' => [],
+            ],
+            'byReferenceCallableParamAcceptsByValueCallee' => [
+                'code' => '<?php
+                    /** @param callable(int &$i): void $closure */
+                    function takesRefCallable(callable $closure): void {
+                        $v = 1;
+                        $closure($v);
+                    }
+                    function show(int $i): void {
+                        echo $i;
+                    }
+                    takesRefCallable("show");
+                    takesRefCallable(function (int $i): void {
+                        echo $i;
+                    });',
+                'assertions' => [],
+            ],
+            'namedOptionalCallableParam' => [
+                'code' => '<?php
+                    /** @param callable(int $i=): void $closure */
+                    function takesOptional(callable $closure): void {
+                        $closure();
+                    }
+                    takesOptional(function (int $i = 0): void {});',
+                'assertions' => [],
+            ],
             'stringNamingAFunctionForClosureOrStringParam' => [
                 'code' => <<<'PHP'
                     <?php
@@ -2809,6 +3090,29 @@ final class CallableTest extends TestCase
                         return call_user_func($var);
                     }',
             ],
+            'negatedIsStringKeepsArrayOfCallableOrArray' => [
+                'code' => '<?php
+                    /** @var string|callable|array $p */
+                    $p = $_GET["p"];
+                    $r = is_string($p) ? 0 : $p;
+                ',
+                'assertions' => [
+                    '$r===' => '0|array<array-key, mixed>|callable-object',
+                ],
+            ],
+            'callableCheckAfterIsStringOnCallableOrArray' => [
+                'code' => '<?php
+                    /** @param string|callable|array $param */
+                    function foo($param): void {
+                        if (is_string($param)) {
+                            return;
+                        }
+
+                        if (is_callable($param)) {
+                            return;
+                        }
+                    }',
+            ],
         ];
     }
 
@@ -2819,6 +3123,96 @@ final class CallableTest extends TestCase
     public static function providerInvalidCodeParse(): iterable
     {
         return [
+            'byReferenceFunctionNameIsNotCallableWithValue' => [
+                'code' => '<?php
+                    /** @param callable(int): int $closure */
+                    function takesClosure($closure): int {
+                        return $closure(123);
+                    }
+                    function takesIntByRef(int &$i): int {
+                        return $i ** 2;
+                    }
+                    takesClosure("takesIntByRef");',
+                'error_message' => 'CallableByReferenceMismatch',
+            ],
+            'byReferenceCallableParamRejectsValueCallee' => [
+                'code' => '<?php
+                    /** @param callable(int &$i): void $closure */
+                    function takesRefCallable(callable $closure): void {}
+                    /** @param callable(int): void $closure */
+                    function takesValueCallable(callable $closure): void {}
+                    /** @param callable(int &$i): void $closure */
+                    function forward(callable $closure): void {
+                        takesValueCallable($closure);
+                    }',
+                'error_message' => 'CallableByReferenceMismatch',
+            ],
+            'byReferenceVariadicFunctionNameIsNotCallableWithValue' => [
+                'code' => '<?php
+                    function bump(int &...$numbers): void {
+                        foreach ($numbers as &$number) {
+                            $number++;
+                        }
+                    }
+
+                    /** @param callable(int): void $closure */
+                    function takesValueCallable(callable $closure): void {}
+
+                    takesValueCallable("bump");',
+                'error_message' => 'CallableByReferenceMismatch - src' . DIRECTORY_SEPARATOR . 'somefile.php:11:40',
+            ],
+            'byReferenceVariadicClosureIsNotCallableWithValue' => [
+                'code' => '<?php
+                    /** @param callable(int): void $closure */
+                    function takesValueCallable(callable $closure): void {}
+
+                    takesValueCallable(function (int &...$numbers): void {});',
+                'error_message' => 'CallableByReferenceMismatch - src' . DIRECTORY_SEPARATOR . 'somefile.php:5:40',
+            ],
+            'byReferenceClosureIsNotCallableWithValue' => [
+                'code' => '<?php
+                    /** @param callable(int): void $closure */
+                    function takesClosure(callable $closure): void {}
+                    takesClosure(function (int &$i): void {});',
+                'error_message' => 'CallableByReferenceMismatch',
+            ],
+            'byReferenceClosureIsNotCallableWithValueByAnyAlternativeOfAUnion' => [
+                'code' => '<?php
+                    /** @param callable(int): void|callable(int, int=): void $closure */
+                    function takesClosure(callable $closure): void {}
+                    takesClosure(function (int &$i): void {});',
+                'error_message' => 'CallableByReferenceMismatch - src' . DIRECTORY_SEPARATOR . 'somefile.php:4:34',
+            ],
+            'byReferenceClosureGivenToUsortIsNotCallableWithValues' => [
+                'code' => '<?php
+                    /** @param list<int> $numbers */
+                    function sorted(array $numbers): void {
+                        usort($numbers, function (int &$a, int &$b): int {
+                            return $a <=> $b;
+                        });
+                    }',
+                'error_message' => 'CallableByReferenceMismatch',
+            ],
+            'byReferenceClosureGivenToArrayMapIsNotCallableWithValues' => [
+                'code' => '<?php
+                    /** @param list<int> $numbers */
+                    function doubled(array $numbers): array {
+                        return array_map(function (int &$n): int {
+                            return $n * 2;
+                        }, $numbers);
+                    }',
+                'error_message' => 'CallableByReferenceMismatch',
+            ],
+            'byReferenceVariadicGivenWhereTwoValuesAreExpectedIsNotCallableWithValues' => [
+                'code' => '<?php
+                    function bump(int &...$numbers): void {}
+
+                    /** @param callable(int, int): void $closure */
+                    function takesValueCallable(callable $closure): void {}
+
+                    takesValueCallable("bump");',
+                'error_message' => 'CallableByReferenceMismatch',
+            ],
             'stringNamingAFunctionForClosureParamOnly' => [
                 'code' => <<<'PHP'
                     <?php
