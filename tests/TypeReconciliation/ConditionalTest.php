@@ -154,6 +154,194 @@ final class ConditionalTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'ifSkippedByAnotherOperandKeepsTheValuesThatSkipIt' => [
+                'code' => '<?php
+                    final class A {}
+
+                    function f(?A $a, bool $b): void {
+                        if ($b || $a === null) {
+                            if ($a !== null) {
+                                return;
+                            }
+                        }
+
+                        /** @psalm-check-type-exact $a = A|null */
+                    }
+
+                    /** @param int|string|null $a */
+                    function g($a, bool $b): void {
+                        if ($a === null || (is_int($a) && $b)) {
+                            if ($a !== null) {
+                                return;
+                            }
+                        }
+
+                        /** @psalm-check-type-exact $a = int|null|string */
+                    }',
+            ],
+            'ifSkippedByAnotherOperandStillNarrowsWhatTheBodyAssigns' => [
+                'code' => '<?php
+                    final class A {}
+
+                    function f(?A $a, bool $force): A {
+                        if ($a === null || $force) {
+                            $a = new A();
+                        }
+
+                        /** @psalm-check-type-exact $a = A */
+                        return $a;
+                    }
+
+                    function g(?A $a, bool $b): A {
+                        if ($b || $a === null) {
+                            return new A();
+                        }
+
+                        /** @psalm-check-type-exact $a = A */
+                        return $a;
+                    }
+
+                    function h(?string $s): string {
+                        if ($s === null || $s === "") {
+                            $s = "a";
+                        }
+
+                        /** @psalm-check-type-exact $s = non-empty-string */
+                        return $s;
+                    }',
+            ],
+            'andOutsideTheConjunctsOfTheConditionDoesNotNarrowTheBody' => [
+                'code' => '<?php
+                    function f(?int $a, bool $d): void {
+                        if ($d xor ($a !== null && $a > 0)) {
+                            /** @psalm-check-type-exact $a = int|null */
+                        }
+                    }
+
+                    function g(?int $p, ?string $q, bool $r): void {
+                        if (!($p === 0 && !($q !== null && $r))) {
+                            /** @psalm-check-type-exact $p = int|null */
+                        }
+                    }',
+            ],
+            'andConjunctsOfTheConditionNarrowTheBody' => [
+                'code' => '<?php
+                    function takesBool(bool $b): bool {
+                        return $b;
+                    }
+
+                    function f(?int $a, ?string $s, bool $c): void {
+                        if ($a !== null && $a > 0) {
+                            /** @psalm-check-type-exact $a = int<1, max> */
+                        }
+
+                        if ($c && ($a !== null && $a > 0)) {
+                            /** @psalm-check-type-exact $a = int<1, max> */
+                        }
+
+                        if (($t = $s) !== null && $c) {
+                            /** @psalm-check-type-exact $t = string */
+                        }
+                    }
+
+                    function g(?int $a): void {
+                        if (takesBool($a !== null && $a > 0)) {
+                            /** @psalm-check-type-exact $a = int|null */
+                        }
+                    }',
+            ],
+            'leavingIfKeepsWhatItsConditionChanged' => [
+                'code' => '<?php
+                    final class A {
+                        /** @var int|null */
+                        public $foo = 1;
+
+                        public function load(): bool {
+                            $this->foo = null;
+                            return true;
+                        }
+
+                        public function leftCall(bool $c): void {
+                            if ($this->foo === null) {
+                                return;
+                            }
+
+                            if (!$this->load() || $c) {
+                                return;
+                            }
+
+                            /** @psalm-check-type-exact $this->foo = int|null */
+                        }
+
+                        public function rightCall(bool $c): void {
+                            if ($this->foo === null) {
+                                return;
+                            }
+
+                            if ($c || !$this->load()) {
+                                return;
+                            }
+
+                            /** @psalm-check-type-exact $this->foo = int|null */
+                        }
+
+                        public function andCall(bool $c): void {
+                            if ($this->foo === null) {
+                                return;
+                            }
+
+                            if (!$this->load() && $c) {
+                                return;
+                            }
+
+                            /** @psalm-check-type-exact $this->foo = int|null */
+                        }
+                    }',
+            ],
+            'leavingIfKeepsTheNarrowingsItsConditionLeaves' => [
+                'code' => '<?php
+                    final class A {
+                        /** @var int|null */
+                        public $foo = 1;
+
+                        /** @psalm-mutation-free */
+                        public function check(): bool {
+                            return true;
+                        }
+
+                        public function load(): bool {
+                            $this->foo = null;
+                            return true;
+                        }
+
+                        public function pureCall(bool $c): void {
+                            if ($this->foo === null) {
+                                return;
+                            }
+
+                            if (!$this->check() || $c) {
+                                return;
+                            }
+
+                            /** @psalm-check-type-exact $this->foo = int */
+                        }
+
+                        public function assignment(?string $s): void {
+                            if ($this->foo === null) {
+                                return;
+                            }
+
+                            if (($t = $s) === null || !$this->load()) {
+                                return;
+                            }
+
+                            /** @psalm-check-type-exact $t = string */
+                            echo $t;
+
+                            /** @psalm-check-type-exact $this->foo = int|null */
+                        }
+                    }',
+            ],
             'notIterableDropsTheObjectsThatAreTraversable' => [
                 'code' => '<?php
                     function f(Throwable $e): void {

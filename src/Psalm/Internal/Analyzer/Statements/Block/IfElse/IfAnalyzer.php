@@ -28,6 +28,7 @@ use Psalm\Type\Union;
 
 use function array_any;
 use function array_combine;
+use function array_diff;
 use function array_diff_key;
 use function array_filter;
 use function array_intersect;
@@ -284,13 +285,43 @@ final class IfAnalyzer
                 array_keys($if_scope->negated_types),
             );
 
+            // update() replaces the part of the type that enters the if, which is only known when the code skipping
+            // the if cannot see the same values (unlike with `if ($b || $a === null)`)
+            $overlapping_var_ids = array_filter(
+                $vars_to_update,
+                static fn(string $var_id): bool => isset($old_if_context->vars_in_scope[$var_id])
+                    && UnionTypeComparator::canExpressionTypesBeIdentical(
+                        $codebase,
+                        $old_if_context->vars_in_scope[$var_id],
+                        $pre_assignment_else_redefined_vars[$var_id],
+                    ),
+            );
+
             $outer_context->update(
                 $old_if_context,
                 $if_context,
                 $has_leaving_statements,
-                $vars_to_update,
+                array_diff($vars_to_update, $overlapping_var_ids),
                 $if_scope->updated_vars,
             );
+
+            foreach ($overlapping_var_ids as $var_id) {
+                $else_type = $pre_assignment_else_redefined_vars[$var_id];
+
+                if ($has_leaving_statements) {
+                    $outer_context->vars_in_scope[$var_id] = $else_type;
+                } elseif ($if_context->hasVariable($var_id)) {
+                    $outer_context->vars_in_scope[$var_id] = Type::combineUnionTypes(
+                        $if_context->vars_in_scope[$var_id],
+                        $else_type,
+                        $codebase,
+                    );
+                } else {
+                    continue;
+                }
+
+                $if_scope->updated_vars[$var_id] = true;
+            }
         }
 
         if (!$has_ending_statements) {

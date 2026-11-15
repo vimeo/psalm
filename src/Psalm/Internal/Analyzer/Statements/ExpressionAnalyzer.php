@@ -98,7 +98,20 @@ final class ExpressionAnalyzer
 
         $codebase = $statements_analyzer->getCodebase();
 
-        if (self::handleExpression(
+        $if_body_context = $context->if_body_context;
+
+        // only the `&&` and `||` operands the condition is made of hold in the if body, not those of a `xor`, a `!`,
+        // a call argument...
+        if ($if_body_context
+            && !$stmt instanceof PhpParser\Node\Expr\BinaryOp\BooleanAnd
+            && !$stmt instanceof PhpParser\Node\Expr\BinaryOp\LogicalAnd
+            && !$stmt instanceof PhpParser\Node\Expr\BinaryOp\BooleanOr
+            && !$stmt instanceof PhpParser\Node\Expr\BinaryOp\LogicalOr
+        ) {
+            $context->if_body_context = null;
+        }
+
+        $handled = self::handleExpression(
             $statements_analyzer,
             $stmt,
             $context,
@@ -107,7 +120,11 @@ final class ExpressionAnalyzer
             $from_stmt,
             $template_result,
             $assigned_to_reference,
-        ) === false) {
+        );
+
+        $context->if_body_context = $if_body_context;
+
+        if ($handled === false) {
             return false;
         }
 

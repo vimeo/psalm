@@ -135,6 +135,15 @@ final class IfElseAnalyzer
             return false;
         }
 
+        if ($if_scope->post_leaving_if_context) {
+            self::applyConditionSideEffects(
+                $statements_analyzer,
+                $if_scope->post_leaving_if_context,
+                $post_if_context,
+                $assigned_in_conditional_var_ids,
+            );
+        }
+
         $mixed_var_ids = [];
 
         foreach ($if_context->vars_in_scope as $var_id => $type) {
@@ -553,6 +562,45 @@ final class IfElseAnalyzer
         }
 
         return null;
+    }
+
+    /**
+     * The context the code after a leaving if starts from is taken before its condition, so it misses what evaluating
+     * the condition changed, like the properties an impure call forgets or sets. The variables the condition assigns
+     * itself are derived again from it (IfAnalyzer::addConditionallyAssignedVarsToContext()).
+     *
+     * @param array<string, int> $assigned_in_conditional_var_ids
+     */
+    private static function applyConditionSideEffects(
+        StatementsAnalyzer $statements_analyzer,
+        Context $post_leaving_if_context,
+        Context $post_if_context,
+        array $assigned_in_conditional_var_ids,
+    ): void {
+        foreach ($post_leaving_if_context->vars_in_scope as $var_id => $type) {
+            // an offset of 0 is a write by a callee, which is not derived again
+            if (($assigned_in_conditional_var_ids[$var_id] ?? 0) !== 0) {
+                continue;
+            }
+
+            $post_cond_type = $post_if_context->vars_in_scope[$var_id] ?? null;
+
+            if ($post_cond_type === null) {
+                $post_leaving_if_context->remove($var_id, false);
+                $post_leaving_if_context->vars_possibly_in_scope[$var_id] = true;
+            } elseif (!$post_cond_type->equals($type, true, false)) {
+                $post_leaving_if_context->vars_in_scope[$var_id] = $post_cond_type;
+            } else {
+                continue;
+            }
+
+            $post_leaving_if_context->clauses = Context::filterClauses(
+                $var_id,
+                $post_leaving_if_context->clauses,
+                $post_cond_type,
+                $statements_analyzer,
+            );
+        }
     }
 
     /**
