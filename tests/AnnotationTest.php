@@ -184,6 +184,176 @@ final class AnnotationTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'suppressDocblockInFrontOfAnArgument' => [
+                'code' => '<?php
+                    /**
+                     * @psalm-mutation-free
+                     */
+                    function describe(): void {
+                        throw new RuntimeException(
+                            /** @psalm-suppress ImpureFunctionCall the last error is part of the message */
+                            sprintf("code: %d", preg_last_error()),
+                        );
+                    }',
+            ],
+            'suppressDocblockInFrontOfAnArgumentCoversTheCheckOfTheArgument' => [
+                'code' => <<<'PHP'
+                    <?php
+                    function take(int $i, string $s): void {
+                        echo $i, $s;
+                    }
+
+                    function f(mixed $m): void {
+                        take(/** @psalm-suppress MixedArgument */ $m, 'a');
+                    }
+                    PHP,
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
+            'intMaskOfGlobalConstantsInNamespace' => [
+                'code' => '<?php
+                    namespace Abc;
+
+                    use const E_ALL;
+
+                    /** @param int-mask<E_ALL, \\E_WARNING> $flags */
+                    function takesFlags(int $flags): void {
+                        echo $flags;
+                    }
+
+                    takesFlags(E_ALL);
+                ',
+            ],
+            'intMaskOfAConstantOfTheNamespaceTakesPrecedenceOverTheGlobalOne' => [
+                'code' => '<?php
+                    namespace Foo;
+
+                    const E_ERROR = 4;
+
+                    /**
+                     * @param int-mask<E_ERROR> $y
+                     */
+                    function takesMask(int $y): void {
+                        /** @psalm-check-type-exact $y = 0|4 */
+                        echo $y;
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'intMaskOfConstantsImportedWithUseConst' => [
+                'code' => '<?php
+                    namespace Bar {
+                        const E_ERROR = 4;
+                        const FLAG_A = 8;
+                    }
+
+                    namespace Foo {
+                        use const Bar\E_ERROR;
+                        use const Bar\FLAG_A as AA;
+
+                        /** @param int-mask<E_ERROR> $y */
+                        function f(int $y): void {
+                            echo $y;
+                        }
+
+                        /** @param int-mask<AA, E_ERROR> $y */
+                        function g(int $y): void {
+                            echo $y;
+                        }
+
+                        f(4);
+                        g(12);
+                    }',
+            ],
+            'intMaskOfAnImportedGlobalConstant' => [
+                'code' => '<?php
+                    namespace Foo;
+
+                    use const PHP_INT_MAX;
+
+                    /**
+                     * @param int-mask<PHP_INT_MAX> $y
+                     */
+                    function takesMask(int $y): void {
+                        echo $y;
+                    }
+
+                    takesMask(0);',
+            ],
+            'intMaskOfGlobalConstantsFromANamespace' => [
+                'code' => '<?php
+                    namespace Foo;
+
+                    /**
+                     * @param int-mask<E_ERROR, E_WARNING> $y
+                     */
+                    function takesMask(int $y): void {
+                        echo $y;
+                    }
+
+                    takesMask(E_ERROR);',
+            ],
+            'selfAndStaticOfAGlobalTagAreTheClassOfTheMethod' => [
+                'code' => '<?php
+                    final class K {
+                        public function me(): int {
+                            return 1;
+                        }
+
+                        /**
+                         * @global static $k
+                         * @global self $s
+                         */
+                        public function g(): int {
+                            global $k, $s;
+
+                            /** @psalm-check-type-exact $k = K&static */
+                            /** @psalm-check-type-exact $s = K */
+
+                            return $k->me() + $s->me();
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
+            'staticOfAGlobalTagIsTheClassOfTheMethodAfterACallThatMayWriteTheGlobal' => [
+                'code' => '<?php
+                    class Foo {
+                        /** @return static */
+                        public function me() {
+                            return $this;
+                        }
+
+                        /** @global static $q */
+                        public function c(): Foo {
+                            global $q;
+
+                            $q->c();
+                            $x = $q->me();
+
+                            /** @psalm-check-type-exact $x = Foo&static */
+
+                            return $x;
+                        }
+                    }',
+            ],
+            'globalDocblockStaticTypeDoesNotCrashAMethodCall' => [
+                'code' => '<?php
+                    class Foo {
+                        /**
+                         * @global static $bar
+                         * @return void
+                         */
+                        public function instance() {
+                            global $bar;
+
+                            $bar->instance();
+                        }
+                    }',
+            ],
             'optionalShapeKeysNamedLikeScalarAliases' => [
                 'code' => '<?php
                     /** @var array{double?: string, integer?: int, boolean?: bool, real?: float} $a */
@@ -1986,33 +2156,6 @@ final class AnnotationTest extends TestCase
 
                     echo strlen($title);',
             ],
-            'suppressDocblockInFrontOfAnArgument' => [
-                'code' => '<?php
-                    /**
-                     * @psalm-mutation-free
-                     */
-                    function describe(): void {
-                        throw new RuntimeException(
-                            /** @psalm-suppress ImpureFunctionCall the last error is part of the message */
-                            sprintf("code: %d", preg_last_error()),
-                        );
-                    }',
-            ],
-            'suppressDocblockInFrontOfAnArgumentCoversTheCheckOfTheArgument' => [
-                'code' => <<<'PHP'
-                    <?php
-                    function take(int $i, string $s): void {
-                        echo $i, $s;
-                    }
-
-                    function f(mixed $m): void {
-                        take(/** @psalm-suppress MixedArgument */ $m, 'a');
-                    }
-                    PHP,
-                'assertions' => [],
-                'ignored_issues' => [],
-                'php_version' => '8.1',
-            ],
             'keyOfAndValueOfOfImportedTypeAlias' => [
                 'code' => '<?php
                     /**
@@ -2067,6 +2210,108 @@ final class AnnotationTest extends TestCase
                 'error_message' => 'MixedArgument - src' . DIRECTORY_SEPARATOR . 'somefile.php:7:51 - Argument 2 of take cannot be mixed',
                 'error_levels' => [],
                 'php_version' => '8.1',
+            ],
+            'suppressDocblockInFrontOfAnArgumentOnlyCoversThatArgument' => [
+                'code' => '<?php
+                    /**
+                     * @psalm-mutation-free
+                     */
+                    function describe(): void {
+                        echo sprintf(
+                            "%d %d",
+                            /** @psalm-suppress ImpureFunctionCall */
+                            preg_last_error(),
+                            preg_last_error(),
+                        );
+                    }',
+                'error_message' => 'ImpureFunctionCall - src' . DIRECTORY_SEPARATOR . 'somefile.php:10:29',
+            ],
+            'unusedSuppressDocblockInFrontOfAnArgument' => [
+                'code' => '<?php
+                    function describe(): void {
+                        echo strlen(
+                            /** @psalm-suppress ImpureFunctionCall */
+                            "text",
+                        );
+                    }',
+                'error_message' => 'UnusedPsalmSuppress',
+            ],
+            'intMaskOfAConstantImportedWithUseConstIsNotTheGlobalOne' => [
+                'code' => '<?php
+                    namespace Bar {
+                        const E_ERROR = 4;
+                    }
+
+                    namespace Foo {
+                        use const Bar\E_ERROR;
+
+                        /** @param int-mask<E_ERROR> $y */
+                        function f(int $y): void {
+                            echo $y;
+                        }
+
+                        f(1);
+                    }',
+                'error_message' => 'InvalidArgument - src' . DIRECTORY_SEPARATOR . 'somefile.php:14:27 - '
+                    . 'Argument 1 of Foo\f expects 0|4, but 1 provided',
+            ],
+            'intMaskOfANonIntegerConstantOfTheNamespace' => [
+                'code' => '<?php
+                    namespace Foo;
+
+                    const NAME = "x";
+
+                    /** @param int-mask<NAME> $flags */
+                    function takesFlags(int $flags): void {
+                        echo $flags;
+                    }',
+                'error_message' => 'InvalidDocblock',
+            ],
+            'intMaskOfNonIntegerGlobalConstantInNamespace' => [
+                'code' => '<?php
+                    namespace Abc;
+
+                    /** @param int-mask<PHP_VERSION> $flags */
+                    function takesFlags(int $flags): void {
+                        echo $flags;
+                    }',
+                'error_message' => 'InvalidDocblock',
+            ],
+            'intMaskOfAPartiallyQualifiedConstantDoesNotFallBackToTheGlobalOne' => [
+                'code' => '<?php
+                    namespace Foo;
+
+                    /**
+                     * @param int-mask<Sub\\E_ERROR> $y
+                     */
+                    function takesMask(int $y): void {
+                        echo $y;
+                    }',
+                'error_message' => 'UndefinedConstant',
+            ],
+            'intMaskOfAQualifiedConstantDoesNotFallBackToTheGlobalOne' => [
+                'code' => '<?php
+                    namespace Foo;
+
+                    /**
+                     * @param int-mask<\\Foo\\E_ERROR> $y
+                     */
+                    function takesMask(int $y): void {
+                        echo $y;
+                    }',
+                'error_message' => 'UndefinedConstant',
+            ],
+            'intMaskOfAnUndefinedConstantFromANamespace' => [
+                'code' => '<?php
+                    namespace Foo;
+
+                    /**
+                     * @param int-mask<NOT_A_CONSTANT> $y
+                     */
+                    function takesMask(int $y): void {
+                        echo $y;
+                    }',
+                'error_message' => 'UndefinedConstant',
             ],
             'removedSelfAccessingCallableWithParamsIsInvalid' => [
                 'code' => <<<'PHP'
@@ -2944,30 +3189,67 @@ final class AnnotationTest extends TestCase
                     global $title;',
                 'error_message' => 'InvalidGlobal',
             ],
-            'suppressDocblockInFrontOfAnArgumentOnlyCoversThatArgument' => [
+            'assertionWithOnlyAStarInPlaceOfTheType' => [
                 'code' => '<?php
                     /**
-                     * @psalm-mutation-free
+                     * @psalm-assert * $x
                      */
-                    function describe(): void {
-                        echo sprintf(
-                            "%d %d",
-                            /** @psalm-suppress ImpureFunctionCall */
-                            preg_last_error(),
-                            preg_last_error(),
-                        );
+                    function f(int $x): void {
+                        echo $x;
                     }',
-                'error_message' => 'ImpureFunctionCall - src' . DIRECTORY_SEPARATOR . 'somefile.php:10:29',
+                'error_message' => 'Invalid @psalm-assert union type: Type is empty',
             ],
-            'unusedSuppressDocblockInFrontOfAnArgument' => [
+            'assertionWithOnlyANegationInPlaceOfTheType' => [
                 'code' => '<?php
-                    function describe(): void {
-                        echo strlen(
-                            /** @psalm-suppress ImpureFunctionCall */
-                            "text",
-                        );
+                    /**
+                     * @psalm-assert ! $x
+                     */
+                    function f(int $x): void {
+                        echo $x;
                     }',
-                'error_message' => 'UnusedPsalmSuppress',
+                'error_message' => 'Invalid @psalm-assert union type: Type is empty',
+            ],
+            'selfOutWithOnlyAStarInPlaceOfTheType' => [
+                'code' => '<?php
+                    class X {
+                        /**
+                         * @psalm-self-out *
+                         */
+                        public function a(): void {}
+                    }',
+                'error_message' => 'InvalidDocblock',
+            ],
+            'thisOutWithOnlyAStarInPlaceOfTheType' => [
+                'code' => '<?php
+                    class X {
+                        /**
+                         * @psalm-this-out *
+                         */
+                        public function a(): void {}
+                    }',
+                'error_message' => 'InvalidDocblock',
+            ],
+            'ifThisIsWithOnlyAStarInPlaceOfTheType' => [
+                'code' => '<?php
+                    class X {
+                        /**
+                         * @psalm-if-this-is *
+                         */
+                        public function a(): void {}
+                    }',
+                'error_message' => 'InvalidDocblock',
+            ],
+            'returnTypeWithOnlyAStarInPlaceOfTheType' => [
+                'code' => '<?php
+                    class X {
+                        /**
+                         * @psalm-return      * @return list<int>
+                         */
+                        public static function a(): array {
+                            return [];
+                        }
+                    }',
+                'error_message' => 'InvalidDocblock',
             ],
             'keyOfImportedTypeAliasOfANonArrayIsInvalid' => [
                 'code' => '<?php
