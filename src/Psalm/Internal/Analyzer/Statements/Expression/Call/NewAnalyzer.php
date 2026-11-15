@@ -569,26 +569,13 @@ final class NewAnalyzer extends CallAnalyzer
             : null;
     }
 
-    private static function applyConstructorAssertions(
+    private static function setConstructorConditionAssertions(
         StatementsAnalyzer $statements_analyzer,
         Codebase $codebase,
-        Context $context,
         PhpParser\Node\Expr\New_ $stmt,
         MethodStorage $method_storage,
         TemplateResult $template_result,
     ): void {
-        if ($method_storage->assertions && $stmt->class instanceof PhpParser\Node\Name) {
-            self::applyAssertionsToContext(
-                $stmt->class,
-                null,
-                self::getAssertionsOnArgs($method_storage->assertions, $method_storage, $stmt->getArgs()),
-                $stmt->getArgs(),
-                $template_result,
-                $context,
-                $statements_analyzer,
-            );
-        }
-
         if ($method_storage->if_true_assertions) {
             $statements_analyzer->node_data->setIfTrueAssertions(
                 $stmt,
@@ -659,6 +646,41 @@ final class NewAnalyzer extends CallAnalyzer
         }
 
         CliOutput::checkInstantiation($statements_analyzer, $context, $storage, $stmt);
+    }
+
+    private static function applyConstructorAssertions(
+        StatementsAnalyzer $statements_analyzer,
+        PhpParser\Node\Expr\New_ $stmt,
+        Context $context,
+        MethodIdentifier $method_id,
+        TemplateResult $template_result,
+    ): void {
+        $codebase = $statements_analyzer->getCodebase();
+        $declaring_method_id = $codebase->methods->getDeclaringMethodId($method_id) ?? $method_id;
+        $method_storage = $codebase->methods->getStorage($declaring_method_id);
+
+        if (!$method_storage->assertions || !$stmt->class instanceof PhpParser\Node\Name) {
+            return;
+        }
+
+        $args = $stmt->getArgs();
+
+        self::applyAssertionsToContext(
+            $stmt->class,
+            null,
+            self::resolveStaticPropertyAssertionClasses(
+                self::getAssertionsOnArgs($method_storage->assertions, $method_storage, $args),
+                $codebase,
+                $context,
+                ($codebase->methods->getAppearingMethodId($method_id) ?? $declaring_method_id)->fq_class_name,
+                // `new static` keeps the caller's, any other `new` instantiates the class it names
+                strtolower($stmt->class->getFirst()) === 'static' ? 'static' : $method_id->fq_class_name,
+            ),
+            $args,
+            $template_result,
+            $context,
+            $statements_analyzer,
+        );
     }
 
     private static function analyzeNamedConstructor(
@@ -788,8 +810,15 @@ final class NewAnalyzer extends CallAnalyzer
 
                 self::applyConstructorAssertions(
                     $statements_analyzer,
-                    $codebase,
+                    $stmt,
                     $context,
+                    $method_id,
+                    $template_result,
+                );
+
+                self::setConstructorConditionAssertions(
+                    $statements_analyzer,
+                    $codebase,
                     $stmt,
                     $method_storage,
                     $template_result,

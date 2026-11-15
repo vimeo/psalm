@@ -16,7 +16,6 @@ use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\Internal\Clause;
 use Psalm\Node\Stmt\VirtualExpression;
 use Psalm\Node\Stmt\VirtualIf;
-use Psalm\Type;
 use Psalm\Type\Reconciler;
 
 use function array_diff;
@@ -193,6 +192,7 @@ final class AndAnalyzer
         $right_context->clauses = $partitioned_clauses[0];
 
         $pre_right_assigned_var_ids = $right_context->assigned_var_ids;
+        $pre_right_remove_vars = $right_context->parent_remove_vars;
 
         if (ExpressionAnalyzer::analyze($statements_analyzer, $stmt->right, $right_context) === false) {
             return false;
@@ -209,7 +209,11 @@ final class AndAnalyzer
 
         $context->intersectNullArrayOffsets($right_context);
         $context->removeClausesOfVarsChangedIn($left_context);
-        $context->removeClausesOfVarsChangedIn($right_context);
+
+        // what a right side that never returns changes is never seen after the expression
+        if (!$right_context->has_returned) {
+            $context->removeClausesOfVarsChangedIn($right_context);
+        }
 
         $context->cond_referenced_var_ids = array_merge(
             $right_context->cond_referenced_var_ids,
@@ -327,17 +331,7 @@ final class AndAnalyzer
             $context->vars_in_scope = $left_context->vars_in_scope;
 
             // the right operand is skipped when the left one is false
-            foreach ($right_context->assigned_var_ids as $var_id => $assigned_offset) {
-                if ((!isset($left_context->assigned_var_ids[$var_id])
-                        || $left_context->assigned_var_ids[$var_id] !== $assigned_offset)
-                    && isset($context->vars_in_scope[$var_id], $right_context->vars_in_scope[$var_id])
-                ) {
-                    $context->vars_in_scope[$var_id] = Type::combineUnionTypes(
-                        $context->vars_in_scope[$var_id],
-                        $right_context->vars_in_scope[$var_id],
-                    );
-                }
-            }
+            $context->mergeChangesOfPossiblySkippedBranch($right_context, $pre_right_remove_vars, $codebase);
         }
 
         return true;

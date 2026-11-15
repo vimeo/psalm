@@ -5300,6 +5300,19 @@ final class FunctionCallTest extends TestCase
                     takesInt($foo);',
                 'error_message' => 'InvalidScalarArgument',
             ],
+            'extractForgetsTheOffsetsOfAVariableItOverwrites' => [
+                'code' => '<?php
+                    /** @param array{a?: int} $arr */
+                    function f(array $arr): int {
+                        $x = $arr;
+                        if (!isset($x["a"])) {
+                            return 0;
+                        }
+                        extract(["x" => []]);
+                        return $x["a"];
+                    }',
+                'error_message' => 'EmptyArrayAccess',
+            ],
             'unserializeWithInvalidMaxDepthType' => [
                 'code' => '<?php
                     unserialize("", ["max_depth" => "foo"]);',

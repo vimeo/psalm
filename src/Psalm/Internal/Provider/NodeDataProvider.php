@@ -42,6 +42,9 @@ final class NodeDataProvider implements NodeTypeProvider
     /** @var SplObjectStorage<Expr, list<string>> */
     private SplObjectStorage $node_literal_prefixes;
 
+    /** @var SplObjectStorage<Expr, true> */
+    private SplObjectStorage $written_by_reference;
+
     /**
      * Expressions analysed already, whose analysis is not repeated (see markEvaluated()), with how many times
      * they were marked
@@ -62,6 +65,7 @@ final class NodeDataProvider implements NodeTypeProvider
         $this->node_if_true_assertions = new SplObjectStorage();
         $this->node_if_false_assertions = new SplObjectStorage();
         $this->node_literal_prefixes = new SplObjectStorage();
+        $this->written_by_reference = new SplObjectStorage();
         $this->evaluated = new SplObjectStorage();
     }
 
@@ -165,6 +169,22 @@ final class NodeDataProvider implements NodeTypeProvider
     public function getLiteralPrefixes(Expr $node): ?array
     {
         return $this->node_literal_prefixes[$node] ?? null;
+    }
+
+    /**
+     * Records an argument passed to a by-reference parameter, which the call may assign
+     */
+    public function markWrittenByReference(Expr $node): void
+    {
+        $this->written_by_reference[$node] = true;
+    }
+
+    /**
+     * @psalm-capabilities read-props
+     */
+    public function isWrittenByReference(Expr $node): bool
+    {
+        return isset($this->written_by_reference[$node]);
     }
 
     /**
