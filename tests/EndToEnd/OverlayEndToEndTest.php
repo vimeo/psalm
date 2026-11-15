@@ -988,6 +988,20 @@ final class OverlayEndToEndTest extends TestCase
             [['MixedReturnStatement', 'src/UseFn.php', 'error'], ['UndefinedConstant', 'src/UseFn.php', 'error']],
         ];
 
+        yield 'first-class callables in an ordinary and an autoloaded file' => [
+            [
+                'functions.php' => '<?php namespace App; function helper(string $s): int { return (strlen(...))($s); }',
+                'A.php' => '<?php namespace App; final class A { public function f(): int { return (strlen(...))("a"); } }',
+            ],
+            [
+                'src/functions.php' => '<?php namespace App;
+                    function helper(string $s): int { return (strlen(...))($s . "x"); }',
+                'src/A.php' => '<?php namespace App;
+                    final class A { public function f(): int { return (strlen(...))("b"); } }',
+            ],
+            [],
+        ];
+
         yield 'new declaration resolves an undefined reference' => [
             [
                 'A.php' => $a,
@@ -1065,7 +1079,9 @@ final class OverlayEndToEndTest extends TestCase
         }
 
         $process = self::newProcess(
-            [PHP_BINARY, $this->psalm, '--overlays-from=-', '--output-format=json', '--no-progress', '--threads=1'],
+            // with assertions, as CI runs Psalm
+            [PHP_BINARY, '-d', 'zend.assertions=1', $this->psalm, '--overlays-from=-', '--output-format=json',
+                '--no-progress', '--threads=1'],
             $this->project,
             [...self::agentEnvVarsToUnset(), ...$env],
             json_encode(['overlays' => $manifest, 'whole_project' => $whole_project], JSON_THROW_ON_ERROR),

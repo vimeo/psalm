@@ -17,8 +17,10 @@ use PhpParser\ParserFactory;
 use Psalm\Config;
 
 use function array_diff_key;
+use function array_flip;
 use function array_keys;
 use function file_get_contents;
+use function get_included_files;
 use function ltrim;
 use function strtolower;
 
@@ -35,8 +37,11 @@ final class RuntimeDeclarations
      */
     public static function forgetRemoved(Config $config, array $overlays): void
     {
+        // the files Composer's autoload.files loaded; other project files declare nothing in this process
+        $loaded = array_flip(get_included_files());
+
         foreach ($overlays as $path => $contents) {
-            $original = @file_get_contents($path);
+            $original = isset($loaded[$path]) ? @file_get_contents($path) : false;
             if ($original === false) {
                 continue;
             }
@@ -79,6 +84,10 @@ final class RuntimeDeclarations
         }
 
         foreach ($finder->findInstanceOf($statements, FuncCall::class) as $call) {
+            if ($call->isFirstClassCallable()) {
+                continue;
+            }
+
             $argument = $call->getArgs()[0] ?? null;
             if ($call->name instanceof Name
                 && strtolower($call->name->getLast()) === 'define'
