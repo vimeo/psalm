@@ -877,6 +877,14 @@ final class ReferenceTest extends TestCase
     public static function providerInvalidCodeParse(): iterable
     {
         return [
+            'referenceToTheResponseHeaderVariableIsNullWhenItIsNotSet' => [
+                'code' => '<?php
+                    function f(): array {
+                        $h = &$http_response_header;
+                        return $h;
+                    }',
+                'error_message' => 'NullableReturnStatement',
+            ],
             'issueInTheKeyOfAnArrayItemPassedByReference' => [
                 'code' => '<?php
                     /**

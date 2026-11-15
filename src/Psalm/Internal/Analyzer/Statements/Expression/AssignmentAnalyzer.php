@@ -1466,13 +1466,13 @@ final class AssignmentAnalyzer
         $rhs_type = $context->vars_in_scope[$rhs_var_id];
 
         // binding a reference to a variable or an offset that is not set creates it as null (a superglobal read
-        // is taken as defined, see VariableFetchAnalyzer)
+        // is taken as defined, but $http_response_header: see VariableFetchAnalyzer::getReadSuperGlobalType())
         if ($rhs_type->possibly_undefined || $rhs_type->possibly_undefined_from_try) {
             $rhs_type = $rhs_type->setPossiblyUndefined(false, false);
 
             $context->vars_in_scope[$rhs_var_id] = $rhs_type->isNullable()
                 || $rhs_type->hasMixed()
-                || VariableFetchAnalyzer::isSuperGlobal($rhs_var_id)
+                || (VariableFetchAnalyzer::isSuperGlobal($rhs_var_id) && $rhs_var_id !== '$http_response_header')
                 ? $rhs_type
                 : $rhs_type->getBuilder()->addType(new TNull())->freeze();
         }
