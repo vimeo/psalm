@@ -11,12 +11,14 @@ use Psalm\FileSource;
 use Psalm\Internal\Analyzer\ClassLikeAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\Fetch\ConstFetchAnalyzer;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
+use Psalm\Internal\PrettyPrinter;
 
 use function addcslashes;
 use function count;
 use function implode;
 use function in_array;
 use function is_string;
+use function preg_replace;
 use function stripslashes;
 use function strtolower;
 use function substr;
@@ -141,6 +143,18 @@ final class ExpressionIdentifier
         }
 
         return null;
+    }
+
+    /**
+     * What the messages call the object: its variable id, or else its code on one line
+     */
+    public static function getNameForMessage(?string $var_id, PhpParser\Node\Expr $expr): string
+    {
+        return $var_id ?? (string) preg_replace(
+            '/\s+/',
+            ' ',
+            PrettyPrinter::printExpr($expr),
+        );
     }
 
     public static function getExtendedVarId(

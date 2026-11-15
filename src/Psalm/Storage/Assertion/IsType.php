@@ -8,6 +8,9 @@ use Override;
 use Psalm\Storage\Assertion;
 use Psalm\Storage\UnserializeMemoryUsageSuppressionTrait;
 use Psalm\Type\Atomic;
+use Psalm\Type\Atomic\TLiteralString;
+
+use function mb_strlen;
 
 /**
  * @psalm-immutable
@@ -28,7 +31,20 @@ final class IsType extends Assertion
 
     public function __toString(): string
     {
-        return $this->type->getId();
+        return self::getTypeKey($this->type);
+    }
+
+    /**
+     * The id of the type, but with the whole of a literal string that the id would cut short
+     *
+     * @internal
+     * @psalm-pure
+     */
+    public static function getTypeKey(Atomic $type): string
+    {
+        return $type instanceof TLiteralString && mb_strlen($type->value) > 80
+            ? $type->getAssertionString()
+            : $type->getId();
     }
 
     #[Override]
@@ -50,6 +66,7 @@ final class IsType extends Assertion
     #[Override]
     public function isNegationOf(Assertion $assertion): bool
     {
-        return $assertion instanceof IsNotType && $this->type->getId() === $assertion->type->getId();
+        return $assertion instanceof IsNotType
+            && self::getTypeKey($this->type) === self::getTypeKey($assertion->type);
     }
 }
