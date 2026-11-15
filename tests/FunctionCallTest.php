@@ -24,6 +24,30 @@ final class FunctionCallTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'lvaluesCanBePassedToByRefParams' => [
+                'code' => '<?php
+                    class A {
+                        public int $p = 1;
+                        public static int $s = 1;
+                    }
+                    function fooFoo(int &$v): void {}
+                    $a = ["k" => 1];
+                    $o = new A();
+                    $v = 1;
+                    fooFoo($v);
+                    fooFoo($a["k"]);
+                    fooFoo($o->p);
+                    fooFoo(A::$s);',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
+            'internalFunctionsPreferringRefsAcceptAnAssignment' => [
+                'code' => '<?php
+                    $read = [STDIN];
+                    $r = stream_select($read, $w = null, $e = null, 0);',
+                'assertions' => [],
+            ],
             'existenceChecksOfALowercaseOrLiteralStringKeepTheNameType' => [
                 'code' => <<<'PHP'
                     <?php
@@ -3744,6 +3768,203 @@ final class FunctionCallTest extends TestCase
                     function fooFoo(string &$v): void {}
                     fooFoo("a");',
                 'error_message' => 'InvalidPassByReference',
+            ],
+            'badByRefWithAssignArgument' => [
+                'code' => '<?php
+                    function fooFoo(mixed &$v): void {}
+                    $t = "a";
+                    $n = 1;
+                    $o = new stdClass();
+                    fooFoo($s = "a");',
+                'error_message' => 'InvalidPassByReference',
+                'error_levels' => [],
+                'php_version' => '8.1',
+            ],
+            'badByRefWithAssignOpArgument' => [
+                'code' => '<?php
+                    function fooFoo(mixed &$v): void {}
+                    $t = "a";
+                    $n = 1;
+                    $o = new stdClass();
+                    fooFoo($t .= "a");',
+                'error_message' => 'InvalidPassByReference',
+                'error_levels' => [],
+                'php_version' => '8.1',
+            ],
+            'badByRefWithBooleanNotArgument' => [
+                'code' => '<?php
+                    function fooFoo(mixed &$v): void {}
+                    $t = "a";
+                    $n = 1;
+                    $o = new stdClass();
+                    fooFoo(!$t);',
+                'error_message' => 'InvalidPassByReference',
+                'error_levels' => [],
+                'php_version' => '8.1',
+            ],
+            'badByRefWithUnaryMinusArgument' => [
+                'code' => '<?php
+                    function fooFoo(mixed &$v): void {}
+                    $t = "a";
+                    $n = 1;
+                    $o = new stdClass();
+                    fooFoo(-$n);',
+                'error_message' => 'InvalidPassByReference',
+                'error_levels' => [],
+                'php_version' => '8.1',
+            ],
+            'badByRefWithPostIncArgument' => [
+                'code' => '<?php
+                    function fooFoo(mixed &$v): void {}
+                    $t = "a";
+                    $n = 1;
+                    $o = new stdClass();
+                    fooFoo($n++);',
+                'error_message' => 'InvalidPassByReference',
+                'error_levels' => [],
+                'php_version' => '8.1',
+            ],
+            'badByRefWithPreIncArgument' => [
+                'code' => '<?php
+                    function fooFoo(mixed &$v): void {}
+                    $t = "a";
+                    $n = 1;
+                    $o = new stdClass();
+                    fooFoo(++$n);',
+                'error_message' => 'InvalidPassByReference',
+                'error_levels' => [],
+                'php_version' => '8.1',
+            ],
+            'badByRefWithIssetArgument' => [
+                'code' => '<?php
+                    function fooFoo(mixed &$v): void {}
+                    $t = "a";
+                    $n = 1;
+                    $o = new stdClass();
+                    fooFoo(isset($t));',
+                'error_message' => 'InvalidPassByReference',
+                'error_levels' => [],
+                'php_version' => '8.1',
+            ],
+            'badByRefWithEmptyArgument' => [
+                'code' => '<?php
+                    function fooFoo(mixed &$v): void {}
+                    $t = "a";
+                    $n = 1;
+                    $o = new stdClass();
+                    fooFoo(empty($t));',
+                'error_message' => 'InvalidPassByReference',
+                'error_levels' => [],
+                'php_version' => '8.1',
+            ],
+            'badByRefWithInstanceofArgument' => [
+                'code' => '<?php
+                    function fooFoo(mixed &$v): void {}
+                    $t = "a";
+                    $n = 1;
+                    $o = new stdClass();
+                    fooFoo($t instanceof stdClass);',
+                'error_message' => 'InvalidPassByReference',
+                'error_levels' => [],
+                'php_version' => '8.1',
+            ],
+            'badByRefWithCloneArgument' => [
+                'code' => '<?php
+                    function fooFoo(mixed &$v): void {}
+                    $t = "a";
+                    $n = 1;
+                    $o = new stdClass();
+                    fooFoo(clone $o);',
+                'error_message' => 'InvalidPassByReference',
+                'error_levels' => [],
+                'php_version' => '8.1',
+            ],
+            'badByRefWithClosureArgument' => [
+                'code' => '<?php
+                    function fooFoo(mixed &$v): void {}
+                    $t = "a";
+                    $n = 1;
+                    $o = new stdClass();
+                    fooFoo(function (): void {});',
+                'error_message' => 'InvalidPassByReference',
+                'error_levels' => [],
+                'php_version' => '8.1',
+            ],
+            'badByRefWithArrowFunctionArgument' => [
+                'code' => '<?php
+                    function fooFoo(mixed &$v): void {}
+                    $t = "a";
+                    $n = 1;
+                    $o = new stdClass();
+                    fooFoo(fn(): int => 1);',
+                'error_message' => 'InvalidPassByReference',
+                'error_levels' => [],
+                'php_version' => '8.1',
+            ],
+            'badByRefWithMatchArgument' => [
+                'code' => '<?php
+                    function fooFoo(mixed &$v): void {}
+                    $t = "a";
+                    $n = 1;
+                    $o = new stdClass();
+                    fooFoo(match (1) { default => 2 });',
+                'error_message' => 'InvalidPassByReference',
+                'error_levels' => [],
+                'php_version' => '8.1',
+            ],
+            'badByRefWithErrorSuppressArgument' => [
+                'code' => '<?php
+                    function fooFoo(mixed &$v): void {}
+                    $a = 1;
+                    fooFoo(@$a);',
+                'error_message' => 'InvalidPassByReference',
+                'error_levels' => [],
+                'php_version' => '8.1',
+            ],
+            'badByRefWithPrintArgument' => [
+                'code' => '<?php
+                    function fooFoo(mixed &$v): void {}
+                    fooFoo(print "a");',
+                'error_message' => 'InvalidPassByReference',
+                'error_levels' => [],
+                'php_version' => '8.1',
+            ],
+            'badByRefWithNewArgument' => [
+                'code' => '<?php
+                    function fooFoo(mixed &$v): void {}
+                    fooFoo(new stdClass());',
+                'error_message' => 'InvalidPassByReference',
+                'error_levels' => [],
+                'php_version' => '8.1',
+            ],
+            'badByRefWithAssignArgumentOfAMethod' => [
+                'code' => '<?php
+                    class A {
+                        public function m(mixed &$v): void {}
+                    }
+                    (new A())->m($s = "a");',
+                'error_message' => 'InvalidPassByReference',
+                'error_levels' => [],
+                'php_version' => '8.1',
+            ],
+            'badByRefWithAssignArgumentOfAStaticMethod' => [
+                'code' => '<?php
+                    class A {
+                        public static function m(mixed &$v): void {}
+                    }
+                    A::m($s = "a");',
+                'error_message' => 'InvalidPassByReference',
+                'error_levels' => [],
+                'php_version' => '8.1',
+            ],
+            'badByRefWithAssignArgumentOfAVariadicParam' => [
+                'code' => '<?php
+                    function fooFoo(mixed &...$v): void {}
+                    $a = 1;
+                    fooFoo($a, $s = "a");',
+                'error_message' => 'InvalidPassByReference',
+                'error_levels' => [],
+                'php_version' => '8.1',
             ],
             'badArrayByRef' => [
                 'code' => '<?php
