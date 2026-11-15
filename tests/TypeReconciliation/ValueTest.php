@@ -78,6 +78,29 @@ final class ValueTest extends TestCase
                 'ignored_issues' => [],
                 'php_version' => '8.1',
             ],
+            'nonEmptyStringKnownBeforeTheOtherConditionsIsKeptOnMixed' => [
+                'code' => '<?php
+                    /** @return non-empty-string */
+                    function f(mixed $v, bool $b): string {
+                        if (is_string($v) && $v !== "" && $b) {
+                            return $v;
+                        }
+
+                        return "x";
+                    }
+
+                    /** @return non-empty-string */
+                    function g(mixed $v): string {
+                        if (!is_string($v) || $v === "") {
+                            return "x";
+                        }
+
+                        return $v;
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
             'nonEmptyStringNotZeroIsNonFalsy' => [
                 'code' => '<?php
                     /** @var non-empty-string $s */
