@@ -194,7 +194,7 @@ final class ElseAnalyzer
             }
 
             IfAnalyzer::updateIfScope(
-                $codebase,
+                $statements_analyzer,
                 $if_scope,
                 $else_context,
                 $original_context,

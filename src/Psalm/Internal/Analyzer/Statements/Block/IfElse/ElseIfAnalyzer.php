@@ -383,14 +383,8 @@ final class ElseIfAnalyzer
 
         // update the parent context as necessary
         if (!$has_leaving_statements) {
-            $outer_context->detachReferencesReboundIn(
-                $elseif_context->references_in_scope,
-                $statements_analyzer,
-                [$elseif->cond, ...$elseif->stmts],
-            );
-
             IfAnalyzer::updateIfScope(
-                $codebase,
+                $statements_analyzer,
                 $if_scope,
                 $elseif_context,
                 $outer_context,
@@ -398,6 +392,7 @@ final class ElseIfAnalyzer
                 $new_stmts_possibly_assigned_var_ids,
                 $newly_reconciled_var_ids,
                 assigned_in_conditional_var_ids: $assigned_in_conditional_var_ids,
+                branch_nodes: [$elseif->cond, ...$elseif->stmts],
             );
 
             $reasonable_clause_count = count($if_scope->reasonable_clauses);
