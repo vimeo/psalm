@@ -5,8 +5,14 @@ declare(strict_types=1);
 namespace Psalm\Tests;
 
 use Override;
+use Psalm\Context;
+use Psalm\Internal\Analyzer\IssueData;
+use Psalm\IssueBuffer;
 use Psalm\Tests\Traits\InvalidCodeAnalysisTestTrait;
 use Psalm\Tests\Traits\ValidCodeAnalysisTestTrait;
+
+use function array_filter;
+use function array_values;
 
 use const DIRECTORY_SEPARATOR;
 
@@ -14,6 +20,82 @@ final class TraitTest extends TestCase
 {
     use InvalidCodeAnalysisTestTrait;
     use ValidCodeAnalysisTestTrait;
+
+    public function testMissingTraitIsReportedWhenMethodMutationsAreCollected(): void
+    {
+        $this->testConfig->throw_exception = false;
+        $file_path = self::$src_dir_path . 'somefile.php';
+
+        $this->addFile(
+            $file_path,
+            '<?php
+                class Base {
+                    use MissingTrait;
+
+                    protected string $name;
+
+                    protected function init(): void {
+                        $this->name = "x";
+                    }
+                }
+
+                final class Child extends Base {
+                    public function __construct() {
+                        $this->init();
+                    }
+                }',
+        );
+
+        $this->analyzeFile($file_path, new Context());
+
+        $issues = array_values(array_filter(
+            IssueBuffer::getIssuesDataForFile($file_path),
+            static fn(IssueData $issue): bool => $issue->type === 'UndefinedTrait',
+        ));
+
+        self::assertCount(1, $issues);
+        self::assertSame(3, $issues[0]->line_from);
+    }
+
+    public function testMissingNestedTraitIsReportedWhenMethodMutationsAreCollected(): void
+    {
+        $this->testConfig->throw_exception = false;
+        $file_path = self::$src_dir_path . 'somefile.php';
+
+        $this->addFile(
+            $file_path,
+            '<?php
+                trait T1 {
+                    use MissingTrait;
+                }
+
+                class Base {
+                    use T1;
+
+                    protected string $name;
+
+                    protected function init(): void {
+                        $this->name = "x";
+                    }
+                }
+
+                final class Child extends Base {
+                    public function __construct() {
+                        $this->init();
+                    }
+                }',
+        );
+
+        $this->analyzeFile($file_path, new Context());
+
+        $issues = array_values(array_filter(
+            IssueBuffer::getIssuesDataForFile($file_path),
+            static fn(IssueData $issue): bool => $issue->type === 'UndefinedTrait',
+        ));
+
+        self::assertCount(1, $issues);
+        self::assertSame(3, $issues[0]->line_from);
+    }
 
     /**
      * @psalm-pure
