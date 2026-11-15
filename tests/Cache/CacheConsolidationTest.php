@@ -9,8 +9,11 @@ use Override;
 use PHPUnit\Framework\Attributes\RequiresPhpExtension;
 use Psalm\Config;
 use Psalm\Internal\Cache;
+use Psalm\Internal\Provider\FileStorageCacheProvider;
+use Psalm\Internal\Provider\FileStorageProvider;
 use Psalm\Internal\RuntimeCaches;
 use Psalm\Internal\ZstdSerializer;
+use Psalm\Storage\FileStorage;
 use Psalm\Tests\TestCase;
 use ReflectionProperty;
 
@@ -371,6 +374,25 @@ final class CacheConsolidationTest extends TestCase
         $reader = $this->newCache();
         $this->assertTrue($reader->hasItem('a'));
         $this->assertSame(['item a'], $reader->getItem('a', 'hash a'));
+    }
+
+    /** The cached copy of a storage that is removed was populated in place, but the one on disk is still good */
+    public function testRemovedStorageIsStillReadFromTheConsolidatedCache(): void
+    {
+        $config = $this->newConfig();
+        $file_path = '/project/src/File.php';
+
+        $writer = new FileStorageCacheProvider($config, '');
+        $writer->writeToCache(new FileStorage($file_path), 'contents');
+        $writer->consolidate();
+
+        $provider = new FileStorageProvider(new FileStorageCacheProvider($config, ''));
+        $this->assertTrue($provider->has($file_path, 'contents'));
+
+        $provider->remove($file_path);
+
+        $this->assertFalse($provider->has($file_path));
+        $this->assertTrue($provider->has($file_path, 'contents'));
     }
 
     /** The data file can be cut short, changed or gone: every read of it is a miss, without a warning */

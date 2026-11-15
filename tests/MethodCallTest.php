@@ -6,9 +6,13 @@ namespace Psalm\Tests;
 
 use Override;
 use Psalm\Context;
+use Psalm\Internal\Analyzer\IssueData;
+use Psalm\IssueBuffer;
 use Psalm\Tests\Traits\InvalidCodeAnalysisTestTrait;
 use Psalm\Tests\Traits\InvalidCodeAnalysisWithIssuesTestTrait;
 use Psalm\Tests\Traits\ValidCodeAnalysisTestTrait;
+
+use function array_map;
 
 use const DIRECTORY_SEPARATOR;
 
@@ -27,6 +31,38 @@ final class MethodCallTest extends TestCase
         );
 
         $this->analyzeFile('somefile.php', new Context());
+    }
+
+    public function testNewOfAnObjectOrAClassStringOfTheSameClassIsReportedOnce(): void
+    {
+        $this->testConfig->throw_exception = false;
+        $file_path = self::$src_dir_path . 'somefile.php';
+        $this->addFile(
+            $file_path,
+            '<?php
+                class A {
+                    public function __construct(array $items = []) {}
+                }
+
+                function f(mixed $c): A {
+                    if (!is_a($c, A::class, true)) {
+                        throw new Exception();
+                    }
+
+                    return new $c([]);
+                }',
+        );
+
+        $this->project_analyzer->setPhpVersion('8.0', 'tests');
+        $this->analyzeFile($file_path, new Context(), false);
+
+        self::assertSame(
+            ['UnsafeInstantiation'],
+            array_map(
+                static fn(IssueData $issue): string => $issue->type,
+                IssueBuffer::getIssuesDataForFile($file_path),
+            ),
+        );
     }
 
     public function testMethodCallMemoize(): void
@@ -205,6 +241,72 @@ final class MethodCallTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'instantiateFromObjectOfSafeClasses' => [
+                'code' => '<?php
+                    final class F {}
+
+                    /**
+                     * @psalm-consistent-constructor
+                     */
+                    class C {
+                        public function __construct(int $i) {}
+                    }
+
+                    function fromFinal(F $f): F {
+                        return new $f();
+                    }
+
+                    function fromConsistent(C $c): C {
+                        return new $c(1);
+                    }',
+            ],
+            'instantiateFromObjectWhoseConstructorCannotChange' => [
+                'code' => '<?php
+                    class FinalConstructor {
+                        final public function __construct(public int $i = 0) {}
+                    }
+
+                    /** @final */
+                    class DocblockFinal {
+                        public function __construct(public int $i = 0) {}
+                    }
+
+                    interface Buildable {
+                        public function __construct(int $i);
+                    }
+
+                    class Impl implements Buildable {
+                        public function __construct(public int $i) {}
+                    }
+
+                    function fromFinalConstructor(FinalConstructor $o): FinalConstructor {
+                        return new $o();
+                    }
+
+                    function fromDocblockFinal(DocblockFinal $o): DocblockFinal {
+                        return new $o();
+                    }
+
+                    function fromInterfaceConstructor(Impl $o): Impl {
+                        return new $o(1);
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
+            'instantiateFromObjectOfAnAnonymousClass' => [
+                'code' => '<?php
+                    function f(): object {
+                        $a = new class {
+                            public function __construct(public int $i = 0) {}
+                        };
+
+                        return new $a();
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
             'propertyUnsetInABranchIsNotRestoredAfterIt' => [
                 'code' => '<?php
                     final class Box {
@@ -2181,6 +2283,51 @@ final class MethodCallTest extends TestCase
     public static function providerInvalidCodeParse(): iterable
     {
         return [
+            'unsafeInstantiationFromThis' => [
+                'code' => '<?php
+                    class A {
+                        public function __construct(public int $i = 0) {}
+
+                        public function copy(): static {
+                            return new $this();
+                        }
+                    }',
+                'error_message' => 'Cannot safely instantiate class A with "new $object" as its constructor',
+                'error_levels' => [],
+                'php_version' => '8.1',
+            ],
+            'unsafeInstantiationFromObjectWithArgumentsThatDontFitTheInterface' => [
+                'code' => '<?php
+                    interface Buildable {
+                        public function __construct(int $i);
+                    }
+
+                    class Impl implements Buildable {
+                        public function __construct(public int $i) {}
+                    }
+
+                    function f(Impl $o): Impl {
+                        return new $o("x");
+                    }',
+                'error_message' => 'UnsafeInstantiation',
+                'error_levels' => [],
+                'php_version' => '8.1',
+            ],
+            'unsafeInstantiationFromObject' => [
+                'code' => '<?php
+                    class A {}
+
+                    class Alpha extends A {
+                        public function __construct(string $a) {}
+                    }
+
+                    function foo(A $instance): A {
+                        return new $instance();
+                    }
+
+                    foo(new Alpha("xxx"));',
+                'error_message' => 'UnsafeInstantiation',
+            ],
             'variableUnsetInABranchIsNotRestoredAfterIt' => [
                 'code' => '<?php
                     function unsetThenReturn(?int $x): ?string {
