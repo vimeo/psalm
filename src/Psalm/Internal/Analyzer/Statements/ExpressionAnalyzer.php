@@ -204,7 +204,7 @@ final class ExpressionAnalyzer
      * narrow reaches the if body: those of an `&&`, of an `||` under a `!`, of a comparison to `true`, not those of a
      * `xor`, of a negated `&&` or of a call argument
      *
-     * @psalm-pure
+     * @psalm-mutation-free
      */
     private static function passesIfBodyContext(PhpParser\Node\Expr $stmt, bool $inside_negation): bool
     {
@@ -226,7 +226,7 @@ final class ExpressionAnalyzer
     }
 
     /**
-     * @psalm-pure
+     * @psalm-mutation-free
      */
     private static function isTrueConst(PhpParser\Node\Expr $expr): bool
     {
