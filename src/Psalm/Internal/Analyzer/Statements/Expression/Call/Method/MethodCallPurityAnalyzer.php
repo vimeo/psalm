@@ -631,7 +631,9 @@ final class MethodCallPurityAnalyzer
                 $context->removeMutableObjectVars(false, $method_capabilities);
             }
 
-            if (($callee_capabilities & (Capabilities::WRITE_PROPS | Capabilities::WRITE_THIS_PROPS)) !== 0
+            if ((($callee_capabilities & (Capabilities::WRITE_PROPS | Capabilities::WRITE_THIS_PROPS)) !== 0
+                    // a body writing nothing but its local variables, unless an override may run instead
+                    && !($method_storage->writes_only_this_properties && !$method_storage->overridden_downstream))
                 || self::isCalledForItsTemplatesEffects($method_storage)
             ) {
                 // the method may write properties, but not which ones (a stub, a body writing `$this`
