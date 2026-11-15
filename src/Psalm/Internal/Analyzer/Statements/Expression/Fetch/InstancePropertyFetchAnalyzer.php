@@ -709,6 +709,7 @@ final class InstancePropertyFetchAnalyzer
                                 $declaring_class_storage->properties[$stmt->name->name],
                                 $context,
                                 $stmt_var_type->reference_free && $stmt_var_type->allow_mutations,
+                                $stmt->getAttribute(UnsetAnalyzer::TARGET_ATTRIBUTE) !== true,
                             );
                         }
                     }

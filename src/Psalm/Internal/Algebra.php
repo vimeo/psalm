@@ -10,7 +10,6 @@ use Psalm\Type\Atomic\TArray;
 use Psalm\Type\Atomic\TKeyedArray;
 use UnexpectedValueException;
 
-use function array_filter;
 use function array_intersect_key;
 use function array_keys;
 use function array_pop;
@@ -561,7 +560,7 @@ final class Algebra
                                     }
 
                                     if ($av->isNegationOf($bv)) {
-                                        break 3;
+                                        continue 3;
                                     }
                                 }
                             }
@@ -608,7 +607,7 @@ final class Algebra
         int $conditional_object_id,
     ): array {
         if (count($left_clauses) > 60_000 || count($right_clauses) > 60_000) {
-            return [];
+            return [new Clause([], $conditional_object_id, $conditional_object_id, true)];
         }
 
         $clauses = [];
@@ -652,6 +651,9 @@ final class Algebra
                     if (isset($right_clause->redefined_vars[$var])
                         || isset($right_clause->redefined_vars[substr($var, 0, strcspn($var, '[-'))])
                     ) {
+                        // the left disjunct is about the previous value: the clause no longer lists all disjuncts
+                        $can_reconcile = false;
+
                         continue;
                     }
 
@@ -722,36 +724,40 @@ final class Algebra
      *   (!$a || !$c || !$e) &&
      *   (!$a || !$c || !$f)
      *
+     * A clause that can't be reconciled doesn't list all its disjuncts (`$a === null || !f($a)`, with f() asserting
+     * nothing when false), and an equality with a non-literal value can't be negated: the negation of what is left
+     * is only implied by the negation of the formula, so a wedge is added, which keeps negating it again from
+     * asserting anything. With $exact, such clauses are left out instead, which gives a formula that implies the
+     * negation, as is needed to prove that a condition can never be true.
+     *
      * @param list<Clause>  $clauses
      * @return non-empty-list<Clause>
      */
-    public static function negateFormula(array $clauses): array
+    public static function negateFormula(array $clauses, bool $exact = false): array
     {
-        $reconcilable_clauses = array_filter(
-            $clauses,
-            static fn(Clause $clause): bool => $clause->reconcilable,
-        );
-
-        // A clause that can't be reconciled, as one of its disjuncts says nothing (`$a === null || !f($a)`, with
-        // f() asserting nothing when false), still lists disjuncts that are all false where it is: where there is
-        // nothing else to negate, that is what the negation says
-        $clauses = $reconcilable_clauses ?: array_filter(
-            $clauses,
-            static fn(Clause $clause): bool => $clause->possibilities && !$clause->wedge,
-        );
-
-        if (!$clauses) {
-            $cond_id = mt_rand(0, 100_000_000);
-            return [new Clause([], $cond_id, $cond_id, true)];
-        }
-
         $clauses_with_impossibilities = [];
+        $partial = false;
 
         foreach ($clauses as $clause) {
-            $clauses_with_impossibilities[] = $clause->calculateNegation();
+            $negated_clause = $clause->calculateNegation();
+
+            if (!$clause->reconcilable || $negated_clause->partial_negation) {
+                if ($exact) {
+                    continue;
+                }
+
+                $partial = true;
+            }
+
+            $clauses_with_impossibilities[] = $negated_clause;
         }
 
         unset($clauses);
+
+        if (!$clauses_with_impossibilities) {
+            $cond_id = mt_rand(0, 100_000_000);
+            return [new Clause([], $cond_id, $cond_id, true)];
+        }
 
         $impossible_clauses = self::groupImpossibilities($clauses_with_impossibilities);
 
@@ -765,6 +771,11 @@ final class Algebra
         if (!$negated) {
             $cond_id = mt_rand(0, 100_000_000);
             return [new Clause([], $cond_id, $cond_id, true)];
+        }
+
+        if ($partial) {
+            $cond_id = mt_rand(0, 100_000_000);
+            $negated[] = new Clause([], $cond_id, $cond_id, true);
         }
 
         return $negated;

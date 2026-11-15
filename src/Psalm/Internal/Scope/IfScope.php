@@ -9,6 +9,8 @@ use Psalm\Internal\Clause;
 use Psalm\Storage\Assertion;
 use Psalm\Type\Union;
 
+use function array_intersect_key;
+
 /**
  * @internal
  */
@@ -52,6 +54,13 @@ final class IfScope
      * @var array<string, bool>
      */
     public array $reassigned_var_ids = [];
+
+    /**
+     * The variables the conditions of the elseifs assigned, which the else runs after
+     *
+     * @var array<string, int>
+     */
+    public array $elseif_cond_assigned_var_ids = [];
 
     /**
      * @var array<string, Union>
@@ -103,4 +112,21 @@ final class IfScope
     public array $final_actions = [];
 
     public ?Context $post_leaving_if_context = null;
+
+    /**
+     * The offsets of nullable arrays read on every branch that reaches the end of the if so far, null before one does
+     *
+     * @var array<string, true>|null
+     */
+    public ?array $null_array_offsets_read = null;
+
+    /**
+     * @psalm-external-mutation-free
+     */
+    public function addBranchReachingTheEnd(Context $branch_context): void
+    {
+        $this->null_array_offsets_read = $this->null_array_offsets_read === null
+            ? $branch_context->null_array_offsets_read
+            : array_intersect_key($this->null_array_offsets_read, $branch_context->null_array_offsets_read);
+    }
 }
