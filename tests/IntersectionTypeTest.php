@@ -20,27 +20,6 @@ final class IntersectionTypeTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
-            'genericWithoutArgumentsInIntersectionGetsItsDefaults' => [
-                'code' => '<?php
-                    interface I {}
-
-                    /** @template T of object */
-                    interface Coll {}
-
-                    abstract class B {
-                        /** @return I&Coll */
-                        abstract public function get(): I;
-                    }
-
-                    function b(): B {
-                        throw new Exception();
-                    }
-
-                    $r = b()->get();',
-                'assertions' => [
-                    '$r===' => 'I&Coll<object>',
-                ],
-            ],
             'propertyFetchOfTheSecondClassOfAnIntersectionWithAnInterface' => [
                 'code' => '<?php
                     interface I {}

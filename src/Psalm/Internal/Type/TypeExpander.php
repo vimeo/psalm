@@ -119,6 +119,14 @@ final class TypeExpander
             }
         }
 
+        $fleshed_out_type = null;
+
+        // combining can still simplify the parts, e.g. drop a subclass of another class of the union
+        if (!$changed && count($new_return_type_parts) > 1) {
+            $fleshed_out_type = TypeCombiner::combine($new_return_type_parts, $codebase);
+            $changed = $fleshed_out_type->getAtomicTypes() !== $return_type->getAtomicTypes();
+        }
+
         // keeps the type, its cached ids and the types that hold it, with what a rebuilt type would reset
         if (!$changed) {
             return $return_type->setProperties([
@@ -136,7 +144,7 @@ final class TypeExpander
             ]);
         }
 
-        $fleshed_out_type = TypeCombiner::combine(
+        $fleshed_out_type ??= TypeCombiner::combine(
             $new_return_type_parts,
             $codebase,
         );
@@ -256,7 +264,6 @@ final class TypeExpander
                         $parent_class,
                         $evaluate_class_constants,
                         $evaluate_conditional_types,
-                        $final,
                         $expand_generic,
                         $expand_templates,
                         $throw_on_unresolvable_constant,
