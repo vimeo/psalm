@@ -41,6 +41,14 @@ final class TypeCombination
     /** @var array<string, non-empty-list<Union>> */
     public array $object_type_params = [];
 
+    /**
+     * The least offset of a left-out type parameter of the generic objects combined under a key, see
+     * TGenericObject::$omitted_params_from: the union holds what any of them holds
+     *
+     * @var array<string, int>
+     */
+    public array $object_omitted_params_from = [];
+
     /** @var array<string, bool> */
     public array $object_static = [];
 

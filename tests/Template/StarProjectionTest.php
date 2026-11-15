@@ -180,6 +180,34 @@ final class StarProjectionTest extends TestCase
                         return parentOf($relation);
                     }',
             ],
+            'starProjectionFitsAClassWithoutArgumentsInAUnion' => [
+                'code' => '<?php
+                    /**
+                     * @template A
+                     * @template B of object
+                     */
+                    final class Pair {}
+
+                    function nullable(?Pair $p): void {}
+
+                    function nativeUnion(Pair|int $p): void {}
+
+                    /** @param list<Pair|null> $l */
+                    function nestedNullable(array $l): void {}
+
+                    function optional(Pair $p = null): void {}
+
+                    /** @param Pair<int, *> $s */
+                    function f(Pair $s): void {
+                        nullable($s);
+                        nativeUnion($s);
+                        nestedNullable([$s]);
+                        optional($s);
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
             'starProjectionLetsTheOtherArgumentsBindTemplates' => [
                 'code' => '<?php
                     abstract class Model {}
