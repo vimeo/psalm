@@ -63,34 +63,18 @@ final class CoalesceAnalyzer
         if ($has_call_root || $has_untracked_offset) {
             $left_var_id = '$<tmp coalesce var>' . (int) $left_expr->getAttribute('startFilePos');
 
-            // an untracked offset is evaluated unconditionally, so its assignments belong to the real context
-            $cloned = $has_untracked_offset ? $context : clone $context;
-            $was_inside_isset = $cloned->inside_isset;
-            $was_inside_general_use = $cloned->inside_general_use;
-            $cloned->inside_isset = true;
+            // the left operand is evaluated unconditionally, so what it assigns (and the clauses and the types of
+            // properties and offsets that an assignment drops) belongs to the real context
+            $was_inside_isset = $context->inside_isset;
+            $was_inside_general_use = $context->inside_general_use;
+            $context->inside_isset = true;
             // the value of the left operand decides which side is taken
-            $cloned->inside_general_use = true;
+            $context->inside_general_use = true;
 
-            ExpressionAnalyzer::analyze($statements_analyzer, $left_expr, $cloned);
+            ExpressionAnalyzer::analyze($statements_analyzer, $left_expr, $context);
 
-            if ($has_untracked_offset) {
-                $context->inside_isset = $was_inside_isset;
-                $context->inside_general_use = $was_inside_general_use;
-            } else {
-                // the call is evaluated unconditionally: what it assigns is set on the right too (the type of a
-                // variable it didn't assign is the same object, also on a later pass of a loop)
-                foreach ($cloned->assigned_var_ids as $assigned_var_id => $assigned_offset) {
-                    if (isset($cloned->vars_in_scope[$assigned_var_id])
-                        && ($context->vars_in_scope[$assigned_var_id] ?? null)
-                            !== $cloned->vars_in_scope[$assigned_var_id]
-                    ) {
-                        $context->vars_in_scope[$assigned_var_id] = $cloned->vars_in_scope[$assigned_var_id];
-                        $context->assigned_var_ids[$assigned_var_id] = $assigned_offset;
-                    }
-                }
-
-                $context->vars_possibly_in_scope += $cloned->vars_possibly_in_scope;
-            }
+            $context->inside_isset = $was_inside_isset;
+            $context->inside_general_use = $was_inside_general_use;
 
             if ($root_expr !== $left_expr) {
                 $condition_type = $statements_analyzer->node_data->getType($left_expr);

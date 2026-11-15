@@ -1441,6 +1441,46 @@ final class IssetTest extends TestCase
                 'ignored_issues' => [],
                 'php_version' => '8.0',
             ],
+            'variableAssignedInTheCallOnTheLeftOfACoalesceLosesTheClausesOfItsOldValue' => [
+                'code' => '<?php
+                    function g(?int $n): ?int {
+                        return $n === 0 ? null : $n;
+                    }
+
+                    function staleClause(?int $x, ?int $y): void {
+                        if ($x !== null || $y !== null) {
+                            $r = g($x = null) ?? 0;
+                            if ($y === null) {
+                                /** @psalm-check-type-exact $x = null */
+                                echo $r;
+                            }
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'objectAssignedInTheCallOnTheLeftOfACoalesceLosesTheTypesOfItsOldProperties' => [
+                'code' => '<?php
+                    final class O {
+                        public ?int $p = null;
+                    }
+
+                    function g(O $o): ?int {
+                        return $o->p;
+                    }
+
+                    function objDesc(O $o, O $o2): void {
+                        $o->p = 5;
+                        $r = g($o = $o2) ?? 0;
+                        $p = $o->p;
+                        /** @psalm-check-type-exact $p = ?int */
+                        echo $p, $r;
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
             'issetOnPropertyOfUnionWhereALaterMemberHasAMagicGetterStillSeesTheMissingOne' => [
                 'code' => '<?php
                     final class A {
