@@ -685,6 +685,9 @@ final class LoopAnalyzer
             );
         }
 
+        $loop_parent_context->removeClausesOfVarsChangedIn($loop_context);
+        $loop_parent_context->removeClausesOfVarsChangedIn($continue_context);
+
         if ($inner_do_context) {
             // what the condition throws is thrown by the loop too
             $inner_do_context->mergeExceptions($continue_context);
