@@ -178,15 +178,25 @@ final class ElseAnalyzer
 
         // if it doesn't end in a return
         if (!$has_leaving_statements) {
+            // what the conditions of the elseifs assigned is assigned in the else too, even with an unchanged type
+            foreach ($if_scope->elseif_cond_assigned_var_ids as $var_id => $_) {
+                if (isset($outer_context->vars_in_scope[$var_id])) {
+                    $original_context->vars_in_scope[$var_id] = $outer_context->vars_in_scope[$var_id];
+                } else {
+                    unset($original_context->vars_in_scope[$var_id]);
+                }
+            }
+
             IfAnalyzer::updateIfScope(
                 $codebase,
                 $if_scope,
                 $else_context,
                 $original_context,
-                $new_assigned_var_ids,
+                $new_assigned_var_ids + $if_scope->elseif_cond_assigned_var_ids,
                 $new_possibly_assigned_var_ids,
                 $if_scope->if_cond_changed_var_ids,
                 true,
+                $if_scope->elseif_cond_assigned_var_ids,
             );
 
             $if_scope->reasonable_clauses = [];

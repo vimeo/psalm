@@ -54,6 +54,13 @@ final class IfScope
     public array $reassigned_var_ids = [];
 
     /**
+     * The variables the conditions of the elseifs assigned, which the else runs after
+     *
+     * @var array<string, int>
+     */
+    public array $elseif_cond_assigned_var_ids = [];
+
+    /**
      * @var array<string, Union>
      */
     public array $possibly_redefined_vars = [];

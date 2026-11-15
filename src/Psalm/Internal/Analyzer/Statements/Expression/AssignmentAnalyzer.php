@@ -1463,6 +1463,20 @@ final class AssignmentAnalyzer
                 ?? Type::getMixed();
         }
 
+        $rhs_type = $context->vars_in_scope[$rhs_var_id];
+
+        // binding a reference to a variable or an offset that is not set creates it as null (a superglobal read
+        // is taken as defined, see VariableFetchAnalyzer)
+        if ($rhs_type->possibly_undefined || $rhs_type->possibly_undefined_from_try) {
+            $rhs_type = $rhs_type->setPossiblyUndefined(false, false);
+
+            $context->vars_in_scope[$rhs_var_id] = $rhs_type->isNullable()
+                || $rhs_type->hasMixed()
+                || VariableFetchAnalyzer::isSuperGlobal($rhs_var_id)
+                ? $rhs_type
+                : $rhs_type->getBuilder()->addType(new TNull())->freeze();
+        }
+
         FunctionLikeAnalyzer::unbindByRefParam($statements_analyzer->getCodebase(), $context, $lhs_var_id);
 
         if ($rhs_var_id === '$GLOBALS[\'' . substr($lhs_var_id, 1) . '\']') {
