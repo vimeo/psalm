@@ -326,11 +326,6 @@ final class LoopAnalyzer
                             $pre_loop_context->removeVarFromConflictingClauses($var_id);
                         }
                     } else {
-                        // give an opportunity to redeemed UndefinedVariable issues
-                        if ($recorded_issues) {
-                            $has_changes = true;
-                        }
-
                         // the next iteration starts with what this one left in the variable (see below)
                         if (self::isLoopVar($var_id)
                             && (!isset($loop_var_types_at_start[$var_id])
@@ -367,6 +362,26 @@ final class LoopAnalyzer
                     }
                 }
 
+                // the variables the loop defines are possibly defined where the next iteration starts, holding what
+                // an iteration left in them where it ended or continued: the other ones defined in the loop go
+                foreach ($loop_scope->possibly_defined_loop_vars as $var_id => $type) {
+                    if (!isset($continue_context->vars_in_scope[$var_id])
+                        && !isset($original_parent_context->vars_in_scope[$var_id])
+                        && !in_array($var_id, $always_assigned_before_loop_body_vars, true)
+                        && !$is_do
+                    ) {
+                        $vars_to_remove[] = $var_id;
+
+                        // only a `continue` defines it
+                        if (self::isLoopVar($var_id)
+                            && (!isset($loop_var_types_at_start[$var_id])
+                                || !$type->setPossiblyUndefined(false)->equals($loop_var_types_at_start[$var_id]))
+                        ) {
+                            $has_changes = true;
+                        }
+                    }
+                }
+
                 $continue_context->has_returned = false;
 
                 $loop_parent_context->vars_possibly_in_scope += $continue_context->vars_possibly_in_scope;
@@ -379,18 +394,6 @@ final class LoopAnalyzer
                 }
 
                 $force_pass = false;
-
-                // the variables the loop defines are possibly defined where the next iteration starts, holding what
-                // an iteration left in them where it ended or continued: the other ones defined in the loop go
-                foreach ($loop_scope->possibly_defined_loop_vars as $var_id => $_) {
-                    if (!isset($continue_context->vars_in_scope[$var_id])
-                        && !isset($original_parent_context->vars_in_scope[$var_id])
-                        && !in_array($var_id, $always_assigned_before_loop_body_vars, true)
-                        && !$is_do
-                    ) {
-                        $vars_to_remove[] = $var_id;
-                    }
-                }
 
                 foreach ($vars_to_remove as $var_id) {
                     if (!self::isLoopVar($var_id) || isset($continue_context->references_in_scope[$var_id])) {
@@ -430,8 +433,10 @@ final class LoopAnalyzer
 
                 foreach ($always_assigned_before_loop_body_vars as $var_id) {
                     if ((!isset($continue_context->vars_in_scope[$var_id])
-                            || $continue_context->vars_in_scope[$var_id]->getId()
-                                !== $pre_loop_context->vars_in_scope[$var_id]->getId()
+                            || self::differ(
+                                $continue_context->vars_in_scope[$var_id],
+                                $pre_loop_context->vars_in_scope[$var_id],
+                            )
                             || $continue_context->vars_in_scope[$var_id]->from_docblock
                                 !== $pre_loop_context->vars_in_scope[$var_id]->from_docblock
                             // the value of an iteration is not the one the last one ended with
@@ -553,7 +558,7 @@ final class LoopAnalyzer
                 continue;
             }
 
-            if ($loop_context->vars_in_scope[$var_id]->getId() !== $type->getId()) {
+            if (self::differ($loop_context->vars_in_scope[$var_id], $type)) {
                 $loop_parent_context->vars_in_scope[$var_id] = Type::combineUnionTypes(
                     $loop_parent_context->vars_in_scope[$var_id],
                     $loop_context->vars_in_scope[$var_id],
@@ -597,7 +602,7 @@ final class LoopAnalyzer
                     continue;
                 }
 
-                if ($continue_context->vars_in_scope[$var_id]->getId() !== $type->getId()) {
+                if (self::differ($continue_context->vars_in_scope[$var_id], $type)) {
                     $loop_parent_context->vars_in_scope[$var_id] = Type::combineUnionTypes(
                         $loop_parent_context->vars_in_scope[$var_id],
                         $continue_context->vars_in_scope[$var_id],
@@ -1380,5 +1385,17 @@ final class LoopAnalyzer
         }
 
         return $max_depth;
+    }
+
+    /**
+     * Types that read the same may still differ: closures made from different functions or methods do
+     *
+     * @psalm-pure
+     */
+    private static function differ(Union $type, Union $other_type): bool
+    {
+        return $type->getId() !== $other_type->getId()
+            || array_diff_key($type->getAtomicTypes(), $other_type->getAtomicTypes()) !== []
+            || array_diff_key($other_type->getAtomicTypes(), $type->getAtomicTypes()) !== [];
     }
 }

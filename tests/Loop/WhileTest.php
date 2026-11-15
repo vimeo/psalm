@@ -5,9 +5,14 @@ declare(strict_types=1);
 namespace Psalm\Tests\Loop;
 
 use Override;
+use Psalm\Context;
+use Psalm\Internal\Analyzer\IssueData;
+use Psalm\IssueBuffer;
 use Psalm\Tests\TestCase;
 use Psalm\Tests\Traits\InvalidCodeAnalysisTestTrait;
 use Psalm\Tests\Traits\ValidCodeAnalysisTestTrait;
+
+use function array_map;
 
 use const DIRECTORY_SEPARATOR;
 
@@ -15,6 +20,195 @@ final class WhileTest extends TestCase
 {
     use InvalidCodeAnalysisTestTrait;
     use ValidCodeAnalysisTestTrait;
+
+    public function testAnIssueInTheLoopDoesNotChangeTheUndefinedVariableIssues(): void
+    {
+        $this->project_analyzer->getConfig()->throw_exception = false;
+
+        $file_path = self::$src_dir_path . 'somefile.php';
+
+        $this->addFile(
+            $file_path,
+            '<?php
+                final class O {
+                    public ?int $p = null;
+                }
+
+                function takesInt(int $_i): void {}
+
+                function definedLater(): void {
+                    while (rand(0, 1)) {
+                        if (rand(0, 1)) {
+                            echo $a;
+                        }
+                        $a = 1;
+                        takesInt("s");
+                    }
+                }
+
+                function chain(array $arr): void {
+                    foreach ($arr as $_) {
+                        if (rand(0, 1)) {
+                            echo $c;
+                        }
+                        $c = $b;
+                        $b = 1;
+                        takesInt("s");
+                    }
+                }
+
+                function nested(): void {
+                    while (rand(0, 1)) {
+                        while (rand(0, 1)) {
+                            if (rand(0, 1)) {
+                                echo $n;
+                            }
+                            takesInt("s");
+                        }
+                        $n = 1;
+                    }
+                }
+
+                /** @param list<int> $arr */
+                function definedBeforeContinue(array $arr): void {
+                    foreach ($arr as $v) {
+                        if ($v > 1) {
+                            echo $x;
+                        }
+                        if ($v) {
+                            $x = 1;
+                            continue;
+                        }
+                        takesInt("s");
+                        break;
+                    }
+                }
+
+                function definedBeforeBreak(O $o): void {
+                    while (rand(0, 1)) {
+                        if (rand(0, 1)) {
+                            echo $y;
+                        }
+                        $o->p = 1;
+                        if (rand(0, 1)) {
+                            $y = 1;
+                            break;
+                        }
+                        takesInt("s");
+                    }
+                }
+
+                function unsetAtTheEnd(): void {
+                    while (rand(0, 1)) {
+                        if (rand(0, 1)) {
+                            echo $z;
+                        }
+                        $z = 1;
+                        takesInt("s");
+                        unset($z);
+                    }
+                }
+
+                function definedBeforeContinueOnly(O $o): void {
+                    while (rand(0, 1)) {
+                        if (rand(0, 1)) {
+                            echo $w;
+                        }
+                        if (rand(0, 1)) {
+                            $w = 1;
+                            continue;
+                        }
+                        $o->p = 1;
+                        takesInt("s");
+                    }
+                }',
+        );
+
+        $this->analyzeFile($file_path, new Context());
+
+        self::assertSame(
+            [
+                'PossiblyUndefinedVariable 11:34',
+                'InvalidScalarArgument 14:34',
+                'PossiblyUndefinedVariable 21:34',
+                'PossiblyUndefinedVariable 23:30',
+                'InvalidScalarArgument 25:34',
+                'PossiblyUndefinedVariable 33:38',
+                'InvalidScalarArgument 35:38',
+                'PossiblyUndefinedVariable 45:34',
+                'InvalidScalarArgument 51:34',
+                'UndefinedVariable 59:34',
+                'MixedArgument 59:34',
+                'InvalidScalarArgument 66:34',
+                'UndefinedVariable 73:34',
+                'MixedArgument 73:34',
+                'InvalidScalarArgument 76:34',
+                'PossiblyUndefinedVariable 84:34',
+                'InvalidScalarArgument 91:34',
+            ],
+            array_map(
+                static fn(IssueData $issue): string
+                    => $issue->type . ' ' . $issue->line_from . ':' . $issue->column_from,
+                IssueBuffer::getIssuesDataForFile($file_path),
+            ),
+        );
+    }
+
+    public function testAnIssueInTheLoopDoesNotChangeTheUnusedVariableIssues(): void
+    {
+        $this->project_analyzer->getConfig()->throw_exception = false;
+        $this->project_analyzer->getCodebase()->reportUnusedVariables();
+
+        $file_path = self::$src_dir_path . 'somefile.php';
+
+        $this->addFile(
+            $file_path,
+            '<?php
+                function takesInt(int $_i): void {}
+
+                function readByTheNextIteration(): void {
+                    $a = 0;
+                    while (rand(0, 1)) {
+                        echo $a;
+                        $a = 1;
+                        takesInt("s");
+                    }
+                }
+
+                function definedInTheLoopAndReadByTheNextIteration(): void {
+                    while (rand(0, 1)) {
+                        if (isset($b)) {
+                            echo $b;
+                        }
+                        $b = 1;
+                        takesInt("s");
+                    }
+                }
+
+                function neverRead(): void {
+                    while (rand(0, 1)) {
+                        $c = 1;
+                        takesInt("s");
+                    }
+                }',
+        );
+
+        $this->analyzeFile($file_path, new Context());
+
+        self::assertSame(
+            [
+                'InvalidScalarArgument 9:34',
+                'InvalidScalarArgument 19:34',
+                'InvalidScalarArgument 26:34',
+                'UnusedVariable 25:25',
+            ],
+            array_map(
+                static fn(IssueData $issue): string
+                    => $issue->type . ' ' . $issue->line_from . ':' . $issue->column_from,
+                IssueBuffer::getIssuesDataForFile($file_path),
+            ),
+        );
+    }
 
     /**
      * @psalm-pure
@@ -1328,6 +1522,21 @@ final class WhileTest extends TestCase
     public static function providerInvalidCodeParse(): iterable
     {
         return [
+            'variableDefinedOnlyBeforeAContinueIsPossiblyUndefined' => [
+                'code' => '<?php
+                    function f(): void {
+                        while (rand(0, 1)) {
+                            if (rand(0, 1)) {
+                                echo $x;
+                            }
+                            if (rand(0, 1)) {
+                                $x = 1;
+                                continue;
+                            }
+                        }
+                    }',
+                'error_message' => 'PossiblyUndefinedVariable',
+            ],
             'whileTrueVariableUndefinedAtABreakIsPossiblyUndefined' => [
                 'code' => '<?php
                     function f(): void {
