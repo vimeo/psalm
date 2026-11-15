@@ -849,13 +849,10 @@ final class AssertionFinder
                 $class_string_type = new TClassString('object', null, $class_exists_check_type === 1);
                 $if_types[$first_var_name] = [[new IsType($class_string_type)]];
             }
-        } elseif ($class_exists_check_type = self::hasTraitExistsCheck($expr)) {
+        } elseif ($trait_exists_check_type = self::hasClassExistsCheck($expr, 'trait_exists')) {
             if ($first_var_name) {
-                if ($class_exists_check_type === 2) {
-                    $if_types[$first_var_name] = [[new IsType(new TTraitString())]];
-                } else {
-                    $if_types[$first_var_name] = [[new IsIdentical(new TTraitString())]];
-                }
+                $trait_string_type = new TTraitString(is_loaded: $trait_exists_check_type === 1);
+                $if_types[$first_var_name] = [[new IsType($trait_string_type)]];
             }
         } elseif (self::hasEnumExistsCheck($expr)) {
             if ($first_var_name) {
@@ -2122,10 +2119,12 @@ final class AssertionFinder
     /**
      * @return Reconciler::RECONCILIATION_*
      */
-    private static function hasClassExistsCheck(PhpParser\Node\Expr\FuncCall $stmt): int
-    {
+    private static function hasClassExistsCheck(
+        PhpParser\Node\Expr\FuncCall $stmt,
+        string $function_name = 'class_exists',
+    ): int {
         if ($stmt->name instanceof PhpParser\Node\Name
-            && strtolower($stmt->name->getFirst()) === 'class_exists'
+            && strtolower($stmt->name->getFirst()) === $function_name
         ) {
             if (!isset($stmt->getArgs()[1])) {
                 return 2;
@@ -2145,31 +2144,6 @@ final class AssertionFinder
         return 0;
     }
 
-    /**
-     * @return  0|1|2
-     */
-    private static function hasTraitExistsCheck(PhpParser\Node\Expr\FuncCall $stmt): int
-    {
-        if ($stmt->name instanceof PhpParser\Node\Name
-            && strtolower($stmt->name->getFirst()) === 'trait_exists'
-        ) {
-            if (!isset($stmt->getArgs()[1])) {
-                return 2;
-            }
-
-            $second_arg = $stmt->getArgs()[1]->value;
-
-            if ($second_arg instanceof PhpParser\Node\Expr\ConstFetch
-                && strtolower($second_arg->name->getFirst()) === 'true'
-            ) {
-                return 2;
-            }
-
-            return 1;
-        }
-
-        return 0;
-    }
 
     private static function hasEnumExistsCheck(PhpParser\Node\Expr\FuncCall $stmt): bool
     {
