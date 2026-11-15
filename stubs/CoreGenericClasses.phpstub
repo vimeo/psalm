@@ -745,6 +745,8 @@ class DateInterval
     /**
      * @throws Exception when the $duration cannot be parsed as an interval.
      * @link https://php.net/manual/en/dateinterval.construct.php
+     * @psalm-flow ($duration) -> Exception::$messages[*]
+     * @psalm-flow ($duration) -> DateMalformedIntervalStringException::$messages[*]
      */
     public function __construct(string $duration = '') {}
 

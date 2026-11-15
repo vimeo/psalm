@@ -9498,6 +9498,44 @@ final class TaintTest extends TestCase
                     }',
                 'error_message' => 'TaintedHtml',
             ],
+            'keyedStoreWrittenByAConstructor' => [
+                'code' => '<?php
+                    final class Entry {
+                        /** @psalm-flow ($value) -> Cache::$data[$key] */
+                        public function __construct(string $key, string $value) {}
+                    }
+
+                    final class Cache {
+                        /** @psalm-flow Cache::$data[$key] -> return */
+                        public static function get(string $key): string {
+                            return "";
+                        }
+                    }
+
+                    new Entry("k", (string) $_GET["x"]);
+                    echo Cache::get("k");',
+                'error_message' => 'TaintedHtml',
+            ],
+            'keyedStoreOfAClassWrittenByNameIsReadThroughItsParent' => [
+                'code' => '<?php
+                    abstract class Model {
+                        /** @psalm-flow static::$temp[$key] -> return */
+                        public function getTemp(string $key): string {
+                            return "";
+                        }
+                    }
+
+                    final class Post extends Model {}
+
+                    /** @psalm-flow ($value) -> Post::$temp[$key] */
+                    function setPostTemp(string $key, string $value): void {}
+
+                    function show(Model $model): void {
+                        setPostTemp("k", (string) $_GET["x"]);
+                        echo $model->getTemp("k");
+                    }',
+                'error_message' => 'TaintedHtml',
+            ],
             'lateBoundKeyedStoreWrittenThroughAClassIsReadThroughAnInterfaceOfASubclass' => [
                 'code' => '<?php
                     abstract class Model {
@@ -15693,6 +15731,56 @@ final class TaintTest extends TestCase
                     $previous = $e->getPrevious();
                     if ($previous) {
                         echo $previous->getMessage();
+                    }',
+                'error_message' => 'TaintedHtml',
+            ],
+            'taintCaughtExceptionDump' => [
+                'code' => '<?php
+                    function foo(string $s): void {
+                        throw new RuntimeException("safe");
+                    }
+                    try {
+                        foo((string) $_GET["x"]);
+                    } catch (RuntimeException $e) {
+                        // its trace holds the arguments of foo()
+                        echo print_r($e, true);
+                    }',
+                'error_message' => 'TaintedHtml',
+            ],
+            'taintTheMessageOfTheExceptionAnObjectIdThrowsOnInvalidInput' => [
+                'code' => '<?php
+                    try {
+                        new MongoDB\BSON\ObjectId((string) $_GET["id"]);
+                    } catch (MongoDB\Driver\Exception\InvalidArgumentException $e) {
+                        // it repeats the input
+                        echo $e->getMessage();
+                    }',
+                'error_message' => 'TaintedHtml',
+            ],
+            'taintTheMessageOfTheExceptionDateTimeImmutableThrowsOnInvalidInput' => [
+                'code' => '<?php
+                    try {
+                        new DateTimeImmutable((string) $_GET["date"]);
+                    } catch (Exception $e) {
+                        echo $e->getMessage();
+                    }',
+                'error_message' => 'TaintedHtml',
+            ],
+            'taintTheMessageOfTheExceptionDateTimeThrowsOnInvalidInput' => [
+                'code' => '<?php
+                    try {
+                        new DateTime((string) $_GET["date"]);
+                    } catch (Exception $e) {
+                        echo $e->getMessage();
+                    }',
+                'error_message' => 'TaintedHtml',
+            ],
+            'taintTheMessageOfTheExceptionDateTimeZoneThrowsReadAsThrowable' => [
+                'code' => '<?php
+                    try {
+                        new DateTimeZone((string) $_GET["zone"]);
+                    } catch (Throwable $e) {
+                        echo $e->getMessage();
                     }',
                 'error_message' => 'TaintedHtml',
             ],

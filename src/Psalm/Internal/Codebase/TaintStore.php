@@ -255,7 +255,8 @@ final class TaintStore
     /**
      * The stores a call writes or reads: the one of the flow, or for `static::$data` the one of the class the method
      * is called on. An object of a class may be one of the classes extending it, and be read as one of their parent
-     * classes and interfaces: a write is into the store of each of them, a read from the store of the class only.
+     * classes and interfaces: a write is into the store of each of them, a read from the store of the class only. A
+     * write into the store of a class that exists is also into those of its parent classes and interfaces.
      *
      * @param array{store: string, is_late_bound: bool, ...} $flow
      * @return list<string>
@@ -267,6 +268,28 @@ final class TaintStore
         ?MethodIdentifier $method_id,
         bool $is_write,
     ): array {
+        if (!$flow['is_late_bound'] && $is_write) {
+            $parts = explode('::$', $flow['store'], 2);
+            $class = ltrim($parts[0], '\\');
+            if (!isset($parts[1]) || !$codebase->classlike_storage_provider->has($class)) {
+                return [$flow['store']];
+            }
+
+            $class_storage = $codebase->classlike_storage_provider->get($class);
+            $stores = [$flow['store']];
+            foreach ([
+                ...$class_storage->parent_classes,
+                ...$class_storage->parent_interfaces,
+                ...$class_storage->class_implements,
+            ] as $ancestor) {
+                if ($codebase->classlike_storage_provider->has($ancestor)) {
+                    $stores[] = $codebase->classlike_storage_provider->get($ancestor)->name . '::$' . $parts[1];
+                }
+            }
+
+            return $stores;
+        }
+
         if (!$flow['is_late_bound']
             || $method_id === null
             || !$codebase->classlike_storage_provider->has($method_id->fq_class_name)

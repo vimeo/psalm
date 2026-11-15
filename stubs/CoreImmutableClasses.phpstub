@@ -2,6 +2,10 @@
 
 class DateTimeImmutable implements DateTimeInterface
 {
+    /**
+     * @psalm-flow ($datetime) -> Exception::$messages[*]
+     * @psalm-flow ($datetime) -> DateMalformedStringException::$messages[*]
+     */
     public function __construct(string $datetime = "now", DateTimeZone $timezone = null) {}
 
     /**
@@ -49,6 +53,7 @@ class DateTimeImmutable implements DateTimeInterface
     /**
      * @psalm-mutation-free
      * @return static|false
+     * @psalm-flow ($modifier) -> DateMalformedStringException::$messages[*]
      */
     public function modify(string $modifier) {}
 
@@ -107,7 +112,11 @@ class DateTimeImmutable implements DateTimeInterface
  */
 class DateTimeZone
 {
-    /** @param non-empty-string $timezone */
+    /**
+     * @param non-empty-string $timezone
+     * @psalm-flow ($timezone) -> Exception::$messages[*]
+     * @psalm-flow ($timezone) -> DateInvalidTimeZoneException::$messages[*]
+     */
     public function __construct(string $timezone) {}
 }
 
@@ -137,6 +146,7 @@ interface Throwable
     /**
      * @psalm-mutation-free
      * @psalm-flow $this->message -> return
+     * @psalm-flow static::$messages[*] -> return
      */
     public function getMessage() : string;
 
@@ -216,6 +226,7 @@ class Exception implements Throwable
     /**
      * @psalm-mutation-free
      * @psalm-flow $this->message -> return
+     * @psalm-flow static::$messages[*] -> return
      */
     public final function getMessage() : string {}
 
@@ -327,6 +338,7 @@ class Error implements Throwable
     /**
      * @psalm-mutation-free
      * @psalm-flow $this->message -> return
+     * @psalm-flow static::$messages[*] -> return
      */
     public final function getMessage() : string {}
 

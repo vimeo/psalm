@@ -25,6 +25,7 @@ use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\Internal\Codebase\CliOutput;
 use Psalm\Internal\Codebase\ConditionalTaintSinks;
 use Psalm\Internal\Codebase\ReceiverPropertyTaints;
+use Psalm\Internal\Codebase\TaintStore;
 use Psalm\Internal\DataFlow\DataFlowNode;
 use Psalm\Internal\MethodIdentifier;
 use Psalm\Internal\Type\Comparator\UnionTypeComparator;
@@ -1022,6 +1023,17 @@ final class NewAnalyzer extends CallAnalyzer
                 $fq_class_name,
                 $code_location,
                 $stmt_type,
+            );
+
+            $stmt_type = TaintStore::taintCall(
+                $statements_analyzer,
+                $statements_analyzer->taint_flow_graph,
+                $method_storage,
+                $stmt->getArgs(),
+                $code_location,
+                $stmt_type,
+                $cased_constructor_id,
+                $declaring_method_id ?? $method_id,
             );
         }
 

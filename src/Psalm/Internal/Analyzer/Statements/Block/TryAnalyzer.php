@@ -402,6 +402,20 @@ final class TryAnalyzer
                         'variable-use',
                     );
                 }
+
+                $taint_flow_graph = $statements_analyzer->getTaintFlowGraphWithSuppressed();
+                if ($taint_flow_graph) {
+                    // the arguments in the trace of an exception may come from any data, which dumping it
+                    // (print_r(), var_export()) prints; its message is what its constructor was given (see the
+                    // stub of Throwable::getMessage()). The variable's own node is the source: a node specialized to
+                    // the catch would make the calls on the exception specialized to it, which every call of the
+                    // same method elsewhere reaches through their shared node.
+                    $taint_flow_graph->addSource(
+                        DataFlowNode::getForAssignment($catch_var_id, $location)->setTaints(
+                            $statements_analyzer->getCodebase()->getInputTaints(),
+                        ),
+                    );
+                }
             }
 
             $suppressed_issues = $statements_analyzer->getSuppressedIssues();

@@ -188,7 +188,10 @@ echo Cache::get('title_1');   // no issue
   same one.
 + `static` names the class the method is called on, giving each class its own store, e.g. for the temporary
   properties of ORM models: `($value) -> static::$temp[$key]`. What is stored through a class can be read through it,
-  its subclasses and their parents and interfaces, but not through unrelated classes.
+  its subclasses and their parents and interfaces, but not through unrelated classes. What is stored in the store of a
+  class named by name is read through its parents and interfaces too: Psalm's stubs store the input that builtins like
+  `new DateTime()` repeat in the messages of the exceptions they throw in `Exception::$messages`,
+  `DateMalformedStringException::$messages`..., which `getMessage()` reads as `static::$messages[*]`.
 + `[*]` is any key: `($values) -> Store::$data[*]` for a method storing an array of keys and values, and
   `Store::$data[*] -> return` for one returning what is stored under any key. `[$keys[*]]` is each key of a list, as
   for `mGet(array $keys)`. In nested stores, like `Store::$data[$namespace][$key]`, only the first key tells the values

@@ -27,6 +27,7 @@ namespace MongoDB\BSON
          * id, it only validates it.
          *
          * @psalm-capabilities ($id is null ? read-globals|write-globals|io : pure)
+         * @psalm-flow ($id) -> \MongoDB\Driver\Exception\InvalidArgumentException::$messages[*]
          */
         final public function __construct(?string $id = null)
         {

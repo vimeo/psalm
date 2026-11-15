@@ -14,4 +14,9 @@ return [
     'apcu_entry' => ['APCu::$data[$key] -> return'],
     'apcu_fetch' => ['APCu::$data[$key] -> return'],
     'apcu_store' => ['($value) -> APCu::$data[$key]'],
+    'datetime::__construct' => [
+        '($datetime) -> Exception::$messages[*]',
+        '($datetime) -> DateMalformedStringException::$messages[*]',
+    ],
+    'datetime::modify' => ['($modifier) -> DateMalformedStringException::$messages[*]'],
 ];
