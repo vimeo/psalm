@@ -56,6 +56,8 @@ final class TypeHintResolver
                 );
             }
 
+            $seen_keys = [];
+
             foreach ($hint->types as $atomic_typehint) {
                 $resolved_type = self::resolve(
                     $atomic_typehint,
@@ -67,18 +69,24 @@ final class TypeHintResolver
                     $analysis_php_version_id,
                 );
 
-                if ($type !== null) {
-                    $seen_types = $type->getAtomicTypes();
+                $resolved_keys = [];
 
-                    foreach ($resolved_type->getAtomicTypes() as $resolved_key => $_) {
-                        if (isset($seen_types[$resolved_key])) {
-                            $file_storage->scan_issues[] = new ParseError(
-                                'Duplicate type ' . $resolved_key . ' is redundant',
-                                $code_location,
-                            );
-                        }
+                foreach ($resolved_type->getAtomicTypes() as $resolved_key => $resolved_atomic) {
+                    // `static` has the key of the class it is resolved to, but PHP accepts `static|A` and `self|static`
+                    $resolved_keys[$resolved_key . ($resolved_atomic instanceof TNamedObject
+                        && $resolved_atomic->is_static ? '&static' : '')] = $resolved_key;
+                }
+
+                foreach ($resolved_keys as $seen_key => $resolved_key) {
+                    if (isset($seen_keys[$seen_key])) {
+                        $file_storage->scan_issues[] = new ParseError(
+                            'Duplicate type ' . $resolved_key . ' is redundant',
+                            $code_location,
+                        );
                     }
                 }
+
+                $seen_keys += $resolved_keys;
 
                 $type = Type::combineUnionTypes($resolved_type, $type);
             }

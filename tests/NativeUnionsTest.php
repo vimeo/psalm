@@ -31,6 +31,16 @@ final class NativeUnionsTest extends TestCase
                     function f(int|string|null $a, A|B $b, ?A $c, int|float|bool $d): void {
                         echo gettype($a), gettype($b), gettype($c), gettype($d);
                     }
+
+                    class C {
+                        public function f(): static|C {
+                            return $this;
+                        }
+
+                        public function g(): self|static {
+                            return $this;
+                        }
+                    }
                     PHP,
                 'assertions' => [],
                 'ignored_issues' => [],
@@ -119,6 +129,17 @@ final class NativeUnionsTest extends TestCase
                         public A|null|A $a = null;
                     }',
                 'error_message' => 'ParseError - src' . DIRECTORY_SEPARATOR . 'somefile.php:3:32 - Duplicate type A is redundant',
+                'error_levels' => [],
+                'php_version' => '8.0',
+            ],
+            'classNameAndSelfInAReturnUnion' => [
+                'code' => '<?php
+                    class A {
+                        public function f(): A|self {
+                            return $this;
+                        }
+                    }',
+                'error_message' => 'ParseError - src' . DIRECTORY_SEPARATOR . 'somefile.php:3:46 - Duplicate type A is redundant',
                 'error_levels' => [],
                 'php_version' => '8.0',
             ],
