@@ -6,6 +6,7 @@ namespace Psalm\Internal\Analyzer\Statements\Expression;
 
 use PhpParser;
 use Psalm\Context;
+use Psalm\Internal\Analyzer\Statements\Expression\ExpressionIdentifier;
 use Psalm\Internal\Analyzer\Statements\ExpressionAnalyzer;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\Node\Expr\BinaryOp\VirtualIdentical;
@@ -16,7 +17,11 @@ use Psalm\Node\Expr\VirtualTernary;
 use Psalm\Node\Expr\VirtualVariable;
 use Psalm\Node\VirtualName;
 use Psalm\Type;
+use Psalm\Type\Atomic;
+use Psalm\Type\Atomic\TArray;
+use Psalm\Type\Atomic\TKeyedArray;
 
+use function array_all;
 use function is_string;
 
 /**
@@ -24,6 +29,37 @@ use function is_string;
  */
 final class NullsafeAnalyzer
 {
+    /**
+     * Whether the receiver is a place that keeps its value: a property, a static property or an item of an array.
+     * Other receivers (an assignment, a call, an item of an ArrayAccess object) are evaluated once into the
+     * temporary variable.
+     */
+    private static function isStoredInPlace(StatementsAnalyzer $statements_analyzer, PhpParser\Node\Expr $expr): bool
+    {
+        if ($expr instanceof PhpParser\Node\Expr\ArrayDimFetch) {
+            $base_type = $statements_analyzer->node_data->getType($expr->var);
+
+            if ($base_type === null
+                || !array_all(
+                    $base_type->getAtomicTypes(),
+                    static fn(Atomic $atomic): bool => $atomic instanceof TArray || $atomic instanceof TKeyedArray,
+                )
+            ) {
+                return false;
+            }
+        } elseif (!$expr instanceof PhpParser\Node\Expr\PropertyFetch
+            && !$expr instanceof PhpParser\Node\Expr\StaticPropertyFetch
+        ) {
+            return false;
+        }
+
+        return ExpressionIdentifier::getExtendedVarId(
+            $expr,
+            $statements_analyzer->getFQCLN(),
+            $statements_analyzer,
+        ) !== null;
+    }
+
     /**
      * @param PhpParser\Node\Expr\NullsafePropertyFetch|PhpParser\Node\Expr\NullsafeMethodCall $stmt
      */
@@ -44,7 +80,11 @@ final class NullsafeAnalyzer
             $condition_type = $statements_analyzer->node_data->getType($stmt->var);
             $var_type = $condition_type;
 
-            if ($condition_type) {
+            // a property, static property or array item is the one the call acts on: what the call does to the
+            // object (what it stores in it, for the taint analysis) would be lost on a temporary variable
+            if ($condition_type
+                && !self::isStoredInPlace($statements_analyzer, $stmt->var)
+            ) {
                 $context->vars_in_scope['$' . $tmp_name] = $condition_type;
 
                 $tmp_var = new VirtualVariable($tmp_name, $stmt->var->getAttributes());
