@@ -61,6 +61,39 @@ final class SwitchTypeTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'caseConditionReassigningAVariableIsNotNarrowedByAnEarlierCase' => [
+                'code' => '<?php
+                    function f(string $type): void {
+                        switch (true) {
+                            case false !== $pos = strpos($type, "<"):
+                                echo substr($type, $pos + 1, -1);
+                                break;
+                            case false !== $pos = strrpos($type, "["):
+                                /** @psalm-check-type-exact $pos = int */
+                                echo substr($type, 0, $pos);
+                                break;
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
+            'caseConditionReassigningAVariableKeepsTheEarlierCasesOfOtherVariables' => [
+                'code' => '<?php
+                    function f(?int $a, string $type): void {
+                        switch (true) {
+                            case $a === null:
+                                break;
+                            case false !== $pos = strpos($type, "<"):
+                                /** @psalm-check-type-exact $a = int */
+                                echo $a + $pos;
+                                break;
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
             'switchTrueCaseThatCanMatch' => [
                 'code' => '<?php
                     class Foo {}
@@ -1200,6 +1233,21 @@ final class SwitchTypeTest extends TestCase
     public static function providerInvalidCodeParse(): iterable
     {
         return [
+            'caseConditionAssigningAnotherVariableStillContradictsAnEarlierCase' => [
+                'code' => '<?php
+                    function f(?int $a, string $type): void {
+                        switch (true) {
+                            case $a === null:
+                                break;
+                            case false !== ($pos = strpos($type, "<")) && $a === null:
+                                echo $pos;
+                                break;
+                        }
+                    }',
+                'error_message' => 'ParadoxicalCondition',
+                'error_levels' => [],
+                'php_version' => '8.1',
+            ],
             'switchTrueCaseThatCannotMatch' => [
                 'code' => '<?php
                     class Foo {}

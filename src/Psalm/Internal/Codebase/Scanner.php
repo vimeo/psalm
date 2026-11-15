@@ -188,23 +188,26 @@ final class Scanner
 
         if ($this->codebase->classlike_storage_provider->has($fq_classlike_name)
             || !$this->codebase->classlikes->doesClassLikeExist($fq_classlike_name_lc)
-            || (!class_exists($fq_classlike_name, false)
-                && !interface_exists($fq_classlike_name, false)
-                && !enum_exists($fq_classlike_name, false)
-                && !trait_exists($fq_classlike_name, false))
         ) {
             return;
         }
 
-        $reflected_class = new ReflectionClass($fq_classlike_name);
+        // trait_exists() without autoloading asserts an equality, which a negation can't express: the narrowing must
+        // come from the positive condition
+        if (class_exists($fq_classlike_name, false)
+            || interface_exists($fq_classlike_name, false)
+            || enum_exists($fq_classlike_name, false)
+            || trait_exists($fq_classlike_name, false)
+        ) {
+            $reflected_class = new ReflectionClass($fq_classlike_name);
 
-        // Only built-in classlikes; a user-defined one loaded in Psalm's own process may differ from the analyzed code
-        if (!$reflected_class->isInternal()) {
-            return;
+            // Only built-in classlikes; a user-defined one loaded in Psalm's own process may differ from the analyzed
+            // code
+            if ($reflected_class->isInternal()) {
+                $this->reflection->registerClass($reflected_class);
+                $this->reflected_classlikes_lc[$fq_classlike_name_lc] = true;
+            }
         }
-
-        $this->reflection->registerClass($reflected_class);
-        $this->reflected_classlikes_lc[$fq_classlike_name_lc] = true;
     }
 
     /**
@@ -733,7 +736,7 @@ final class Scanner
                 if (!$this->codebase->tryExhumeClassLikeStorage($fq_classlike_name, $file_path)) {
                     // the cache has the storage of the file, but not that of a class-like it declares: scan again
                     foreach ($exhumed_classlike_names as $exhumed_classlike_name) {
-                        $this->codebase->classlike_storage_provider->remove($exhumed_classlike_name);
+                        $this->codebase->classlike_storage_provider->remove($exhumed_classlike_name, $file_path);
                     }
 
                     $from_cache = false;

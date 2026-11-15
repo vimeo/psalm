@@ -31,6 +31,7 @@ use Psalm\Internal\Type\TemplateBound;
 use Psalm\Internal\Type\TemplateInferredTypeReplacer;
 use Psalm\Internal\Type\TemplateResult;
 use Psalm\Internal\Type\TypeExpander;
+use Psalm\Internal\Type\TypeVariableTracker;
 use Psalm\IssueBuffer;
 use Psalm\Plugin\EventHandler\Event\AddRemoveTaintsEvent;
 use Psalm\Plugin\EventHandler\Event\AfterFunctionCallAnalysisEvent;
@@ -210,6 +211,8 @@ final class FunctionCallReturnTypeFetcher
                             true,
                         );
 
+                        $return_type = TypeVariableTracker::resolveTypeVariables($return_type, $codebase);
+
                         $return_type_location = $function_storage->return_type_location;
 
                         $event = new AfterFunctionCallAnalysisEvent(
@@ -283,6 +286,8 @@ final class FunctionCallReturnTypeFetcher
         if (!$stmt_type) {
             $stmt_type = Type::getMixed();
         }
+
+        $stmt_type = TypeVariableTracker::resolveTypeVariables($stmt_type, $codebase);
 
         if (!$stmt->isFirstClassCallable()) {
             self::taintPhpInputSource(
@@ -574,17 +579,18 @@ final class FunctionCallReturnTypeFetcher
                     }
                     if (count($call_args) < 2) {
                         return $returnType;
-                    } else {
-                        $second_arg_type = $statements_analyzer->node_data->getType($call_args[1]->value);
-                        if ($second_arg_type && $second_arg_type->isNull()) {
-                            return $returnType;
-                        }
                     }
+
+                    $second_arg_type = $statements_analyzer->node_data->getType($call_args[1]->value);
+                    if ($second_arg_type && $second_arg_type->isNull()) {
+                        return $returnType;
+                    }
+
                     if ($string_arg_type !== null && $string_arg_type->isNonEmptyString()) {
                         return Type::getNonEmptyString();
-                    } else {
-                        return Type::getString();
                     }
+
+                    return Type::getString();
             }
         }
 
@@ -1201,7 +1207,10 @@ final class FunctionCallReturnTypeFetcher
     ): ?FunctionLikeStorage {
         $codebase = $statements_analyzer->getCodebase();
 
-        if (!$codebase->functions->functionExists($statements_analyzer, $function_id)) {
+        // the closure of a method has the method's id
+        if (str_contains($function_id, '::')
+            || !$codebase->functions->functionExists($statements_analyzer, $function_id)
+        ) {
             return null;
         }
 
