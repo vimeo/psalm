@@ -30,6 +30,7 @@ use function substr;
 use function sys_get_temp_dir;
 use function uniqid;
 use function unlink;
+use function var_export;
 
 use const DIRECTORY_SEPARATOR;
 
@@ -158,7 +159,7 @@ final class CachedStorageTest extends TestCase
         self::assertSame(['UnimplementedInterfaceMethod'], $issue_types);
     }
 
-    public function testRescannedParentKeepsWhatItsChildrenWroteIntoIt(): void
+    public function testRescannedParentGetsWhatItsChildrenWriteIntoIt(): void
     {
         $codebase = $this->project_analyzer->getCodebase();
         $codebase->diff_methods = true;
@@ -178,7 +179,7 @@ final class CachedStorageTest extends TestCase
         $codebase->scanFiles();
         $codebase->analyzer->analyzeFiles($this->project_analyzer, 1, false);
 
-        // only a comment changes: nothing a fresh scan would not also produce
+        // the edit only adds a comment
         $this->file_provider->registerFile($base, '<?php // edited' . "\n" . substr($base_code, 6));
         $codebase->reloadFiles($this->project_analyzer, [$base]);
 
@@ -190,34 +191,40 @@ final class CachedStorageTest extends TestCase
         self::assertNotEmpty($codebase->file_storage_provider->get($base)->required_by_file_paths);
     }
 
+    public function testReloadedIncluderDoesNotKeepTheOldFunctionsOfTheFileItIncludes(): void
+    {
+        $codebase = $this->project_analyzer->getCodebase();
+        $codebase->diff_methods = true;
+        $functions = (string) getcwd() . DIRECTORY_SEPARATOR . 'functions.php';
+        $includer = (string) getcwd() . DIRECTORY_SEPARATOR . 'includer.php';
+
+        $this->file_provider->registerFile($functions, '<?php function foo(): int { return 1; }');
+        $this->file_provider->registerFile($includer, '<?php require_once ' . var_export($functions, true) . ';');
+
+        $codebase->addFilesToAnalyze([$functions => $functions, $includer => $includer]);
+        $codebase->scanFiles();
+        $codebase->analyzer->analyzeFiles($this->project_analyzer, 1, false);
+
+        $this->file_provider->registerFile($functions, '<?php function bar(): int { return 1; }');
+        $codebase->reloadFiles($this->project_analyzer, [$functions, $includer], true);
+
+        $declared = array_keys($codebase->file_storage_provider->get($includer)->declaring_function_ids);
+
+        self::assertSame(['bar'], $declared);
+    }
+
     public function testStubbedClassIsReportedAfterItsInterfaceMethodIsRenamed(): void
     {
-        // the file storage is exhumed from the disk (pristine) while the class-like storage comes from the array
         $cache_directory = sys_get_temp_dir() . DIRECTORY_SEPARATOR . uniqid('psalm-13779-', true);
-        $config = new TestConfig();
-        $config->cache_directory = $cache_directory;
-        $project_analyzer = new ProjectAnalyzer($config, new Providers(
-            $this->file_provider,
-            new ParserCacheProvider($config, '', false),
-            new FileStorageCacheProvider($config, ''),
-            new ClassLikeStorageCacheProvider($config, ''),
-            new FileReferenceCacheProvider($config, '', false),
-            new ProjectCacheProvider(),
-        ));
+
         try {
-            $project_analyzer->setPhpVersion('7.3', 'tests');
+            $project_analyzer = $this->newPersistentProjectAnalyzer($cache_directory);
             $codebase = $project_analyzer->getCodebase();
-            $codebase->diff_methods = true;
             $guard = (string) getcwd() . DIRECTORY_SEPARATOR . 'Guard.php';
             $request_guard = (string) getcwd() . DIRECTORY_SEPARATOR . 'RequestGuard.php';
             $stub = (string) getcwd() . DIRECTORY_SEPARATOR . 'RequestGuard.phpstub';
 
-            $this->file_provider->registerFile($guard, '<?php
-                namespace App;
-                interface Guard { public function guest(): bool; }');
-            $this->file_provider->registerFile($request_guard, '<?php
-                namespace App;
-                final class RequestGuard implements Guard { public function guest(): bool { return true; } }');
+            $this->registerGuardFiles($guard, $request_guard);
             $this->file_provider->registerFile($stub, '<?php
                 namespace App;
                 final class RequestGuard { public function guest(): bool {} }');
@@ -226,31 +233,105 @@ final class CachedStorageTest extends TestCase
             $codebase->scanFiles();
             $codebase->analyzer->analyzeFiles($project_analyzer, 1, false);
 
-            // the stub moves the storage of the class to the stub's path
+            // the stub moves the class's stmt_location to its path, but its cache entry stays under the file
+            // that declared it
             $codebase->register_stub_files = true;
             $codebase->scanner->addStubFileToDeepScan($stub);
             $codebase->scanFiles();
             $codebase->register_stub_files = false;
 
-            $this->file_provider->registerFile($guard, '<?php
-                namespace App;
-                interface Guard { public function isGuest(): bool; }');
+            $codebase->reloadFiles($project_analyzer, [$this->renameGuardMethod($guard)]);
 
-            $codebase->reloadFiles($project_analyzer, [$guard]);
-            $codebase->addFilesToAnalyze([$request_guard => $request_guard]);
-
-            $codebase->config->throw_exception = false;
-            $codebase->analyzer->analyzeFiles($project_analyzer, 1, false, true);
-
-            $issue_types = [];
-            foreach (IssueBuffer::getIssuesDataForFile($request_guard) as $issue) {
-                $issue_types[] = $issue->type;
-            }
+            $issue_types = $this->analyzeRequestGuard($project_analyzer, $request_guard);
         } finally {
             self::removeDirectory($cache_directory);
         }
 
         self::assertSame(['UnimplementedInterfaceMethod'], $issue_types);
+    }
+
+    public function testInvalidatedClassIsReportedAfterItsInterfaceMethodIsRenamed(): void
+    {
+        $cache_directory = sys_get_temp_dir() . DIRECTORY_SEPARATOR . uniqid('psalm-13779-', true);
+
+        try {
+            $project_analyzer = $this->newPersistentProjectAnalyzer($cache_directory);
+            $codebase = $project_analyzer->getCodebase();
+            $guard = (string) getcwd() . DIRECTORY_SEPARATOR . 'Guard.php';
+            $request_guard = (string) getcwd() . DIRECTORY_SEPARATOR . 'RequestGuard.php';
+
+            $this->registerGuardFiles($guard, $request_guard);
+
+            $codebase->addFilesToAnalyze([$guard => $guard, $request_guard => $request_guard]);
+            $codebase->scanFiles();
+            $codebase->analyzer->analyzeFiles($project_analyzer, 1, false);
+
+            // as the language server does for the files it was asked to analyze
+            $codebase->reloadFiles($project_analyzer, [$this->renameGuardMethod($guard), $request_guard], true);
+
+            $issue_types = $this->analyzeRequestGuard($project_analyzer, $request_guard);
+        } finally {
+            self::removeDirectory($cache_directory);
+        }
+
+        self::assertSame(['UnimplementedInterfaceMethod'], $issue_types);
+    }
+
+    /**
+     * Storages are read back from the disk, while the ones the array cache holds are populated in place
+     */
+    private function newPersistentProjectAnalyzer(string $cache_directory): ProjectAnalyzer
+    {
+        $config = new TestConfig();
+        $config->cache_directory = $cache_directory;
+
+        $project_analyzer = new ProjectAnalyzer($config, new Providers(
+            $this->file_provider,
+            new ParserCacheProvider($config, '', false),
+            new FileStorageCacheProvider($config, ''),
+            new ClassLikeStorageCacheProvider($config, ''),
+            new FileReferenceCacheProvider($config, '', false),
+            new ProjectCacheProvider(),
+        ));
+        $project_analyzer->setPhpVersion('7.3', 'tests');
+        $project_analyzer->getCodebase()->diff_methods = true;
+
+        return $project_analyzer;
+    }
+
+    private function registerGuardFiles(string $guard, string $request_guard): void
+    {
+        $this->file_provider->registerFile($guard, '<?php
+            namespace App;
+            interface Guard { public function guest(): bool; }');
+        $this->file_provider->registerFile($request_guard, '<?php
+            namespace App;
+            final class RequestGuard implements Guard { public function guest(): bool { return true; } }');
+    }
+
+    private function renameGuardMethod(string $guard): string
+    {
+        $this->file_provider->registerFile($guard, '<?php
+            namespace App;
+            interface Guard { public function isGuest(): bool; }');
+
+        return $guard;
+    }
+
+    /** @return list<string> */
+    private function analyzeRequestGuard(ProjectAnalyzer $project_analyzer, string $request_guard): array
+    {
+        $codebase = $project_analyzer->getCodebase();
+        $codebase->addFilesToAnalyze([$request_guard => $request_guard]);
+        $codebase->config->throw_exception = false;
+        $codebase->analyzer->analyzeFiles($project_analyzer, 1, false, true);
+
+        $issue_types = [];
+        foreach (IssueBuffer::getIssuesDataForFile($request_guard) as $issue) {
+            $issue_types[] = $issue->type;
+        }
+
+        return $issue_types;
     }
 
     private static function removeDirectory(string $directory): void
@@ -259,7 +340,8 @@ final class CachedStorageTest extends TestCase
             return;
         }
 
-        // the caches still hold their locks, which Config::removeCacheDirectory() would wait for
+        // Config::removeCacheDirectory() deadlocks here: it waits for an exclusive lock, which the live caches of
+        // this process hold as shared
         /** @var iterable<SplFileInfo> $entries */
         $entries = new RecursiveIteratorIterator(
             new RecursiveDirectoryIterator($directory, FilesystemIterator::SKIP_DOTS),
