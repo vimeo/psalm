@@ -229,6 +229,32 @@ final class TypeAlgebraTest extends TestCase
                 'ignored_issues' => [],
                 'php_version' => '8.0',
             ],
+            'aDoWhileConditionWithTooManyPartlyNegatableClausesIsAnalyzed' => [
+                'code' => '<?php
+                    function f(
+                        ?int $q,
+                        bool $a,
+                        bool $b,
+                        bool $c,
+                        bool $d,
+                        bool $e,
+                        bool $f,
+                        bool $g,
+                        bool $h,
+                        string $name
+                    ): void {
+                        do {
+                            echo "body";
+                        } while ($q !== null
+                            && (($a && $b && $c && $d) || ($e && $f && $g && $h) || !trait_exists($name, false))
+                        );
+                        /** @psalm-check-type-exact $q = int|null */
+                        echo "after";
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
             'aCaseOfASwitchTrueAssigningAVariableHasNoClausesOfItsOldValue' => [
                 'code' => '<?php
                     function f(string $s): int {
