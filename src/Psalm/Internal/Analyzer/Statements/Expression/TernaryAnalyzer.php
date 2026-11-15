@@ -28,7 +28,6 @@ use Psalm\Type\Union;
 
 use function array_diff;
 use function array_diff_assoc;
-use function array_diff_key;
 use function array_fill_keys;
 use function array_filter;
 use function array_intersect;
@@ -233,8 +232,8 @@ final class TernaryAnalyzer
             );
         }
 
-        $if_narrowed_var_ids = array_diff_key($changed_var_ids, $assigned_in_conditional_var_ids);
-        $if_narrowed_vars = $if_context->vars_in_scope;
+        $if_start_vars = $if_context->vars_in_scope;
+        $if_start_assigned_var_ids = $if_context->assigned_var_ids;
 
         $t_else_context = clone $context;
 
@@ -286,12 +285,8 @@ final class TernaryAnalyzer
             $t_else_context->clauses = Context::removeReconciledClauses($t_else_context->clauses, $changed_var_ids)[0];
         }
 
-        $else_narrowed_var_ids = array_diff_key(
-            $changed_var_ids,
-            $assigned_in_conditional_var_ids,
-            $else_rederived_var_ids,
-        );
-        $else_narrowed_vars = $t_else_context->vars_in_scope;
+        $else_start_vars = $t_else_context->vars_in_scope;
+        $else_start_assigned_var_ids = $t_else_context->assigned_var_ids;
 
         if (ExpressionAnalyzer::analyze($statements_analyzer, $stmt->else, $t_else_context) === false) {
             return false;
@@ -386,33 +381,60 @@ final class TernaryAnalyzer
 
         //these vars were changed in the if and existed before
         foreach ($redef_var_ifs as $redef_var_ifs_id) {
-            if (isset($context->vars_in_scope[$redef_var_ifs_id])
-                && !self::keepsOuterMixedType($statements_analyzer, $context, $if_context, $redef_var_ifs_id)
-                && !self::isOnlyNarrowed($if_context, $if_narrowed_var_ids, $if_narrowed_vars, $redef_var_ifs_id)
+            if (!isset($context->vars_in_scope[$redef_var_ifs_id])
+                || self::keepsOuterMixedType($statements_analyzer, $context, $if_context, $redef_var_ifs_id)
             ) {
-                $context->vars_in_scope[$redef_var_ifs_id] = Type::combineUnionTypes(
-                    $context->vars_in_scope[$redef_var_ifs_id],
-                    $if_context->vars_in_scope[$redef_var_ifs_id],
-                );
+                continue;
             }
+
+            if (self::isOnlyNarrowed(
+                $statements_analyzer,
+                $context,
+                $if_context,
+                $if_start_vars,
+                $if_start_assigned_var_ids,
+                $assigned_in_conditional_var_ids,
+                $redef_var_ifs_id,
+            )) {
+                $context->vars_in_scope[$redef_var_ifs_id] = $context->vars_in_scope[$redef_var_ifs_id]
+                    ->addParentNodes($if_context->vars_in_scope[$redef_var_ifs_id]->parent_nodes);
+
+                continue;
+            }
+
+            $context->vars_in_scope[$redef_var_ifs_id] = Type::combineUnionTypes(
+                $context->vars_in_scope[$redef_var_ifs_id],
+                $if_context->vars_in_scope[$redef_var_ifs_id],
+            );
         }
 
         //these vars were changed in the else and existed before
         foreach ($redef_var_else as $redef_var_else_id) {
-            if (isset($context->vars_in_scope[$redef_var_else_id])
-                && !self::keepsOuterMixedType($statements_analyzer, $context, $t_else_context, $redef_var_else_id)
-                && !self::isOnlyNarrowed(
-                    $t_else_context,
-                    $else_narrowed_var_ids,
-                    $else_narrowed_vars,
-                    $redef_var_else_id,
-                )
+            if (!isset($context->vars_in_scope[$redef_var_else_id])
+                || self::keepsOuterMixedType($statements_analyzer, $context, $t_else_context, $redef_var_else_id)
             ) {
-                $context->vars_in_scope[$redef_var_else_id] = Type::combineUnionTypes(
-                    $context->vars_in_scope[$redef_var_else_id],
-                    $t_else_context->vars_in_scope[$redef_var_else_id],
-                );
+                continue;
             }
+
+            if (self::isOnlyNarrowed(
+                $statements_analyzer,
+                $context,
+                $t_else_context,
+                $else_start_vars,
+                $else_start_assigned_var_ids,
+                $assigned_in_conditional_var_ids + $else_rederived_var_ids,
+                $redef_var_else_id,
+            )) {
+                $context->vars_in_scope[$redef_var_else_id] = $context->vars_in_scope[$redef_var_else_id]
+                    ->addParentNodes($t_else_context->vars_in_scope[$redef_var_else_id]->parent_nodes);
+
+                continue;
+            }
+
+            $context->vars_in_scope[$redef_var_else_id] = Type::combineUnionTypes(
+                $context->vars_in_scope[$redef_var_else_id],
+                $t_else_context->vars_in_scope[$redef_var_else_id],
+            );
         }
 
         $context->vars_possibly_in_scope = [
@@ -460,21 +482,35 @@ final class TernaryAnalyzer
     }
 
     /**
-     * A variable that only the condition narrowed in this branch keeps its outer type, as IfAnalyzer does: the
-     * narrowing says nothing about the paths through the other branch
+     * A variable that only the condition narrowed in this branch, and that the branch then left untouched, keeps its
+     * outer type, as IfAnalyzer does: the narrowing says nothing about the paths through the other branch
      *
-     * @param array<string, mixed> $narrowed_var_ids
-     * @param array<string, Union> $narrowed_vars
-     * @psalm-capabilities read-props
+     * @param array<string, Union> $start_vars the branch's variables once the condition is applied
+     * @param array<string, int> $start_assigned_var_ids
+     * @param array<string, mixed> $condition_assigned_var_ids
      */
     private static function isOnlyNarrowed(
+        StatementsAnalyzer $statements_analyzer,
+        Context $outer_context,
         Context $branch_context,
-        array $narrowed_var_ids,
-        array $narrowed_vars,
+        array $start_vars,
+        array $start_assigned_var_ids,
+        array $condition_assigned_var_ids,
         string $var_id,
     ): bool {
-        return isset($narrowed_var_ids[$var_id], $narrowed_vars[$var_id], $branch_context->vars_in_scope[$var_id])
-            && $branch_context->vars_in_scope[$var_id]->equals($narrowed_vars[$var_id], false, false);
+        return !isset($condition_assigned_var_ids[$var_id])
+            && isset(
+                $start_vars[$var_id],
+                $branch_context->vars_in_scope[$var_id],
+                $outer_context->vars_in_scope[$var_id],
+            )
+            && ($branch_context->assigned_var_ids[$var_id] ?? null) === ($start_assigned_var_ids[$var_id] ?? null)
+            && $branch_context->vars_in_scope[$var_id]->equals($start_vars[$var_id])
+            && UnionTypeComparator::isContainedBy(
+                $statements_analyzer->getCodebase(),
+                $start_vars[$var_id],
+                $outer_context->vars_in_scope[$var_id],
+            );
     }
 
     private static function setResultType(

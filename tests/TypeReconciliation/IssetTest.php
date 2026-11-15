@@ -1313,6 +1313,21 @@ final class IssetTest extends TestCase
                 ],
                 'ignored_issues' => ['MixedAssignment', 'MixedArrayAccess'],
             ],
+            'issetAndTernaryKeepsTheTypeOfTheArrayItReads' => [
+                'code' => '<?php
+                    /** @return list<mixed> */
+                    function getList(): array {
+                        return [];
+                    }
+
+                    $l = getList();
+                    $x = isset($l[0]["w"]) && $l[0]["w"] !== "" ? 1 : 2;
+                    $w = $l[0]["w"];',
+                'assertions' => [
+                    '$l===' => 'list<mixed>',
+                ],
+                'ignored_issues' => ['MixedAssignment', 'MixedArrayAccess'],
+            ],
             'negatedIssetTernaryKeepsTheTypeOfTheArrayItReads' => [
                 'code' => '<?php
                     /** @return list<mixed> */

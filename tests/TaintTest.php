@@ -6020,6 +6020,24 @@ final class TaintTest extends TestCase
     public static function providerInvalidCodeParse(): array
     {
         return [
+            'ternaryBranchWritingTheNarrowedTypeKeepsItsTaint' => [
+                'code' => '<?php // --taint-analysis
+                    /** @psalm-assert-if-true non-falsy-string $s */
+                    function isNonFalsy(string $s): bool {
+                        return $s !== "" && $s !== "0";
+                    }
+
+                    /** @psalm-taint-source input */
+                    function src(): string {
+                        return "";
+                    }
+
+                    function f(string $s): void {
+                        $r = isNonFalsy($s) ? ($s = "prefix" . src()) : null;
+                        echo $s;
+                    }',
+                'error_message' => 'TaintedHtml',
+            ],
             'nullsafeCallOnAStaticPropertyStoresTheTaint' => [
                 'code' => '<?php // --taint-analysis
                     final class H {
