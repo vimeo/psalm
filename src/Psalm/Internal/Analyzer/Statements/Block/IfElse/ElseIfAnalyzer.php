@@ -112,10 +112,11 @@ final class ElseIfAnalyzer
         // it: what the condition assigns is assigned for the elseifs and the else after it too
         $post_if_context = $if_conditional_scope->post_if_context;
 
-        foreach ($assigned_in_conditional_var_ids as $var_id => $_) {
+        foreach ($assigned_in_conditional_var_ids as $var_id => $offset) {
             if (isset($post_if_context->vars_in_scope[$var_id])) {
                 $else_context->vars_in_scope[$var_id] = $post_if_context->vars_in_scope[$var_id];
                 $else_context->vars_possibly_in_scope[$var_id] = true;
+                $if_scope->elseif_cond_assigned_var_ids[$var_id] = $offset;
             }
         }
 
