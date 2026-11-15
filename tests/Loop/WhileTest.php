@@ -1035,6 +1035,104 @@ final class WhileTest extends TestCase
                         }
                     }',
             ],
+            'whileLoopNeverEnteredKeepsThePreLoopValues' => [
+                'code' => '<?php
+                    $b = rand(0, 1) ? null : rand(0, 10);
+                    while ($b) {
+                        $b--;
+                    }',
+                'assertions' => [
+                    '$b===' => '0|null',
+                ],
+            ],
+            'whileLoopNeverEnteredKeepsThePreLoopFalsyStrings' => [
+                'code' => '<?php
+                    function getString(): ?string {
+                        return rand(0, 1) ? null : (string) rand();
+                    }
+
+                    $s = getString();
+                    while ($s) {
+                        $s = null;
+                    }',
+                'assertions' => [
+                    '$s===' => "''|'0'|null",
+                ],
+            ],
+            'whileLoopWithAndConditionNeverEnteredKeepsThePreLoopValues' => [
+                'code' => '<?php
+                    $a = rand(0, 1) ? null : rand(-10, 10);
+                    while ($a !== null && $a > 0) {
+                        $a = rand(0, 1) ? null : $a - 1;
+                    }',
+                'assertions' => [
+                    '$a===' => 'int<-10, 0>|null',
+                ],
+            ],
+            'whileLoopNeverEnteredStillHasWhatItsConditionWrites' => [
+                'code' => '<?php
+                    /** @param-out int<1, 10> $a */
+                    function nextValue(int &$a): bool {
+                        $a = rand(1, 10);
+                        return (bool) rand(0, 1);
+                    }
+
+                    $a = 0;
+                    while (nextValue($a) || $a > 5) {}
+                    $b = rand(0, 1) ? null : rand(0, 10);
+                    while ($b && abs($b) < 20) {
+                        $b--;
+                    }',
+                'assertions' => [
+                    '$a===' => 'int<1, 5>',
+                    '$b===' => 'int<0, 10>|null',
+                ],
+            ],
+            'loopLeftWithWhatItsConditionWroteNotWhatTheBodyLeft' => [
+                'code' => '<?php
+                    /** @param-out int<1, 10> $a */
+                    function nextValue(int &$a): bool {
+                        $a = rand(1, 10);
+                        return (bool) rand(0, 1);
+                    }
+
+                    /** @return int<0, 10> */
+                    function g(): int {
+                        return rand(0, 10);
+                    }
+
+                    final class K {
+                        public int $p = 0;
+
+                        /** @return int<0, 5> */
+                        public function f(): int {
+                            $this->p = 0;
+                            while (($this->p = g()) > 5) {}
+                            return $this->p;
+                        }
+                    }
+
+                    $a = 20;
+                    for (; nextValue($a), $a > 5;) {}
+                    $b = 20;
+                    while (nextValue($b) || $b > 5) {
+                        $b = 100;
+                    }',
+                'assertions' => [
+                    '$a===' => 'int<1, 5>',
+                    '$b===' => 'int<1, 5>',
+                ],
+            ],
+            'whileLoopAlwaysEnteredGetsTheNegatedCondition' => [
+                'code' => '<?php
+                    $a = null;
+                    while ($a === null) {
+                        $a = rand(0, 1) ? 1 : null;
+                    }',
+                'assertions' => [
+                    '$a===' => '1',
+                ],
+            ],
         ];
     }
 
