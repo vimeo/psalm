@@ -24,6 +24,7 @@ use Psalm\Type\Atomic\TNamedObject;
 use Psalm\Type\Atomic\TNull;
 use Psalm\Type\Atomic\TNumeric;
 use Psalm\Type\Atomic\TObjectWithProperties;
+use Psalm\Type\Atomic\TStarProjection;
 use Psalm\Type\Atomic\TTemplateParam;
 use Psalm\Type\Atomic\TTypeAlias;
 use Psalm\Type\Atomic\TTypeVariable;
@@ -110,6 +111,15 @@ final class UnionTypeComparator
                 && !$input_type_part->extra_types
             ) {
                 $input_atomic_types = array_merge($input_type_part->as->getAtomicTypes(), $input_atomic_types);
+                continue;
+            }
+
+            // a `*` is some type within what is known of it
+            if ($input_type_part instanceof TStarProjection) {
+                $input_atomic_types = array_merge(
+                    ($input_type_part->as ?? Type::getMixed())->getAtomicTypes(),
+                    $input_atomic_types,
+                );
                 continue;
             }
 

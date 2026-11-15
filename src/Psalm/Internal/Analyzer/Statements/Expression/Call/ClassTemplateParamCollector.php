@@ -117,8 +117,8 @@ final class ClassTemplateParamCollector
         $e = $static_class_storage->template_extended_params;
 
         if ($lhs_type_part instanceof TGenericObject) {
-            // members of a `Pair<int, *>` see the bound of the template a `*` stands for
-            $lhs_type_part = StarProjection::readArguments($lhs_type_part, $codebase);
+            // a template of a `Pair<int, *>` is bound to the `*`, knowing the template's bound
+            $lhs_type_part = StarProjection::boundArguments($lhs_type_part, $codebase);
 
             if ($class_storage === $static_class_storage && $class_storage->template_types) {
                 $lhs_type_params = TemplateDefaults::fillTypeArguments(

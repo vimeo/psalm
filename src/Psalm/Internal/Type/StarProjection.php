@@ -5,32 +5,39 @@ declare(strict_types=1);
 namespace Psalm\Internal\Type;
 
 use Psalm\Codebase;
+use Psalm\Storage\ClassLikeStorage;
 use Psalm\Type;
 use Psalm\Type\Atomic\TGenericObject;
 use Psalm\Type\Atomic\TStarProjection;
-use Psalm\Type\Atomic\TTemplateParam;
 use Psalm\Type\Union;
 
 use function array_any;
 use function array_keys;
+use function array_map;
+use function array_values;
 use function reset;
 
 /**
  * The `*` type argument of a generic object (`Pair<int, *>`), see {@see TStarProjection}.
  *
+ * A template of a `Pair<int, *>` is bound to the `*`, which knows the template's bound with the other type arguments
+ * applied (see boundStars()). The template replacer reads the template as that (see readBindings()).
+ *
  * @internal
- * @psalm-immutable
  */
 final class StarProjection
 {
     public const NAME = '*';
 
+    /** @var array<string, true> the classes whose template bounds boundStars() is expanding */
+    private static array $expanding = [];
+
     /**
      * @psalm-pure
      */
-    public static function create(bool $from_docblock): Union
+    public static function create(bool $from_docblock, ?Union $as = null): Union
     {
-        return new Union([new TStarProjection($from_docblock)], ['from_docblock' => $from_docblock]);
+        return new Union([new TStarProjection($from_docblock, $as)], ['from_docblock' => $from_docblock]);
     }
 
     /**
@@ -42,18 +49,21 @@ final class StarProjection
     }
 
     /**
-     * What reading a template bound to $argument gives: $bound, the template's bound, for a `*`
+     * What reading a template bound to $argument gives: for a `*`, what is known of it, else $bound
      *
      * @psalm-pure
      */
-    public static function read(Union $argument, Union $bound): Union
+    public static function read(Union $argument, ?Union $bound = null): Union
     {
-        return self::isStar($argument) ? $bound : $argument;
+        $star = $argument->isSingle() ? $argument->getSingleAtomic() : null;
+
+        return $star instanceof TStarProjection ? $star->as ?? $bound ?? Type::getMixed() : $argument;
     }
 
     /**
-     * The generic object with each `*` argument read as the bound of its template, as a use of the class leaving
-     * the argument out does: a bound that is an earlier template (`@template B of A`) takes its argument.
+     * The generic object with each `*` argument read as what is known of it, else as the bound of its template, for
+     * where its type arguments are read directly rather than through its templates (iterating it, a return type
+     * provider)
      *
      * @psalm-mutation-free
      */
@@ -64,31 +74,150 @@ final class StarProjection
         }
 
         $template_types = $codebase->classlike_storage_provider->has($type->value)
-            ? $codebase->classlike_storage_provider->get($type->value)->template_types ?? []
+            ? array_values($codebase->classlike_storage_provider->get($type->value)->template_types ?? [])
             : [];
-        $template_names = array_keys($template_types);
-        $read = [];
         $type_params = [];
 
         foreach ($type->type_params as $offset => $type_param) {
-            $template_name = $template_names[$offset] ?? null;
-
-            if (self::isStar($type_param)) {
-                $type_param = $template_name === null ? Type::getMixed() : reset($template_types[$template_name]);
-                $bound = $type_param->isSingle() ? $type_param->getSingleAtomic() : null;
-
-                if ($bound instanceof TTemplateParam && isset($read[$bound->param_name])) {
-                    $type_param = $read[$bound->param_name];
-                }
-            }
-
-            if ($template_name !== null) {
-                $read[$template_name] = $type_param;
-            }
-
-            $type_params[] = $type_param;
+            $bound = isset($template_types[$offset]) ? reset($template_types[$offset]) : null;
+            $type_params[] = self::read($type_param, $bound ?: null);
         }
 
         return $type->setTypeParams($type_params);
+    }
+
+    /**
+     * The template result with each template it binds to `*` bound to what is known of the `*` instead. It is a copy
+     * when it binds one, so it is for reading the bindings, not for recording them.
+     *
+     * @psalm-capabilities read-props|write-props
+     */
+    public static function readBindings(TemplateResult $template_result): TemplateResult
+    {
+        $read_result = null;
+
+        foreach ($template_result->template_types as $template_name => $type_map) {
+            foreach ($type_map as $defining_class => $type) {
+                if (self::isStar($type)) {
+                    $read_result ??= clone $template_result;
+                    $read_result->template_types[$template_name][$defining_class] = self::read($type);
+                }
+            }
+        }
+
+        foreach ($template_result->lower_bounds as $template_name => $type_map) {
+            foreach ($type_map as $defining_class => $bounds) {
+                foreach ($bounds as $bound) {
+                    if (self::isStar($bound->type)) {
+                        $read_result ??= clone $template_result;
+                        $read_result->lower_bounds[$template_name][$defining_class] = array_map(
+                            self::readBound(...),
+                            $bounds,
+                        );
+
+                        break;
+                    }
+                }
+            }
+        }
+
+        return $read_result ?? $template_result;
+    }
+
+    /**
+     * @psalm-capabilities read-props
+     */
+    private static function readBound(TemplateBound $bound): TemplateBound
+    {
+        if (!self::isStar($bound->type)) {
+            return $bound;
+        }
+
+        $read_bound = clone $bound;
+        $read_bound->type = self::read($bound->type);
+
+        return $read_bound;
+    }
+
+    /**
+     * The generic object with each `*` argument knowing what it is known to be, see boundStars()
+     */
+    public static function boundArguments(TGenericObject $type, Codebase $codebase): TGenericObject
+    {
+        if (!array_any($type->type_params, self::isStar(...))
+            || !$codebase->classlike_storage_provider->has($type->value)
+        ) {
+            return $type;
+        }
+
+        $type_params = self::boundStars(
+            $type->type_params,
+            $codebase->classlike_storage_provider->get($type->value),
+            $codebase,
+        );
+
+        return $type_params === [] || $type_params === $type->type_params ? $type : $type->setTypeParams($type_params);
+    }
+
+    /**
+     * The type arguments of a use of the class with each `*` knowing the bound of its template, expanded, with the
+     * other arguments applied (`Pair<int, *>` with `@template B of list<A>` knows `list<int>`)
+     *
+     * @param list<Union> $type_params
+     * @return list<Union>
+     */
+    public static function boundStars(array $type_params, ClassLikeStorage $storage, Codebase $codebase): array
+    {
+        $template_types = $storage->template_types ?? [];
+        $template_names = array_keys($template_types);
+        $bindings = [];
+        $unbound_offsets = [];
+
+        foreach ($type_params as $offset => $type_param) {
+            if (!isset($template_names[$offset])) {
+                break;
+            }
+
+            $bindings[$template_names[$offset]][$storage->name] = $type_param;
+            $star = $type_param->isSingle() ? $type_param->getSingleAtomic() : null;
+
+            if ($star instanceof TStarProjection && $star->as === null) {
+                $unbound_offsets[] = $offset;
+            }
+        }
+
+        // a bound naming its own class with a `*` (`T of Node<*>`) is expanded once
+        if ($unbound_offsets === [] || isset(self::$expanding[$storage->name])) {
+            return $type_params;
+        }
+
+        self::$expanding[$storage->name] = true;
+
+        try {
+            foreach ($unbound_offsets as $offset) {
+                $template_name = $template_names[$offset];
+                $other_bindings = $bindings;
+                unset($other_bindings[$template_name]);
+
+                $type_params[$offset] = $bindings[$template_name][$storage->name] = self::create(
+                    $type_params[$offset]->from_docblock,
+                    TypeExpander::expandUnion(
+                        $codebase,
+                        TemplateInferredTypeReplacer::replace(
+                            reset($template_types[$template_name]),
+                            new TemplateResult([], $other_bindings),
+                            $codebase,
+                        ),
+                        $storage->name,
+                        $storage->name,
+                        $storage->parent_class,
+                    ),
+                );
+            }
+        } finally {
+            unset(self::$expanding[$storage->name]);
+        }
+
+        return $type_params;
     }
 }

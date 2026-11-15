@@ -118,6 +118,11 @@ final class TemplateStandinTypeReplacer
         ?string $bound_equality_classlike = null,
         int $depth = 1,
     ): Union {
+        // the class templates of a `Pair<int, *>` read as what is known of the `*`; bounds are not recorded then
+        if ($template_result->readonly) {
+            $template_result = StarProjection::readBindings($template_result);
+        }
+
         $atomic_types = [];
 
         $original_atomic_types = $union_type->getAtomicTypes();

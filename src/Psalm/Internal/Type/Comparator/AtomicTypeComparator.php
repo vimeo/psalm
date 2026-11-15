@@ -42,6 +42,7 @@ use Psalm\Type\Atomic\TNull;
 use Psalm\Type\Atomic\TObject;
 use Psalm\Type\Atomic\TObjectWithProperties;
 use Psalm\Type\Atomic\TScalar;
+use Psalm\Type\Atomic\TStarProjection;
 use Psalm\Type\Atomic\TString;
 use Psalm\Type\Atomic\TTemplateKeyOf;
 use Psalm\Type\Atomic\TTemplateParam;
@@ -80,7 +81,23 @@ final class AtomicTypeComparator
         bool $allow_float_int_equality = true,
         ?TypeComparisonResult $atomic_comparison_result = null,
     ): bool {
+        // a `*` holds any type, and is some type within what is known of it
+        if ($container_type_part instanceof TStarProjection) {
+            return true;
+        }
 
+        if ($input_type_part instanceof TStarProjection) {
+            return UnionTypeComparator::isContainedBy(
+                $codebase,
+                $input_type_part->as ?? Type::getMixed(),
+                new Union([$container_type_part]),
+                false,
+                false,
+                $atomic_comparison_result,
+                $allow_interface_equality,
+                $allow_float_int_equality,
+            );
+        }
 
         if (($container_type_part instanceof TTemplateParam
                 || ($container_type_part instanceof TNamedObject

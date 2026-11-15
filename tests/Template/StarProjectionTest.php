@@ -695,6 +695,29 @@ final class StarProjectionTest extends TestCase
                 'ignored_issues' => [],
                 'php_version' => '8.0',
             ],
+            'starProjectionComposedBoundFollowsTheOtherArguments' => [
+                'code' => '<?php
+                    /**
+                     * @template A
+                     * @template B of list<A>
+                     */
+                    final class P {
+                        /** @return B */
+                        public function b(): array {
+                            throw new Exception();
+                        }
+                    }
+
+                    /** @return P<int, *> */
+                    function p(): P {
+                        throw new Exception();
+                    }
+
+                    $b = p()->b();',
+                'assertions' => [
+                    '$b===' => 'list<int>',
+                ],
+            ],
             'starProjectionParamDoesNotRetypeAnEmptyValue' => [
                 'code' => '<?php
                     /** @template T */
@@ -889,7 +912,7 @@ final class StarProjectionTest extends TestCase
                     function f(Pair $p): void {
                         takesConcrete($p);
                     }',
-                'error_message' => 'InvalidArgument - src' . DIRECTORY_SEPARATOR . 'somefile.php:13:39 - Argument 1 of takesConcrete expects Pair<int, stdClass>, but Pair<int, *> provided',
+                'error_message' => 'ArgumentTypeCoercion - src' . DIRECTORY_SEPARATOR . 'somefile.php:13:39 - Argument 1 of takesConcrete expects Pair<int, stdClass>, but parent type Pair<int, *> provided',
             ],
             'starProjectionIsNotTheBoundArgument' => [
                 'code' => '<?php
@@ -906,7 +929,7 @@ final class StarProjectionTest extends TestCase
                     function f(Pair $p): void {
                         takesBound($p);
                     }',
-                'error_message' => 'InvalidArgument - src' . DIRECTORY_SEPARATOR . 'somefile.php:13:36 - Argument 1 of takesBound expects Pair<int, object>, but Pair<int, *> provided',
+                'error_message' => 'ArgumentTypeCoercion - src' . DIRECTORY_SEPARATOR . 'somefile.php:13:36 - Argument 1 of takesBound expects Pair<int, object>, but parent type Pair<int, *> provided',
             ],
             'starProjectionIsNotTheMixedArgument' => [
                 'code' => '<?php
@@ -920,7 +943,7 @@ final class StarProjectionTest extends TestCase
                     function f(Box $b): void {
                         takesMixed($b);
                     }',
-                'error_message' => 'InvalidArgument - src' . DIRECTORY_SEPARATOR . 'somefile.php:10:36 - Argument 1 of takesMixed expects Box<mixed>, but Box<*> provided',
+                'error_message' => 'ArgumentTypeCoercion - src' . DIRECTORY_SEPARATOR . 'somefile.php:10:36 - Argument 1 of takesMixed expects Box<mixed>, but parent type Box<*> provided',
             ],
             'starProjectionFitsOnlyACovariantArgumentHoldingTheBound' => [
                 'code' => '<?php
@@ -940,7 +963,7 @@ final class StarProjectionTest extends TestCase
                     function f(ObjectReader $r): void {
                         takesStdClassReader($r);
                     }',
-                'error_message' => 'InvalidArgument - src' . DIRECTORY_SEPARATOR . 'somefile.php:16:45 - Argument 1 of takesStdClassReader expects Reader<stdClass>, but ObjectReader<*> provided',
+                'error_message' => 'ArgumentTypeCoercion - src' . DIRECTORY_SEPARATOR . 'somefile.php:16:45 - Argument 1 of takesStdClassReader expects Reader<stdClass>, but parent type ObjectReader<*> provided',
             ],
             'starProjectionDoesNotBindATemplateArgument' => [
                 'code' => '<?php
@@ -957,7 +980,7 @@ final class StarProjectionTest extends TestCase
                     function f(Box $b): void {
                         takesTemplated($b);
                     }',
-                'error_message' => 'InvalidArgument - src' . DIRECTORY_SEPARATOR . 'somefile.php:13:40 - Argument 1 of takesTemplated expects Box<mixed>, but Box<*> provided',
+                'error_message' => 'ArgumentTypeCoercion - src' . DIRECTORY_SEPARATOR . 'somefile.php:13:40 - Argument 1 of takesTemplated expects Box<mixed>, but parent type Box<*> provided',
             ],
             'starProjectionDoesNotBindATemplateArgumentNextToStars' => [
                 'code' => '<?php
@@ -978,7 +1001,7 @@ final class StarProjectionTest extends TestCase
                     function f(Relation $r): void {
                         takesTemplated($r);
                     }',
-                'error_message' => 'InvalidArgument - src' . DIRECTORY_SEPARATOR . 'somefile.php:17:40 - Argument 1 of takesTemplated expects Relation<mixed, *, *>, but Relation<*, *, *> provided',
+                'error_message' => 'ArgumentTypeCoercion - src' . DIRECTORY_SEPARATOR . 'somefile.php:17:40 - Argument 1 of takesTemplated expects Relation<mixed, *, *>, but parent type Relation<*, *, *> provided',
             ],
             'starProjectionInExtends' => [
                 'code' => '<?php
