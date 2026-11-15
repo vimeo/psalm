@@ -18,6 +18,7 @@ use Psalm\Internal\Scope\FinallyScope;
 use Psalm\Internal\Scope\LoopScope;
 use Psalm\Internal\Scope\TryScope;
 use Psalm\Internal\Type\AssertionReconciler;
+use Psalm\Internal\Type\Comparator\UnionTypeComparator;
 use Psalm\Storage\Capabilities;
 use Psalm\Storage\FunctionLikeStorage;
 use Psalm\Type\Atomic\DependentType;
@@ -1086,6 +1087,9 @@ final class Context
             } elseif ($statements_analyzer &&
                 $new_type &&
                 !$new_type->hasMixed()
+                // the types don't say whether the variable is set
+                && !$new_type->possibly_undefined
+                && !$new_type->possibly_undefined_from_try
             ) {
                 $type_changed = false;
 
@@ -1123,8 +1127,15 @@ final class Context
                         $failed_reconciliation,
                     );
 
+                    // an impossible assertion may be reconciled to the asserted type instead of never: no value of the
+                    // new type is then left
                     if (!$negated_result_type->isNever()
                         && $failed_reconciliation !== Reconciler::RECONCILIATION_EMPTY
+                        && UnionTypeComparator::isContainedBy(
+                            $statements_analyzer->getCodebase(),
+                            $negated_result_type,
+                            $new_type,
+                        )
                     ) {
                         $type_changed = true;
                         break;

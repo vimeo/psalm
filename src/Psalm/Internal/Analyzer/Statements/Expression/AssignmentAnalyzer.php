@@ -13,6 +13,7 @@ use Psalm\CodeLocation;
 use Psalm\CodeLocation\DocblockTypeLocation;
 use Psalm\Codebase;
 use Psalm\Context;
+use Psalm\Exception\ComplicatedExpressionException;
 use Psalm\Exception\DocblockParseException;
 use Psalm\Exception\IncorrectDocblockException;
 use Psalm\Internal\Algebra;
@@ -2603,6 +2604,7 @@ final class AssignmentAnalyzer
                     : $assign_value;
 
                 if ($assign_value_type->getId() === 'bool'
+                    && $assign_value !== null
                     && ($assigned_condition instanceof PhpParser\Node\Expr\BinaryOp
                         || $assigned_condition instanceof PhpParser\Node\Expr\Instanceof_
                         || $assigned_condition instanceof PhpParser\Node\Expr\FuncCall
@@ -2614,25 +2616,29 @@ final class AssignmentAnalyzer
                     $var_object_id = spl_object_id($assign_var);
                     $cond_object_id = spl_object_id($assign_value);
 
-                    $right_clauses = FormulaGenerator::getFormula(
-                        $cond_object_id,
-                        $cond_object_id,
-                        $assign_value,
-                        $context->self,
-                        $statements_analyzer,
-                        $codebase,
-                    );
+                    try {
+                        $right_clauses = FormulaGenerator::getFormula(
+                            $cond_object_id,
+                            $cond_object_id,
+                            $assign_value,
+                            $context->self,
+                            $statements_analyzer,
+                            $codebase,
+                        );
 
-                    $right_clauses = Context::filterClauses(
-                        $var_id,
-                        $right_clauses,
-                    );
+                        $right_clauses = Context::filterClauses(
+                            $var_id,
+                            $right_clauses,
+                        );
 
-                    $assignment_clauses = Algebra::combineOredClauses(
-                        [new Clause([$var_id => ['falsy' => new Falsy()]], $var_object_id, $var_object_id)],
-                        $right_clauses,
-                        $cond_object_id,
-                    );
+                        $assignment_clauses = Algebra::combineOredClauses(
+                            [new Clause([$var_id => ['falsy' => new Falsy()]], $var_object_id, $var_object_id)],
+                            $right_clauses,
+                            $cond_object_id,
+                        );
+                    } catch (ComplicatedExpressionException) {
+                        $assignment_clauses = [];
+                    }
 
                     $context->clauses = [...$context->clauses, ...$assignment_clauses];
                 }

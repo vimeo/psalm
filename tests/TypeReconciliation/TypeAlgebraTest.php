@@ -1261,6 +1261,38 @@ final class TypeAlgebraTest extends TestCase
                         return 0;
                     }',
             ],
+            'negatedCallWithTooManyAssertionsStoredInVariableDoesNotCrash' => [
+                'code' => '<?php
+                    /**
+                     * @psalm-assert-if-true int|string $p1
+                     * @psalm-assert-if-true int|string $p2
+                     * @psalm-assert-if-true int|string $p3
+                     * @psalm-assert-if-true int|string $p4
+                     * @psalm-assert-if-true int|string $p5
+                     * @psalm-assert-if-true int|string $p6
+                     * @psalm-assert-if-true int|string $p7
+                     * @psalm-assert-if-true int|string $p8
+                     * @psalm-assert-if-true int|string $p9
+                     * @psalm-assert-if-true int|string $p10
+                     * @psalm-assert-if-true int|string $p11
+                     * @psalm-assert-if-true int|string $p12
+                     * @psalm-assert-if-true int|string $p13
+                     * @psalm-assert-if-true int|string $p14
+                     * @psalm-assert-if-true int|string $p15
+                     */
+                    function validate(mixed $p1, mixed $p2, mixed $p3, mixed $p4, mixed $p5, mixed $p6, mixed $p7, mixed $p8, mixed $p9, mixed $p10, mixed $p11, mixed $p12, mixed $p13, mixed $p14, mixed $p15): bool {
+                        return (bool) rand(0, 1);
+                    }
+
+                    function g(mixed $a1, mixed $a2, mixed $a3, mixed $a4, mixed $a5, mixed $a6, mixed $a7, mixed $a8, mixed $a9, mixed $a10, mixed $a11, mixed $a12, mixed $a13, mixed $a14, mixed $a15): bool {
+                        $failed = !validate($a1, $a2, $a3, $a4, $a5, $a6, $a7, $a8, $a9, $a10, $a11, $a12, $a13, $a14, $a15);
+
+                        return $failed;
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
             'dependentTypeKeptWhenABranchFalsifiesIt' => [
                 'code' => '<?php
                     class A {
@@ -3476,6 +3508,29 @@ final class TypeAlgebraTest extends TestCase
                         return 0;
                     }',
                 'error_message' => 'PossiblyNullArgument',
+            ],
+            'issetStoredInVariableIsForgottenWhenABranchMayUnsetTheVariable' => [
+                'code' => '<?php
+                    function f(bool $init, bool $c, bool $d): void {
+                        if ($init) {
+                            $x = "a";
+                        }
+
+                        $hasX = isset($x);
+
+                        if ($c) {
+                            unset($x);
+
+                            if ($d) {
+                                $x = "b";
+                            }
+                        }
+
+                        if ($hasX) {
+                            echo $x;
+                        }
+                    }',
+                'error_message' => 'PossiblyUndefinedVariable',
             ],
             'nullCheckStoredInVariableIsForgottenWhenALoopAssignsNull' => [
                 'code' => '<?php
