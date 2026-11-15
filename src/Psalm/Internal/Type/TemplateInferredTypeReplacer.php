@@ -6,6 +6,7 @@ namespace Psalm\Internal\Type;
 
 use InvalidArgumentException;
 use Psalm\Codebase;
+use Psalm\Internal\Type\Comparator\TypeComparisonResult;
 use Psalm\Internal\Type\Comparator\UnionTypeComparator;
 use Psalm\Internal\TypeVisitor\ConditionalSubjectReplacer;
 use Psalm\Internal\TypeVisitor\ContainsStaticVisitor;
@@ -103,23 +104,23 @@ final class TemplateInferredTypeReplacer
                     )
                     : null;
 
-                $class_template_type = null;
+                $class_template_types = [];
 
                 if ($template_type) {
                     foreach ($template_type->getAtomicTypes() as $template_type_part) {
                         if ($template_type_part instanceof TMixed
                             || $template_type_part instanceof TObject
                         ) {
-                            $class_template_type = new TClassString();
+                            $class_template_types[] = new TClassString();
                         } elseif ($template_type_part instanceof TNamedObject) {
-                            $class_template_type = new TClassString(
+                            $class_template_types[] = new TClassString(
                                 $template_type_part->value,
                                 $template_type_part,
                             );
                         } elseif ($template_type_part instanceof TTemplateParam) {
                             $first_atomic_type = $template_type_part->as->getSingleAtomic();
 
-                            $class_template_type = new TTemplateParamClass(
+                            $class_template_types[] = new TTemplateParamClass(
                                 $template_type_part->param_name,
                                 $template_type_part->as->getId(),
                                 $first_atomic_type instanceof TNamedObject ? $first_atomic_type : null,
@@ -129,9 +130,9 @@ final class TemplateInferredTypeReplacer
                     }
                 }
 
-                if ($class_template_type) {
+                if ($class_template_types) {
                     $should_set = false;
-                    $new_types[] = $class_template_type;
+                    $new_types = [...$new_types, ...$class_template_types];
                 }
             } elseif ($atomic_type instanceof TTemplateIndexedAccess) {
                 $should_set = false;
@@ -522,16 +523,19 @@ final class TemplateInferredTypeReplacer
             $l = $template_type->getAtomicTypes();
             foreach (isset($l['mixed']) ? [$l['mixed']] : $l as $candidate_atomic_type) {
                 $candidate = new Union([$candidate_atomic_type]);
+                $comparison_result = new TypeComparisonResult();
+                // an object that is only castable to string is not of a string condition
                 if (UnionTypeComparator::isContainedBy(
                     $codebase,
                     $candidate,
                     $conditional_type,
                     false,
                     false,
-                    null,
+                    $comparison_result,
                     false,
                     false,
                 )
+                    && !$comparison_result->to_string_cast
                     && (!$candidate_atomic_type instanceof TInt
                         || $conditional_type->getId() !== 'float')
                 ) {

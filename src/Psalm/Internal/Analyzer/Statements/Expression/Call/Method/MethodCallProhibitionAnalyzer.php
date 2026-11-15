@@ -5,9 +5,10 @@ declare(strict_types=1);
 namespace Psalm\Internal\Analyzer\Statements\Expression\Call\Method;
 
 use Psalm\CodeLocation;
-use Psalm\Codebase;
 use Psalm\Context;
 use Psalm\Internal\Analyzer\NamespaceAnalyzer;
+use Psalm\Internal\Analyzer\StatementsAnalyzer;
+use Psalm\Internal\Codebase\CliOutput;
 use Psalm\Internal\MethodIdentifier;
 use Psalm\Issue\DeprecatedMethod;
 use Psalm\Issue\InternalClass;
@@ -23,14 +24,17 @@ final class MethodCallProhibitionAnalyzer
      * @param  string[]     $suppressed_issues
      */
     public static function analyze(
-        Codebase $codebase,
+        StatementsAnalyzer $statements_analyzer,
         Context $context,
         MethodIdentifier $method_id,
         ?string $caller_identifier,
         CodeLocation $code_location,
         array $suppressed_issues,
     ): void {
+        $codebase = $statements_analyzer->getCodebase();
         $codebase_methods = $codebase->methods;
+
+        CliOutput::checkMethodCall($statements_analyzer, $context, $method_id, $code_location);
 
         $method_id = $codebase_methods->getDeclaringMethodId($method_id);
 

@@ -31,6 +31,7 @@ use Psalm\Internal\Type\TemplateInferredTypeReplacer;
 use Psalm\Internal\Type\TemplateResult;
 use Psalm\Internal\Type\TypeExpander;
 use Psalm\Internal\Type\TypeVariableTracker;
+use Psalm\IssueBuffer;
 use Psalm\Plugin\EventHandler\Event\AddRemoveTaintsEvent;
 use Psalm\Storage\MethodStorage;
 use Psalm\Type;
@@ -85,6 +86,7 @@ final class MethodCallReturnTypeFetcher
                     $codebase,
                     $method_id,
                     $method_storage,
+                    $statements_analyzer,
                 );
 
                 return self::getFirstClassCallableType(
@@ -117,7 +119,17 @@ final class MethodCallReturnTypeFetcher
             );
 
             if ($return_type_candidate) {
-                return $return_type_candidate;
+                return self::taintReturnType(
+                    $statements_analyzer,
+                    $stmt,
+                    $context,
+                    $method_id,
+                    $declaring_method_id,
+                    $cased_method_id,
+                    $args,
+                    $template_result,
+                    $return_type_candidate,
+                );
             }
         }
 
@@ -151,7 +163,17 @@ final class MethodCallReturnTypeFetcher
                 );
 
                 if ($return_type_candidate) {
-                    return $return_type_candidate;
+                    return self::taintReturnType(
+                        $statements_analyzer,
+                        $stmt,
+                        $context,
+                        $method_id,
+                        $declaring_method_id,
+                        $cased_method_id,
+                        $args,
+                        $template_result,
+                        $return_type_candidate,
+                    );
                 }
             }
         }
@@ -261,19 +283,27 @@ final class MethodCallReturnTypeFetcher
 
                 $config = Config::getInstance();
 
-                // only check the type locally if it's defined externally
+                // only check the type locally if it's defined externally, reporting its issues at one call
                 if ($return_type_location && !$config->isInProjectDirs($return_type_location->file_path)) {
-                    /** @psalm-suppress UnusedMethodCall Actually generates issues */
-                    $return_type_candidate->check(
-                        $statements_analyzer,
-                        new CodeLocation($statements_analyzer, $stmt),
-                        $statements_analyzer->getSuppressedIssues(),
-                        $context->phantom_classes,
-                        true,
-                        false,
-                        false,
-                        $context,
+                    $issue_group = IssueBuffer::setIssueGroup(
+                        $return_type_location->file_path . ':' . $return_type_location->raw_file_start,
                     );
+
+                    try {
+                        /** @psalm-suppress UnusedMethodCall Actually generates issues */
+                        $return_type_candidate->check(
+                            $statements_analyzer,
+                            new CodeLocation($statements_analyzer, $stmt),
+                            $statements_analyzer->getSuppressedIssues(),
+                            $context->phantom_classes,
+                            true,
+                            false,
+                            false,
+                            $context,
+                        );
+                    } finally {
+                        IssueBuffer::setIssueGroup($issue_group);
+                    }
                 }
             } else {
                 $result->returns_by_ref =
@@ -288,6 +318,54 @@ final class MethodCallReturnTypeFetcher
 
         $return_type_candidate = TypeVariableTracker::resolveTypeVariables($return_type_candidate, $codebase);
 
+        return self::taintReturnType(
+            $statements_analyzer,
+            $stmt,
+            $context,
+            $method_id,
+            $declaring_method_id,
+            $cased_method_id,
+            $args,
+            $template_result,
+            $return_type_candidate,
+        );
+    }
+
+    /**
+     * What a call gives, whichever way its return type was found: a plugin supplying the type of a call doesn't
+     * make it lose the taints its method declares.
+     *
+     * @param list<PhpParser\Node\Arg> $args
+     */
+    private static function taintReturnType(
+        StatementsAnalyzer $statements_analyzer,
+        PhpParser\Node\Expr\MethodCall $stmt,
+        Context $context,
+        MethodIdentifier $method_id,
+        ?MethodIdentifier $declaring_method_id,
+        string $cased_method_id,
+        array $args,
+        TemplateResult $template_result,
+        Union $return_type_candidate,
+    ): Union {
+        $result_added_taints = 0;
+        $result_removed_taints = 0;
+        $taint_flow_graph = $statements_analyzer->getTaintFlowGraphWithSuppressed();
+
+        // the event of taintMethodCallResult() is about the receiver; this one is about the call
+        if ($taint_flow_graph) {
+            $event = new AddRemoveTaintsEvent(
+                $stmt,
+                $context,
+                $statements_analyzer,
+                $statements_analyzer->getCodebase(),
+            );
+            $dispatcher = $statements_analyzer->getCodebase()->config->eventDispatcher;
+
+            $result_added_taints = $dispatcher->dispatchAddTaints($event);
+            $result_removed_taints = $dispatcher->dispatchRemoveTaints($event);
+        }
+
         self::taintMethodCallResult(
             $statements_analyzer,
             $return_type_candidate,
@@ -299,13 +377,15 @@ final class MethodCallReturnTypeFetcher
             $cased_method_id,
             $context,
             $template_result,
+            $result_added_taints,
+            $result_removed_taints,
         );
 
         // what is sent to a generator becomes the value of its yield expressions (what it gives back, see
         // YieldAnalyzer::taintGenerator(), flows as dictionaries/InternalTaintObjectFlowMap.php says)
         if (strtolower((string) $declaring_method_id) === 'generator::send'
             && isset($args[0])
-            && ($taint_flow_graph = $statements_analyzer->getTaintFlowGraphWithSuppressed())
+            && $taint_flow_graph
             && ($var_type = $statements_analyzer->node_data->getType($stmt->var))
             && $var_type->parent_nodes
             && ($sent_type = $statements_analyzer->node_data->getType($args[0]->value))
@@ -383,6 +463,8 @@ final class MethodCallReturnTypeFetcher
         string $cased_method_id,
         Context $context,
         ?TemplateResult $template_result = null,
+        int $result_added_taints = 0,
+        int $result_removed_taints = 0,
     ): void {
         if (!($graph = $statements_analyzer->getDataFlowGraphWithSuppressed())
             || !$declaring_method_id
@@ -746,6 +828,9 @@ final class MethodCallReturnTypeFetcher
             $return_type_candidate,
         );
 
+        $added_taints |= $result_added_taints;
+        $removed_taints |= $result_removed_taints;
+
         // what the plugins add to and remove from the result of this call, on a node of its own: the nodes the
         // result comes from may be shared with the other calls, the last call deciding for all
         if ($added_taints !== 0 || $removed_taints !== 0) {
@@ -924,10 +1009,13 @@ final class MethodCallReturnTypeFetcher
         Codebase $codebase,
         MethodIdentifier $method_id,
         MethodStorage $method_storage,
+        StatementsAnalyzer $statements_analyzer,
     ): array {
         $params = $codebase->methods->getMethodParams($method_id);
 
-        if ($method_storage->return_type !== null) {
+        // a signature return type without a docblock one inherits the docblock return type of the parent, as a
+        // call does
+        if ($method_storage->return_type !== null && $method_storage->has_docblock_return_type) {
             return [
                 new TClosure($params, $method_storage->return_type, $method_storage->capabilities),
                 $method_storage->template_types ?? [],
@@ -944,7 +1032,7 @@ final class MethodCallReturnTypeFetcher
         return [
             new TClosure(
                 $params,
-                $codebase->methods->getMethodReturnType($codebase, $method_id, $self_class),
+                $codebase->methods->getMethodReturnType($codebase, $method_id, $self_class, $statements_analyzer),
                 $method_storage->capabilities,
             ),
             ($documenting_method_id !== null

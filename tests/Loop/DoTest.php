@@ -417,6 +417,163 @@ final class DoTest extends TestCase
                         echo "here";
                     } while ($code === 1);',
             ],
+            'doWhileConditionAssignmentKeepsTheAssignedTypeAfterTheLoop' => [
+                'code' => '<?php
+                    function fetchError(): ?stdClass {
+                        return rand(0, 1) ? new stdClass() : null;
+                    }
+
+                    $try = 0;
+                    do {
+                        $try++;
+                    } while ((null !== $error = fetchError()) && $try < 3);
+
+                    $result = $error;
+
+                    if (null !== $error) {
+                        echo "failed";
+                    }',
+                'assertions' => [
+                    '$result===' => 'null|stdClass',
+                ],
+            ],
+            'doWhileConditionAssignmentAfterTheFirstOperandMayBeSkipped' => [
+                'code' => '<?php
+                    function fetchError(): ?stdClass {
+                        return rand(0, 1) ? new stdClass() : null;
+                    }
+
+                    $try = 0;
+                    $error = null;
+                    do {
+                        $try++;
+                    } while ($try < 3 && null !== ($error = fetchError()));
+
+                    $result = $error;',
+                'assertions' => [
+                    '$result===' => 'null|stdClass',
+                ],
+            ],
+            'doWhileConditionAssignmentIsNarrowedWhenTheLoopEndsOnIt' => [
+                'code' => '<?php
+                    function fetchError(): ?stdClass {
+                        return rand(0, 1) ? new stdClass() : null;
+                    }
+
+                    do {
+                        $x = 1;
+                    } while (null !== ($error = fetchError()));
+
+                    $result = $error;',
+                'assertions' => [
+                    '$result===' => 'null',
+                ],
+            ],
+            'doWhileConditionAssignmentInAnOrOperandEndsAsFalsy' => [
+                'code' => '<?php
+                    function fetchError(): ?stdClass {
+                        return rand(0, 1) ? new stdClass() : null;
+                    }
+
+                    $try = 0;
+                    do {
+                        $try++;
+                    } while (($error = fetchError()) || $try < 3);
+
+                    $result = $error;',
+                'assertions' => [
+                    '$result===' => 'null',
+                ],
+            ],
+            'doWhileConditionAssignmentInInstanceofKeepsTheAssignedType' => [
+                'code' => '<?php
+                    function fetchError(): ?stdClass {
+                        return rand(0, 1) ? new stdClass() : null;
+                    }
+
+                    do {
+                        $x = 1;
+                    } while (($error = fetchError()) instanceof stdClass && rand(0, 1));
+
+                    $result = $error;',
+                'assertions' => [
+                    '$result===' => 'null|stdClass',
+                ],
+            ],
+            'doWhileConditionAssignmentInAFunctionCallKeepsTheAssignedType' => [
+                'code' => '<?php
+                    function fetchError(): ?stdClass {
+                        return rand(0, 1) ? new stdClass() : null;
+                    }
+
+                    $try = 0;
+                    do {
+                        $try++;
+                    } while (!is_null($error = fetchError()) && $try < 3);
+
+                    $result = $error;',
+                'assertions' => [
+                    '$result===' => 'null|stdClass',
+                ],
+            ],
+            'doWhileConditionAssignmentOfAVariableAssignedInTheBody' => [
+                'code' => '<?php
+                    function fetchError(): ?stdClass {
+                        return rand(0, 1) ? new stdClass() : null;
+                    }
+
+                    $error = 5;
+                    $try = 0;
+                    do {
+                        $error = 6;
+                        $try++;
+                    } while ($try < 3 && null !== ($error = fetchError()));
+
+                    $result = $error;',
+                'assertions' => [
+                    '$result===' => '6|null|stdClass',
+                ],
+            ],
+            'doWhileConditionAssignmentToAPropertyKeepsTheAssignedType' => [
+                'code' => '<?php
+                    function fetchError(): ?stdClass {
+                        return rand(0, 1) ? new stdClass() : null;
+                    }
+
+                    $o = new stdClass();
+                    $o->error = null;
+                    do {
+                        $x = 1;
+                    } while ((null !== $o->error = fetchError()) && rand(0, 1));
+
+                    $result = $o->error;',
+                'assertions' => [
+                    '$result===' => 'null|stdClass',
+                ],
+            ],
+            'doWhileConditionOnVariableIncrementedAfterIt' => [
+                'code' => '<?php
+                    $v = 0;
+                    do {
+                        $foo = "a";
+                        if ($v > 0) {
+                            $foo .= sprintf("_%02d", $v);
+                        }
+                        $v++;
+                    } while (rand(1, 10) < 5);
+
+                    echo $foo;',
+            ],
+            'doWhileUsesVariableIncrementedAfterTheCondition' => [
+                'code' => '<?php
+                    $i = 0;
+                    do {
+                        if ($i > 0) {
+                            echo $i;
+                        }
+                        $i++;
+                    } while ($i < 10);',
+            ],
         ];
     }
 
@@ -427,6 +584,33 @@ final class DoTest extends TestCase
     public static function providerInvalidCodeParse(): iterable
     {
         return [
+            'doWhileBreakBeforeDefinition' => [
+                'code' => <<<'PHP'
+                    <?php
+                    function f(): void {
+                        do {
+                            if (rand()) {
+                                break;
+                            }
+
+                            $v = 1;
+
+                            try {
+                                if (rand()) {
+                                    break;
+                                }
+                            } finally {
+                                echo "done";
+                            }
+                        } while (rand());
+
+                        echo $v;
+                    }
+                    PHP,
+                'error_message' => 'PossiblyUndefinedVariable - src' . DIRECTORY_SEPARATOR . 'somefile.php:19:10',
+                'error_levels' => [],
+                'php_version' => '8.1',
+            ],
             'doWhileConditionOnNarrowedPropertyIsRedundant' => [
                 'code' => '<?php
                     class Options {

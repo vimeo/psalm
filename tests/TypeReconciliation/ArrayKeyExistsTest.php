@@ -23,6 +23,59 @@ final class ArrayKeyExistsTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'arrayKeyExistsOfAKeyThatIsNotAnIntOrAStringKeepsItsType' => [
+                'code' => '<?php
+                    function ofMixed(mixed $key): void {
+                        $items = [971 => "x", 972 => "y"];
+
+                        if (array_key_exists($key, $items)) {
+                            /** @psalm-check-type-exact $key = mixed */
+                        }
+                    }
+
+                    function ofFloatOrString(float|string $key): void {
+                        $items = [971 => "x", 972 => "y"];
+
+                        if (array_key_exists($key, $items)) {
+                            /** @psalm-check-type-exact $key = float|string */
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => ['MixedArgument', 'InvalidScalarArgument'],
+                'php_version' => '8.1',
+            ],
+            'arrayKeyExistsOfAStringInAnArrayOfIntKeysNarrowsItToTheKeysAsStrings' => [
+                'code' => '<?php
+                    final class Codes {
+                        public const MAP = ["AA" => "971", "BB" => "972"];
+                    }
+
+                    function lookup(string $zip): string {
+                        $prefix = substr($zip, 0, 3);
+                        $flipped = array_flip(Codes::MAP);
+
+                        if (array_key_exists($prefix, $flipped)) {
+                            /** @psalm-check-type-exact $prefix = "971"|"972" */
+                            return $flipped[$prefix];
+                        }
+
+                        return "XX";
+                    }
+
+                    function ofInts(string|int $key): string {
+                        $items = [971 => "x", 972 => "y"];
+
+                        if (array_key_exists($key, $items)) {
+                            /** @psalm-check-type-exact $key = "971"|"972"|971|972 */
+                            return $items[$key];
+                        }
+
+                        return "z";
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
             'negatedKeyCheckKeepsWhatTheOtherOffsetsOfAnArrayHold' => [
                 'code' => '<?php
                     function f(array $options): string {
@@ -599,7 +652,7 @@ final class ArrayKeyExistsTest extends TestCase
                      */
                     function stringKeys(array $optionalKeys, string $key): void {
                         if (array_key_exists($key, $optionalKeys)) {
-                            /** @psalm-check-type-exact $optionalKeys = array{bar?: \'hello\'|\'world\', baz?: \'hello\'|\'world\', foo?: \'hello\'|\'world\'} */;
+                            /** @psalm-check-type-exact $optionalKeys = array{bar?: \'world\', baz?: \'hello\'|\'world\', foo?: \'hello\'} */;
                         }
                     }
 
@@ -609,7 +662,7 @@ final class ArrayKeyExistsTest extends TestCase
                      */
                     function intKeys(array $optionalKeys, int $key): void {
                         if (array_key_exists($key, $optionalKeys)) {
-                            /** @psalm-check-type-exact $optionalKeys = array{1?: \'a\'|\'b\', 2?: \'a\'|\'b\'} */;
+                            /** @psalm-check-type-exact $optionalKeys = array{1?: \'a\', 2?: \'b\'} */;
                         }
                     }',
             ],
@@ -645,6 +698,38 @@ final class ArrayKeyExistsTest extends TestCase
     public static function providerInvalidCodeParse(): iterable
     {
         return [
+            'arrayKeyExistsOfAStringInAnArrayOfIntKeysDoesNotMakeAnyOffsetValid' => [
+                'code' => '<?php
+                    function lookup(string $key, string $other): string {
+                        $items = [971 => "x", 972 => "y"];
+
+                        if (array_key_exists($key, $items)) {
+                            return $items[$other];
+                        }
+
+                        return "z";
+                    }',
+                'error_message' => 'InvalidArrayOffset',
+                'error_levels' => [],
+                'php_version' => '8.1',
+            ],
+            'arrayKeyExistsOfATemplateOfStringInAnArrayOfIntKeysNarrowsItToTheKeysAsStrings' => [
+                'code' => '<?php
+                    function takesInt(int $i): void {}
+
+                    /**
+                     * @template T of string
+                     * @param T $key
+                     */
+                    function ofTemplate(string $key): void {
+                        $items = [971 => "x", 972 => "y"];
+
+                        if (array_key_exists($key, $items)) {
+                            takesInt($key);
+                        }
+                    }',
+                'error_message' => 'expects int, but \'971\'|\'972\' provided',
+            ],
             'negatedIssetKeepsAnOptionalKeyThatMayBeNull' => [
                 'code' => '<?php
                     /**
@@ -695,7 +780,6 @@ final class ArrayKeyExistsTest extends TestCase
                             throw new Exception(\'bad\');
                         }
 
-                        /** @psalm-suppress MixedArgument */
                         echo $options[\'\\\'size\\\'\'];
                     }',
                 'error_message' => 'InvalidArrayOffset',

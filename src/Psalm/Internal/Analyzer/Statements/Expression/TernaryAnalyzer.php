@@ -13,6 +13,7 @@ use Psalm\Internal\Algebra;
 use Psalm\Internal\Algebra\FormulaGenerator;
 use Psalm\Internal\Analyzer\AlgebraAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Block\IfConditionalAnalyzer;
+use Psalm\Internal\Analyzer\Statements\Block\IfElse\IfAnalyzer;
 use Psalm\Internal\Analyzer\Statements\ExpressionAnalyzer;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\Internal\Clause;
@@ -25,6 +26,7 @@ use Psalm\Type;
 use Psalm\Type\Reconciler;
 
 use function array_diff;
+use function array_fill_keys;
 use function array_filter;
 use function array_intersect;
 use function array_intersect_key;
@@ -52,6 +54,15 @@ final class TernaryAnalyzer
         $if_scope = new IfScope();
 
         try {
+            $reassigned_var_ids = FormulaGenerator::getVarsAssignedByOredRightSides($stmt->cond, $context->self);
+
+            // the else of an `||` is analysed again from where the condition started, not from where it ended
+            $pre_condition_context = $reassigned_var_ids
+                || $stmt->cond instanceof PhpParser\Node\Expr\BinaryOp\BooleanOr
+                || $stmt->cond instanceof PhpParser\Node\Expr\BinaryOp\LogicalOr
+                    ? clone $context
+                    : null;
+
             $if_conditional_scope = IfConditionalAnalyzer::analyze(
                 $statements_analyzer,
                 $stmt->cond,
@@ -155,6 +166,11 @@ final class TernaryAnalyzer
         }
 
         try {
+            if (FormulaGenerator::leavesOutClausesOfAssignedVars($stmt->cond, $context->self)) {
+                // the right side of an `&&` that assigns isn't evaluated where the left one is false
+                throw new ComplicatedExpressionException();
+            }
+
             $if_scope->negated_clauses = Algebra::negateFormula($if_clauses);
         } catch (ComplicatedExpressionException) {
             try {
@@ -171,6 +187,12 @@ final class TernaryAnalyzer
                 $if_scope->negated_clauses = [];
             }
         }
+
+        $if_scope->negated_clauses = FormulaGenerator::withoutClausesOfReassignedVars(
+            $if_scope->negated_clauses,
+            $stmt->cond,
+            $context->self,
+        );
 
         $if_scope->negated_types = Algebra::getTruthsFromFormula(
             Algebra::simplifyCNF(
@@ -205,6 +227,20 @@ final class TernaryAnalyzer
         }
 
         $t_else_context = clone $context;
+
+        // the else runs when every operand of an `||` was evaluated and falsy, so what they assigned is known there
+        $else_rederived_var_ids = array_fill_keys(array_keys($reassigned_var_ids), 1)
+            + array_filter($assigned_in_conditional_var_ids);
+
+        if ($else_rederived_var_ids !== [] && $pre_condition_context !== null) {
+            IfAnalyzer::addConditionallyAssignedVarsToContext(
+                $statements_analyzer,
+                $stmt->cond,
+                $pre_condition_context,
+                $t_else_context,
+                $else_rederived_var_ids,
+            );
+        }
 
         if ($stmt->if) {
             if (ExpressionAnalyzer::analyze($statements_analyzer, $stmt->if, $if_context) === false) {
@@ -270,6 +306,8 @@ final class TernaryAnalyzer
                 ...$completing_context->vars_possibly_in_scope,
             ];
 
+            $context->null_array_offsets_read = $completing_context->null_array_offsets_read;
+
             $context->cond_referenced_var_ids = [
                 ...$context->cond_referenced_var_ids,
                 ...$completing_context->cond_referenced_var_ids,
@@ -277,6 +315,9 @@ final class TernaryAnalyzer
 
             return self::setResultType($statements_analyzer, $stmt, $context);
         }
+
+        $context->detachReferencesReboundIn($if_context, $statements_analyzer, $stmt->if ? [$stmt->if] : []);
+        $context->detachReferencesReboundIn($t_else_context, $statements_analyzer, [$stmt->else]);
 
         $assign_var_ifs = $if_context->assigned_var_ids;
         $assign_var_else = $t_else_context->assigned_var_ids;
@@ -346,6 +387,12 @@ final class TernaryAnalyzer
             ...$if_context->vars_possibly_in_scope,
             ...$t_else_context->vars_possibly_in_scope,
         ];
+
+        // every way past the ternary goes through one of its branches
+        $context->null_array_offsets_read = array_intersect_key(
+            $if_context->null_array_offsets_read,
+            $t_else_context->null_array_offsets_read,
+        );
 
         $context->cond_referenced_var_ids = [
             ...$context->cond_referenced_var_ids,

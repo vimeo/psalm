@@ -28,12 +28,14 @@ use Psalm\Type\Union;
 
 use function array_diff_key;
 use function array_filter;
+use function array_intersect_key;
 use function array_key_first;
 use function array_merge;
 use function array_values;
 use function count;
 use function explode;
 use function in_array;
+use function is_string;
 use function spl_object_id;
 
 /**
@@ -50,6 +52,8 @@ final class IfConditionalAnalyzer
         int $branch_point,
     ): IfConditionalScope {
         $entry_clauses = [];
+        $condition_context = $outer_context;
+        $negated_phantom_classes_before_cond = $outer_context->negated_phantom_classes;
 
         // used when evaluating elseifs
         if ($if_scope->negated_clauses) {
@@ -164,6 +168,13 @@ final class IfConditionalAnalyzer
         // we need to clone the current context so our ongoing updates
         // to $outer_context don't mess with elseif/else blocks
         $post_if_context = clone $outer_context;
+
+        // the condition may have been analysed on a copy of the context it was given
+        $condition_context->phantom_classes += $outer_context->phantom_classes;
+        $condition_context->negated_phantom_classes += $outer_context->negated_phantom_classes;
+
+        // where a negated condition about a class holds, the class is missing
+        $if_context->demoteNegatedPhantomClasses($negated_phantom_classes_before_cond);
 
         if ($internally_applied_if_cond_expr !== $cond
             || $externally_applied_if_cond_expr !== $cond
@@ -298,6 +309,78 @@ final class IfConditionalAnalyzer
             $assigned_in_conditional_var_ids,
             $entry_clauses,
         );
+    }
+
+    /**
+     * The clauses that analysing the condition added to the context: what its own assignments say of the new values.
+     * A clause of a variable the condition always assigns is new even if an identical one was there before: the
+     * assignment removed the old ones.
+     *
+     * @param list<Clause> $pre_condition_clauses
+     * @param list<Clause> $clauses
+     * @return list<Clause>
+     * @psalm-capabilities read-props
+     */
+    public static function getClausesAddedByCondition(
+        PhpParser\Node\Expr $cond,
+        array $pre_condition_clauses,
+        array $clauses,
+    ): array {
+        $pre_condition_hashes = [];
+
+        foreach ($pre_condition_clauses as $clause) {
+            $pre_condition_hashes[$clause->hash] = true;
+        }
+
+        $always_assigned_var_ids = self::getAlwaysAssignedVarIds($cond);
+
+        return array_values(array_filter(
+            $clauses,
+            static fn(Clause $clause): bool => !isset($pre_condition_hashes[$clause->hash])
+                || array_intersect_key($clause->possibilities, $always_assigned_var_ids) !== [],
+        ));
+    }
+
+    /**
+     * The variables the expression assigns wherever it is evaluated
+     *
+     * @return array<string, true>
+     * @psalm-capabilities read-props
+     */
+    private static function getAlwaysAssignedVarIds(PhpParser\Node\Expr $expr): array
+    {
+        if ($expr instanceof PhpParser\Node\Expr\Assign) {
+            $var_ids = self::getAlwaysAssignedVarIds($expr->expr);
+
+            if ($expr->var instanceof PhpParser\Node\Expr\Variable && is_string($expr->var->name)) {
+                $var_ids['$' . $expr->var->name] = true;
+            }
+
+            return $var_ids;
+        }
+
+        if ($expr instanceof PhpParser\Node\Expr\BooleanNot || $expr instanceof PhpParser\Node\Expr\Cast) {
+            return self::getAlwaysAssignedVarIds($expr->expr);
+        }
+
+        // the right side of these isn't always evaluated
+        if ($expr instanceof PhpParser\Node\Expr\BinaryOp\BooleanAnd
+            || $expr instanceof PhpParser\Node\Expr\BinaryOp\BooleanOr
+            || $expr instanceof PhpParser\Node\Expr\BinaryOp\LogicalAnd
+            || $expr instanceof PhpParser\Node\Expr\BinaryOp\LogicalOr
+            || $expr instanceof PhpParser\Node\Expr\BinaryOp\Coalesce
+        ) {
+            return self::getAlwaysAssignedVarIds($expr->left);
+        }
+
+        if ($expr instanceof PhpParser\Node\Expr\BinaryOp) {
+            return [
+                ...self::getAlwaysAssignedVarIds($expr->left),
+                ...self::getAlwaysAssignedVarIds($expr->right),
+            ];
+        }
+
+        return [];
     }
 
     /**
@@ -520,7 +603,8 @@ final class IfConditionalAnalyzer
         ?string $self,
         array $incoming,
     ): array {
-        if ($expr instanceof PhpParser\Node\Expr\Assign
+        // the value of `$a ??= $b` is the value `$a` has afterwards, like that of `$a = $b`
+        if (($expr instanceof PhpParser\Node\Expr\Assign || $expr instanceof PhpParser\Node\Expr\AssignOp\Coalesce)
             && ExpressionIdentifier::getExtendedVarId($expr->var, $self, $statements_analyzer) === $var_id
         ) {
             return [['truthy#' . spl_object_id($expr) => true], ['full#' . spl_object_id($expr) => true]];
@@ -658,11 +742,11 @@ final class IfConditionalAnalyzer
      * Whether an assignment that may be skipped is in the value of an assignment of the same variable that always runs
      * (`$a = match (...) { f($a = 1) => ... }`): the value of the outer one is what the variable is after both
      *
-     * @param list<PhpParser\Node\Expr\Assign> $unconditional_assignments
+     * @param list<PhpParser\Node\Expr\Assign|PhpParser\Node\Expr\AssignOp\Coalesce> $unconditional_assignments
      */
     private static function isOverwrittenByAnUnconditionalAssignment(
         StatementsAnalyzer $statements_analyzer,
-        PhpParser\Node\Expr\Assign $assign,
+        PhpParser\Node\Expr\Assign|PhpParser\Node\Expr\AssignOp\Coalesce $assign,
         array $unconditional_assignments,
         string $var_id,
         ?string $self,
@@ -684,14 +768,14 @@ final class IfConditionalAnalyzer
 
     /**
      * @param bool $only_unconditional leave out assignments in a part of the expression that may not run
-     * @return list<PhpParser\Node\Expr\Assign>
+     * @return list<PhpParser\Node\Expr\Assign|PhpParser\Node\Expr\AssignOp\Coalesce>
      */
     private static function getAssignmentsInCondition(
         PhpParser\Node\Expr $cond,
         bool $only_unconditional = false,
     ): array {
         $visitor = new class ($only_unconditional) extends PhpParser\NodeVisitorAbstract {
-            /** @var list<PhpParser\Node\Expr\Assign> */
+            /** @var list<PhpParser\Node\Expr\Assign|PhpParser\Node\Expr\AssignOp\Coalesce> */
             public array $assignments = [];
 
             public function __construct(private readonly bool $only_unconditional)
@@ -707,6 +791,11 @@ final class IfConditionalAnalyzer
                     || $node instanceof PhpParser\Node\Stmt\ClassLike
                 ) {
                     return PhpParser\NodeVisitor::DONT_TRAVERSE_CHILDREN;
+                }
+
+                // `$a ??= $b` always gives `$a` its value, but its right operand may not run
+                if ($node instanceof PhpParser\Node\Expr\AssignOp\Coalesce) {
+                    $this->assignments[] = $node;
                 }
 
                 if ($this->only_unconditional
