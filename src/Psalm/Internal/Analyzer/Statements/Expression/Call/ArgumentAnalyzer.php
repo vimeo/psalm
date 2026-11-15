@@ -2104,9 +2104,7 @@ final class ArgumentAnalyzer
     ): void {
         $codebase = $statements_analyzer->getCodebase();
 
-        if (($converts_to_string || ($function_param->type && $function_param->type->isString()))
-            && !$input_type->isString()
-        ) {
+        if ($function_param->type && $function_param->type->isString() && !$input_type->isString()) {
             // the argument check reports a bad argument itself, but the implicit __toString call is signalled
             // whether or not a data-flow graph is built
             $input_type = CastAnalyzer::castStringAttempt(
@@ -2117,6 +2115,20 @@ final class ArgumentAnalyzer
                 false,
                 false,
             );
+        } elseif ($converts_to_string && $input_type->hasObjectType()) {
+            $to_string_parent_nodes = CastAnalyzer::castStringAttempt(
+                $statements_analyzer,
+                $context,
+                $input_type,
+                $expr,
+                false,
+                false,
+            )->parent_nodes;
+
+            // only objects are converted: what else the value may be keeps its own flow
+            $input_type = $input_type->setParentNodes($input_type->isObjectType()
+                ? $to_string_parent_nodes
+                : [...$input_type->parent_nodes, ...$to_string_parent_nodes]);
         }
 
         if (!$graph = $statements_analyzer->getDataFlowGraphWithSuppressed()) {
