@@ -2500,6 +2500,32 @@ final class ArrayAccessTest extends TestCase
                         return $l[0];
                     }',
             ],
+            'offsetCheckedAgainAfterNotEmptyCheck' => [
+                'code' => '<?php
+                    /** @param array{s?: mixed} $o */
+                    function f(array $o): void {
+                        if (!empty($o["s"])) {
+                            echo 1;
+                        }
+                        if (!empty($o["s"])) {
+                            echo 2;
+                        }
+                    }',
+            ],
+            'offsetCheckedAgainInALoopAfterNotEmptyCheck' => [
+                'code' => '<?php
+                    /** @param array{s?: mixed} $o */
+                    function f(array $o): void {
+                        if (!empty($o["s"])) {
+                            echo 1;
+                        }
+                        foreach ([1, 2] as $_) {
+                            if (!empty($o["s"])) {
+                                echo 2;
+                            }
+                        }
+                    }',
+            ],
         ];
     }
 

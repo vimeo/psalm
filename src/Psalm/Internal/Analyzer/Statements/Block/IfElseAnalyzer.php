@@ -44,7 +44,6 @@ use function preg_match;
 use function preg_quote;
 use function spl_object_id;
 use function str_contains;
-use function str_ends_with;
 use function substr;
 
 /**
@@ -469,13 +468,12 @@ final class IfElseAnalyzer
             $if_scope->assigned_var_ids ?: [],
         );
 
+        foreach ($if_scope->unknown_offsets as $var_id => $_) {
+            unset($context->vars_in_scope[$var_id]);
+        }
+
         if ($if_scope->new_vars) {
             foreach ($if_scope->new_vars as $var_id => &$type) {
-                // an offset only some branches know to be set (e.g. by `isset()`) says no more than the array type
-                if ($type->possibly_undefined && str_ends_with($var_id, ']')) {
-                    continue;
-                }
-
                 // a variable every branch assigns no longer holds what it held before: only the use of variables
                 // is tracked through the assignments made before then (a branch defining it by narrowing, like
                 // the implicit else of `if (empty($a)) { $a = 1; }`, keeps it, and its taints)
