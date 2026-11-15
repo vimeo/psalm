@@ -71,6 +71,8 @@ final class ContinueAnalyzer
                 $loop_scope->final_actions[] = ScopeAnalyzer::ACTION_CONTINUE;
             }
 
+            $loop_scope->addJump($context);
+
             $redefined_vars = $context->getRedefinedVars($loop_scope->loop_parent_context->vars_in_scope);
 
             foreach ($loop_scope->redefined_loop_vars as $redefined_var => $type) {

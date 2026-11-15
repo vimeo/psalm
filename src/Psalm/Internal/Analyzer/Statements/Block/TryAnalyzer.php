@@ -547,6 +547,9 @@ final class TryAnalyzer
 
                 $statements_analyzer->analyze($stmt->finally->stmts, $finally_context);
 
+                // the code after the try runs after the finally
+                $context->intersectNullArrayOffsets($finally_context);
+
                 $context->constructor_exits?->applyFinally(
                     $try_context->finally_scope,
                     $finally_context->vars_in_scope,

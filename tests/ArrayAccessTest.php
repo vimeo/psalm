@@ -841,6 +841,111 @@ final class ArrayAccessTest extends TestCase
         );
     }
 
+    public function testAnAssignmentNestedInABranchOfAnIfOrALoopEndsTheDeduplicationOfItsNull(): void
+    {
+        $this->assertPossiblyNullArrayAccessLines(
+            '<?php
+                /**
+                 * @param list<string>|null $m
+                 * @param list<string>|null $n
+                 * @param list<int> $xs
+                 */
+                function switchInALoop(?array $m, ?array $n, array $xs): void {
+                    echo $m[0]; // issue
+                    foreach ($xs as $k) { switch ($k) { case 1: $m = $n; break; default: } }
+                    if (isset($m[0]) && is_string($m[0])) { echo 1; }
+                    echo $m[0]; // issue
+                }
+
+                /**
+                 * @param list<string>|null $m
+                 * @param list<string>|null $n
+                 */
+                function switchInAnIf(?array $m, ?array $n, int $k): void {
+                    echo $m[0]; // issue
+                    if (rand(0, 1)) { switch ($k) { case 1: $m = $n; break; default: } }
+                    echo $m[0]; // issue
+                }
+
+                /**
+                 * @param list<string>|null $m
+                 * @param list<string>|null $n
+                 */
+                function ternaryInAnIf(?array $m, ?array $n): void {
+                    echo $m[0]; // issue
+                    if (rand(0, 1)) { $x = rand(0, 1) ? ($m = $n) : null; }
+                    echo $m[0]; // issue
+                }
+
+                /**
+                 * @param list<string>|null $m
+                 * @param list<string>|null $n
+                 * @param list<int> $xs
+                 */
+                function loopInAnIf(?array $m, ?array $n, array $xs): void {
+                    echo $m[0]; // issue
+                    if (rand(0, 1)) { foreach ($xs as $_) { $m = $n; } }
+                    echo $m[0]; // issue
+                }
+
+                /**
+                 * @param list<string>|null $m
+                 * @param list<string>|null $n
+                 * @param list<int> $xs
+                 */
+                function catchInALoop(?array $m, ?array $n, array $xs): void {
+                    echo $m[0]; // issue
+                    foreach ($xs as $_) { try { echo 1; } catch (Exception $e) { $m = $n; } }
+                    echo $m[0]; // issue
+                }
+
+                /**
+                 * @param list<string>|null $m
+                 * @param list<string>|null $n
+                 * @param list<int> $xs
+                 */
+                function assignedBeforeABreak(?array $m, ?array $n, array $xs): void {
+                    echo $m[0]; // issue
+                    foreach ($xs as $_) { if (rand(0, 1)) { $m = $n; break; } }
+                    echo $m[0]; // issue
+                }
+
+                /**
+                 * @param list<string>|null $m
+                 * @param list<string>|null $n
+                 */
+                function ifInAFinally(?array $m, ?array $n): void {
+                    echo $m[0]; // issue
+                    try { echo 1; } finally { if (rand(0, 1)) { $m = $n; } }
+                    echo $m[0]; // issue
+                }
+
+                /**
+                 * @param list<string>|null $m
+                 * @param list<int> $xs
+                 */
+                function notAssignedInTheNestedBranches(?array $m, array $xs, int $k): void {
+                    echo $m[0]; // issue
+                    foreach ($xs as $_) { switch ($k) { case 1: echo 1; break; default: } }
+                    if (rand(0, 1)) { $x = rand(0, 1) ? 1 : 2; }
+                    echo $m[0];
+                }',
+        );
+    }
+
+    public function testAReadInTheAndConditionOfATernaryIsKeptAfterTheTernary(): void
+    {
+        $this->assertPossiblyNullArrayAccessLines(
+            '<?php
+                /** @param array{generation: array{expression: string|null, type: string}|null}|null $column */
+                function g(?array $column): void {
+                    $a = ! is_null($column["generation"]) && $column["generation"]["type"] === "v" ? 1 : null; // issue
+                    $b = ! is_null($column["generation"]) ? 1 : null;
+                    echo $a, $b;
+                }',
+        );
+    }
+
     /**
      * Asserts that PossiblyNullArrayAccess is reported on the lines of the code marked `// issue`, and nowhere else
      */

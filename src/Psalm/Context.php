@@ -918,16 +918,6 @@ final class Context
     }
 
     /**
-     * What is assigned from here on is what a block assigns, without what was assigned before it
-     *
-     * @psalm-capabilities write-this-props
-     */
-    public function startCollectingPossiblyAssignedVarIds(): void
-    {
-        $this->possibly_assigned_var_ids = [];
-    }
-
-    /**
      * Past a branch that can fall through, only the offsets it still knows to have been read were read
      *
      * @psalm-capabilities read-props|write-this-props

@@ -444,9 +444,11 @@ final class IfElseAnalyzer
             ...$if_scope->possibly_assigned_var_ids ?: [],
         ];
 
-        // the branches that reach the end of the if dropped what was known of the offsets of what they assigned
-        foreach ($if_scope->possibly_assigned_var_ids ?: [] as $assigned_var_id => $_) {
-            $context->forgetNullArrayOffsets($assigned_var_id);
+        if ($if_scope->null_array_offsets_read !== null) {
+            $context->null_array_offsets_read = array_intersect_key(
+                $context->null_array_offsets_read,
+                $if_scope->null_array_offsets_read,
+            );
         }
 
         // vars can only be defined/redefined if there was an else (defined in every block)

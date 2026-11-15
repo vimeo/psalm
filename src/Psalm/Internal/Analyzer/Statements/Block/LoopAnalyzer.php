@@ -27,6 +27,7 @@ use UnexpectedValueException;
 
 use function array_diff_key;
 use function array_filter;
+use function array_intersect_key;
 use function array_keys;
 use function array_map;
 use function array_merge;
@@ -127,7 +128,6 @@ final class LoopAnalyzer
         if ($assignment_depth === 0 || $does_always_break) {
             $continue_context = clone $loop_context;
             $continue_context->loop_scope = $loop_scope;
-            $continue_context->startCollectingPossiblyAssignedVarIds();
 
             foreach ($pre_conditions as $condition_offset => $pre_condition) {
                 self::applyPreConditionToLoopContext(
@@ -158,10 +158,7 @@ final class LoopAnalyzer
 
             $loop_parent_context->vars_possibly_in_scope += $continue_context->vars_possibly_in_scope;
 
-            // what the body assigned is not what the offsets were read from
-            foreach ($continue_context->possibly_assigned_var_ids as $assigned_var_id => $_) {
-                $loop_parent_context->forgetNullArrayOffsets($assigned_var_id);
-            }
+            self::keepNullArrayOffsetsReadOnEveryPath($loop_parent_context, $continue_context, $loop_scope);
         } else {
             $original_parent_context = clone $loop_parent_context;
 
@@ -190,7 +187,6 @@ final class LoopAnalyzer
             $continue_context = clone $loop_context;
 
             $continue_context->loop_scope = $loop_scope;
-            $continue_context->startCollectingPossiblyAssignedVarIds();
 
             $continue_context->protected_var_ids = $loop_scope->protected_var_ids;
 
@@ -330,10 +326,7 @@ final class LoopAnalyzer
 
                 $loop_parent_context->vars_possibly_in_scope += $continue_context->vars_possibly_in_scope;
 
-                // what the body assigned is not what the offsets were read from
-                foreach ($continue_context->possibly_assigned_var_ids as $assigned_var_id => $_) {
-                    $loop_parent_context->forgetNullArrayOffsets($assigned_var_id);
-                }
+                self::keepNullArrayOffsetsReadOnEveryPath($loop_parent_context, $continue_context, $loop_scope);
 
                 // if there are no changes to the types, no need to re-examine
                 if (!$has_changes && !$force_pass) {
@@ -629,6 +622,27 @@ final class LoopAnalyzer
         );
 
         return null;
+    }
+
+    /**
+     * After the loop, an offset was read only if it was read where the loop isn't entered, at the end of the body and
+     * at every `break` and `continue`
+     *
+     * @psalm-capabilities read-props|write-props
+     */
+    private static function keepNullArrayOffsetsReadOnEveryPath(
+        Context $loop_parent_context,
+        Context $continue_context,
+        LoopScope $loop_scope,
+    ): void {
+        $loop_parent_context->intersectNullArrayOffsets($continue_context);
+
+        if ($loop_scope->null_array_offsets_read_at_jumps !== null) {
+            $loop_parent_context->null_array_offsets_read = array_intersect_key(
+                $loop_parent_context->null_array_offsets_read,
+                $loop_scope->null_array_offsets_read_at_jumps,
+            );
+        }
     }
 
     /**

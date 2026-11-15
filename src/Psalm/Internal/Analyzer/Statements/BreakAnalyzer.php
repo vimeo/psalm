@@ -69,6 +69,8 @@ final class BreakAnalyzer
                 : 0;
             $ends_this_loop = !$leaving_switch && $loops_between === 0;
 
+            $loop_scope->addJump($context);
+
             $redefined_vars = $context->getRedefinedVars($loop_scope->loop_parent_context->vars_in_scope);
 
             foreach ($redefined_vars as $var => $type) {
@@ -117,6 +119,7 @@ final class BreakAnalyzer
 
                 if ($target_scope && $target_scope !== $loop_scope) {
                     $target_scope->final_actions[] = ScopeAnalyzer::ACTION_BREAK;
+                    $target_scope->addJump($context);
 
                     $target_redefined_vars = $context->getRedefinedVars(
                         $target_scope->loop_parent_context->vars_in_scope,
