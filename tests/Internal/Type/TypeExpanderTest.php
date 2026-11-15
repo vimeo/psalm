@@ -7,6 +7,7 @@ namespace Psalm\Tests\Internal\Type;
 use Override;
 use PHPUnit\Framework\Attributes\DataProvider;
 use Psalm\Codebase;
+use Psalm\Context;
 use Psalm\Internal\Type\TemplateBound;
 use Psalm\Internal\Type\TypeExpander;
 use Psalm\Internal\Type\TypeVariableBounds;
@@ -15,6 +16,10 @@ use Psalm\Type;
 use Psalm\Type\Atomic\TArray;
 use Psalm\Type\Atomic\TTypeVariable;
 use Psalm\Type\Union;
+
+use function getcwd;
+
+use const DIRECTORY_SEPARATOR;
 
 final class TypeExpanderTest extends TestCase
 {
@@ -57,6 +62,19 @@ final class TypeExpanderTest extends TestCase
 
         $this->assertNotSame($type, $expanded);
         $this->assertSame('array<int, Exception>|null', $expanded->getId());
+    }
+
+    public function testCombinesUnionWithNothingToExpand(): void
+    {
+        $file_path = (string) getcwd() . DIRECTORY_SEPARATOR . 'somefile.php';
+        $this->addFile($file_path, '<?php class A {} class B extends A {}');
+        $this->analyzeFile($file_path, new Context());
+
+        foreach (['A|B', 'B|A'] as $type_string) {
+            $expanded = TypeExpander::expandUnion($this->codebase, Type::parseString($type_string), null, null, null);
+
+            $this->assertSame('A', $expanded->getId());
+        }
     }
 
     public function testRebuildsTypeHoldingATypeVariableWithNewBounds(): void
