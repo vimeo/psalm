@@ -1142,10 +1142,8 @@ final class FunctionCallAnalyzer extends CallAnalyzer
                 continue;
             }
 
-            $bound_signature = [];
-
-            foreach ([false, true] as $keep_method_templates) {
-                $bound_signature[] = MethodCallReturnTypeFetcher::getFirstClassCallableType(
+            $get_bound_closure = static fn(bool $keep_method_templates): Atomic
+                => MethodCallReturnTypeFetcher::getFirstClassCallableType(
                     $codebase,
                     null,
                     $closure,
@@ -1158,9 +1156,9 @@ final class FunctionCallAnalyzer extends CallAnalyzer
                     $expand_generic,
                     $keep_method_templates,
                 )->getSingleAtomic();
-            }
 
-            [$bound_erased, $bound_generic] = $bound_signature;
+            $bound_erased = $get_bound_closure(false);
+            $bound_generic = $get_bound_closure(true);
 
             if ($bound_erased instanceof TClosure && $bound_generic instanceof TClosure) {
                 $signatures[] = [

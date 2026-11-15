@@ -2100,12 +2100,16 @@ final class ClosureTest extends TestCase
                     $wrap = $coll->wrap(...);
                     $wrapped = $wrap(5);
                     $list_of = Coll::listOf(...);
+                    $mapped_direct = $coll->map(fn(int $i): string => (string) $i);
+                    $wrapped_direct = $coll->wrap(5);
                 ',
                 'assertions' => [
                     '$map===' => 'Closure[impure](callable[impure](int):mixed):list<mixed>',
-                    '$mapped===' => 'list<mixed>',
+                    '$mapped===' => 'list<decimal-int-string>',
+                    '$mapped_direct===' => 'list<decimal-int-string>',
                     '$wrap===' => 'Closure[impure](int):list<int>',
-                    '$wrapped===' => 'list<int>',
+                    '$wrapped===' => 'list<5>',
+                    '$wrapped_direct===' => 'list<5>',
                     '$list_of===' => 'Closure[impure](mixed):list<mixed>',
                 ],
                 'ignored_issues' => [],
