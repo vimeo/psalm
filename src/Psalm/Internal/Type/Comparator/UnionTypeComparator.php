@@ -512,6 +512,7 @@ final class UnionTypeComparator
             $any_to_string_cast = false;
             $all_coerced_from_mixed = true;
             $all_coerced_from_as_mixed = true;
+            $any_scalar_match = false;
             $all_scalar_match = true;
             $missing_shape_fields = [];
             $all_miss_shape_fields = true;
@@ -521,6 +522,8 @@ final class UnionTypeComparator
                 $any_to_string_cast = $any_to_string_cast || $failed_part['to_string_cast'];
                 $all_coerced_from_mixed = $all_coerced_from_mixed && $failed_part['coerced_from_mixed'];
                 $all_coerced_from_as_mixed = $all_coerced_from_as_mixed && $failed_part['coerced_from_as_mixed'];
+                $any_scalar_match = $any_scalar_match || $failed_part['scalar_match'];
+
                 // a part that only fails because it is mixed says nothing about the scalar match of the others
                 $all_scalar_match = $all_scalar_match
                     && ($failed_part['scalar_match'] || $failed_part['coerced_from_mixed']);
@@ -546,7 +549,7 @@ final class UnionTypeComparator
                 }
             }
 
-            if (!$all_scalar_match) {
+            if (!$any_scalar_match || !$all_scalar_match) {
                 $union_comparison_result->scalar_type_match_found = false;
             }
 
