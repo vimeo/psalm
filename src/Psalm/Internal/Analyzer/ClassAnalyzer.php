@@ -1567,11 +1567,14 @@ final class ClassAnalyzer extends ClassLikeAnalyzer
                 }
             }
 
-            $codebase->analyzer->setAnalyzedMethod(
-                $included_file_path,
-                $fq_class_name_lc . '::__construct',
-                true,
-            );
+            // recorded issues may be discarded (a loop keeps only those of its last pass): check again next time
+            if (!IssueBuffer::isRecording()) {
+                $codebase->analyzer->setAnalyzedMethod(
+                    $included_file_path,
+                    $fq_class_name_lc . '::__construct',
+                    true,
+                );
+            }
 
             return;
         }

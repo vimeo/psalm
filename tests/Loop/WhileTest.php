@@ -217,6 +217,60 @@ final class WhileTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'whileBodyStartingWithAForeachIsAnalysedUntilTheLastAssignmentReachesTheFirst' => [
+                'code' => <<<'PHP'
+                    <?php
+                    /** @param list<int> $arr */
+                    function f(array $arr): void {
+                        $a = 0;
+                        $b = 0;
+                        $c = 0;
+                        while (rand(0, 1)) {
+                            foreach ($arr as $_v) {}
+                            $a = $b;
+                            $b = $c;
+                            $c = "s";
+                        }
+                        /** @psalm-check-type-exact $a = 0|'s' */;
+                    }
+                    PHP,
+            ],
+            'whileBodyStartingWithAStaticDeclarationIsAnalysedUntilTheLastAssignmentReachesTheFirst' => [
+                'code' => <<<'PHP'
+                    <?php
+                    /** @param list<int> $arr */
+                    function f(array $arr): void {
+                        $a = 0;
+                        $b = 0;
+                        $c = 0;
+                        while (rand(0, 1)) {
+                            static $s = 1;
+                            $a = $b;
+                            $b = $c;
+                            $c = "s";
+                        }
+                        /** @psalm-check-type-exact $a = 0|'s' */;
+                    }
+                    PHP,
+            ],
+            'whileBodyStartingWithAReferenceAssignmentIsAnalysedUntilTheLastAssignmentReachesTheFirst' => [
+                'code' => <<<'PHP'
+                    <?php
+                    /** @param list<int> $arr */
+                    function f(array $arr): void {
+                        $a = 0;
+                        $b = 0;
+                        $c = 0;
+                        while (rand(0, 1)) {
+                            $r = &$arr[0];
+                            $a = $b;
+                            $b = $c;
+                            $c = "s";
+                        }
+                        /** @psalm-check-type-exact $a = 0|'s' */;
+                    }
+                    PHP,
+            ],
             'whileTrueIntRangeShiftedByEveryIterationIsWidened' => [
                 'code' => '<?php
                     function f(): int {
@@ -1867,6 +1921,26 @@ final class WhileTest extends TestCase
     public static function providerInvalidCodeParse(): iterable
     {
         return [
+            'whileAnonymousClassPropertyNotSetInConstructor' => [
+                'code' => <<<'PHP'
+                    <?php
+                    function f(): void {
+                        $a = 0;
+                        $b = 0;
+                        while (rand(0, 1)) {
+                            $o = new class {
+                                public int $p;
+                                public function __construct() {}
+                            };
+                            echo $o->p;
+                            $a = $b;
+                            $b = 1;
+                        }
+                        echo $a;
+                    }
+                    PHP,
+                'error_message' => 'PropertyNotSetInConstructor - src' . DIRECTORY_SEPARATOR . 'somefile.php:7:24',
+            ],
             'whileTrueWidenedIntRangeKeepsTheBoundItDoesNotShift' => [
                 'code' => '<?php
                     function f(): int {
