@@ -35,6 +35,7 @@ use Psalm\Storage\Assertion\NestedAssertions;
 use Psalm\Storage\Assertion\NonEmpty;
 use Psalm\Storage\Assertion\NonEmptyCountable;
 use Psalm\Storage\Assertion\Truthy;
+use Psalm\Storage\Capabilities;
 use Psalm\Type;
 use Psalm\Type\Atomic;
 use Psalm\Type\Atomic\Scalar;
@@ -85,6 +86,7 @@ use function count;
 use function is_nan;
 use function is_numeric;
 use function is_string;
+use function reset;
 use function strtolower;
 
 /**
@@ -788,9 +790,9 @@ final class AssertionReconciler extends Reconciler
      * Narrowing a `Parent<A, B>` to a child class whose templates are passed straight to Parent's
      * (`@extends Parent<T, U>`, `@implements Iterator[P]<K, V>`) gives the child those arguments:
      * `Iterator[pure]<int, string>` narrowed to `Child` is a `Child[pure]<int, string>`. With
-     * $unknown_as_star, the other templates are `*` rather than leaving the child without arguments.
-     *
-     * @psalm-capabilities read-props
+     * $unknown_as_star, the other type templates are `*` rather than leaving the child without arguments,
+     * and a `*` passed down knows the child template's bound too (`Box<*>` narrowed to a `DateBox` whose
+     * `T of DateTime` is passed to Box is a `DateBox<*>` known to be a DateTime).
      */
     private static function inferTemplateParamsFromParent(
         Codebase $codebase,
@@ -820,8 +822,10 @@ final class AssertionReconciler extends Reconciler
 
         $parent_template_names = array_keys($parent_storage->template_types);
         $type_params = [];
+        /** @var array<int, Union> what is known of each `*` passed down from the parent, by offset */
+        $parent_stars = [];
 
-        foreach (array_keys($child_storage->template_types) as $template_name) {
+        foreach ($child_storage->template_types as $template_name => $type_map) {
             $inferred = null;
 
             foreach ($extended_params as $parent_template_name => $extended_type) {
@@ -848,13 +852,20 @@ final class AssertionReconciler extends Reconciler
                     return $child;
                 }
 
-                $inferred = StarProjection::create($child->from_docblock);
+                // a purity template is left to its bound, which a `*` cannot stand for
+                $bound = reset($type_map);
+                $inferred = Capabilities::isPurityType($bound)
+                    ? PurityArguments::getOmittedArgument($bound)
+                    : StarProjection::create($child->from_docblock);
+            } elseif ($unknown_as_star && StarProjection::isStar($inferred)) {
+                $parent_stars[count($type_params)] = StarProjection::read($inferred);
+                $inferred = StarProjection::create($inferred->from_docblock);
             }
 
             $type_params[] = $inferred;
         }
 
-        return new TGenericObject(
+        $narrowed = new TGenericObject(
             $child->value,
             $type_params,
             false,
@@ -862,6 +873,22 @@ final class AssertionReconciler extends Reconciler
             $child->extra_types,
             $child->from_docblock,
         );
+
+        if (!$unknown_as_star) {
+            return $narrowed;
+        }
+
+        $type_params = StarProjection::boundArguments($narrowed, $codebase)->type_params;
+
+        foreach ($parent_stars as $offset => $parent_as) {
+            $child_as = StarProjection::read($type_params[$offset]);
+            $type_params[$offset] = StarProjection::create(
+                $type_params[$offset]->from_docblock,
+                Type::intersectUnionTypes($parent_as, $child_as, $codebase) ?? $child_as,
+            );
+        }
+
+        return $narrowed->setTypeParams($type_params);
     }
 
     /**

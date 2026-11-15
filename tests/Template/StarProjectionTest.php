@@ -939,6 +939,60 @@ final class StarProjectionTest extends TestCase
                 'ignored_issues' => [],
                 'php_version' => '8.0',
             ],
+            'starProjectionNarrowedToAChildKnowsTheChildsBound' => [
+                'code' => '<?php
+                    /** @template T of object */
+                    class Box {
+                        /** @return T */
+                        public function get(): object {
+                            throw new Exception();
+                        }
+                    }
+
+                    /**
+                     * @template T of DateTime
+                     * @extends Box<T>
+                     */
+                    final class DateBox extends Box {}
+
+                    /** @return Box<*> */
+                    function source(): Box {
+                        throw new Exception();
+                    }
+
+                    $box = source();
+                    $value = $box instanceof DateBox ? $box->get() : null;',
+                'assertions' => [
+                    '$value===' => 'DateTime|null',
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'starProjectionNarrowedToAChildLeavesItsPurityTemplateToItsBound' => [
+                'code' => '<?php
+                    /** @template T */
+                    class ParentBox {}
+
+                    /**
+                     * @template T
+                     * @psalm-purity-template P
+                     * @extends ParentBox<T>
+                     */
+                    final class ChildBox extends ParentBox {}
+
+                    /** @return ParentBox<*> */
+                    function source(): ParentBox {
+                        throw new Exception();
+                    }
+
+                    $box = source();
+                    $child = $box instanceof ChildBox ? $box : null;',
+                'assertions' => [
+                    '$child===' => 'ChildBox[impure]<*>|null',
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
         ];
     }
 
