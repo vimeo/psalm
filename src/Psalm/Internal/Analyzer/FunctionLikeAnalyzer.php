@@ -1622,6 +1622,11 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
                 $codebase->taint_flow_graph->addNode($out_node);
                 $codebase->taint_flow_graph->addNode($overridden_out_node);
                 $codebase->taint_flow_graph->addPath($out_node, $overridden_out_node, 'param-out');
+
+                if ($specialization_location === null) {
+                    // the out node, shared by the calls of the method, has a path of its own
+                    $codebase->taint_flow_graph->addVirtualCallee($codebase, $storage);
+                }
             }
         }
     }

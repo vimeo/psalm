@@ -2085,10 +2085,13 @@ final class TaintFlowResolution
                     || count($this->call_entries_reaching[$id] ?? []) > 1
                     || !$this->hasLocation($id))
             ) {
+                // the convergence leaves through the specializations below as one flow outside of calls
                 $this->enterConvergence($state, $id);
-            } else {
-                $this->walkEdges($state, $id);
+
+                return;
             }
+
+            $this->walkEdges($state, $id);
 
             if (!isset($this->specializations[$id])) {
                 return;
@@ -2096,8 +2099,8 @@ final class TaintFlowResolution
 
             // The node of a static method the calls naming its class have specializations of, while its other
             // calls share it through its edges: leave through those of the calls naming the class too (see
-            // TaintFlowGraph::isCallSpecialized()), all of them outside of any specialized call, else that of the
-            // call the flow's body was entered through.
+            // TaintFlowGraph::isCallSpecialized()), which are resolved as unspecialized calls (see
+            // TaintFlowGraph::despecializeImpureCalls()).
             $context = $this->state_contexts[$state];
             $outside_of_calls = $this->isOutsideOfCalls($context);
             $has_specialized_calls = false;

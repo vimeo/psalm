@@ -5220,6 +5220,38 @@ final class TaintTest extends TestCase
 
                     echo Html::bold("safe");',
             ],
+            'returnOfAPureStaticMethodOfANonFinalClassIsNotSharedByTheCallsNamingItsClassInInstanceMethods' => [
+                'code' => '<?php
+                    class Html {
+                        public static function bold(string $s): string {
+                            return "<b>" . $s . "</b>";
+                        }
+
+                        public function title(): string {
+                            return self::bold((string) $_GET["title"]);
+                        }
+
+                        public function show(): void {
+                            echo self::bold("safe");
+                        }
+                    }',
+            ],
+            'arrayKeysOfACallNamingTheClassOfAStaticMethodAlsoCalledThroughStatic' => [
+                'code' => '<?php
+                    class Arr {
+                        public static function wrap(array $a): array {
+                            return $a;
+                        }
+
+                        public static function first(array $a): array {
+                            return static::wrap($a);
+                        }
+                    }
+
+                    $x = Arr::wrap(["bad" => (string) $_GET["a"], "safe" => "ok"]);
+                    echo (string) $x["safe"];
+                    echo (string) Arr::first(["safe" => "ok"])["safe"];',
+            ],
             'getoptOptionCastToInt' => [
                 'code' => '<?php
                     $options = getopt("n:");
