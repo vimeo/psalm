@@ -24,6 +24,61 @@ final class FunctionCallTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'fileTestFunctionsKeepAMixedArgument' => [
+                'code' => <<<'PHP'
+                    <?php
+                    function f(mixed $a, mixed $b, mixed $c): void {
+                        if (is_link($a)) {
+                            /** @psalm-check-type-exact $a = mixed */
+                        }
+
+                        if (file_exists($b)) {
+                            /** @psalm-check-type-exact $b = mixed */
+                        }
+
+                        if (is_dir($c) || is_readable($c)) {
+                            /** @psalm-check-type-exact $c = mixed */
+                        }
+                    }
+                    PHP,
+                'assertions' => [],
+                'ignored_issues' => ['MixedArgument'],
+                'php_version' => '8.1',
+            ],
+            'fileTestFunctionsKeepAnSplFileInfoArgument' => [
+                'code' => <<<'PHP'
+                    <?php
+                    function f(SplFileInfo $a, SplFileInfo $b): void {
+                        if (is_link($a)) {
+                            /** @psalm-check-type-exact $a = SplFileInfo */
+                        }
+
+                        if (is_file($b) || file_exists($b)) {
+                            /** @psalm-check-type-exact $b = SplFileInfo */
+                        }
+                    }
+                    PHP,
+                'assertions' => [],
+                'ignored_issues' => ['ImplicitToStringCast'],
+                'php_version' => '8.1',
+            ],
+            'fileTestFunctionsStillNarrowAStringArgument' => [
+                'code' => <<<'PHP'
+                    <?php
+                    function f(string $a, string $b): void {
+                        if (is_link($a)) {
+                            /** @psalm-check-type-exact $a = non-empty-string */
+                        }
+
+                        if (file_exists($b)) {
+                            /** @psalm-check-type-exact $b = non-empty-string */
+                        }
+                    }
+                    PHP,
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
             'fileTestFunctionsAssertANonEmptyString' => [
                 'code' => '<?php
                     /** @param non-empty-string $path */
