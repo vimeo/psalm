@@ -67,7 +67,6 @@ use function implode;
 use function in_array;
 use function is_int;
 use function mt_rand;
-use function pathinfo;
 use function preg_match;
 use function preg_replace;
 use function spl_object_id;
@@ -75,8 +74,6 @@ use function str_contains;
 use function str_replace;
 use function str_starts_with;
 use function strtolower;
-
-use const PATHINFO_EXTENSION;
 
 /**
  * @internal
@@ -761,7 +758,7 @@ abstract class CallAnalyzer
         // A native function (from a stub or the runtime's reflection) with no `@since` is dated by
         // the versioned callmaps. A polyfill declared in PHP code makes it available.
         $is_native = $function_storage->location === null
-            || pathinfo($function_storage->location->file_path, PATHINFO_EXTENSION) === 'phpstub';
+            || $codebase->scanner->isStubFile($function_storage->location->file_path);
 
         if ($since_php_version_id === null && $is_native) {
             $since_php_version_id = InternalCallMapHandler::getIntroducingPhpVersionId($function_id);
@@ -771,7 +768,7 @@ abstract class CallAnalyzer
             && $is_native
             && ($codebase->getGuardedPhpVersionId($context) ?? $codebase->analysis_php_version_id)
                 < $since_php_version_id
-            && !$codebase->functions->isDeclaredInCode($function_id)
+            && !$codebase->functions->isDeclaredInCode($function_id, $codebase->scanner)
         ) {
             IssueBuffer::maybeAdd(
                 new UndefinedFunction(
