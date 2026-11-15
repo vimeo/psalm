@@ -525,8 +525,15 @@ final class LoopAnalyzer
                         )
                     ;
 
-                    $loop_parent_context->vars_in_scope[$var_id] =
-                        $continue_context->vars_in_scope[$var_id];
+                    // a mixed value the loop condition narrowed (`non-empty-mixed`) is not narrowed where the loop
+                    // is left, so it is combined with the type it had before the loop
+                    $loop_parent_context->vars_in_scope[$var_id] = $loop_parent_context->vars_in_scope[$var_id]
+                        ->hasMixed()
+                        ? Type::combineUnionTypes(
+                            $loop_parent_context->vars_in_scope[$var_id],
+                            $continue_context->vars_in_scope[$var_id],
+                        )
+                        : $continue_context->vars_in_scope[$var_id];
                     $loop_parent_context->removeVarFromConflictingClauses($var_id);
 
                     continue;
