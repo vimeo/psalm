@@ -673,10 +673,10 @@ final class AssertionReconciler extends Reconciler
                 $any_scalar_type_match_found,
             );
 
-            if ($code_location
-                && !$intersection_type
-                && (!$assertion instanceof IsLooselyEqual || !$any_scalar_type_match_found)
-            ) {
+            $impossible = !$intersection_type
+                && (!$assertion instanceof IsLooselyEqual || !$any_scalar_type_match_found);
+
+            if ($code_location && $impossible) {
                 if ($new_type_part instanceof TNull) {
                     if ($existing_var_type->from_docblock) {
                         IssueBuffer::maybeAdd(
@@ -734,7 +734,9 @@ final class AssertionReconciler extends Reconciler
                         );
                     }
                 }
+            }
 
+            if ($impossible) {
                 $failed_reconciliation = Reconciler::RECONCILIATION_EMPTY;
             }
 

@@ -167,7 +167,7 @@ final class IfAnalyzer
             return false;
         }
 
-        $outer_context->removeClausesOfVarsChangedIn($if_context);
+        $outer_context->removeClausesOfVarsChangedIn($if_context, $statements_analyzer);
 
         $final_actions = ScopeAnalyzer::getControlActions(
             $stmt->stmts,

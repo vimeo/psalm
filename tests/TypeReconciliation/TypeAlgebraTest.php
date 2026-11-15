@@ -1107,6 +1107,157 @@ final class TypeAlgebraTest extends TestCase
                         $obj->bar();
                     }',
             ],
+            'isArrayStoredInVariableKeptAfterOffsetAssignment' => [
+                'code' => '<?php
+                    /** @param callable|array $l */
+                    function f($l): int {
+                        $isArray = is_array($l);
+
+                        if ($isArray) {
+                            $l[1] = "x";
+                        }
+
+                        if ($isArray) {
+                            return count($l);
+                        }
+
+                        return 0;
+                    }',
+            ],
+            'negatedFunctionCallStoredInVariableNarrows' => [
+                'code' => '<?php
+                    /** @param int|string $x */
+                    function f($x): string {
+                        $isNotInt = !is_int($x);
+
+                        if ($isNotInt) {
+                            return $x;
+                        }
+
+                        return "";
+                    }',
+            ],
+            'staticAndMethodCallAssertionsStoredInVariableNarrow' => [
+                'code' => '<?php
+                    final class Check {
+                        /** @psalm-assert-if-true string $v */
+                        public static function isStr(mixed $v): bool {
+                            return is_string($v);
+                        }
+
+                        /** @psalm-assert-if-true int $v */
+                        public function isInt(mixed $v): bool {
+                            return is_int($v);
+                        }
+                    }
+
+                    /** @param int|string|null $x */
+                    function f($x, Check $check): string {
+                        $isStr = Check::isStr($x);
+
+                        if ($isStr) {
+                            return $x;
+                        }
+
+                        $isInt = $check->isInt($x);
+
+                        if ($isInt) {
+                            return (string) ($x + 1);
+                        }
+
+                        return "";
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'issetAndNotEmptyStoredInVariableNarrow' => [
+                'code' => '<?php
+                    /** @param array<string, ?string> $a */
+                    function f(array $a, ?object $o): int {
+                        $hasX = isset($a["x"]);
+
+                        if ($hasX) {
+                            return strlen($a["x"]);
+                        }
+
+                        $notEmpty = !empty($o);
+
+                        if ($notEmpty) {
+                            return spl_object_id($o);
+                        }
+
+                        return 0;
+                    }',
+            ],
+            'nullCheckStoredInVariableKeptAfterOffsetAssignment' => [
+                'code' => '<?php
+                    function f(?array $l): int {
+                        $notNull = $l !== null;
+
+                        if ($notNull) {
+                            $l[1] = "x";
+                        }
+
+                        if ($notNull) {
+                            return count($l);
+                        }
+
+                        return 0;
+                    }',
+            ],
+            'nullCheckStoredInVariableKeptAfterOffsetAssignmentInElse' => [
+                'code' => '<?php
+                    function f(?array $l, bool $c): int {
+                        $notNull = $l !== null;
+
+                        if ($c) {
+                            echo "c";
+                        } else {
+                            $l[1] = "x";
+                        }
+
+                        if ($notNull) {
+                            return count($l);
+                        }
+
+                        return 0;
+                    }',
+            ],
+            'nullCheckStoredInVariableKeptAfterOffsetAssignmentInElseIf' => [
+                'code' => '<?php
+                    function f(?array $l, bool $c): int {
+                        $notNull = $l !== null;
+
+                        if ($c) {
+                            echo "c";
+                        } elseif ($notNull) {
+                            $l[1] = "x";
+                        }
+
+                        if ($notNull) {
+                            return count($l);
+                        }
+
+                        return 0;
+                    }',
+            ],
+            'notLooselyEqualStoredInVariableIsForgottenWhenABranchAssignsAnEqualValue' => [
+                'code' => '<?php
+                    function f(int $x): int {
+                        $notFive = $x != 5;
+
+                        if (rand(0, 1)) {
+                            $x = 5;
+                        }
+
+                        if ($notFive && $x === 5) {
+                            return 1;
+                        }
+
+                        return 0;
+                    }',
+            ],
             'nullsafeCallFalsyResultDoesNotNarrowReceiver' => [
                 'code' => <<<'PHP'
                     <?php
@@ -3143,6 +3294,72 @@ final class TypeAlgebraTest extends TestCase
                         }
                     }',
                 'error_message' => 'UndefinedInterfaceMethod',
+            ],
+            'functionCallStoredInVariableIsForgottenWhenTheVariableIsReassigned' => [
+                'code' => '<?php
+                    /** @param int|string $x */
+                    function f($x): string {
+                        $isString = is_string($x);
+                        $x = 1;
+
+                        if ($isString) {
+                            return $x;
+                        }
+
+                        return "";
+                    }',
+                'error_message' => 'InvalidReturnStatement',
+            ],
+            'nullCheckStoredInVariableIsForgottenWhenABranchMayAssignNull' => [
+                'code' => '<?php
+                    function f(?array $l): int {
+                        $notNull = $l !== null;
+
+                        if ($notNull) {
+                            $l = rand(0, 1) ? [1] : null;
+                        }
+
+                        if ($notNull) {
+                            return count($l);
+                        }
+
+                        return 0;
+                    }',
+                'error_message' => 'PossiblyNullArgument',
+            ],
+            'nullCheckStoredInVariableIsForgottenWhenABranchAssignsNull' => [
+                'code' => '<?php
+                    function f(?array $l): int {
+                        $notNull = $l !== null;
+
+                        if (rand(0, 1)) {
+                            $l = null;
+                        }
+
+                        if ($notNull) {
+                            return count($l);
+                        }
+
+                        return 0;
+                    }',
+                'error_message' => 'PossiblyNullArgument',
+            ],
+            'nullCheckStoredInVariableIsForgottenWhenALoopAssignsNull' => [
+                'code' => '<?php
+                    function f(?array $l): int {
+                        $notNull = $l !== null;
+
+                        while (rand(0, 1)) {
+                            $l = null;
+                        }
+
+                        if ($notNull) {
+                            return count($l);
+                        }
+
+                        return 0;
+                    }',
+                'error_message' => 'PossiblyNullArgument',
             ],
             'booleanVariableNarrowingNotKeptInElseOfOr' => [
                 'code' => <<<'PHP'

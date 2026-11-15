@@ -2589,12 +2589,18 @@ final class AssignmentAnalyzer
                     );
                 }
 
+                $assigned_condition = $assign_value instanceof PhpParser\Node\Expr\BooleanNot
+                    ? $assign_value->expr
+                    : $assign_value;
+
                 if ($assign_value_type->getId() === 'bool'
-                    && ($assign_value instanceof PhpParser\Node\Expr\BinaryOp
-                        || $assign_value instanceof PhpParser\Node\Expr\Instanceof_
-                        || ($assign_value instanceof PhpParser\Node\Expr\BooleanNot
-                            && ($assign_value->expr instanceof PhpParser\Node\Expr\BinaryOp
-                                || $assign_value->expr instanceof PhpParser\Node\Expr\Instanceof_)))
+                    && ($assigned_condition instanceof PhpParser\Node\Expr\BinaryOp
+                        || $assigned_condition instanceof PhpParser\Node\Expr\Instanceof_
+                        || $assigned_condition instanceof PhpParser\Node\Expr\FuncCall
+                        || $assigned_condition instanceof PhpParser\Node\Expr\MethodCall
+                        || $assigned_condition instanceof PhpParser\Node\Expr\StaticCall
+                        || $assigned_condition instanceof PhpParser\Node\Expr\Isset_
+                        || $assigned_condition instanceof PhpParser\Node\Expr\Empty_)
                 ) {
                     $var_object_id = spl_object_id($assign_var);
                     $cond_object_id = spl_object_id($assign_value);

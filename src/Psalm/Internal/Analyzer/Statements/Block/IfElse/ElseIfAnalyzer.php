@@ -358,7 +358,7 @@ final class ElseIfAnalyzer
             return false;
         }
 
-        $outer_context->removeClausesOfVarsChangedIn($elseif_context);
+        $outer_context->removeClausesOfVarsChangedIn($elseif_context, $statements_analyzer);
 
         /** @var array<string, int> */
         $new_stmts_assigned_var_ids = $elseif_context->assigned_var_ids;

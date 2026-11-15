@@ -502,7 +502,7 @@ final class IfElseAnalyzer
 
                 // what was known of an offset or property of a variable a branch assigned is no longer true
                 if ($previous_type && isset($if_scope->reassigned_var_ids[$var_id])) {
-                    $context->removeDescendents($var_id, $previous_type, $type);
+                    $context->removeDescendents($var_id, $previous_type, $type, $statements_analyzer);
                 }
 
                 if ($if_scope->reasonable_clauses) {
@@ -537,7 +537,7 @@ final class IfElseAnalyzer
                         );
 
                         if (!$combined_type->equals($context->vars_in_scope[$var_id], true, false)) {
-                            $context->removeDescendents($var_id, $combined_type);
+                            $context->removeDescendents($var_id, $combined_type, $type, $statements_analyzer);
                         }
 
                         $context->vars_in_scope[$var_id] = $combined_type;
@@ -552,7 +552,7 @@ final class IfElseAnalyzer
                             && !UnionTypeComparator::isContainedBy($codebase, $type, $updated_type)
                         ) {
                             $updated_type = Type::combineUnionTypes($updated_type, $type, $codebase);
-                            $context->removeDescendents($var_id, $updated_type);
+                            $context->removeDescendents($var_id, $updated_type, $type, $statements_analyzer);
                         }
 
                         $context->vars_in_scope[$var_id] = $updated_type;
