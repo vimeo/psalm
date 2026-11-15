@@ -1820,7 +1820,7 @@ final class NewAnalyzer extends CallAnalyzer
     /**
      * Returns the set of class templates with no public channel that can constrain
      * them: a template named anywhere in a public non-constructor method parameter
-     * or a public non-readonly property type is one that later code can still
+     * or a public writable property type is one that later code can still
      * constrain, anything else can only have been fixed at the construction site and
      * so is pinned eagerly rather than minted as a type variable.
      *
@@ -1879,10 +1879,11 @@ final class NewAnalyzer extends CallAnalyzer
                 break;
             }
 
-            // A `readonly` property cannot be assigned after construction, so it
-            // is not a channel through which the template can be constrained.
+            // A `readonly` property cannot be assigned after construction unless it is
+            // `public(set)` and not promoted, so it is not a channel through which the template can be constrained.
             if ($property_storage->visibility !== ClassLikeAnalyzer::VISIBILITY_PUBLIC
-                || $property_storage->readonly
+                || ($property_storage->readonly
+                    && (!$property_storage->readonly_public_set || $property_storage->is_promoted))
             ) {
                 continue;
             }
