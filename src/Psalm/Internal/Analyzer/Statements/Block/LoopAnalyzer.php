@@ -986,17 +986,43 @@ final class LoopAnalyzer
         array $always_assigned_before_loop_body_vars = [],
         bool $is_only_left_by_break = false,
     ): void {
-        if ($is_only_left_by_break && $loop_scope->vars_at_breaks !== null) {
+        if ($is_only_left_by_break
+            && $loop_scope->vars_at_breaks !== null
+            && !$loop_scope->breaks_through_finally
+        ) {
+            foreach ($context->vars_in_scope as $var_id => $_) {
+                if (!isset($loop_scope->vars_at_breaks[$var_id]) && self::isLoopVar($var_id)) {
+                    // unset at every break
+                    $context->remove($var_id);
+                }
+            }
+
             foreach ($loop_scope->vars_at_breaks as $var_id => $type) {
-                if (isset($loop_scope->possibly_defined_loop_parent_vars[$var_id])) {
-                    // defined in the loop: possibly undefined after it if a break of any pass leaves it undefined
-                    if ($loop_scope->possibly_defined_loop_parent_vars[$var_id]->possibly_undefined) {
+                $defined_in_loop_type = $loop_scope->possibly_defined_loop_parent_vars[$var_id] ?? null;
+
+                if ($type->isNever()) {
+                    // the passes over the body found no value at the breaks: what an iteration ends with is kept
+                    if ($defined_in_loop_type && isset($inner_context->vars_in_scope[$var_id])) {
+                        $context->vars_in_scope[$var_id] = Type::combineUnionTypes(
+                            $inner_context->vars_in_scope[$var_id],
+                            $defined_in_loop_type,
+                        );
+                    }
+
+                    continue;
+                }
+
+                if ($defined_in_loop_type) {
+                    // possibly undefined after the loop if a break of any pass leaves it undefined
+                    if ($defined_in_loop_type->possibly_undefined) {
                         $type = $type->setPossiblyUndefined(true);
                     }
-                } elseif (!isset($context->vars_in_scope[$var_id])
-                    // a property or offset missing at a break is unknown there, not unset
-                    || ($type->possibly_undefined && !self::isLoopVar($var_id))
-                ) {
+                } elseif (!isset($context->vars_in_scope[$var_id])) {
+                    continue;
+                }
+
+                // a property or offset missing at a break is unknown there, not unset
+                if ($type->possibly_undefined && !self::isLoopVar($var_id)) {
                     continue;
                 }
 

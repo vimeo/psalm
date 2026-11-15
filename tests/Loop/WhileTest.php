@@ -164,6 +164,50 @@ final class WhileTest extends TestCase
                         /** @psalm-check-type-exact $x = "again"|1 */;
                     }',
             ],
+            'whileTrueBreakThroughAFinallyKeepsWhatTheFinallyAssigns' => [
+                'code' => '<?php
+                    function finallyInTheLoop(): void {
+                        while (true) {
+                            try {
+                                $x = 1;
+                                break;
+                            } finally {
+                                $x = "f";
+                            }
+                        }
+                        /** @psalm-check-type-exact $x = "f"|1 */;
+                    }
+
+                    function finallyAroundTheLoop(): void {
+                        try {
+                            while (true) {
+                                $x = rand(0, 1) ? "s" : null;
+                                if ($x === null) {
+                                    continue;
+                                }
+                                break;
+                            }
+                            /** @psalm-check-type-exact $x = "s" */;
+                        } finally {
+                            echo "done";
+                        }
+                    }',
+            ],
+            'whileTrueVariableWithNoValueAtTheBreaks' => [
+                'code' => '<?php
+                    function f(): int {
+                        $i = 0;
+                        while (true) {
+                            $i += rand(1, 3);
+                            if ($i > 10) {
+                                break;
+                            }
+                        }
+                        return $i;
+                    }',
+                'assertions' => [],
+                'ignored_issues' => ['TypeDoesNotContainType'],
+            ],
             'mixedConditionVariableOfAWhileLoopIsNotNonEmptyAfterIt' => [
                 'code' => '<?php
                     function check(mixed $w): void {
@@ -1316,6 +1360,42 @@ final class WhileTest extends TestCase
                         echo $x;
                     }',
                 'error_message' => 'PossiblyUndefinedVariable',
+            ],
+            'whileTrueVariableUnsetAtEveryBreakIsReported' => [
+                'code' => '<?php
+                    function f(): void {
+                        $x = 1;
+                        while (true) {
+                            unset($x);
+                            break;
+                        }
+                        echo $x;
+                    }',
+                'error_message' => 'PossiblyUndefinedVariable',
+            ],
+            'whileTrueKeepsAPropertyNarrowedAtOnlyOneBreakNullable' => [
+                'code' => '<?php
+                    final class Service {
+                        public function run(): void {}
+                    }
+
+                    final class Box {
+                        public ?Service $service = null;
+                    }
+
+                    function f(Box $box): void {
+                        while (true) {
+                            if (rand(0, 1)) {
+                                if ($box->service !== null) {
+                                    break;
+                                }
+                                continue;
+                            }
+                            break;
+                        }
+                        $box->service->run();
+                    }',
+                'error_message' => 'PossiblyNullReference',
             ],
             'whileBreakBeforeDefinition' => [
                 'code' => <<<'PHP'

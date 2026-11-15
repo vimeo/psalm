@@ -69,6 +69,11 @@ final class LoopScope
     public ?array $vars_at_breaks = null;
 
     /**
+     * Whether a break leaves a `try` of the loop body that has a `finally`, which changes the variables after the break
+     */
+    public bool $breaks_through_finally = false;
+
+    /**
      * The number of break statements seen in the first iteration
      */
     public int $break_count = 0;
@@ -110,6 +115,10 @@ final class LoopScope
      */
     public function addBreak(Context $context): void
     {
+        if ($context->finally_scope !== $this->loop_parent_context->finally_scope) {
+            $this->breaks_through_finally = true;
+        }
+
         if ($this->vars_at_breaks === null) {
             $this->vars_at_breaks = $context->vars_in_scope;
 
