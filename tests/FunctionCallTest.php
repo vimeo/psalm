@@ -63,6 +63,21 @@ final class FunctionCallTest extends TestCase
                 'ignored_issues' => ['RedundantCast'],
                 'php_version' => '8.1',
             ],
+            'negatedClassExistsInAFormTheOperandsDoNotFollowGuardsTheRightOperandOfOrInAnIf' => [
+                'code' => '<?php
+                    function check(bool $a, bool $b, bool $c, bool $d): void {
+                        if (!(bool) class_exists(Optional::class) || Optional::available()) {
+                            echo "short";
+                        }
+
+                        if ($a || $b || $c || !(bool) class_exists(Optional::class) || Optional::available()) {
+                            echo "deep";
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => ['RedundantCast'],
+                'php_version' => '8.1',
+            ],
             'classExistsAfterUnrelatedAndOperand' => [
                 'code' => <<<'PHP'
                     <?php
