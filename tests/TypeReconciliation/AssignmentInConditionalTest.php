@@ -540,7 +540,7 @@ final class AssignmentInConditionalTest extends TestCase
                     /**
                      * @psalm-suppress MixedReturnStatement
                      */
-                    function foo(string $file_name) : int {
+                    function foo(string $file_name) : int|float|string {
                         while ($data = getData()) {
                             if (is_numeric($data[0])) {
                                 for ($i = 1; $i < count($data); $i++) {
@@ -555,6 +555,9 @@ final class AssignmentInConditionalTest extends TestCase
                     function getData() : ?array {
                         return rand(0, 1) ? ["a", "b", "c"] : null;
                     }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
             ],
             'assertVarRedefinedInIfWithExtraIf' => [
                 'code' => '<?php
