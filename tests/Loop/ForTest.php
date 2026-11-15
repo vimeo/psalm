@@ -140,7 +140,7 @@ final class ForTest extends TestCase
                         echo "again";
                     }',
                 'assertions' => [
-                    '$value===' => 'int<0, 3>',
+                    '$value===' => '0',
                 ],
             ],
             'variableAssignedInALaterCommaSeparatedForConditionIsDefinedAfterTheLoop' => [
@@ -373,6 +373,41 @@ final class ForTest extends TestCase
                             return 1;
                         }
                     }',
+            ],
+            'forLoopWithAlwaysTruthyLastConditionIsInfinite' => [
+                'code' => '<?php
+                    function g(): int {
+                        for ($i = 0; $i < 5, true; $i++) {
+                            if (rand(0, 1)) {
+                                return $i;
+                            }
+                        }
+                    }',
+            ],
+            'forLoopBodyOnlyGetsTheLastCondition' => [
+                'code' => '<?php
+                    function f(?int $a, int $n): void {
+                        for ($i = 0; $a !== null, $i < $n; $i++) {
+                            if ($a === null) {
+                                echo "null";
+                            }
+                        }
+                    }',
+            ],
+            'forLoopIsOnlyLeftByTheLastCondition' => [
+                'code' => '<?php
+                    $a = rand(0, 1) ? null : rand();
+                    for (; rand(0, 1), $a !== null;) {
+                        echo "";
+                    }
+                    $n = rand();
+                    for ($i = 0, $j = 0; $i < 10, $j < $n; $i++, $j++) {
+                        echo "";
+                    }',
+                'assertions' => [
+                    '$a===' => 'null',
+                    '$i===' => 'int<0, max>',
+                ],
             ],
         ];
     }

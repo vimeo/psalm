@@ -68,6 +68,19 @@ final class ClassLikeStorageCacheProvider
     }
 
     /**
+     * Drops the storage that the cache holds in memory, which may have been populated in place since it was
+     * saved. The copy on disk is from before that.
+     *
+     * @param lowercase-string $fq_classlike_name_lc
+     * @param string $file_path the file that declared the class-like, which keys its entry
+     * @psalm-capabilities read-props|write-props|write-refs
+     */
+    public function evict(string $fq_classlike_name_lc, string $file_path): void
+    {
+        $this->cache->evictItem($file_path."\0".$fq_classlike_name_lc);
+    }
+
+    /**
      * @param lowercase-string $fq_classlike_name_lc
      */
     public function getLatestFromCache(

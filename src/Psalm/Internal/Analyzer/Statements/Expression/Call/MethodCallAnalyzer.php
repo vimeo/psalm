@@ -477,7 +477,8 @@ final class MethodCallAnalyzer extends CallAnalyzer
                 throw new AssertionError("We must have some types here!");
             }
 
-            $context->removeVarFromConflictingClauses($lhs_var_id, null, $statements_analyzer);
+            // narrowed, not written: the enclosing scopes keep their clauses about it
+            $context->clauses = Context::filterClauses($lhs_var_id, $context->clauses, null, $statements_analyzer);
 
             $class_type = $class_type->getBuilder()->setTypes($types);
             $class_type->from_docblock = false;
