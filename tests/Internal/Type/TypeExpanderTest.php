@@ -7,9 +7,14 @@ namespace Psalm\Tests\Internal\Type;
 use Override;
 use PHPUnit\Framework\Attributes\DataProvider;
 use Psalm\Codebase;
+use Psalm\Internal\Type\TemplateBound;
 use Psalm\Internal\Type\TypeExpander;
+use Psalm\Internal\Type\TypeVariableBounds;
 use Psalm\Tests\TestCase;
 use Psalm\Type;
+use Psalm\Type\Atomic\TArray;
+use Psalm\Type\Atomic\TTypeVariable;
+use Psalm\Type\Union;
 
 final class TypeExpanderTest extends TestCase
 {
@@ -52,6 +57,21 @@ final class TypeExpanderTest extends TestCase
 
         $this->assertNotSame($type, $expanded);
         $this->assertSame('array<int, Exception>|null', $expanded->getId());
+    }
+
+    public function testRebuildsTypeHoldingATypeVariableWithNewBounds(): void
+    {
+        $bounds = new TypeVariableBounds([new TemplateBound(Type::getInt())]);
+        $type = new Union([
+            new TArray([Type::getInt(), new Union([new TTypeVariable('$T', $bounds)])]),
+        ]);
+        $this->assertSame('array<int, $T:int>', $type->getId());
+
+        $bounds->lower_bounds[] = new TemplateBound(Type::getString());
+
+        $expanded = TypeExpander::expandUnion($this->codebase, $type, null, null, null);
+
+        $this->assertSame('array<int, $T:int|string>', $expanded->getId());
     }
 
     public function testResetsFlagsOfKeptTypeLikeARebuiltType(): void

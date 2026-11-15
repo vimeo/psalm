@@ -43,6 +43,7 @@ use Psalm\Type\Atomic\TObjectWithProperties;
 use Psalm\Type\Atomic\TPropertiesOf;
 use Psalm\Type\Atomic\TTemplateParam;
 use Psalm\Type\Atomic\TTypeAlias;
+use Psalm\Type\Atomic\TTypeVariable;
 use Psalm\Type\Atomic\TValueOf;
 use Psalm\Type\Atomic\TVoid;
 use Psalm\Type\Union;
@@ -246,6 +247,11 @@ final class TypeExpander
     ): array {
         if ($return_type instanceof TEnumCase) {
             return [$return_type];
+        }
+
+        // its id follows bounds that keep growing, so the types holding it are rebuilt to drop their cached ids
+        if ($return_type instanceof TTypeVariable) {
+            return [new TTypeVariable($return_type->name, $return_type->bounds, $return_type->from_docblock)];
         }
 
         if ($return_type instanceof TNamedObject
