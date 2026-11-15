@@ -555,6 +555,7 @@ final class ArrayAccessTest extends TestCase
 
     public function testAFalseOffsetIsReportedOnceAndOnlyWhenItIsTheOnlyProblem(): void
     {
+        $this->project_analyzer->setPhpVersion('8.3', 'tests');
         $this->project_analyzer->getConfig()->throw_exception = false;
         $file_path = self::$src_dir_path . 'somefile.php';
 
@@ -584,6 +585,41 @@ final class ArrayAccessTest extends TestCase
                     }
 
                     return "";
+                }
+
+                function byRef(array &$x): void {}
+
+                /** @param array<int, array> $a */
+                function refArg(array $a, int|false $k): void { byRef($a[$k]); }
+
+                /** @param array<int, int> $a */
+                function incr(array $a, int|false $k): void { $a[$k]++; }
+
+                /** @param array<int, int> $a */
+                function plusEq(array $a, int|false $k): void { $a[$k] += 1; }
+
+                /** @param array<string, array> $a */
+                function refArgStrFalse(array $a, string|false $k): void { byRef($a[$k]); }
+
+                /** @param array<int, string> $a */
+                function readInLoop(array $a, int|false $k): void {
+                    for ($i = 0; $i < 3; $i++) {
+                        echo $a[$k];
+                    }
+                }
+
+                /** @param array<int, string> $a */
+                function writeInLoop(array $a, int|false $k): void {
+                    while (rand(0, 1)) {
+                        $a[$k] = "x";
+                    }
+                }
+
+                /** @param array<int, int> $a */
+                function incrInLoop(array $a, int|false $k): void {
+                    foreach ([1, 2] as $_) {
+                        $a[$k]++;
+                    }
                 }',
         );
         $this->analyzeFile($file_path, new Context());
@@ -602,10 +638,24 @@ final class ArrayAccessTest extends TestCase
                     . 'expecting \'a\'|\'b\'',
                 '9 InvalidArrayOffset: Cannot access value on variable $a[$k] using a false|float offset, '
                     . 'expecting array-key',
-                '12 PossiblyInvalidArrayOffset: Cannot access value on variable $a[$k] using a false|int offset, '
-                    . 'expecting array-key',
+                '12 PossiblyInvalidArrayOffset: Cannot access value on variable $a[$k] using possibly false offset '
+                    . 'false|int, which is 0',
                 '15 PossiblyInvalidArrayOffset: Cannot access value on variable $l using possibly false offset '
                     . 'false|int<0, max>, which is 0',
+                '30 PossiblyInvalidArrayOffset: Cannot access value on variable $a using possibly false offset '
+                    . 'false|int, which is 0',
+                '33 PossiblyInvalidArrayOffset: Cannot access value on variable $a using possibly false offset '
+                    . 'false|int, which is 0',
+                '36 PossiblyInvalidArrayOffset: Cannot access value on variable $a using possibly false offset '
+                    . 'false|int, which is 0',
+                '39 PossiblyInvalidArrayOffset: Cannot access value on variable $a using a false|string offset, '
+                    . 'expecting string',
+                '44 PossiblyInvalidArrayOffset: Cannot access value on variable $a using possibly false offset '
+                    . 'false|int, which is 0',
+                '51 PossiblyInvalidArrayOffset: Cannot access value on variable $a[$k] using possibly false offset '
+                    . 'false|int, which is 0',
+                '58 PossiblyInvalidArrayOffset: Cannot access value on variable $a using possibly false offset '
+                    . 'false|int, which is 0',
             ],
             $messages,
         );

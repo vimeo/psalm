@@ -1244,6 +1244,7 @@ final class ArrayFetchAnalyzer
             }
 
             if ($expected_offset_types) {
+                $statements_analyzer->node_data->markOffsetChecked($stmt);
                 $invalid_offset_type = $expected_offset_types[0];
 
                 $used_offset = 'using a ' . $offset_type->getId() . ' offset';
@@ -1292,8 +1293,13 @@ final class ArrayFetchAnalyzer
                 && $array_type->isArray()
                 && !$offset_type->ignore_falsable_issues
                 && isset($offset_type->getAtomicTypes()['false'])
+                && !$statements_analyzer->node_data->isOffsetChecked($stmt)
             ) {
-                // PHP turns a false offset of an array into 0, and `false` alone is already an invalid offset
+                // PHP turns a false offset of an array into 0, and `false` alone is already an invalid offset. An
+                // expression that is read and written (`$a[$k]++`, a by-reference argument) is analyzed twice: it
+                // is reported once, and not when the other analysis already reported its offset
+                $statements_analyzer->node_data->markOffsetChecked($stmt);
+
                 IssueBuffer::maybeAdd(
                     new PossiblyInvalidArrayOffset(
                         'Cannot access value on variable ' . self::describeArrayVar($extended_var_id, $stmt)
