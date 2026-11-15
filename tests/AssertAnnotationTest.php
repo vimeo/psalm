@@ -251,6 +251,97 @@ final class AssertAnnotationTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'assertionOnAStringParameterOfABuiltinKeepsAMixedArgument' => [
+                'code' => <<<'PHP'
+                    <?php
+                    function f(mixed $a, mixed $b, mixed $c, mixed $d): void {
+                        if (str_contains($a, 'x')) {
+                            /** @psalm-check-type-exact $a = mixed */
+                        }
+
+                        if (str_starts_with($b, 'x')) {
+                            /** @psalm-check-type-exact $b = mixed */
+                        }
+
+                        if (str_ends_with($c, 'x')) {
+                            /** @psalm-check-type-exact $c = mixed */
+                        }
+
+                        if (strpos($d, 'x') !== false) {
+                            /** @psalm-check-type-exact $d = mixed */
+                        }
+                    }
+                    PHP,
+                'assertions' => [],
+                'ignored_issues' => ['MixedArgument'],
+                'php_version' => '8.1',
+            ],
+            'assertionOnAStringParameterOfABuiltinStillNarrowsAStringArgument' => [
+                'code' => <<<'PHP'
+                    <?php
+                    function f(string $a, string $b, string $c, string $d): void {
+                        if (str_contains($a, 'x')) {
+                            /** @psalm-check-type-exact $a = non-empty-string */
+                        }
+
+                        if (str_starts_with($b, 'x')) {
+                            /** @psalm-check-type-exact $b = non-empty-string */
+                        }
+
+                        if (str_ends_with($c, 'x')) {
+                            /** @psalm-check-type-exact $c = non-empty-string */
+                        }
+
+                        if (strpos($d, 'x') !== false) {
+                            /** @psalm-check-type-exact $d = non-empty-string */
+                        }
+                    }
+                    PHP,
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
+            'assertionOnAStringParameterOfABuiltinKeepsAnObjectArgument' => [
+                'code' => <<<'PHP'
+                    <?php
+                    function f(SplFileInfo $file): void {
+                        if (str_contains($file, 'x')) {
+                            /** @psalm-check-type-exact $file = SplFileInfo */
+                        }
+                    }
+                    PHP,
+                'assertions' => [],
+                'ignored_issues' => ['ImplicitToStringCast'],
+                'php_version' => '8.1',
+            ],
+            'assertOnAMixedParameterStillNarrowsAMixedArgument' => [
+                'code' => <<<'PHP'
+                    <?php
+                    /** @psalm-assert-if-true non-empty-string $s */
+                    function nonEmpty(mixed $s): bool {
+                        return is_string($s) && $s !== '';
+                    }
+
+                    /** @psalm-assert non-empty-array $a */
+                    function assertNonEmptyArray(array $a): void {
+                        if ($a === []) {
+                            throw new InvalidArgumentException();
+                        }
+                    }
+
+                    function f(mixed $m, mixed $n): void {
+                        if (nonEmpty($m)) {
+                            /** @psalm-check-type-exact $m = non-empty-string */
+                        }
+
+                        assertNonEmptyArray($n);
+                        /** @psalm-check-type-exact $n = non-empty-array<array-key, mixed> */
+                    }
+                    PHP,
+                'assertions' => [],
+                'ignored_issues' => ['MixedArgument'],
+                'php_version' => '8.1',
+            ],
             'selfOfATraitAssertionIsTheClassUsingTheTraitEverywhere' => [
                 'code' => '<?php
                     trait Comparable {
