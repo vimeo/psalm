@@ -42,7 +42,7 @@ final class IsAClass extends Assertion
     public function isNegationOf(Assertion $assertion): bool
     {
         return $assertion instanceof IsNotAClass
-            && $this->type === $assertion->type
+            && $this->type->getId() === $assertion->type->getId()
             && $this->allow_string === $assertion->allow_string;
     }
 }
