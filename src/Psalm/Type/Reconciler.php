@@ -43,6 +43,7 @@ use Psalm\Storage\Assertion\IsIdentical;
 use Psalm\Storage\Assertion\IsIsset;
 use Psalm\Storage\Assertion\IsLessThan;
 use Psalm\Storage\Assertion\IsLessThanOrEqualTo;
+use Psalm\Storage\Assertion\IsNotIdentical;
 use Psalm\Storage\Assertion\IsNotIsset;
 use Psalm\Storage\Assertion\IsNotLooselyEqual;
 use Psalm\Storage\Assertion\NestedAssertions;
@@ -287,7 +288,7 @@ class Reconciler
 
             $failed_reconciliation = self::RECONCILIATION_OK;
 
-            foreach ($new_type_parts as $offset => $new_type_part_parts) {
+            foreach (self::orderExclusionOfEmptyStringFirst($new_type_parts) as $offset => $new_type_part_parts) {
                 $orred_type = null;
                 $report_location = $code_location
                     && isset($referenced_var_ids[$key])
@@ -608,6 +609,71 @@ class Reconciler
     }
 
     /**
+     * `'0' !== $s` leaves `string` as it is, so it is only worth something after `'' !== $s` has made the string
+     * non-empty: the assertions of a variable that exclude `''` are applied before the one that excludes `'0'`,
+     * whatever order they were written in. The other assertions (`is_string()`) keep their place.
+     *
+     * @param array<array-key, array<int, Assertion>> $new_type_parts
+     * @return array<array-key, array<int, Assertion>>
+     * @psalm-pure
+     */
+    private static function orderExclusionOfEmptyStringFirst(array $new_type_parts): array
+    {
+        $first_zero_exclusion = null;
+        $empty_string_exclusions_after_it = [];
+
+        foreach ($new_type_parts as $offset => $new_type_part_parts) {
+            $excluded = self::getExcludedLiteralString($new_type_part_parts);
+
+            if ($excluded === '0') {
+                $first_zero_exclusion ??= $offset;
+            } elseif ($excluded === '' && $first_zero_exclusion !== null) {
+                $empty_string_exclusions_after_it[$offset] = $new_type_part_parts;
+            }
+        }
+
+        if (!$empty_string_exclusions_after_it) {
+            return $new_type_parts;
+        }
+
+        $ordered = [];
+
+        foreach ($new_type_parts as $offset => $new_type_part_parts) {
+            if (isset($empty_string_exclusions_after_it[$offset])) {
+                continue;
+            }
+
+            if ($offset === $first_zero_exclusion) {
+                $ordered += $empty_string_exclusions_after_it;
+            }
+
+            $ordered[$offset] = $new_type_part_parts;
+        }
+
+        return $ordered;
+    }
+
+    /**
+     * The literal string a lone assertion says the variable is not (`'' !== $s`, `'0' != $s`)
+     *
+     * @param array<int, Assertion> $assertions
+     * @psalm-pure
+     */
+    private static function getExcludedLiteralString(array $assertions): ?string
+    {
+        $assertion = $assertions[0] ?? null;
+
+        if (count($assertions) === 1
+            && ($assertion instanceof IsNotIdentical || $assertion instanceof IsNotLooselyEqual)
+            && $assertion->type instanceof TLiteralString
+        ) {
+            return $assertion->type->value;
+        }
+
+        return null;
+    }
+
+    /**
      * This generates a list of extra assertions for an assertion on a nested key.
      *
      * For example  ['$a[0]->foo->bar' => 'isset']
@@ -893,7 +959,7 @@ class Reconciler
         $key_parts = self::breakUpPathIntoParts($key);
 
         if (count($key_parts) === 1) {
-            if ($key === Context::PHP_VERSION_ID_VAR_ID) {
+            if ($key === Context::PHP_VERSION_ID_VAR_ID || $key === Context::PHP_SYMBOL_GUARD_VAR_ID) {
                 return $existing_keys[$key] ?? Type::getIntRange(1, null);
             }
 
