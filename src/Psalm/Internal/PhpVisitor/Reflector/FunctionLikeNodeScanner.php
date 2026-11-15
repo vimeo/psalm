@@ -228,6 +228,7 @@ final class FunctionLikeNodeScanner
                         $assigned_var_ids += FormulaGenerator::getAssignedVarIds(
                             $function_stmt->cond,
                             $this->classlike_storage->name ?? null,
+                            null,
                         );
 
                         try {
