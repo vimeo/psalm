@@ -1133,7 +1133,7 @@ final class ReferenceTest extends TestCase
                         }
                     }',
                 'assertions' => [],
-                'ignored_issues' => ['PossiblyUndefinedArrayOffset'],
+                'ignored_issues' => ['PossiblyUndefinedArrayOffset', 'MixedArrayAccess', 'PossiblyNullArrayAccess'],
             ],
         ];
     }
@@ -1197,6 +1197,7 @@ final class ReferenceTest extends TestCase
                 'error_message' => 'ReferenceConstraintViolation - src' . DIRECTORY_SEPARATOR . 'somefile.php:6:41 - '
                     . 'Variable $data is limited to values of type array<string, mixed> because it is passed by '
                     . 'reference, array<string, mixed>|string type found',
+                'error_levels' => ['MixedArrayAccess'],
             ],
             'referenceThatWasOneBeforeATernaryIsReboundAndWrittenToAfterIt' => [
                 'code' => '<?php

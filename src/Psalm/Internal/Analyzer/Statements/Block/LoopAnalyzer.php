@@ -24,8 +24,10 @@ use Psalm\Node\Expr\BinaryOp\VirtualBooleanAnd;
 use Psalm\Storage\Assertion;
 use Psalm\Type;
 use Psalm\Type\Atomic;
+use Psalm\Type\Atomic\TArray;
 use Psalm\Type\Atomic\TInt;
 use Psalm\Type\Atomic\TIntRange;
+use Psalm\Type\Atomic\TKeyedArray;
 use Psalm\Type\Reconciler;
 use Psalm\Type\Union;
 use UnexpectedValueException;
@@ -35,7 +37,6 @@ use function array_filter;
 use function array_flip;
 use function array_intersect_key;
 use function array_keys;
-use function array_map;
 use function array_merge;
 use function array_reverse;
 use function array_slice;
@@ -91,7 +92,7 @@ final class LoopAnalyzer
         $assignment_map = $assignment_mapper->getAssignmentMap();
 
         $loop_scope->assigned_root_var_ids = ($loop_parent_context->loop_scope?->assigned_root_var_ids ?? [])
-            + array_map(static fn(array $_): bool => true, $assignment_map);
+            + $assignment_mapper->getAssignedVarIds();
 
         $assignment_depth = 0;
 
@@ -147,6 +148,11 @@ final class LoopAnalyzer
             $first_var_id = array_keys($assignment_map)[0];
 
             $assignment_depth = self::getAssignmentMapDepth($first_var_id, $assignment_map);
+        }
+
+        // what an iteration defines otherwise is seen by the next one
+        if ($assignment_depth === 0 && $assignment_mapper->getDefinedVarIds()) {
+            $assignment_depth = 1;
         }
 
         if ($assignment_depth === 0 || $does_always_break) {
@@ -283,6 +289,7 @@ final class LoopAnalyzer
             // the types the variables the loop defines start an iteration with
             $loop_var_types_at_start = [];
             $unset_in_loop_vars = [];
+            $possibly_defined_in_loop_vars = [];
 
             // the data flow of the last pass is linked to the reads of the first one by one more pass
             $max_passes = $assignment_depth;
@@ -348,12 +355,7 @@ final class LoopAnalyzer
                             $has_changes = true;
                         }
 
-                        // if we're in a do block we don't want to remove vars before evaluating
-                        // the where conditional, but a property or array offset it narrowed was not
-                        // in scope when the loop was entered
-                        if (!$is_do || !self::isLoopVar($var_id)) {
-                            $vars_to_remove[] = $var_id;
-                        }
+                        $vars_to_remove[] = $var_id;
                     }
                 }
 
@@ -365,6 +367,19 @@ final class LoopAnalyzer
                         && self::isLoopVar($var_id)
                     ) {
                         $unset_in_loop_vars[$var_id] = true;
+                        $has_changes = true;
+                    }
+                }
+
+                // a variable an iteration only possibly defines (a foreach over a possibly empty array, the right
+                // operand of `||`) is possibly defined where the next one starts
+                foreach ($continue_context->vars_possibly_in_scope as $var_id => $_) {
+                    if (!isset($continue_context->vars_in_scope[$var_id])
+                        && !isset($pre_loop_context->vars_possibly_in_scope[$var_id])
+                        && !isset($possibly_defined_in_loop_vars[$var_id])
+                        && self::isLoopVar($var_id)
+                    ) {
+                        $possibly_defined_in_loop_vars[$var_id] = true;
                         $has_changes = true;
                     }
                 }
@@ -1587,7 +1602,7 @@ final class LoopAnalyzer
         $traverser->addVisitor($assignment_mapper);
         $traverser->traverse($exprs);
 
-        return array_map(static fn(array $_): bool => true, $assignment_mapper->getAssignmentMap());
+        return $assignment_mapper->getAssignedVarIds();
     }
 
     /**
@@ -1620,15 +1635,14 @@ final class LoopAnalyzer
     }
 
     /**
-     * The variables whose int range at the end of an iteration goes past the ints they started it with, with that
-     * side moved to the next of the bounds, or unbounded. Literals are left alone: they come from assignments, so
-     * the passes reach all of them.
+     * The variables whose int range at the end of an iteration, or that of an array value they hold, goes past the
+     * ints it started it with, with that side moved to the next of the bounds, or unbounded
      *
      * @param array<string, Union> $vars_at_start
      * @param array<string, Union> $vars_at_end
      * @param ?list<int> $bounds sorted
      * @return array<string, Union>
-     * @psalm-pure
+     * @psalm-capabilities read-props|write-this-props|write-refs
      */
     private static function getWidenedIntRanges(array $vars_at_start, array $vars_at_end, ?array $bounds): array
     {
@@ -1639,59 +1653,170 @@ final class LoopAnalyzer
                 continue;
             }
 
-            $start_bounds = self::getIntBounds($vars_at_start[$var_id]);
+            $widened_type = self::widenIntRanges($vars_at_start[$var_id], $end_type, $bounds);
 
-            if ($start_bounds === null) {
-                continue;
+            if ($widened_type !== $end_type) {
+                $widened_var_types[$var_id] = $widened_type;
             }
-
-            [$start_min, $start_max] = $start_bounds;
-
-            $widen_min = false;
-            $widen_max = false;
-
-            foreach ($end_type->getAtomicTypes() as $atomic) {
-                if (!$atomic instanceof TIntRange) {
-                    continue;
-                }
-
-                if ($start_min !== null && ($atomic->min_bound === null || $atomic->min_bound < $start_min)) {
-                    $widen_min = true;
-                }
-
-                if ($start_max !== null && ($atomic->max_bound === null || $atomic->max_bound > $start_max)) {
-                    $widen_max = true;
-                }
-            }
-
-            if (!$widen_min && !$widen_max) {
-                continue;
-            }
-
-            [$end_min, $end_max] = self::getIntBounds($end_type) ?? [null, null];
-
-            $types = array_filter(
-                $end_type->getAtomicTypes(),
-                static fn(Atomic $atomic): bool => !$atomic instanceof TInt,
-            );
-
-            $min = $start_min === null || $end_min === null ? null : min($start_min, $end_min);
-            $max = $start_max === null || $end_max === null ? null : max($start_max, $end_max);
-
-            if ($widen_min) {
-                $min = $min === null || $bounds === null ? null : self::getBoundBeyond($bounds, $min, false);
-            }
-
-            if ($widen_max) {
-                $max = $max === null || $bounds === null ? null : self::getBoundBeyond($bounds, $max, true);
-            }
-
-            $types[] = $min === null && $max === null ? new TInt() : new TIntRange($min, $max);
-
-            $widened_var_types[$var_id] = $end_type->setTypes($types);
         }
 
         return $widened_var_types;
+    }
+
+    /**
+     * Literals are left alone: they come from assignments, so the passes reach all of them.
+     *
+     * @param ?list<int> $bounds sorted
+     * @psalm-capabilities read-props|write-this-props|write-refs
+     */
+    private static function widenIntRanges(Union $start_type, Union $end_type, ?array $bounds): Union
+    {
+        $end_type = self::widenArrayValueIntRanges($start_type, $end_type, $bounds);
+
+        $start_bounds = self::getIntBounds($start_type);
+
+        if ($start_bounds === null) {
+            return $end_type;
+        }
+
+        [$start_min, $start_max] = $start_bounds;
+
+        $widen_min = false;
+        $widen_max = false;
+
+        foreach ($end_type->getAtomicTypes() as $atomic) {
+            if (!$atomic instanceof TIntRange) {
+                continue;
+            }
+
+            if ($start_min !== null && ($atomic->min_bound === null || $atomic->min_bound < $start_min)) {
+                $widen_min = true;
+            }
+
+            if ($start_max !== null && ($atomic->max_bound === null || $atomic->max_bound > $start_max)) {
+                $widen_max = true;
+            }
+        }
+
+        if (!$widen_min && !$widen_max) {
+            return $end_type;
+        }
+
+        [$end_min, $end_max] = self::getIntBounds($end_type) ?? [null, null];
+
+        $types = array_filter(
+            $end_type->getAtomicTypes(),
+            static fn(Atomic $atomic): bool => !$atomic instanceof TInt,
+        );
+
+        $min = $start_min === null || $end_min === null ? null : min($start_min, $end_min);
+        $max = $start_max === null || $end_max === null ? null : max($start_max, $end_max);
+
+        if ($widen_min) {
+            $min = $min === null || $bounds === null ? null : self::getBoundBeyond($bounds, $min, false);
+        }
+
+        if ($widen_max) {
+            $max = $max === null || $bounds === null ? null : self::getBoundBeyond($bounds, $max, true);
+        }
+
+        $types[] = $min === null && $max === null ? new TInt() : new TIntRange($min, $max);
+
+        return $end_type->setTypes($types);
+    }
+
+    /**
+     * @param ?list<int> $bounds sorted
+     * @psalm-capabilities read-props|write-this-props|write-refs
+     */
+    private static function widenArrayValueIntRanges(Union $start_type, Union $end_type, ?array $bounds): Union
+    {
+        $types = [];
+        $changed = false;
+
+        foreach ($end_type->getAtomicTypes() as $key => $atomic) {
+            if ($atomic instanceof TKeyedArray && !$atomic->is_callable) {
+                $properties = [];
+
+                foreach ($atomic->properties as $offset => $property) {
+                    $start_property = self::getArrayValueType($start_type, $offset);
+
+                    $properties[$offset] = $start_property === null
+                        ? $property
+                        : self::widenIntRanges($start_property, $property, $bounds);
+                }
+
+                $fallback_params = $atomic->fallback_params;
+
+                if ($fallback_params !== null) {
+                    $start_value = self::getArrayValueType($start_type, null);
+
+                    if ($start_value !== null) {
+                        $fallback_params = [
+                            $fallback_params[0],
+                            self::widenIntRanges($start_value, $fallback_params[1], $bounds),
+                        ];
+                    }
+                }
+
+                if ($properties !== $atomic->properties || $fallback_params !== $atomic->fallback_params) {
+                    $atomic = TKeyedArray::make(
+                        $properties,
+                        $atomic->class_strings,
+                        $fallback_params,
+                        $atomic->is_list,
+                        $atomic->from_docblock,
+                    );
+                    $changed = true;
+                }
+            } elseif ($atomic instanceof TArray) {
+                $start_value = self::getArrayValueType($start_type, null);
+
+                if ($start_value !== null) {
+                    $value = self::widenIntRanges($start_value, $atomic->type_params[1], $bounds);
+
+                    if ($value !== $atomic->type_params[1]) {
+                        $atomic = $atomic->setTypeParams([$atomic->type_params[0], $value]);
+                        $changed = true;
+                    }
+                }
+            }
+
+            $types[$key] = $atomic;
+        }
+
+        return $changed ? $end_type->setTypes($types) : $end_type;
+    }
+
+    /**
+     * What the arrays of a type hold at an offset, or at the offsets their shapes don't list for null; null if it
+     * holds no array that has it
+     *
+     * @psalm-capabilities read-props|write-this-props|write-refs
+     */
+    private static function getArrayValueType(Union $type, int|string|null $offset): ?Union
+    {
+        $value_type = null;
+
+        foreach ($type->getAtomicTypes() as $atomic) {
+            if ($atomic instanceof TKeyedArray) {
+                if ($offset !== null && isset($atomic->properties[$offset])) {
+                    $atomic_value_type = $atomic->properties[$offset];
+                } elseif ($atomic->fallback_params !== null) {
+                    $atomic_value_type = $atomic->fallback_params[1];
+                } else {
+                    continue;
+                }
+            } elseif ($atomic instanceof TArray) {
+                $atomic_value_type = $atomic->type_params[1];
+            } else {
+                continue;
+            }
+
+            $value_type = Type::combineUnionTypes($value_type, $atomic_value_type);
+        }
+
+        return $value_type;
     }
 
     /**

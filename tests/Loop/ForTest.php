@@ -34,6 +34,17 @@ final class ForTest extends TestCase
                         return $total;
                     }',
             ],
+            'forIntRangeShiftedInAnArrayOffsetIsWidened' => [
+                'code' => '<?php
+                    function f(stdClass $o): int {
+                        $a = ["n" => 0, "o" => $o];
+                        for ($i = 0; $i < 100; $i++) {
+                            $a["n"] -= rand(1, 3);
+                        }
+                        /** @psalm-check-type-exact $a = array{n: int<min, -1>, o: stdClass} */;
+                        return $a["n"];
+                    }',
+            ],
             'forIntRangeComputedFromTheCounterIsNotWidened' => [
                 'code' => '<?php
                     function f(): int {

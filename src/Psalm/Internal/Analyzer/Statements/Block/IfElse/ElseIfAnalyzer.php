@@ -327,9 +327,11 @@ final class ElseIfAnalyzer
             );
 
             if ($newly_reconciled_var_ids) {
-                $elseif_context->clauses = Context::removeReconciledClauses(
+                $elseif_context->clauses = AlgebraAnalyzer::removeReconciledClauses(
                     $elseif_context->clauses,
                     $newly_reconciled_var_ids,
+                    $elseif_context->vars_in_scope,
+                    $statements_analyzer,
                 )[0];
 
                 foreach ($newly_reconciled_var_ids as $changed_var_id => $_) {

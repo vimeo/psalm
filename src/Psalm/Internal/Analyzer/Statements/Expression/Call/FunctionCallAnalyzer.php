@@ -536,7 +536,13 @@ final class FunctionCallAnalyzer extends CallAnalyzer
                 self::applyAssertionsToContext(
                     $function_name,
                     null,
-                    self::getAssertionsOnArgs($function_storage->assertions, $function_storage, $stmt->getArgs()),
+                    self::resolveStaticPropertyAssertionClasses(
+                        self::getAssertionsOnArgs($function_storage->assertions, $function_storage, $stmt->getArgs()),
+                        $codebase,
+                        $context,
+                        null,
+                        null,
+                    ),
                     $stmt->getArgs(),
                     $template_result,
                     $context,
@@ -1908,7 +1914,12 @@ final class FunctionCallAnalyzer extends CallAnalyzer
         }
 
         if ($changed_var_ids) {
-            $simplified_clauses = Context::removeReconciledClauses($simplified_clauses, $changed_var_ids)[0];
+            $simplified_clauses = AlgebraAnalyzer::removeReconciledClauses(
+                $simplified_clauses,
+                $changed_var_ids,
+                $context->vars_in_scope,
+                $statements_analyzer,
+            )[0];
         }
 
         $context->clauses = $simplified_clauses;
