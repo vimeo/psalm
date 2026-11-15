@@ -540,7 +540,7 @@ This is perfectly valid, and Psalm won't complain.
 
 ## Star projection
 
-A `*` type argument (`Pair<int, *>`, as in PHPStan) stands for some unknown type within the template's bound. Any argument fits it, and reading the template gives its bound:
+A `*` type argument (`Pair<int, *>`, as in PHPStan) stands for some unknown type within the template's bound, with the other type arguments applied. Any argument fits it, and reading the template gives that bound:
 
 ```php
 <?php
@@ -569,11 +569,11 @@ function takesPairOfStdClass(Pair $pair): void {}
 function f(Pair $concrete, Pair $other, Pair $any): void {
     takesAnyPair($concrete); // no issue
     takesAnyPair($other); // InvalidArgument
-    takesPairOfStdClass($any); // InvalidArgument
+    takesPairOfStdClass($any); // ArgumentTypeCoercion
 }
 ```
 
-A `*` argument itself fits only another `*`, an argument left out (`Pair $pair`), or a covariant argument that holds the whole bound. `class-string<*>` is any class-string, and the array-like builtins (`array<*>`, `non-empty-array<*>`, `list<*>`, `non-empty-list<*>`, `iterable<*>`) read `*` as `mixed`. A `*` argument is not allowed in `@extends`, `@implements` or `@use` (`InvalidDocblock`).
+A `*` argument itself fits only another `*`, an argument left out (`Pair $pair`), or a covariant argument that holds the whole bound. With `@template B of list<A>`, reading `B` of a `P<int, *>` gives `list<int>`. `class-string<*>` is any class-string, and the array-like builtins (`array<*>`, `non-empty-array<*>`, `list<*>`, `non-empty-list<*>`, `iterable<*>`) read `*` as `mixed`. A `*` argument is not allowed in `@extends`, `@implements` or `@use` (`InvalidDocblock`).
 
 ## Builtin templated classes and interfaces
 
