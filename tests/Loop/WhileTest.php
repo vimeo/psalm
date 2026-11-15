@@ -144,6 +144,38 @@ final class WhileTest extends TestCase
                         return $i;
                     }',
             ],
+            'variableDefinedBeforeAPlainBreakIsDefinedAfterTheInnerLoopOfABreakTwo' => [
+                'code' => '<?php
+                    while (true) {
+                        while (true) {
+                            if (rand(0, 1)) {
+                                break 2;
+                            }
+
+                            $x = 1;
+                            break;
+                        }
+
+                        echo $x;
+                        break;
+                    }
+
+                    function f(): void {
+                        while (true) {
+                            while (true) {
+                                if (rand(0, 1)) {
+                                    break 2;
+                                }
+
+                                $y = 1;
+                                break;
+                            }
+
+                            echo $y;
+                            break;
+                        }
+                    }',
+            ],
             'variableDefinedBeforeTheLoopAndAssignedInTheConditionHasWhatTheConditionLeaves' => [
                 'code' => '<?php
                     $result = 1;
@@ -1134,6 +1166,28 @@ final class WhileTest extends TestCase
                         $name = "thing";
                     }',
                 'error_message' => 'TypeDoesNotContainType - src' . DIRECTORY_SEPARATOR . 'somefile.php:3:28 - Type int<min, 0> for $try is never > 0',
+            ],
+            'whileBreakBeforeDefinition' => [
+                'code' => <<<'PHP'
+                    <?php
+                    function f(): void {
+                        while (rand()) {
+                            if (rand()) {
+                                $y = 1;
+                                break;
+                            }
+
+                            if (rand()) {
+                                break;
+                            }
+                        }
+
+                        echo $y;
+                    }
+                    PHP,
+                'error_message' => 'PossiblyUndefinedVariable - src' . DIRECTORY_SEPARATOR . 'somefile.php:14:10',
+                'error_levels' => [],
+                'php_version' => '8.1',
             ],
             'variableAssignedOnlyInTheSkippableOperandOfTheConditionIsPossiblyUndefined' => [
                 'code' => '<?php
