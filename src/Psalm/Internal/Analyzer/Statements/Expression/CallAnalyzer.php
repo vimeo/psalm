@@ -10,6 +10,7 @@ use PhpParser\Node\Name;
 use Psalm\CodeLocation;
 use Psalm\Codebase;
 use Psalm\Context;
+use Psalm\Exception\ComplicatedExpressionException;
 use Psalm\FileSource;
 use Psalm\Internal\Algebra;
 use Psalm\Internal\Algebra\FormulaGenerator;
@@ -1016,16 +1017,20 @@ abstract class CallAnalyzer
                         $statements_analyzer->getCodebase(),
                     );
                 } elseif ($single_rule instanceof Falsy) {
-                    $assert_clauses = Algebra::negateFormula(
-                        FormulaGenerator::getFormula(
-                            spl_object_id($arg_value),
-                            spl_object_id($arg_value),
-                            $arg_value,
-                            $context->self,
-                            $statements_analyzer,
-                            $codebase,
-                        ),
-                    );
+                    try {
+                        $assert_clauses = Algebra::negateFormula(
+                            FormulaGenerator::getFormula(
+                                spl_object_id($arg_value),
+                                spl_object_id($arg_value),
+                                $arg_value,
+                                $context->self,
+                                $statements_analyzer,
+                                $codebase,
+                            ),
+                        );
+                    } catch (ComplicatedExpressionException) {
+                        $assert_clauses = [];
+                    }
                 } elseif ($single_rule instanceof IsType
                     && $single_rule->type instanceof TTrue
                 ) {
