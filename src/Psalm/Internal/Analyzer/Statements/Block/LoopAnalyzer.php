@@ -281,7 +281,7 @@ final class LoopAnalyzer
             // the data flow of the last pass is linked to the reads of the first one by one more pass
             $max_passes = $assignment_depth;
             $data_flow_pass_added = false;
-            $widening_pass_added = false;
+            $widening_passes = 0;
             $force_pass = false;
 
             for ($i = 0; $i < $max_passes; ++$i) {
@@ -523,21 +523,29 @@ final class LoopAnalyzer
                 IssueBuffer::stopRecording();
 
                 // a range the passes keep shifting (`$i += rand(1, 3)`) would go further on the iterations not
-                // analysed: its bound is dropped and the body analysed once more with it
-                if ($i + 1 === $max_passes && !$widening_pass_added) {
-                    $widened_var_types = self::getWidenedIntRanges(
-                        array_diff_key(
-                            $vars_at_iteration_start,
-                            array_flip($always_assigned_before_loop_body_vars),
-                        ),
-                        $continue_context->vars_in_scope,
-                    );
+                // analysed: its bound is dropped and the body analysed once more with it. The pass after that one
+                // starts with what the widened pass ended with, which gets back the bounds the body enforces
+                // (`$i = min(10, $i + 1)`), unless it still does not hold the range: then it is widened again.
+                if ($i + 1 === $max_passes && $widening_passes < 3) {
+                    $widened_var_types = [];
 
-                    if ($widened_var_types) {
+                    if ($widening_passes !== 1) {
+                        $widened_var_types = self::getWidenedIntRanges(
+                            array_diff_key(
+                                $vars_at_iteration_start,
+                                array_flip($always_assigned_before_loop_body_vars),
+                            ),
+                            self::getVarsStartingNextIteration($continue_context, $loop_scope),
+                        );
+                    }
+
+                    if ($widened_var_types || $widening_passes === 1) {
                         $continue_context->vars_in_scope = $widened_var_types + $continue_context->vars_in_scope;
                         ++$max_passes;
-                        $widening_pass_added = true;
+                        ++$widening_passes;
                         $force_pass = true;
+                    } else {
+                        $widening_passes = 3;
                     }
                 }
 
@@ -1413,6 +1421,26 @@ final class LoopAnalyzer
         }
 
         return $max_depth;
+    }
+
+    /**
+     * What the variables hold where an iteration goes on to the next one: the end of the body, or only its
+     * `continue`s when the body never gets to its end (`return`, `break`, `throw`)
+     *
+     * @return array<string, Union>
+     * @psalm-mutation-free
+     */
+    private static function getVarsStartingNextIteration(Context $continue_context, LoopScope $loop_scope): array
+    {
+        if (!$continue_context->has_returned) {
+            return $continue_context->vars_in_scope;
+        }
+
+        if (!in_array(ScopeAnalyzer::ACTION_CONTINUE, $loop_scope->final_actions, true)) {
+            return [];
+        }
+
+        return $loop_scope->possibly_redefined_loop_vars + $loop_scope->possibly_defined_loop_vars;
     }
 
     /**

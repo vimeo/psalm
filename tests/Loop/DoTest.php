@@ -30,7 +30,7 @@ final class DoTest extends TestCase
                         do {
                             $i = $i + rand(1, 3);
                         } while ($i <= 10);
-                        /** @psalm-check-type-exact $i = int<11, max> */;
+                        /** @psalm-check-type-exact $i = int<11, 13> */;
                         return $i;
                     }',
             ],

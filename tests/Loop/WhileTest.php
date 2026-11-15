@@ -227,7 +227,7 @@ final class WhileTest extends TestCase
                                 break;
                             }
                         }
-                        /** @psalm-check-type-exact $i = int<11, max> */;
+                        /** @psalm-check-type-exact $i = int<11, 13> */;
                         return $i;
                     }',
             ],
@@ -241,7 +241,7 @@ final class WhileTest extends TestCase
                                 break;
                             }
                         }
-                        /** @psalm-check-type-exact $i = int<min, -11> */;
+                        /** @psalm-check-type-exact $i = int<-13, -11> */;
                         return $i;
                     }',
             ],
@@ -256,7 +256,7 @@ final class WhileTest extends TestCase
                                 break;
                             }
                         }
-                        /** @psalm-check-type-exact $i = int<11, max> */;
+                        /** @psalm-check-type-exact $i = int<11, 13> */;
                         return $i;
                     }',
             ],
@@ -319,6 +319,64 @@ final class WhileTest extends TestCase
                         }
                         /** @psalm-check-type-exact $state = 0|1|2 */;
                         return $state;
+                    }',
+            ],
+            'whileIntRangeTheBodyBoundsKeepsTheBoundAfterWidening' => [
+                'code' => '<?php
+                    /** @param int<0, 10> $n */
+                    function takesBounded(int $n): void {}
+
+                    function f(): int {
+                        $i = 0;
+                        while (rand(0, 1)) {
+                            takesBounded($i);
+                            $i = min(10, $i + rand(1, 3));
+                        }
+                        /** @psalm-check-type-exact $i = int<0, 10> */;
+                        return $i;
+                    }',
+            ],
+            'whileTrueIntRangeShiftedBeforeAlwaysReturningIsNotWidened' => [
+                'code' => '<?php
+                    /** @return int<1, 10> */
+                    function f(): int {
+                        $i = 0;
+                        while (true) {
+                            $i += rand(1, 3);
+                            return $i;
+                        }
+                    }',
+            ],
+            'whileTrueIntRangeShiftedBeforeAContinueOfABodyEndingInAReturnIsWidened' => [
+                'code' => '<?php
+                    function f(): int {
+                        $i = 0;
+                        while (true) {
+                            $i += rand(1, 3);
+                            if ($i < 10) {
+                                continue;
+                            }
+                            return $i;
+                        }
+                    }',
+            ],
+            'foreachEndingInAReturnDoesNotWidenWhatItsContinuesLeave' => [
+                'code' => '<?php
+                    /** @param list<string> $metas */
+                    function f(array $metas): void {
+                        foreach ($metas as $_meta) {
+                            /** @psalm-check-type-exact $count? = int<1, max> */;
+                            while (rand(0, 1)) {
+                                $count = 0;
+                                while (rand(0, 1)) {
+                                    ++$count;
+                                }
+                                if ($count) {
+                                    continue 2;
+                                }
+                            }
+                            return;
+                        }
                     }',
             ],
             'whileTrueVariableIsNotWhatAContinueLeaves' => [
