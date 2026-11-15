@@ -484,6 +484,10 @@ final class ExistingAtomicMethodCallAnalyzer extends CallAnalyzer
             $assertionsResolver = new AssertionsFromInheritanceResolver($codebase);
             $assertions = $assertionsResolver->resolve($method_storage, $class_storage);
 
+            // `self` in the assertions of a method of a trait is the class using the trait, where it appears
+            $trait_self_class = $codebase->methods->getAppearingMethodId($method_id)?->fq_class_name
+                ?? $class_storage->name;
+
             if ($assertions) {
                 self::applyAssertionsToContext(
                     $stmt_name,
@@ -494,6 +498,7 @@ final class ExistingAtomicMethodCallAnalyzer extends CallAnalyzer
                     $context,
                     $statements_analyzer,
                     $fq_class_name,
+                    $trait_self_class,
                 );
             }
 
@@ -501,11 +506,14 @@ final class ExistingAtomicMethodCallAnalyzer extends CallAnalyzer
 
             if ($if_true_assertions) {
                 $possibilities = array_map(
-                    static fn(Possibilities $assertion): Possibilities => $assertion->getUntemplatedCopy(
-                        $template_result,
-                        $lhs_var_id,
-                        $codebase,
-                        $static_type,
+                    static fn(Possibilities $assertion): Possibilities => self::resolveTraitSelf(
+                        $assertion->getUntemplatedCopy(
+                            $template_result,
+                            $lhs_var_id,
+                            $codebase,
+                            $static_type,
+                        ),
+                        $trait_self_class,
                     ),
                     self::getAssertionsOnArgs($if_true_assertions, $method_storage, $args),
                 );
@@ -527,11 +535,14 @@ final class ExistingAtomicMethodCallAnalyzer extends CallAnalyzer
 
             if ($if_false_assertions) {
                 $possibilities = array_map(
-                    static fn(Possibilities $assertion): Possibilities => $assertion->getUntemplatedCopy(
-                        $template_result,
-                        $lhs_var_id,
-                        $codebase,
-                        $static_type,
+                    static fn(Possibilities $assertion): Possibilities => self::resolveTraitSelf(
+                        $assertion->getUntemplatedCopy(
+                            $template_result,
+                            $lhs_var_id,
+                            $codebase,
+                            $static_type,
+                        ),
+                        $trait_self_class,
                     ),
                     self::getAssertionsOnArgs($if_false_assertions, $method_storage, $args),
                 );

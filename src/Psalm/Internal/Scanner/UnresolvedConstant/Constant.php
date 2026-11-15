@@ -15,7 +15,10 @@ final class Constant extends UnresolvedConstantComponent
     /**
      * @psalm-mutation-free
      */
-    public function __construct(public readonly string $name, public readonly bool $is_fully_qualified)
-    {
+    public function __construct(
+        public readonly string $name,
+        public readonly bool $is_fully_qualified,
+        public readonly string $namespace = '',
+    ) {
     }
 }

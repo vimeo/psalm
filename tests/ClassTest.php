@@ -147,6 +147,25 @@ final class ClassTest extends TestCase
                         return new $class(1);
                     }',
             ],
+            'instanceofIterableDoesNotNarrowTheVariable' => [
+                'code' => <<<'PHP'
+                    <?php
+                    function f(ArrayObject $o, mixed $m): void {
+                        if ($o instanceof iterable) {
+                            /** @psalm-check-type-exact $o = ArrayObject<array-key, mixed> */
+                        } else {
+                            /** @psalm-check-type-exact $o = ArrayObject<array-key, mixed> */
+                        }
+
+                        if ($m instanceof iterable) {
+                            /** @psalm-check-type-exact $m = mixed */
+                        }
+                    }
+                    PHP,
+                'assertions' => [],
+                'ignored_issues' => ['ReservedWord'],
+                'php_version' => '8.1',
+            ],
             'newStaticOfAClassImplementingAnInterfaceWithAConstructor' => [
                 'code' => '<?php
                     interface Buildable {
@@ -1697,6 +1716,35 @@ final class ClassTest extends TestCase
                         return new $class("x");
                     }',
                 'error_message' => 'InvalidScalarArgument',
+            ],
+            'instanceofIterableIsReportedOnlyAsAReservedWord' => [
+                'code' => '<?php
+                    function f(ArrayObject $o): void {
+                        if ($o instanceof iterable) {
+                            echo "never";
+                        }
+                    }',
+                'error_message' => 'ReservedWord',
+                'error_levels' => [],
+                'php_version' => '8.1',
+            ],
+            'instanceofIterableInANamespace' => [
+                'code' => '<?php
+                    namespace Foo;
+
+                    /** @param mixed $a */
+                    function f($a): bool {
+                        return $a instanceof Iterable;
+                    }',
+                'error_message' => 'ReservedWord - src' . DIRECTORY_SEPARATOR . 'somefile.php:6:46 - iterable is a reserved word',
+            ],
+            'instanceofIterable' => [
+                'code' => '<?php
+                    /** @param mixed $a */
+                    function f($a): bool {
+                        return $a instanceof iterable;
+                    }',
+                'error_message' => 'ReservedWord - src' . DIRECTORY_SEPARATOR . 'somefile.php:4:46 - iterable is a reserved word',
             ],
             'classOfANegatedClassExistsInAnElseifIsUndefinedInItsBody' => [
                 'code' => '<?php
