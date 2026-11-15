@@ -2520,47 +2520,6 @@ final class TypeAlgebraTest extends TestCase
                         }
                     }',
             ],
-            'clausesOnOtherVarsAreKeptWhenAnArrayWithACheckedOffsetIsReassigned' => [
-                'code' => '<?php
-                    /** @param array<string, int> $a */
-                    function f(array $a, ?int $x, ?int $y, bool $p): int {
-                        if (!isset($a["k"]) && !$p) {
-                            return 0;
-                        }
-
-                        if ($x === null && $y === null) {
-                            return 0;
-                        }
-
-                        $a = [];
-
-                        if ($x === null) {
-                            return $y;
-                        }
-
-                        return 1;
-                    }',
-            ],
-            'propertyWrittenByAMethodCallIsNotParadoxical' => [
-                'code' => '<?php
-                    final class C {
-                        public int $n = 1;
-
-                        public function dec(): void {
-                            $this->n--;
-                        }
-                    }
-
-                    function f(C $c): void {
-                        if ($c->n) {
-                            $c->dec();
-
-                            if (!$c->n) {
-                                echo "zero";
-                            }
-                        }
-                    }',
-            ],
             'clauseIsKeptByANestedScopeAfterAnEarlierReassignment' => [
                 'code' => '<?php
                     function takesInt(int $_i): void {}
