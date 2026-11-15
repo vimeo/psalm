@@ -1069,6 +1069,34 @@ final class StarProjectionTest extends TestCase
                     }',
                 'error_message' => 'ArgumentTypeCoercion - src' . DIRECTORY_SEPARATOR . 'somefile.php:17:40 - Argument 1 of takesTemplated expects Relation<mixed, *, *>, but parent type Relation<*, *, *> provided',
             ],
+            'omittedArgumentStaysMixedThroughAFunctionTemplate' => [
+                'code' => '<?php
+                    /**
+                     * @template TKey of array-key
+                     * @template TValue
+                     */
+                    final class Page {}
+
+                    /** @return Page */
+                    function page(): Page {
+                        return new Page();
+                    }
+
+                    /**
+                     * @template T
+                     * @param T $value
+                     * @return T
+                     */
+                    function same($value) {
+                        return $value;
+                    }
+
+                    /** @return Page<int, stdClass> */
+                    function f(): Page {
+                        return same(page());
+                    }',
+                'error_message' => 'MixedReturnTypeCoercion',
+            ],
             'starProjectionInExtends' => [
                 'code' => '<?php
                     /** @template T */

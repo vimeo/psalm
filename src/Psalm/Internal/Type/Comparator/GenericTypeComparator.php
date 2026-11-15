@@ -166,6 +166,7 @@ final class GenericTypeComparator
                     && !($container_type_params_covariant[$i] ?? false)
                     && !StarProjection::isStar($container_param)
                     && !$container_param->from_template_default
+                    && !$container_param->had_template
                 ) {
                     $all_types_contain = false;
 
