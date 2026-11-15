@@ -38,8 +38,12 @@ use Psalm\Storage\Assertion\HasArrayKey;
 use Psalm\Storage\Assertion\HasIntOrStringArrayAccess;
 use Psalm\Storage\Assertion\HasStringArrayAccess;
 use Psalm\Storage\Assertion\IsEqualIsset;
+use Psalm\Storage\Assertion\IsGreaterThan;
+use Psalm\Storage\Assertion\IsGreaterThanOrEqualTo;
 use Psalm\Storage\Assertion\IsIdentical;
 use Psalm\Storage\Assertion\IsIsset;
+use Psalm\Storage\Assertion\IsLessThan;
+use Psalm\Storage\Assertion\IsLessThanOrEqualTo;
 use Psalm\Storage\Assertion\IsNotIsset;
 use Psalm\Storage\Assertion\IsNotLooselyEqual;
 use Psalm\Storage\Assertion\NestedAssertions;
@@ -89,6 +93,7 @@ use function str_ends_with;
 use function str_split;
 use function str_starts_with;
 use function strlen;
+use function strpbrk;
 use function strpos;
 use function strtolower;
 use function substr;
@@ -312,6 +317,25 @@ class Reconciler
                 throw new InvalidArgumentException('Union::$types cannot be empty after get value for ' . $key);
             }
 
+            // a variable that is not set reads as null: only isset() and empty() tell it from one set to null
+            $undefined_reads_as_null = $result_type
+                && $result_type->possibly_undefined
+                && !$result_type->possibly_undefined_from_try
+                && !$has_isset
+                && !$has_inverted_isset
+                && !$has_empty
+                && $key[0] === '$'
+                && strpbrk($key, '[-:') === false;
+
+            if ($undefined_reads_as_null) {
+                // the flags only make falsy narrowing keep the truthy types: the null stands for an undefined value
+                $result_type = $result_type->setPossiblyUndefined(false, false);
+
+                if (!$result_type->isNullable() && !$result_type->hasMixed()) {
+                    $result_type = $result_type->getBuilder()->addType(new TNull())->freeze();
+                }
+            }
+
             $before_adjustment = $result_type;
 
             $failed_reconciliation = self::RECONCILIATION_OK;
@@ -461,6 +485,24 @@ class Reconciler
 
             if (!$result_type) {
                 throw new UnexpectedValueException('$result_type should not be null');
+            }
+
+            if ($undefined_reads_as_null) {
+                // where the value cannot be null the variable is set
+                $result_type = $result_type->setPossiblyUndefined(
+                    $result_type->isNullable()
+                        // a mixed or a template does not tell whether its null was kept
+                        || (($result_type->hasMixed() || $result_type->hasTemplate())
+                            && self::nullPassesAssertions(
+                                $new_type_parts,
+                                $key,
+                                $statements_analyzer,
+                                $inside_loop,
+                                $template_type_map,
+                                $negated,
+                            )),
+                    false,
+                );
             }
 
             if ($has_inverted_key_exists || $has_inverted_isset) {
@@ -933,8 +975,12 @@ class Reconciler
         $key_parts = self::breakUpPathIntoParts($key);
 
         if (count($key_parts) === 1) {
-            if ($key === Context::PHP_VERSION_ID_VAR_ID) {
+            if ($key === Context::PHP_VERSION_ID_VAR_ID || $key === Context::PHP_SYMBOL_GUARD_VAR_ID) {
                 return $existing_keys[$key] ?? Type::getIntRange(1, null);
+            }
+
+            if ($key === Context::PHP_SAPI_VAR_ID) {
+                return $existing_keys[$key] ?? Type::getString();
             }
 
             if (!isset($existing_keys[$key_parts[0]]) && str_contains($key, '::') && !str_contains($key, '$')) {
@@ -1471,11 +1517,17 @@ class Reconciler
             $assertion_string = substr($assertion_string, 1);
         }
 
-        $operator = substr($assertion_string, 0, 1);
-        if ($operator === '>') {
-            $assertion_string = '>= '.substr($assertion_string, 1);
-        } elseif ($operator === '<') {
-            $assertion_string = '<= '.substr($assertion_string, 1);
+        // what the comparison says, as it is written: `!>5` is the assertion of `<= 5`
+        if ($assertion instanceof IsLessThan) {
+            $assertion_string = '< ' . $assertion->value;
+        } elseif ($assertion instanceof IsGreaterThan) {
+            $assertion_string = '> ' . $assertion->value;
+        } elseif ($assertion instanceof IsLessThanOrEqualTo) {
+            $assertion_string = '<= ' . $assertion->value;
+            $not = false;
+        } elseif ($assertion instanceof IsGreaterThanOrEqualTo) {
+            $assertion_string = '>= ' . $assertion->value;
+            $not = false;
         }
 
         if ($negated) {
@@ -1563,7 +1615,7 @@ class Reconciler
                             . ' for ' . $key
                             . ' is ' . ($not
                                 ? 'always ' . $assertion_string . ', so its negation can never be true'
-                                : 'never ' . $assertion),
+                                : 'never ' . $assertion_string),
                         $code_location,
                         $old_var_type_string . ' ' . $assertion,
                     );
@@ -1729,6 +1781,61 @@ class Reconciler
         }
 
         return [$key => [[$key_assertions[0][0]->getNegation()]]];
+    }
+
+    /**
+     * @param array<array<int, Assertion>> $new_type_parts
+     * @param array<string, array<string, Union>> $template_type_map
+     */
+    private static function nullPassesAssertions(
+        array $new_type_parts,
+        string $key,
+        StatementsAnalyzer $statements_analyzer,
+        bool $inside_loop,
+        array $template_type_map,
+        bool $negated,
+    ): bool {
+        foreach ($new_type_parts as $new_type_part_parts) {
+            $passes = false;
+
+            foreach ($new_type_part_parts as $new_type_part_part) {
+                // what a nested assertion says of the variable is not known here
+                if ($new_type_part_part instanceof NestedAssertions
+                    || $new_type_part_part instanceof NotNestedAssertions
+                ) {
+                    $passes = true;
+
+                    break;
+                }
+
+                $failed_reconciliation = self::RECONCILIATION_OK;
+
+                $null_candidate = AssertionReconciler::reconcile(
+                    $new_type_part_part,
+                    Type::getNull(),
+                    $key,
+                    $statements_analyzer,
+                    $inside_loop,
+                    $template_type_map,
+                    null,
+                    [],
+                    $failed_reconciliation,
+                    $negated,
+                );
+
+                if (!$null_candidate->isUnionEmpty() && !$null_candidate->isNever()) {
+                    $passes = true;
+
+                    break;
+                }
+            }
+
+            if (!$passes) {
+                return false;
+            }
+        }
+
+        return true;
     }
 
     /**

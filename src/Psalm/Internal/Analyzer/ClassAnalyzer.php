@@ -22,6 +22,7 @@ use Psalm\Internal\Analyzer\FunctionLike\ReturnTypeAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\Call\ClassTemplateParamCollector;
 use Psalm\Internal\Analyzer\Statements\Expression\ClassConstAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\Fetch\AtomicPropertyFetchAnalyzer;
+use Psalm\Internal\Codebase\CliOutput;
 use Psalm\Internal\FileManipulation\FileManipulationBuffer;
 use Psalm\Internal\FileManipulation\PropertyDocblockManipulator;
 use Psalm\Internal\MethodIdentifier;
@@ -98,7 +99,6 @@ use UnexpectedValueException;
 use function array_filter;
 use function array_keys;
 use function array_map;
-use function array_merge;
 use function array_pop;
 use function array_shift;
 use function array_values;
@@ -370,34 +370,12 @@ final class ClassAnalyzer extends ClassLikeAnalyzer
             }
         }
 
-        if (($storage->templatedMixins || $storage->namedMixins)
-            && $storage->mixin_declaring_fqcln === $storage->name) {
-            /** @var non-empty-array<int, TTemplateParam|TNamedObject> $mixins */
-            $mixins = array_merge($storage->templatedMixins, $storage->namedMixins);
-            $union = new Union($mixins);
-
-            $static_self = new TNamedObject($storage->name, true);
-
-            $union = TypeExpander::expandUnion(
-                $codebase,
-                $union,
-                $storage->name,
-                $static_self,
-                null,
-            );
-
-            /** @psalm-suppress UnusedMethodCall This call actually has the side effect of creating issues */
-            $union->check(
-                $this,
-                new CodeLocation(
-                    $this,
-                    $class->name ?: $class,
-                    null,
-                    true,
-                ),
-                $this->getSuppressedIssues(),
-            );
-        }
+        self::checkMixins(
+            $this,
+            $storage,
+            new CodeLocation($this, $class->name ?: $class, null, true),
+            $this->getSuppressedIssues(),
+        );
 
         if ($storage->template_extended_params) {
             foreach ($storage->template_extended_params as $type_map) {
@@ -607,6 +585,11 @@ final class ClassAnalyzer extends ClassLikeAnalyzer
 
         $statements_analyzer = new StatementsAnalyzer($this, new NodeDataProvider(), true);
         $statements_analyzer->analyze($member_stmts, $class_context, $global_context);
+
+        CliOutput::checkCliOnlyInstancesClass(
+            $storage,
+            $storage->suppressed_issues + $this->getSuppressedIssues(),
+        );
 
         ClassConstAnalyzer::analyze($storage, $this->getCodebase());
 
@@ -819,8 +802,8 @@ final class ClassAnalyzer extends ClassLikeAnalyzer
                         );
                     }
 
-                    if ($property_storage->type === null) {
-                        // Property type not set, no need to check for docblock invariance
+                    // without a docblock type of its own, the property has the one it overrides
+                    if ($property_storage->type === null || $property_storage->inherited_type) {
                         continue;
                     }
 
@@ -936,7 +919,9 @@ final class ClassAnalyzer extends ClassLikeAnalyzer
                                 $storage->declaring_method_ids['__construct']->fq_class_name,
                             ) === strtolower($fq_class_name)))
                     && !$property_storage->has_default
-                    && !($property_type->isNullable() && $property_type->from_docblock)
+                    && !($property_storage->signature_type === null
+                        && $property_type->isNullable()
+                        && $property_type->from_docblock)
                 ) {
                     $property_type = $property_type->setProperties([
                         'initialized' => false,
@@ -1011,8 +996,10 @@ final class ClassAnalyzer extends ClassLikeAnalyzer
                 );
             }
 
+            // an inherited docblock type is checked where it is written, and the native type here
             $has_docblock_over_signature = $property_storage->signature_type
-                && $property_storage->type?->getId() !== $property_storage->signature_type->getId();
+                && ($property_storage->inherited_type
+                    || $property_storage->type?->getId() !== $property_storage->signature_type->getId());
 
             if ($property_type_location && (!$fleshed_out_type->isMixed() || $has_docblock_over_signature)) {
                 $stmt = array_filter(
@@ -1037,14 +1024,16 @@ final class ClassAnalyzer extends ClassLikeAnalyzer
                     }
                 }
 
-                /** @psalm-suppress UnusedMethodCall This call actually has the side effect of creating issues */
-                $fleshed_out_type->check(
-                    $statements_source,
-                    $property_type_location,
-                    $storage->suppressed_issues + $statements_source->getSuppressedIssues() + $suppressed,
-                    [],
-                    false,
-                );
+                if (!$property_storage->inherited_type) {
+                    /** @psalm-suppress UnusedMethodCall This call actually has the side effect of creating issues */
+                    $fleshed_out_type->check(
+                        $statements_source,
+                        $property_type_location,
+                        $storage->suppressed_issues + $statements_source->getSuppressedIssues() + $suppressed,
+                        [],
+                        false,
+                    );
+                }
 
                 if ($property_storage->signature_type) {
                     $union_comparison_result = new TypeComparisonResult();
@@ -1058,7 +1047,7 @@ final class ClassAnalyzer extends ClassLikeAnalyzer
                         $parent_fq_class_name,
                     );
 
-                    if (!UnionTypeComparator::isContainedBy(
+                    if (!$property_storage->inherited_type && !UnionTypeComparator::isContainedBy(
                         $codebase,
                         $fleshed_out_type,
                         $signature_type,
@@ -1069,9 +1058,9 @@ final class ClassAnalyzer extends ClassLikeAnalyzer
                     ) {
                         IssueBuffer::maybeAdd(
                             new MismatchingDocblockPropertyType(
-                                'Parameter '
+                                'Property '
                                     . $property_class_name . '::$' . $property_name
-                                    . ' has wrong type \'' . $fleshed_out_type .
+                                    . ' has wrong type \'' . $fleshed_out_type->getId() .
                                     '\', should be \'' . $signature_type->getId() . '\'',
                                 $property_type_location,
                             ),
@@ -1256,7 +1245,12 @@ final class ClassAnalyzer extends ClassLikeAnalyzer
                 continue;
             }
 
-            if ($property->type && $property->type->from_docblock && $property->type->isNullable()) {
+            // an untyped property is null until it is assigned
+            if ($property->signature_type === null
+                && $property->type
+                && $property->type->from_docblock
+                && $property->type->isNullable()
+            ) {
                 continue;
             }
 
@@ -1408,25 +1402,8 @@ final class ClassAnalyzer extends ClassLikeAnalyzer
                     $fake_constructor_attributes,
                 );
 
-                $codebase->analyzer->disableMixedCounts();
-
-                $was_collecting_initializations = $class_context->collect_initializations;
-
-                $class_context->collect_initializations = true;
-                $class_context->collect_nonprivate_initializations = !$uninitialized_private_properties;
-
-                $constructor_analyzer = $this->analyzeClassMethod(
-                    $fake_stmt,
-                    $storage,
-                    $this,
-                    $class_context,
-                    $global_context,
-                    true,
-                );
-
-                $class_context->collect_initializations = $was_collecting_initializations;
-
-                $codebase->analyzer->enableMixedCounts();
+                // analysed below, where the properties it initialises are collected
+                $constructor_analyzer = new MethodAnalyzer($fake_stmt, $this);
             }
         }
 
@@ -1938,7 +1915,6 @@ final class ClassAnalyzer extends ClassLikeAnalyzer
         SourceAnalyzer $source,
         Context $class_context,
         ?Context $global_context = null,
-        bool $is_fake = false,
     ): ?MethodAnalyzer {
         $config = Config::getInstance();
 
@@ -2040,7 +2016,6 @@ final class ClassAnalyzer extends ClassLikeAnalyzer
             && $method_already_analyzed
             && !$class_context->collect_initializations
             && !$class_context->collect_mutations
-            && !$is_fake
         ) {
             $project_analyzer->progress->debug(
                 'Skipping analysis of pre-analyzed method ' . $analyzed_method_id . "\n",
@@ -2103,7 +2078,6 @@ final class ClassAnalyzer extends ClassLikeAnalyzer
         if (!$method_already_analyzed
             && !$class_context->collect_initializations
             && !$class_context->collect_mutations
-            && !$is_fake
         ) {
             $codebase->analyzer->setAnalyzedMethod($included_file_path, $trait_safe_method_id);
         }
