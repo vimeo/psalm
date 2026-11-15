@@ -269,7 +269,12 @@ final class TernaryAnalyzer
                 new CodeLocation($statements_analyzer->getSource(), $stmt->else),
             );
 
-            $t_else_context->clauses = Context::removeReconciledClauses($t_else_context->clauses, $changed_var_ids)[0];
+            $t_else_context->clauses = AlgebraAnalyzer::removeReconciledClauses(
+                $t_else_context->clauses,
+                $changed_var_ids,
+                $t_else_context->vars_in_scope,
+                $statements_analyzer,
+            )[0];
         }
 
         $else_start_vars = $t_else_context->vars_in_scope;
