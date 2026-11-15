@@ -48,6 +48,35 @@ final class ConstantTest extends TestCase
         $this->analyzeFile($file2, new Context());
     }
 
+    public function testTheNamespaceConstantsOfAnEarlierAnalysisAreForgotten(): void
+    {
+        $file_path = (string) getcwd() . DIRECTORY_SEPARATOR . 'src' . DIRECTORY_SEPARATOR . 'somefile.php';
+
+        $this->addFile(
+            $file_path,
+            '<?php
+                namespace Foo;
+
+                const E_ERROR = 4;
+            ',
+        );
+        $this->analyzeFile($file_path, new Context());
+
+        // a new analysis, as for the next test, of code without that constant
+        $this->setUp();
+
+        $this->addFile(
+            $file_path,
+            '<?php
+                namespace Foo;
+
+                /** @psalm-check-type-exact $value = 1 */
+                $value = E_ERROR;
+            ',
+        );
+        $this->analyzeFile($file_path, new Context());
+    }
+
     public function testGlobalConstantOfEnumCasesFromAnotherFile(): void
     {
         $this->project_analyzer->setPhpVersion('8.1', 'tests');
@@ -539,6 +568,19 @@ final class ConstantTest extends TestCase
                     $a = C::POTATO;',
                 'assertions' => [],
                 'ignored_issues' => ['MixedAssignment'],
+            ],
+            'classConstantTypeNamingAnUndefinedConstant' => [
+                'code' => '<?php
+                    final class A {
+                        public const X = UNDEF_CONST;
+                    }
+
+                    /** @return A::X */
+                    function g() {
+                        return 1;
+                    }',
+                'assertions' => [],
+                'ignored_issues' => ['UndefinedConstant', 'MixedReturnStatement', 'MissingClassConstType'],
             ],
             'hardToDefineClassConstant' => [
                 'code' => '<?php
