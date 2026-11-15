@@ -353,6 +353,7 @@ final class SwitchCaseAnalyzer
                 : $original_context->clauses,
             $case_equality_expr,
             $context->self,
+            $statements_analyzer->node_data,
         );
 
         if ($case_clauses && $case->cond) {
