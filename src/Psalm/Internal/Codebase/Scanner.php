@@ -192,7 +192,8 @@ final class Scanner
             return;
         }
 
-        // not an early return: trait_exists() without autoloading asserts nothing about the name when false
+        // trait_exists() without autoloading asserts an equality, which a negation can't express: the narrowing must
+        // come from the positive condition
         if (class_exists($fq_classlike_name, false)
             || interface_exists($fq_classlike_name, false)
             || enum_exists($fq_classlike_name, false)

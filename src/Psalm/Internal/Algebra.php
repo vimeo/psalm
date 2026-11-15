@@ -759,16 +759,7 @@ final class Algebra
             return [new Clause([], $cond_id, $cond_id, true)];
         }
 
-        try {
-            $impossible_clauses = self::groupImpossibilities($clauses_with_impossibilities);
-        } catch (ComplicatedExpressionException $e) {
-            // a partial negation may as well say nothing
-            if (!$partial) {
-                throw $e;
-            }
-
-            $impossible_clauses = [];
-        }
+        $impossible_clauses = self::groupImpossibilities($clauses_with_impossibilities);
 
         if (!$impossible_clauses) {
             $cond_id = mt_rand(0, 100_000_000);

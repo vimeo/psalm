@@ -255,6 +255,43 @@ final class TypeAlgebraTest extends TestCase
                 'ignored_issues' => [],
                 'php_version' => '8.0',
             ],
+            'aDoWhileConditionTooComplexToNegateIsAnalyzed' => [
+                'code' => '<?php
+                    function f(?int $q, bool $a, bool $b, bool $c, bool $d, bool $e, bool $f, bool $g, bool $h): void {
+                        do {
+                            echo "body";
+                        } while ($q !== null
+                            && (($a && $b && $c && $d)
+                                || ($e && $f && $g && $h)
+                                || ($a && $c && $e && $g)
+                                || ($b && $d && $f && $h))
+                        );
+                        echo "after";
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'aFalsyAssertionOnAConditionTooComplexToNegateIsAnalyzed' => [
+                'code' => '<?php
+                    /** @psalm-assert falsy $value */
+                    function assertFalsy(mixed $value): void {
+                        if ($value) {
+                            throw new Exception();
+                        }
+                    }
+
+                    function f(bool $a, bool $b, bool $c, bool $d, bool $e, bool $f, bool $g, bool $h): void {
+                        assertFalsy(($a && $b && $c && $d)
+                            || ($e && $f && $g && $h)
+                            || ($a && $c && $e && $g)
+                            || ($b && $d && $f && $h));
+                        echo "after";
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
             'aCaseOfASwitchTrueAssigningAVariableHasNoClausesOfItsOldValue' => [
                 'code' => '<?php
                     function f(string $s): int {
@@ -2380,6 +2417,22 @@ final class TypeAlgebraTest extends TestCase
     public static function providerInvalidCodeParse(): iterable
     {
         return [
+            'onlyTheOperandOfAnOrContradictedByAnEarlierConditionIsAParadox' => [
+                'code' => '<?php
+                    final class A {}
+
+                    function f(?A $a, ?A $b, string $s, string $t): void {
+                        if ($a && $b) {
+                            return;
+                        }
+                        if ($s === $t || ($a && $b)) {
+                            echo "reached";
+                        }
+                    }',
+                'error_message' => 'ParadoxicalCondition - src' . DIRECTORY_SEPARATOR . 'somefile.php:8:43',
+                'error_levels' => ['TypeDoesNotContainType'],
+                'php_version' => '8.0',
+            ],
             'aConditionThatContradictsItselfIsReported' => [
                 'code' => '<?php
                     function f(?int $a, bool $b): void {
