@@ -280,6 +280,9 @@ final class TernaryAnalyzer
             return false;
         }
 
+        $context->removeClausesOfVarsChangedIn($if_context);
+        $context->removeClausesOfVarsChangedIn($t_else_context);
+
         // a branch that never finishes (throw, exit) leaves the other one as the only way past the ternary
         $if_type = $stmt->if ? $statements_analyzer->node_data->getType($stmt->if) : null;
         $else_type = $statements_analyzer->node_data->getType($stmt->else);

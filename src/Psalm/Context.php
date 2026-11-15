@@ -481,6 +481,9 @@ final class Context
     public bool $inside_attribute = false;
 
     /**
+     * The variables whose clauses were dropped since this context was cloned: the scope it analyses changed them,
+     * so the enclosing scope drops its clauses about them too (see removeClausesOfVarsChangedIn())
+     *
      * @var array<string, true>
      */
     public array $parent_remove_vars = [];
@@ -891,6 +894,14 @@ final class Context
         $this->forgetNarrowedShapeProperty($var_id);
     }
 
+    /**
+     * @psalm-capabilities read-props|write-this-props|write-refs
+     */
+    public function __clone()
+    {
+        $this->parent_remove_vars = [];
+    }
+
     public function remove(string $remove_var_id, bool $removeDescendents = true): void
     {
         if (isset($this->vars_in_scope[$remove_var_id])) {
@@ -1017,7 +1028,7 @@ final class Context
 
             foreach ($clause->possibilities as $var_id => $_) {
                 if (preg_match('/' . $quoted_remove_var_id . '[\]\[\-]/', $var_id)) {
-                    break 2;
+                    continue 2;
                 }
             }
 
@@ -1057,6 +1068,25 @@ final class Context
                         $type_changed = true;
                         break;
                     }
+
+                    // the assertion not narrowing the new type doesn't mean it holds for every value of it
+                    // (truthy on int): it does when its negation can't hold for any
+                    $negated_result_type = AssertionReconciler::reconcile(
+                        $assertion->getNegation(),
+                        $new_type,
+                        null,
+                        $statements_analyzer,
+                        false,
+                        [],
+                        null,
+                        [],
+                        $failed_reconciliation,
+                    );
+
+                    if (!$negated_result_type->isNever()) {
+                        $type_changed = true;
+                        break;
+                    }
                 }
 
                 if (!$type_changed) {
@@ -1068,6 +1098,31 @@ final class Context
         return $clauses_to_keep;
     }
 
+    /**
+     * The clauses that still hold after a branch analysed in $branch_context assigned $assigned_var_ids
+     *
+     * @param  list<Clause>       $clauses
+     * @param  array<string, int> $assigned_var_ids
+     * @return list<Clause>
+     */
+    public static function filterClausesOfAssignedVars(
+        array $clauses,
+        array $assigned_var_ids,
+        Context $branch_context,
+        StatementsAnalyzer $statements_analyzer,
+    ): array {
+        foreach ($assigned_var_ids as $var_id => $_) {
+            $clauses = self::filterClauses(
+                $var_id,
+                $clauses,
+                $branch_context->vars_in_scope[$var_id] ?? null,
+                $statements_analyzer,
+            );
+        }
+
+        return $clauses;
+    }
+
     public function removeVarFromConflictingClauses(
         string $remove_var_id,
         ?Union $new_type = null,
@@ -1075,6 +1130,27 @@ final class Context
     ): void {
         $this->clauses = self::filterClauses($remove_var_id, $this->clauses, $new_type, $statements_analyzer);
         $this->parent_remove_vars[$remove_var_id] = true;
+
+        // the variables bound to it by reference changed with it
+        $referenced_var_id = $this->references_in_scope[$remove_var_id] ?? $remove_var_id;
+        $bound_var_ids = [$referenced_var_id => $referenced_var_id] + $this->references_in_scope;
+
+        foreach ($bound_var_ids as $reference_id => $target_id) {
+            if ($target_id === $referenced_var_id && $reference_id !== $remove_var_id) {
+                $this->clauses = self::filterClauses($reference_id, $this->clauses, $new_type, $statements_analyzer);
+                $this->parent_remove_vars[$reference_id] = true;
+            }
+        }
+    }
+
+    /**
+     * Drops the clauses about the variables a nested scope, analysed in a clone of this context, changed
+     */
+    public function removeClausesOfVarsChangedIn(Context $nested_context): void
+    {
+        foreach ($nested_context->parent_remove_vars as $var_id => $_) {
+            $this->removeVarFromConflictingClauses($var_id);
+        }
     }
 
     /**

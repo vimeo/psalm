@@ -112,9 +112,7 @@ final class OrAnalyzer
                 return false;
             }
 
-            foreach ($left_context->parent_remove_vars as $var_id => $_) {
-                $context->removeVarFromConflictingClauses($var_id);
-            }
+            $context->removeClausesOfVarsChangedIn($left_context);
 
             IfConditionalAnalyzer::handleParadoxicalCondition($statements_analyzer, $stmt->left);
 
@@ -287,6 +285,8 @@ final class OrAnalyzer
         }
 
         IfConditionalAnalyzer::handleParadoxicalCondition($statements_analyzer, $stmt->right);
+
+        $context->removeClausesOfVarsChangedIn($right_context);
 
         $right_referenced_var_ids = $right_context->cond_referenced_var_ids;
         $right_context->cond_referenced_var_ids = array_merge($pre_referenced_var_ids, $right_referenced_var_ids);

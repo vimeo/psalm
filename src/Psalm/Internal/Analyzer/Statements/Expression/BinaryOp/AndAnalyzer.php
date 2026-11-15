@@ -179,6 +179,9 @@ final class AndAnalyzer
 
         IfConditionalAnalyzer::handleParadoxicalCondition($statements_analyzer, $stmt->right);
 
+        $context->removeClausesOfVarsChangedIn($left_context);
+        $context->removeClausesOfVarsChangedIn($right_context);
+
         $context->cond_referenced_var_ids = array_merge(
             $right_context->cond_referenced_var_ids,
             $left_context->cond_referenced_var_ids,

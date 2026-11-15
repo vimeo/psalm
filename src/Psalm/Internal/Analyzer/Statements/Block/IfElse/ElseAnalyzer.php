@@ -123,9 +123,7 @@ final class ElseAnalyzer
             }
         }
 
-        foreach ($else_context->parent_remove_vars as $var_id => $_) {
-            $outer_context->removeVarFromConflictingClauses($var_id);
-        }
+        $outer_context->removeClausesOfVarsChangedIn($else_context);
 
         /** @var array<string, int> */
         $new_assigned_var_ids = $else_context->assigned_var_ids;

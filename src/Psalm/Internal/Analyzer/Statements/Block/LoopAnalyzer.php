@@ -604,6 +604,9 @@ final class LoopAnalyzer
             );
         }
 
+        $loop_parent_context->removeClausesOfVarsChangedIn($loop_context);
+        $loop_parent_context->removeClausesOfVarsChangedIn($continue_context);
+
         if ($inner_do_context) {
             $continue_context = $inner_do_context;
         }

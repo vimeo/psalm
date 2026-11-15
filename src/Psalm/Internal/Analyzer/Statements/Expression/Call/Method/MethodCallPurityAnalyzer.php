@@ -624,6 +624,8 @@ final class MethodCallPurityAnalyzer
                     $context->vars_in_scope[$mutation_var_id] = $new_type;
                     $context->possibly_assigned_var_ids[$mutation_var_id] = true;
                 }
+
+                $context->removeVarFromConflictingClauses($mutation_var_id);
             }
         } else {
             if (!$config->remember_property_assignments_after_call) {

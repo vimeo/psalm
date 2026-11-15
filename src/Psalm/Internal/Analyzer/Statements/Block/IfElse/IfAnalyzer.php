@@ -166,9 +166,7 @@ final class IfAnalyzer
             return false;
         }
 
-        foreach ($if_context->parent_remove_vars as $var_id => $_) {
-            $outer_context->removeVarFromConflictingClauses($var_id);
-        }
+        $outer_context->removeClausesOfVarsChangedIn($if_context);
 
         $final_actions = ScopeAnalyzer::getControlActions(
             $stmt->stmts,
@@ -237,14 +235,12 @@ final class IfAnalyzer
 
             if ($if_scope->reasonable_clauses) {
                 // remove all reasonable clauses that would be negated by the if stmts
-                foreach ($new_assigned_var_ids as $var_id => $_) {
-                    $if_scope->reasonable_clauses = Context::filterClauses(
-                        $var_id,
-                        $if_scope->reasonable_clauses,
-                        $if_context->vars_in_scope[$var_id] ?? null,
-                        $statements_analyzer,
-                    );
-                }
+                $if_scope->reasonable_clauses = Context::filterClausesOfAssignedVars(
+                    $if_scope->reasonable_clauses,
+                    $new_assigned_var_ids,
+                    $if_context,
+                    $statements_analyzer,
+                );
             }
         } else {
             if (!$has_break_statement) {
