@@ -101,6 +101,7 @@ use function is_string;
 use function krsort;
 use function ksort;
 use function ltrim;
+use function max;
 use function min;
 use function preg_match;
 use function preg_replace;
@@ -114,6 +115,7 @@ use function strrpos;
 use function strtolower;
 use function substr;
 use function substr_count;
+use function uasort;
 
 use const PHP_INT_SIZE;
 use const PHP_VERSION_ID;
@@ -915,7 +917,7 @@ final class Codebase
             $file_storage = $this->file_storage_provider->get($referenced_file_path);
 
             foreach ($file_storage->classlikes_in_file as $fq_classlike_name) {
-                $this->classlike_storage_provider->remove($fq_classlike_name);
+                $this->classlike_storage_provider->remove($fq_classlike_name, $referenced_file_path);
                 $this->classlikes->removeClassLike($fq_classlike_name);
             }
 
@@ -1003,10 +1005,11 @@ final class Codebase
     }
 
     /**
-     * Lets Psalm report issues in these files without scanning or analyzing them, e.g. in the template a plugin
-     * compiled the analyzed PHP from. An issue is checked in the process that raises it: files added in an
-     * AfterCodebasePopulated handler are reportable in every analysis worker, files added in a BeforeAddIssue
-     * handler only in the process that runs it.
+     * Lets Psalm report issues in these files, e.g. in the template a plugin compiled the analyzed PHP from. It
+     * doesn't queue them for scanning or analysis, a path counts only when it is the issue's file path verbatim,
+     * and the files the config ignores stay ignored. An issue is checked in the process that raises it: files
+     * added in the plugin entry point are reportable in every scanning and analysis process, files added in an
+     * AfterCodebasePopulated handler only for issues raised while analyzing.
      *
      * @api
      * @param list<string> $file_paths absolute paths
@@ -1025,7 +1028,7 @@ final class Codebase
      */
     public function isReportableFile(string $file_path): bool
     {
-        return isset($this->reportable_files[$file_path]);
+        return $this->reportable_files[$file_path] ?? false;
     }
 
     /**
@@ -1174,9 +1177,19 @@ final class Codebase
      */
     public function findReferencesToMethod(string $method_id): array
     {
-        return $this->code_use_graph->getReferenceLocations(
-            CodeUseGraph::functionLikeNode(strtolower($method_id)),
+        $method_id_lc = strtolower($method_id);
+
+        // calls whose return value is used are recorded on the return node
+        $locations = $this->code_use_graph->getReferenceLocations(CodeUseGraph::functionLikeNode($method_id_lc))
+            + $this->code_use_graph->getReferenceLocations(CodeUseGraph::functionLikeReturnNode($method_id_lc));
+
+        uasort(
+            $locations,
+            static fn(CodeLocation $a, CodeLocation $b): int
+                => [$a->file_path, $a->raw_file_start] <=> [$b->file_path, $b->raw_file_start],
         );
+
+        return $locations;
     }
 
     /**
@@ -1634,7 +1647,7 @@ final class Codebase
     }
 
     /**
-     * @psalm-capabilities read-props|write-this-props|write-props|write-refs
+     * @psalm-capabilities read-props|write-this-props|write-props|write-refs|read-globals|write-globals
      */
     public function invalidateInformationForFile(string $file_path): void
     {
@@ -1647,7 +1660,7 @@ final class Codebase
         }
 
         foreach ($file_storage->classlikes_in_file as $fq_classlike_name) {
-            $this->classlike_storage_provider->remove($fq_classlike_name);
+            $this->classlike_storage_provider->remove($fq_classlike_name, $file_path);
             $this->classlikes->removeClassLike($fq_classlike_name);
         }
 
@@ -3411,26 +3424,34 @@ final class Codebase
      */
     public function getGuardedPhpVersionId(?Context $context): ?int
     {
-        $type = $context?->vars_in_scope[Context::PHP_VERSION_ID_VAR_ID] ?? null;
+        $guarded = null;
 
-        if ($type === null) {
-            return null;
-        }
+        foreach ([Context::PHP_VERSION_ID_VAR_ID, Context::PHP_SYMBOL_GUARD_VAR_ID] as $var_id) {
+            $type = $context?->vars_in_scope[$var_id] ?? null;
 
-        $min = null;
-        foreach ($type->getAtomicTypes() as $atomic) {
-            if ($atomic instanceof TLiteralInt) {
-                $atomic_min = $atomic->value;
-            } elseif ($atomic instanceof TIntRange && $atomic->min_bound !== null) {
-                $atomic_min = $atomic->min_bound;
-            } else {
-                return null;
+            if ($type === null) {
+                continue;
             }
 
-            $min = $min === null ? $atomic_min : min($min, $atomic_min);
+            $min = null;
+            foreach ($type->getAtomicTypes() as $atomic) {
+                if ($atomic instanceof TLiteralInt) {
+                    $atomic_min = $atomic->value;
+                } elseif ($atomic instanceof TIntRange && $atomic->min_bound !== null) {
+                    $atomic_min = $atomic->min_bound;
+                } else {
+                    continue 2;
+                }
+
+                $min = $min === null ? $atomic_min : min($min, $atomic_min);
+            }
+
+            if ($min !== null && $min > $this->analysis_php_version_id) {
+                $guarded = max($guarded ?? $min, $min);
+            }
         }
 
-        return $min > $this->analysis_php_version_id ? $min : null;
+        return $guarded;
     }
 
     /**

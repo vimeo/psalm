@@ -29,6 +29,187 @@ final class ValueTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'looseComparisonOfAnObjectOrAStringWithAStringKeepsTheObject' => [
+                'code' => <<<'PHP'
+                    <?php
+                    class Plain {}
+
+                    function anObject(object|string $x): void {
+                        if ($x == 'a') {
+                            /** @psalm-check-type-exact $x = 'a'|object */
+                        }
+                    }
+
+                    function withoutToString(Plain|string $x): void {
+                        if ($x == 'a') {
+                            /** @psalm-check-type-exact $x = 'a' */
+                        }
+                    }
+                    PHP,
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
+            'looseInequalityWithAStringKeepsTheStringableObjectInTheElseBranch' => [
+                'code' => <<<'PHP'
+                    <?php
+                    class A {
+                        public function __toString(): string {
+                            return 'a';
+                        }
+                    }
+
+                    function f(A|string $x): void {
+                        if ($x != 'a') {
+                            /** @psalm-check-type-exact $x = A|string */
+                        } else {
+                            /** @psalm-check-type-exact $x = 'a'|A */
+                        }
+                    }
+                    PHP,
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
+            'looseEqualityWithAStringKeepsAStringableObject' => [
+                'code' => '<?php
+                    final class A {
+                        public function __toString(): string {
+                            return "a";
+                        }
+                    }
+
+                    /** @var A|"a" $foo */
+                    $foo = new A();
+
+                    if ($foo == "a") {
+                        $result = $foo;
+                    } else {
+                        $result = null;
+                    }',
+                'assertions' => [
+                    '$result' => 'A|null|string',
+                ],
+            ],
+            'strictEqualityWithAStringDropsAStringableObject' => [
+                'code' => '<?php
+                    final class A {
+                        public function __toString(): string {
+                            return "a";
+                        }
+                    }
+
+                    /** @var A|"a" $foo */
+                    $foo = new A();
+
+                    if ($foo === "a") {
+                        $result = $foo;
+                    } else {
+                        $result = null;
+                    }',
+                'assertions' => [
+                    '$result' => 'null|string',
+                ],
+            ],
+            'stringThatIsNeitherEmptyNorZeroIsNonFalsyInEveryOrder' => [
+                'code' => <<<'PHP'
+                    <?php
+                    function emptyFirst(string $s): void {
+                        if ($s !== '' && $s !== '0') {
+                            /** @psalm-check-type-exact $s = non-falsy-string */
+                        }
+                    }
+
+                    function zeroFirst(string $s): void {
+                        if ($s !== '0' && $s !== '') {
+                            /** @psalm-check-type-exact $s = non-falsy-string */
+                        }
+                    }
+
+                    function earlyReturnsZeroFirst(string $s): void {
+                        if ('0' === $s) {
+                            return;
+                        }
+
+                        if ('' === $s) {
+                            return;
+                        }
+
+                        /** @psalm-check-type-exact $s = non-falsy-string */
+                    }
+
+                    function earlyReturnsEmptyFirst(string $s): void {
+                        if ('' === $s) {
+                            return;
+                        }
+
+                        if ('0' === $s) {
+                            return;
+                        }
+
+                        /** @psalm-check-type-exact $s = non-falsy-string */
+                    }
+
+                    function onlyZeroExcluded(string $s): void {
+                        if ($s !== '0') {
+                            /** @psalm-check-type-exact $s = string */
+                        }
+                    }
+                    PHP,
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
+            'nonEmptyStringKnownBeforeTheOtherConditionsIsKeptOnMixed' => [
+                'code' => '<?php
+                    /** @return non-empty-string */
+                    function f(mixed $v, bool $b): string {
+                        if (is_string($v) && $v !== "" && $b) {
+                            return $v;
+                        }
+
+                        return "x";
+                    }
+
+                    /** @return non-empty-string */
+                    function g(mixed $v): string {
+                        if (!is_string($v) || $v === "") {
+                            return "x";
+                        }
+
+                        return $v;
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'nonEmptyStringNotZeroIsNonFalsy' => [
+                'code' => '<?php
+                    /** @var non-empty-string $s */
+                    $s = $_GET["s"];
+                    if ($s === "0") { throw new Exception(""); }',
+                'assertions' => [
+                    '$s===' => 'non-falsy-string',
+                ],
+            ],
+            'nonEmptyStringLooselyNotZeroIsNonFalsy' => [
+                'code' => '<?php
+                    /** @var non-empty-string $s */
+                    $s = $_GET["s"];
+                    if ($s == "0") { throw new Exception(""); }',
+                'assertions' => [
+                    '$s===' => 'non-falsy-string',
+                ],
+            ],
+            'nonEmptyStringNotAnotherLiteralStaysNonEmpty' => [
+                'code' => '<?php
+                    /** @var non-empty-string $s */
+                    $s = $_GET["s"];
+                    if ($s === "a") { throw new Exception(""); }',
+                'assertions' => [
+                    '$s===' => 'non-empty-string',
+                ],
+            ],
             'whileCountUpdate' => [
                 'code' => '<?php
                     $array = [1, 2, 3];

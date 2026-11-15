@@ -32,6 +32,7 @@ use Psalm\Internal\Type\TemplateBound;
 use Psalm\Internal\Type\TemplateInferredTypeReplacer;
 use Psalm\Internal\Type\TemplateResult;
 use Psalm\Internal\Type\TypeExpander;
+use Psalm\Internal\Type\TypeVariableTracker;
 use Psalm\Internal\TypeVisitor\ContainsStaticVisitor;
 use Psalm\Issue\AbstractMethodCall;
 use Psalm\Issue\ImpureMethodCall;
@@ -430,6 +431,10 @@ final class ExistingAtomicStaticCallAnalyzer
                 $class_storage,
             );
 
+            // `self` in the assertions of a method of a trait is the class using the trait, where it appears
+            $trait_self_class = $codebase->methods->getAppearingMethodId($method_id)?->fq_class_name
+                ?? $class_storage->name;
+
             if ($assertions) {
                 CallAnalyzer::applyAssertionsToContext(
                     $stmt_name,
@@ -439,6 +444,8 @@ final class ExistingAtomicStaticCallAnalyzer
                     $template_result,
                     $context,
                     $statements_analyzer,
+                    null,
+                    $trait_self_class,
                 );
             }
 
@@ -446,8 +453,10 @@ final class ExistingAtomicStaticCallAnalyzer
                 $statements_analyzer->node_data->setIfTrueAssertions(
                     $stmt,
                     array_map(
-                        static fn(Possibilities $assertion): Possibilities =>
+                        static fn(Possibilities $assertion): Possibilities => CallAnalyzer::resolveTraitSelf(
                             $assertion->getUntemplatedCopy($template_result, null, $codebase),
+                            $trait_self_class,
+                        ),
                         CallAnalyzer::getAssertionsOnArgs(
                             $method_storage->if_true_assertions,
                             $method_storage,
@@ -461,8 +470,10 @@ final class ExistingAtomicStaticCallAnalyzer
                 $statements_analyzer->node_data->setIfFalseAssertions(
                     $stmt,
                     array_map(
-                        static fn(Possibilities $assertion): Possibilities =>
+                        static fn(Possibilities $assertion): Possibilities => CallAnalyzer::resolveTraitSelf(
                             $assertion->getUntemplatedCopy($template_result, null, $codebase),
+                            $trait_self_class,
+                        ),
                         CallAnalyzer::getAssertionsOnArgs(
                             $method_storage->if_false_assertions,
                             $method_storage,
@@ -539,6 +550,10 @@ final class ExistingAtomicStaticCallAnalyzer
                     }
                 }
             }
+        }
+
+        if ($return_type_candidate) {
+            $return_type_candidate = TypeVariableTracker::resolveTypeVariables($return_type_candidate, $codebase);
         }
 
         if ($config->eventDispatcher->hasAfterMethodCallAnalysisHandlers()) {
