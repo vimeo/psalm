@@ -22,12 +22,14 @@ use Psalm\Type\Atomic\TArray;
 use Psalm\Type\Atomic\TIntRange;
 use Psalm\Type\Atomic\TKeyedArray;
 use Psalm\Type\Atomic\TLiteralInt;
+use Psalm\Type\Atomic\TLiteralString;
 use Psalm\Type\Atomic\TMixed;
 use Psalm\Type\Atomic\TNever;
 use Psalm\Type\Atomic\TNonEmptyArray;
 use Psalm\Type\Atomic\TNonEmptyMixed;
 use Psalm\Type\Union;
 
+use function array_key_first;
 use function count;
 use function is_int;
 use function strtok;
@@ -253,11 +255,135 @@ final class UnsetAnalyzer
                         $context->vars_in_scope[$root_var_id],
                         $statements_analyzer,
                     );
+
+                    self::updateHoldingArrays(
+                        $statements_analyzer,
+                        $context,
+                        $var->var,
+                        $context->vars_in_scope[$root_var_id],
+                    );
                 }
             }
         }
 
         $context->inside_unset = false;
+    }
+
+    /**
+     * Gives the arrays $child_expr is an element of, up to the root variable or property, the type they have once
+     * $child_expr has become $child_type
+     */
+    private static function updateHoldingArrays(
+        StatementsAnalyzer $statements_analyzer,
+        Context $context,
+        PhpParser\Node\Expr $child_expr,
+        Union $child_type,
+    ): void {
+        $codebase = $statements_analyzer->getCodebase();
+
+        while ($child_expr instanceof PhpParser\Node\Expr\ArrayDimFetch && $child_expr->dim) {
+            $parent_var_id = ExpressionIdentifier::getExtendedVarId(
+                $child_expr->var,
+                $statements_analyzer->getFQCLN(),
+                $statements_analyzer,
+            );
+            $key_type = $statements_analyzer->node_data->getType($child_expr->dim);
+
+            if ($parent_var_id === null || $key_type === null || !isset($context->vars_in_scope[$parent_var_id])) {
+                return;
+            }
+
+            $parent_type = $context->vars_in_scope[$parent_var_id];
+
+            // reading a missing element gives null, but unsetting from it doesn't create it
+            $child_type_without_null = $child_type;
+            if ($child_type->isNull()) {
+                $child_type_without_null = Type::getNever();
+            } elseif ($child_type->hasNull()) {
+                $child_type_builder = $child_type->getBuilder();
+                $child_type_builder->removeType('null');
+                $child_type_without_null = $child_type_builder->freeze();
+            }
+
+            // the keys the element may be under, null when it may be under any
+            $keys = [];
+            foreach ($key_type->getAtomicTypes() as $atomic_key_type) {
+                if (!$atomic_key_type instanceof TLiteralInt && !$atomic_key_type instanceof TLiteralString) {
+                    $keys = null;
+                    break;
+                }
+                $keys[$atomic_key_type->value] = true;
+            }
+
+            $parent_atomic_types = [];
+            $changed = false;
+            foreach ($parent_type->getAtomicTypes() as $atomic_parent_type) {
+                if ($atomic_parent_type instanceof TKeyedArray) {
+                    $changed = true;
+                    $properties =$atomic_parent_type->properties;
+                    $fallback_params = $atomic_parent_type->fallback_params;
+                    $key = $keys !== null && count($keys) === 1 ? array_key_first($keys) : null;
+
+                    if ($key !== null && isset($properties[$key])) {
+                        $old_property = $properties[$key];
+                        $properties[$key] = ($old_property->hasNull() ? $child_type : $child_type_without_null)
+                            ->setPossiblyUndefined($old_property->possibly_undefined);
+                    } else {
+                        foreach ($properties as $property_key => $property) {
+                            if ($keys === null || isset($keys[$property_key])) {
+                                $properties[$property_key] = Type::combineUnionTypes(
+                                    $property,
+                                    $child_type_without_null,
+                                    $codebase,
+                                )->setPossiblyUndefined($property->possibly_undefined);
+                            }
+                        }
+
+                        if ($fallback_params !== null) {
+                            $fallback_params[1] = Type::combineUnionTypes(
+                                $fallback_params[1],
+                                $child_type_without_null,
+                                $codebase,
+                            );
+                        }
+                    }
+
+                    $atomic_parent_type = TKeyedArray::make(
+                        $properties,
+                        $atomic_parent_type->class_strings,
+                        $fallback_params,
+                        $atomic_parent_type->is_list,
+                        $atomic_parent_type->from_docblock,
+                    );
+                } elseif ($atomic_parent_type instanceof TArray && !$atomic_parent_type->type_params[1]->isNever()) {
+                    $changed = true;
+                    $atomic_parent_type = $atomic_parent_type->setTypeParams([
+                        $atomic_parent_type->type_params[0],
+                        Type::combineUnionTypes(
+                            $atomic_parent_type->type_params[1],
+                            $child_type_without_null,
+                            $codebase,
+                        ),
+                    ]);
+                }
+
+                $parent_atomic_types[] = $atomic_parent_type;
+            }
+
+            // an ArrayAccess object holds the element, and stays the same object
+            if (!$changed) {
+                return;
+            }
+
+            $parent_type = $parent_type->getBuilder()->setTypes($parent_atomic_types)->freeze();
+
+            $context->vars_in_scope[$parent_var_id] = $parent_type;
+            $context->possibly_assigned_var_ids[$parent_var_id] = true;
+            $context->removeVarFromConflictingClauses($parent_var_id, $parent_type, $statements_analyzer);
+
+            $child_expr = $child_expr->var;
+            $child_type = $parent_type;
+        }
     }
 
     /**
