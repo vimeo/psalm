@@ -100,6 +100,7 @@ final class InstancePropertyAssignmentAnalyzer
     /**
      * @param   PropertyFetch|PropertyItem  $stmt
      * @param   bool                        $direct_assignment whether the variable is assigned explicitly
+     * @param   bool                        $indirect written through a reference or as an array element
      */
     public static function analyze(
         StatementsAnalyzer $statements_analyzer,
@@ -109,6 +110,7 @@ final class InstancePropertyAssignmentAnalyzer
         Union $assignment_value_type,
         Context $context,
         bool $direct_assignment = true,
+        bool $indirect = false,
     ): void {
         $codebase = $statements_analyzer->getCodebase();
 
@@ -163,6 +165,7 @@ final class InstancePropertyAssignmentAnalyzer
                 $assignment_value_type,
                 $prop_name,
                 $var_id,
+                $indirect,
             );
         }
 
@@ -405,6 +408,8 @@ final class InstancePropertyAssignmentAnalyzer
 
     /**
      * Charges writing a property, and returns whether it did (it can't without a receiver variable)
+     *
+     * @param bool $indirect written through a reference or as an array element
      */
     public static function trackPropertyImpurity(
         StatementsAnalyzer $statements_analyzer,
@@ -414,6 +419,7 @@ final class InstancePropertyAssignmentAnalyzer
         ClassLikeStorage $declaring_class_storage,
         Context $context,
         ?string $lhs_var_id,
+        bool $indirect = false,
     ): bool {
         $codebase = $statements_analyzer->getCodebase();
 
@@ -430,6 +436,7 @@ final class InstancePropertyAssignmentAnalyzer
             $property_storage,
             $context,
             $property_var_pure_compatible,
+            $indirect,
         );
 
         // writing the property of an object reached from global state writes global state
@@ -511,6 +518,8 @@ final class InstancePropertyAssignmentAnalyzer
     /**
      * Reports writing a readonly property where PHP forbids it, and returns whether the write is the class
      * initialising its own property: a `public(set)` readonly one written elsewhere is allowed, but still a mutation
+     *
+     * @param bool $indirect written through a reference or as an array element, which `public(set)` doesn't allow
      */
     public static function checkReadonlyPropertyWrite(
         StatementsAnalyzer $statements_analyzer,
@@ -519,6 +528,7 @@ final class InstancePropertyAssignmentAnalyzer
         PropertyStorage $property_storage,
         Context $context,
         bool $property_var_pure_compatible,
+        bool $indirect,
     ): bool {
         $codebase = $statements_analyzer->getCodebase();
 
@@ -542,7 +552,7 @@ final class InstancePropertyAssignmentAnalyzer
 
             if (!$can_set_readonly_property
                 && $property_storage->readonly
-                && !$property_storage->readonly_public_set
+                && ($indirect || !$property_storage->readonly_public_set)
             ) {
                 IssueBuffer::maybeAdd(
                     new InaccessibleProperty(
@@ -975,6 +985,7 @@ final class InstancePropertyAssignmentAnalyzer
         Union $assignment_value_type,
         string $prop_name,
         ?string &$var_id,
+        bool $indirect,
     ): array {
         $was_inside_general_use = $context->inside_general_use;
         $context->inside_general_use = true;
@@ -1115,6 +1126,7 @@ final class InstancePropertyAssignmentAnalyzer
                 $lhs_var_id,
                 $has_valid_assignment_type,
                 $has_regular_setter,
+                $indirect,
             );
 
             if ($assigned_property) {
@@ -1195,6 +1207,7 @@ final class InstancePropertyAssignmentAnalyzer
         ?string $lhs_var_id,
         bool &$has_valid_assignment_type,
         bool &$has_regular_setter,
+        bool $indirect,
     ): ?AssignedProperty {
         if ($lhs_type_part instanceof TNull) {
             return null;
@@ -1716,6 +1729,7 @@ final class InstancePropertyAssignmentAnalyzer
                 $declaring_class_storage,
                 $context,
                 $lhs_var_id,
+                $indirect,
             )) {
                 $stmt->setAttribute(self::WRITE_CHARGED, true);
             }

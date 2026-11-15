@@ -372,6 +372,33 @@ final class AsymmetricVisibilityTest extends TestCase
                 'ignored_issues' => ['MissingConstructor', 'PropertyNotSetInConstructor'],
                 'php_version' => '8.4',
             ],
+            'readonlyWithPublicSetUnsetOrDestructuredFromOutside' => [
+                'code' => '<?php
+                    final class A {
+                        public public(set) readonly string $name;
+                    }
+
+                    $a = new A();
+                    unset($a->name);
+                    [$a->name] = ["x"];',
+                'assertions' => [],
+                'ignored_issues' => ['MissingConstructor'],
+                'php_version' => '8.4',
+            ],
+            'immutableChildRedeclaresReadonlyWithPublicSet' => [
+                'code' => '<?php
+                    abstract class P {
+                        public public(set) readonly int $v;
+                    }
+
+                    /** @psalm-immutable */
+                    final class C extends P {
+                        public public(set) readonly int $v;
+                    }',
+                'assertions' => [],
+                'ignored_issues' => ['MissingConstructor', 'MutableDependency'],
+                'php_version' => '8.4',
+            ],
         ];
     }
 
@@ -679,6 +706,74 @@ final class AsymmetricVisibilityTest extends TestCase
                         }
                     }',
                 'error_message' => 'ImpurePropertyAssignment',
+                'error_levels' => ['MissingConstructor'],
+                'php_version' => '8.4',
+            ],
+            'readonlyWithPublicSetPassedByReference' => [
+                'code' => '<?php
+                    final class A {
+                        public public(set) readonly string $name;
+                    }
+
+                    function fill(string &$s): void {
+                        $s = "x";
+                    }
+
+                    $a = new A();
+                    fill($a->name);',
+                'error_message' => 'InaccessibleProperty - src' . DIRECTORY_SEPARATOR . 'somefile.php:11:26 - A::$name is marked readonly',
+                'error_levels' => ['MissingConstructor'],
+                'php_version' => '8.4',
+            ],
+            'readonlyWithPublicSetElementAppended' => [
+                'code' => '<?php
+                    final class A {
+                        /** @var list<int> */
+                        public public(set) readonly array $list;
+                    }
+
+                    $a = new A();
+                    $a->list[] = 1;',
+                'error_message' => 'InaccessibleProperty - src' . DIRECTORY_SEPARATOR . 'somefile.php:8:21 - A::$list is marked readonly',
+                'error_levels' => ['MissingConstructor'],
+                'php_version' => '8.4',
+            ],
+            'readonlyWithPublicSetElementUnset' => [
+                'code' => '<?php
+                    final class A {
+                        /** @var array<string, int> */
+                        public public(set) readonly array $map;
+                    }
+
+                    $a = new A();
+                    unset($a->map["k"]);',
+                'error_message' => 'InaccessibleProperty - src' . DIRECTORY_SEPARATOR . 'somefile.php:8:27 - A::$map is marked readonly',
+                'error_levels' => ['MissingConstructor'],
+                'php_version' => '8.4',
+            ],
+            'immutableReadonlyWithPublicSetWrittenFromOutside' => [
+                'code' => '<?php
+                    /** @psalm-immutable */
+                    final class A {
+                        public public(set) readonly string $name;
+                    }
+
+                    $a = new A();
+                    $a->name = "x";',
+                'error_message' => 'InaccessibleProperty - src' . DIRECTORY_SEPARATOR . 'somefile.php:8:21 - A::$name is marked readonly',
+                'error_levels' => ['MissingConstructor'],
+                'php_version' => '8.4',
+            ],
+            'readonlyRedeclaredWithoutPublicSet' => [
+                'code' => '<?php
+                    abstract class P {
+                        public public(set) readonly int $v;
+                    }
+
+                    final class C extends P {
+                        public readonly int $v;
+                    }',
+                'error_message' => 'OverriddenPropertyAccess',
                 'error_levels' => ['MissingConstructor'],
                 'php_version' => '8.4',
             ],

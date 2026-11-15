@@ -286,6 +286,7 @@ final class ArrayAssignmentAnalyzer
                     $root_type,
                     $context,
                     false,
+                    true,
                 );
 
                 self::trackPropertyElementImpurity($statements_analyzer, $root_array_expr, $context);
