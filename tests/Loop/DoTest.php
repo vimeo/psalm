@@ -485,6 +485,28 @@ final class DoTest extends TestCase
                 ],
                 'ignored_issues' => ['MixedArrayAccess'],
             ],
+            'doWhileWithContinueIsLeftWhenItsConditionIsFalse' => [
+                'code' => '<?php
+                    $a = rand(0, 1) ? null : rand();
+                    do {
+                        if (rand(0, 1)) {
+                            continue;
+                        }
+                        echo "";
+                    } while ($a === null);
+                    $b = null;
+                    do {
+                        if (rand(0, 1)) {
+                            $b = 5;
+                            continue;
+                        }
+                        $b = null;
+                    } while ($b === null);',
+                'assertions' => [
+                    '$a===' => 'int',
+                    '$b===' => '5',
+                ],
+            ],
         ];
     }
 

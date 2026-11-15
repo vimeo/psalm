@@ -587,8 +587,8 @@ final class LoopAnalyzer
                 $changed_var_ids = [];
 
                 // a while or for loop is also left before its body ever runs: the parent context holds the types
-                // of both ways out
-                $exit_context = $is_do ? $continue_context : $loop_parent_context;
+                // of both ways out. A do-while is left after its body, where its condition is not yet assumed
+                $exit_context = $is_do ? ($inner_do_context ?? $continue_context) : $loop_parent_context;
 
                 [$vars_in_scope_reconciled, $_] = Reconciler::reconcileKeyedTypes(
                     $negated_pre_condition_types,
