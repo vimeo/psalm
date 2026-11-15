@@ -1834,6 +1834,191 @@ final class FunctionTemplateTest extends TestCase
                 'ignored_issues' => [],
                 'php_version' => '8.0',
             ],
+            'inferTemplateFromCallableReturningNullableList' => [
+                'code' => '<?php
+                    /**
+                     * @template TNode
+                     * @param callable(): (list<TNode>|null) $fetch
+                     * @return list<TNode>
+                     */
+                    function nullable(callable $fetch): array {
+                        return $fetch() ?? [];
+                    }
+
+                    /** @var list<int>|null $ints */
+                    $ints = null;
+                    $a = nullable(fn () => $ints);',
+                'assertions' => [
+                    '$a' => 'list<int>',
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'inferTemplateFromNullableListParam' => [
+                'code' => '<?php
+                    /**
+                     * @template T
+                     * @param list<T>|null $items
+                     * @return list<T>
+                     */
+                    function fromNullable($items): array {
+                        return $items ?? [];
+                    }
+
+                    /** @var list<int>|null $ints */
+                    $ints = null;
+                    $a = fromNullable($ints);',
+                'assertions' => [
+                    '$a' => 'list<int>',
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'inferTemplateFromListOrFalseParam' => [
+                'code' => '<?php
+                    /**
+                     * @template T
+                     * @param list<T>|false $items
+                     * @return list<T>
+                     */
+                    function fromFalsable($items): array {
+                        return $items === false ? [] : $items;
+                    }
+
+                    /** @var list<string>|false $strings */
+                    $strings = false;
+                    $a = fromFalsable($strings);',
+                'assertions' => [
+                    '$a' => 'list<string>',
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'inferTemplateFromArrayOrFalseParam' => [
+                'code' => '<?php
+                    /**
+                     * @template T
+                     * @param array<T>|false $items
+                     * @return list<T>
+                     */
+                    function fromFalsableArray($items): array {
+                        return $items === false ? [] : array_values($items);
+                    }
+
+                    /** @var array<string, int>|false $map */
+                    $map = false;
+                    $a = fromFalsableArray($map);',
+                'assertions' => [
+                    '$a' => 'list<int>',
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'inferTemplateFromNullableListInConstructor' => [
+                'code' => '<?php
+                    /**
+                     * @template T
+                     */
+                    final class Coll {
+                        /**
+                         * @param list<T>|null $items
+                         */
+                        public function __construct(public ?array $items = null) {}
+                    }
+
+                    /** @var list<int>|null $ints */
+                    $ints = null;
+                    $a = new Coll($ints);',
+                'assertions' => [
+                    '$a' => 'Coll<int>',
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'subtractArrayFromTemplateUnionWithArray' => [
+                'code' => '<?php
+                    /**
+                     * @template T
+                     * @param T|array $var
+                     * @return T
+                     */
+                    function notArray($var) {
+                        if (\is_array($var)) {
+                            throw new \InvalidArgumentException("");
+                        }
+
+                        return $var;
+                    }
+
+                    /** @var array<string>|int $in */
+                    $in = 1;
+                    $a = notArray($in);',
+                'assertions' => [
+                    '$a' => 'int',
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'inferTemplateFromTemplateOrListUnion' => [
+                'code' => '<?php
+                    /**
+                     * @template T
+                     * @param T|list<T> $var
+                     * @return list<T>
+                     */
+                    function toList($var): array {
+                        return [];
+                    }
+
+                    /** @var int|list<int> $in */
+                    $in = 1;
+                    $a = toList($in);',
+                'assertions' => [
+                    '$a' => 'list<int>',
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'keepScalarBoundsForTemplateOrListUnion' => [
+                'code' => '<?php
+                    /**
+                     * @template T
+                     * @param T|list<T> $var
+                     * @return list<T>
+                     */
+                    function toList($var): array {
+                        return [];
+                    }
+
+                    /** @var int|string|list<int> $in */
+                    $in = 1;
+                    $a = toList($in);',
+                'assertions' => [
+                    '$a' => 'list<int|string>',
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'keepScalarBoundsForTemplateOrKeyedArrayUnion' => [
+                'code' => '<?php
+                    /**
+                     * @template T
+                     * @param T|array<string, T> $var
+                     * @return list<T>
+                     */
+                    function toList($var): array {
+                        return [];
+                    }
+
+                    /** @var int|string|array<string, int> $in */
+                    $in = 1;
+                    $a = toList($in);',
+                'assertions' => [
+                    '$a' => 'list<int|string>',
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
             'templateChildClass' => [
                 'code' => '<?php
                     /** @template T */

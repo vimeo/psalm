@@ -129,6 +129,470 @@ final class ClosureTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'propertyOfAVariableCapturedByReferenceMayChangeAfterTheClosureIsCreated' => [
+                'code' => '<?php
+                    final class Job {
+                        public string $state = "idle";
+                    }
+
+                    function run(): bool {
+                        $job = new Job();
+                        $job->state = "idle";
+
+                        $isRunning = function () use (&$job): bool {
+                            return $job->state === "running";
+                        };
+
+                        $job->state = "running";
+
+                        return $isRunning();
+                    }
+
+                    /** @param array<string, int> $data */
+                    function offset(array $data): int {
+                        if (isset($data["k"])) {
+                            $get = function () use (&$data): int {
+                                return $data["k"];
+                            };
+
+                            return $get();
+                        }
+
+                        return 0;
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
+            'byRefCapturedIntKeepsItsPrecisionInTheEnclosingScopeWhenTheClosureOnlyReadsIt' => [
+                'code' => '<?php
+                    $i = 0;
+                    $cb = function () use (&$i): int {
+                        return $i;
+                    };',
+                'assertions' => [
+                    '$i===' => '0',
+                ],
+            ],
+            'byRefCapturedIntKeepsItsRangeInTheEnclosingScopeWhenTheClosureIncrementsIt' => [
+                'code' => '<?php
+                    $i = 0;
+                    $cb = function () use (&$i): void {
+                        $i++;
+                    };',
+                'assertions' => [
+                    '$i===' => 'int<0, max>',
+                ],
+            ],
+            'byRefCapturedPossiblyUndefinedIntIsBoundAndWidened' => [
+                'code' => '<?php
+                    if (rand(0, 1)) {
+                        $i = 0;
+                    }
+
+                    $inside = null;
+                    $cb = function () use (&$i): void {
+                        $inside = $i;
+                        echo $inside;
+                    };',
+                'assertions' => [
+                    '$i===' => '0|null',
+                ],
+                'ignored_issues' => ['PossiblyUndefinedGlobalVariable'],
+            ],
+            'byRefCapturedIntIsNotItsCaptureTimeLiteral' => [
+                'code' => '<?php
+                    function f(): void {
+                        $i = -1;
+                        $callback = function () use (&$i): void {
+                            switch ($i) {
+                                case 0:
+                                    echo "zero";
+                                    break;
+                                case 1:
+                                    echo "one";
+                                    break;
+                                default:
+                                    echo "other";
+                            }
+                        };
+                        ++$i;
+                        $callback();
+                    }',
+            ],
+            'byRefCapturedStringIsNotItsCaptureTimeLiteral' => [
+                'code' => '<?php
+                    function f(): void {
+                        $state = "idle";
+                        $callback = function () use (&$state): void {
+                            if ($state === "running") {
+                                echo "running";
+                            }
+                        };
+                        $state = "running";
+                        $callback();
+                    }',
+            ],
+            'byRefCapturedClassStringStaysAClassString' => [
+                'code' => '<?php
+                    final class Foo {}
+
+                    function f(): void {
+                        $c = Foo::class;
+                        $cb = function () use (&$c): Foo {
+                            return new $c();
+                        };
+                        $cb();
+                    }',
+            ],
+            'byRefCapturedEnumCaseIsNotItsCaptureTimeLiteral' => [
+                'code' => '<?php
+                    enum E {
+                        case A;
+                        case B;
+                    }
+
+                    function f(): void {
+                        $e = E::A;
+                        $cb = function () use (&$e): void {
+                            if ($e === E::B) {
+                                echo 1;
+                            }
+                        };
+                        $e = E::B;
+                        $cb();
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
+            'byRefCapturedBoolIsNotItsCaptureTimeLiteral' => [
+                'code' => '<?php
+                    function f(): void {
+                        $done = false;
+                        $callback = function () use (&$done): void {
+                            if ($done) {
+                                echo "done";
+                            }
+                        };
+                        $done = true;
+                        $callback();
+                    }',
+            ],
+            'byRefCapturedFloatIsNotItsCaptureTimeLiteral' => [
+                'code' => '<?php
+                    function f(): void {
+                        $ratio = 1.5;
+                        $callback = function () use (&$ratio): void {
+                            if ($ratio === 2.5) {
+                                echo "changed";
+                            }
+                        };
+                        $ratio = 2.5;
+                        $callback();
+                    }',
+            ],
+            'byRefCapturedUnionOfLiteralsIsWidened' => [
+                'code' => '<?php
+                    function f(bool $c): void {
+                        $v = $c ? 1 : "a";
+                        $callback = function () use (&$v): void {
+                            if ($v === 2) {
+                                echo "two";
+                            }
+                        };
+                        $v = 2;
+                        $callback();
+                    }',
+            ],
+            'byRefCapturedArrayShapeLiteralIsNotItsCaptureTimeLiteral' => [
+                'code' => '<?php
+                    function f(): void {
+                        $state = ["k" => "idle"];
+                        $callback = function () use (&$state): void {
+                            if ($state["k"] === "running") {
+                                echo "running";
+                            }
+                        };
+                        $state["k"] = "running";
+                        $callback();
+                    }',
+            ],
+            'byRefCapturedListLiteralIsNotItsCaptureTimeLiteral' => [
+                'code' => '<?php
+                    function f(): void {
+                        $flags = [false];
+                        $callback = function () use (&$flags): void {
+                            if ($flags[0]) {
+                                echo "set";
+                            }
+                        };
+                        $flags[0] = true;
+                        $callback();
+                    }',
+            ],
+            'byRefCapturedNestedArrayShapeLiteralIsNotItsCaptureTimeLiteral' => [
+                'code' => '<?php
+                    function f(): void {
+                        $state = ["a" => ["b" => 1]];
+                        $callback = function () use (&$state): void {
+                            if ($state["a"]["b"] === 2) {
+                                echo "two";
+                            }
+                        };
+                        $state["a"]["b"] = 2;
+                        $callback();
+                    }',
+            ],
+            'byRefCapturedGenericArrayLiteralIsNotItsCaptureTimeLiteral' => [
+                'code' => '<?php
+                    /** @param array<string, "idle"> $state */
+                    function f(array $state): void {
+                        $callback = function () use (&$state): void {
+                            if (($state["k"] ?? null) === "running") {
+                                echo "running";
+                            }
+                        };
+                        $state["k"] = "running";
+                        $callback();
+                    }',
+            ],
+            'byRefCapturedArrayShapeKeepsItsLiteralsInTheEnclosingScope' => [
+                'code' => '<?php
+                    $state = ["k" => "idle"];
+                    $callback = function () use (&$state): void {
+                        echo $state["k"];
+                    };',
+                'assertions' => [
+                    '$state===' => "array{k: 'idle'}",
+                ],
+            ],
+            'closureByRefWriteInABranchBeforeAReturnIsKept' => [
+                'code' => '<?php
+                    $i = 0;
+
+                    $f = function () use (&$i): int {
+                        if (rand(0, 1)) {
+                            $i++;
+                        }
+
+                        return 1;
+                    };',
+                'assertions' => [
+                    '$i===' => 'int<0, max>',
+                ],
+            ],
+            'closureByRefWriteInALoopIsKept' => [
+                'code' => '<?php
+                    $i = 0;
+
+                    $f = function (array $xs) use (&$i): void {
+                        foreach ($xs as $_) {
+                            $i++;
+                        }
+                    };',
+                'assertions' => [
+                    '$i===' => 'int<0, max>',
+                ],
+            ],
+            'closureByRefWriteInALoopBeforeAReturnIsKept' => [
+                'code' => '<?php
+                    $i = 0;
+
+                    $f = function (array $xs) use (&$i): int {
+                        foreach ($xs as $_) {
+                            $i++;
+                        }
+
+                        return 1;
+                    };',
+                'assertions' => [
+                    '$i===' => 'int<0, max>',
+                ],
+            ],
+            'closureByRefWriteInABranchBeforeItsOwnReturnIsKept' => [
+                'code' => '<?php
+                    $i = 0;
+
+                    $f = function () use (&$i): int {
+                        if (rand(0, 1)) {
+                            if (rand(0, 1)) {
+                                $i++;
+                            }
+
+                            return 0;
+                        }
+
+                        return 1;
+                    };',
+                'assertions' => [
+                    '$i===' => 'int<0, max>',
+                ],
+            ],
+            'closureByRefWriteInAFinallyIsKept' => [
+                'code' => '<?php
+                    $i = 0;
+
+                    $f = function () use (&$i): int {
+                        try {
+                            if (rand(0, 1)) {
+                                $i = 5;
+
+                                return 0;
+                            }
+                        } finally {
+                            echo "done";
+                        }
+
+                        return 1;
+                    };',
+                'assertions' => [
+                    '$i===' => '0|5',
+                ],
+            ],
+            'closureByRefWriteInANestedClosureIsKept' => [
+                'code' => '<?php
+                    $i = 0;
+
+                    $f = function () use (&$i): void {
+                        $g = function () use (&$i): void {
+                            $i++;
+                        };
+                    };',
+                'assertions' => [
+                    '$i===' => 'int<0, max>',
+                ],
+            ],
+            'closureByRefWriteThroughAReferenceIsKept' => [
+                'code' => '<?php
+                    $i = 0;
+
+                    $f = function () use (&$i): void {
+                        $j = &$i;
+                        $j++;
+                    };',
+                'assertions' => [
+                    '$i===' => 'int<0, max>',
+                ],
+            ],
+            'closureByRefWriteThroughAByRefArgumentInAConditionIsKept' => [
+                'code' => '<?php
+                    function inc(int &$x): bool {
+                        $x++;
+                        return true;
+                    }
+
+                    $i = 0;
+
+                    $f = function () use (&$i): void {
+                        if (inc($i)) {}
+                    };',
+                'assertions' => [
+                    '$i===' => 'int',
+                ],
+            ],
+            'closureByRefWriteOfAnIntToACapturedLiteralIsKept' => [
+                'code' => '<?php
+                    $count = 0;
+
+                    $f = static function (int $x) use (&$count): int {
+                        if ($x > 1) {
+                            $count = $x * 2;
+
+                            return 0;
+                        }
+
+                        return 1;
+                    };',
+                'assertions' => [
+                    '$count===' => 'int<0, max>',
+                ],
+            ],
+            'useByReferenceOfAPossiblyUndefinedVariableDefinesIt' => [
+                'code' => '<?php
+                    function f(): ?int {
+                        if (rand(0, 1)) {
+                            $y = 1;
+                        }
+
+                        $f = function () use (&$y): ?int {
+                            return $y;
+                        };
+
+                        return $f();
+                    }',
+            ],
+            'useOfAVariableDefinedInATryBindsItToNullWhenUndefined' => [
+                'code' => '<?php
+                    function f(): int {
+                        try {
+                            $y = rand(0, 1);
+                            throw new Exception();
+                        } catch (Exception $e) {
+                        }
+
+                        $f = function () use ($y): int {
+                            /** @psalm-check-type-exact $y = int<0, 1>|null */;
+                            return (int) $y;
+                        };
+
+                        return $f();
+                    }',
+                'assertions' => [],
+                'ignored_issues' => ['PossiblyUndefinedVariable'],
+            ],
+            'useOfANonEmptyMixedDefinedByAPreviousIterationBindsItToMixed' => [
+                'code' => '<?php
+                    /**
+                     * @param list<non-empty-mixed> $xs
+                     */
+                    function f(array $xs): void {
+                        foreach ($xs as $x) {
+                            $f = function () use ($a): void {
+                                /** @psalm-check-type-exact $a = mixed */;
+                                if (!isset($a)) {
+                                    echo "first";
+                                }
+                            };
+                            $f();
+                            $a = $x;
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => ['PossiblyUndefinedVariable', 'MixedAssignment'],
+            ],
+            'useOfAMixedDefinedByAPreviousIterationKeepsMixed' => [
+                'code' => '<?php
+                    function f(array $xs): void {
+                        foreach ($xs as $x) {
+                            $f = function () use ($a): void {
+                                /** @psalm-check-type-exact $a = mixed */;
+                                if (!isset($a)) {
+                                    echo "first";
+                                }
+                            };
+                            $f();
+                            $a = $x;
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => ['PossiblyUndefinedVariable', 'MixedAssignment'],
+            ],
+            'useByReferenceOfAVariableDefinedByAPreviousIterationDefinesIt' => [
+                'code' => '<?php
+                    function f(array $xs): ?int {
+                        $r = null;
+                        foreach ($xs as $_) {
+                            $g = function () use (&$y): ?int {
+                                return $y;
+                            };
+                            $r = $g();
+                            $y = 1;
+                        }
+
+                        return $r;
+                    }',
+            ],
             'methodCallableOfATraitMethodResolvesSelfAndParentOfTheParamsToTheUsingClass' => [
                 'code' => <<<'PHP'
                     <?php
@@ -246,7 +710,7 @@ final class ClosureTest extends TestCase
                         return $total;
                     }',
                 'assertions' => [],
-                'ignored_issues' => ['MixedReturnStatement', 'MixedInferredReturnType'],
+                'ignored_issues' => ['MixedReturnStatement'],
             ],
             'closureCapturingTheVariableItIsAssignedToByReferenceInAnArgument' => [
                 'code' => '<?php
@@ -346,7 +810,7 @@ final class ClosureTest extends TestCase
                 ',
                 'assertions' => [
                     '$testBefore===' => '123',
-                    '$testInsideBefore===' => "'test'|123|null",
+                    '$testInsideBefore===' => "'test'|int|null",
                     '$testInsideAfter===' => "'test'|null",
                     '$test===' => "'test'|123",
 
@@ -1064,7 +1528,7 @@ final class ClosureTest extends TestCase
                 ',
                 'assertions' => [
                     '$closure' => 'Closure[pure](string):int<0, max>',
-                    '$result' => 'int<0, max>',
+                    '$result' => 'int<1, max>',
                 ],
                 'ignored_issues' => [],
                 'php_version' => '8.1',
@@ -1148,7 +1612,7 @@ final class ClosureTest extends TestCase
                     '$make===' => 'Closure[impure]():SubItems',
                     '$result' => 'SubItems',
                 ],
-                'ignored_issues' => ['ClassMustBeFinal'],
+                'ignored_issues' => [],
                 'php_version' => '8.1',
             ],
             'FirstClassCallable:InstanceMethod:InheritedReturnTypeKeepsTheOwnParameters' => [
@@ -1217,9 +1681,9 @@ final class ClosureTest extends TestCase
                     $result = $id("s");',
                 'assertions' => [
                     '$id===' => 'Closure[impure](mixed):mixed',
-                    '$result' => 'mixed',
+                    '$result' => 'string',
                 ],
-                'ignored_issues' => ['MixedAssignment'],
+                'ignored_issues' => [],
                 'php_version' => '8.1',
             ],
             'FirstClassCallable:InstanceMethod:UserDefined' => [
@@ -1636,12 +2100,16 @@ final class ClosureTest extends TestCase
                     $wrap = $coll->wrap(...);
                     $wrapped = $wrap(5);
                     $list_of = Coll::listOf(...);
+                    $mapped_direct = $coll->map(fn(int $i): string => (string) $i);
+                    $wrapped_direct = $coll->wrap(5);
                 ',
                 'assertions' => [
                     '$map===' => 'Closure[impure](callable[impure](int):mixed):list<mixed>',
-                    '$mapped===' => 'list<mixed>',
+                    '$mapped===' => 'list<decimal-int-string>',
+                    '$mapped_direct===' => 'list<decimal-int-string>',
                     '$wrap===' => 'Closure[impure](int):list<int>',
-                    '$wrapped===' => 'list<int>',
+                    '$wrapped===' => 'list<5>',
+                    '$wrapped_direct===' => 'list<5>',
                     '$list_of===' => 'Closure[impure](mixed):list<mixed>',
                 ],
                 'ignored_issues' => [],
@@ -1768,7 +2236,7 @@ final class ClosureTest extends TestCase
                     '$identity===' => 'Closure[impure](Model):Model',
                     '$model===' => 'Model',
                     '$chained===' => 'Closure[impure](mixed, mixed):list<mixed>',
-                    '$list===' => 'list<mixed>',
+                    '$list===' => 'list<2>',
                 ],
                 'ignored_issues' => [],
                 'php_version' => '8.1',
@@ -1835,7 +2303,7 @@ final class ClosureTest extends TestCase
                     '$find===' => 'Closure[impure](int):int',
                     '$fresh===' => 'Closure[impure]():Repository<int>&static',
                 ],
-                'ignored_issues' => ['MissingAbstractPureAnnotation'],
+                'ignored_issues' => [],
                 'php_version' => '8.1',
             ],
             'FirstClassCallable:InstanceMethod:PassedToTemplatedCallableParam' => [
@@ -2251,6 +2719,70 @@ final class ClosureTest extends TestCase
                         echo $closure() . $arrow();
                     }',
             ],
+            'recursiveClosureCalledThroughItsByReferenceUseHasItsOwnReturnType' => [
+                'code' => '<?php
+                    $factorial = function (int $x) use (&$factorial): int {
+                        if ($x === 1) {
+                            return 1;
+                        }
+
+                        return $x * $factorial($x - 1);
+                    };
+
+                    $result = $factorial(5);',
+                'assertions' => ['$result===' => 'int'],
+            ],
+            'recursiveClosureOfATemplatedClassPassesTheTemplatedValuesOfItsMethodsToItself' => [
+                'code' => '<?php
+                    /**
+                     * @template TNode
+                     */
+                    final class Link {
+                        /**
+                         * @param TNode $to
+                         */
+                        public function __construct(public mixed $to) {}
+                    }
+
+                    /**
+                     * @template TNode
+                     */
+                    final class Graph {
+                        /**
+                         * @param array<int, list<Link<TNode>>> $links
+                         */
+                        public function __construct(private array $links = []) {}
+
+                        /**
+                         * @param TNode $from
+                         * @return list<Link<TNode>>
+                         */
+                        public function linksFrom(mixed $from): array {
+                            return $this->links[(int) $from] ?? [];
+                        }
+
+                        public function reaches(): bool {
+                            $visit =
+                                /**
+                                 * @param TNode $node
+                                 */
+                                function (mixed $node) use (&$visit): bool {
+                                    foreach ($this->linksFrom($node) as $link) {
+                                        if ($visit($link->to)) {
+                                            return true;
+                                        }
+                                    }
+
+                                    return false;
+                                };
+
+                            return false;
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.2',
+            ],
             'fromCallableOfAClassStringMethodReturningStaticIsTheClassItself' => [
                 'code' => '<?php
                     class P {
@@ -2289,11 +2821,11 @@ final class ClosureTest extends TestCase
                     function check(C $c): void {
                         $method = $c->m(...);
                         $viaMethod = $method('a');
-                        /** @psalm-check-type-exact $viaMethod = bool|int */
+                        /** @psalm-check-type-exact $viaMethod = int */
 
                         $static = C::s(...);
                         $viaStatic = $static('a');
-                        /** @psalm-check-type-exact $viaStatic = bool|int */
+                        /** @psalm-check-type-exact $viaStatic = int */
 
                         $fromCallable = Closure::fromCallable([$c, 'm']);
                         $viaFromCallable = $fromCallable('a');
@@ -2413,6 +2945,83 @@ final class ClosureTest extends TestCase
     public static function providerInvalidCodeParse(): iterable
     {
         return [
+            'byRefCapturedTypeFromAnAssertionKeepsItsDocblockOrigin' => [
+                'code' => '<?php
+                    function f(): void {
+                        \assert((bool) ($trace = \debug_backtrace(\DEBUG_BACKTRACE_IGNORE_ARGS)));
+                        $cb = static function () use (&$trace): void {
+                            if ($trace ?? false) {
+                                echo 1;
+                            }
+                        };
+                        $cb();
+                    }',
+                'error_message' => 'RedundantConditionGivenDocblockType - src' . DIRECTORY_SEPARATOR . 'somefile.php:5:33',
+            ],
+            'byRefCapturedDocblockLiteralIsWidenedWithItsDocblockOrigin' => [
+                'code' => '<?php
+                    function f(): void {
+                        /** @var "a"|"b" $s */
+                        $s = rand(0, 1) ? "a" : "b";
+                        $cb = function () use (&$s): void {
+                            if (is_int($s)) {
+                                echo 1;
+                            }
+                        };
+                        $cb();
+                    }',
+                'error_message' => 'DocblockTypeContradiction - src' . DIRECTORY_SEPARATOR . 'somefile.php:6:33',
+            ],
+            'arrowFunctionReadingAVariableDefinedInAnIfIsPossiblyUndefined' => [
+                'code' => '<?php
+                    function f(): ?int {
+                        if (rand(0, 1)) {
+                            $y = 1;
+                        }
+
+                        $f = fn(): ?int => $y;
+
+                        return $f();
+                    }',
+                'error_message' => 'PossiblyUndefinedVariable - src' . DIRECTORY_SEPARATOR . 'somefile.php:7:44',
+            ],
+            'useOfAVariableDefinedByAPreviousIterationIsPossiblyUndefinedAtTheUse' => [
+                'code' => '<?php
+                    function f(array $xs): void {
+                        foreach ($xs as $_) {
+                            $f = function () use ($a): ?string {
+                                return $a;
+                            };
+                            echo (string) $f();
+                            $a = "s";
+                        }
+                    }',
+                'error_message' => 'PossiblyUndefinedVariable - src' . DIRECTORY_SEPARATOR . 'somefile.php:4:51',
+            ],
+            'useOfAVariableExtractedFromAnOptionalKeyIsPossiblyUndefinedAtTheUse' => [
+                'code' => '<?php
+                    /** @param array{x?: int} $data */
+                    function f(array $data): ?int {
+                        extract($data);
+                        $f = function () use ($x): ?int {
+                            return $x;
+                        };
+                        return $f();
+                    }',
+                'error_message' => 'PossiblyUndefinedVariable - src' . DIRECTORY_SEPARATOR . 'somefile.php:5:47'
+                    . ' - Possibly undefined variable $x',
+            ],
+            'arrowFunctionReadingAVariableDefinedByAPreviousIterationIsPossiblyUndefined' => [
+                'code' => '<?php
+                    function f(array $xs): void {
+                        foreach ($xs as $_) {
+                            $f = fn(): ?string => $a;
+                            echo (string) $f();
+                            $a = "s";
+                        }
+                    }',
+                'error_message' => 'PossiblyUndefinedVariable - src' . DIRECTORY_SEPARATOR . 'somefile.php:4:51',
+            ],
             'FirstClassCallable:InstanceMethod:InheritedReturnTypeKeepsTheOwnParameterType' => [
                 'code' => '<?php
                     interface Fmt {
@@ -2504,12 +3113,8 @@ final class ClosureTest extends TestCase
                      */
                     $foo = null;
 
-
                     $foo =
-                        /**
-                         * @param mixed $bar
-                         * @psalm-suppress MixedFunctionCall
-                         */
+                        /** @param mixed $bar */
                         function ($bar) use (&$foo): string
                         {
                             if (is_array($bar)) {
@@ -3058,6 +3663,17 @@ final class ClosureTest extends TestCase
                 'error_message' => 'NullableReturnStatement',
                 'error_levels' => [],
                 'php_version' => '8.1',
+            ],
+            'recursiveClosureCalledThroughItsByReferenceUseChecksItsParams' => [
+                'code' => '<?php
+                    $factorial = function (int $x) use (&$factorial): int {
+                        if ($x === 1) {
+                            return 1;
+                        }
+
+                        return $factorial("a");
+                    };',
+                'error_message' => 'InvalidScalarArgument',
             ],
         ];
     }

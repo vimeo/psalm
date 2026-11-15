@@ -40,6 +40,7 @@ use Psalm\Internal\Analyzer\Statements\ReturnAnalyzer;
 use Psalm\Internal\Analyzer\Statements\StaticAnalyzer;
 use Psalm\Internal\Analyzer\Statements\UnsetAnalyzer;
 use Psalm\Internal\Analyzer\Statements\UnusedAssignmentRemover;
+use Psalm\Internal\Codebase\CliOutput;
 use Psalm\Internal\Codebase\CombinedFlowGraph;
 use Psalm\Internal\Codebase\TaintFlowGraph;
 use Psalm\Internal\Codebase\VariableUseGraph;
@@ -115,6 +116,13 @@ final class StatementsAnalyzer extends SourceAnalyzer
     private array $all_vars = [];
 
     /**
+     * The variables a closure of these statements captures by reference: any call may write them from then on
+     *
+     * @var array<string, true>
+     */
+    private array $vars_captured_by_reference = [];
+
+    /**
      * @var array<string, int>
      */
     private array $var_branch_points = [];
@@ -173,6 +181,15 @@ final class StatementsAnalyzer extends SourceAnalyzer
     public array $foreach_var_locations = [];
 
     private int $depth = 0;
+
+    /**
+     * The first statement of a method guarding the instances of a class with `@psalm-cli-only-instances`, which has to
+     * leave the SAPI narrowed to the command line (see CliOutput::checkInstanceGuard())
+     */
+    public ?PhpParser\Node\Stmt $cli_instance_guard = null;
+
+    /** Whether the context after $cli_instance_guard was narrowed to the command line */
+    public bool $cli_instance_guarded = false;
 
     /**
      * Tracks bounds for the type variables minted while these statements are
@@ -279,6 +296,10 @@ final class StatementsAnalyzer extends SourceAnalyzer
             foreach ($stmts as $stmt) {
                 if (self::analyzeStatement($this, $stmt, $context, $global_context) === false) {
                     return false;
+                }
+
+                if ($stmt === $this->cli_instance_guard) {
+                    $this->cli_instance_guarded = CliOutput::isNarrowedToCli($context);
                 }
             }
 
@@ -1204,6 +1225,16 @@ final class StatementsAnalyzer extends SourceAnalyzer
     }
 
     /**
+     * A variable of the enclosing scope these statements read without assigning it
+     *
+     * @psalm-external-mutation-free
+     */
+    public function registerEnclosingVariable(string $var_id, CodeLocation $location): void
+    {
+        $this->all_vars[$var_id] = $location;
+    }
+
+    /**
      * @psalm-external-mutation-free
      */
     public function registerVariableAssignment(string $var_id, CodeLocation $location): void
@@ -1267,6 +1298,22 @@ final class StatementsAnalyzer extends SourceAnalyzer
         }
 
         return $parent_nodes;
+    }
+
+    /**
+     * @psalm-external-mutation-free
+     */
+    public function markCapturedByReference(string $var_id): void
+    {
+        $this->vars_captured_by_reference[$var_id] = true;
+    }
+
+    /**
+     * @psalm-mutation-free
+     */
+    public function isCapturedByReference(string $var_id): bool
+    {
+        return isset($this->vars_captured_by_reference[$var_id]);
     }
 
     /**

@@ -81,6 +81,56 @@ final class IssetTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'negatedIssetOfAConditionallyDefinedVariableIsNullWhereTheLoopMayNotAssignIt' => [
+                'code' => '<?php
+                    /** @param list<string> $values */
+                    function validate(array $values, bool $early, bool $answered): int {
+                        if ($early) {
+                            $status = 401;
+                        }
+
+                        if (!isset($status)) {
+                            if ($answered) {
+                                $status = 409;
+                            }
+
+                            if (!isset($status)) {
+                                foreach ($values as $value) {
+                                    if ($value === "") {
+                                        $status = 400;
+                                        break;
+                                    }
+                                }
+
+                                if (!isset($status)) {
+                                    $status = 201;
+                                }
+                            }
+                        }
+
+                        return $status;
+                    }
+
+                    function nested(bool $a, bool $b): void {
+                        if ($a) {
+                            $s = 409;
+                        }
+
+                        if (!isset($s)) {
+                            if ($b) {
+                                $s = 5;
+                            }
+
+                            if (!isset($s)) {
+                                /** @psalm-check-type-exact $s? = null */
+                                echo 1;
+                            }
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
             'issetOfAnOptionalKeyOfAnUnsealedShapeKeepsTheShape' => [
                 'code' => '<?php
                     /** @var array{name?: string, id: string, ...} $a */
@@ -1223,6 +1273,144 @@ final class IssetTest extends TestCase
                         echo $test[0];
                     }',
             ],
+            'coalesceKeepsTheTypeOfTheArrayItReads' => [
+                'code' => '<?php
+                    /** @return list<mixed> */
+                    function getList(): array {
+                        return [];
+                    }
+
+                    $l = getList();
+                    $x = $l[0]["w"] ?? false;
+                    $w = $l[0]["w"];',
+                'assertions' => [
+                    '$l===' => 'list<mixed>',
+                ],
+                'ignored_issues' => ['MixedAssignment', 'MixedArrayAccess'],
+            ],
+            'coalesceKeepsTheTypeOfTheParamItReads' => [
+                'code' => '<?php
+                    /** @param list<mixed> $l */
+                    function f(array $l): void {
+                        $x = $l[0]["w"] ?? false;
+                        $w = $l[0]["w"];
+                    }',
+                'assertions' => [],
+                'ignored_issues' => ['MixedAssignment', 'MixedArrayAccess'],
+            ],
+            'coalesceChainKeepsTheTypeOfTheArrayItReads' => [
+                'code' => '<?php
+                    /** @param list<mixed> $l */
+                    function f(array $l): void {
+                        $x = $l[0]["w"] ?? $l[1]["x"] ?? null;
+                        $w = $l[1]["x"];
+                    }',
+                'assertions' => [],
+                'ignored_issues' => ['MixedAssignment', 'MixedArrayAccess'],
+            ],
+            'coalesceOnAnOffsetKeepsTheTypeOfTheArrayItReads' => [
+                'code' => '<?php
+                    /** @param list<mixed> $l */
+                    function f(array $l): void {
+                        $y = $l[0] ?? [];
+                        $w = $l[0]["w"];
+                    }
+
+                    /** @param list<mixed> $l */
+                    function g(array $l): void {
+                        $y = isset($l[0]) ? 1 : 2;
+                        $w = $l[0]["w"];
+                    }
+
+                    /** @param list<mixed> $l */
+                    function h(array $l): void {
+                        $x = $l[0] ?? false;
+                        $w = $l[0];
+                    }',
+                'assertions' => [],
+                'ignored_issues' => ['MixedAssignment', 'MixedArrayAccess'],
+            ],
+            'ternaryCombinesANarrowingWithAnAssignmentOfAnotherType' => [
+                'code' => '<?php
+                    $a = rand(0, 1) ? null : 1;
+                    $a === null ? 0 : ($a = "s");',
+                'assertions' => [
+                    '$a===' => "'s'|null",
+                ],
+            ],
+            'issetTernaryKeepsTheTypeOfTheArrayItReads' => [
+                'code' => '<?php
+                    /** @return list<mixed> */
+                    function getList(): array {
+                        return [];
+                    }
+
+                    $l = getList();
+                    $x = isset($l[0]["w"]) ? $l[0]["w"] : false;
+                    $w = $l[0]["w"];',
+                'assertions' => [
+                    '$l===' => 'list<mixed>',
+                ],
+                'ignored_issues' => ['MixedAssignment', 'MixedArrayAccess'],
+            ],
+            'issetAndTernaryKeepsTheTypeOfTheArrayItReads' => [
+                'code' => '<?php
+                    /** @return list<mixed> */
+                    function getList(): array {
+                        return [];
+                    }
+
+                    $l = getList();
+                    $x = isset($l[0]["w"]) && $l[0]["w"] !== "" ? 1 : 2;
+                    $w = $l[0]["w"];',
+                'assertions' => [
+                    '$l===' => 'list<mixed>',
+                ],
+                'ignored_issues' => ['MixedAssignment', 'MixedArrayAccess'],
+            ],
+            'negatedIssetTernaryKeepsTheTypeOfTheArrayItReads' => [
+                'code' => '<?php
+                    /** @return list<mixed> */
+                    function getList(): array {
+                        return [];
+                    }
+
+                    $l = getList();
+                    $x = !isset($l[0]["w"]) ? false : $l[0]["w"];
+                    $w = $l[0]["w"];',
+                'assertions' => [
+                    '$l===' => 'list<mixed>',
+                ],
+                'ignored_issues' => ['MixedAssignment', 'MixedArrayAccess'],
+            ],
+            'ternaryCombinesANarrowingWithAnAssignmentInTheOtherBranch' => [
+                'code' => '<?php
+                    $a = rand(0, 1) ? null : 1;
+                    $a === null ? $a = 5 : $a;',
+                'assertions' => [
+                    '$a===' => '1|5',
+                ],
+            ],
+            'ternaryKeepsAnAssignmentOfItsCondition' => [
+                'code' => '<?php
+                    $x = rand(0, 1) ? null : 1;
+                    $y = 1;
+                    $r = (isset($x) && ($y = "a")) ? 1 : 2;',
+                'assertions' => [
+                    '$y===' => "'a'|1",
+                ],
+            ],
+            'ternaryCombinesTheAssignmentsOfBothBranches' => [
+                'code' => '<?php
+                    $a = 1;
+                    $b = 1;
+                    rand(0, 1) ? ($a = "x") : ($a = 2.0);
+                    $r = rand(0, 1) ? ($b = "x") : 0;',
+                'assertions' => [
+                    '$a===' => "'x'|float(2)",
+                    '$b===' => "'x'|1",
+                ],
+            ],
             'issetNarrowsObjectShapeAfterAnEarlyReturn' => [
                 'code' => '<?php
                     /** @param object{bar?: string} $foo */
@@ -1313,6 +1501,69 @@ final class IssetTest extends TestCase
                             return "";
                         }
                     }',
+            ],
+            'issetOnPropertyOfUnionWhereALaterMemberHasAMagicGetterStillSeesTheMissingOne' => [
+                'code' => '<?php
+                    final class A {
+                        public string $a = "";
+                    }
+
+                    final class B {}
+
+                    final class C {
+                        public function __get(string $name): string {
+                            return "";
+                        }
+                    }
+
+                    function f(A|C|B $x): string {
+                        return isset($x->a) ? $x->a : "";
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.2',
+            ],
+            'issetOnPropertyOfOnlyOneMemberOfUnion' => [
+                'code' => '<?php
+                    class A {
+                        public function __construct(public readonly string $a) {}
+                    }
+
+                    class B {
+                        public function __construct(public readonly string $b) {}
+                    }
+
+                    function f(A|B $obj): string {
+                        return $obj->a ?? "";
+                    }
+
+                    function g(B|A $obj): string {
+                        return $obj->a ?? "";
+                    }
+
+                    function h(A|B $obj): void {
+                        if (isset($obj->a)) {
+                            echo $obj->a;
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
+            'issetOnPropertyOfNoMemberOfUnionIsStillUnknown' => [
+                'code' => '<?php
+                    class A {}
+
+                    class B {}
+
+                    function f(A|B $obj): void {
+                        if (isset($obj->nope)) {
+                            echo 1;
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
             ],
             'comparisonOfAnItemWithAUnionKeyKeepsTheTypesOfItemsOfOtherTypes' => [
                 'code' => <<<'PHP'
@@ -1410,6 +1661,22 @@ final class IssetTest extends TestCase
     public static function providerInvalidCodeParse(): iterable
     {
         return [
+            'issetOnPropertyOfUnionWhoseMembersAllHaveItThroughAnIntersectionIsRedundant' => [
+                'code' => '<?php
+                    final class A {
+                        public string $a = "";
+                    }
+
+                    interface B {}
+
+                    /** @param A|(B&object{a: string}) $x */
+                    function f($x): string {
+                        return isset($x->a) ? $x->a : "";
+                    }',
+                'error_message' => 'RedundantConditionGivenDocblockType',
+                'error_levels' => [],
+                'php_version' => '8.2',
+            ],
             'variableNotSetByTheEmptyBranchOfAnIssetCheckIsPossiblyUndefinedAfterIt' => [
                 'code' => '<?php
 
@@ -1536,7 +1803,6 @@ final class IssetTest extends TestCase
 
                     function foo() : void {
                         $arr = returnPossiblyFalseArray();
-                        /** @psalm-suppress PossiblyInvalidArrayAccess */
                         if (!isset($arr["b"])) {}
                         echo $arr["b"];
                     }',
@@ -1721,6 +1987,46 @@ final class IssetTest extends TestCase
                         echo $foo->bar;
                     }',
                 'error_message' => 'InvalidArgument',
+            ],
+            'issetOnPropertyOfEveryMemberOfUnionStaysRedundant' => [
+                'code' => '<?php
+                    class A {
+                        public function __construct(public readonly string $a) {}
+                    }
+
+                    class B {
+                        public function __construct(public readonly string $a) {}
+                    }
+
+                    function f(A|B $obj): void {
+                        if (isset($obj->a)) {
+                            echo $obj->a;
+                        }
+                    }',
+                'error_message' => 'RedundantCondition',
+                'error_levels' => [],
+                'php_version' => '8.1',
+            ],
+            'issetOnPropertyOfMemberWithMagicGetterOfUnion' => [
+                'code' => '<?php
+                    class A {
+                        public string $a = "";
+                    }
+
+                    class B {
+                        public function __get(string $name): string {
+                            return $name;
+                        }
+                    }
+
+                    function f(A|B $obj): void {
+                        if (isset($obj->a)) {
+                            echo $obj->a;
+                        }
+                    }',
+                'error_message' => 'RedundantCondition',
+                'error_levels' => [],
+                'php_version' => '8.1',
             ],
         ];
     }

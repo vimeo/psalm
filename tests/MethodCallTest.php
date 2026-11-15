@@ -6,9 +6,13 @@ namespace Psalm\Tests;
 
 use Override;
 use Psalm\Context;
+use Psalm\Internal\Analyzer\IssueData;
+use Psalm\IssueBuffer;
 use Psalm\Tests\Traits\InvalidCodeAnalysisTestTrait;
 use Psalm\Tests\Traits\InvalidCodeAnalysisWithIssuesTestTrait;
 use Psalm\Tests\Traits\ValidCodeAnalysisTestTrait;
+
+use function array_map;
 
 use const DIRECTORY_SEPARATOR;
 
@@ -27,6 +31,38 @@ final class MethodCallTest extends TestCase
         );
 
         $this->analyzeFile('somefile.php', new Context());
+    }
+
+    public function testNewOfAnObjectOrAClassStringOfTheSameClassIsReportedOnce(): void
+    {
+        $this->testConfig->throw_exception = false;
+        $file_path = self::$src_dir_path . 'somefile.php';
+        $this->addFile(
+            $file_path,
+            '<?php
+                class A {
+                    public function __construct(array $items = []) {}
+                }
+
+                function f(mixed $c): A {
+                    if (!is_a($c, A::class, true)) {
+                        throw new Exception();
+                    }
+
+                    return new $c([]);
+                }',
+        );
+
+        $this->project_analyzer->setPhpVersion('8.0', 'tests');
+        $this->analyzeFile($file_path, new Context(), false);
+
+        self::assertSame(
+            ['UnsafeInstantiation'],
+            array_map(
+                static fn(IssueData $issue): string => $issue->type,
+                IssueBuffer::getIssuesDataForFile($file_path),
+            ),
+        );
     }
 
     public function testMethodCallMemoize(): void
@@ -205,6 +241,240 @@ final class MethodCallTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'instantiateFromObjectOfSafeClasses' => [
+                'code' => '<?php
+                    final class F {}
+
+                    /**
+                     * @psalm-consistent-constructor
+                     */
+                    class C {
+                        public function __construct(int $i) {}
+                    }
+
+                    function fromFinal(F $f): F {
+                        return new $f();
+                    }
+
+                    function fromConsistent(C $c): C {
+                        return new $c(1);
+                    }',
+            ],
+            'instantiateFromObjectWhoseConstructorCannotChange' => [
+                'code' => '<?php
+                    class FinalConstructor {
+                        final public function __construct(public int $i = 0) {}
+                    }
+
+                    /** @final */
+                    class DocblockFinal {
+                        public function __construct(public int $i = 0) {}
+                    }
+
+                    interface Buildable {
+                        public function __construct(int $i);
+                    }
+
+                    class Impl implements Buildable {
+                        public function __construct(public int $i) {}
+                    }
+
+                    function fromFinalConstructor(FinalConstructor $o): FinalConstructor {
+                        return new $o();
+                    }
+
+                    function fromDocblockFinal(DocblockFinal $o): DocblockFinal {
+                        return new $o();
+                    }
+
+                    function fromInterfaceConstructor(Impl $o): Impl {
+                        return new $o(1);
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
+            'instantiateFromObjectOfAnAnonymousClass' => [
+                'code' => '<?php
+                    function f(): object {
+                        $a = new class {
+                            public function __construct(public int $i = 0) {}
+                        };
+
+                        return new $a();
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
+            'propertyUnsetInABranchIsNotRestoredAfterIt' => [
+                'code' => '<?php
+                    final class Box {
+                        public ?int $v = null;
+                    }
+
+                    function unsetProp(Box $b): ?string {
+                        if ($b->v !== null) {
+                            unset($b->v);
+                        }
+
+                        return $b->v;
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'negatedMemoizedGetterIsNotNarrowedAfterABranchThatMutatesItsReceiver' => [
+                'code' => '<?php
+                    final class Quote {}
+
+                    final class Order {
+                        private int $counter = 0;
+
+                        /**
+                         * @return false|Quote
+                         * @psalm-mutation-free
+                         */
+                        public function quote() {
+                            return $this->counter > 0 ? new Quote() : false;
+                        }
+
+                        public function touch(): void {
+                            $this->counter++;
+                        }
+                    }
+
+                    $o = new Order();
+
+                    if (!$o->quote()) {
+                        $o->touch();
+                    }
+
+                    $q = $o->quote();',
+                'assertions' => ['$q===' => 'Quote|false'],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'memoizedGetterIsNotNarrowedAfterABranchThatMutatesItsReceiver' => [
+                'code' => '<?php
+                    final class Quote {
+                        public function amount(): int {
+                            return 1;
+                        }
+                    }
+
+                    final class Order {
+                        private int $counter = 0;
+
+                        /**
+                         * @return false|Quote
+                         * @psalm-mutation-free
+                         */
+                        public function quote() {
+                            return $this->counter > 0 ? new Quote() : false;
+                        }
+
+                        public function touch(): void {
+                            $this->counter++;
+                        }
+                    }
+
+                    function f(Order $o): int {
+                        $total = 0;
+
+                        if ($o->quote() instanceof Quote) {
+                            $total += $o->quote()->amount();
+                            $o->touch();
+                        }
+
+                        if ($o->quote() && $o->quote()->amount() > 0) {
+                            $total++;
+                        }
+
+                        return $total;
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'propertyIsNotNarrowedAfterABranchThatCallsAMethodChangingIt' => [
+                'code' => '<?php
+                    final class Quote {
+                        public function amount(): int {
+                            return 1;
+                        }
+                    }
+
+                    final class Holder {
+                        public ?Quote $quote = null;
+
+                        public function reset(): void {
+                            $this->quote = null;
+                        }
+                    }
+
+                    function g(Holder $h): int {
+                        if ($h->quote instanceof Quote) {
+                            $h->reset();
+                        }
+
+                        return $h->quote !== null ? $h->quote->amount() : 0;
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'methodCallOnATemplateBoundedByAnotherTemplate' => [
+                'code' => '<?php
+                    interface Document {
+                        public function total(): int;
+                    }
+
+                    /**
+                     * @template TDocument of Document
+                     * @template TDraft of TDocument
+                     * @param TDraft $draft
+                     */
+                    function draftTotal($draft): int {
+                        return $draft->total();
+                    }',
+            ],
+            'methodOfAnInterfaceATemplateBoundedByAnotherTemplateWasNarrowedTo' => [
+                'code' => '<?php
+                    interface Document {
+                        public function total(): int;
+                    }
+
+                    interface Sheet {
+                        public function total(): int;
+                    }
+
+                    /**
+                     * @template TDocument of Document
+                     * @template TDraft of TDocument
+                     * @param TDraft $draft
+                     */
+                    function draftCount($draft): int {
+                        if ($draft instanceof Countable) {
+                            return $draft->count() + $draft->total();
+                        }
+
+                        return 0;
+                    }
+
+                    /**
+                     * @template TDocument of Document|Sheet
+                     * @template TDraft of TDocument
+                     * @param TDraft $draft
+                     */
+                    function unionDraftCount($draft): int {
+                        if ($draft instanceof Countable) {
+                            return $draft->count() + $draft->total();
+                        }
+
+                        return 0;
+                    }',
+            ],
             'nullsafeCallOnAnAssignmentIsEvaluatedOnceAndNarrowed' => [
                 'code' => <<<'PHP'
                     <?php
@@ -278,7 +548,7 @@ final class MethodCallTest extends TestCase
                         $result = $query->where("x", Holder::$count);
                     }',
                 'assertions' => [],
-                'ignored_issues' => ['MixedMethodCall', 'MixedAssignment', 'UnusedVariable'],
+                'ignored_issues' => ['MixedMethodCall', 'MixedAssignment'],
             ],
             'privateConstructorOfAParentWithCallStaticStillInitializesTheProperties' => [
                 'code' => '<?php
@@ -297,7 +567,6 @@ final class MethodCallTest extends TestCase
 
                     final class Child extends Base {}',
                 'assertions' => [],
-                'ignored_issues' => ['ClassMustBeFinal'],
             ],
             'inaccessibleStaticMethodForwardedToCallStaticHasItsReturnType' => [
                 'code' => '<?php
@@ -332,7 +601,6 @@ final class MethodCallTest extends TestCase
 
                     $made = Child::make();',
                 'assertions' => ['$made===' => 'Base'],
-                'ignored_issues' => ['ClassMustBeFinal'],
             ],
             'inaccessibleStaticMethodForwardedToAnInheritedCallStaticResolvesStaticToTheCalledClass' => [
                 'code' => '<?php
@@ -354,7 +622,6 @@ final class MethodCallTest extends TestCase
 
                     $made = Child::make();',
                 'assertions' => ['$made===' => 'Child&static'],
-                'ignored_issues' => ['ClassMustBeFinal'],
             ],
             'staticCallOfInaccessibleMethodGoesToCallStatic' => [
                 'code' => <<<'PHP'
@@ -493,7 +760,6 @@ final class MethodCallTest extends TestCase
                         use Chain;
                     }',
                 'assertions' => [],
-                'ignored_issues' => ['MissingOverrideAttribute'],
             ],
             'selfStaticAndParentCallsKeepTheTypeArgumentsOfAStaticReturnType' => [
                 'code' => '<?php
@@ -533,7 +799,6 @@ final class MethodCallTest extends TestCase
                         }
                     }',
                 'assertions' => [],
-                'ignored_issues' => ['ClassMustBeFinal'],
             ],
             'parentSelfAndStaticCallsReturnTheStaticTypeOfTheCallingClass' => [
                 'code' => '<?php
@@ -574,7 +839,6 @@ final class MethodCallTest extends TestCase
                         }
                     }',
                 'assertions' => [],
-                'ignored_issues' => ['MissingOverrideAttribute'],
             ],
             'mysqliGetWarningsMayReturnFalse' => [
                 'code' => <<<'PHP'
@@ -2019,6 +2283,81 @@ final class MethodCallTest extends TestCase
     public static function providerInvalidCodeParse(): iterable
     {
         return [
+            'unsafeInstantiationFromThis' => [
+                'code' => '<?php
+                    class A {
+                        public function __construct(public int $i = 0) {}
+
+                        public function copy(): static {
+                            return new $this();
+                        }
+                    }',
+                'error_message' => 'Cannot safely instantiate class A with "new $object" as its constructor',
+                'error_levels' => [],
+                'php_version' => '8.1',
+            ],
+            'unsafeInstantiationFromObjectWithArgumentsThatDontFitTheInterface' => [
+                'code' => '<?php
+                    interface Buildable {
+                        public function __construct(int $i);
+                    }
+
+                    class Impl implements Buildable {
+                        public function __construct(public int $i) {}
+                    }
+
+                    function f(Impl $o): Impl {
+                        return new $o("x");
+                    }',
+                'error_message' => 'UnsafeInstantiation',
+                'error_levels' => [],
+                'php_version' => '8.1',
+            ],
+            'unsafeInstantiationFromObject' => [
+                'code' => '<?php
+                    class A {}
+
+                    class Alpha extends A {
+                        public function __construct(string $a) {}
+                    }
+
+                    function foo(A $instance): A {
+                        return new $instance();
+                    }
+
+                    foo(new Alpha("xxx"));',
+                'error_message' => 'UnsafeInstantiation',
+            ],
+            'variableUnsetInABranchIsNotRestoredAfterIt' => [
+                'code' => '<?php
+                    function unsetThenReturn(?int $x): ?string {
+                        if ($x !== null) {
+                            unset($x);
+                        }
+
+                        return $x ?? null;
+                    }',
+                'error_message' => 'TypeDoesNotContainType',
+                'error_levels' => [],
+                'php_version' => '8.0',
+            ],
+            'undefinedMethodOnATemplateBoundedByAnotherTemplate' => [
+                'code' => '<?php
+                    interface Document {
+                        public function total(): int;
+                    }
+
+                    /**
+                     * @template TDocument of Document
+                     * @template TDraft of TDocument
+                     * @param TDraft $draft
+                     * @return mixed
+                     */
+                    function draftNope($draft) {
+                        return $draft->nope();
+                    }',
+                'error_message' => 'PossiblyUndefinedMethod - src' . DIRECTORY_SEPARATOR . 'somefile.php:13:40 - Method Document::nope does not exist',
+            ],
             'undefinedStaticPropertyGivenToAMethodOfAnUnknownClass' => [
                 'code' => '<?php
                     class Holder {}
@@ -2145,10 +2484,6 @@ final class MethodCallTest extends TestCase
 
                     $a->barBar();',
                 'error_message' => 'MixedMethodCall',
-                'error_levels' => [
-                    'MissingPropertyType',
-                    'MixedAssignment',
-                ],
             ],
             'invalidMethodCall' => [
                 'code' => '<?php
@@ -2214,7 +2549,7 @@ final class MethodCallTest extends TestCase
                         }
                     }',
                 'error_message' => 'LessSpecificReturnStatement',
-                'error_levels' => ['MixedReturnStatement', 'MixedMethodCall'],
+                'error_levels' => ['MixedMethodCall'],
             ],
             'undefinedVariableStaticCall' => [
                 'code' => '<?php

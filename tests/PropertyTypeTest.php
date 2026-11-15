@@ -7,9 +7,11 @@ namespace Psalm\Tests;
 use Countable;
 use DateTime;
 use Override;
+use PHPUnit\Framework\Attributes\DataProvider;
 use Psalm\Config;
 use Psalm\Context;
 use Psalm\Exception\CodeException;
+use Psalm\IssueBuffer;
 use Psalm\Tests\Traits\InvalidCodeAnalysisTestTrait;
 use Psalm\Tests\Traits\ValidCodeAnalysisTestTrait;
 
@@ -663,12 +665,106 @@ final class PropertyTypeTest extends TestCase
     }
 
     /**
+     * A parameter type naming a missing class makes the analysis of a constructor skip its body, but the properties
+     * the body sets are still initialised in the subclasses.
+     */
+    #[DataProvider('providerSubclassesOfAConstructorWithAMissingParamClass')]
+    public function testConstructorWithAMissingParamClassInitialisesSubclassProperties(string $child_code): void
+    {
+        $this->testConfig->throw_exception = false;
+
+        $parent_file = self::$src_dir_path . 'parent.php';
+        $child_file = self::$src_dir_path . 'child.php';
+
+        $this->addFile($parent_file, '<?php
+            namespace Fixture;
+
+            class ParentClass {
+                protected string $name;
+
+                /** @param MissingClass $finder */
+                public function __construct($finder = null) {
+                    $this->name = "name";
+                }
+            }
+        ');
+        $this->addFile($child_file, $child_code);
+
+        $this->analyzeFile($child_file, new Context());
+
+        $issues = [];
+
+        foreach ([$parent_file, $child_file] as $file) {
+            foreach (IssueBuffer::getIssuesDataForFile($file) as $issue) {
+                $issues[] = $issue->type . ' ' . $issue->file_name . ':' . $issue->line_from;
+            }
+        }
+
+        self::assertSame(['UndefinedDocblockClass src' . DIRECTORY_SEPARATOR . 'parent.php:7'], $issues);
+    }
+
+    /**
+     * @return iterable<string, array{string}>
+     * @psalm-pure
+     */
+    public static function providerSubclassesOfAConstructorWithAMissingParamClass(): iterable
+    {
+        yield 'inheriting the constructor' => ['<?php
+            namespace Fixture;
+
+            class ChildClass extends ParentClass {}
+        '];
+        yield 'calling the constructor' => ['<?php
+            namespace Fixture;
+
+            class ChildClass extends ParentClass {
+                public function __construct() {
+                    parent::__construct();
+                }
+            }
+        '];
+    }
+
+    /**
      * @psalm-pure
      */
     #[Override]
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'declaredPropertyOfAStdClassSubclassKeepsItsTypeAndAnUndeclaredOneStaysDynamic' => [
+                'code' => '<?php
+                    final class Item extends stdClass {
+                        /** @var list<string> */
+                        public array $tags = [];
+
+                        public int $count = 0;
+
+                        public ?string $note = null;
+                    }
+
+                    function write(Item $item): void {
+                        $item->tags = ["a"];
+                        $item->count = 2;
+                        $item->extra = "x";
+                    }
+
+                    function read(Item $item): void {
+                        $tags = $item->tags;
+                        $count = $item->count;
+                        $note = $item->note;
+                        $extra = $item->extra;
+
+                        /** @psalm-check-type-exact $tags = list<string> */
+                        /** @psalm-check-type-exact $count = int */
+                        /** @psalm-check-type-exact $note = null|string */
+                        /** @psalm-check-type-exact $extra = mixed */
+                        echo count($tags), $count, $note;
+                    }',
+                'assertions' => [],
+                'ignored_issues' => ['MixedAssignment'],
+                'php_version' => '8.1',
+            ],
             'staticOfTheCallerIsNotTheStaticPropertyOfAnotherClassOfTheSameName' => [
                 'code' => '<?php
                     final class Other {
@@ -1757,6 +1853,64 @@ final class PropertyTypeTest extends TestCase
                     function foo(DOMElement $e) : ?DOMAttr {
                         return $e->attributes->item(0);
                     }',
+            ],
+            'propertyMapKeyMatchesDeclaredCase' => [
+                'code' => '<?php
+                    namespace Parle;
+
+                    class Parser {
+                        public $reduceId;
+
+                        public function __construct() {
+                            $this->reduceId = 1;
+                        }
+                    }
+
+                    class RParser {
+                        public $reduceId;
+
+                        public function __construct() {
+                            $this->reduceId = 1;
+                        }
+                    }
+
+                    $parser = new Parser();
+                    $rparser = new RParser();
+                    $parserId = $parser->reduceId;
+                    $rparserId = $rparser->reduceId;',
+                'assertions' => [
+                    '$parserId===' => 'int',
+                    '$rparserId===' => 'int',
+                ],
+            ],
+            'propertyMapNestedNamespaceKeyMatchesDeclaredCase' => [
+                'code' => '<?php
+                    namespace MongoDB\Driver\Exception;
+
+                    class CommandException extends \Exception {
+                        public $resultDocument;
+
+                        public function __construct() {
+                            $this->resultDocument = new \stdClass();
+                        }
+                    }
+
+                    class RuntimeException extends \Exception {
+                        public $errorLabels;
+
+                        public function __construct() {
+                            $this->errorLabels = null;
+                        }
+                    }
+
+                    $command = new CommandException();
+                    $runtime = new RuntimeException();
+                    $document = $command->resultDocument;
+                    $labels = $runtime->errorLabels;',
+                'assertions' => [
+                    '$document===' => 'object',
+                    '$labels===' => 'array<array-key, mixed>|null',
+                ],
             ],
             'goodArrayProperties' => [
                 'code' => '<?php
@@ -4027,6 +4181,168 @@ final class PropertyTypeTest extends TestCase
                         }
                     }',
             ],
+            'aTypedPropertyThatNoConstructorSetsIsNotNullableAfterACoalesce' => [
+                'code' => '<?php
+                    final class Meta {
+                        public string $name;
+                    }
+
+                    function e(Meta $m): int {
+                        $label = $m->name ?? "default";
+                        return strlen($m->name) + strlen($label);
+                    }',
+                'assertions' => [],
+                'ignored_issues' => ['PropertyNotSetInConstructor', 'MissingConstructor'],
+            ],
+            'aTypedPropertyThatNoConstructorSetsIsNotNullableAfterAnIssetTernary' => [
+                'code' => '<?php
+                    final class Meta {
+                        public string $name;
+                    }
+
+                    function f(Meta $m): int {
+                        $x = isset($m->name) ? 1 : 0;
+                        return strlen($m->name) + $x;
+                    }',
+                'assertions' => [],
+                'ignored_issues' => ['PropertyNotSetInConstructor', 'MissingConstructor'],
+            ],
+            'aTypedPropertyThatNoConstructorSetsIsNotNullableInATruthyCoalesce' => [
+                'code' => '<?php
+                    abstract class Gen {}
+
+                    final class M2 {
+                        public Gen $g;
+
+                        public function set(Gen $g): void {
+                            $this->g = $g;
+                        }
+                    }
+
+                    function h(M2 $a, M2 $b): void {
+                        if ($b->g ?? null) {
+                            $a->set($b->g);
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => ['PropertyNotSetInConstructor', 'MissingConstructor'],
+            ],
+            'aTypedPropertyThatNoConstructorSetsHasItsTypeAfterACoalesce' => [
+                'code' => '<?php
+                    final class Meta {
+                        public string $name;
+                    }
+
+                    $m = new Meta();
+                    $label = $m->name ?? "default";
+                    $name = $m->name;',
+                'assertions' => [
+                    '$label===' => 'string',
+                    '$name===' => 'string',
+                ],
+                'ignored_issues' => ['PropertyNotSetInConstructor', 'MissingConstructor'],
+            ],
+            'emptyOnATypedPropertyThatNoConstructorSetsAllowsAnArrayAppend' => [
+                'code' => '<?php
+                    final class Builder {
+                        public ?array $orders;
+                    }
+
+                    function append(Builder $q): void {
+                        if (empty($q->orders)) {
+                            $q->orders[] = 1;
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => ['MissingConstructor', 'RiskyTruthyFalsyComparison'],
+                'php_version' => '8.0',
+            ],
+            'issetOnATypedPropertyDoesNotMakeAFollowingReadPossiblyUndefined' => [
+                'code' => '<?php
+                    final class Book {
+                        public string $name;
+                    }
+
+                    function viaVariable(Book $book): string {
+                        $has = isset($book->name);
+
+                        if ($has) {
+                            return $book->name;
+                        }
+
+                        return "";
+                    }
+
+                    function viaAssignment(Book $book): string {
+                        $set = isset($book->name);
+                        $name = $book->name;
+
+                        return $name;
+                    }
+
+                    function viaArgument(Book $book): int {
+                        $set = isset($book->name);
+
+                        return strlen($book->name);
+                    }',
+                'assertions' => [],
+                'ignored_issues' => ['MissingConstructor', 'UnusedVariable'],
+                'php_version' => '8.0',
+            ],
+            'issetOnATypedPropertyAsTheLeftOfAndChecksWhetherItWasSet' => [
+                'code' => '<?php
+                    final class Book {
+                        public string $name;
+                    }
+
+                    function hasName(Book $book): bool {
+                        return isset($book->name) && $book->name !== "";
+                    }',
+                'assertions' => [],
+                'ignored_issues' => ['MissingConstructor'],
+                'php_version' => '8.0',
+            ],
+            'issetOnATypedPropertyThatNoConstructorSetsChecksWhetherItWasSet' => [
+                'code' => '<?php
+                    final class Book {
+                        public string $name;
+
+                        public function __construct() {
+                        }
+                    }
+
+                    function title(Book $book): string {
+                        return $book->name ?? "untitled";
+                    }',
+                'assertions' => [],
+                'ignored_issues' => ['PropertyNotSetInConstructor'],
+                'php_version' => '8.0',
+            ],
+            'issetOnATypedPropertyOfAClassWithoutAConstructorChecksWhetherItWasSet' => [
+                'code' => '<?php
+                    final class Book {
+                        public string $name;
+                    }
+
+                    function title(Book $book): string {
+                        return $book->name ?? throw new \\Exception("Give the book a name first");
+                    }
+
+                    function hasName(Book $book): bool {
+                        return isset($book->name);
+                    }
+
+                    function describe(Book $book): string {
+                        if (!isset($book->name)) {
+                            return "nameless";
+                        }
+
+                        return $book->name;
+                    }',
+                'assertions' => [],
+                'ignored_issues' => ['MissingConstructor'],
+                'php_version' => '8.0',
+            ],
         ];
     }
 
@@ -4037,6 +4353,39 @@ final class PropertyTypeTest extends TestCase
     public static function providerInvalidCodeParse(): iterable
     {
         return [
+            'declaredPropertyOfAStdClassSubclassRejectsAWrongValue' => [
+                'code' => '<?php
+                    final class Item extends stdClass {
+                        public int $count = 0;
+                    }
+
+                    $item = new Item();
+                    $item->count = "three";',
+                'error_message' => 'InvalidPropertyAssignmentValue',
+            ],
+            'declaredPropertyOfAStdClassSubclassHasItsTypeWhenRead' => [
+                'code' => '<?php
+                    final class Item extends stdClass {
+                        public string $label = "";
+                    }
+
+                    function takesInt(int $n): int {
+                        return $n;
+                    }
+
+                    $item = new Item();
+                    takesInt($item->label);',
+                'error_message' => 'InvalidScalarArgument',
+            ],
+            'promotedPropertyRedeclaresPropertyOfTheSameClass' => [
+                'code' => '<?php
+                    final class Order {
+                        public int $id;
+
+                        public function __construct(public int $id) {}
+                    }',
+                'error_message' => 'ParseError - src' . DIRECTORY_SEPARATOR . 'somefile.php:5:64 - Promoted property id clashes',
+            ],
             'staticPropertyOfATraitIsSharedWithTheSubclassesOfTheUsingClass' => [
                 'code' => '<?php
                     trait Holder {
@@ -4189,7 +4538,7 @@ final class PropertyTypeTest extends TestCase
                         }
                     }',
                 'error_message' => 'PropertyNotSetInConstructor - src' . DIRECTORY_SEPARATOR . 'somefile.php:7:40 - Property Response::$canary',
-                'error_levels' => ['RedundantPropertyInitializationCheck', 'RedundantCondition'],
+                'error_levels' => ['RedundantPropertyInitializationCheck'],
             ],
             'propertyNotInitializedByAnInterfaceStaticMethodCalledInTheConstructor' => [
                 'code' => '<?php
@@ -4635,10 +4984,6 @@ final class PropertyTypeTest extends TestCase
 
                     echo $a->foo;',
                 'error_message' => 'MixedPropertyFetch',
-                'error_levels' => [
-                    'MissingPropertyType',
-                    'MixedAssignment',
-                ],
             ],
             'mixedPropertyAssignment' => [
                 'code' => '<?php
@@ -4652,10 +4997,6 @@ final class PropertyTypeTest extends TestCase
 
                     $a->foo = "hello";',
                 'error_message' => 'MixedPropertyAssignment',
-                'error_levels' => [
-                    'MissingPropertyType',
-                    'MixedAssignment',
-                ],
             ],
             'possiblyNullablePropertyAssignment' => [
                 'code' => '<?php
@@ -4812,7 +5153,6 @@ final class PropertyTypeTest extends TestCase
                         }
                     }',
                 'error_message' => 'PropertyNotSetInConstructor',
-                'error_levels' => ['RedundantPropertyInitializationCheck'],
             ],
             'propertyReadUnconditionallyInATraitIsReportedAtAReturnOfConstructor' => [
                 'code' => '<?php
@@ -4844,7 +5184,6 @@ final class PropertyTypeTest extends TestCase
                         }
                     }',
                 'error_message' => 'PropertyNotSetInConstructor',
-                'error_levels' => ['RedundantPropertyInitializationCheck'],
             ],
             'propertyReadUnconditionallyInATraitUsedByAnAliasIsReportedAtAReturnOfConstructor' => [
                 'code' => '<?php
@@ -4877,7 +5216,6 @@ final class PropertyTypeTest extends TestCase
                         }
                     }',
                 'error_message' => 'PropertyNotSetInConstructor',
-                'error_levels' => ['RedundantPropertyInitializationCheck'],
             ],
             'propertyReadAsAnArgumentOfACoalesceOperandIsReportedAtAReturnOfConstructor' => [
                 'code' => '<?php
@@ -4911,7 +5249,7 @@ final class PropertyTypeTest extends TestCase
                         }
                     }',
                 'error_message' => 'PropertyNotSetInConstructor',
-                'error_levels' => ['RedundantPropertyInitializationCheck', 'RedundantConditionGivenDocblockType', 'DocblockTypeContradiction', 'RedundantCondition', 'TypeDoesNotContainNull'],
+                'error_levels' => ['RedundantCondition', 'TypeDoesNotContainNull'],
             ],
             'propertyReadAsTheIndexOfAnIssetIsReportedAtAReturnOfConstructor' => [
                 'code' => '<?php
@@ -4938,7 +5276,6 @@ final class PropertyTypeTest extends TestCase
                         }
                     }',
                 'error_message' => 'PropertyNotSetInConstructor',
-                'error_levels' => ['RedundantPropertyInitializationCheck'],
             ],
             'notSetBeforeReturnOfConstructor' => [
                 'code' => '<?php
@@ -5333,7 +5670,7 @@ final class PropertyTypeTest extends TestCase
                         }
                     }',
                 'error_message' => 'UninitializedProperty',
-                'error_levels' => ['MixedArgument', 'MissingPropertyType'],
+                'error_levels' => ['MixedArgument'],
             ],
             'uninitializedObjectProperty' => [
                 'code' => '<?php
@@ -5641,7 +5978,7 @@ final class PropertyTypeTest extends TestCase
                         /** @var array */
                         public string $s = [];
                     }',
-                'error_message' => 'MismatchingDocblockPropertyType - src' . DIRECTORY_SEPARATOR . 'somefile.php:3:34 - Parameter A::$s has wrong type',
+                'error_message' => 'MismatchingDocblockPropertyType - src' . DIRECTORY_SEPARATOR . 'somefile.php:3:34 - Property A::$s has wrong type',
             ],
             'overwritePropertyType' => [
                 'code' => '<?php
@@ -5650,6 +5987,15 @@ final class PropertyTypeTest extends TestCase
                         public string $s = [];
                     }',
                 'error_message' => 'MismatchingDocblockPropertyType',
+            ],
+            'mismatchingDocblockPropertyTypeShowsExactType' => [
+                'code' => '<?php
+                    class A {
+                        /** @var numeric-string */
+                        public int $s;
+                    }',
+                'error_message' => 'MismatchingDocblockPropertyType - src' . DIRECTORY_SEPARATOR . 'somefile.php:3:34'
+                    . ' - Property A::$s has wrong type \'numeric-string\', should be \'int',
             ],
             'possiblyNullOnFunctionCallNotCoalesced' => [
                 'code' => '<?php
@@ -5732,6 +6078,89 @@ final class PropertyTypeTest extends TestCase
                     }
                 PHP,
                 'error_message' => 'MissingConstructor',
+            ],
+            'mixedObjectOfPropertyAssignmentIsNamed' => [
+                'code' => '<?php
+                    function f(): mixed { return 1; }
+                    f()->name = "x";',
+                'error_message' => 'MixedPropertyAssignment - src' . DIRECTORY_SEPARATOR . 'somefile.php:3:21 - f() of type mixed cannot be assigned to',
+                'error_levels' => [],
+                'php_version' => '8.0',
+            ],
+            'arrayOffsetObjectOfPropertyAssignmentIsNamed' => [
+                'code' => '<?php
+                    function f(array $metadata, int $i, string $column): void {
+                        $metadata[$i]->name = $column;
+                    }',
+                'error_message' => 'MixedPropertyAssignment - src' . DIRECTORY_SEPARATOR . 'somefile.php:3:25 - $metadata[$i] of type mixed cannot be assigned to',
+            ],
+            'closureCallObjectOfPropertyAssignmentIsNamedOnOneLine' => [
+                'code' => '<?php
+                    (function () {
+                        return null;
+                    })()->name = "x";',
+                'error_message' => 'NullPropertyAssignment - src' . DIRECTORY_SEPARATOR . 'somefile.php:2:21 - (function () { return null; })() of type null cannot be assigned to',
+            ],
+            'nullObjectOfPropertyAssignmentIsNamed' => [
+                'code' => '<?php
+                    function f(): null { return null; }
+                    f()->name = "x";',
+                'error_message' => 'NullPropertyAssignment - src' . DIRECTORY_SEPARATOR . 'somefile.php:3:21 - f() of type null cannot be assigned to',
+            ],
+            'nullableObjectOfPropertyAssignmentIsNamed' => [
+                'code' => '<?php
+                    function f(): ?stdClass { return null; }
+                    f()->name = "x";',
+                'error_message' => 'PossiblyNullPropertyAssignment - src' . DIRECTORY_SEPARATOR . 'somefile.php:3:21 - f() with possibly null type',
+            ],
+            'partialApplicationInTheObjectOfPropertyAssignmentIsNamed' => [
+                'code' => '<?php
+                    function wrap(Closure $c): ?stdClass { return rand(0, 1) ? null : new stdClass; }
+                    function add(int $a, int $b): int { return $a + $b; }
+                    wrap(add(1, ?))->x = 1;',
+                'error_message' => 'PossiblyNullPropertyAssignment - src' . DIRECTORY_SEPARATOR . 'somefile.php:4:21 - wrap(add(1, ?)) with possibly null type',
+                'error_levels' => [],
+                'php_version' => '8.6',
+            ],
+            'nonObjectOfPropertyAssignmentIsNamed' => [
+                'code' => '<?php
+                    function f(): int { return 1; }
+                    f()->name = "x";',
+                'error_message' => 'InvalidPropertyAssignment - src' . DIRECTORY_SEPARATOR . 'somefile.php:3:21 - f() with non-object type',
+            ],
+            'possiblyNonObjectOfPropertyAssignmentIsNamed' => [
+                'code' => '<?php
+                    function f(): int|stdClass { return 1; }
+                    f()->name = "x";',
+                'error_message' => 'PossiblyInvalidPropertyAssignment - src' . DIRECTORY_SEPARATOR . 'somefile.php:3:21 - f() with possible non-object type',
+                'error_levels' => [],
+                'php_version' => '8.0',
+            ],
+            'nullObjectOfPropertyFetchIsNamed' => [
+                'code' => '<?php
+                    function f(): null { return null; }
+                    echo f()->name;',
+                'error_message' => 'NullPropertyFetch - src' . DIRECTORY_SEPARATOR . 'somefile.php:3:26 - Cannot get property on null variable f',
+            ],
+            'possiblyNullObjectOfPropertyFetchIsNamed' => [
+                'code' => '<?php
+                    function f(): ?stdClass { return null; }
+                    echo f()->name;',
+                'error_message' => 'PossiblyNullPropertyFetch - src' . DIRECTORY_SEPARATOR . 'somefile.php:3:26 - Cannot get property on possibly null variable f() of type',
+            ],
+            'invalidObjectOfMethodCallIsNamed' => [
+                'code' => '<?php
+                    function f(): int { return 1; }
+                    f()->m();',
+                'error_message' => 'InvalidMethodCall - src' . DIRECTORY_SEPARATOR . 'somefile.php:3:26 - Cannot call method on int variable f',
+            ],
+            'possiblyInvalidObjectOfMethodCallIsNamed' => [
+                'code' => '<?php
+                    function f(): int|stdClass { return 1; }
+                    f()->m();',
+                'error_message' => 'PossiblyInvalidMethodCall - src' . DIRECTORY_SEPARATOR . 'somefile.php:3:26 - Cannot call method on possible int variable f',
+                'error_levels' => [],
+                'php_version' => '8.0',
             ],
             'notSetWhenTheChildOverridesTheMethodOfAParentClass' => [
                 'code' => '<?php
@@ -5841,6 +6270,133 @@ final class PropertyTypeTest extends TestCase
                         }
                     }',
                 'error_message' => 'PropertyNotSetInConstructor - src' . DIRECTORY_SEPARATOR . 'somefile.php:20:27 - Property B::$prop is not defined in constructor of B',
+            ],
+            'propertyMapWrongCasePropertyIsUndefined' => [
+                'code' => '<?php
+                    function foo(DOMDocumentType $t): string {
+                        return $t->publicid;
+                    }',
+                'error_message' => 'UndefinedPropertyFetch',
+                'error_levels' => [],
+                'php_version' => '8.4',
+            ],
+            'issetOnATypedPropertyThatAParentConstructorSetsIsRedundantInTheChild' => [
+                'code' => '<?php
+                    class Base {
+                        public string $name;
+
+                        public function __construct() {
+                            $this->name = "x";
+                        }
+                    }
+
+                    final class Child extends Base {
+                        public function __construct() {
+                            parent::__construct();
+                        }
+                    }
+
+                    function hasName(Child $child): bool {
+                        if (isset($child->name)) {
+                            return true;
+                        }
+
+                        return false;
+                    }',
+                'error_message' => 'RedundantCondition',
+                'error_levels' => [],
+                'php_version' => '8.0',
+            ],
+            'nullCoalescingOnATypedPropertyThatNoConstructorSetsKeepsTheNullableConcatenation' => [
+                'code' => '<?php
+                    final class Box {
+                        public ?string $tag;
+
+                        public function __construct() {
+                        }
+                    }
+
+                    function tag(Box $box): void {
+                        $t = $box->tag ?? null;
+                        $box->tag .= "x";
+                    }',
+                'error_message' => 'PossiblyNullOperand',
+                'error_levels' => ['MissingConstructor', 'PropertyNotSetInConstructor'],
+                'php_version' => '8.0',
+            ],
+            'issetOnADocblockTypedPropertyIsRedundant' => [
+                'code' => '<?php
+                    final class Book {
+                        /** @var string */
+                        public $name = "x";
+                    }
+
+                    function hasName(Book $book): bool {
+                        if (isset($book->name)) {
+                            return true;
+                        }
+
+                        return false;
+                    }',
+                'error_message' => 'RedundantConditionGivenDocblockType',
+                'error_levels' => [],
+                'php_version' => '8.0',
+            ],
+            'issetOnATypedPropertyWithADefaultIsRedundant' => [
+                'code' => '<?php
+                    final class Book {
+                        public string $name = "x";
+                    }
+
+                    function hasName(Book $book): bool {
+                        if (isset($book->name)) {
+                            return true;
+                        }
+
+                        return false;
+                    }',
+                'error_message' => 'RedundantCondition',
+                'error_levels' => [],
+                'php_version' => '8.0',
+            ],
+            'issetOnAPromotedPropertyIsRedundant' => [
+                'code' => '<?php
+                    final class Book {
+                        public function __construct(public string $name) {
+                        }
+                    }
+
+                    function hasName(Book $book): bool {
+                        if (isset($book->name)) {
+                            return true;
+                        }
+
+                        return false;
+                    }',
+                'error_message' => 'RedundantCondition',
+                'error_levels' => [],
+                'php_version' => '8.0',
+            ],
+            'issetOnATypedPropertyThatAConstructorSetsIsRedundant' => [
+                'code' => '<?php
+                    final class Book {
+                        public string $name;
+
+                        public function __construct() {
+                            $this->name = "x";
+                        }
+                    }
+
+                    function hasName(Book $book): bool {
+                        if (isset($book->name)) {
+                            return true;
+                        }
+
+                        return false;
+                    }',
+                'error_message' => 'RedundantCondition - src' . DIRECTORY_SEPARATOR . 'somefile.php:11:29 - Type string for $book->name is always isset',
+                'error_levels' => [],
+                'php_version' => '8.0',
             ],
         ];
     }

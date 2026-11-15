@@ -22,6 +22,7 @@ use Psalm\Internal\Analyzer\Statements\Expression\GlobalStateAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\SimpleTypeInferer;
 use Psalm\Internal\Analyzer\Statements\ExpressionAnalyzer;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
+use Psalm\Internal\Codebase\CliOutput;
 use Psalm\Internal\Codebase\ConditionalTaintSinks;
 use Psalm\Internal\Codebase\ReceiverPropertyTaints;
 use Psalm\Internal\DataFlow\DataFlowNode;
@@ -549,6 +550,47 @@ final class NewAnalyzer extends CallAnalyzer
         }
     }
 
+    /**
+     * Reports the instantiation of a class deprecated, internal to other code, or only running from the command line
+     */
+    private static function checkInstantiationProhibitions(
+        StatementsAnalyzer $statements_analyzer,
+        Context $context,
+        PhpParser\Node\Expr\New_ $stmt,
+        ClassLikeStorage $storage,
+        string $fq_class_name,
+    ): void {
+        if ($storage->deprecated && strtolower($fq_class_name) !== strtolower((string)$context->self)) {
+            IssueBuffer::maybeAdd(
+                new DeprecatedClass(
+                    $fq_class_name . ' is marked deprecated',
+                    new CodeLocation($statements_analyzer->getSource(), $stmt),
+                    $fq_class_name,
+                ),
+                $statements_analyzer->getSuppressedIssues(),
+            );
+        }
+
+        $caller_identifier = $statements_analyzer->getFullyQualifiedFunctionMethodOrNamespaceName() ?? '';
+
+        if (!$context->collect_initializations
+            && !$context->collect_mutations
+            && !NamespaceAnalyzer::isWithinAny($caller_identifier, $storage->internal)
+        ) {
+            IssueBuffer::maybeAdd(
+                new InternalClass(
+                    $fq_class_name . ' is internal to ' . InternalClass::listToPhrase($storage->internal)
+                        . ' but called from ' . ($caller_identifier ?: 'root namespace'),
+                    new CodeLocation($statements_analyzer->getSource(), $stmt),
+                    $fq_class_name,
+                ),
+                $statements_analyzer->getSuppressedIssues(),
+            );
+        }
+
+        CliOutput::checkInstantiation($statements_analyzer, $context, $storage, $stmt);
+    }
+
     private static function analyzeNamedConstructor(
         StatementsAnalyzer $statements_analyzer,
         Codebase $codebase,
@@ -578,34 +620,7 @@ final class NewAnalyzer extends CallAnalyzer
             }
         }
 
-        if ($storage->deprecated && strtolower($fq_class_name) !== strtolower((string)$context->self)) {
-            IssueBuffer::maybeAdd(
-                new DeprecatedClass(
-                    $fq_class_name . ' is marked deprecated',
-                    new CodeLocation($statements_analyzer->getSource(), $stmt),
-                    $fq_class_name,
-                ),
-                $statements_analyzer->getSuppressedIssues(),
-            );
-        }
-
-
-        $caller_identifier = $statements_analyzer->getFullyQualifiedFunctionMethodOrNamespaceName() ?? '';
-
-        if (!$context->collect_initializations
-            && !$context->collect_mutations
-            && !NamespaceAnalyzer::isWithinAny($caller_identifier, $storage->internal)
-        ) {
-            IssueBuffer::maybeAdd(
-                new InternalClass(
-                    $fq_class_name . ' is internal to ' . InternalClass::listToPhrase($storage->internal)
-                        . ' but called from ' . ($caller_identifier ?: 'root namespace'),
-                    new CodeLocation($statements_analyzer->getSource(), $stmt),
-                    $fq_class_name,
-                ),
-                $statements_analyzer->getSuppressedIssues(),
-            );
-        }
+        self::checkInstantiationProhibitions($statements_analyzer, $context, $stmt, $storage, $fq_class_name);
 
         $method_id = new MethodIdentifier($fq_class_name, '__construct');
 
@@ -673,6 +688,7 @@ final class NewAnalyzer extends CallAnalyzer
             if ($declaring_method_id) {
                 $method_storage = $codebase->methods->getStorage($declaring_method_id);
 
+                $caller_identifier = $statements_analyzer->getFullyQualifiedFunctionMethodOrNamespaceName() ?? '';
                 if (!NamespaceAnalyzer::isWithinAny($caller_identifier, $method_storage->internal)) {
                     IssueBuffer::maybeAdd(
                         new InternalMethod(
@@ -1402,6 +1418,54 @@ final class NewAnalyzer extends CallAnalyzer
             return;
         }
     }
+    /**
+     * `new $object` is as unsafe as `new static` when a child class may change the constructor
+     */
+    private static function checkNewOfAnObject(
+        StatementsAnalyzer $statements_analyzer,
+        Codebase $codebase,
+        Context $context,
+        PhpParser\Node\Expr\New_ $stmt,
+        TNamedObject $lhs_type_part,
+        bool &$unsafe_instantiation_reported,
+    ): void {
+        if ($lhs_type_part instanceof TAnonymousClassInstance
+            || $statements_analyzer->node_data->getType($stmt)
+            || !$codebase->classlikes->classExists($lhs_type_part->value, null, $context)
+        ) {
+            return;
+        }
+
+        $object_storage = $codebase->classlike_storage_provider->get($lhs_type_part->value);
+
+        // a final class has no child that could change the constructor, and the object of an internal
+        // class is mostly one just created (`$o = new stdClass; new $o`)
+        if ($unsafe_instantiation_reported
+            || !$object_storage->user_defined
+            || $object_storage->final
+            || self::childConstructorsAcceptArgs(
+                $statements_analyzer,
+                $codebase,
+                $context,
+                $object_storage,
+                $stmt->getArgs(),
+            )
+        ) {
+            return;
+        }
+
+        $unsafe_instantiation_reported = true;
+
+        IssueBuffer::maybeAdd(
+            new UnsafeInstantiation(
+                'Cannot safely instantiate class ' . $lhs_type_part->value
+                . ' with "new $object" as its constructor might change in child classes',
+                new CodeLocation($statements_analyzer->getSource(), $stmt),
+            ),
+            $statements_analyzer->getSuppressedIssues(),
+        );
+    }
+
     private static function getNewType(
         StatementsAnalyzer $statements_analyzer,
         Codebase $codebase,
@@ -1410,6 +1474,7 @@ final class NewAnalyzer extends CallAnalyzer
         Union $stmt_class_type,
         Config $config,
         bool &$can_extend,
+        bool &$unsafe_instantiation_reported = false,
     ): ?Union {
         $new_types = [];
 
@@ -1423,6 +1488,7 @@ final class NewAnalyzer extends CallAnalyzer
                     $lhs_type_part->as,
                     $config,
                     $can_extend,
+                    $unsafe_instantiation_reported,
                 );
                 if ($as) {
                     $new_types []= new Union([$lhs_type_part->replaceAs($as)]);
@@ -1459,13 +1525,15 @@ final class NewAnalyzer extends CallAnalyzer
                             $lhs_type_part->as_type->value,
                         );
 
-                        if (!self::childConstructorsAcceptArgs(
+                        if (!$unsafe_instantiation_reported && !self::childConstructorsAcceptArgs(
                             $statements_analyzer,
                             $codebase,
                             $context,
                             $as_storage,
                             $stmt->getArgs(),
                         )) {
+                            $unsafe_instantiation_reported = true;
+
                             IssueBuffer::maybeAdd(
                                 new UnsafeInstantiation(
                                     'Cannot safely instantiate class ' . $lhs_type_part->as_type->value
@@ -1522,13 +1590,15 @@ final class NewAnalyzer extends CallAnalyzer
                                 $lhs_type_part->as_type->value,
                             );
 
-                            if (!self::childConstructorsAcceptArgs(
+                            if (!$unsafe_instantiation_reported && !self::childConstructorsAcceptArgs(
                                 $statements_analyzer,
                                 $codebase,
                                 $context,
                                 $as_storage,
                                 $stmt->getArgs(),
                             )) {
+                                $unsafe_instantiation_reported = true;
+
                                 IssueBuffer::maybeAdd(
                                     new UnsafeInstantiation(
                                         'Cannot safely instantiate class ' . $lhs_type_part->as_type->value
@@ -1619,6 +1689,15 @@ final class NewAnalyzer extends CallAnalyzer
             ) {
                 // do nothing
             } elseif ($lhs_type_part instanceof TNamedObject) {
+                self::checkNewOfAnObject(
+                    $statements_analyzer,
+                    $codebase,
+                    $context,
+                    $stmt,
+                    $lhs_type_part,
+                    $unsafe_instantiation_reported,
+                );
+
                 $new_types []= new Union([$lhs_type_part]);
                 continue;
             } else {
@@ -1804,7 +1883,7 @@ final class NewAnalyzer extends CallAnalyzer
     /**
      * Returns the set of class templates with no public channel that can constrain
      * them: a template named anywhere in a public non-constructor method parameter
-     * or a public non-readonly property type is one that later code can still
+     * or a public writable property type is one that later code can still
      * constrain, anything else can only have been fixed at the construction site and
      * so is pinned eagerly rather than minted as a type variable.
      *
@@ -1863,10 +1942,11 @@ final class NewAnalyzer extends CallAnalyzer
                 break;
             }
 
-            // A `readonly` property cannot be assigned after construction, so it
-            // is not a channel through which the template can be constrained.
+            // A `readonly` property cannot be assigned after construction unless it is
+            // `public(set)` and not promoted, so it is not a channel through which the template can be constrained.
             if ($property_storage->visibility !== ClassLikeAnalyzer::VISIBILITY_PUBLIC
-                || $property_storage->readonly
+                || ($property_storage->readonly
+                    && (!$property_storage->readonly_public_set || $property_storage->is_promoted))
             ) {
                 continue;
             }
