@@ -114,6 +114,39 @@ final class RedundantConditionTest extends TestCase
         );
     }
 
+    public function testMessagesOfACoalesceOnACallNameTheCodeOfTheOperand(): void
+    {
+        $this->project_analyzer->getConfig()->throw_exception = false;
+        $file_path = self::$src_dir_path . 'somefile.php';
+
+        $this->addFile(
+            $file_path,
+            '<?php
+                final class A {
+                    /** @return object */
+                    public function m() { return new stdClass; }
+                }
+
+                function f(A $a): object {
+                    return $a->m() ?? new stdClass;
+                }',
+        );
+        $this->analyzeFile($file_path, new Context(), false);
+        $this->project_analyzer->consolidateAnalyzedData();
+
+        $this->assertSame(
+            [
+                'RedundantConditionGivenDocblockType: Docblock-defined type object for $a->m() is never null',
+                'DocblockTypeContradiction: Cannot resolve types for $a->m() - docblock-defined type object does not '
+                    . 'contain null',
+            ],
+            array_map(
+                static fn(IssueData $issue): string => $issue->type . ': ' . $issue->message,
+                IssueBuffer::getIssuesDataForFile($file_path),
+            ),
+        );
+    }
+
     /**
      * @psalm-pure
      */

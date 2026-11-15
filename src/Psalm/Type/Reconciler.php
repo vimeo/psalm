@@ -1485,7 +1485,7 @@ class Reconciler
         CodeLocation $code_location,
         array $suppressed_issues,
     ): void {
-        $key = CoalesceAnalyzer::getDisplayName($key);
+        $key = CoalesceAnalyzer::getDisplayName($key, $code_location);
 
         $assertion_string = Clause::getAssertionDisplayString($assertion);
         $not = $assertion_string[0] === '!';
