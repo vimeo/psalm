@@ -273,7 +273,7 @@ final class WhileTest extends TestCase
                         return $a[0];
                     }',
             ],
-            'whileTrueIntRangeShiftedInAnOffsetAssignedBeforeTheLoopIsWidened' => [
+            'whileTrueIntRangeShiftedInAnOffsetAssignedBeforeTheLoopIsWidenedInTheArrayToo' => [
                 'code' => '<?php
                     function f(): int {
                         $a = [];

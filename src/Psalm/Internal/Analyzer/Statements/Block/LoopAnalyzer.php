@@ -1654,13 +1654,16 @@ final class LoopAnalyzer
                 }
 
                 $fallback_params = $atomic->fallback_params;
-                $start_value = self::getArrayValueType($start_type, null);
 
-                if ($fallback_params !== null && $start_value !== null) {
-                    $fallback_params = [
-                        $fallback_params[0],
-                        self::widenIntRanges($start_value, $fallback_params[1], $bounds),
-                    ];
+                if ($fallback_params !== null) {
+                    $start_value = self::getArrayValueType($start_type, null);
+
+                    if ($start_value !== null) {
+                        $fallback_params = [
+                            $fallback_params[0],
+                            self::widenIntRanges($start_value, $fallback_params[1], $bounds),
+                        ];
+                    }
                 }
 
                 if ($properties !== $atomic->properties || $fallback_params !== $atomic->fallback_params) {
