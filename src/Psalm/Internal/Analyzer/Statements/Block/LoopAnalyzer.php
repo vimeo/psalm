@@ -288,7 +288,6 @@ final class LoopAnalyzer
             $data_flow_pass_added = false;
             $widening_passes = 0;
             $widening_bounds = null;
-            $post_expression_var_ids = null;
             $force_pass = false;
 
             for ($i = 0; $i < $max_passes; ++$i) {
@@ -538,13 +537,6 @@ final class LoopAnalyzer
                     $widened_var_types = [];
 
                     if ($widening_passes !== 1) {
-                        if ($continue_context->has_returned && $post_expressions) {
-                            $post_expression_var_ids ??= self::getAssignedVarIds(
-                                $post_expressions,
-                                $loop_context->self,
-                            );
-                        }
-
                         $vars_at_start = array_diff_key(
                             $vars_at_iteration_start,
                             array_flip($always_assigned_before_loop_body_vars),
@@ -552,7 +544,7 @@ final class LoopAnalyzer
                         $vars_at_end = self::getVarsStartingNextIteration(
                             $continue_context,
                             $loop_scope,
-                            $post_expression_var_ids ?? [],
+                            $post_expressions,
                         );
 
                         $widened_var_types = self::getWidenedIntRanges($vars_at_start, $vars_at_end, null);
@@ -1459,14 +1451,13 @@ final class LoopAnalyzer
      * `continue`s when the body never gets to its end (`return`, `break`, `throw`), followed by the post
      * expressions of a `for`
      *
-     * @param array<string, true> $post_expression_var_ids
+     * @param array<PhpParser\Node\Expr> $post_expressions
      * @return array<string, Union>
-     * @psalm-mutation-free
      */
     private static function getVarsStartingNextIteration(
         Context $continue_context,
         LoopScope $loop_scope,
-        array $post_expression_var_ids,
+        array $post_expressions,
     ): array {
         if (!$continue_context->has_returned) {
             return $continue_context->vars_in_scope;
@@ -1476,7 +1467,10 @@ final class LoopAnalyzer
             return [];
         }
 
-        return array_intersect_key($continue_context->vars_in_scope, $post_expression_var_ids)
+        return array_intersect_key(
+            $continue_context->vars_in_scope,
+            self::getAssignedVarIds($post_expressions, $continue_context->self),
+        )
             + $loop_scope->possibly_redefined_loop_vars
             + $loop_scope->possibly_defined_loop_vars;
     }
