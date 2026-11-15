@@ -2342,6 +2342,45 @@ final class ArrayAccessTest extends TestCase
                         /** @psalm-check-type-exact $a = array{x: array{c?: int, d: int}, y: array{c?: int, d: int}, z: array{c: int}} */;
                     }',
             ],
+            'nestedUnsetUnderSeveralKeysKeepsTheShapeOfEachElement' => [
+                'code' => '<?php
+                    /**
+                     * @param array{x: array{c: int, d: int}, y: array{c: int, e: string}} $a
+                     * @param "x"|"y" $k
+                     */
+                    function f(array $a, string $k): int {
+                        unset($a[$k]["c"]);
+                        /** @psalm-check-type-exact $a = array{x: array{c?: int, d: int}, y: array{c?: int, e: string}} */;
+                        return $a["x"]["d"];
+                    }',
+            ],
+            'nestedUnsetUnderNonLiteralKeyKeepsTheShapeOfEachElement' => [
+                'code' => '<?php
+                    /** @param array{x: array{c: int, d: int}, z: array{c: int}} $a */
+                    function f(array $a, string $k): void {
+                        unset($a[$k]["c"]);
+                        /** @psalm-check-type-exact $a = array{x: array{c?: int, d: int}, z: array{c?: int}} */;
+                    }',
+            ],
+            'deeplyNestedUnsetUnderSeveralKeysKeepsTheShapeOfEachElement' => [
+                'code' => '<?php
+                    /**
+                     * @param array{x: array{m: array{c: int, d: int}}, y: array{m: array{c: int, e: string}}} $a
+                     * @param "x"|"y" $k
+                     */
+                    function f(array $a, string $k): void {
+                        unset($a[$k]["m"]["c"]);
+                        /** @psalm-check-type-exact $a = array{x: array{m: array{c?: int, d: int}}, y: array{m: array{c?: int, e: string}}} */;
+                    }',
+            ],
+            'nestedUnsetKeepsACallableArrayCallable' => [
+                'code' => '<?php
+                    /** @param callable-list{ArrayAccess<string, int>, "run"} $cb */
+                    function f(array $cb): callable {
+                        unset($cb[0]["x"]);
+                        return $cb;
+                    }',
+            ],
             'nestedUnsetUnderUndeclaredKeyOfUnsealedArray' => [
                 'code' => '<?php
                     /** @param array{a: array{c: int, d: int}, ...<string, array{c: int, d: int}>} $a */
