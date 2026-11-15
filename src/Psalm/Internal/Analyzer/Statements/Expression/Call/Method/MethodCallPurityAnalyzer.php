@@ -650,8 +650,7 @@ final class MethodCallPurityAnalyzer
 
         if ($context->inside_conditional && $lhs_var_id !== null) {
             foreach ($method_storage->this_property_mutations ?? [] as $name => $_) {
-                $context->assigned_var_ids[$lhs_var_id . '->' . $name]
-                    ??= (int) $stmt->getAttribute('startFilePos');
+                $context->assigned_var_ids[$lhs_var_id . '->' . $name] ??= 0;
             }
         }
     }

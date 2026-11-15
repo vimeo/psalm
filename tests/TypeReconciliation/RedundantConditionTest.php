@@ -7,9 +7,16 @@ namespace Psalm\Tests\TypeReconciliation;
 use Override;
 use Psalm\Config;
 use Psalm\Context;
+use Psalm\Internal\Analyzer\IssueData;
+use Psalm\IssueBuffer;
 use Psalm\Tests\TestCase;
 use Psalm\Tests\Traits\InvalidCodeAnalysisTestTrait;
 use Psalm\Tests\Traits\ValidCodeAnalysisTestTrait;
+
+use function array_filter;
+use function array_map;
+use function array_values;
+use function sort;
 
 use const DIRECTORY_SEPARATOR;
 
@@ -42,6 +49,69 @@ final class RedundantConditionTest extends TestCase
         );
 
         $this->analyzeFile('somefile.php', new Context());
+    }
+
+    public function testMixedAssignmentOfALoopWhoseConditionsCallAMethodWritingAProperty(): void
+    {
+        $this->project_analyzer->getConfig()->throw_exception = false;
+        $file_path = self::$src_dir_path . 'somefile.php';
+
+        $this->addFile(
+            $file_path,
+            '<?php
+                final class Dumper {
+                    private bool $used = false;
+
+                    private function dumpValue(mixed $v, bool $interpolate = true): string {
+                        $this->used = true;
+                        return "";
+                    }
+
+                    public function isTrivial(array $args): bool {
+                        foreach ($args as $arg) {
+                            if (!$arg) {
+                                continue;
+                            }
+                            if (is_array($arg) && 3 >= count($arg)) {
+                                foreach ($arg as $k => $v) {
+                                    if ($this->dumpValue($k) !== $this->dumpValue($k, false)) {
+                                        return false;
+                                    }
+                                    if (!$v) {
+                                        continue;
+                                    }
+                                    if (!is_scalar($v) || $this->dumpValue($v) !== $this->dumpValue($v, false)) {
+                                        return false;
+                                    }
+                                }
+                            } elseif (!is_scalar($arg) || $this->dumpValue($arg) !== $this->dumpValue($arg, false)) {
+                                return false;
+                            }
+                        }
+
+                        return true;
+                    }
+                }',
+        );
+
+        $this->analyzeFile($file_path, new Context());
+
+        $issues = array_map(
+            static fn(IssueData $issue): array => [$issue->line_from, $issue->message],
+            array_values(array_filter(
+                IssueBuffer::getIssuesDataForFile($file_path),
+                static fn(IssueData $issue): bool => $issue->type === 'MixedAssignment',
+            )),
+        );
+        sort($issues);
+
+        self::assertSame(
+            [
+                [11, 'Unable to determine the type that $arg is being assigned to'],
+                [16, 'Unable to determine the type that $v is being assigned to'],
+            ],
+            $issues,
+        );
     }
 
     /**
