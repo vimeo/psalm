@@ -13,6 +13,7 @@ use Psalm\Type\Atomic\TLiteralFloat;
 use Psalm\Type\Atomic\TLiteralInt;
 use Psalm\Type\Atomic\TLiteralString;
 use Psalm\Type\Atomic\TNamedObject;
+use Psalm\Type\Atomic\TNull;
 use Stringable;
 
 use function array_diff_key;
@@ -262,6 +263,7 @@ final class Clause implements Stringable
                             || $inner_type instanceof TLiteralString
                             || $inner_type instanceof TClassConstant
                             || $inner_type instanceof TEnumCase
+                            || $inner_type instanceof TNull
                             || ($inner_type instanceof TNamedObject && $inner_type->is_static)))
                 ) {
                     $impossibility[] = $type->getNegation();

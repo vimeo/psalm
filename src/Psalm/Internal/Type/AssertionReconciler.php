@@ -28,9 +28,12 @@ use Psalm\Storage\Assertion\IsClassEqual;
 use Psalm\Storage\Assertion\IsEqualIsset;
 use Psalm\Storage\Assertion\IsIsset;
 use Psalm\Storage\Assertion\IsLooselyEqual;
+use Psalm\Storage\Assertion\IsNotIdentical;
+use Psalm\Storage\Assertion\IsNotLooselyEqual;
 use Psalm\Storage\Assertion\NestedAssertions;
 use Psalm\Storage\Assertion\NonEmpty;
 use Psalm\Storage\Assertion\NonEmptyCountable;
+use Psalm\Storage\Assertion\Truthy;
 use Psalm\Type;
 use Psalm\Type\Atomic;
 use Psalm\Type\Atomic\Scalar;
@@ -170,6 +173,23 @@ final class AssertionReconciler extends Reconciler
             return new Union($type_variables);
         }
 
+        if (($assertion instanceof IsLooselyEqual || $assertion instanceof IsNotLooselyEqual)
+            && $assertion->type instanceof TNull
+        ) {
+            return self::reconcileLooseNullComparison(
+                $assertion,
+                $existing_var_type,
+                $key,
+                $statements_analyzer,
+                $inside_loop,
+                $template_type_map,
+                $code_location,
+                $suppressed_issues,
+                $failed_reconciliation,
+                $negated,
+            );
+        }
+
         if ($is_negation) {
             return NegatedAssertionReconciler::reconcile(
                 $statements_analyzer,
@@ -282,6 +302,98 @@ final class AssertionReconciler extends Reconciler
             false,
             true,
         );
+    }
+
+    /**
+     * `$x == null` is `!$x`, except that null is compared to a string as '': the falsy '0' is still != null
+     *
+     * @param   string[]            $suppressed_issues
+     * @param   array<string, array<string, Union>> $template_type_map
+     * @param-out Reconciler::RECONCILIATION_* $failed_reconciliation
+     */
+    private static function reconcileLooseNullComparison(
+        IsLooselyEqual|IsNotLooselyEqual $assertion,
+        Union $existing_var_type,
+        ?string $key,
+        StatementsAnalyzer $statements_analyzer,
+        bool $inside_loop,
+        array $template_type_map,
+        ?CodeLocation $code_location,
+        array $suppressed_issues,
+        ?int &$failed_reconciliation,
+        bool $negated,
+    ): Union {
+        $codebase = $statements_analyzer->getCodebase();
+        $zero = TLiteralString::make('0');
+
+        if (!self::canBeZeroString($codebase, $existing_var_type, $zero)) {
+            return self::reconcile(
+                $assertion instanceof IsLooselyEqual ? new Falsy() : new Truthy(),
+                $existing_var_type,
+                $key,
+                $statements_analyzer,
+                $inside_loop,
+                $template_type_map,
+                $code_location,
+                $suppressed_issues,
+                $failed_reconciliation,
+                $negated,
+            );
+        }
+
+        // what the truthiness check reports would be wrong about '0'
+        $failed_reconciliation = Reconciler::RECONCILIATION_OK;
+
+        if ($assertion instanceof IsLooselyEqual) {
+            return self::reconcile(
+                new IsNotIdentical($zero),
+                self::reconcile(
+                    new Falsy(),
+                    $existing_var_type,
+                    $key,
+                    $statements_analyzer,
+                    $inside_loop,
+                    $template_type_map,
+                ),
+                $key,
+                $statements_analyzer,
+                $inside_loop,
+                $template_type_map,
+            );
+        }
+
+        return Type::combineUnionTypes(
+            self::reconcile(
+                new Truthy(),
+                $existing_var_type,
+                $key,
+                $statements_analyzer,
+                $inside_loop,
+                $template_type_map,
+            ),
+            new Union([$zero]),
+            $codebase,
+        );
+    }
+
+    /**
+     * A mixed is left out: it stays non-empty-mixed rather than becoming '0'|non-empty-mixed
+     */
+    private static function canBeZeroString(Codebase $codebase, Union $type, TLiteralString $zero): bool
+    {
+        foreach ($type->getAtomicTypes() as $atomic_type) {
+            if ($atomic_type instanceof TTemplateParam) {
+                if (self::canBeZeroString($codebase, $atomic_type->as, $zero)) {
+                    return true;
+                }
+            } elseif (!$atomic_type instanceof TMixed
+                && AtomicTypeComparator::isContainedBy($codebase, $zero, $atomic_type)
+            ) {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     /**
