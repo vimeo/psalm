@@ -53,6 +53,8 @@ final class TernaryAnalyzer
 
         $if_scope = new IfScope();
 
+        $pre_condition_remove_vars = $context->parent_remove_vars;
+
         try {
             $reassigned_var_ids = FormulaGenerator::getVarsAssignedByOredRightSides($stmt->cond, $context->self);
 
@@ -139,6 +141,8 @@ final class TernaryAnalyzer
             $stmt->cond,
             $assigned_in_conditional_var_ids,
         );
+
+        $context->removeClausesOfVarsChangedSince($pre_condition_remove_vars);
 
         $if_clauses = Algebra::simplifyCNF($if_clauses);
 
@@ -285,6 +289,14 @@ final class TernaryAnalyzer
         $else_type = $statements_analyzer->node_data->getType($stmt->else);
         $if_exits = $if_type !== null && $if_type->isNever();
         $else_exits = $else_type !== null && $else_type->isNever();
+
+        if (!$if_exits) {
+            $context->removeClausesOfVarsChangedIn($if_context);
+        }
+
+        if (!$else_exits) {
+            $context->removeClausesOfVarsChangedIn($t_else_context);
+        }
 
         if ($if_exits !== $else_exits) {
             $completing_context = $if_exits ? $t_else_context : $if_context;

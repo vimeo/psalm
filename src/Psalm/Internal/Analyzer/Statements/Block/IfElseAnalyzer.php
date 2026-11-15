@@ -105,6 +105,7 @@ final class IfElseAnalyzer
 
         $pre_cond_reconciled_clauses = $context->reconciled_expression_clauses;
         $pre_cond_clauses = $context->clauses;
+        $pre_cond_remove_vars = $context->parent_remove_vars;
 
         $reassigned_var_ids = FormulaGenerator::getVarsAssignedByOredRightSides($stmt->cond, $context->self);
 
@@ -226,6 +227,8 @@ final class IfElseAnalyzer
             $stmt->cond,
             $assigned_in_conditional_var_ids,
         );
+
+        $context->removeClausesOfVarsChangedSince($pre_cond_remove_vars);
 
         $if_clauses = Algebra::simplifyCNF($if_clauses);
 
