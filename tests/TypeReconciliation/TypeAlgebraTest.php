@@ -1167,7 +1167,7 @@ final class TypeAlgebraTest extends TestCase
                 'ignored_issues' => ['RiskyTruthyFalsyComparison'],
                 'php_version' => '8.1',
             ],
-            'nullsafeCallComparedToBoolLiteralDoesNotNarrowReceiver' => [
+            'nullsafeCallComparedToBoolLiteral' => [
                 'code' => <<<'PHP'
                     <?php
                     final class Box
