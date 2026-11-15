@@ -23,6 +23,19 @@ final class ForTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'forEverVariableIsWhatTheBreaksLeave' => [
+                'code' => '<?php
+                    function f(): void {
+                        for (;;) {
+                            $x = rand(0, 1) ? "s" : null;
+                            if ($x === null) {
+                                continue;
+                            }
+                            break;
+                        }
+                        /** @psalm-check-type-exact $x = "s" */;
+                    }',
+            ],
             'mixedConditionVariableOfAForLoopIsNotNonEmptyAfterIt' => [
                 'code' => '<?php
                     function check(mixed $m): void {
