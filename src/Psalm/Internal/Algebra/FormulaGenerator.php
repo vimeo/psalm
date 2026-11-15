@@ -637,7 +637,7 @@ final class FormulaGenerator
     }
 
     /**
-     * @psalm-mutation-free
+     * @psalm-pure
      */
     private static function canBeNull(Union $type): bool
     {
