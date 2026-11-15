@@ -107,6 +107,20 @@ final class WhileTest extends TestCase
                         takesInt("s");
                         unset($z);
                     }
+                }
+
+                function definedBeforeContinueOnly(O $o): void {
+                    while (rand(0, 1)) {
+                        if (rand(0, 1)) {
+                            echo $w;
+                        }
+                        if (rand(0, 1)) {
+                            $w = 1;
+                            continue;
+                        }
+                        $o->p = 1;
+                        takesInt("s");
+                    }
                 }',
         );
 
@@ -129,6 +143,8 @@ final class WhileTest extends TestCase
                 'UndefinedVariable 73:34',
                 'MixedArgument 73:34',
                 'InvalidScalarArgument 76:34',
+                'PossiblyUndefinedVariable 84:34',
+                'InvalidScalarArgument 91:34',
             ],
             array_map(
                 static fn(IssueData $issue): string
@@ -1506,6 +1522,21 @@ final class WhileTest extends TestCase
     public static function providerInvalidCodeParse(): iterable
     {
         return [
+            'variableDefinedOnlyBeforeAContinueIsPossiblyUndefined' => [
+                'code' => '<?php
+                    function f(): void {
+                        while (rand(0, 1)) {
+                            if (rand(0, 1)) {
+                                echo $x;
+                            }
+                            if (rand(0, 1)) {
+                                $x = 1;
+                                continue;
+                            }
+                        }
+                    }',
+                'error_message' => 'PossiblyUndefinedVariable',
+            ],
             'whileTrueVariableUndefinedAtABreakIsPossiblyUndefined' => [
                 'code' => '<?php
                     function f(): void {

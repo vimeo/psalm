@@ -362,6 +362,26 @@ final class LoopAnalyzer
                     }
                 }
 
+                // the variables the loop defines are possibly defined where the next iteration starts, holding what
+                // an iteration left in them where it ended or continued: the other ones defined in the loop go
+                foreach ($loop_scope->possibly_defined_loop_vars as $var_id => $type) {
+                    if (!isset($continue_context->vars_in_scope[$var_id])
+                        && !isset($original_parent_context->vars_in_scope[$var_id])
+                        && !in_array($var_id, $always_assigned_before_loop_body_vars, true)
+                        && !$is_do
+                    ) {
+                        $vars_to_remove[] = $var_id;
+
+                        // only a `continue` defines it
+                        if (self::isLoopVar($var_id)
+                            && (!isset($loop_var_types_at_start[$var_id])
+                                || !$type->setPossiblyUndefined(false)->equals($loop_var_types_at_start[$var_id]))
+                        ) {
+                            $has_changes = true;
+                        }
+                    }
+                }
+
                 $continue_context->has_returned = false;
 
                 $loop_parent_context->vars_possibly_in_scope += $continue_context->vars_possibly_in_scope;
@@ -374,18 +394,6 @@ final class LoopAnalyzer
                 }
 
                 $force_pass = false;
-
-                // the variables the loop defines are possibly defined where the next iteration starts, holding what
-                // an iteration left in them where it ended or continued: the other ones defined in the loop go
-                foreach ($loop_scope->possibly_defined_loop_vars as $var_id => $_) {
-                    if (!isset($continue_context->vars_in_scope[$var_id])
-                        && !isset($original_parent_context->vars_in_scope[$var_id])
-                        && !in_array($var_id, $always_assigned_before_loop_body_vars, true)
-                        && !$is_do
-                    ) {
-                        $vars_to_remove[] = $var_id;
-                    }
-                }
 
                 foreach ($vars_to_remove as $var_id) {
                     if (!self::isLoopVar($var_id) || isset($continue_context->references_in_scope[$var_id])) {
