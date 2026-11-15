@@ -5,9 +5,14 @@ declare(strict_types=1);
 namespace Psalm\Tests\TypeReconciliation;
 
 use Override;
+use Psalm\Context;
+use Psalm\Internal\Analyzer\IssueData;
+use Psalm\IssueBuffer;
 use Psalm\Tests\TestCase;
 use Psalm\Tests\Traits\InvalidCodeAnalysisTestTrait;
 use Psalm\Tests\Traits\ValidCodeAnalysisTestTrait;
+
+use function array_map;
 
 use const DIRECTORY_SEPARATOR;
 
@@ -16,6 +21,50 @@ final class AssignmentInConditionalTest extends TestCase
     use InvalidCodeAnalysisTestTrait;
     use ValidCodeAnalysisTestTrait;
 
+    public function testAPossiblyUndefinedVariableIsSetWhereItIsNotNull(): void
+    {
+        $this->project_analyzer->getConfig()->throw_exception = false;
+
+        $file_path = self::$src_dir_path . 'somefile.php';
+
+        $this->addFile(
+            $file_path,
+            '<?php
+                final class Item {
+                    public function name(): string {
+                        return "i";
+                    }
+                }
+
+                function f(bool $first): string {
+                    if ($first) {
+                        $item = new Item();
+                    }
+
+                    if ($item === null) {
+                        echo $item;
+                        return "";
+                    }
+
+                    return $item->name();
+                }',
+        );
+
+        $this->analyzeFile($file_path, new Context());
+
+        self::assertSame(
+            [
+                'PossiblyUndefinedVariable 13:25',
+                'PossiblyUndefinedVariable 14:30',
+            ],
+            array_map(
+                static fn(IssueData $issue): string
+                    => $issue->type . ' ' . $issue->line_from . ':' . $issue->column_from,
+                IssueBuffer::getIssuesDataForFile($file_path),
+            ),
+        );
+    }
+
     /**
      * @psalm-pure
      */
@@ -23,6 +72,108 @@ final class AssignmentInConditionalTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'variableDefinedInSomeBranchesKeepsItsTypeWhenPossiblyUndefined' => [
+                'code' => '<?php
+                    if (rand(0, 1)) {
+                        $a = 1;
+                    } elseif (rand(0, 1)) {
+                        $a = "b";
+                    }
+
+                    $b = $a;',
+                'assertions' => [
+                    '$b===' => "'b'|1|null",
+                ],
+                'ignored_issues' => ['PossiblyUndefinedGlobalVariable'],
+            ],
+            'variableAssignedInAnElseifConditionKeepsTheValuesOfThePathsSkippingTheBranch' => [
+                'code' => '<?php
+                    function f(bool $skip, bool $value, bool $gate): void {
+                        if ($skip) {
+                        } elseif (($a = $value) && $gate) {
+                        }
+
+                        if (isset($a) && $a === false) {
+                            echo "false";
+                        }
+                    }',
+            ],
+            'globalBoundToAVariableSomeBranchesDefineIsNullWhenUnset' => [
+                'code' => '<?php
+                    if (rand(0, 1)) {
+                        $g = 1;
+                    }
+
+                    final class C {
+                        public function m(): ?int {
+                            global $g;
+                            /** @psalm-check-type-exact $g = 1|null */;
+                            return $g;
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => ['MixedReturnStatement', 'MixedInferredReturnType'],
+            ],
+            'possiblyUndefinedVariableIsNullWhereItIsFalsy' => [
+                'code' => '<?php
+                    function f(bool $flag): void {
+                        if ($flag) {
+                            $a = "s";
+                        }
+
+                        if (!$a) {
+                            /** @psalm-check-type-exact $a? = null */;
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => ['PossiblyUndefinedVariable'],
+            ],
+            'variableAssignedInTheConditionKeepsTheValuesOfThePathsSkippingTheBranch' => [
+                'code' => '<?php
+                    function f(string $s): void {
+                        if ($s !== "" && ($pos = strpos($s, "x"))) {
+                        }
+
+                        if (isset($pos) && $pos === 0) {
+                            echo "first";
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => ['RiskyTruthyFalsyComparison'],
+            ],
+            'conditionallyCreatedObjectStaysFreshWhereItIsNotNull' => [
+                'code' => '<?php
+                    final class Box {
+                        public int $v = 0;
+                    }
+
+                    /** @psalm-pure */
+                    function f(bool $flag): int {
+                        if ($flag) {
+                            $box = new Box();
+                        }
+
+                        /** @psalm-suppress PossiblyUndefinedVariable */
+                        if ($box !== null) {
+                            $box->v = 1;
+                            return $box->v;
+                        }
+
+                        return 0;
+                    }',
+            ],
+            'passingAPossiblyUndefinedVariableByReferenceDefinesIt' => [
+                'code' => '<?php
+                    function f(bool $flag, string $s): int {
+                        if ($flag) {
+                            $m = [];
+                        }
+
+                        preg_match("/x/", $s, $m);
+
+                        return count($m);
+                    }',
+            ],
             'negatedAssignedVariableIsTruthyOnTheRightOfOr' => [
                 'code' => '<?php
                     function takesObject(object $o): bool {
@@ -868,6 +1019,46 @@ final class AssignmentInConditionalTest extends TestCase
                         return isset($a["k"]) && ($a = other()) !== null ? count($a) : 0;
                     }',
             ],
+            'elseifConditionAssigningAMixedVariableInALoopDefinesItInTheElse' => [
+                'code' => '<?php
+                    /**
+                     * @param list<bool> $l
+                     * @param mixed $inc
+                     */
+                    function f(array $l, $inc): void {
+                        foreach ($l as $a) {
+                            if ($a) {
+                                $x = 1;
+                            } elseif (is_array($x = $inc)) {
+                                $x = 2;
+                            }
+                            echo is_int($x) ? "int" : "";
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => ['MixedAssignment'],
+            ],
+            'elseifConditionAssigningAVariableWithTheTypeItHadDefinesItInTheElse' => [
+                'code' => '<?php
+                    function check(int $i): bool {
+                        return $i > 0;
+                    }
+
+                    if (rand(0, 1)) {
+                        $x = rand(0, 1);
+                    }
+
+                    if (rand(0, 1)) {
+                        $x = rand(0, 1);
+                    } elseif (check($x = rand(0, 1))) {
+                        $x = rand(0, 1);
+                    }
+
+                    $y = $x;',
+                'assertions' => [
+                    '$y===' => 'int<0, 1>',
+                ],
+            ],
         ];
     }
 
@@ -878,6 +1069,60 @@ final class AssignmentInConditionalTest extends TestCase
     public static function providerInvalidCodeParse(): iterable
     {
         return [
+            'elseifConditionAssignmentIsNotMadeInTheBranchesBeforeIt' => [
+                'code' => '<?php
+                    function check(int $i): bool {
+                        return $i > 0;
+                    }
+
+                    function f(bool $a, bool $b): void {
+                        if (rand(0, 1)) {
+                            $x = rand(0, 1);
+                        }
+
+                        if ($a) {
+                            $x = rand(0, 1);
+                        } elseif ($b) {
+                        } elseif (check($x = rand(0, 1))) {
+                        }
+
+                        echo $x;
+                    }',
+                'error_message' => 'PossiblyUndefinedVariable - src' . DIRECTORY_SEPARATOR . 'somefile.php:17:30',
+            ],
+            'variableOnlyAnIssetInABranchMentionsIsUndefined' => [
+                'code' => '<?php
+                    if (rand(0, 1)) {
+                        if (isset($missing)) {}
+                    }
+
+                    $copy = $missing;',
+                'error_message' => 'UndefinedGlobalVariable',
+            ],
+            'variableAnExtractInABranchDefinesIsPossiblyUndefined' => [
+                'code' => '<?php
+                    function f(bool $flag): void {
+                        if ($flag) {
+                            extract(["a" => 1]);
+                        }
+
+                        echo $a;
+                    }',
+                'error_message' => 'PossiblyUndefinedVariable - src' . DIRECTORY_SEPARATOR . 'somefile.php:7:30',
+            ],
+            'possiblyUndefinedVariableReadInACastIsReported' => [
+                'code' => '<?php
+                    function f(bool $flag): string {
+                        if ($flag) {
+                            $a = 1;
+                        }
+
+                        $b = (string) $a;
+
+                        return $b;
+                    }',
+                'error_message' => 'PossiblyUndefinedVariable - src' . DIRECTORY_SEPARATOR . 'somefile.php:7:39',
+            ],
             'assignedVariableIsFalsyOnTheRightOfOr' => [
                 'code' => '<?php
                     function takesObject(object $o): bool {
