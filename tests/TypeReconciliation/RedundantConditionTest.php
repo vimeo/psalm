@@ -1369,6 +1369,70 @@ final class RedundantConditionTest extends TestCase
                         return $list === $shape;
                     }',
             ],
+            'issetOfAnOffsetWhoseKeyTheConditionChanges' => [
+                'code' => '<?php
+                    /** @param list<int> $a */
+                    function f(array $a, int $i): void {
+                        if (isset($a[$i]) && ++$i && isset($a[$i])) {
+                            echo "if";
+                        }
+                    }',
+            ],
+            'issetOfAnOffsetWhoseKeyTheConditionChangesInATernary' => [
+                'code' => '<?php
+                    /** @param list<int> $a */
+                    function f(array $a, int $i): int {
+                        return isset($a[$i]) && ++$i && isset($a[$i]) ? 1 : 2;
+                    }',
+            ],
+            'issetOfAnOffsetWhoseKeyTheConditionChangesInAnElseif' => [
+                'code' => '<?php
+                    /** @param list<int> $a */
+                    function f(array $a, int $i, bool $b): void {
+                        if ($b) {
+                            echo "if";
+                        } elseif (isset($a[$i]) && ++$i && isset($a[$i])) {
+                            echo "elseif";
+                        }
+                    }',
+            ],
+            'propertyThatAMethodCalledInTheConditionWrites' => [
+                'code' => '<?php
+                    final class Counter {
+                        public int $n = 1;
+
+                        public function reset(): bool {
+                            $this->n = 0;
+                            return true;
+                        }
+                    }
+
+                    function f(Counter $c): void {
+                        if ($c->n && $c->reset() && $c->n) {
+                            echo "if";
+                        }
+                    }',
+            ],
+            'propertyThatAMethodCalledBeforeTheConditionWrites' => [
+                'code' => '<?php
+                    final class Counter {
+                        public int $n = 1;
+
+                        public function reset(): void {
+                            $this->n = 0;
+                        }
+                    }
+
+                    function f(Counter $c): void {
+                        if ($c->n) {
+                            $c->reset();
+
+                            if ($c->n) {
+                                echo "if";
+                            }
+                        }
+                    }',
+            ],
             'identicalComparisonOfAShapeWithAListOfARangeOfItsValues' => [
                 'code' => '<?php
                     /** @param list<int<1, max>> $ints */
@@ -2291,6 +2355,57 @@ final class RedundantConditionTest extends TestCase
                         return $list === $shape;
                     }',
                 'error_message' => 'TypeDoesNotContainType - src' . DIRECTORY_SEPARATOR . 'somefile.php:7:32',
+            ],
+            'issetOfAnOffsetWhoseKeyTheConditionDoesNotChange' => [
+                'code' => '<?php
+                    /** @param list<int> $a */
+                    function f(array $a, int $i, int $j): void {
+                        if (isset($a[$i]) && ++$j && isset($a[$i])) {
+                            echo "if";
+                        }
+                    }',
+                'error_message' => 'RedundantCondition - src' . DIRECTORY_SEPARATOR . 'somefile.php:4:29 - $a[$i] is isset has already been asserted',
+            ],
+            'propertyThatAMethodCalledInTheConditionDoesNotWrite' => [
+                'code' => '<?php
+                    final class Counter {
+                        public int $n = 1;
+                        public int $m = 1;
+
+                        public function reset(): bool {
+                            $this->m = 0;
+                            return true;
+                        }
+                    }
+
+                    function f(Counter $c): void {
+                        if ($c->n && $c->reset() && $c->n) {
+                            echo "if";
+                        }
+                    }',
+                'error_message' => 'RedundantCondition - src' . DIRECTORY_SEPARATOR . 'somefile.php:13:29 - $c->n has already been asserted',
+            ],
+            'propertyThatAMethodCalledBeforeTheConditionDoesNotWrite' => [
+                'code' => '<?php
+                    final class Counter {
+                        public int $n = 1;
+                        public int $m = 1;
+
+                        public function reset(): void {
+                            $this->m = 0;
+                        }
+                    }
+
+                    function f(Counter $c): void {
+                        if ($c->n) {
+                            $c->reset();
+
+                            if ($c->n) {
+                                echo "if";
+                            }
+                        }
+                    }',
+                'error_message' => 'RedundantCondition - src' . DIRECTORY_SEPARATOR . 'somefile.php:15:33',
             ],
             'identicalComparisonOfAShapeWithAShorterOneIsImpossible' => [
                 'code' => '<?php
