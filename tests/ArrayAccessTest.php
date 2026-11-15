@@ -786,6 +786,92 @@ final class ArrayAccessTest extends TestCase
                     '$second===' => 'string',
                 ],
             ],
+            'destructureArrayAccessObjectOfSelf' => [
+                'code' => '<?php
+                    /** @implements ArrayAccess<int, self> */
+                    final class Bag implements ArrayAccess {
+                        /** @param int $offset */
+                        public function offsetExists($offset): bool { return true; }
+                        /** @param int $offset */
+                        public function offsetGet($offset): self { return $this; }
+                        /**
+                         * @param ?int $offset
+                         * @param self $value
+                         */
+                        public function offsetSet($offset, $value): void {}
+                        /** @param int $offset */
+                        public function offsetUnset($offset): void {}
+                        public function value(): int { return 1; }
+                    }
+
+                    function f(Bag $b): int {
+                        [$v] = $b;
+                        return $v->value();
+                    }
+
+                    [$first] = new Bag();',
+                'assertions' => [
+                    '$first===' => 'Bag',
+                ],
+            ],
+            'destructureArrayAccessObjectOfSelfDeclaredInParent' => [
+                'code' => '<?php
+                    /** @implements ArrayAccess<int, self> */
+                    class Bag implements ArrayAccess {
+                        /** @param int $offset */
+                        public function offsetExists($offset): bool { return true; }
+                        /** @param int $offset */
+                        public function offsetGet($offset): self { return $this; }
+                        /**
+                         * @param ?int $offset
+                         * @param self $value
+                         */
+                        public function offsetSet($offset, $value): void {}
+                        /** @param int $offset */
+                        public function offsetUnset($offset): void {}
+                    }
+
+                    final class SubBag extends Bag {}
+
+                    [$first] = new SubBag();',
+                'assertions' => [
+                    '$first===' => 'Bag',
+                ],
+            ],
+            'destructureArrayAccessObjectOfStatic' => [
+                'code' => '<?php
+                    /** @implements ArrayAccess<int, static> */
+                    abstract class Bag implements ArrayAccess {
+                        public function offsetExists(mixed $offset): bool { return true; }
+                        public function offsetGet(mixed $offset): static { return $this; }
+                        public function offsetSet(mixed $offset, mixed $value): void {}
+                        public function offsetUnset(mixed $offset): void {}
+                    }
+
+                    final class SubBag extends Bag {}
+
+                    [$first] = new SubBag();',
+                'assertions' => [
+                    '$first===' => 'SubBag',
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'destructureTraversableArrayAccessInterfaceOfSelf' => [
+                'code' => '<?php
+                    /**
+                     * @extends ArrayAccess<int, self>
+                     * @extends Traversable<int, self>
+                     */
+                    interface Bag extends ArrayAccess, Traversable {
+                        public function value(): int;
+                    }
+
+                    function f(Bag $b): int {
+                        [$v] = $b;
+                        return $v->value();
+                    }',
+            ],
             'allowEmptyList' => [
                 'code' => '<?php
                     function test(): void {
