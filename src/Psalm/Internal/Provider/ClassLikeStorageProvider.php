@@ -183,14 +183,11 @@ final class ClassLikeStorageProvider
     /**
      * @psalm-capabilities read-props|write-props|write-refs|read-globals|write-globals
      */
-    public function remove(string $fq_classlike_name): void
+    public function remove(string $fq_classlike_name, string $file_path): void
     {
         $fq_classlike_name_lc = strtolower($fq_classlike_name);
 
-        $file_path = self::$storage[$fq_classlike_name_lc]->stmt_location?->file_path ?? null;
-        if ($file_path !== null) {
-            $this->cache?->forget($fq_classlike_name_lc, $file_path);
-        }
+        $this->cache?->forget($fq_classlike_name_lc, $file_path);
 
         unset(self::$storage[$fq_classlike_name_lc]);
     }
