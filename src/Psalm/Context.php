@@ -1618,19 +1618,6 @@ final class Context
     }
 
     /**
-     * What a condition made phantom classes is only true where the check it came from holds, except for a
-     * negated check, whose classes stay phantom classes in the code after it
-     *
-     * @param array<lowercase-string,true> $phantom_before the phantom classes before the condition
-     * @param array<lowercase-string,true> $negated_before the negated classes before the condition
-     * @psalm-external-mutation-free
-     */
-    public function restorePhantomClassesKeepingNegated(array $phantom_before, array $negated_before): void
-    {
-        $this->phantom_classes = $phantom_before + array_diff_key($this->negated_phantom_classes, $negated_before);
-    }
-
-    /**
      * @psalm-external-mutation-free
      */
     public function hasVariable(string $var_name): bool

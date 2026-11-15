@@ -1205,6 +1205,17 @@ final class ClassTest extends TestCase
                         Missing\Thing::run();
                     }',
             ],
+            'twoNegatedClassExistsInAnOrWithReturnCoverTheCodeAfter' => [
+                'code' => '<?php
+                    function foo(): void {
+                        if (!class_exists(Missing\Thing::class) || !class_exists(Missing\Other::class)) {
+                            return;
+                        }
+
+                        Missing\Thing::run();
+                        Missing\Other::run();
+                    }',
+            ],
             'negatedInterfaceExistsWithThrowCoversTheCodeAfter' => [
                 'code' => '<?php
                     function foo(): void {
@@ -1736,6 +1747,17 @@ final class ClassTest extends TestCase
                     function foo(bool $flag): void {
                         if (class_exists(Missing\Thing::class) && $flag) {
                             Missing\Thing::run();
+                        }
+
+                        Missing\Thing::run();
+                    }',
+                'error_message' => 'UndefinedClass - src' . DIRECTORY_SEPARATOR . 'somefile.php:7:25',
+            ],
+            'negatedClassExistsAndAFlagWithReturnDoesNotCoverTheCodeAfter' => [
+                'code' => '<?php
+                    function foo(bool $flag): void {
+                        if (!class_exists(Missing\Thing::class) && $flag) {
+                            return;
                         }
 
                         Missing\Thing::run();

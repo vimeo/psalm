@@ -17,6 +17,7 @@ use Psalm\Internal\Analyzer\ScopeAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Block\IfElse\ElseAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Block\IfElse\ElseIfAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Block\IfElse\IfAnalyzer;
+use Psalm\Internal\Analyzer\Statements\Expression\BinaryOp\GuardedClasses;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\Internal\Analyzer\TraitAnalyzer;
 use Psalm\Internal\Clause;
@@ -108,7 +109,6 @@ final class IfElseAnalyzer
         $pre_cond_remove_vars = $context->parent_remove_vars;
 
         $phantom_classes_before_cond = $context->phantom_classes;
-        $negated_phantom_classes_before_cond = $context->negated_phantom_classes;
         $reassigned_var_ids = FormulaGenerator::getVarsAssignedByOredRightSides($stmt->cond, $context->self);
 
         // the else of an `||` is analysed again from where the condition started, not from where it ended
@@ -129,11 +129,11 @@ final class IfElseAnalyzer
             );
 
             // a class that doesn't exist is only known to be there in the block run when
-            // `class_exists()` (or the like) is true
-            $context->restorePhantomClassesKeepingNegated(
-                $phantom_classes_before_cond,
-                $negated_phantom_classes_before_cond,
-            );
+            // `class_exists()` (or the like) is true, and after the if where the condition is false
+            $context->phantom_classes = [
+                ...$phantom_classes_before_cond,
+                ...GuardedClasses::unknownWhenResult($stmt->cond, false, $codebase),
+            ];
 
             // this is the context for stuff that happens within the `if` block
             $if_context = $if_conditional_scope->if_context;
