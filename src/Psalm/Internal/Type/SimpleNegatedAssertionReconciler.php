@@ -157,6 +157,15 @@ final class SimpleNegatedAssertionReconciler extends Reconciler
                 return Type::getNever();
             }
 
+            // a typed property that nothing initializes (see InstancePropertyFetchAnalyzer) has no value when it is
+            // not set: reading it throws
+            if ($existing_var_type->ignore_isset
+                && !$existing_var_type->initialized
+                && !$existing_var_type->isNullable()
+            ) {
+                return Type::getNever();
+            }
+
             return Type::getNull();
         }
 

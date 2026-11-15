@@ -20,6 +20,13 @@ final class IfScope
     public ?array $new_vars = null;
 
     /**
+     * Types of the variables some branches define but not all, combined over the branches that define them
+     *
+     * @var array<string, Union>
+     */
+    public array $partial_new_vars = [];
+
+    /**
      * @var array<string, bool>
      */
     public array $new_vars_possibly_in_scope = [];
@@ -45,6 +52,13 @@ final class IfScope
      * @var array<string, bool>
      */
     public array $reassigned_var_ids = [];
+
+    /**
+     * The variables the conditions of the elseifs assigned, which the else runs after
+     *
+     * @var array<string, int>
+     */
+    public array $elseif_cond_assigned_var_ids = [];
 
     /**
      * @var array<string, Union>
