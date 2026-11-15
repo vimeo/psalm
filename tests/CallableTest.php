@@ -463,10 +463,111 @@ final class CallableTest extends TestCase
                     }
                     /** @var Box<int> $box */;
                     $wrap = $box->wrap(...);
-                    $wrapped = $wrap(5);',
+                    $wrapped = $wrap(5);
+                    $direct = $box->wrap(5);',
                 'assertions' => [
                     '$wrap===' => 'Closure[impure](int):list<int>',
-                    '$wrapped===' => 'list<int>',
+                    '$wrapped===' => 'list<5>',
+                    '$direct===' => 'list<5>',
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
+            'invokeFirstClassCallableOfGenericMethodOfInferredObject' => [
+                'code' => '<?php
+                    /** @template T */
+                    final class Box {
+                        /** @param T $v */
+                        public function __construct(public mixed $v) {}
+
+                        /**
+                         * @template U
+                         * @param U $u
+                         * @return array{T, U}
+                         */
+                        public function pair(mixed $u): array { return [$this->v, $u]; }
+                    }
+                    $b = new Box(1);
+                    $p = $b->pair(...);
+                    $pair = $p("x");
+                    $direct = $b->pair("x");',
+                'assertions' => [
+                    '$pair===' => "list{`_0:1, 'x'}",
+                    '$direct===' => "list{`_0:1, 'x'}",
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
+            'invokeFirstClassCallableOfGenericMethodOfObjectWidenedLater' => [
+                'code' => '<?php
+                    /** @template T of int|string */
+                    final class Box {
+                        /** @param T $v */
+                        public function __construct(public int|string $v) {}
+
+                        /** @param T $v */
+                        public function set(int|string $v): void { $this->v = $v; }
+
+                        /**
+                         * @template U
+                         * @param U $u
+                         * @return array{T, U}
+                         */
+                        public function pair(mixed $u): array { return [$this->v, $u]; }
+                    }
+                    $b = new Box(1);
+                    $p = $b->pair(...);
+                    $b->set("two");
+                    $pair = $p("x");
+                    $direct = $b->pair("x");',
+                'assertions' => [
+                    '$pair===' => "list{`_0:'two'|1, 'x'}",
+                    '$direct===' => "list{`_0:'two'|1, 'x'}",
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
+            'invokeFirstClassCallableOfGenericMethodWithClassTemplateParam' => [
+                'code' => '<?php
+                    /** @template T */
+                    final class Box {
+                        /**
+                         * @template U
+                         * @param T $t
+                         * @param U $u
+                         * @return array{T, U}
+                         */
+                        public function pair(mixed $t, mixed $u): array { return [$t, $u]; }
+                    }
+                    /** @var Box<int|string> $box */;
+                    $p = $box->pair(...);
+                    $pair = $p(1, "x");',
+                'assertions' => [
+                    '$p===' => 'Closure[impure](int|string, mixed):list{int|string, mixed}',
+                    '$pair===' => "list{int|string, 'x'}",
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
+            'invokeFirstClassCallableOfGenericMethodOfExtendedClass' => [
+                'code' => '<?php
+                    /** @template T */
+                    abstract class Box {
+                        /**
+                         * @template U
+                         * @param U $u
+                         * @return array{T, U}
+                         */
+                        public function pair(mixed $u): array { throw new Exception(); }
+                    }
+                    /** @extends Box<int> */
+                    final class IntBox extends Box {}
+                    $p = (new IntBox())->pair(...);
+                    $pair = $p("x");
+                    $direct = (new IntBox())->pair("x");',
+                'assertions' => [
+                    '$pair===' => "list{int, 'x'}",
+                    '$direct===' => "list{int, 'x'}",
                 ],
                 'ignored_issues' => [],
                 'php_version' => '8.1',
@@ -3469,6 +3570,24 @@ final class CallableTest extends TestCase
                     $identity = identity(...);
                     $identity(42);',
                 'error_message' => 'InvalidArgument',
+                'error_levels' => [],
+                'php_version' => '8.1',
+            ],
+            'invokeFirstClassCallableOfGenericMethodOfGenericObjectWithInvalidBound' => [
+                'code' => '<?php
+                    /** @template T */
+                    final class Box {
+                        /**
+                         * @template U of T
+                         * @param U $u
+                         * @return list<U>
+                         */
+                        public function wrap(mixed $u): array { return [$u]; }
+                    }
+                    /** @var Box<int> $box */;
+                    $wrap = $box->wrap(...);
+                    $wrap("x");',
+                'error_message' => "InvalidArgument - src" . DIRECTORY_SEPARATOR . "somefile.php:13:27 - Argument 1 expects int",
                 'error_levels' => [],
                 'php_version' => '8.1',
             ],
