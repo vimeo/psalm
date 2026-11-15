@@ -32,15 +32,12 @@ use function explode;
 use function implode;
 use function in_array;
 use function is_bool;
-use function pathinfo;
 use function rtrim;
 use function str_contains;
 use function str_ends_with;
 use function str_starts_with;
 use function strtolower;
 use function substr;
-
-use const PATHINFO_EXTENSION;
 
 /**
  * @internal
@@ -194,13 +191,13 @@ final class Functions
      *
      * @psalm-capabilities read-props|write-this-props|write-refs
      */
-    public function isDeclaredInCode(string $function_id): bool
+    public function isDeclaredInCode(string $function_id, Scanner $scanner): bool
     {
         $function_id = strtolower($function_id);
 
         foreach (FileStorageProvider::getAll() as $file_path => $file_storage) {
             if (isset($file_storage->functions[$function_id])
-                && pathinfo($file_path, PATHINFO_EXTENSION) !== 'phpstub'
+                && !$scanner->isStubFile($file_path)
             ) {
                 return true;
             }

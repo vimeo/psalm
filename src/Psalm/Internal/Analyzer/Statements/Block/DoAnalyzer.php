@@ -7,6 +7,7 @@ namespace Psalm\Internal\Analyzer\Statements\Block;
 use PhpParser;
 use Psalm\CodeLocation;
 use Psalm\Context;
+use Psalm\Exception\ComplicatedExpressionException;
 use Psalm\Internal\Algebra;
 use Psalm\Internal\Algebra\FormulaGenerator;
 use Psalm\Internal\Analyzer\ScopeAnalyzer;
@@ -113,7 +114,11 @@ final class DoAnalyzer
             throw new UnexpectedValueException('There should be an inner loop context');
         }
 
-        $negated_while_clauses = Algebra::negateFormula($while_clauses);
+        try {
+            $negated_while_clauses = Algebra::negateFormula($while_clauses);
+        } catch (ComplicatedExpressionException) {
+            $negated_while_clauses = [];
+        }
 
         $negated_while_types = Algebra::getTruthsFromFormula(
             Algebra::simplifyCNF(
