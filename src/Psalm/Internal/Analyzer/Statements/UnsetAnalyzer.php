@@ -40,7 +40,22 @@ final class UnsetAnalyzer
     /**
      * Marks an expression unset() is given, as opposed to one an unset expression goes through
      */
-    private const TARGET_ATTRIBUTE = 'psalmUnsetTarget';
+    public const TARGET_ATTRIBUTE = 'psalmUnsetTarget';
+
+    /**
+     * Marks an expression PHP fetches for unsetting rather than reads: the unset target, and the array or object
+     * each element or property on its way is taken from. Accessing an element of null there is a silent no-op,
+     * whereas offsets, call arguments, method receivers and dynamic names are read as usual
+     */
+    private const CHAIN_ATTRIBUTE = 'psalmUnsetChain';
+
+    /**
+     * Whether unset() fetches $stmt to remove something from it, so that its being null is not an error
+     */
+    public static function isOnTargetChain(Context $context, PhpParser\Node\Expr $stmt): bool
+    {
+        return $context->inside_unset && $stmt->getAttribute(self::CHAIN_ATTRIBUTE) === true;
+    }
 
     /**
      * Whether unsetting writes the property the expression fetches: when it's the expression unset() removes, or
@@ -64,6 +79,15 @@ final class UnsetAnalyzer
 
         foreach ($stmt->vars as $var) {
             $var->setAttribute(self::TARGET_ATTRIBUTE, true);
+
+            $chain_node = $var;
+            do {
+                $chain_node->setAttribute(self::CHAIN_ATTRIBUTE, true);
+                $chain_node = $chain_node instanceof PhpParser\Node\Expr\ArrayDimFetch
+                    || $chain_node instanceof PhpParser\Node\Expr\PropertyFetch
+                    ? $chain_node->var
+                    : null;
+            } while ($chain_node !== null);
 
             $was_inside_general_use = $context->inside_general_use;
             $context->inside_general_use = true;

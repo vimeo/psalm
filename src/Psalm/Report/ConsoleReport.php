@@ -8,13 +8,11 @@ use Override;
 use Psalm\Config;
 use Psalm\Internal\Analyzer\DataFlowNodeData;
 use Psalm\Internal\Analyzer\IssueData;
+use Psalm\Internal\FileLink;
 use Psalm\Report;
 
 use function basename;
-use function get_cfg_var;
-use function ini_get;
 use function strlen;
-use function strtr;
 use function substr;
 
 /**
@@ -23,8 +21,6 @@ use function substr;
  */
 final class ConsoleReport extends Report
 {
-    private ?string $link_format = null;
-
     #[Override]
     public function create(): string
     {
@@ -141,18 +137,6 @@ final class ConsoleReport extends Report
             return $reference;
         }
 
-        if (null === $this->link_format) {
-            // if xdebug is not enabled, use `get_cfg_var` to get the value directly from php.ini
-            /** @psalm-suppress ImpureFunctionCall read once, like configuration */
-            $this->link_format = (
-                ini_get('xdebug.file_link_format') ?: get_cfg_var('xdebug.file_link_format')
-            ) ?: 'file://%f#L%l';
-        }
-
-        $link = strtr($this->link_format, ['%f' => $data->file_path, '%l' => $data->line_from]);
-        // $reference = $data->file_name . ':' . $data->line_from . ':' . $data->column_from;
-
-
-        return "\033]8;;" . $link . "\033\\" . $reference . "\033]8;;\033\\";
+        return FileLink::hyperlink($reference, $data->file_path, $data->line_from);
     }
 }

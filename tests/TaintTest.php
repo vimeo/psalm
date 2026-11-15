@@ -1196,6 +1196,26 @@ final class TaintTest extends TestCase
     public static function providerValidCodeParse(): array
     {
         return [
+            'coalesceOnAnOffsetKeepsTheTypeOfTheArrayItReads' => [
+                'code' => '<?php
+                    /** @param list<mixed> $l */
+                    function f(array $l): array {
+                        $y = $l[0] ?? [];
+                        return [$y, $l[0]["w"]];
+                    }
+
+                    /** @param list<mixed> $l */
+                    function g(array $l): array {
+                        $y = isset($l[0]) ? 1 : 2;
+                        return [$y, $l[0]["w"]];
+                    }
+
+                    /** @param list<mixed> $l */
+                    function h(array $l): array {
+                        $x = $l[0] ?? false;
+                        return [$x, $l[0]];
+                    }',
+            ],
             'conditionallyEscapedTaintPassedTrueInstanceMethod' => [
                 'code' => '<?php
                     class U {
@@ -5017,6 +5037,174 @@ final class TaintTest extends TestCase
                         echo $value;
                     }',
             ],
+            'byRefParamOutOfAPureMethodIsNotSharedByItsCalls' => [
+                'code' => '<?php
+                    final class Splitter {
+                        /** @param-out list<string> $parts */
+                        public static function split(string $subject, ?array &$parts = null): int {
+                            $parts = explode(",", $subject);
+                            return count($parts);
+                        }
+                    }
+
+                    function count_input(): int {
+                        return Splitter::split((string) $_GET["x"]);
+                    }
+
+                    function show(string $s): void {
+                        Splitter::split($s, $parts);
+                        echo implode(",", $parts);
+                    }',
+            ],
+            'byRefParamOutOfAPureFunctionIsNotSharedByItsCalls' => [
+                'code' => '<?php
+                    function wrap(string &$value): void {
+                        $value = "<b>" . $value . "</b>";
+                    }
+
+                    function wrapBoth(): string {
+                        $tainted = (string) $_GET["value"];
+                        wrap($tainted);
+                        $safe = "safe";
+                        wrap($safe);
+                        echo $safe;
+
+                        return $tainted;
+                    }',
+            ],
+            'byRefParamOutOfAPurePrivateMethodIsNotSharedByItsCalls' => [
+                'code' => '<?php
+                    class Page {
+                        private function wrap(string &$value): void {
+                            $value = "<b>" . $value . "</b>";
+                        }
+
+                        public function render(): string {
+                            $tainted = (string) $_GET["value"];
+                            $this->wrap($tainted);
+                            $safe = "safe";
+                            $this->wrap($safe);
+                            echo $safe;
+
+                            return $tainted;
+                        }
+                    }',
+            ],
+            'byRefParamOutOfAPureOverrideIsNotSharedByItsCalls' => [
+                'code' => '<?php // --taint-analysis
+                    class Wrapper {
+                        public function wrap(string &$value): void {}
+                    }
+
+                    final class BoldWrapper extends Wrapper {
+                        #[Override]
+                        public function wrap(string &$value): void {
+                            $value = "<b>" . $value . "</b>";
+                        }
+                    }
+
+                    function wrapBoth(): string {
+                        $wrapper = new BoldWrapper();
+                        $tainted = (string) $_GET["value"];
+                        $wrapper->wrap($tainted);
+                        $safe = "safe";
+                        $wrapper->wrap($safe);
+                        echo $safe;
+
+                        return $tainted;
+                    }',
+            ],
+            'byRefParamOutFilledByPregMatchInAPureMethodIsNotSharedByItsCalls' => [
+                'code' => '<?php
+                    final class Parser {
+                        /** @param-out array<array-key, string> $matches */
+                        public static function match(string $subject, ?array &$matches = null): int {
+                            return (int) preg_match("/(.*)/", $subject, $matches);
+                        }
+                    }
+
+                    function dump(): void {
+                        Parser::match((string) $_GET["x"]);
+                    }
+
+                    function parse(string $s): void {
+                        if (Parser::match($s, $matches)) {
+                            unserialize($matches[1] ?? "");
+                        }
+                    }
+
+                    dump();
+                    parse("safe");',
+            ],
+            'byRefParamOutPassedOnToAnotherPureFunctionIsNotSharedByItsCalls' => [
+                'code' => '<?php
+                    function wrap(string &$value): void {
+                        $value = "<b>" . $value . "</b>";
+                    }
+
+                    function wrapTwice(string &$value): void {
+                        wrap($value);
+                        wrap($value);
+                    }
+
+                    function wrapBoth(): string {
+                        $tainted = (string) $_GET["value"];
+                        wrapTwice($tainted);
+                        $safe = "safe";
+                        wrapTwice($safe);
+                        echo $safe;
+
+                        return $tainted;
+                    }',
+            ],
+            'byRefParamOutOfAPureRecursiveFunctionIsNotSharedByItsCalls' => [
+                'code' => '<?php
+                    function wrapN(string &$value, int $n): void {
+                        if ($n > 0) {
+                            wrapN($value, $n - 1);
+                        }
+                        $value = "<b>" . $value . "</b>";
+                    }
+
+                    function wrapTainted(): string {
+                        $tainted = (string) $_GET["value"];
+                        wrapN($tainted, 2);
+
+                        return $tainted;
+                    }
+
+                    function wrapSafe(): void {
+                        $safe = "safe";
+                        wrapN($safe, 2);
+                        echo $safe;
+                    }',
+            ],
+            'byRefParamOutOfAPureOverrideCalledDirectlyIsNotFilledByCallsOfTheOverriddenMethod' => [
+                'code' => '<?php // --taint-analysis
+                    class Wrapper {
+                        public function wrap(string &$value): void {}
+                    }
+
+                    final class BoldWrapper extends Wrapper {
+                        #[Override]
+                        public function wrap(string &$value): void {
+                            $value = "<b>" . $value . "</b>";
+                        }
+                    }
+
+                    function wrapTainted(Wrapper $wrapper): string {
+                        $tainted = (string) $_GET["value"];
+                        $wrapper->wrap($tainted);
+
+                        return $tainted;
+                    }
+
+                    function wrapSafe(BoldWrapper $wrapper): void {
+                        $safe = "safe";
+                        $wrapper->wrap($safe);
+                        echo $safe;
+                    }',
+            ],
             'getoptOptionCastToInt' => [
                 'code' => '<?php
                     $options = getopt("n:");
@@ -6020,6 +6208,24 @@ final class TaintTest extends TestCase
     public static function providerInvalidCodeParse(): array
     {
         return [
+            'ternaryBranchWritingTheNarrowedTypeKeepsItsTaint' => [
+                'code' => '<?php // --taint-analysis
+                    /** @psalm-assert-if-true non-falsy-string $s */
+                    function isNonFalsy(string $s): bool {
+                        return $s !== "" && $s !== "0";
+                    }
+
+                    /** @psalm-taint-source input */
+                    function src(): string {
+                        return "";
+                    }
+
+                    function f(string $s): void {
+                        $r = isNonFalsy($s) ? ($s = "prefix" . src()) : null;
+                        echo $s;
+                    }',
+                'error_message' => 'TaintedHtml',
+            ],
             'nullsafeCallOnAStaticPropertyStoresTheTaint' => [
                 'code' => '<?php // --taint-analysis
                     final class H {
@@ -6106,9 +6312,7 @@ final class TaintTest extends TestCase
                 'code' => '<?php // --taint-analysis
                     /** @param mixed $m */
                     function f($m): void {
-                        /** @psalm-suppress MixedArrayAccess */
                         preg_match("/(.*)/", (string) $_GET["x"], $m["k"]);
-                        /** @psalm-suppress MixedArrayAccess, MixedArgument */
                         echo $m["k"][1];
                     }',
                 'error_message' => 'TaintedHtml',
@@ -6132,6 +6336,28 @@ final class TaintTest extends TestCase
                     if (is_string($s)) {
                         fill($s);
                         output();
+                    }',
+                'error_message' => 'TaintedHtml',
+            ],
+            'taintAStaticPropertyOfStaticPassedByReference' => [
+                'code' => '<?php // --taint-analysis
+                    class Box {
+                        /** @var list<string> */
+                        protected static array $matches = [];
+
+                        public static function fill(string $s): void {
+                            preg_match("/(.*)/", $s, static::$matches);
+                        }
+
+                        public static function output(): void {
+                            echo static::$matches[0];
+                        }
+                    }
+
+                    $s = $_GET["q"];
+                    if (is_string($s)) {
+                        Box::fill($s);
+                        Box::output();
                     }',
                 'error_message' => 'TaintedHtml',
             ],
@@ -7716,6 +7942,15 @@ final class TaintTest extends TestCase
                     $render = render(...);
                     $render((string) $_GET["x"], 3);',
                 'error_message' => 'TaintedHtml',
+            ],
+            'sinkOfOneOfTwoFirstClassCallablesOfTheSameType' => [
+                'code' => '<?php
+                    function runIt(string $s): string { system($s); return $s; }
+                    function safe(string $s): string { return $s; }
+
+                    $f = rand(0, 1) ? safe(...) : runIt(...);
+                    $f((string) $_GET["a"]);',
+                'error_message' => 'TaintedShell',
             ],
             'conditionalSinkOfAClosure' => [
                 'code' => '<?php
@@ -11315,6 +11550,130 @@ final class TaintTest extends TestCase
                     }',
                 'error_message' => 'TaintedHtml',
             ],
+            'taintByRefParamOutOfAPureMethodAtTheSameCall' => [
+                'code' => '<?php
+                    final class Splitter {
+                        /** @param-out list<string> $parts */
+                        public static function split(string $subject, ?array &$parts = null): int {
+                            $parts = explode(",", $subject);
+                            return count($parts);
+                        }
+                    }
+
+                    function show(string $s): void {
+                        Splitter::split($s, $parts);
+                        echo implode(",", $parts);
+                    }
+
+                    Splitter::split("safe", $parts);
+                    show((string) $_GET["x"]);',
+                'error_message' => 'TaintedHtml',
+            ],
+            'taintByRefParamOutSharedByTheCallsOfAnImpureMethod' => [
+                'code' => '<?php
+                    final class Splitter {
+                        public static int $calls = 0;
+
+                        /** @param-out list<string> $parts */
+                        public static function split(string $subject, ?array &$parts = null): int {
+                            self::$calls++;
+                            $parts = explode(",", $subject);
+                            return count($parts);
+                        }
+                    }
+
+                    function count_input(): int {
+                        return Splitter::split((string) $_GET["x"]);
+                    }
+
+                    function show(string $s): void {
+                        Splitter::split($s, $parts);
+                        echo implode(",", $parts);
+                    }',
+                'error_message' => 'TaintedHtml',
+            ],
+            'taintByRefParamOfAPureOverride' => [
+                'code' => '<?php // --taint-analysis
+                    class Wrapper {
+                        public function wrap(string &$value): void {}
+                    }
+
+                    final class BoldWrapper extends Wrapper {
+                        #[Override]
+                        public function wrap(string &$value): void {
+                            $value = "<b>" . $value . "</b>";
+                        }
+                    }
+
+                    $value = (string) $_GET["value"];
+                    (new BoldWrapper())->wrap($value);
+                    echo $value;',
+                'error_message' => 'TaintedHtml',
+            ],
+            'taintByRefParamOfAPureOverrideThroughACallOfTheOverriddenMethod' => [
+                'code' => '<?php // --taint-analysis
+                    class Reader {
+                        public function read(string &$value): void {
+                            $value = "literal";
+                        }
+                    }
+
+                    final class GetReader extends Reader {
+                        #[Override]
+                        public function read(string &$value): void {
+                            $value = $value . (string) $_GET["value"];
+                        }
+                    }
+
+                    function show(Reader $reader): void {
+                        $value = "";
+                        $reader->read($value);
+                        echo $value;
+                    }',
+                'error_message' => 'TaintedHtml',
+            ],
+            'taintByRefParamOutPassedOnToAnotherPureFunction' => [
+                'code' => '<?php
+                    function wrap(string &$value): void {
+                        $value = "<b>" . $value . "</b>";
+                    }
+
+                    function wrapTwice(string &$value): void {
+                        wrap($value);
+                        wrap($value);
+                    }
+
+                    $safe = "safe";
+                    wrapTwice($safe);
+                    $tainted = (string) $_GET["value"];
+                    wrapTwice($tainted);
+                    echo $tainted;',
+                'error_message' => 'TaintedHtml',
+            ],
+            'taintByRefParamOutReadFromStaticPropertyByAPureCallee' => [
+                'code' => '<?php
+                    final class Store {
+                        public static string $value = "";
+
+                        public static function set(string $value): void {
+                            self::$value = $value;
+                        }
+
+                        public static function get(?string &$value = null): void {
+                            $value = self::$value;
+                        }
+                    }
+
+                    function store(): void {
+                        Store::set((string) $_GET["x"]);
+                    }
+
+                    function show(): void {
+                        Store::get($value);
+                        echo (string) $value;
+                    }',
+                'error_message' => 'TaintedHtml',
+            ],
             'taintPropertyPromotedByATraitConstructorOfAnImmutableClass' => [
                 'code' => '<?php // --taint-analysis
                     /** @psalm-immutable */
@@ -12135,19 +12494,16 @@ final class TaintTest extends TestCase
             ],
             'taintedHtmlWrittenToAPhpOutputStream' => [
                 'code' => '<?php
-                    /** @psalm-suppress PossiblyFalseArgument */
                     fwrite(fopen("php://output", "w"), (string) $_GET["x"]);',
                 'error_message' => 'TaintedHtml',
             ],
             'taintedHtmlWrittenToAPhpStdoutStream' => [
                 'code' => '<?php
-                    /** @psalm-suppress PossiblyFalseArgument */
                     fwrite(fopen("php://stdout", "w"), (string) $_GET["x"]);',
                 'error_message' => 'TaintedHtml',
             ],
             'taintedTextWithQuotesWrittenToAPhpOutputStream' => [
                 'code' => '<?php
-                    /** @psalm-suppress PossiblyFalseArgument */
                     fwrite(fopen("php://output", "w"), strip_tags((string) $_GET["x"]));',
                 'error_message' => 'TaintedTextWithQuotes',
             ],
@@ -13152,10 +13508,6 @@ final class TaintTest extends TestCase
             ],
             'taintOverMixed' => [
                 'code' => '<?php
-                    /**
-                     * @psalm-suppress MixedAssignment
-                     * @psalm-suppress MixedArgument
-                     */
                     function foo() : void {
                         $a = $_GET["bad"];
                         echo $a;
@@ -13165,7 +13517,6 @@ final class TaintTest extends TestCase
             'taintStrConversion' => [
                 'code' => '<?php
                     function foo() : void {
-                        /** @psalm-suppress PossiblyInvalidCast */
                         $a = strtoupper(strtolower((string) $_GET["bad"]));
                         echo $a;
                     }',
@@ -13958,13 +14309,11 @@ final class TaintTest extends TestCase
             ],
             'taintThroughArrayMapUntypedClosureOverMixedArray' => [
                 'code' => '<?php
-                    /** @psalm-suppress MissingClosureParamType, MissingClosureReturnType */
                     echo implode(",", array_map(fn($s) => $s, $_GET["a"]));',
                 'error_message' => 'TaintedHtml',
             ],
             'taintThroughArrayMapUntypedClosureIntoItsElements' => [
                 'code' => '<?php
-                    /** @psalm-suppress MissingClosureParamType, MissingClosureReturnType */
                     foreach (array_map(fn($s) => $s, $_GET["a"]) as $value) {
                         echo (string) $value;
                     }',
@@ -14157,10 +14506,8 @@ final class TaintTest extends TestCase
             'taintExit' => [
                 'code' => '<?php
                     if (rand(0, 1)) {
-                        /** @psalm-suppress PossiblyInvalidArgument */
                         exit($_GET[\'a\']);
                     } else {
-                        /** @psalm-suppress PossiblyInvalidArgument */
                         die($_GET[\'b\']);
                     }',
                 'error_message' => 'TaintedHtml',
@@ -14370,7 +14717,6 @@ final class TaintTest extends TestCase
                         echo $b[0];
                     }
 
-                    /** @psalm-suppress MixedArgumentTypeCoercion */
                     spread($_GET["a"]);',
                 'error_message' => 'TaintedHtml',
             ],
@@ -14878,10 +15224,8 @@ final class TaintTest extends TestCase
                         }
                     }
 
-                    /** @psalm-suppress InvalidReturnType */
                     function stub(): Unsafe { }
 
-                    /** @psalm-suppress MixedArgument */
                     echo stub()->isUnsafe();',
                 'error_message' => 'TaintedHtml',
             ],
@@ -15018,7 +15362,6 @@ final class TaintTest extends TestCase
             ],
             'taintPopen' => [
                 'code' => '<?php
-                    /** @psalm-suppress PossiblyInvalidCast */
                     $cb = popen($_POST[\'x\'], \'r\');',
                 'error_message' => 'TaintedShell',
             ],
@@ -15885,7 +16228,6 @@ final class TaintTest extends TestCase
                  * We arbitrarily chose system() to test this.
                  */
                 'code' => '<?php
-                    /** @psalm-suppress PossiblyInvalidArgument */
                     system(urlencode($_GET["bad"]));
                 ',
                 'error_message' => 'TaintedShell',

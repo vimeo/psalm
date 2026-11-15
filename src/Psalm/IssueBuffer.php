@@ -882,7 +882,6 @@ final class IssueBuffer
                         );
                     }
                 }
-            } else {
             }
         }
 
@@ -1064,6 +1063,14 @@ final class IssueBuffer
             && !($codebase->taint_flow_graph
                 && self::hasSarifReport($project_analyzer->generated_report_options)
                 && isset($_SERVER['GITHUB_WORKFLOW']))
+        ) {
+            exit(2);
+        }
+
+        // like Rector, a dry run that would change files exits with an error so it can gate CI
+        if ($codebase->alter_code
+            && $project_analyzer->dry_run
+            && $codebase->analyzer->getChangedFilesCount() > 0
         ) {
             exit(2);
         }

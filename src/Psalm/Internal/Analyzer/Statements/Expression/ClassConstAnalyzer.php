@@ -43,7 +43,9 @@ use Psalm\Storage\ClassConstantStorage;
 use Psalm\Storage\ClassLikeStorage;
 use Psalm\Type;
 use Psalm\Type\Atomic\TClassString;
+use Psalm\Type\Atomic\TDependentGetClass;
 use Psalm\Type\Atomic\TLiteralClassString;
+use Psalm\Type\Atomic\TLiteralString;
 use Psalm\Type\Atomic\TMixed;
 use Psalm\Type\Atomic\TNamedObject;
 use Psalm\Type\Atomic\TObject;
@@ -56,6 +58,7 @@ use ReflectionProperty;
 use function assert;
 use function explode;
 use function in_array;
+use function ltrim;
 use function strtolower;
 
 /**
@@ -152,6 +155,9 @@ final class ClassConstAnalyzer
                 if ($stmt->name instanceof PhpParser\Node\Identifier) {
                     if ((!$context->inside_class_exists || $stmt->name->name !== 'class')
                         && !isset($context->phantom_classes[strtolower($fq_class_name)])
+                        // PHP allows the name of a class that is missing, such as in the message about it
+                        && ($stmt->name->name !== 'class'
+                            || !isset($context->negated_phantom_classes[strtolower($fq_class_name)]))
                     ) {
                         if (ClassLikeAnalyzer::checkFullyQualifiedClassLikeName(
                             $statements_analyzer,
@@ -513,6 +519,8 @@ final class ClassConstAnalyzer
             return true;
         }
 
+        // ::class retrieves a class name; it is not a use of a string literal
+        // instead of ::class. In particular, do not report a class-string made by Foo::class.
         if ($stmt->name instanceof PhpParser\Node\Identifier && $stmt->name->name === 'class') {
             $class_string_types = [];
 
@@ -559,20 +567,13 @@ final class ClassConstAnalyzer
             return true;
         }
 
-        if ($stmt->class instanceof PhpParser\Node\Expr\Variable) {
-            $fq_class_name = null;
-            $lhs_type_definite_class = null;
-            if ($lhs_type->isSingle()) {
-                $atomic_type = $lhs_type->getSingleAtomic();
-                if ($atomic_type instanceof TNamedObject) {
-                    $fq_class_name = $atomic_type->value;
-                    $lhs_type_definite_class = $atomic_type->definite_class;
-                } elseif ($atomic_type instanceof TLiteralClassString) {
-                    $fq_class_name = $atomic_type->value;
-                    $lhs_type_definite_class = $atomic_type->definite_class;
-                } elseif ($atomic_type instanceof TString
-                    && !$atomic_type instanceof TClassString
-                    && !$codebase->config->allow_string_standin_for_class
+        // Check all union members, not just the single-type variable case below.
+        if (!$codebase->config->allow_string_standin_for_class) {
+            foreach ($lhs_type->getAtomicTypes() as $lhs_atomic_type) {
+                if ($lhs_atomic_type instanceof TString
+                    && !$lhs_atomic_type instanceof TClassString
+                    && !$lhs_atomic_type instanceof TDependentGetClass
+                    && !$lhs_atomic_type instanceof TLiteralClassString
                 ) {
                     IssueBuffer::maybeAdd(
                         new InvalidStringClass(
@@ -581,6 +582,27 @@ final class ClassConstAnalyzer
                         ),
                         $statements_analyzer->getSuppressedIssues(),
                     );
+                    break;
+                }
+            }
+        }
+
+        if ($stmt->class instanceof PhpParser\Node\Expr\Variable) {
+            $fq_class_name = null;
+            $lhs_type_definite_class = null;
+            if ($lhs_type->isSingle()) {
+                $atomic_type = $lhs_type->getSingleAtomic();
+                if ($atomic_type instanceof TNamedObject || $atomic_type instanceof TLiteralClassString) {
+                    $fq_class_name = $atomic_type->value;
+                    $lhs_type_definite_class = $atomic_type->definite_class;
+                } elseif ($atomic_type::class === TLiteralString::class
+                    && $codebase->config->allow_string_standin_for_class
+                ) {
+                    $class_name = ltrim($atomic_type->value, '\\');
+                    if ($codebase->classlike_storage_provider->has($class_name)) {
+                        $fq_class_name = $class_name;
+                        $lhs_type_definite_class = true;
+                    }
                 }
             }
 
