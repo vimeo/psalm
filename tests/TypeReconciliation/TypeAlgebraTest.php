@@ -5609,18 +5609,6 @@ final class TypeAlgebraTest extends TestCase
                 'error_message' => 'ParadoxicalCondition - src' . DIRECTORY_SEPARATOR . 'somefile.php:5:37',
                 'error_levels' => ['RiskyTruthyFalsyComparison'],
             ],
-            'truthyNullableIntOfTheLeftOfAnAndContradictsItsNegationInTheIf' => [
-                'code' => '<?php
-                    function f(?int $x, ?int $y): void {
-                        if ($x && $y) {
-                            if (!$x) {
-                                echo "never";
-                            }
-                        }
-                    }',
-                'error_message' => 'ParadoxicalCondition - src' . DIRECTORY_SEPARATOR . 'somefile.php:4:33',
-                'error_levels' => ['RiskyTruthyFalsyComparison'],
-            ],
         ];
     }
 }

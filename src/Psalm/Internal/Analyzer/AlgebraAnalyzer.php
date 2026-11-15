@@ -17,10 +17,12 @@ use Psalm\Issue\ParadoxicalCondition;
 use Psalm\Issue\RedundantCondition;
 use Psalm\IssueBuffer;
 use Psalm\Storage\Assertion;
+use Psalm\Storage\Assertion\Falsy;
 use Psalm\Storage\Assertion\InArray;
 use Psalm\Storage\Assertion\IsIsset;
 use Psalm\Storage\Assertion\IsNotType;
 use Psalm\Storage\Assertion\NotInArray;
+use Psalm\Storage\Assertion\Truthy;
 use Psalm\Type\Atomic;
 use Psalm\Type\Atomic\TNull;
 use Psalm\Type\Atomic\TTypeVariable;
@@ -52,7 +54,7 @@ final class AlgebraAnalyzer
      * the new types do not express: `$x` truthy makes an `int|null` an `int`, which can still be falsy
      *
      * @param list<Clause> $clauses
-     * @param array<string, mixed> $changed_var_ids
+     * @param array<string, bool> $changed_var_ids
      * @param array<string, Union> $vars_in_scope
      * @return array{list<Clause>, list<Clause>}
      */
@@ -78,7 +80,9 @@ final class AlgebraAnalyzer
     }
 
     /**
-     * Whether the types of the variables make one of the clause's possibilities certain
+     * Whether the type of the variable makes the clause certain. Types can't say that an int or a float is not zero,
+     * so only a lone truthiness assertion is known not to be, when its negation is still possible: the negations of
+     * other assertions are not all exact
      *
      * @param array<string, Union> $vars_in_scope
      */
@@ -87,49 +91,49 @@ final class AlgebraAnalyzer
         array $vars_in_scope,
         StatementsAnalyzer $statements_analyzer,
     ): bool {
-        $codebase = $statements_analyzer->getCodebase();
+        $assertion = self::getSingleAssertion($clause);
 
-        foreach ($clause->possibilities as $var_id => $possibilities) {
-            $type = $vars_in_scope[$var_id] ?? null;
-
-            // reconciling a type variable records bounds on it
-            if ($type === null
-                || array_any(
-                    $type->getAtomicTypes(),
-                    static fn(Atomic $atomic): bool => $atomic instanceof TTypeVariable,
-                )
-            ) {
-                return true;
-            }
-
-            foreach ($possibilities as $possibility) {
-                $failed_reconciliation = Reconciler::RECONCILIATION_OK;
-
-                $negated_type = AssertionReconciler::reconcile(
-                    $possibility->getNegation(),
-                    $type,
-                    $var_id,
-                    $statements_analyzer,
-                    false,
-                    $statements_analyzer->getTemplateTypeMap() ?: [],
-                    null,
-                    [],
-                    $failed_reconciliation,
-                );
-
-                // the negation is only known to be possible when it narrows the type: the reconciler may return the
-                // asserted type instead of never when it is impossible, or the type unchanged when it can't tell
-                if ($failed_reconciliation === Reconciler::RECONCILIATION_EMPTY
-                    || $negated_type->isNever()
-                    || !UnionTypeComparator::isContainedBy($codebase, $negated_type, $type)
-                    || UnionTypeComparator::isContainedBy($codebase, $type, $negated_type)
-                ) {
-                    return true;
-                }
-            }
+        if ($assertion === null || !($assertion[1] instanceof Truthy || $assertion[1] instanceof Falsy)) {
+            return true;
         }
 
-        return false;
+        [$var_id, $possibility] = $assertion;
+
+        $type = $vars_in_scope[$var_id] ?? null;
+
+        // reconciling a type variable records bounds on it
+        if ($type === null
+            || array_any(
+                $type->getAtomicTypes(),
+                static fn(Atomic $atomic): bool => $atomic instanceof TTypeVariable,
+            )
+        ) {
+            return true;
+        }
+
+        $failed_reconciliation = Reconciler::RECONCILIATION_OK;
+
+        $negated_type = AssertionReconciler::reconcile(
+            $possibility->getNegation(),
+            $type,
+            $var_id,
+            $statements_analyzer,
+            false,
+            $statements_analyzer->getTemplateTypeMap() ?? [],
+            null,
+            [],
+            $failed_reconciliation,
+        );
+
+        $codebase = $statements_analyzer->getCodebase();
+
+        // the negation is only known to be possible when it narrows the type: the reconciler may return the asserted
+        // type or an empty union instead of never when it is impossible, or the type unchanged when it can't tell
+        return $failed_reconciliation === Reconciler::RECONCILIATION_EMPTY
+            || $negated_type->isUnionEmpty()
+            || $negated_type->isNever()
+            || !UnionTypeComparator::isContainedBy($codebase, $negated_type, $type)
+            || UnionTypeComparator::isContainedBy($codebase, $type, $negated_type);
     }
 
     /**
