@@ -537,7 +537,12 @@ final class FunctionCallAnalyzer extends CallAnalyzer
                     $function_name,
                     null,
                     self::resolveStaticPropertyAssertionClasses(
-                        self::getAssertionsOnArgs($function_storage->assertions, $function_storage, $stmt->getArgs()),
+                        self::getAssertionsOnArgs(
+                            $function_storage->assertions,
+                            $function_storage,
+                            $stmt->getArgs(),
+                            $statements_analyzer->node_data,
+                        ),
                         $codebase,
                         $context,
                         null,
@@ -560,6 +565,7 @@ final class FunctionCallAnalyzer extends CallAnalyzer
                             $function_storage->if_true_assertions,
                             $function_storage,
                             $stmt->getArgs(),
+                            $statements_analyzer->node_data,
                         ),
                     ),
                 );
@@ -575,6 +581,7 @@ final class FunctionCallAnalyzer extends CallAnalyzer
                             $function_storage->if_false_assertions,
                             $function_storage,
                             $stmt->getArgs(),
+                            $statements_analyzer->node_data,
                         ),
                     ),
                 );
