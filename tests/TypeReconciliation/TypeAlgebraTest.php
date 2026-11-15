@@ -1465,6 +1465,230 @@ final class TypeAlgebraTest extends TestCase
                         $obj->bar();
                     }',
             ],
+            'isArrayStoredInVariableKeptAfterOffsetAssignment' => [
+                'code' => '<?php
+                    /** @param callable|array $l */
+                    function f($l): int {
+                        $isArray = is_array($l);
+
+                        if ($isArray) {
+                            $l[1] = "x";
+                        }
+
+                        if ($isArray) {
+                            return count($l);
+                        }
+
+                        return 0;
+                    }',
+            ],
+            'negatedFunctionCallStoredInVariableNarrows' => [
+                'code' => '<?php
+                    /** @param int|string $x */
+                    function f($x): string {
+                        $isNotInt = !is_int($x);
+
+                        if ($isNotInt) {
+                            return $x;
+                        }
+
+                        return "";
+                    }',
+            ],
+            'staticAndMethodCallAssertionsStoredInVariableNarrow' => [
+                'code' => '<?php
+                    final class Check {
+                        /** @psalm-assert-if-true string $v */
+                        public static function isStr(mixed $v): bool {
+                            return is_string($v);
+                        }
+
+                        /** @psalm-assert-if-true int $v */
+                        public function isInt(mixed $v): bool {
+                            return is_int($v);
+                        }
+                    }
+
+                    /** @param int|string|null $x */
+                    function f($x, Check $check): string {
+                        $isStr = Check::isStr($x);
+
+                        if ($isStr) {
+                            return $x;
+                        }
+
+                        $isInt = $check->isInt($x);
+
+                        if ($isInt) {
+                            return (string) ($x + 1);
+                        }
+
+                        return "";
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'issetAndNotEmptyStoredInVariableNarrow' => [
+                'code' => '<?php
+                    /** @param array<string, ?string> $a */
+                    function f(array $a, ?object $o): int {
+                        $hasX = isset($a["x"]);
+
+                        if ($hasX) {
+                            return strlen($a["x"]);
+                        }
+
+                        $notEmpty = !empty($o);
+
+                        if ($notEmpty) {
+                            return spl_object_id($o);
+                        }
+
+                        return 0;
+                    }',
+            ],
+            'nullCheckStoredInVariableKeptAfterOffsetAssignment' => [
+                'code' => '<?php
+                    function f(?array $l): int {
+                        $notNull = $l !== null;
+
+                        if ($notNull) {
+                            $l[1] = "x";
+                        }
+
+                        if ($notNull) {
+                            return count($l);
+                        }
+
+                        return 0;
+                    }',
+            ],
+            'nullCheckStoredInVariableKeptAfterOffsetAssignmentInElse' => [
+                'code' => '<?php
+                    function f(?array $l, bool $c): int {
+                        $notNull = $l !== null;
+
+                        if ($c) {
+                            echo "c";
+                        } else {
+                            $l[1] = "x";
+                        }
+
+                        if ($notNull) {
+                            return count($l);
+                        }
+
+                        return 0;
+                    }',
+            ],
+            'nullCheckStoredInVariableKeptAfterOffsetAssignmentInElseIf' => [
+                'code' => '<?php
+                    function f(?array $l, bool $c): int {
+                        $notNull = $l !== null;
+
+                        if ($c) {
+                            echo "c";
+                        } elseif ($notNull) {
+                            $l[1] = "x";
+                        }
+
+                        if ($notNull) {
+                            return count($l);
+                        }
+
+                        return 0;
+                    }',
+            ],
+            'nullCheckStoredInVariableKeptWhenAnElseLeavesAReassignedVariableAlone' => [
+                'code' => '<?php
+                    function f(?array $l, bool $c): int {
+                        $l = rand(0, 1) ? $l : null;
+                        $notNull = $l !== null;
+
+                        if ($c) {
+                            $l[1] = "x";
+                        } else {
+                            echo "c";
+                        }
+
+                        if ($notNull) {
+                            return count($l);
+                        }
+
+                        return 0;
+                    }',
+            ],
+            'negatedCallWithTooManyAssertionsStoredInVariableDoesNotCrash' => [
+                'code' => '<?php
+                    /**
+                     * @psalm-assert-if-true int|string $p1
+                     * @psalm-assert-if-true int|string $p2
+                     * @psalm-assert-if-true int|string $p3
+                     * @psalm-assert-if-true int|string $p4
+                     * @psalm-assert-if-true int|string $p5
+                     * @psalm-assert-if-true int|string $p6
+                     * @psalm-assert-if-true int|string $p7
+                     * @psalm-assert-if-true int|string $p8
+                     * @psalm-assert-if-true int|string $p9
+                     * @psalm-assert-if-true int|string $p10
+                     * @psalm-assert-if-true int|string $p11
+                     * @psalm-assert-if-true int|string $p12
+                     * @psalm-assert-if-true int|string $p13
+                     * @psalm-assert-if-true int|string $p14
+                     * @psalm-assert-if-true int|string $p15
+                     */
+                    function validate(mixed $p1, mixed $p2, mixed $p3, mixed $p4, mixed $p5, mixed $p6, mixed $p7, mixed $p8, mixed $p9, mixed $p10, mixed $p11, mixed $p12, mixed $p13, mixed $p14, mixed $p15): bool {
+                        return (bool) rand(0, 1);
+                    }
+
+                    function g(mixed $a1, mixed $a2, mixed $a3, mixed $a4, mixed $a5, mixed $a6, mixed $a7, mixed $a8, mixed $a9, mixed $a10, mixed $a11, mixed $a12, mixed $a13, mixed $a14, mixed $a15): bool {
+                        $failed = !validate($a1, $a2, $a3, $a4, $a5, $a6, $a7, $a8, $a9, $a10, $a11, $a12, $a13, $a14, $a15);
+
+                        return $failed;
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'dependentTypeKeptWhenABranchFalsifiesIt' => [
+                'code' => '<?php
+                    class A {
+                        public function isValid() : bool {
+                            return (bool) rand(0, 1);
+                        }
+
+                        public function foo() : void {}
+                    }
+
+                    function takesA(?A $a) : void {
+                        $is_valid_a = $a && $a->isValid();
+
+                        if (rand(0, 1)) {
+                            $is_valid_a = false;
+                        }
+
+                        if ($is_valid_a) {
+                            $a->foo();
+                        }
+                    }',
+            ],
+            'notLooselyEqualStoredInVariableIsForgottenWhenABranchAssignsAnEqualValue' => [
+                'code' => '<?php
+                    function f(int $x): int {
+                        $notFive = $x != 5;
+
+                        if (rand(0, 1)) {
+                            $x = 5;
+                        }
+
+                        if ($notFive && $x === 5) {
+                            return 1;
+                        }
+
+                        return 0;
+                    }',
+            ],
             'nullsafeCallFalsyResultDoesNotNarrowReceiver' => [
                 'code' => <<<'PHP'
                     <?php
@@ -3668,6 +3892,275 @@ final class TypeAlgebraTest extends TestCase
                     }',
                 'error_message' => 'UndefinedInterfaceMethod',
             ],
+            'functionCallStoredInVariableIsForgottenWhenTheVariableIsReassigned' => [
+                'code' => '<?php
+                    /** @param int|string $x */
+                    function f($x): string {
+                        $isString = is_string($x);
+                        $x = 1;
+
+                        if ($isString) {
+                            return $x;
+                        }
+
+                        return "";
+                    }',
+                'error_message' => 'InvalidReturnStatement',
+            ],
+            'nullCheckStoredInVariableIsForgottenWhenABranchMayAssignNull' => [
+                'code' => '<?php
+                    function f(?array $l): int {
+                        $notNull = $l !== null;
+
+                        if ($notNull) {
+                            $l = rand(0, 1) ? [1] : null;
+                        }
+
+                        if ($notNull) {
+                            return count($l);
+                        }
+
+                        return 0;
+                    }',
+                'error_message' => 'PossiblyNullArgument',
+            ],
+            'nullCheckStoredInVariableIsForgottenWhenABranchAssignsNull' => [
+                'code' => '<?php
+                    function f(?array $l): int {
+                        $notNull = $l !== null;
+
+                        if (rand(0, 1)) {
+                            $l = null;
+                        }
+
+                        if ($notNull) {
+                            return count($l);
+                        }
+
+                        return 0;
+                    }',
+                'error_message' => 'PossiblyNullArgument',
+            ],
+            'nullCheckStoredInVariableIsForgottenAfterACatchWhenABranchOfTheTryAssignsNull' => [
+                'code' => '<?php
+                    function mayThrow(): void {
+                        if (rand(0, 1)) {
+                            throw new Exception();
+                        }
+                    }
+
+                    function f(?array $l): int {
+                        $notNull = $l !== null;
+
+                        try {
+                            if (rand(0, 1)) {
+                                $l = null;
+                                mayThrow();
+                                $l = [1];
+                            }
+                        } catch (Exception $e) {}
+
+                        if ($notNull) {
+                            return count($l);
+                        }
+
+                        return 0;
+                    }',
+                'error_message' => 'PossiblyNullArgument',
+            ],
+            'nullCheckStoredInVariableIsForgottenInAFinallyWhenABranchOfTheTryAssignsNull' => [
+                'code' => '<?php
+                    function mayThrow(): void {
+                        if (rand(0, 1)) {
+                            throw new Exception();
+                        }
+                    }
+
+                    function f(?array $l): void {
+                        $notNull = $l !== null;
+
+                        try {
+                            if (rand(0, 1)) {
+                                $l = null;
+                                mayThrow();
+                                $l = [1];
+                            }
+                        } finally {
+                            if ($notNull) {
+                                echo count($l);
+                            }
+                        }
+                    }',
+                'error_message' => 'PossiblyNullArgument',
+            ],
+            'callAssertionOnPropertyStoredInVariableIsForgottenWhenThePropertyIsAssigned' => [
+                'code' => '<?php
+                    final class C {
+                        public ?string $s = null;
+
+                        /** @psalm-assert-if-true !null $this->s */
+                        public function has(): bool {
+                            return $this->s !== null;
+                        }
+                    }
+
+                    function f(C $c): int {
+                        $has = $c->has();
+                        $c->s = null;
+
+                        if ($has) {
+                            return strlen($c->s);
+                        }
+
+                        return 0;
+                    }',
+                'error_message' => 'NullArgument',
+            ],
+            'nullCheckStoredInVariableIsForgottenWhenAClosureCapturesItByReference' => [
+                'code' => '<?php
+                    function f(?string $x): int {
+                        $notNull = $x !== null;
+                        $f = function () use (&$x): void {
+                            $x = null;
+                        };
+                        $f();
+
+                        if ($notNull) {
+                            return strlen($x);
+                        }
+
+                        return 0;
+                    }',
+                'error_message' => 'PossiblyNullArgument',
+            ],
+            'issetStoredInVariableIsForgottenWhenABranchMayUnsetTheVariable' => [
+                'code' => '<?php
+                    function f(bool $init, bool $c, bool $d): void {
+                        if ($init) {
+                            $x = "a";
+                        }
+
+                        $hasX = isset($x);
+
+                        if ($c) {
+                            unset($x);
+
+                            if ($d) {
+                                $x = "b";
+                            }
+                        }
+
+                        if ($hasX) {
+                            echo $x;
+                        }
+                    }',
+                'error_message' => 'PossiblyUndefinedVariable',
+            ],
+            'callAssertionOnPropertyStoredInVariableIsForgottenWhenThePropertyIsPassedByReference' => [
+                'code' => '<?php
+                    final class C {
+                        public ?string $p = null;
+
+                        /** @psalm-assert-if-true !null $this->p */
+                        public function hasP(): bool {
+                            return $this->p !== null;
+                        }
+                    }
+
+                    function setNull(?string &$s): void {
+                        $s = null;
+                    }
+
+                    function f(C $c): int {
+                        $has = $c->hasP();
+                        setNull($c->p);
+
+                        if ($has) {
+                            return strlen($c->p);
+                        }
+
+                        return 0;
+                    }',
+                'error_message' => 'PossiblyNullArgument',
+            ],
+            'nullCheckOfPropertyStoredInVariableIsForgottenWhenThePropertyIsPassedByReference' => [
+                'code' => '<?php
+                    final class C {
+                        public ?string $p = null;
+
+                        /** @psalm-assert-if-true !null $this->p */
+                        public function hasP(): bool {
+                            return $this->p !== null;
+                        }
+                    }
+
+                    function setNull(?string &$s): void {
+                        $s = null;
+                    }
+
+                    function f(C $c): int {
+                        $has = $c->p !== null;
+                        setNull($c->p);
+
+                        if ($has) {
+                            return strlen($c->p);
+                        }
+
+                        return 0;
+                    }',
+                'error_message' => 'PossiblyNullArgument',
+            ],
+            'functionCallStoredInVariableIsForgottenWhenAClosureCapturingItByReferenceIsCalled' => [
+                'code' => '<?php
+                    function f(?string $x): int {
+                        $f = function () use (&$x): void {
+                            $x = null;
+                        };
+                        $notNull = is_string($x);
+                        $f();
+
+                        if ($notNull) {
+                            return strlen($x);
+                        }
+
+                        return 0;
+                    }',
+                'error_message' => 'PossiblyNullArgument',
+            ],
+            'nullCheckStoredInVariableIsForgottenWhenAClosureCapturingItByReferenceIsCalled' => [
+                'code' => '<?php
+                    function f(?string $x): int {
+                        $f = function () use (&$x): void {
+                            $x = null;
+                        };
+                        $notNull = $x !== null;
+                        $f();
+
+                        if ($notNull) {
+                            return strlen($x);
+                        }
+
+                        return 0;
+                    }',
+                'error_message' => 'PossiblyNullArgument',
+            ],
+            'nullCheckStoredInVariableIsForgottenWhenALoopAssignsNull' => [
+                'code' => '<?php
+                    function f(?array $l): int {
+                        $notNull = $l !== null;
+
+                        while (rand(0, 1)) {
+                            $l = null;
+                        }
+
+                        if ($notNull) {
+                            return count($l);
+                        }
+
+                        return 0;
+                    }',
+                'error_message' => 'PossiblyNullArgument',
+            ],
             'booleanVariableNarrowingNotKeptInElseOfOr' => [
                 'code' => <<<'PHP'
                     <?php
@@ -4074,7 +4567,7 @@ final class TypeAlgebraTest extends TestCase
                         $is_valid_a = $a && $a->isValid();
 
                         if (rand(0, 1)) {
-                            $is_valid_a = false;
+                            $is_valid_a = true;
                         }
 
                         if ($is_valid_a) {
