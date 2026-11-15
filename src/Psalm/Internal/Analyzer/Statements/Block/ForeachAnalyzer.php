@@ -16,6 +16,7 @@ use Psalm\Internal\Analyzer\ClassLikeNameOptions;
 use Psalm\Internal\Analyzer\CommentAnalyzer;
 use Psalm\Internal\Analyzer\FunctionLikeAnalyzer;
 use Psalm\Internal\Analyzer\PurityWildcardInference;
+use Psalm\Internal\Analyzer\ScopeAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\Assignment\ArrayAssignmentAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\Assignment\InstancePropertyAssignmentAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\AssignmentAnalyzer;
@@ -34,10 +35,12 @@ use Psalm\Internal\MethodIdentifier;
 use Psalm\Internal\Scope\LoopScope;
 use Psalm\Internal\Type\AssertionReconciler;
 use Psalm\Internal\Type\Comparator\AtomicTypeComparator;
+use Psalm\Internal\Type\Comparator\UnionTypeComparator;
 use Psalm\Internal\Type\PurityWildcardPaths;
 use Psalm\Internal\Type\TemplateInferredTypeReplacer;
 use Psalm\Internal\Type\TemplateResult;
 use Psalm\Internal\Type\TypeExpander;
+use Psalm\Internal\TypeVisitor\TypeVariableResolver;
 use Psalm\Issue\ImpureMethodCall;
 use Psalm\Issue\InvalidDocblock;
 use Psalm\Issue\InvalidIterator;
@@ -78,17 +81,26 @@ use Psalm\Type\Atomic\TVoid;
 use Psalm\Type\Union;
 use UnexpectedValueException;
 
+use function array_any;
+use function array_filter;
 use function array_keys;
 use function array_map;
 use function array_pop;
 use function array_search;
 use function array_values;
 use function assert;
+use function count;
+use function end;
 use function implode;
+use function in_array;
 use function is_string;
 use function reset;
+use function str_contains;
 use function stripos;
 use function strtolower;
+use function substr;
+
+use const ARRAY_FILTER_USE_BOTH;
 
 /**
  * @internal
@@ -210,6 +222,7 @@ final class ForeachAnalyzer
                 if ($codebase->find_unused_variables
                     && $doc_comment
                     && $type_location
+                    && !$var_comment->from_phpstan
                     && isset($context->vars_in_scope[$var_comment->var_id])
                     && $context->vars_in_scope[$var_comment->var_id]->getId() === $comment_type->getId()
                     && !$comment_type->isMixed(true)
@@ -262,7 +275,7 @@ final class ForeachAnalyzer
         );
 
         if ($stmt_expr_type = $statements_analyzer->node_data->getType($stmt->expr)) {
-            $iterator_type = $stmt_expr_type;
+            $iterator_type = TypeVariableResolver::resolveTopLevel($stmt_expr_type, $codebase);
         } elseif ($var_id && $context->hasVariable($var_id)) {
             $iterator_type = $context->vars_in_scope[$var_id];
         } else {
@@ -354,6 +367,7 @@ final class ForeachAnalyzer
         ) {
             // TODO support references with destructuring
             $foreach_context->references_to_external_scope['$' . $stmt->valueVar->name] = true;
+            $foreach_context->forgetReferencesPossiblyBound('$' . $stmt->valueVar->name);
         }
 
         // PHP evaluates the iterated expression once, before it assigns the value and then a key of the same name
@@ -540,7 +554,29 @@ final class ForeachAnalyzer
 
         $written_type = $written_type->setProperties(['by_ref' => false, 'parent_nodes' => []]);
 
+        $written_keys = self::getKeysWrittenToTheItem($statements_analyzer, $stmt->stmts, substr($value_var_id, 1));
+
         $array_type = $context->vars_in_scope[$array_var_id];
+
+        // a loop that is not left early visits every item, and an iteration that leaves the variable as it was
+        // keeps the item's type in what it ends with: when an item's type isn't in the written type, every
+        // iteration wrote the variable
+        $visits_every_item = !in_array(ScopeAnalyzer::ACTION_BREAK, $loop_scope->final_actions, true)
+            && !self::mayDetachTheValueVariable($stmt->stmts, substr($value_var_id, 1))
+            && !self::mayWriteTheArrayOtherwise($statements_analyzer, $stmt, $array_var_id, $value_var_id, $context);
+
+        $item_after_loop = static function (Union $item) use (
+            $codebase,
+            $written_type,
+            $written_keys,
+            $visits_every_item,
+        ): Union {
+            $item_written_type = self::withoutKeysOfNarrowing($written_type, $item, $written_keys);
+
+            return $visits_every_item && !UnionTypeComparator::isContainedBy($codebase, $item, $item_written_type)
+                ? $item_written_type
+                : Type::combineUnionTypes($item, $item_written_type, $codebase);
+        };
 
         $atomic_types = [];
 
@@ -549,7 +585,7 @@ final class ForeachAnalyzer
                 $properties = [];
 
                 foreach ($atomic_type->properties as $key => $property) {
-                    $properties[$key] = Type::combineUnionTypes($property, $written_type, $codebase)
+                    $properties[$key] = $item_after_loop($property)
                         ->setPossiblyUndefined($property->possibly_undefined);
                 }
 
@@ -558,7 +594,7 @@ final class ForeachAnalyzer
                     $atomic_type->class_strings,
                     $atomic_type->fallback_params === null ? null : [
                         $atomic_type->fallback_params[0],
-                        Type::combineUnionTypes($atomic_type->fallback_params[1], $written_type, $codebase),
+                        $item_after_loop($atomic_type->fallback_params[1]),
                     ],
                     $atomic_type->is_list,
                     $atomic_type->from_docblock,
@@ -566,7 +602,7 @@ final class ForeachAnalyzer
             } elseif ($atomic_type instanceof TArray && !$atomic_type->isEmptyArray()) {
                 $atomic_type = $atomic_type->setTypeParams([
                     $atomic_type->type_params[0],
-                    Type::combineUnionTypes($atomic_type->type_params[1], $written_type, $codebase),
+                    $item_after_loop($atomic_type->type_params[1]),
                 ]);
             }
 
@@ -575,6 +611,394 @@ final class ForeachAnalyzer
 
         $context->vars_in_scope[$array_var_id] = $array_type->setTypes($atomic_types);
         $context->removeDescendents($array_var_id, $array_type, null, $statements_analyzer);
+    }
+
+    /**
+     * What an iteration may have written to an item is not the keys that a test of the variable added to its shape:
+     * `isset($row['name'])` makes `name?: mixed` part of the type of `$row`, but nothing wrote it into the item. Such a
+     * key is possibly undefined, of an unknown type, not one of the keys the items have, and not assigned in the loop.
+     *
+     * @param array<int|string, true>|null $written_keys the keys the loop assigns, null when it may assign any
+     */
+    private static function withoutKeysOfNarrowing(Union $written_type, Union $item_type, ?array $written_keys): Union
+    {
+        if ($written_keys === null) {
+            return $written_type;
+        }
+
+        $item_keys = [];
+
+        foreach ($item_type->getAtomicTypes() as $item_atomic_type) {
+            if ($item_atomic_type instanceof TNull) {
+                continue;
+            }
+
+            if (!$item_atomic_type instanceof TKeyedArray) {
+                return $written_type;
+            }
+
+            $item_keys += $item_atomic_type->properties;
+        }
+
+        $atomic_types = [];
+        $changed = false;
+
+        foreach ($written_type->getAtomicTypes() as $written_atomic_type) {
+            if ($written_atomic_type instanceof TKeyedArray) {
+                $properties = array_filter(
+                    $written_atomic_type->properties,
+                    static fn(Union $property, int|string $key): bool => isset($item_keys[$key])
+                        || isset($written_keys[$key])
+                        || !$property->possibly_undefined,
+                    ARRAY_FILTER_USE_BOTH,
+                );
+
+                if ($properties !== [] && count($properties) !== count($written_atomic_type->properties)) {
+                    $written_atomic_type = $written_atomic_type->setProperties($properties);
+                    $changed = true;
+                }
+            }
+
+            $atomic_types[] = $written_atomic_type;
+        }
+
+        return $changed ? $written_type->setTypes($atomic_types) : $written_type;
+    }
+
+    /**
+     * The keys that the statements assign in the array held by the variable (`$row['name'] = ...`, also as the start of
+     * a longer path), null when one is not a literal (`$row[$k] = ...`, `$row[] = ...`)
+     *
+     * @param array<PhpParser\Node\Stmt> $stmts
+     * @return array<int|string, true>|null
+     */
+    private static function getKeysWrittenToTheItem(
+        StatementsAnalyzer $statements_analyzer,
+        array $stmts,
+        string $var_name,
+    ): ?array {
+        $keys = [];
+
+        $nodes = (new NodeFinder())->find(
+            $stmts,
+            static fn(PhpParser\Node $node): bool => $node instanceof PhpParser\Node\Expr\Assign
+                || $node instanceof PhpParser\Node\Expr\AssignOp
+                || $node instanceof PhpParser\Node\Expr\AssignRef
+                || $node instanceof PhpParser\Node\Expr\CallLike,
+        );
+
+        foreach ($nodes as $node) {
+            if ($node instanceof PhpParser\Node\Expr\CallLike) {
+                // a key passed to a call may be written through its parameter, the variable itself may be changed
+                foreach ($node->getRawArgs() as $position => $arg) {
+                    if (!$arg instanceof PhpParser\Node\Arg
+                        || !self::mayPassByReference($statements_analyzer, $node, $position, $arg)
+                    ) {
+                        continue;
+                    }
+
+                    $dim = self::getKeyOfTheItem($arg->value, $var_name);
+
+                    if ($dim === false) {
+                        continue;
+                    }
+
+                    if ($dim === null) {
+                        return null;
+                    }
+
+                    $keys[$dim] = true;
+                }
+
+                continue;
+            }
+
+            assert(
+                $node instanceof PhpParser\Node\Expr\Assign
+                || $node instanceof PhpParser\Node\Expr\AssignOp
+                || $node instanceof PhpParser\Node\Expr\AssignRef,
+            );
+
+            $dim = self::getKeyOfTheItem($node->var, $var_name);
+
+            if ($dim === false) {
+                continue;
+            }
+
+            if ($dim === null) {
+                return null;
+            }
+
+            $keys[$dim] = true;
+        }
+
+        return $keys;
+    }
+
+    /**
+     * Whether the body may end what the value variable is a reference to, so that an iteration does not write the
+     * item: it unsets the variable, assigns it by reference or makes a reference to it, binds it another way, or
+     * jumps with a `goto` over the statements that write it
+     *
+     * @param array<PhpParser\Node\Stmt> $stmts
+     */
+    private static function mayDetachTheValueVariable(array $stmts, string $var_name): bool
+    {
+        $is_the_variable = static fn(?PhpParser\Node $node): bool => $node instanceof PhpParser\Node\Expr\Variable
+            && $node->name === $var_name;
+
+        return (new NodeFinder())->findFirst(
+            $stmts,
+            static function (PhpParser\Node $node) use ($is_the_variable, $var_name): bool {
+                if ($node instanceof PhpParser\Node\Stmt\Goto_) {
+                    return true;
+                }
+
+                if ($node instanceof PhpParser\Node\Stmt\Unset_) {
+                    return array_any($node->vars, $is_the_variable);
+                }
+
+                if ($node instanceof PhpParser\Node\Expr\AssignRef) {
+                    return $is_the_variable($node->var) || $is_the_variable($node->expr);
+                }
+
+                // `[&$v] = $a`, `list('k' => &$v) = $a`
+                if ($node instanceof PhpParser\Node\ArrayItem) {
+                    return $node->byRef && $is_the_variable($node->value);
+                }
+
+                if ($node instanceof PhpParser\Node\Stmt\Foreach_) {
+                    return $is_the_variable($node->valueVar) || $is_the_variable($node->keyVar);
+                }
+
+                if ($node instanceof PhpParser\Node\Stmt\Global_) {
+                    return array_any($node->vars, $is_the_variable);
+                }
+
+                if ($node instanceof PhpParser\Node\Stmt\StaticVar) {
+                    return $node->var->name === $var_name;
+                }
+
+                return false;
+            },
+        ) !== null;
+    }
+
+    /**
+     * Whether the body may write to the iterated array other than through the value variable: an assignment to it or
+     * to one of its offsets, passing it by reference, or, when the array is a property or a reference, a call (or a
+     * write to another variable, which may be bound to it)
+     */
+    private static function mayWriteTheArrayOtherwise(
+        StatementsAnalyzer $statements_analyzer,
+        PhpParser\Node\Stmt\Foreach_ $stmt,
+        string $array_var_id,
+        string $value_var_id,
+        Context $context,
+    ): bool {
+        $array_root = self::getRootVariableName($stmt->expr);
+
+        if ($array_root === null) {
+            return true;
+        }
+
+        $array_root_id = '$' . $array_root;
+
+        $value_var_name = substr($value_var_id, 1);
+
+        $is_reference = $statements_analyzer->isCapturedByReference($array_root_id)
+            || isset($context->references_to_external_scope[$array_var_id])
+            || isset($context->references_in_scope[$array_var_id])
+            || array_any(
+                $context->references_in_scope,
+                static fn(string $referenced_id, string $reference_id): bool => $referenced_id === $array_var_id
+                    && $reference_id !== $value_var_id,
+            );
+        $any_call_writes = $is_reference || str_contains($array_var_id, '->') || str_contains($array_var_id, '::');
+
+        $writes = static fn(PhpParser\Node\Expr $target): bool => self::writesToTheArray(
+            $target,
+            $array_root,
+            $value_var_name,
+            $is_reference,
+        );
+
+        return (new NodeFinder())->findFirst(
+            $stmt->stmts,
+            static function (PhpParser\Node $node) use ($statements_analyzer, $writes, $any_call_writes): bool {
+                if ($node instanceof PhpParser\Node\Expr\CallLike) {
+                    if ($any_call_writes) {
+                        return true;
+                    }
+
+                    foreach ($node->getRawArgs() as $position => $arg) {
+                        if ($arg instanceof PhpParser\Node\Arg
+                            && self::mayPassByReference($statements_analyzer, $node, $position, $arg)
+                            && $writes($arg->value)
+                        ) {
+                            return true;
+                        }
+                    }
+
+                    return false;
+                }
+
+                if ($node instanceof PhpParser\Node\Expr\Assign
+                    || $node instanceof PhpParser\Node\Expr\AssignOp
+                    || $node instanceof PhpParser\Node\Expr\AssignRef
+                    || $node instanceof PhpParser\Node\Expr\PreInc
+                    || $node instanceof PhpParser\Node\Expr\PreDec
+                    || $node instanceof PhpParser\Node\Expr\PostInc
+                    || $node instanceof PhpParser\Node\Expr\PostDec
+                ) {
+                    return $writes($node->var);
+                }
+
+                if ($node instanceof PhpParser\Node\Stmt\Unset_) {
+                    return array_any($node->vars, $writes);
+                }
+
+                return false;
+            },
+        ) !== null;
+    }
+
+    /**
+     * @param bool $is_reference whether the array is a reference: then a write to another variable may reach it
+     * @psalm-capabilities read-props
+     */
+    private static function writesToTheArray(
+        PhpParser\Node\Expr $target,
+        string $array_root,
+        string $value_var_name,
+        bool $is_reference,
+    ): bool {
+        if ($target instanceof PhpParser\Node\Expr\List_ || $target instanceof PhpParser\Node\Expr\Array_) {
+            foreach ($target->items as $item) {
+                if ($item !== null
+                    && self::writesToTheArray($item->value, $array_root, $value_var_name, $is_reference)
+                ) {
+                    return true;
+                }
+            }
+
+            return false;
+        }
+
+        $root = self::getRootVariableName($target);
+
+        return $root === null || $root === $array_root || ($is_reference && $root !== $value_var_name);
+    }
+
+    /**
+     * The name of the variable an expression is a part of (`$a` of `$a['k']->p`), null when it is not one with a name
+     *
+     * @psalm-capabilities read-props
+     */
+    private static function getRootVariableName(PhpParser\Node\Expr $expr): ?string
+    {
+        while ($expr instanceof PhpParser\Node\Expr\ArrayDimFetch
+            || $expr instanceof PhpParser\Node\Expr\PropertyFetch
+            || $expr instanceof PhpParser\Node\Expr\NullsafePropertyFetch
+            || $expr instanceof PhpParser\Node\Expr\StaticPropertyFetch
+        ) {
+            if ($expr instanceof PhpParser\Node\Expr\StaticPropertyFetch) {
+                return $expr->class instanceof PhpParser\Node\Name ? '::' . strtolower($expr->class->toString()) : null;
+            }
+
+            $expr = $expr->var;
+        }
+
+        return $expr instanceof PhpParser\Node\Expr\Variable && is_string($expr->name) ? $expr->name : null;
+    }
+
+    /**
+     * Whether the call may take the argument at the position by reference: false only for a function that is known
+     * and takes it by value. A named argument is matched by its name, an unpacked one (or one after it) may reach any
+     * parameter.
+     */
+    private static function mayPassByReference(
+        StatementsAnalyzer $statements_analyzer,
+        PhpParser\Node\Expr\CallLike $call,
+        int $position,
+        PhpParser\Node\Arg $arg,
+    ): bool {
+        if (!$call instanceof PhpParser\Node\Expr\FuncCall || !$call->name instanceof PhpParser\Node\Name) {
+            return true;
+        }
+
+        foreach ($call->getRawArgs() as $other_position => $other_arg) {
+            if ($other_position > $position) {
+                break;
+            }
+
+            if (!$other_arg instanceof PhpParser\Node\Arg || $other_arg->unpack) {
+                return true;
+            }
+        }
+
+        $functions = $statements_analyzer->getCodebase()->functions;
+        $function_name = $call->name->toString();
+
+        foreach ([
+            $functions->getFullyQualifiedFunctionNameFromString($function_name, $statements_analyzer),
+            $function_name,
+        ] as $function_id) {
+            $function_id = strtolower($function_id);
+
+            if (!$functions->functionExists($statements_analyzer, $function_id)) {
+                continue;
+            }
+
+            $params = $functions->getStorage($statements_analyzer, $function_id)->params;
+            $param = null;
+
+            if ($arg->name !== null) {
+                foreach ($params as $named_param) {
+                    if ($named_param->name === $arg->name->name && !$named_param->is_variadic) {
+                        $param = $named_param;
+                        break;
+                    }
+                }
+            } else {
+                $param = $params[$position] ?? null;
+            }
+
+            $param ??= ($last = end($params)) !== false && $last->is_variadic ? $last : null;
+
+            return $param === null || $param->by_ref;
+        }
+
+        return true;
+    }
+
+    /**
+     * @return int|string|false|null the literal key an expression reaches in the array held by the variable (the
+     *                                first one of a longer path), null when the key is not a literal or the expression
+     *                                is the variable itself, false when the expression is not part of the variable
+     * @psalm-capabilities read-props
+     */
+    private static function getKeyOfTheItem(PhpParser\Node\Expr $expr, string $var_name): int|string|false|null
+    {
+        $dim = null;
+        $target = $expr;
+
+        while ($target instanceof PhpParser\Node\Expr\ArrayDimFetch) {
+            $dim = $target->dim;
+            $target = $target->var;
+        }
+
+        if (!$target instanceof PhpParser\Node\Expr\Variable || $target->name !== $var_name) {
+            return false;
+        }
+
+        if ($expr === $target
+            || (!$dim instanceof PhpParser\Node\Scalar\String_ && !$dim instanceof PhpParser\Node\Scalar\Int_)
+        ) {
+            return null;
+        }
+
+        return $dim->value;
     }
 
     /**

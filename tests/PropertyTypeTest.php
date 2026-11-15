@@ -7,9 +7,11 @@ namespace Psalm\Tests;
 use Countable;
 use DateTime;
 use Override;
+use PHPUnit\Framework\Attributes\DataProvider;
 use Psalm\Config;
 use Psalm\Context;
 use Psalm\Exception\CodeException;
+use Psalm\IssueBuffer;
 use Psalm\Tests\Traits\InvalidCodeAnalysisTestTrait;
 use Psalm\Tests\Traits\ValidCodeAnalysisTestTrait;
 
@@ -663,12 +665,627 @@ final class PropertyTypeTest extends TestCase
     }
 
     /**
+     * A parameter type naming a missing class makes the analysis of a constructor skip its body, but the properties
+     * the body sets are still initialised in the subclasses.
+     */
+    #[DataProvider('providerSubclassesOfAConstructorWithAMissingParamClass')]
+    public function testConstructorWithAMissingParamClassInitialisesSubclassProperties(string $child_code): void
+    {
+        $this->testConfig->throw_exception = false;
+
+        $parent_file = self::$src_dir_path . 'parent.php';
+        $child_file = self::$src_dir_path . 'child.php';
+
+        $this->addFile($parent_file, '<?php
+            namespace Fixture;
+
+            class ParentClass {
+                protected string $name;
+
+                /** @param MissingClass $finder */
+                public function __construct($finder = null) {
+                    $this->name = "name";
+                }
+            }
+        ');
+        $this->addFile($child_file, $child_code);
+
+        $this->analyzeFile($child_file, new Context());
+
+        $issues = [];
+
+        foreach ([$parent_file, $child_file] as $file) {
+            foreach (IssueBuffer::getIssuesDataForFile($file) as $issue) {
+                $issues[] = $issue->type . ' ' . $issue->file_name . ':' . $issue->line_from;
+            }
+        }
+
+        self::assertSame(['UndefinedDocblockClass src' . DIRECTORY_SEPARATOR . 'parent.php:7'], $issues);
+    }
+
+    /**
+     * @return iterable<string, array{string}>
+     * @psalm-pure
+     */
+    public static function providerSubclassesOfAConstructorWithAMissingParamClass(): iterable
+    {
+        yield 'inheriting the constructor' => ['<?php
+            namespace Fixture;
+
+            class ChildClass extends ParentClass {}
+        '];
+        yield 'calling the constructor' => ['<?php
+            namespace Fixture;
+
+            class ChildClass extends ParentClass {
+                public function __construct() {
+                    parent::__construct();
+                }
+            }
+        '];
+    }
+
+    /**
      * @psalm-pure
      */
     #[Override]
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'declaredPropertyOfAStdClassSubclassKeepsItsTypeAndAnUndeclaredOneStaysDynamic' => [
+                'code' => '<?php
+                    final class Item extends stdClass {
+                        /** @var list<string> */
+                        public array $tags = [];
+
+                        public int $count = 0;
+
+                        public ?string $note = null;
+                    }
+
+                    function write(Item $item): void {
+                        $item->tags = ["a"];
+                        $item->count = 2;
+                        $item->extra = "x";
+                    }
+
+                    function read(Item $item): void {
+                        $tags = $item->tags;
+                        $count = $item->count;
+                        $note = $item->note;
+                        $extra = $item->extra;
+
+                        /** @psalm-check-type-exact $tags = list<string> */
+                        /** @psalm-check-type-exact $count = int */
+                        /** @psalm-check-type-exact $note = null|string */
+                        /** @psalm-check-type-exact $extra = mixed */
+                        echo count($tags), $count, $note;
+                    }',
+                'assertions' => [],
+                'ignored_issues' => ['MixedAssignment'],
+                'php_version' => '8.1',
+            ],
+            'staticOfTheCallerIsNotTheStaticPropertyOfAnotherClassOfTheSameName' => [
+                'code' => '<?php
+                    final class Other {
+                        public static ?int $p = null;
+
+                        public static function clear(): void {
+                            self::$p = null;
+                        }
+                    }
+
+                    final class A {
+                        public static ?int $p = null;
+
+                        public static function get(): int {
+                            static::$p = 1;
+                            Other::clear();
+
+                            return static::$p;
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'parentStaticPropertyRedeclaredByTheParentIsNotTheOneOfTheGrandparent' => [
+                'code' => '<?php
+                    class G {
+                        public static ?int $p = null;
+                    }
+
+                    class P extends G {
+                        public static ?int $p = null;
+                    }
+
+                    final class A extends P {
+                        public static function clear(): void {
+                            parent::$p = null;
+                        }
+                    }
+
+                    function get(): int {
+                        G::$p = 1;
+                        A::clear();
+
+                        return G::$p;
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'staticPropertyOfATraitIsOnePropertyPerUsingClass' => [
+                'code' => '<?php
+                    trait Holder {
+                        public static ?int $v = null;
+                    }
+
+                    final class A {
+                        use Holder;
+
+                        public static function clear(): void {
+                            self::$v = null;
+                        }
+                    }
+
+                    final class B {
+                        use Holder;
+
+                        public static function get(): int {
+                            self::$v = 1;
+                            A::clear();
+
+                            return self::$v;
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'staticPropertyAssignedThroughStaticInAParentCallIsForgottenInTheCallingClass' => [
+                'code' => '<?php
+                    class Base {
+                        public static bool $flag = false;
+
+                        public static function prepare(): void {
+                            static::$flag = true;
+                        }
+                    }
+
+                    final class Child extends Base {
+                        public static bool $flag = false;
+
+                        public static function run(): bool {
+                            Child::$flag = false;
+                            parent::prepare();
+
+                            if (Child::$flag) {
+                                return true;
+                            }
+
+                            return false;
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'staticPropertyAssignedByAStaticMethodIsForgottenAfterTheCall' => [
+                'code' => '<?php
+                    final class Counter {
+                        public static bool $ready = false;
+
+                        public static function prepare(): void {
+                            self::$ready = true;
+                        }
+
+                        public static function run(): void {
+                            self::$ready = false;
+                            self::prepare();
+
+                            if (self::$ready) {
+                                echo "ready";
+                            }
+                        }
+                    }',
+            ],
+            'staticPropertyAssignedByAnInstanceMethodIsForgottenInALoop' => [
+                'code' => '<?php
+                    final class Widget {
+                        private static bool $isSomething = false;
+
+                        /** @param list<string> $values */
+                        public function run(array $values): void {
+                            self::$isSomething = false;
+
+                            foreach ($values as $value) {
+                                if (self::$isSomething) {
+                                    echo $value;
+                                    continue;
+                                }
+
+                                $this->helper();
+                            }
+                        }
+
+                        private function helper(): void {
+                            static::$isSomething = true;
+                        }
+                    }',
+            ],
+            'staticPropertyAssignedThroughParentIsForgottenInTheNamedClass' => [
+                'code' => '<?php
+                    class Base {
+                        public static bool $ready = false;
+                    }
+
+                    final class Child extends Base {
+                        public static function prepare(): void {
+                            parent::$ready = true;
+                        }
+
+                        public static function run(): void {
+                            Base::$ready = false;
+                            self::prepare();
+
+                            if (Base::$ready) {
+                                echo "ready";
+                            }
+                        }
+                    }',
+            ],
+            'staticPropertyAssignedThroughTheNamedClassIsForgottenAsSelf' => [
+                'code' => '<?php
+                    class Base {
+                        public static bool $ready = false;
+                    }
+
+                    final class Child extends Base {
+                        public static function prepare(): void {
+                            Base::$ready = true;
+                        }
+
+                        public static function run(): void {
+                            self::$ready = false;
+                            self::prepare();
+
+                            if (self::$ready) {
+                                echo "ready";
+                            }
+                        }
+                    }',
+            ],
+            'staticPropertyAssignedThroughAChildClassIsForgottenInTheParentClass' => [
+                'code' => '<?php
+                    class Base {
+                        public static bool $ready = false;
+                    }
+
+                    final class Child extends Base {
+                        public static function prepare(): void {
+                            Child::$ready = true;
+                        }
+
+                        public static function run(): void {
+                            Base::$ready = false;
+                            self::prepare();
+
+                            if (Base::$ready) {
+                                echo "ready";
+                            }
+                        }
+                    }',
+            ],
+            'staticPropertyRedeclaredByAChildClassIsAnotherPropertyThanTheOneAssigned' => [
+                'code' => '<?php
+                    class Base {
+                        public static bool $flag = false;
+                    }
+
+                    final class Child extends Base {
+                        public static bool $flag = false;
+
+                        public static function prepare(): void {
+                            Base::$flag = true;
+                        }
+
+                        public static function run(): void {
+                            Child::$flag = false;
+                            self::prepare();
+
+                            /** @psalm-check-type-exact $flag = false */
+                            $flag = Child::$flag;
+                        }
+                    }',
+            ],
+            'firstClassCallableOfAMethodThatAssignsAStaticPropertyKeepsItsType' => [
+                'code' => '<?php
+                    final class Counter {
+                        public static bool $ready = false;
+
+                        public static function prepare(): void {
+                            self::$ready = true;
+                        }
+
+                        public static function run(): void {
+                            self::$ready = false;
+                            $callback = self::prepare(...);
+
+                            /** @psalm-check-type-exact $ready = false */
+                            $ready = self::$ready;
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
+            'selfInAnInheritedMethodIsTheClassThatDeclaresItNotTheRedeclaringChild' => [
+                'code' => '<?php
+                    class Base {
+                        public static bool $flag = false;
+
+                        public static function prepare(): void {
+                            self::$flag = true;
+                        }
+                    }
+
+                    final class Child extends Base {
+                        public static bool $flag = false;
+
+                        public static function runChild(): void {
+                            Child::$flag = false;
+                            Child::prepare();
+
+                            /** @psalm-check-type-exact $child = false */
+                            $child = Child::$flag;
+                        }
+
+                        public static function runBase(): void {
+                            Base::$flag = false;
+                            Child::prepare();
+
+                            /** @psalm-check-type-exact $base = bool */
+                            $base = Base::$flag;
+                        }
+                    }',
+            ],
+            'staticInAnInheritedMethodIsTheClassItIsCalledOn' => [
+                'code' => '<?php
+                    class Base {
+                        public static bool $flag = false;
+
+                        public static function prepare(): void {
+                            static::$flag = true;
+                        }
+                    }
+
+                    final class Child extends Base {
+                        public static bool $flag = false;
+
+                        public static function run(): void {
+                            Child::$flag = false;
+                            Base::$flag = false;
+                            Child::prepare();
+
+                            /** @psalm-check-type-exact $child = bool */
+                            $child = Child::$flag;
+                            /** @psalm-check-type-exact $base = false */
+                            $base = Base::$flag;
+                        }
+                    }',
+            ],
+            'selfInAMethodOfATraitIsTheClassUsingTheTraitNotTheClassItIsCalledOn' => [
+                'code' => '<?php
+                    trait Prepares {
+                        public static function prepare(): void {
+                            self::$flag = true;
+                        }
+                    }
+
+                    class Base {
+                        use Prepares;
+
+                        public static bool $flag = false;
+                    }
+
+                    final class Child extends Base {
+                        public static bool $flag = false;
+
+                        public static function runChild(): void {
+                            Child::$flag = false;
+                            Child::prepare();
+
+                            /** @psalm-check-type-exact $child = false */
+                            $child = Child::$flag;
+                        }
+
+                        public static function runBase(): void {
+                            Base::$flag = false;
+                            Child::prepare();
+
+                            /** @psalm-check-type-exact $base = bool */
+                            $base = Base::$flag;
+                        }
+                    }',
+            ],
+            'staticPropertyIncrementedByAMethodIsForgottenAfterTheCall' => [
+                'code' => '<?php
+                    final class Holder {
+                        public static int $n = 0;
+
+                        public static function change(): void {
+                            self::$n++;
+                        }
+
+                        public static function run(): void {
+                            self::$n = 0;
+                            self::change();
+
+                            /** @psalm-check-type-exact $n = int */
+                            $n = self::$n;
+                        }
+                    }',
+            ],
+            'staticPropertyPreDecrementedByAMethodIsForgottenAfterTheCall' => [
+                'code' => '<?php
+                    final class Holder {
+                        public static int $n = 0;
+
+                        public static function change(): void {
+                            --self::$n;
+                        }
+
+                        public static function run(): void {
+                            self::$n = 0;
+                            self::change();
+
+                            /** @psalm-check-type-exact $n = int */
+                            $n = self::$n;
+                        }
+                    }',
+            ],
+            'staticPropertyInAListAssignedByAMethodIsForgottenAfterTheCall' => [
+                'code' => '<?php
+                    final class Holder {
+                        public static int $n = 0;
+
+                        public static function change(): void {
+                            [self::$n] = [1];
+                        }
+
+                        public static function run(): void {
+                            self::$n = 0;
+                            self::change();
+
+                            /** @psalm-check-type-exact $n = int */
+                            $n = self::$n;
+                        }
+                    }',
+            ],
+            'staticPropertyAForeachTargetOfAMethodIsForgottenAfterTheCall' => [
+                'code' => '<?php
+                    final class Holder {
+                        public static int $n = 0;
+
+                        public static function change(): void {
+                            foreach ([1] as self::$n) {}
+                        }
+
+                        public static function run(): void {
+                            self::$n = 0;
+                            self::change();
+
+                            /** @psalm-check-type-exact $n = int */
+                            $n = self::$n;
+                        }
+                    }',
+            ],
+            'staticPropertyAssignedByAClosureOfAMethodIsAKnownLimit' => [
+                'code' => '<?php
+                    final class Holder {
+                        public static int $n = 0;
+
+                        public static function change(): void {
+                            $set = function (): void {
+                                self::$n = 1;
+                            };
+                            $set();
+                        }
+
+                        public static function run(): void {
+                            self::$n = 0;
+                            self::change();
+
+                            /** @psalm-check-type-exact $n = 0 */
+                            $n = self::$n;
+                        }
+                    }',
+            ],
+            'staticPropertyAssignedByAConstructorIsAKnownLimit' => [
+                'code' => '<?php
+                    final class Holder {
+                        public static int $n = 0;
+
+                        public static function run(): void {
+                            self::$n = 0;
+                            new Setter();
+
+                            /** @psalm-check-type-exact $n = 0 */
+                            $n = self::$n;
+                        }
+                    }
+
+                    final class Setter {
+                        public function __construct() {
+                            Holder::$n = 1;
+                        }
+                    }',
+            ],
+            'staticPropertyAssignedByAFirstClassCallableIsAKnownLimit' => [
+                'code' => '<?php
+                    final class Holder {
+                        public static int $n = 0;
+
+                        public static function change(): void {
+                            self::$n = 1;
+                        }
+
+                        public static function run(): void {
+                            self::$n = 0;
+                            $change = self::change(...);
+                            $change();
+
+                            /** @psalm-check-type-exact $n = 0 */
+                            $n = self::$n;
+                        }
+                    }',
+            ],
+            'staticArrayPropertyChangedByAMethodIsForgottenAfterTheCall' => [
+                'code' => '<?php
+                    final class Queue {
+                        /** @var list<int> */
+                        private static array $items = [];
+
+                        public static function add(int $item): void {
+                            self::$items[] = $item;
+                        }
+
+                        public static function hasItems(): bool {
+                            self::$items = [];
+                            self::add(1);
+
+                            if (self::$items) {
+                                return true;
+                            }
+
+                            return false;
+                        }
+                    }',
+            ],
+            'staticPropertyAssignedByNamedClassIsForgottenAfterTheCall' => [
+                'code' => '<?php
+                    final class Flag {
+                        public static bool $raised = false;
+
+                        public function raise(): void {
+                            Flag::$raised = true;
+                        }
+                    }
+
+                    final class Runner {
+                        public static function run(): bool {
+                            Flag::$raised = false;
+                            (new Flag())->raise();
+
+                            if (Flag::$raised) {
+                                return true;
+                            }
+
+                            return false;
+                        }
+                    }',
+            ],
             'propertyReadOnlyWhereIssetHoldsInATraitMayBeLeftUninitialisedByAReturnOfConstructor' => [
                 'code' => '<?php
                     final class Canary {
@@ -1236,6 +1853,64 @@ final class PropertyTypeTest extends TestCase
                     function foo(DOMElement $e) : ?DOMAttr {
                         return $e->attributes->item(0);
                     }',
+            ],
+            'propertyMapKeyMatchesDeclaredCase' => [
+                'code' => '<?php
+                    namespace Parle;
+
+                    class Parser {
+                        public $reduceId;
+
+                        public function __construct() {
+                            $this->reduceId = 1;
+                        }
+                    }
+
+                    class RParser {
+                        public $reduceId;
+
+                        public function __construct() {
+                            $this->reduceId = 1;
+                        }
+                    }
+
+                    $parser = new Parser();
+                    $rparser = new RParser();
+                    $parserId = $parser->reduceId;
+                    $rparserId = $rparser->reduceId;',
+                'assertions' => [
+                    '$parserId===' => 'int',
+                    '$rparserId===' => 'int',
+                ],
+            ],
+            'propertyMapNestedNamespaceKeyMatchesDeclaredCase' => [
+                'code' => '<?php
+                    namespace MongoDB\Driver\Exception;
+
+                    class CommandException extends \Exception {
+                        public $resultDocument;
+
+                        public function __construct() {
+                            $this->resultDocument = new \stdClass();
+                        }
+                    }
+
+                    class RuntimeException extends \Exception {
+                        public $errorLabels;
+
+                        public function __construct() {
+                            $this->errorLabels = null;
+                        }
+                    }
+
+                    $command = new CommandException();
+                    $runtime = new RuntimeException();
+                    $document = $command->resultDocument;
+                    $labels = $runtime->errorLabels;',
+                'assertions' => [
+                    '$document===' => 'object',
+                    '$labels===' => 'array<array-key, mixed>|null',
+                ],
             ],
             'goodArrayProperties' => [
                 'code' => '<?php
@@ -3408,6 +4083,266 @@ final class PropertyTypeTest extends TestCase
                 'ignored_issues' => [],
                 'php_version' => '8.4',
             ],
+            'inheritedConstructorCallingAMethodReturningStaticInAFinalChild' => [
+                'code' => '<?php
+                    abstract class Base
+                    {
+                        protected stdClass $prop;
+
+                        public function __construct(stdClass $prop) {
+                            $this->prop = $prop;
+                            $this->touch();
+                        }
+
+                        /** @return $this */
+                        public function touch(): static
+                        {
+                            return $this;
+                        }
+                    }
+
+                    final class Child extends Base
+                    {
+                    }',
+            ],
+            'setInFinalMethodOfAParentClass' => [
+                'code' => '<?php
+                    abstract class Event {
+                        protected string $uniqueId;
+
+                        final protected function generateUniqueId(): void {
+                            $this->uniqueId = "test";
+                        }
+                    }
+
+                    final class SomeEvent extends Event {
+                        public function __construct(string $someValue) {
+                            $this->generateUniqueId();
+                        }
+                    }',
+            ],
+            'setInPrivateTraitMethodByAParentConstructor' => [
+                'code' => '<?php
+                    trait CreatedAt {
+                        protected DateTimeImmutable $createdAt;
+
+                        private function onCreated(): void {
+                            $this->createdAt = new DateTimeImmutable();
+                        }
+                    }
+
+                    class Foo {
+                        use CreatedAt;
+
+                        public function __construct() {
+                            $this->onCreated();
+                        }
+                    }
+
+                    class Bar extends Foo {}',
+            ],
+            'setInFinalTraitMethodByAParentConstructor' => [
+                'code' => '<?php
+                    trait Tr {
+                        protected int $a;
+
+                        final protected function set(): void {
+                            $this->a = 5;
+                        }
+                    }
+
+                    class B {
+                        use Tr;
+
+                        protected function __construct() {
+                            $this->set();
+                        }
+                    }
+
+                    final class Cl extends B {}',
+            ],
+            'setByATraitMethodCalledByItsAliasWhileTheClassOverridesTheName' => [
+                'code' => '<?php
+                    trait T {
+                        protected int $prop;
+
+                        protected function init(): void {
+                            $this->prop = 1;
+                        }
+                    }
+
+                    class A {
+                        use T { init as alias; }
+
+                        protected function init(): void {}
+
+                        public function __construct() {
+                            $this->alias();
+                        }
+                    }',
+            ],
+            'aTypedPropertyThatNoConstructorSetsIsNotNullableAfterACoalesce' => [
+                'code' => '<?php
+                    final class Meta {
+                        public string $name;
+                    }
+
+                    function e(Meta $m): int {
+                        $label = $m->name ?? "default";
+                        return strlen($m->name) + strlen($label);
+                    }',
+                'assertions' => [],
+                'ignored_issues' => ['PropertyNotSetInConstructor', 'MissingConstructor'],
+            ],
+            'aTypedPropertyThatNoConstructorSetsIsNotNullableAfterAnIssetTernary' => [
+                'code' => '<?php
+                    final class Meta {
+                        public string $name;
+                    }
+
+                    function f(Meta $m): int {
+                        $x = isset($m->name) ? 1 : 0;
+                        return strlen($m->name) + $x;
+                    }',
+                'assertions' => [],
+                'ignored_issues' => ['PropertyNotSetInConstructor', 'MissingConstructor'],
+            ],
+            'aTypedPropertyThatNoConstructorSetsIsNotNullableInATruthyCoalesce' => [
+                'code' => '<?php
+                    abstract class Gen {}
+
+                    final class M2 {
+                        public Gen $g;
+
+                        public function set(Gen $g): void {
+                            $this->g = $g;
+                        }
+                    }
+
+                    function h(M2 $a, M2 $b): void {
+                        if ($b->g ?? null) {
+                            $a->set($b->g);
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => ['PropertyNotSetInConstructor', 'MissingConstructor'],
+            ],
+            'aTypedPropertyThatNoConstructorSetsHasItsTypeAfterACoalesce' => [
+                'code' => '<?php
+                    final class Meta {
+                        public string $name;
+                    }
+
+                    $m = new Meta();
+                    $label = $m->name ?? "default";
+                    $name = $m->name;',
+                'assertions' => [
+                    '$label===' => 'string',
+                    '$name===' => 'string',
+                ],
+                'ignored_issues' => ['PropertyNotSetInConstructor', 'MissingConstructor'],
+            ],
+            'emptyOnATypedPropertyThatNoConstructorSetsAllowsAnArrayAppend' => [
+                'code' => '<?php
+                    final class Builder {
+                        public ?array $orders;
+                    }
+
+                    function append(Builder $q): void {
+                        if (empty($q->orders)) {
+                            $q->orders[] = 1;
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => ['MissingConstructor', 'RiskyTruthyFalsyComparison'],
+                'php_version' => '8.0',
+            ],
+            'issetOnATypedPropertyDoesNotMakeAFollowingReadPossiblyUndefined' => [
+                'code' => '<?php
+                    final class Book {
+                        public string $name;
+                    }
+
+                    function viaVariable(Book $book): string {
+                        $has = isset($book->name);
+
+                        if ($has) {
+                            return $book->name;
+                        }
+
+                        return "";
+                    }
+
+                    function viaAssignment(Book $book): string {
+                        $set = isset($book->name);
+                        $name = $book->name;
+
+                        return $name;
+                    }
+
+                    function viaArgument(Book $book): int {
+                        $set = isset($book->name);
+
+                        return strlen($book->name);
+                    }',
+                'assertions' => [],
+                'ignored_issues' => ['MissingConstructor', 'UnusedVariable'],
+                'php_version' => '8.0',
+            ],
+            'issetOnATypedPropertyAsTheLeftOfAndChecksWhetherItWasSet' => [
+                'code' => '<?php
+                    final class Book {
+                        public string $name;
+                    }
+
+                    function hasName(Book $book): bool {
+                        return isset($book->name) && $book->name !== "";
+                    }',
+                'assertions' => [],
+                'ignored_issues' => ['MissingConstructor'],
+                'php_version' => '8.0',
+            ],
+            'issetOnATypedPropertyThatNoConstructorSetsChecksWhetherItWasSet' => [
+                'code' => '<?php
+                    final class Book {
+                        public string $name;
+
+                        public function __construct() {
+                        }
+                    }
+
+                    function title(Book $book): string {
+                        return $book->name ?? "untitled";
+                    }',
+                'assertions' => [],
+                'ignored_issues' => ['PropertyNotSetInConstructor'],
+                'php_version' => '8.0',
+            ],
+            'issetOnATypedPropertyOfAClassWithoutAConstructorChecksWhetherItWasSet' => [
+                'code' => '<?php
+                    final class Book {
+                        public string $name;
+                    }
+
+                    function title(Book $book): string {
+                        return $book->name ?? throw new \\Exception("Give the book a name first");
+                    }
+
+                    function hasName(Book $book): bool {
+                        return isset($book->name);
+                    }
+
+                    function describe(Book $book): string {
+                        if (!isset($book->name)) {
+                            return "nameless";
+                        }
+
+                        return $book->name;
+                    }',
+                'assertions' => [],
+                'ignored_issues' => ['MissingConstructor'],
+                'php_version' => '8.0',
+            ],
         ];
     }
 
@@ -3418,45 +4353,84 @@ final class PropertyTypeTest extends TestCase
     public static function providerInvalidCodeParse(): iterable
     {
         return [
-            'privateTraitPropertyIsNotVisibleInASubclass' => [
+            'declaredPropertyOfAStdClassSubclassRejectsAWrongValue' => [
                 'code' => '<?php
-                    trait IdTrait {
-                        private int $id = 1;
+                    final class Item extends stdClass {
+                        public int $count = 0;
                     }
 
-                    class BaseUser {
-                        use IdTrait;
-                    }
-
-                    class Admin extends BaseUser {
-                        public function id(): int {
-                            return $this->id;
-                        }
-                    }',
-                'error_message' => 'UndefinedThisPropertyFetch - src' . DIRECTORY_SEPARATOR . 'somefile.php:12:36 - Instance property Admin::$id is not defined',
+                    $item = new Item();
+                    $item->count = "three";',
+                'error_message' => 'InvalidPropertyAssignmentValue',
             ],
-            'privateTraitPropertyNotInitializedIsStillReportedInTheUsingClass' => [
+            'declaredPropertyOfAStdClassSubclassHasItsTypeWhenRead' => [
                 'code' => '<?php
-                    trait IdTrait {
-                        private int $id;
+                    final class Item extends stdClass {
+                        public string $label = "";
+                    }
 
-                        public function id(): int {
-                            return $this->id;
+                    function takesInt(int $n): int {
+                        return $n;
+                    }
+
+                    $item = new Item();
+                    takesInt($item->label);',
+                'error_message' => 'InvalidScalarArgument',
+            ],
+            'promotedPropertyRedeclaresPropertyOfTheSameClass' => [
+                'code' => '<?php
+                    final class Order {
+                        public int $id;
+
+                        public function __construct(public int $id) {}
+                    }',
+                'error_message' => 'ParseError - src' . DIRECTORY_SEPARATOR . 'somefile.php:5:64 - Promoted property id clashes',
+            ],
+            'staticPropertyOfATraitIsSharedWithTheSubclassesOfTheUsingClass' => [
+                'code' => '<?php
+                    trait Holder {
+                        public static ?int $v = null;
+                    }
+
+                    class A {
+                        use Holder;
+
+                        public static function clear(): void {
+                            self::$v = null;
                         }
                     }
 
-                    class BaseUser {
-                        use IdTrait;
+                    final class Child extends A {
+                        public static function get(): int {
+                            Child::$v = 1;
+                            A::clear();
 
-                        public function __construct() {}
-                    }
-
-                    class Admin extends BaseUser {
-                        public function __construct() {
-                            parent::__construct();
+                            return Child::$v;
                         }
                     }',
-                'error_message' => 'PropertyNotSetInConstructor - src' . DIRECTORY_SEPARATOR . 'somefile.php:10:27 - Property BaseUser::$id',
+                'error_message' => 'NullableReturnStatement',
+                'error_levels' => [],
+                'php_version' => '8.0',
+            ],
+            'staticPropertyIsKeptAfterACallThatDoesNotAssignIt' => [
+                'code' => '<?php
+                    final class Widget {
+                        private static bool $isSomething = false;
+
+                        public function run(): void {
+                            self::$isSomething = false;
+                            $this->helper();
+
+                            if (self::$isSomething) {
+                                echo "never";
+                            }
+                        }
+
+                        private function helper(): void {
+                            echo "nothing";
+                        }
+                    }',
+                'error_message' => 'TypeDoesNotContainType - src' . DIRECTORY_SEPARATOR . 'somefile.php:9:33 - Operand of type false is always falsy',
             ],
             'privateTemplatedPropertyNotInitializedByAFinalParentConstructorChain' => [
                 'code' => '<?php
@@ -3498,6 +4472,46 @@ final class PropertyTypeTest extends TestCase
                 'error_levels' => [],
                 'php_version' => '8.0',
             ],
+            'privateTraitPropertyIsNotVisibleInASubclass' => [
+                'code' => '<?php
+                    trait IdTrait {
+                        private int $id = 1;
+                    }
+
+                    class BaseUser {
+                        use IdTrait;
+                    }
+
+                    class Admin extends BaseUser {
+                        public function id(): int {
+                            return $this->id;
+                        }
+                    }',
+                'error_message' => 'UndefinedThisPropertyFetch - src' . DIRECTORY_SEPARATOR . 'somefile.php:12:36 - Instance property Admin::$id is not defined',
+            ],
+            'privateTraitPropertyNotInitializedIsStillReportedInTheUsingClass' => [
+                'code' => '<?php
+                    trait IdTrait {
+                        private int $id;
+
+                        public function id(): int {
+                            return $this->id;
+                        }
+                    }
+
+                    class BaseUser {
+                        use IdTrait;
+
+                        public function __construct() {}
+                    }
+
+                    class Admin extends BaseUser {
+                        public function __construct() {
+                            parent::__construct();
+                        }
+                    }',
+                'error_message' => 'PropertyNotSetInConstructor - src' . DIRECTORY_SEPARATOR . 'somefile.php:10:27 - Property BaseUser::$id',
+            ],
             'propertyReadThroughCoalesceAndWithoutAGuardIsNotInitialisedByAReturnOfConstructor' => [
                 'code' => '<?php
                     final class Canary {
@@ -3524,7 +4538,7 @@ final class PropertyTypeTest extends TestCase
                         }
                     }',
                 'error_message' => 'PropertyNotSetInConstructor - src' . DIRECTORY_SEPARATOR . 'somefile.php:7:40 - Property Response::$canary',
-                'error_levels' => ['RedundantPropertyInitializationCheck', 'RedundantCondition'],
+                'error_levels' => ['RedundantPropertyInitializationCheck'],
             ],
             'propertyNotInitializedByAnInterfaceStaticMethodCalledInTheConstructor' => [
                 'code' => '<?php
@@ -3970,10 +4984,6 @@ final class PropertyTypeTest extends TestCase
 
                     echo $a->foo;',
                 'error_message' => 'MixedPropertyFetch',
-                'error_levels' => [
-                    'MissingPropertyType',
-                    'MixedAssignment',
-                ],
             ],
             'mixedPropertyAssignment' => [
                 'code' => '<?php
@@ -3987,10 +4997,6 @@ final class PropertyTypeTest extends TestCase
 
                     $a->foo = "hello";',
                 'error_message' => 'MixedPropertyAssignment',
-                'error_levels' => [
-                    'MissingPropertyType',
-                    'MixedAssignment',
-                ],
             ],
             'possiblyNullablePropertyAssignment' => [
                 'code' => '<?php
@@ -4147,7 +5153,6 @@ final class PropertyTypeTest extends TestCase
                         }
                     }',
                 'error_message' => 'PropertyNotSetInConstructor',
-                'error_levels' => ['RedundantPropertyInitializationCheck'],
             ],
             'propertyReadUnconditionallyInATraitIsReportedAtAReturnOfConstructor' => [
                 'code' => '<?php
@@ -4179,7 +5184,6 @@ final class PropertyTypeTest extends TestCase
                         }
                     }',
                 'error_message' => 'PropertyNotSetInConstructor',
-                'error_levels' => ['RedundantPropertyInitializationCheck'],
             ],
             'propertyReadUnconditionallyInATraitUsedByAnAliasIsReportedAtAReturnOfConstructor' => [
                 'code' => '<?php
@@ -4212,7 +5216,6 @@ final class PropertyTypeTest extends TestCase
                         }
                     }',
                 'error_message' => 'PropertyNotSetInConstructor',
-                'error_levels' => ['RedundantPropertyInitializationCheck'],
             ],
             'propertyReadAsAnArgumentOfACoalesceOperandIsReportedAtAReturnOfConstructor' => [
                 'code' => '<?php
@@ -4246,7 +5249,7 @@ final class PropertyTypeTest extends TestCase
                         }
                     }',
                 'error_message' => 'PropertyNotSetInConstructor',
-                'error_levels' => ['RedundantPropertyInitializationCheck', 'RedundantConditionGivenDocblockType', 'DocblockTypeContradiction', 'RedundantCondition', 'TypeDoesNotContainNull'],
+                'error_levels' => ['RedundantCondition', 'TypeDoesNotContainNull'],
             ],
             'propertyReadAsTheIndexOfAnIssetIsReportedAtAReturnOfConstructor' => [
                 'code' => '<?php
@@ -4273,7 +5276,6 @@ final class PropertyTypeTest extends TestCase
                         }
                     }',
                 'error_message' => 'PropertyNotSetInConstructor',
-                'error_levels' => ['RedundantPropertyInitializationCheck'],
             ],
             'notSetBeforeReturnOfConstructor' => [
                 'code' => '<?php
@@ -4668,7 +5670,7 @@ final class PropertyTypeTest extends TestCase
                         }
                     }',
                 'error_message' => 'UninitializedProperty',
-                'error_levels' => ['MixedArgument', 'MissingPropertyType'],
+                'error_levels' => ['MixedArgument'],
             ],
             'uninitializedObjectProperty' => [
                 'code' => '<?php
@@ -4976,7 +5978,7 @@ final class PropertyTypeTest extends TestCase
                         /** @var array */
                         public string $s = [];
                     }',
-                'error_message' => 'MismatchingDocblockPropertyType - src' . DIRECTORY_SEPARATOR . 'somefile.php:3:34 - Parameter A::$s has wrong type',
+                'error_message' => 'MismatchingDocblockPropertyType - src' . DIRECTORY_SEPARATOR . 'somefile.php:3:34 - Property A::$s has wrong type',
             ],
             'overwritePropertyType' => [
                 'code' => '<?php
@@ -4985,6 +5987,15 @@ final class PropertyTypeTest extends TestCase
                         public string $s = [];
                     }',
                 'error_message' => 'MismatchingDocblockPropertyType',
+            ],
+            'mismatchingDocblockPropertyTypeShowsExactType' => [
+                'code' => '<?php
+                    class A {
+                        /** @var numeric-string */
+                        public int $s;
+                    }',
+                'error_message' => 'MismatchingDocblockPropertyType - src' . DIRECTORY_SEPARATOR . 'somefile.php:3:34'
+                    . ' - Property A::$s has wrong type \'numeric-string\', should be \'int',
             ],
             'possiblyNullOnFunctionCallNotCoalesced' => [
                 'code' => '<?php
@@ -5067,6 +6078,242 @@ final class PropertyTypeTest extends TestCase
                     }
                 PHP,
                 'error_message' => 'MissingConstructor',
+            ],
+            'notSetWhenTheChildOverridesTheMethodOfAParentClass' => [
+                'code' => '<?php
+                    abstract class Event {
+                        protected string $uniqueId;
+
+                        protected function generateUniqueId(): void {
+                            $this->uniqueId = "test";
+                        }
+                    }
+
+                    final class SomeEvent extends Event {
+                        protected function generateUniqueId(): void {}
+
+                        public function __construct() {
+                            $this->generateUniqueId();
+                        }
+                    }',
+                'error_message' => 'Property SomeEvent::$uniqueId is not defined in constructor',
+            ],
+            'notSetInFinalMethodOfAParentClassThatSetsAnotherProperty' => [
+                'code' => '<?php
+                    abstract class Event {
+                        protected string $uniqueId;
+
+                        protected string $when;
+
+                        final protected function generateUniqueId(): void {
+                            $this->uniqueId = "test";
+                        }
+                    }
+
+                    final class SomeEvent extends Event {
+                        public function __construct() {
+                            $this->generateUniqueId();
+                        }
+                    }',
+                'error_message' => 'Property SomeEvent::$when is not defined in constructor',
+            ],
+            'notSetByAParentConstructorThatTheChildDoesNotCall' => [
+                'code' => '<?php
+                    trait CreatedAt {
+                        protected DateTimeImmutable $createdAt;
+
+                        private function onCreated(): void {
+                            $this->createdAt = new DateTimeImmutable();
+                        }
+                    }
+
+                    class Foo {
+                        use CreatedAt;
+
+                        public function __construct() {
+                            $this->onCreated();
+                        }
+                    }
+
+                    class Bar extends Foo {
+                        public function __construct() {}
+                    }',
+                'error_message' => 'PropertyNotSetInConstructor - src' . DIRECTORY_SEPARATOR . 'somefile.php:18',
+            ],
+            'notSetByATraitMethodCalledByItsAliasWhileTheClassOverridesTheName' => [
+                'code' => '<?php
+                    trait T {
+                        protected function init(): void {}
+                    }
+
+                    class A {
+                        use T { init as alias; }
+
+                        protected int $prop;
+
+                        protected function init(): void {
+                            $this->prop = 1;
+                        }
+
+                        public function __construct() {
+                            $this->alias();
+                        }
+                    }',
+                'error_message' => 'PropertyNotSetInConstructor',
+            ],
+            'notSetByAnInheritedTraitMethodCalledByItsAliasWhileTheParentOverridesTheName' => [
+                'code' => '<?php
+                    trait T {
+                        protected function init(): void {}
+                    }
+
+                    class P {
+                        use T { init as alias; }
+
+                        protected int $prop;
+
+                        public function __construct() {
+                            $this->init();
+                        }
+
+                        protected function init(): void {
+                            $this->prop = 1;
+                        }
+                    }
+
+                    class B extends P {
+                        public function __construct() {
+                            $this->alias();
+                        }
+                    }',
+                'error_message' => 'PropertyNotSetInConstructor - src' . DIRECTORY_SEPARATOR . 'somefile.php:20:27 - Property B::$prop is not defined in constructor of B',
+            ],
+            'propertyMapWrongCasePropertyIsUndefined' => [
+                'code' => '<?php
+                    function foo(DOMDocumentType $t): string {
+                        return $t->publicid;
+                    }',
+                'error_message' => 'UndefinedPropertyFetch',
+                'error_levels' => [],
+                'php_version' => '8.4',
+            ],
+            'issetOnATypedPropertyThatAParentConstructorSetsIsRedundantInTheChild' => [
+                'code' => '<?php
+                    class Base {
+                        public string $name;
+
+                        public function __construct() {
+                            $this->name = "x";
+                        }
+                    }
+
+                    final class Child extends Base {
+                        public function __construct() {
+                            parent::__construct();
+                        }
+                    }
+
+                    function hasName(Child $child): bool {
+                        if (isset($child->name)) {
+                            return true;
+                        }
+
+                        return false;
+                    }',
+                'error_message' => 'RedundantCondition',
+                'error_levels' => [],
+                'php_version' => '8.0',
+            ],
+            'nullCoalescingOnATypedPropertyThatNoConstructorSetsKeepsTheNullableConcatenation' => [
+                'code' => '<?php
+                    final class Box {
+                        public ?string $tag;
+
+                        public function __construct() {
+                        }
+                    }
+
+                    function tag(Box $box): void {
+                        $t = $box->tag ?? null;
+                        $box->tag .= "x";
+                    }',
+                'error_message' => 'PossiblyNullOperand',
+                'error_levels' => ['MissingConstructor', 'PropertyNotSetInConstructor'],
+                'php_version' => '8.0',
+            ],
+            'issetOnADocblockTypedPropertyIsRedundant' => [
+                'code' => '<?php
+                    final class Book {
+                        /** @var string */
+                        public $name = "x";
+                    }
+
+                    function hasName(Book $book): bool {
+                        if (isset($book->name)) {
+                            return true;
+                        }
+
+                        return false;
+                    }',
+                'error_message' => 'RedundantConditionGivenDocblockType',
+                'error_levels' => [],
+                'php_version' => '8.0',
+            ],
+            'issetOnATypedPropertyWithADefaultIsRedundant' => [
+                'code' => '<?php
+                    final class Book {
+                        public string $name = "x";
+                    }
+
+                    function hasName(Book $book): bool {
+                        if (isset($book->name)) {
+                            return true;
+                        }
+
+                        return false;
+                    }',
+                'error_message' => 'RedundantCondition',
+                'error_levels' => [],
+                'php_version' => '8.0',
+            ],
+            'issetOnAPromotedPropertyIsRedundant' => [
+                'code' => '<?php
+                    final class Book {
+                        public function __construct(public string $name) {
+                        }
+                    }
+
+                    function hasName(Book $book): bool {
+                        if (isset($book->name)) {
+                            return true;
+                        }
+
+                        return false;
+                    }',
+                'error_message' => 'RedundantCondition',
+                'error_levels' => [],
+                'php_version' => '8.0',
+            ],
+            'issetOnATypedPropertyThatAConstructorSetsIsRedundant' => [
+                'code' => '<?php
+                    final class Book {
+                        public string $name;
+
+                        public function __construct() {
+                            $this->name = "x";
+                        }
+                    }
+
+                    function hasName(Book $book): bool {
+                        if (isset($book->name)) {
+                            return true;
+                        }
+
+                        return false;
+                    }',
+                'error_message' => 'RedundantCondition - src' . DIRECTORY_SEPARATOR . 'somefile.php:11:29 - Type string for $book->name is always isset',
+                'error_levels' => [],
+                'php_version' => '8.0',
             ],
         ];
     }
