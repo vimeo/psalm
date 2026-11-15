@@ -21,9 +21,10 @@ final class TStarProjection extends Atomic
     use UnserializeMemoryUsageSuppressionTrait;
 
     /**
-     * @param Union|null $as what is known of the unknown type, null for nothing (mixed). Once the generic object is
-     *                       expanded, it is the bound of the template the `*` stands for, with the other type
-     *                       arguments applied: `Pair<int, *>` with `@template B of list<A>` knows `list<int>`.
+     * @param Union|null $as what is known of the unknown type: the bound of the template the `*` stands for, with the
+     *                       other type arguments applied (`Pair<int, *>` with `@template B of list<A>` knows
+     *                       `list<int>`; `mixed` for a template without a bound). Null until the generic object is
+     *                       expanded (as parsed, or built by hand), when nothing narrower than mixed is known.
      */
     public function __construct(
         bool $from_docblock = false,
