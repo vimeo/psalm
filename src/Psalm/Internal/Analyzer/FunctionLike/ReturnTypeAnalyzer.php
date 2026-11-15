@@ -84,7 +84,6 @@ final class ReturnTypeAnalyzer
         return $storage instanceof MethodStorage
             && $fq_class_name !== null
             && !$storage->final
-            && !$storage->is_static
             && $storage->visibility !== ClassLikeAnalyzer::VISIBILITY_PRIVATE
             && !$codebase->classlike_storage_provider->get($fq_class_name)->final;
     }

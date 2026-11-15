@@ -2354,6 +2354,21 @@ final class ReturnTypeTest extends TestCase
                         }
                     }',
             ],
+            'overridableStaticMethodThatThrowsAfterAnotherStatementKeepsItsDeclaredReturnType' => [
+                'code' => '<?php
+                    class Logger {
+                        public static function log(string $method): void {}
+                    }
+
+                    abstract class Base {
+                        /** @return string */
+                        public static function doSomething() {
+                            Logger::log(__METHOD__);
+
+                            throw new Exception("Not supported.");
+                        }
+                    }',
+            ],
             'traitMethodOfAnOverridableClassThatThrowsAfterAnotherStatementKeepsTheReturnTypeOfTheInterface' => [
                 'code' => '<?php
                     final class Logger {
@@ -3331,6 +3346,22 @@ final class ReturnTypeTest extends TestCase
                     class Base {
                         /** @return string */
                         final public function doSomething() {
+                            Logger::log(__METHOD__);
+
+                            throw new Exception("Not supported.");
+                        }
+                    }',
+                'error_message' => 'InvalidReturnType',
+            ],
+            'finalStaticMethodThatAlwaysThrowsAfterAnotherStatementIsNever' => [
+                'code' => '<?php
+                    class Logger {
+                        public static function log(string $method): void {}
+                    }
+
+                    class Base {
+                        /** @return string */
+                        final public static function doSomething() {
                             Logger::log(__METHOD__);
 
                             throw new Exception("Not supported.");
