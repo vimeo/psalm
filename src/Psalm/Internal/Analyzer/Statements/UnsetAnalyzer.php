@@ -320,7 +320,7 @@ final class UnsetAnalyzer
             foreach ($parent_type->getAtomicTypes() as $atomic_parent_type) {
                 if ($atomic_parent_type instanceof TKeyedArray) {
                     $changed = true;
-                    $properties =$atomic_parent_type->properties;
+                    $properties = $atomic_parent_type->properties;
                     $fallback_params = $atomic_parent_type->fallback_params;
                     $key = $keys !== null && count($keys) === 1 ? array_key_first($keys) : null;
 

@@ -2370,6 +2370,13 @@ final class ArrayAccessTest extends TestCase
                         }
                     }',
             ],
+            'nestedUnsetOfAnOptionalKeyKeepsTheShapeOfAByRefParam' => [
+                'code' => '<?php
+                    /** @param array{b: array{c?: int}} $a */
+                    function f(array &$a): void {
+                        unset($a["b"]["c"]);
+                    }',
+            ],
             'nestedUnsetThroughArrayAccessKeepsTheObject' => [
                 'code' => '<?php
                     /** @param ArrayAccess<string, array{c: int}>|array{b: array{c: int}} $a */
@@ -2498,6 +2505,14 @@ final class ArrayAccessTest extends TestCase
     public static function providerInvalidCodeParse(): iterable
     {
         return [
+            'nestedUnsetBreaksTheShapeOfAByRefParam' => [
+                'code' => '<?php
+                    /** @param array{b: array{c: int}} $a */
+                    function f(array &$a): void {
+                        unset($a["b"]["c"]);
+                    }',
+                'error_message' => 'ReferenceConstraintViolation',
+            ],
             'offsetOfANullableArrayAfterAnIssetGuardIsPossiblyNull' => [
                 'code' => '<?php
                     /** @param array<string, list<string>>|null $lists */
