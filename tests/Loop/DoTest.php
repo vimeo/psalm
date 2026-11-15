@@ -840,7 +840,7 @@ final class DoTest extends TestCase
                         } while (rand(0, 1));
                     }
                     PHP,
-                'error_message' => 'InvalidCast',
+                'error_message' => 'PossiblyInvalidCast - src' . DIRECTORY_SEPARATOR . 'somefile.php:5:23 - array<never, never> cannot be cast to string',
                 'error_levels' => [],
                 'php_version' => '8.1',
             ],
@@ -855,7 +855,7 @@ final class DoTest extends TestCase
                         } while (rand(0, 1));
                     }
                     PHP,
-                'error_message' => 'InvalidFunctionCall',
+                'error_message' => 'PossiblyInvalidFunctionCall - src' . DIRECTORY_SEPARATOR . 'somefile.php:5:14 - Cannot treat type 5 as callable',
                 'error_levels' => [],
                 'php_version' => '8.1',
             ],
@@ -871,7 +871,7 @@ final class DoTest extends TestCase
                         } while (rand(0, 1));
                     }
                     PHP,
-                'error_message' => 'InvalidArrayOffset',
+                'error_message' => 'PossiblyInvalidArrayOffset - src' . DIRECTORY_SEPARATOR . 'somefile.php:6:14 - Cannot access value on variable $l using a 0|stdClass offset',
                 'error_levels' => [],
                 'php_version' => '8.1',
             ],
