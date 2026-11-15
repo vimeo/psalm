@@ -314,6 +314,50 @@ final class TypeAlgebraTest extends TestCase
                 'ignored_issues' => [],
                 'php_version' => '8.0',
             ],
+            'assertedLongStringLiteralsSharingTheirStartAreNotEachOthersNegation' => [
+                'code' => '<?php
+                    /** @psalm-assert-if-true "https://example.org/api/v2/organisations/acme/projects/psalm/reports/2026/quarterly/summary-one" $x */
+                    function isOne(string $x): bool {
+                        return $x === "https://example.org/api/v2/organisations/acme/projects/psalm/reports/2026/quarterly/summary-one";
+                    }
+                    /** @psalm-assert-if-true "https://example.org/api/v2/organisations/acme/projects/psalm/reports/2026/quarterly/summary-two" $x */
+                    function isTwo(string $x): bool {
+                        return $x === "https://example.org/api/v2/organisations/acme/projects/psalm/reports/2026/quarterly/summary-two";
+                    }
+                    function f(string $x, ?int $b): void {
+                        if (isOne($x) || $b !== null) {
+                            if (!isTwo($x)) {
+                                /** @psalm-check-type-exact $b = int|null */
+                                echo "not two";
+                            }
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'anAssertedLongStringLiteralIsTheNegationOfItself' => [
+                'code' => '<?php
+                    /** @psalm-assert-if-true "https://example.org/api/v2/organisations/acme/projects/psalm/reports/2026/quarterly/summary-one" $x */
+                    function isOne(string $x): bool {
+                        return $x === "https://example.org/api/v2/organisations/acme/projects/psalm/reports/2026/quarterly/summary-one";
+                    }
+                    /** @psalm-assert-if-true "https://example.org/api/v2/organisations/acme/projects/psalm/reports/2026/quarterly/summary-two" $x */
+                    function isTwo(string $x): bool {
+                        return $x === "https://example.org/api/v2/organisations/acme/projects/psalm/reports/2026/quarterly/summary-two";
+                    }
+                    function f(string $x, ?int $b): void {
+                        if (isOne($x) || $b !== null) {
+                            if (!isOne($x)) {
+                                /** @psalm-check-type-exact $b = int */
+                                echo "not one";
+                            }
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
             'assignedTypeChecksOfAnOrNarrowToEitherType' => [
                 'code' => '<?php
                     function f(mixed $x): void {
