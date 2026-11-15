@@ -305,22 +305,18 @@ final class IfAnalyzer
                 $if_scope->updated_vars,
             );
 
-            foreach ($overlapping_var_ids as $var_id) {
-                $else_type = $pre_assignment_else_redefined_vars[$var_id];
-
-                if ($has_leaving_statements) {
-                    $outer_context->vars_in_scope[$var_id] = $else_type;
-                } elseif ($if_context->hasVariable($var_id)) {
-                    $outer_context->vars_in_scope[$var_id] = Type::combineUnionTypes(
-                        $if_context->vars_in_scope[$var_id],
-                        $else_type,
-                        $codebase,
-                    );
-                } else {
-                    continue;
+            // after a leaving if, the code continues from the else, whose type IfElseAnalyzer applies
+            if (!$has_leaving_statements) {
+                foreach ($overlapping_var_ids as $var_id) {
+                    if ($if_context->hasVariable($var_id)) {
+                        $outer_context->vars_in_scope[$var_id] = Type::combineUnionTypes(
+                            $if_context->vars_in_scope[$var_id],
+                            $pre_assignment_else_redefined_vars[$var_id],
+                            $codebase,
+                        );
+                        $if_scope->updated_vars[$var_id] = true;
+                    }
                 }
-
-                $if_scope->updated_vars[$var_id] = true;
             }
         }
 

@@ -179,6 +179,26 @@ final class ConditionalTest extends TestCase
                         /** @psalm-check-type-exact $a = int|null|string */
                     }',
             ],
+            'ifSkippedByAnotherOperandDoesNotNarrowTheValuesThatSkipIt' => [
+                'code' => '<?php
+                    /**
+                     * @param 1|2|3 $a
+                     * @param 1|2|3 $b
+                     */
+                    function test(int $a, int $b): string {
+                        if ($a == 1 || $a == 2 || $b == 1 || $b == 2) {
+                            if ($b == 3 || $a == 3) {
+                                return "false1";
+                            }
+                        }
+
+                        if ($a == 3) {
+                            return "true";
+                        }
+
+                        return "false2";
+                    }',
+            ],
             'ifSkippedByAnotherOperandStillNarrowsWhatTheBodyAssigns' => [
                 'code' => '<?php
                     final class A {}
