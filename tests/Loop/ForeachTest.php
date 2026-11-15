@@ -5,9 +5,17 @@ declare(strict_types=1);
 namespace Psalm\Tests\Loop;
 
 use Override;
+use Psalm\Context;
+use Psalm\Internal\Analyzer\IssueData;
+use Psalm\IssueBuffer;
 use Psalm\Tests\TestCase;
 use Psalm\Tests\Traits\InvalidCodeAnalysisTestTrait;
 use Psalm\Tests\Traits\ValidCodeAnalysisTestTrait;
+
+use function array_filter;
+use function array_map;
+use function array_values;
+use function str_starts_with;
 
 use const DIRECTORY_SEPARATOR;
 
@@ -16,6 +24,185 @@ final class ForeachTest extends TestCase
     use InvalidCodeAnalysisTestTrait;
     use ValidCodeAnalysisTestTrait;
 
+    public function testAVariableOfAPreviousIterationReadsAsNullWhenUndefined(): void
+    {
+        $this->project_analyzer->getConfig()->throw_exception = false;
+
+        $file_path = self::$src_dir_path . 'somefile.php';
+
+        $this->addFile(
+            $file_path,
+            '<?php
+                final class Item {
+                    public function name(): string {
+                        return "i";
+                    }
+                }
+
+                function notNull(array $xs): void {
+                    foreach ($xs as $_) {
+                        if ($item !== null) {
+                            echo $item->name();
+                        }
+                        $item = new Item();
+                    }
+                }
+
+                function falsy(array $xs): void {
+                    foreach ($xs as $_) {
+                        if (!$a) {
+                            /** @psalm-check-type-exact $a? = null */;
+                        }
+                        $a = "s";
+                    }
+                }
+
+                function notIsset(array $xs): void {
+                    foreach ($xs as $_) {
+                        if (!isset($a)) {
+                            /** @psalm-check-type-exact $a? = null */;
+                            echo (string) $a;
+                        }
+                        $a = "s";
+                    }
+                }',
+        );
+
+        $this->analyzeFile($file_path, new Context());
+
+        self::assertSame(
+            [
+                'PossiblyUndefinedVariable 10:29',
+                'PossiblyUndefinedVariable 19:30',
+                'PossiblyUndefinedVariable 30:43',
+            ],
+            array_map(
+                static fn(IssueData $issue): string
+                    => $issue->type . ' ' . $issue->line_from . ':' . $issue->column_from,
+                IssueBuffer::getIssuesDataForFile($file_path),
+            ),
+        );
+    }
+
+    public function testAnItemAssignedToAVariableOfAPreviousIterationCreatesTheArray(): void
+    {
+        $this->project_analyzer->getConfig()->throw_exception = false;
+
+        $file_path = self::$src_dir_path . 'somefile.php';
+
+        $this->addFile(
+            $file_path,
+            '<?php
+                /** @param list<array{int, string}> $xs */
+                function f(array $xs): void {
+                    foreach ($xs as [$k, $v]) {
+                        echo count($by);
+                        $by[$k][] = $v;
+                    }
+                }',
+        );
+
+        $this->analyzeFile($file_path, new Context());
+
+        self::assertSame(
+            ['PossiblyNullArgument 5:36'],
+            array_values(array_map(
+                static fn(IssueData $issue): string
+                    => $issue->type . ' ' . $issue->line_from . ':' . $issue->column_from,
+                array_filter(
+                    IssueBuffer::getIssuesDataForFile($file_path),
+                    static fn(IssueData $issue): bool => str_starts_with($issue->type, 'PossiblyNull'),
+                ),
+            )),
+        );
+    }
+
+    public function testAMixedVariableOfAPreviousIterationIsSetWhereItCannotBeNull(): void
+    {
+        $this->project_analyzer->getConfig()->throw_exception = false;
+
+        $file_path = self::$src_dir_path . 'somefile.php';
+
+        $this->addFile(
+            $file_path,
+            '<?php
+                /** @param mixed $v */
+                function notOne(array $xs, $v): void {
+                    foreach ($xs as $_) {
+                        if ($a !== 1) {
+                            echo gettype($a);
+                        }
+                        $a = $v;
+                    }
+                }
+
+                /** @param mixed $v */
+                function falsy(array $xs, $v): void {
+                    foreach ($xs as $_) {
+                        if (!$b) {
+                            echo gettype($b);
+                        }
+                        $b = $v;
+                    }
+                }
+
+                /** @param mixed $v */
+                function notNull(array $xs, $v): void {
+                    foreach ($xs as $_) {
+                        if ($c !== null) {
+                            echo gettype($c);
+                        }
+                        $c = $v;
+                    }
+                }
+
+                /** @param mixed $v */
+                function truthy(array $xs, $v): void {
+                    foreach ($xs as $_) {
+                        if ($d) {
+                            echo gettype($d);
+                        }
+                        $d = $v;
+                    }
+                }
+
+                /**
+                 * @template T
+                 * @param T $v
+                 */
+                function templateNotNull(array $xs, $v): void {
+                    foreach ($xs as $_) {
+                        if ($e !== null) {
+                            echo gettype($e);
+                        }
+                        $e = $v;
+                    }
+                }',
+        );
+
+        $this->analyzeFile($file_path, new Context());
+
+        self::assertSame(
+            [
+                'PossiblyUndefinedVariable 5:29',
+                'PossiblyUndefinedVariable 6:42',
+                'PossiblyUndefinedVariable 15:30',
+                'PossiblyUndefinedVariable 16:42',
+                'PossiblyUndefinedVariable 25:29',
+                'PossiblyUndefinedVariable 35:29',
+                'PossiblyUndefinedVariable 48:29',
+            ],
+            array_values(array_map(
+                static fn(IssueData $issue): string
+                    => $issue->type . ' ' . $issue->line_from . ':' . $issue->column_from,
+                array_filter(
+                    IssueBuffer::getIssuesDataForFile($file_path),
+                    static fn(IssueData $issue): bool => $issue->type === 'PossiblyUndefinedVariable',
+                ),
+            )),
+        );
+    }
+
     /**
      * @psalm-pure
      */
@@ -23,6 +210,209 @@ final class ForeachTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'aConditionalWriteOfAMixedValueInAForeachByReferenceKeepsTheKey' => [
+                'code' => '<?php
+                    /** @param list<string> $labels */
+                    function assigned(array $labels, mixed $value): void {
+                        $rows = [];
+
+                        foreach ($labels as $l) {
+                            $rows[] = ["label" => $l];
+                        }
+
+                        foreach ($rows as &$row) {
+                            if (rand(0, 1)) {
+                                $row["extra"] = $value;
+                            }
+                        }
+
+                        unset($row);
+
+                        /** @psalm-check-type-exact $rows = list<array{extra?: mixed, label: string}> */
+                        echo count($rows);
+                    }
+
+                    /** @param list<string> $labels */
+                    function nested(array $labels, mixed $value): void {
+                        $rows = [];
+
+                        foreach ($labels as $l) {
+                            $rows[] = ["label" => $l];
+                        }
+
+                        foreach ($rows as &$row) {
+                            if (rand(0, 1)) {
+                                $row["extra"]["x"] = $value;
+                            }
+                        }
+
+                        unset($row);
+
+                        /** @psalm-check-type-exact $rows = list<array{extra?: array{x: mixed}, label: string}> */
+                        echo count($rows);
+                    }',
+                'assertions' => [],
+                'ignored_issues' => ['MixedAssignment'],
+                'php_version' => '8.1',
+            ],
+            'aTestedKeyTheItemsDoNotHaveIsNotAddedToThemWhateverItsTypeOrTheItems' => [
+                'code' => '<?php
+                    /** @param list<string> $labels */
+                    function stringKey(array $labels): void {
+                        $rows = [];
+
+                        foreach ($labels as $l) {
+                            $rows[] = ["label" => $l, "value" => ""];
+                        }
+
+                        foreach ($rows as &$row) {
+                            /** @psalm-suppress InvalidArrayOffset */
+                            if (isset($row["name"]) && is_string($row["name"])) {
+                                $row["value"] = "y";
+                            }
+                        }
+
+                        unset($row);
+
+                        /** @psalm-check-type-exact $rows = list<array{label: string, value: "y"|""}> */
+                        echo count($rows);
+                    }
+
+                    /** @param list<array{label: string, value: ""}|null> $rows */
+                    function nullableItems(array $rows): void {
+                        foreach ($rows as &$row) {
+                            /** @psalm-suppress InvalidArrayOffset */
+                            if ($row !== null && isset($row["name"])) {
+                                $row["value"] = "y";
+                            }
+                        }
+
+                        unset($row);
+
+                        /** @psalm-check-type-exact $rows = list<array{label: string, value: "y"|""}|null> */
+                        echo count($rows);
+                    }
+
+                    /** @param list<array{label: string, value: ""}> $rows */
+                    function byValueCall(array $rows): void {
+                        foreach ($rows as &$row) {
+                            /** @psalm-suppress InvalidArrayOffset */
+                            if (isset($row["name"]) && strlen($row["name"]) > 1) {
+                                $row["value"] = "y";
+                            }
+                        }
+
+                        unset($row);
+
+                        /** @psalm-check-type-exact $rows = list<array{label: string, value: "y"|""}> */
+                        echo count($rows);
+                    }',
+                'assertions' => [],
+                'ignored_issues' => ['MixedArgument'],
+                'php_version' => '8.1',
+            ],
+            'aKeyPassedByReferenceThroughANamedArgumentCountsAsWrittenInAForeachByReference' => [
+                'code' => '<?php
+                    function setNamed(int $a = 0, mixed &$out = null): void {
+                        echo $a;
+                        $out = 1;
+                    }
+
+                    /** @param list<array{label: string}> $rows */
+                    function namedArg(array $rows): void {
+                        foreach ($rows as &$row) {
+                            if (rand(0, 1)) {
+                                setNamed(out: $row["extra"]);
+                            }
+                        }
+
+                        unset($row);
+
+                        if ($rows) {
+                            echo $rows[0]["extra"];
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => ['PossiblyUndefinedArrayOffset', 'MixedArgument'],
+                'php_version' => '8.1',
+            ],
+            'aKeyPassedByReferenceOrAReassignedItemCountsAsWrittenInAForeachByReference' => [
+                'code' => '<?php
+                    /** @param list<array{label: string}> $rows */
+                    function passedByReference(array $rows): void {
+                        foreach ($rows as &$row) {
+                            preg_match("/a/", "a", $row["match"]);
+                        }
+
+                        unset($row);
+
+                        /** @psalm-check-type-exact $rows = list<array{label: string, match?: array<array-key, string>}> */
+                        echo count($rows);
+                    }
+
+                    /** @param list<array{label: string}> $rows */
+                    function reassigned(array $rows): void {
+                        foreach ($rows as &$row) {
+                            if (rand(0, 1)) {
+                                $row = ["label" => "a", "extra" => 1];
+                            }
+                        }
+
+                        unset($row);
+
+                        /** @psalm-check-type-exact $rows = list<array{extra?: 1, label: string}> */
+                        echo count($rows);
+                    }',
+                'assertions' => [],
+                'ignored_issues' => ['MixedAssignment'],
+                'php_version' => '8.1',
+            ],
+            'issetOfAKeyTheItemsDoNotHaveInAForeachByReferenceDoesNotAddItToThem' => [
+                'code' => '<?php
+                    /** @param list<string> $labels */
+                    function tested(array $labels): void {
+                        $rows = [];
+
+                        foreach ($labels as $l) {
+                            $rows[] = ["label" => $l, "value" => ""];
+                        }
+
+                        foreach ($rows as &$row) {
+                            /** @psalm-suppress InvalidArrayOffset */
+                            if (isset($row["name"])) {
+                                $row["value"] = "y";
+                            }
+                        }
+
+                        unset($row);
+
+                        /** @psalm-check-type-exact $rows = list<array{label: string, value: "y"|""}> */
+                        echo count($rows);
+                    }
+
+                    /** @param list<string> $labels */
+                    function assigned(array $labels): void {
+                        $rows = [];
+
+                        foreach ($labels as $l) {
+                            $rows[] = ["label" => $l];
+                        }
+
+                        foreach ($rows as &$row) {
+                            if (rand(0, 1)) {
+                                $row["extra"] = 1;
+                            }
+                        }
+
+                        unset($row);
+
+                        /** @psalm-check-type-exact $rows = list<array{extra?: 1, label: string}> */
+                        echo count($rows);
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
             'foreachOverListKeepsTheEmptyStringOfAnEmptyOrNumericString' => [
                 'code' => '<?php
                     /** @var list<array{foo: ""|numeric-string}> $rows */
@@ -1668,6 +2058,60 @@ final class ForeachTest extends TestCase
                 'ignored_issues' => [],
                 'php_version' => '8.0',
             ],
+            'foreachBreakOfSwitchLeavingAVariableUndefinedIsNotABreakOfTheLoop' => [
+                'code' => '<?php
+                    foreach ([1, 2] as $x) {
+                        if (rand(0, 1)) {
+                            $a = 1;
+                            break;
+                        }
+
+                        $a = 2;
+
+                        switch ($x) {
+                            case 1:
+                                break;
+                        }
+                    }
+
+                    echo $a;',
+            ],
+            'foreachBreakOfSwitchIsNotABreakOfTheLoop' => [
+                'code' => '<?php
+                    foreach ([1, 2] as $x) {
+                        switch ($x) {
+                            case 1:
+                                break;
+                            default:
+                                break;
+                        }
+
+                        $a = 1;
+
+                        if (rand(0, 1)) {
+                            break;
+                        }
+                    }
+
+                    echo $a;',
+            ],
+            'foreachDefinedBeforeEveryBreak' => [
+                'code' => '<?php
+                    foreach ([1, 2, 3, 4] as $_) {
+                        if (rand(0, 1)) {
+                            $car = "Audi";
+                            break;
+                        }
+
+                        $car = "Volvo";
+
+                        if (rand(0, 1)) {
+                            break;
+                        }
+                    }
+
+                    echo $car;',
+            ],
             'incrementInsideAnAssignmentInLoopIsNotFoldedLikeALiteral' => [
                 'code' => <<<'PHP'
                     <?php
@@ -1809,6 +2253,78 @@ final class ForeachTest extends TestCase
     public static function providerInvalidCodeParse(): iterable
     {
         return [
+            'foreachBreakBeforeDefinitionInAFunction' => [
+                'code' => <<<'PHP'
+                    <?php
+                    /** @param list<int> $items */
+                    function f(array $items): void {
+                        foreach ($items as $item) {
+                            if (rand()) {
+                                break;
+                            }
+
+                            $x = $item;
+
+                            if (rand()) {
+                                break;
+                            }
+                        }
+
+                        echo $x;
+                    }
+                    PHP,
+                'error_message' => 'PossiblyUndefinedVariable - src' . DIRECTORY_SEPARATOR . 'somefile.php:16:10',
+                'error_levels' => [],
+                'php_version' => '8.1',
+            ],
+            'foreachBreakOfTheOuterLoopBeforeDefinition' => [
+                'code' => <<<'PHP'
+                    <?php
+                    function f(): void {
+                        for ($i = 0; $i < 3; $i++) {
+                            foreach ([1, 2] as $j) {
+                                if (rand()) {
+                                    break 2;
+                                }
+
+                                $z = 1;
+                            }
+                        }
+
+                        echo $z;
+                    }
+                    PHP,
+                'error_message' => 'PossiblyUndefinedVariable - src' . DIRECTORY_SEPARATOR . 'somefile.php:13:10',
+                'error_levels' => [],
+                'php_version' => '8.1',
+            ],
+            'issetOfAKeyTheItemsDoNotHaveInAForeachByReferenceKeepsTheLaterReadInvalid' => [
+                'code' => '<?php
+                    /** @param list<string> $labels */
+                    function dump(array $labels): void {
+                        $rows = [];
+
+                        foreach ($labels as $l) {
+                            $rows[] = ["label" => $l, "value" => ""];
+                        }
+
+                        foreach ($rows as &$row) {
+                            /** @psalm-suppress InvalidArrayOffset */
+                            if (isset($row["name"])) {
+                                $row["value"] = "y";
+                            }
+                        }
+
+                        unset($row);
+
+                        foreach ($rows as $item) {
+                            echo $item["name"];
+                        }
+                    }',
+                'error_message' => 'InvalidArrayOffset - src' . DIRECTORY_SEPARATOR . 'somefile.php:20:34',
+                'error_levels' => [],
+                'php_version' => '8.1',
+            ],
             'iteratorCurrentNullStaysWhenTheTemplateValueIsNullable' => [
                 'code' => '<?php
                     class Foo {
@@ -2147,6 +2663,23 @@ final class ForeachTest extends TestCase
                     foreach ($gen as $i) {}
                 PHP,
                 'error_message' => 'InvalidIterator',
+            ],
+            'foreachBreakBeforeDefinitionAndBreakAfter' => [
+                'code' => '<?php
+                    foreach ([1, 2, 3, 4] as $_) {
+                        if (rand(0, 1)) {
+                            break;
+                        }
+
+                        $car = "Volvo";
+
+                        if (rand(0, 1)) {
+                            break;
+                        }
+                    }
+
+                    echo $car;',
+                'error_message' => 'PossiblyUndefinedGlobalVariable - src' . DIRECTORY_SEPARATOR . 'somefile.php:14:26',
             ],
         ];
     }

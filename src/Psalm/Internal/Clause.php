@@ -72,6 +72,11 @@ final class Clause implements Stringable
      */
     public ?array $impossibilities = null;
 
+    /**
+     * Whether some possibilities couldn't be negated, and are missing from the impossibilities
+     */
+    public bool $partial_negation = false;
+
     public bool $wedge;
 
     public bool $reconcilable;
@@ -91,8 +96,8 @@ final class Clause implements Stringable
         public bool $generated = false,
         public array $redefined_vars = [],
     ) {
-        if ($wedge || !$reconcilable) {
-            $this->hash = ($wedge ? 'w' : '') . $creating_object_id;
+        if ($wedge) {
+            $this->hash = 'w' . $creating_object_id;
         } else {
             ksort($possibilities);
 
@@ -106,7 +111,10 @@ final class Clause implements Stringable
             }
 
             $data = serialize($possibility_strings);
-            $this->hash = hash('xxh128', $data);
+
+            // a clause that is not reconcilable is not the same as one with the same possibilities from another
+            // condition: it also holds what the condition says about its other disjuncts
+            $this->hash = ($reconcilable ? '' : 'u' . $creating_object_id . ':') . hash('xxh128', $data);
         }
 
         $this->possibilities = $possibilities;
@@ -247,6 +255,7 @@ final class Clause implements Stringable
         }
 
         $impossibilities = [];
+        $partial_negation = false;
 
         foreach ($this->possibilities as $var_id => $possibility) {
             $impossibility = [];
@@ -262,6 +271,8 @@ final class Clause implements Stringable
                             || ($inner_type instanceof TNamedObject && $inner_type->is_static)))
                 ) {
                     $impossibility[] = $type->getNegation();
+                } else {
+                    $partial_negation = true;
                 }
             }
 
@@ -273,6 +284,7 @@ final class Clause implements Stringable
         $clause = clone $this;
 
         $clause->impossibilities = $impossibilities;
+        $clause->partial_negation = $partial_negation;
 
         return $clause;
     }
