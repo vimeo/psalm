@@ -7695,6 +7695,19 @@ final class TaintTest extends TestCase
                     show();',
                 'error_message' => 'TaintedHtml',
             ],
+            'taintListItemAssignedInABranch' => [
+                'code' => '<?php
+                    /** @param list<string> $l */
+                    function show(array $l, string $s): void {
+                        if (rand(0, 1)) {
+                            $l[0] = $s;
+                        }
+                        echo $l[0];
+                    }
+
+                    show([], (string) $_GET["a"]);',
+                'error_message' => 'TaintedHtml',
+            ],
             'taintTopLevelVariableAssignedInABranch' => [
                 'code' => '<?php
                     if (rand(0, 1)) {

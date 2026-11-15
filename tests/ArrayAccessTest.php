@@ -1335,6 +1335,25 @@ final class ArrayAccessTest extends TestCase
         );
     }
 
+    public function testListOffsetAfterAssignmentInABranchWithTaintAnalysis(): void
+    {
+        $this->project_analyzer->trackTaintedInputs();
+        $this->testValidCode(
+            '<?php
+                /**
+                 * @param list<string> $l
+                 * @param string $s
+                 */
+                function g(array $l, $s): string {
+                    if (rand(0, 1)) {
+                        $l[0] = $s;
+                    }
+                    $i = 0;
+                    return $l[$i];
+                }',
+        );
+    }
+
     /**
      * @psalm-pure
      */
@@ -2448,6 +2467,39 @@ final class ArrayAccessTest extends TestCase
                         return $a["x"];
                     }',
             ],
+            'intArrayOffsetAfterIssetCheck' => [
+                'code' => '<?php
+                    /**
+                     * @param array<int, mixed> $a
+                     * @return mixed
+                     */
+                    function f(array $a) {
+                        if (isset($a[0])) {}
+                        return $a[0];
+                    }',
+            ],
+            'listOffsetAfterIssetCheckInACondition' => [
+                'code' => '<?php
+                    /**
+                     * @param list<mixed> $l
+                     * @return mixed
+                     */
+                    function f(array $l, bool $b) {
+                        if (isset($l[0]) && $b) {}
+                        return $l[0];
+                    }',
+            ],
+            'listOffsetAfterIssetCheckInAnElseif' => [
+                'code' => '<?php
+                    /**
+                     * @param list<mixed> $l
+                     * @return mixed
+                     */
+                    function f(array $l, bool $b) {
+                        if ($b) {} elseif (isset($l[0])) {}
+                        return $l[0];
+                    }',
+            ],
         ];
     }
 
@@ -3003,6 +3055,62 @@ final class ArrayAccessTest extends TestCase
                     function f(array $a) {
                         if (isset($a["a"])) {}
                         return $a["a"];
+                    }',
+                'error_message' => 'PossiblyUndefinedArrayOffset',
+            ],
+            'listOffsetInsideNegatedIssetCheck' => [
+                'code' => '<?php
+                    /**
+                     * @param list<mixed> $l
+                     * @return mixed
+                     */
+                    function f(array $l) {
+                        if (!isset($l[0])) {
+                            return $l[0];
+                        }
+                        return null;
+                    }',
+                'error_message' => 'PossiblyUndefinedArrayOffset',
+            ],
+            'stringArrayOffsetInsideNegatedIssetCheck' => [
+                'code' => '<?php
+                    /**
+                     * @param array<string, mixed> $a
+                     * @return mixed
+                     */
+                    function f(array $a) {
+                        if (!isset($a["x"])) {
+                            return $a["x"];
+                        }
+                        return null;
+                    }',
+                'error_message' => 'PossiblyUndefinedArrayOffset',
+            ],
+            'nestedArrayOffsetInsideNegatedIssetCheck' => [
+                'code' => '<?php
+                    /**
+                     * @param array<string, array> $a
+                     * @return mixed
+                     */
+                    function f(array $a, string $k) {
+                        if (!isset($a[$k]["x"])) {
+                            return $a[$k]["x"];
+                        }
+                        return null;
+                    }',
+                'error_message' => 'PossiblyUndefinedArrayOffset',
+            ],
+            'listOffsetAfterLeavingIssetCheck' => [
+                'code' => '<?php
+                    /**
+                     * @param list<mixed> $l
+                     * @return mixed
+                     */
+                    function f(array $l) {
+                        if (isset($l[0])) {
+                            return null;
+                        }
+                        return $l[0];
                     }',
                 'error_message' => 'PossiblyUndefinedArrayOffset',
             ],
