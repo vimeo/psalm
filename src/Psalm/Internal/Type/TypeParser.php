@@ -1214,7 +1214,7 @@ final class TypeParser
         if ($generic_type_value === 'int-mask') {
             $atomic_types = [];
 
-            foreach ($generic_params as $generic_param) {
+            foreach ($generic_params as $generic_param_offset => $generic_param) {
                 if (!$generic_param->isSingle()) {
                     throw new TypeParseTreeException(
                         'int-mask types must all be non-union',
@@ -1227,8 +1227,9 @@ final class TypeParser
 
                 if ($atomic_type instanceof TNamedObject) {
                     if (defined($atomic_type->value)) {
+                        // silenced, as reading a deprecated constant (ASSERT_ACTIVE) emits E_DEPRECATED
                         /** @var mixed */
-                        $constant_value = constant($atomic_type->value);
+                        $constant_value = @constant($atomic_type->value);
 
                         if (!is_int($constant_value)) {
                             throw new TypeParseTreeException(
@@ -1238,13 +1239,21 @@ final class TypeParser
 
                         $atomic_type = new TLiteralInt($constant_value, $from_docblock);
                     } else {
-                        throw new TypeParseTreeException(
-                            'int-mask types must all be integer values',
+                        // the constants of the analysed code are not known yet: an unqualified name in a namespace
+                        // falls back to the global constant as in PHP, when it is resolved with the codebase
+                        $constant_tree = $parse_tree->children[$generic_param_offset] ?? null;
+                        $written_name = $constant_tree instanceof Value ? $constant_tree->text : null;
+
+                        $atomic_type = new TGlobalConstant(
+                            ltrim($atomic_type->value, '\\'),
+                            $written_name !== null && !str_contains($written_name, '\\') ? $written_name : null,
+                            $from_docblock,
                         );
                     }
                 }
 
                 if (!$atomic_type instanceof TLiteralInt
+                    && !$atomic_type instanceof TGlobalConstant
                     && !($atomic_type instanceof TClassConstant
                         && !str_contains($atomic_type->const_name, '*'))
                 ) {

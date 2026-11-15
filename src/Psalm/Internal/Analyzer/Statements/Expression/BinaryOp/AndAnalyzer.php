@@ -27,6 +27,7 @@ use function array_values;
 use function count;
 use function in_array;
 use function spl_object_id;
+use function str_contains;
 use function str_starts_with;
 
 /**
@@ -88,7 +89,12 @@ final class AndAnalyzer
         );
 
         foreach ($left_context->vars_in_scope as $var_id => $type) {
-            if (isset($left_context->assigned_var_ids[$var_id])) {
+            if (isset($left_context->assigned_var_ids[$var_id])
+                // the property of an isset() that asks whether it was set (see InstancePropertyFetchAnalyzer)
+                || ($type->ignore_isset
+                    && !isset($context->vars_in_scope[$var_id])
+                    && str_contains($var_id, '->'))
+            ) {
                 $context->vars_in_scope[$var_id] = $type;
             }
         }
@@ -182,6 +188,13 @@ final class AndAnalyzer
             $context->phantom_classes += $right_context->phantom_classes;
             $context->phantom_functions += $right_context->phantom_functions;
 
+            // where both sides hold, so does a file_exists() check of either, unless it was negated
+            $context->phantom_files = [
+                ...$context->phantom_files,
+                ...array_diff_key($left_context->phantom_files, $left_context->negated_phantom_files),
+                ...array_diff_key($right_context->phantom_files, $right_context->negated_phantom_files),
+            ];
+
             $context->vars_possibly_in_scope = array_merge(
                 $right_context->vars_possibly_in_scope,
                 $left_context->vars_possibly_in_scope,
@@ -232,6 +245,10 @@ final class AndAnalyzer
             $if_body_context->updateChecks($context);
             $if_body_context->phantom_classes += $context->phantom_classes;
             $if_body_context->phantom_functions += $context->phantom_functions;
+            $if_body_context->phantom_files = [
+                ...$if_body_context->phantom_files,
+                ...array_diff_key($context->phantom_files, $context->negated_phantom_files),
+            ];
         } else {
             $context->vars_in_scope = $left_context->vars_in_scope;
 
@@ -260,7 +277,7 @@ final class AndAnalyzer
      * @return array<string, bool>
      * @psalm-pure
      */
-    private static function removeAssignedVarIds(array $referenced_var_ids, array $assigned_var_ids): array
+    public static function removeAssignedVarIds(array $referenced_var_ids, array $assigned_var_ids): array
     {
         foreach ($referenced_var_ids as $referenced_var_id => $_) {
             foreach ($assigned_var_ids as $assigned_var_id => $__) {
