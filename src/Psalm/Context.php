@@ -493,12 +493,14 @@ final class Context
     public bool $inside_attribute = false;
 
     /**
-     * The variables whose clauses were dropped since this context was cloned: the scope it analyses changed them,
-     * so the enclosing scope drops its clauses about them too (see removeClausesOfVarsChangedIn())
+     * The variables whose clauses were dropped, each with a stamp of the removal: a clone keeps the stamps, so an
+     * enclosing scope tells what a nested scope analysed in a clone of it changed (see removeClausesOfVarsChangedIn())
      *
-     * @var array<string, true>
+     * @var array<string, int>
      */
     public array $parent_remove_vars = [];
+
+    private static int $clause_removal_count = 0;
 
     /**
      * @internal
@@ -933,26 +935,23 @@ final class Context
         );
     }
 
-    /**
-     * @psalm-capabilities read-props|write-this-props|write-refs
-     */
-    public function __clone()
-    {
-        $this->parent_remove_vars = [];
-    }
-
     public function remove(string $remove_var_id, bool $removeDescendents = true): void
     {
+        $existing_type = null;
+
         if (isset($this->vars_in_scope[$remove_var_id])) {
             $this->forgetNarrowedShapeProperty($remove_var_id);
             $existing_type = $this->vars_in_scope[$remove_var_id];
             unset($this->vars_in_scope[$remove_var_id]);
-
-            if ($removeDescendents) {
-                $this->removeDescendents($remove_var_id, $existing_type);
-            }
         }
+
+        // detached first: what the variable was bound to by reference keeps its value
         $this->removePossibleReference($remove_var_id);
+
+        if ($existing_type && $removeDescendents) {
+            $this->removeDescendents($remove_var_id, $existing_type);
+        }
+
         unset($this->vars_possibly_in_scope[$remove_var_id], $this->null_array_offsets_read[$remove_var_id]);
         $this->forgetNullArrayOffsets($remove_var_id);
     }
@@ -1169,7 +1168,7 @@ final class Context
         ?StatementsAnalyzer $statements_analyzer = null,
     ): void {
         $this->clauses = self::filterClauses($remove_var_id, $this->clauses, $new_type, $statements_analyzer);
-        $this->parent_remove_vars[$remove_var_id] = true;
+        $this->parent_remove_vars[$remove_var_id] = ++self::$clause_removal_count;
 
         // the variables bound to it by reference changed with it
         $referenced_var_id = $this->references_in_scope[$remove_var_id] ?? $remove_var_id;
@@ -1178,18 +1177,44 @@ final class Context
         foreach ($bound_var_ids as $reference_id => $target_id) {
             if ($target_id === $referenced_var_id && $reference_id !== $remove_var_id) {
                 $this->clauses = self::filterClauses($reference_id, $this->clauses, $new_type, $statements_analyzer);
-                $this->parent_remove_vars[$reference_id] = true;
+                $this->parent_remove_vars[$reference_id] = ++self::$clause_removal_count;
             }
         }
     }
 
     /**
-     * Drops the clauses about the variables a nested scope, analysed in a clone of this context, changed
+     * Drops the clauses about the variables a nested scope, analysed in a clone of this context, changed. Inside a
+     * condition, the clauses are only marked as changed: the condition is checked against them for paradoxes
+     * first, and its analyser drops them afterwards (see removeClausesOfVarsChangedSince()).
      */
     public function removeClausesOfVarsChangedIn(Context $nested_context): void
     {
-        foreach ($nested_context->parent_remove_vars as $var_id => $_) {
-            $this->removeVarFromConflictingClauses($var_id);
+        foreach ($nested_context->parent_remove_vars as $var_id => $stamp) {
+            if (($this->parent_remove_vars[$var_id] ?? null) !== $stamp) {
+                if ($this->inside_conditional) {
+                    $this->parent_remove_vars[$var_id] = $stamp;
+                } else {
+                    $this->removeVarFromConflictingClauses($var_id);
+                }
+            }
+        }
+    }
+
+    /**
+     * Drops the clauses about the variables changed since $parent_remove_vars was taken from this context
+     *
+     * @param array<string, int> $parent_remove_vars
+     */
+    public function removeClausesOfVarsChangedSince(array $parent_remove_vars): void
+    {
+        if ($this->inside_conditional) {
+            return;
+        }
+
+        foreach ($this->parent_remove_vars as $var_id => $stamp) {
+            if (($parent_remove_vars[$var_id] ?? null) !== $stamp) {
+                $this->removeVarFromConflictingClauses($var_id);
+            }
         }
     }
 
@@ -1456,6 +1481,7 @@ final class Context
             $this->remove($var_id, false);
             // forgotten, not unset: Context::update() tells the two apart
             $this->vars_possibly_in_scope[$var_id] = true;
+            $this->parent_remove_vars[$var_id] = ++self::$clause_removal_count;
         }
 
         $clauses_to_keep = [];
@@ -1470,6 +1496,7 @@ final class Context
                     && (!$methods_only || strpos($key, '()'))
                 ) {
                     $abandon_clause = true;
+                    $this->parent_remove_vars[$key] = ++self::$clause_removal_count;
                     break;
                 }
             }

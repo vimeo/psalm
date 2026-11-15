@@ -195,6 +195,12 @@ final class IfConditionalAnalyzer
 
             $if_conditional_context->inside_conditional = $was_inside_conditional;
 
+            // what the operands analysed only here changed is dropped by the analyser of the condition once checked
+            $outer_context->parent_remove_vars = [
+                ...$outer_context->parent_remove_vars,
+                ...$if_conditional_context->parent_remove_vars,
+            ];
+
             /** @var array<string, bool> */
             $more_cond_referenced_var_ids = $if_conditional_context->cond_referenced_var_ids;
             $if_conditional_context->cond_referenced_var_ids = array_merge(

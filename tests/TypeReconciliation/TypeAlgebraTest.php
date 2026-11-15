@@ -2622,6 +2622,52 @@ final class TypeAlgebraTest extends TestCase
                         return $c;
                     }',
             ],
+            'clauseIsKeptWhenAReferenceToTheVarIsUnset' => [
+                'code' => '<?php
+                    function takesInt(int $_i): void {}
+
+                    function load(): ?int {
+                        return rand(0, 1) ? null : 1;
+                    }
+
+                    function f(?int $a, ?int $b): void {
+                        $r = &$a;
+
+                        if ($a === null && $b === null) {
+                            return;
+                        }
+
+                        unset($r);
+
+                        if ($a === null) {
+                            takesInt($b);
+                        }
+                    }',
+            ],
+            'clauseIsKeptWhenOnlyAThrowingTernaryArmReassignsTheVar' => [
+                'code' => '<?php
+                    function takesInt(int $_i): void {}
+
+                    function load(): ?int {
+                        return rand(0, 1) ? null : 1;
+                    }
+
+                    function f(?int $a, ?int $b, bool $c): void {
+                        if ($a === null && $b === null) {
+                            return;
+                        }
+
+                        $v = $c ? throw new RuntimeException((string) ($a = load())) : 0;
+                        echo $v;
+
+                        if ($a === null) {
+                            takesInt($b);
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
         ];
     }
 
@@ -3629,6 +3675,100 @@ final class TypeAlgebraTest extends TestCase
 
                         if ($c) {
                             $r = load();
+                        }
+
+                        if ($a === null) {
+                            takesInt($b);
+                        }
+                    }',
+                'error_message' => 'PossiblyNullArgument',
+            ],
+            'clauseOnVarReassignedInTheRightOfAnAndInAnIfConditionIsDropped' => [
+                'code' => '<?php
+                    function takesInt(int $_i): void {}
+
+                    function load(): ?int {
+                        return rand(0, 1) ? null : 1;
+                    }
+
+                    function f(?int $a, ?int $b, bool $c): void {
+                        if ($a === null && $b === null) {
+                            return;
+                        }
+
+                        if ($c && ($a = load()) !== 2) {
+                            echo "c";
+                        }
+
+                        if ($a === null) {
+                            takesInt($b);
+                        }
+                    }',
+                'error_message' => 'PossiblyNullArgument',
+            ],
+            'clauseOnVarReassignedInTheRightOfAnOrInAnIfConditionIsDropped' => [
+                'code' => '<?php
+                    function takesInt(int $_i): void {}
+
+                    function load(): ?int {
+                        return rand(0, 1) ? null : 1;
+                    }
+
+                    function f(?int $a, ?int $b, bool $c): void {
+                        if ($a === null && $b === null) {
+                            return;
+                        }
+
+                        if ($c || ($a = load()) !== 2) {
+                            echo "c";
+                        }
+
+                        if ($a === null) {
+                            takesInt($b);
+                        }
+                    }',
+                'error_message' => 'PossiblyNullArgument',
+            ],
+            'clauseOnVarReassignedInATernaryInAnIfConditionIsDropped' => [
+                'code' => '<?php
+                    function takesInt(int $_i): void {}
+
+                    function load(): ?int {
+                        return rand(0, 1) ? null : 1;
+                    }
+
+                    function f(?int $a, ?int $b, bool $c): void {
+                        if ($a === null && $b === null) {
+                            return;
+                        }
+
+                        if (($c ? ($a = load()) : 1) !== 3) {
+                            echo "c";
+                        }
+
+                        if ($a === null) {
+                            takesInt($b);
+                        }
+                    }',
+                'error_message' => 'PossiblyNullArgument',
+            ],
+            'clauseOnVarReassignedInAnElseifConditionIsDropped' => [
+                'code' => '<?php
+                    function takesInt(int $_i): void {}
+
+                    function load(): ?int {
+                        return rand(0, 1) ? null : 1;
+                    }
+
+                    function f(?int $a, ?int $b, bool $c): void {
+                        if ($a === null && $b === null) {
+                            return;
+                        }
+
+                        if ($c) {
+                            echo "c";
+                        } elseif (($a = load()) !== 2) {
+                            echo "a";
                         }
 
                         if ($a === null) {
