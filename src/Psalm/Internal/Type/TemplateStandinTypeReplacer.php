@@ -118,11 +118,6 @@ final class TemplateStandinTypeReplacer
         ?string $bound_equality_classlike = null,
         int $depth = 1,
     ): Union {
-        // the class templates of a `Pair<int, *>` read as what is known of the `*`; bounds are not recorded then
-        if ($template_result->readonly) {
-            $template_result = StarProjection::readBindings($template_result);
-        }
-
         $atomic_types = [];
 
         $original_atomic_types = $union_type->getAtomicTypes();
@@ -372,7 +367,9 @@ final class TemplateStandinTypeReplacer
                     $codebase,
                 );
             } elseif (isset($template_result->template_types[$atomic_type->param_name][$atomic_type->defining_class])) {
-                $template_type = $template_result->template_types[$atomic_type->param_name][$atomic_type->defining_class];
+                $template_type = StarProjection::read(
+                    $template_result->template_types[$atomic_type->param_name][$atomic_type->defining_class],
+                );
             }
 
             if ($template_type) {
@@ -419,7 +416,9 @@ final class TemplateStandinTypeReplacer
                 return [$atomic_type];
             }
 
-            $template_type = $template_result->template_types[$atomic_type->param_name][$atomic_type->defining_class];
+            $template_type = StarProjection::read(
+                $template_result->template_types[$atomic_type->param_name][$atomic_type->defining_class],
+            );
 
             $classlike_type = $template_type->getSingleAtomic();
             if (!$classlike_type instanceof TNamedObject) {
@@ -758,9 +757,10 @@ final class TemplateStandinTypeReplacer
             return [$atomic_type];
         }
 
-        $template_type = $template_result->template_types
-            [$atomic_type->param_name]
-            [$atomic_type->defining_class];
+        // a class template of a `Pair<int, *>` reads as what is known of the `*`
+        $template_type = StarProjection::read(
+            $template_result->template_types[$atomic_type->param_name][$atomic_type->defining_class],
+        );
 
         if ($template_type->getId() === $key) {
             return array_values($template_type->getAtomicTypes());
@@ -851,7 +851,7 @@ final class TemplateStandinTypeReplacer
                         && count($template_result->lower_bounds[$atomic_type->param_name][$atomic_type->defining_class])
                             === 1
                     ) {
-                        $keyed_template = $template_result->template_types[$replacement_atomic_type->param_name][$replacement_atomic_type->defining_class];
+                        $keyed_template = StarProjection::read($template_result->template_types[$replacement_atomic_type->param_name][$replacement_atomic_type->defining_class]);
 
                         if ($keyed_template->isSingle()) {
                             $keyed_template = $keyed_template->getSingleAtomic();
@@ -1293,9 +1293,9 @@ final class TemplateStandinTypeReplacer
                 }
             }
         } else {
-            $template_type = $template_result->template_types
-                [$atomic_type->param_name]
-                [$atomic_type->defining_class];
+            $template_type = StarProjection::read(
+                $template_result->template_types[$atomic_type->param_name][$atomic_type->defining_class],
+            );
 
             foreach ($template_type->getAtomicTypes() as $template_atomic_type) {
                 if ($template_atomic_type instanceof TNamedObject) {
@@ -1393,7 +1393,7 @@ final class TemplateStandinTypeReplacer
     public static function getMostSpecificTypeFromBounds(array $lower_bounds, ?Codebase $codebase): Union
     {
         if (count($lower_bounds) === 1) {
-            return reset($lower_bounds)->type;
+            return StarProjection::read(reset($lower_bounds)->type);
         }
 
         // a purity template must allow everything each position it was inferred from requires, however deep
@@ -1443,7 +1443,8 @@ final class TemplateStandinTypeReplacer
             $last_arg_offset = $template_bound->arg_offset;
         }
 
-        return $current_type ?? Type::getMixed();
+        // a `*` bound (a class template of a `Pair<int, *>`) is what is known of the `*`
+        return StarProjection::read($current_type ?? Type::getMixed());
     }
 
     /**

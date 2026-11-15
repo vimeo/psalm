@@ -5,9 +5,13 @@ declare(strict_types=1);
 namespace Psalm\Tests\Template;
 
 use Override;
+use Psalm\Context;
+use Psalm\IssueBuffer;
 use Psalm\Tests\TestCase;
 use Psalm\Tests\Traits\InvalidCodeAnalysisTestTrait;
 use Psalm\Tests\Traits\ValidCodeAnalysisTestTrait;
+
+use function array_column;
 
 use const DIRECTORY_SEPARATOR;
 
@@ -15,6 +19,37 @@ final class StarProjectionTest extends TestCase
 {
     use InvalidCodeAnalysisTestTrait;
     use ValidCodeAnalysisTestTrait;
+
+    public function testStarProjectionReportsAClosureOfTheWrongTypeOnce(): void
+    {
+        $this->project_analyzer->getConfig()->throw_exception = false;
+
+        $file_path = self::$src_dir_path . 'somefile.php';
+
+        $this->addFile(
+            $file_path,
+            '<?php
+                /** @template T of Countable */
+                final class Box {
+                    /** @param Closure(T): void $f */
+                    public function each(Closure $f): void {}
+                }
+
+                /** @param Box<*> $box */
+                function f(Box $box): void {
+                    $box->each(function (int $x): void {
+                        echo $x;
+                    });
+                }',
+        );
+
+        $this->analyzeFile($file_path, new Context());
+
+        self::assertSame(
+            ['InvalidArgument'],
+            array_column(IssueBuffer::getIssuesDataForFile($file_path), 'type'),
+        );
+    }
 
     /**
      * @psalm-pure
@@ -944,6 +979,23 @@ final class StarProjectionTest extends TestCase
                         takesMixed($b);
                     }',
                 'error_message' => 'ArgumentTypeCoercion - src' . DIRECTORY_SEPARATOR . 'somefile.php:10:36 - Argument 1 of takesMixed expects Box<mixed>, but parent type Box<*> provided',
+            ],
+            'starProjectionKeepsTheBoundOfAMethodTemplate' => [
+                'code' => '<?php
+                    /** @template T of Countable */
+                    final class Box {
+                        /**
+                         * @template U of T
+                         * @param U $value
+                         */
+                        public function sub(object $value): void {}
+                    }
+
+                    /** @param Box<*> $box */
+                    function f(Box $box): void {
+                        $box->sub(new stdClass());
+                    }',
+                'error_message' => 'InvalidArgument - src' . DIRECTORY_SEPARATOR . 'somefile.php:13:35 - Argument 1 of Box::sub expects Countable, but stdClass provided',
             ],
             'starProjectionOfAnUnboundedTemplateIsNotAMixedValue' => [
                 'code' => '<?php

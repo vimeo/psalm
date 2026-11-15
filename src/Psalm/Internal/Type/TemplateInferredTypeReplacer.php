@@ -61,9 +61,6 @@ final class TemplateInferredTypeReplacer
         TemplateResult $template_result,
         ?Codebase $codebase,
     ): Union {
-        // a template bound to `*` (`Pair<int, *>`) reads as what is known of the `*`
-        $template_result = StarProjection::readBindings($template_result);
-
         $new_types = [];
 
         $is_mixed = false;

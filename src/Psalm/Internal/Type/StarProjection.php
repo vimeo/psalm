@@ -13,7 +13,6 @@ use Psalm\Type\Union;
 
 use function array_any;
 use function array_keys;
-use function array_map;
 use function array_values;
 use function reset;
 
@@ -21,7 +20,8 @@ use function reset;
  * The `*` type argument of a generic object (`Pair<int, *>`), see {@see TStarProjection}.
  *
  * A template of a `Pair<int, *>` is bound to the `*`, which knows the template's bound with the other type arguments
- * applied (see boundStars()). The template replacer reads the template as that (see readBindings()).
+ * applied (see boundStars()). The template replacers read the binding as that, through
+ * TemplateStandinTypeReplacer::getMostSpecificTypeFromBounds() and where they take a class template's binding.
  *
  * @internal
  */
@@ -87,59 +87,6 @@ final class StarProjection
     }
 
     /**
-     * The template result with each template it binds to `*` bound to what is known of the `*` instead. It is a copy
-     * when it binds one, so it is for reading the bindings, not for recording them.
-     *
-     * @psalm-capabilities read-props|write-props
-     */
-    public static function readBindings(TemplateResult $template_result): TemplateResult
-    {
-        $read_result = null;
-
-        foreach ($template_result->template_types as $template_name => $type_map) {
-            foreach ($type_map as $defining_class => $type) {
-                if (self::isStar($type)) {
-                    $read_result ??= clone $template_result;
-                    $read_result->template_types[$template_name][$defining_class] = self::read($type);
-                }
-            }
-        }
-
-        foreach ($template_result->lower_bounds as $template_name => $type_map) {
-            foreach ($type_map as $defining_class => $bounds) {
-                foreach ($bounds as $bound) {
-                    if (self::isStar($bound->type)) {
-                        $read_result ??= clone $template_result;
-                        $read_result->lower_bounds[$template_name][$defining_class] = array_map(
-                            self::readBound(...),
-                            $bounds,
-                        );
-
-                        break;
-                    }
-                }
-            }
-        }
-
-        return $read_result ?? $template_result;
-    }
-
-    /**
-     * @psalm-capabilities read-props
-     */
-    private static function readBound(TemplateBound $bound): TemplateBound
-    {
-        if (!self::isStar($bound->type)) {
-            return $bound;
-        }
-
-        $read_bound = clone $bound;
-        $read_bound->type = self::read($bound->type);
-
-        return $read_bound;
-    }
-
-    /**
      * The generic object with each `*` argument knowing what it is known to be, see boundStars()
      */
     public static function boundArguments(TGenericObject $type, Codebase $codebase): TGenericObject
@@ -168,17 +115,9 @@ final class StarProjection
      */
     public static function boundStars(array $type_params, ClassLikeStorage $storage, Codebase $codebase): array
     {
-        $template_types = $storage->template_types ?? [];
-        $template_names = array_keys($template_types);
-        $bindings = [];
         $unbound_offsets = [];
 
         foreach ($type_params as $offset => $type_param) {
-            if (!isset($template_names[$offset])) {
-                break;
-            }
-
-            $bindings[$template_names[$offset]][$storage->name] = $type_param;
             $star = $type_param->isSingle() ? $type_param->getSingleAtomic() : null;
 
             if ($star instanceof TStarProjection && $star->as === null) {
@@ -191,10 +130,26 @@ final class StarProjection
             return $type_params;
         }
 
+        $template_types = $storage->template_types ?? [];
+        $template_names = array_keys($template_types);
+        $bindings = [];
+
+        foreach ($type_params as $offset => $type_param) {
+            if (!isset($template_names[$offset])) {
+                break;
+            }
+
+            $bindings[$template_names[$offset]][$storage->name] = $type_param;
+        }
+
         self::$expanding[$storage->name] = true;
 
         try {
             foreach ($unbound_offsets as $offset) {
+                if (!isset($template_names[$offset])) {
+                    break;
+                }
+
                 $template_name = $template_names[$offset];
                 $other_bindings = $bindings;
                 unset($other_bindings[$template_name]);
