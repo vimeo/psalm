@@ -2165,6 +2165,7 @@ final class ArgumentsAnalyzer
                 $declaring_class_storage,
                 $context,
                 $lhs_var_id,
+                true,
             );
         }
     }

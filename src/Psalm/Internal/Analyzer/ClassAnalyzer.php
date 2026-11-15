@@ -754,6 +754,22 @@ final class ClassAnalyzer extends ClassLikeAnalyzer
                                 $property_storage->location,
                             ),
                         );
+                    } elseif ($guide_property_storage->readonly_public_set
+                        && $property_storage->native_readonly
+                        && !$property_storage->readonly_public_set
+                        // where Populator cleared it, the redeclaration may still be public(set)
+                        && !$property_class_storage->isMutationFree()
+                        && !$property_class_storage->taint_specialize
+                        && $property_storage->location
+                    ) {
+                        IssueBuffer::maybeAdd(
+                            new OverriddenPropertyAccess(
+                                'Property ' . $fq_class_name . '::$' . $property_name
+                                    . ' is readonly, so implicitly protected(set), a more restrictive set visibility'
+                                    . ' than ' . $guide_class_name . '::$' . $property_name . ' (public(set))',
+                                $property_storage->location,
+                            ),
+                        );
                     }
 
                     if ($guide_property_storage->is_final
