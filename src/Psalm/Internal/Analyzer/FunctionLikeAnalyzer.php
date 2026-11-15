@@ -30,6 +30,7 @@ use Psalm\Internal\Analyzer\Statements\Expression\DestructorAnalyzer;
 use Psalm\Internal\Analyzer\Statements\ExpressionAnalyzer;
 use Psalm\Internal\Codebase\CliOutput;
 use Psalm\Internal\Codebase\CodeUseGraph;
+use Psalm\Internal\Codebase\TaintFlowGraph;
 use Psalm\Internal\Codebase\TaintStore;
 use Psalm\Internal\DataFlow\DataFlowNode;
 use Psalm\Internal\FileManipulation\FileManipulationBuffer;
@@ -1579,7 +1580,10 @@ abstract class FunctionLikeAnalyzer extends SourceAnalyzer
 
         // specialized like the by-reference parameter out nodes of its calls (see
         // ArgumentsAnalyzer::getByRefParamOutNode())
-        $specialization_location = $storage->specialize_call ? $storage->location : null;
+        $specialization_location = $storage->specialize_call
+            || TaintFlowGraph::getSpeculativelySpecializedCallee($codebase, $storage) !== null
+                ? $storage->location
+                : null;
 
         // the classes a method overridden is called through (see getCasedBodyMethodId())
         foreach ($class_storage->parent_classes + $class_storage->class_implements as $ancestor) {
