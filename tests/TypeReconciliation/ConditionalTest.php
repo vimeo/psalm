@@ -566,6 +566,18 @@ final class ConditionalTest extends TestCase
 
                         return 0;
                     }
+
+                    /**
+                     * @template T of int
+                     * @param T $x
+                     */
+                    function templateOfInt($x, ?A $a2): int {
+                        if ($x === $a2?->a) {
+                            return $a2->b;
+                        }
+
+                        return 0;
+                    }
                     PHP,
                 'assertions' => [],
                 'ignored_issues' => [],
@@ -5390,6 +5402,47 @@ final class ConditionalTest extends TestCase
                     }
 
                     function f(?int $x, ?A $a2): int {
+                        if ($x === $a2?->a) {
+                            return $a2->b;
+                        }
+
+                        return 0;
+                    }',
+                'error_message' => 'PossiblyNullPropertyFetch',
+                'error_levels' => [],
+                'php_version' => '8.2',
+            ],
+            'identityOfANullsafeFetchWithATemplateDoesNotAssertTheReceiver' => [
+                'code' => '<?php
+                    final class A {
+                        public function __construct(public int $a, public int $b) {}
+                    }
+
+                    /**
+                     * @template T
+                     * @param T $x
+                     */
+                    function f($x, ?A $a2): int {
+                        if ($x === $a2?->a) {
+                            return $a2->b;
+                        }
+
+                        return 0;
+                    }',
+                'error_message' => 'PossiblyNullPropertyFetch',
+                'error_levels' => [],
+                'php_version' => '8.2',
+            ],
+            'identityOfANullsafeFetchWithAUnionContainingMixedDoesNotAssertTheReceiver' => [
+                'code' => '<?php
+                    final class A {
+                        public function __construct(public int $a, public int $b) {}
+                    }
+
+                    /**
+                     * @param int|mixed $x
+                     */
+                    function f($x, ?A $a2): int {
                         if ($x === $a2?->a) {
                             return $a2->b;
                         }

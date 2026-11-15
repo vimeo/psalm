@@ -25,7 +25,12 @@ use Psalm\Storage\Assertion\Falsy;
 use Psalm\Storage\Assertion\IsNotType;
 use Psalm\Storage\Assertion\IsType;
 use Psalm\Storage\Assertion\Truthy;
+use Psalm\Type\Atomic\TConditional;
+use Psalm\Type\Atomic\TMixed;
+use Psalm\Type\Atomic\TNonEmptyMixed;
 use Psalm\Type\Atomic\TNull;
+use Psalm\Type\Atomic\TTemplateParam;
+use Psalm\Type\Union;
 
 use function array_diff_key;
 use function array_filter;
@@ -623,12 +628,33 @@ final class FormulaGenerator
 
             $other_operand_type = $source->node_data->getType($other_operand);
 
-            if ($other_operand_type && !$other_operand_type->isNullable() && !$other_operand_type->isMixed()) {
+            if ($other_operand_type && !self::canBeNull($other_operand_type)) {
                 return ExpressionIdentifier::getExtendedVarId($nullsafe_operand->var, $this_class_name, $source);
             }
         }
 
         return null;
+    }
+
+    /**
+     * @psalm-mutation-free
+     */
+    private static function canBeNull(Union $type): bool
+    {
+        if ($type->isNullable()) {
+            return true;
+        }
+
+        foreach ($type->getAtomicTypes() as $atomic_type) {
+            if (($atomic_type instanceof TMixed && !$atomic_type instanceof TNonEmptyMixed)
+                || ($atomic_type instanceof TTemplateParam && self::canBeNull($atomic_type->as))
+                || $atomic_type instanceof TConditional
+            ) {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     /**
