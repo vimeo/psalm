@@ -22,6 +22,14 @@ final class IfScope
     public ?array $new_vars = null;
 
     /**
+     * Offsets some branches reaching the end know to be set and others not (e.g. by `isset()`): the type of the
+     * array tells as much
+     *
+     * @var array<string, true>
+     */
+    public array $unknown_offsets = [];
+
+    /**
      * Types of the variables some branches define but not all, combined over the branches that define them
      *
      * @var array<string, Union>

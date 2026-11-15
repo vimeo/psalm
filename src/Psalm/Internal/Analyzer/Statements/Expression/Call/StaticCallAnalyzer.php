@@ -9,6 +9,7 @@ use Psalm\CodeLocation;
 use Psalm\Context;
 use Psalm\Internal\Analyzer\ClassLikeAnalyzer;
 use Psalm\Internal\Analyzer\ClassLikeNameOptions;
+use Psalm\Internal\Analyzer\FunctionLikeAnalyzer;
 use Psalm\Internal\Analyzer\InheritedMethodTaints;
 use Psalm\Internal\Analyzer\Statements\Expression\Call\Method\MethodCallPurityAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\Call\Method\MethodCallReturnTypeFetcher;
@@ -398,41 +399,45 @@ final class StaticCallAnalyzer extends CallAnalyzer
             $node_location,
         ) ? $node_location : null;
 
+        $codebase = $statements_analyzer->getCodebase();
+
+        // the return of the body the call runs, keyed like the nodes of its parameters: that of the class the
+        // method is analyzed as one of, not the class the call names, which may inherit it
+        $get_return_node = null;
+
         if (!$method_storage) {
             $method_source = DataFlowNode::getForCallableReturn(
                 'builtin',
                 $cased_method_id,
             );
         } else {
+            $declaring_method_id = $codebase->methods->getDeclaringMethodId($method_id);
+            $cased_body_method_id = $declaring_method_id && $codebase->methods->hasStorage($declaring_method_id)
+                ? FunctionLikeAnalyzer::getCasedBodyMethodId($codebase, $method_id)
+                : $cased_method_id;
+
             /** @var string|null $body_class set above */
             $body_class = $stmt->getAttribute(InheritedMethodTaints::BODY_CLASS_ATTRIBUTE);
-            $declaring_method_id = is_string($body_class)
-                ? $statements_analyzer->getCodebase()->methods->getDeclaringMethodId($method_id)
-                : null;
             $body_suffix = is_string($body_class) && $declaring_method_id
                 ? InheritedMethodTaints::getBodySuffix($statements_analyzer, $body_class, $declaring_method_id)
                 : null;
 
-            $method_source = $body_suffix !== null && $declaring_method_id
-                ? InheritedMethodTaints::withMethodSuffix(
-                    $declaring_method_id,
+            $get_return_node = static fn(?CodeLocation $location, int $taints = 0): DataFlowNode
+                => InheritedMethodTaints::withMethodSuffix(
+                    $declaring_method_id ?? $method_id,
                     $body_suffix,
                     static fn(): DataFlowNode => DataFlowNode::getForMethodReturn(
-                        $statements_analyzer->getCodebase()->methods->getCasedMethodId($declaring_method_id),
+                        $cased_body_method_id,
                         $method_storage,
-                        $specialization_location,
+                        $location,
+                        $taints,
                     ),
-                )
-                : DataFlowNode::getForMethodReturn(
-                    $cased_method_id,
-                    $method_storage,
-                    $specialization_location,
                 );
+
+            $method_source = $get_return_node($specialization_location);
         }
 
         $graph->addNode($method_source);
-
-        $codebase = $statements_analyzer->getCodebase();
 
         $conditionally_removed_taints = $method_storage && $template_result
             ? FunctionCallReturnTypeFetcher::getConditionallyRemovedTaints(
@@ -495,11 +500,10 @@ final class StaticCallAnalyzer extends CallAnalyzer
         }
 
         if ($method_storage
+            && $get_return_node
             && $method_storage->taint_source_types
         ) {
-            $method_node = DataFlowNode::getForMethodReturn(
-                $cased_method_id,
-                $method_storage,
+            $method_node = $get_return_node(
                 null,
                 $method_storage->taint_source_types
                     & ~($method_storage->signature_return_type?->getTaintsToRemove($codebase->getInputTaints()) ?? 0),

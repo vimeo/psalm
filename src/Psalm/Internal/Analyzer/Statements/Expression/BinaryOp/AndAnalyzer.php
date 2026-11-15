@@ -19,8 +19,11 @@ use Psalm\Node\Stmt\VirtualIf;
 use Psalm\Type;
 use Psalm\Type\Reconciler;
 
+use function array_diff;
 use function array_diff_key;
+use function array_fill_keys;
 use function array_filter;
+use function array_keys;
 use function array_map;
 use function array_merge;
 use function array_values;
@@ -189,9 +192,18 @@ final class AndAnalyzer
 
         $right_context->clauses = $partitioned_clauses[0];
 
+        $pre_right_assigned_var_ids = $right_context->assigned_var_ids;
+
         if (ExpressionAnalyzer::analyze($statements_analyzer, $stmt->right, $right_context) === false) {
             return false;
         }
+
+        // offset 0 records what no assignment of the condition writes (an argument a call coerces to its parameter
+        // type, a property the callee writes): the condition has no clause about its new value
+        $right_assigned_var_ids = array_filter(
+            array_diff_key($right_context->assigned_var_ids, $pre_right_assigned_var_ids),
+            static fn(int $offset): bool => $offset !== 0,
+        );
 
         IfConditionalAnalyzer::handleParadoxicalCondition($statements_analyzer, $stmt->right);
 
@@ -257,16 +269,40 @@ final class AndAnalyzer
             ];
 
             // clauses simplification derived from the reconciled ones (a nullsafe call's receiver) are applied too
-            $if_body_context->reconciled_expression_clauses = [
-                ...$if_body_context->reconciled_expression_clauses,
-                ...array_map(
+            $reconciled_hashes = array_map(
+                /** @return string|int */
+                static fn(Clause $c) => $c->hash,
+                [
+                    ...$partitioned_clauses[1],
+                    ...Context::removeReconciledClauses($simplified_clauses, $changed_var_ids)[1],
+                ],
+            );
+
+            if ($right_assigned_var_ids) {
+                // but not the left side's clauses on a variable the right side reassigns, here or in a nested `&&`:
+                // they are about its old value, and the clauses with the same hash are about the new one
+                $old_value_hashes = array_map(
                     /** @return string|int */
                     static fn(Clause $c) => $c->hash,
-                    [
-                        ...$partitioned_clauses[1],
-                        ...Context::removeReconciledClauses($simplified_clauses, $changed_var_ids)[1],
-                    ],
-                ),
+                    array_filter(
+                        [...$left_context->clauses, ...$left_clauses, ...$simplified_clauses],
+                        static fn(Clause $c): bool => count(self::removeAssignedVarIds(
+                            array_fill_keys(array_keys($c->possibilities), true),
+                            $right_assigned_var_ids,
+                        )) !== count($c->possibilities),
+                    ),
+                );
+
+                $if_body_context->reconciled_expression_clauses = array_values(array_diff(
+                    $if_body_context->reconciled_expression_clauses,
+                    $old_value_hashes,
+                ));
+                $reconciled_hashes = array_diff($reconciled_hashes, $old_value_hashes);
+            }
+
+            $if_body_context->reconciled_expression_clauses = [
+                ...$if_body_context->reconciled_expression_clauses,
+                ...$reconciled_hashes,
             ];
 
             $if_body_context->vars_possibly_in_scope = [
