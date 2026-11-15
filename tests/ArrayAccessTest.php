@@ -946,6 +946,133 @@ final class ArrayAccessTest extends TestCase
         );
     }
 
+    public function testABreakThatOnlyLeavesASwitchKeepsTheReadAtTheEndOfTheLoopBody(): void
+    {
+        $this->assertPossiblyNullArrayAccessLines(
+            '<?php
+                /**
+                 * @param list<string>|null $m
+                 * @param list<string>|null $n
+                 * @param list<int> $xs
+                 */
+                function f(?array $m, ?array $n, array $xs, int $k): void {
+                    echo $m[0]; // issue
+                    foreach ($xs as $_) {
+                        switch ($k) { case 1: $m = $n; break; default: }
+                        echo $m[0]; // issue
+                    }
+                    echo $m[0];
+                }
+
+                /**
+                 * @param list<string>|null $m
+                 * @param list<int> $xs
+                 */
+                function continueInASwitch(?array $m, array $xs, int $k): void {
+                    foreach ($xs as $_) {
+                        switch ($k) { case 1: continue; default: }
+                        echo $m[0]; // issue
+                    }
+                    echo $m[0]; // issue
+                }',
+        );
+    }
+
+    public function testAReadInTheOrConditionOfAnIfOrATernaryIsKeptAfterIt(): void
+    {
+        $this->assertPossiblyNullArrayAccessLines(
+            '<?php
+                /** @param array{g: array{t: string}|null}|null $c */
+                function inAnIf(?array $c): void {
+                    if (is_null($c["g"]) || $c["g"]["t"] === "v") { echo 1; } // issue
+                    echo $c["g"] === null ? 1 : 2;
+                }
+
+                /** @param array{g: array{t: string}|null}|null $c */
+                function inATernary(?array $c): void {
+                    $a = is_null($c["g"]) || $c["g"]["t"] === "v" ? 1 : null; // issue
+                    echo $c["g"] === null ? 1 : 2;
+                    echo $a;
+                }
+
+                /** @param array{g: array{t: string}|null}|null $c */
+                function withFiveOperands(?array $c, bool $a, bool $b, bool $d): void {
+                    if (is_null($c["g"]) || $a || $b || $d || $c["g"]["t"] === "v") { echo 1; } // issue
+                    echo $c["g"] === null ? 1 : 2;
+                }
+
+                /** @param array{g: array{t: string}|null}|null $c */
+                function onTheRight(?array $c, bool $b): void {
+                    if ($b || $c["g"] === null) { echo 1; } // issue
+                    echo $c["g"] === null ? 1 : 2; // issue
+                }',
+        );
+    }
+
+    public function testAnOffsetReadInEveryBranchIsReadAfterTheMerge(): void
+    {
+        $this->assertPossiblyNullArrayAccessLines(
+            '<?php
+                /** @param list<string>|null $m */
+                function ifElse(?array $m, int $k): void {
+                    if ($k > 0) {
+                        echo $m[0]; // issue
+                    } else {
+                        echo $m[0]; // issue
+                    }
+                    echo $m[0];
+                }
+
+                /** @param list<string>|null $m */
+                function ifElseifElse(?array $m, int $k): void {
+                    if ($k > 0) {
+                        echo $m[0]; // issue
+                    } elseif ($k < 0) {
+                        echo $m[0]; // issue
+                    } else {
+                        echo $m[0]; // issue
+                    }
+                    echo $m[0];
+                }
+
+                /** @param list<string>|null $m */
+                function ifWithoutElse(?array $m, int $k): void {
+                    if ($k > 0) { echo $m[0]; } // issue
+                    echo $m[0]; // issue
+                }
+
+                /** @param list<string>|null $m */
+                function switchWithADefault(?array $m, int $k): void {
+                    switch ($k) {
+                        case 1: echo $m[0]; break; // issue
+                        default: echo $m[0]; // issue
+                    }
+                    echo $m[0];
+                }
+
+                /** @param list<string>|null $m */
+                function switchWithoutADefault(?array $m, int $k): void {
+                    switch ($k) {
+                        case 1: echo $m[0]; break; // issue
+                        case 2: echo $m[0]; break; // issue
+                    }
+                    echo $m[0]; // issue
+                }
+
+                /** @param list<string>|null $m */
+                function breakBeforeTheRead(?array $m, int $k): void {
+                    switch ($k) {
+                        case 1:
+                            if (rand(0, 1)) { break; }
+                            echo $m[0]; // issue
+                            break;
+                        default: echo $m[0]; // issue
+                    }
+                    echo $m[0]; // issue
+                }',
+        );
+    }
+
     /**
      * Asserts that PossiblyNullArrayAccess is reported on the lines of the code marked `// issue`, and nowhere else
      */

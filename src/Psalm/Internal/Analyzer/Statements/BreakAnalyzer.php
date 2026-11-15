@@ -69,7 +69,10 @@ final class BreakAnalyzer
                 : 0;
             $ends_this_loop = !$leaving_switch && $loops_between === 0;
 
-            $loop_scope->addJump($context);
+            // a break out of a switch only reaches the end of the switch, which keeps what every case read
+            if (!$leaving_switch) {
+                $loop_scope->addJump($context);
+            }
 
             $redefined_vars = $context->getRedefinedVars($loop_scope->loop_parent_context->vars_in_scope);
 
@@ -162,6 +165,8 @@ final class BreakAnalyzer
 
         $case_scope = $context->case_scope;
         if ($case_scope && $leaving_switch) {
+            $case_scope->addBreak($context);
+
             foreach ($context->vars_in_scope as $var_id => $type) {
                 if ($case_scope->break_vars === null) {
                     $case_scope->break_vars = [];
