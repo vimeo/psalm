@@ -197,6 +197,10 @@ final class SwitchAnalyzer
         // only update vars if there is a default or all possible cases accounted for
         // if the default has a throw/return/continue, that should be handled above
         if ($all_options_matched) {
+            foreach ($switch_scope->unknown_offsets as $var_id => $_) {
+                unset($context->vars_in_scope[$var_id], $context->vars_possibly_in_scope[$var_id]);
+            }
+
             if ($switch_scope->new_vars_in_scope) {
                 $context->vars_in_scope = array_merge($context->vars_in_scope, $switch_scope->new_vars_in_scope);
             }

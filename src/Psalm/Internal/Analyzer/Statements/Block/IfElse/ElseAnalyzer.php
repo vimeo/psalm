@@ -124,7 +124,7 @@ final class ElseAnalyzer
             }
         }
 
-        $outer_context->removeClausesOfVarsChangedIn($else_context);
+        $outer_context->removeClausesOfVarsChangedIn($else_context, $statements_analyzer);
 
         /** @var array<string, int> */
         $new_assigned_var_ids = $else_context->assigned_var_ids;

@@ -176,6 +176,77 @@ final class ConditionalTest extends TestCase
                     '$equal===' => "''|null",
                 ],
             ],
+            'getClassComparedToAClassStringConstantNarrowsToItsBound' => [
+                'code' => <<<'PHP'
+                    <?php
+                    final class Foo {}
+                    final class Bar {}
+
+                    final class Holder {
+                        /** @var class-string<Bar> */
+                        public const TYPE = Bar::class;
+
+                        public function check(Foo|Bar $x): void {
+                            if (get_class($x) === static::TYPE) {
+                                /** @psalm-check-type-exact $x = Bar */
+                            }
+                        }
+                    }
+                    PHP,
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
+            'classComparedToAClassStringOfANonFinalClassNarrowsOnlyWhereItIsTrue' => [
+                'code' => <<<'PHP'
+                    <?php
+                    class Bar {}
+                    final class Sub extends Bar {}
+                    final class Foo {}
+
+                    /** @param class-string<Bar> $cs */
+                    function f(Bar $x, string $cs): void {
+                        if ($x::class === $cs) {
+                            /** @psalm-check-type-exact $x = Bar */
+                            echo 1;
+                        }
+                    }
+
+                    /** @param class-string<Bar> $cs */
+                    function g(Bar|Foo $x, string $cs): void {
+                        if ($x::class === $cs) {
+                            /** @psalm-check-type-exact $x = Bar */
+                            echo 1;
+                        } else {
+                            /** @psalm-check-type-exact $x = Bar|Foo */
+                            echo 2;
+                        }
+                    }
+                    PHP,
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
+            'classNotEqualToALiteralClassStringConstantNarrowsAfterAnEarlyReturn' => [
+                'code' => <<<'PHP'
+                    <?php
+                    final class Holder {
+                        private const CLS = \stdClass::class;
+
+                        public function check(object $o): void {
+                            if ($o::class !== self::CLS) {
+                                return;
+                            }
+
+                            /** @psalm-check-type-exact $o = stdClass */
+                            echo 1;
+                        }
+                    }
+                    PHP,
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
             'ifSkippedByAnotherOperandKeepsTheValuesThatSkipIt' => [
                 'code' => '<?php
                     final class A {}
@@ -847,6 +918,110 @@ final class ConditionalTest extends TestCase
                 'assertions' => [],
                 'ignored_issues' => [],
                 'php_version' => '8.1',
+            ],
+            'comparisonOfANullsafeFetchWithNullAssertsTheReceiver' => [
+                'code' => <<<'PHP'
+                    <?php
+                    final class A {
+                        public ?int $p = null;
+                    }
+
+                    function notNull(?A $a): int {
+                        if ($a?->p !== null) {
+                            return $a->p;
+                        }
+
+                        return 0;
+                    }
+
+                    function throwsOnNull(?A $a): int {
+                        if (null === $a?->p) {
+                            throw new Exception();
+                        }
+
+                        return $a->p;
+                    }
+                    PHP,
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.2',
+            ],
+            'identityOfANullsafeFetchWithAnotherVariableAssertsTheReceiver' => [
+                'code' => <<<'PHP'
+                    <?php
+                    final readonly class A {
+                        public function __construct(public int $a, public int $b) {}
+                    }
+
+                    function left(A $a1, ?A $a2): bool {
+                        return $a1->a === $a2?->a && $a1->b === $a2->b;
+                    }
+
+                    function right(A $a1, ?A $a2): bool {
+                        return $a2?->a === $a1->a && $a1->b === $a2->b;
+                    }
+
+                    function scalar(int $x, ?A $a2): int {
+                        if ($x === $a2?->a) {
+                            return $a2->b;
+                        }
+
+                        return 0;
+                    }
+
+                    /**
+                     * @template T of int
+                     * @param T $x
+                     */
+                    function templateOfInt($x, ?A $a2): int {
+                        if ($x === $a2?->a) {
+                            return $a2->b;
+                        }
+
+                        return 0;
+                    }
+                    PHP,
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.2',
+            ],
+            'identityOfANullsafeFetchSaysNothingOfTheReceiverWhereItIsFalse' => [
+                'code' => <<<'PHP'
+                    <?php
+                    final readonly class A {
+                        public function __construct(public int $a, public int $b) {}
+                    }
+
+                    function earlyReturn(A $a1, ?A $a2): void {
+                        if ($a1->a === $a2?->a) {
+                            return;
+                        }
+
+                        /** @psalm-check-type-exact $a2 = A|null */
+                        echo 1;
+                    }
+
+                    function variable(int $x, ?A $a2): void {
+                        if ($x === $a2?->a) {
+                            echo 1;
+                        } else {
+                            /** @psalm-check-type-exact $a2 = A|null */
+                            echo 2;
+                        }
+                    }
+
+                    function literal(?A $a2): void {
+                        if ($a2?->a === 1) {
+                            echo 1;
+                        } else {
+                            /** @psalm-check-type-exact $a2 = A|null */
+                            echo 2;
+                        }
+                    }
+                    PHP,
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.2',
             ],
             'negatedInstanceofRemovesTheClassFromTheBoundOfATemplateParam' => [
                 'code' => '<?php
@@ -5023,6 +5198,74 @@ final class ConditionalTest extends TestCase
                         }
                     }',
             ],
+            'classEqualToAClassConstantIsNotTheClassOfTheConstantFetch' => [
+                'code' => '<?php
+                    class Bar {}
+
+                    class Foo {
+                        /** @var class-string<Bar> */
+                        protected const TYPE = Bar::class;
+
+                        public function check(object $bar): void {
+                            assert($bar::class === static::TYPE);
+                            /** @psalm-check-type-exact $bar = Bar */
+                        }
+
+                        public function checkSelf(object $bar): void {
+                            if (self::TYPE === $bar::class) {
+                                /** @psalm-check-type-exact $bar = Bar */
+                            }
+                        }
+                    }',
+            ],
+            'typeNameFunctionsComparedToAClassConstant' => [
+                'code' => '<?php
+                    class A {
+                        private const TYPE = "int";
+                        private const GETTYPE = "integer";
+
+                        public function f(mixed $x): void {
+                            if (get_debug_type($x) === self::TYPE) {
+                                /** @psalm-check-type-exact $x = mixed */
+                                echo 1;
+                            }
+
+                            if (get_debug_type($x) !== self::TYPE) {
+                                /** @psalm-check-type-exact $x = mixed */
+                                echo 2;
+                            }
+
+                            if (gettype($x) === self::GETTYPE) {
+                                /** @psalm-check-type-exact $x = mixed */
+                                echo 3;
+                            }
+
+                            if (gettype($x) !== self::GETTYPE) {
+                                /** @psalm-check-type-exact $x = mixed */
+                                echo 4;
+                            }
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
+            'classEqualToTheClassOfAnotherClassStillNarrows' => [
+                'code' => '<?php
+                    class Bar {}
+
+                    class Foo {
+                        public function check(object $bar): void {
+                            assert($bar::class === static::class);
+                            /** @psalm-check-type-exact $bar = Foo */
+                        }
+
+                        public function checkOther(object $bar): void {
+                            assert($bar::class === Bar::class);
+                            /** @psalm-check-type-exact $bar = Bar */
+                        }
+                    }',
+            ],
             'sideEffectInTheOrConditionRunsOnceInTheElse' => [
                 'code' => '<?php
                     /** @return list<string> */
@@ -5621,6 +5864,64 @@ final class ConditionalTest extends TestCase
                 'error_message' => 'TypeDoesNotContainType',
                 'error_levels' => [],
                 'php_version' => '8.1',
+            ],
+            'identityOfANullsafeFetchWithANullableDoesNotAssertTheReceiver' => [
+                'code' => '<?php
+                    final class A {
+                        public function __construct(public ?int $a, public int $b) {}
+                    }
+
+                    function f(?int $x, ?A $a2): int {
+                        if ($x === $a2?->a) {
+                            return $a2->b;
+                        }
+
+                        return 0;
+                    }',
+                'error_message' => 'PossiblyNullPropertyFetch',
+                'error_levels' => [],
+                'php_version' => '8.2',
+            ],
+            'identityOfANullsafeFetchWithATemplateDoesNotAssertTheReceiver' => [
+                'code' => '<?php
+                    final class A {
+                        public function __construct(public int $a, public int $b) {}
+                    }
+
+                    /**
+                     * @template T
+                     * @param T $x
+                     */
+                    function f($x, ?A $a2): int {
+                        if ($x === $a2?->a) {
+                            return $a2->b;
+                        }
+
+                        return 0;
+                    }',
+                'error_message' => 'PossiblyNullPropertyFetch',
+                'error_levels' => [],
+                'php_version' => '8.2',
+            ],
+            'identityOfANullsafeFetchWithAUnionContainingMixedDoesNotAssertTheReceiver' => [
+                'code' => '<?php
+                    final class A {
+                        public function __construct(public int $a, public int $b) {}
+                    }
+
+                    /**
+                     * @param int|mixed $x
+                     */
+                    function f($x, ?A $a2): int {
+                        if ($x === $a2?->a) {
+                            return $a2->b;
+                        }
+
+                        return 0;
+                    }',
+                'error_message' => 'PossiblyNullPropertyFetch',
+                'error_levels' => [],
+                'php_version' => '8.2',
             ],
             'negatedInstanceofOfTheWholeBoundOfATemplateParamLeavesNoType' => [
                 'code' => '<?php
