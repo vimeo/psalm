@@ -84,9 +84,11 @@ final class TypeExpander
     ): Union {
         $new_return_type_parts = [];
         $int_mask_bits = $return_type->int_mask_bits;
+        $changed = $int_mask_bits !== null;
 
         foreach ($return_type->getAtomicTypes() as $return_type_part) {
             $is_int_mask = self::isIntMask($codebase, $return_type_part, $self_class);
+            $original_part = $return_type_part;
 
             $parts = self::expandAtomic(
                 $codebase,
@@ -108,7 +110,30 @@ final class TypeExpander
                 $int_mask_bits = ($int_mask_bits ?? 0) | $part_int_mask_bits;
             }
 
-            $new_return_type_parts = [...$new_return_type_parts, ...$parts];
+            if ($is_int_mask || count($parts) !== 1 || $parts[0] !== $original_part) {
+                $changed = true;
+            }
+
+            foreach ($parts as $part) {
+                $new_return_type_parts[] = $part;
+            }
+        }
+
+        // keeps the type, its cached ids and the types that hold it, with what a rebuilt type would reset
+        if (!$changed) {
+            return $return_type->setProperties([
+                'from_calculation' => false,
+                'initialized_class' => null,
+                'failed_reconciliation' => false,
+                'ignore_isset' => false,
+                'from_template_default' => false,
+                'reference_free' => false,
+                'closure_state' => false,
+                'allow_mutations' => true,
+                'has_mutations' => true,
+                'propagate_parent_nodes' => false,
+                'different' => false,
+            ]);
         }
 
         $fleshed_out_type = TypeCombiner::combine(
@@ -231,6 +256,7 @@ final class TypeExpander
                         $parent_class,
                         $evaluate_class_constants,
                         $evaluate_conditional_types,
+                        $final,
                         $expand_generic,
                         $expand_templates,
                         $throw_on_unresolvable_constant,
