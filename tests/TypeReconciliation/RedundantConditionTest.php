@@ -5,6 +5,8 @@ declare(strict_types=1);
 namespace Psalm\Tests\TypeReconciliation;
 
 use Override;
+use Psalm\Config;
+use Psalm\Context;
 use Psalm\Tests\TestCase;
 use Psalm\Tests\Traits\InvalidCodeAnalysisTestTrait;
 use Psalm\Tests\Traits\ValidCodeAnalysisTestTrait;
@@ -15,6 +17,32 @@ final class RedundantConditionTest extends TestCase
 {
     use ValidCodeAnalysisTestTrait;
     use InvalidCodeAnalysisTestTrait;
+
+    public function testPropertyThatAMethodCalledInTheConditionWritesWithoutRememberingPropertyAssignments(): void
+    {
+        Config::getInstance()->remember_property_assignments_after_call = false;
+
+        $this->addFile(
+            'somefile.php',
+            '<?php
+                final class Counter {
+                    public int $n = 1;
+
+                    public function reset(): bool {
+                        $this->n = 0;
+                        return true;
+                    }
+                }
+
+                function f(Counter $c): void {
+                    if ($c->n && $c->reset() && $c->n) {
+                        echo "if";
+                    }
+                }',
+        );
+
+        $this->analyzeFile('somefile.php', new Context());
+    }
 
     /**
      * @psalm-pure
