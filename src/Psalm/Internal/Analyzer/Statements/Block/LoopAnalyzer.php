@@ -326,11 +326,6 @@ final class LoopAnalyzer
                             $pre_loop_context->removeVarFromConflictingClauses($var_id);
                         }
                     } else {
-                        // give an opportunity to redeemed UndefinedVariable issues
-                        if ($recorded_issues) {
-                            $has_changes = true;
-                        }
-
                         // the next iteration starts with what this one left in the variable (see below)
                         if (self::isLoopVar($var_id)
                             && (!isset($loop_var_types_at_start[$var_id])
