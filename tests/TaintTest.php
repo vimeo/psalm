@@ -6230,6 +6230,73 @@ final class TaintTest extends TestCase
     public static function providerInvalidCodeParse(): array
     {
         return [
+            'taintOfAnArgumentAfterTheFirstOneReachesAVariadicOverrideCalledThroughTheParentType' => [
+                'code' => '<?php
+                    /** @psalm-taint-source input */
+                    function tainted(): string {
+                        return "attacker";
+                    }
+
+                    class Base {
+                        /** @psalm-impure */
+                        public function run(string ...$parts): void {}
+                    }
+
+                    class Child extends Base {
+                        /** @psalm-impure */
+                        public function run(string ...$parts): void {
+                            foreach ($parts as $part) {
+                                system($part);
+                            }
+                        }
+                    }
+
+                    function f(Base $b): void {
+                        $b->run("", "", tainted());
+                    }',
+                'error_message' => 'TaintedShell',
+            ],
+            'taintOfAnArgumentAfterTheFirstOneReachesTheVariadicOfAParentCall' => [
+                'code' => '<?php
+                    /** @psalm-taint-source input */
+                    function tainted(): string {
+                        return "attacker";
+                    }
+
+                    class Runner {
+                        /** @psalm-impure */
+                        public function run(string ...$parts): void {
+                            foreach ($parts as $part) {
+                                system($part);
+                            }
+                        }
+                    }
+
+                    class Sub extends Runner {
+                        /** @psalm-impure */
+                        public function run(string ...$parts): void {
+                            parent::run("", "", tainted());
+                        }
+                    }',
+                'error_message' => 'TaintedShell',
+            ],
+            'taintOfANamedArgumentAfterPositionalOnesAVariadicCollects' => [
+                'code' => '<?php
+                    /** @psalm-taint-source input */
+                    function tainted(): string {
+                        return "attacker";
+                    }
+
+                    /** @psalm-impure */
+                    function v(string ...$rest): void {
+                        foreach ($rest as $r) {
+                            system($r);
+                        }
+                    }
+
+                    v("", "", zzz: tainted());',
+                'error_message' => 'TaintedShell',
+            ],
             'taintOfAPositionalArgumentAfterTheFirstOneAVariadicCollects' => [
                 'code' => '<?php
                     /** @psalm-taint-source input */

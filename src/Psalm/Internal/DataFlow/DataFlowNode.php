@@ -500,15 +500,20 @@ final class DataFlowNode implements Stringable
     }
 
     /**
-     * The index at which $param is declared in $storage, null if it isn't
+     * The index at which the variadic $param is declared in $storage when the argument at $position comes after
+     * it, null when the node at $position is the declared one (or $param isn't declared in $storage). An argument
+     * the variadic parameter collects has a node keyed by its position, which the body reads through the declared one.
      *
      * @psalm-mutation-free
      */
-    public static function getDeclaredParameterOffset(FunctionLikeStorage $storage, FunctionLikeParameter $param): ?int
-    {
+    public static function getVariadicDeclaredOffset(
+        FunctionLikeStorage $storage,
+        FunctionLikeParameter $param,
+        int $position,
+    ): ?int {
         foreach ($storage->params as $i => $candidate) {
             if ($candidate->name === $param->name) {
-                return $i;
+                return $i < $position ? $i : null;
             }
         }
 
