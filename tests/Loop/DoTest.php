@@ -450,6 +450,33 @@ final class DoTest extends TestCase
     public static function providerInvalidCodeParse(): iterable
     {
         return [
+            'doWhileBreakBeforeDefinition' => [
+                'code' => <<<'PHP'
+                    <?php
+                    function f(): void {
+                        do {
+                            if (rand()) {
+                                break;
+                            }
+
+                            $v = 1;
+
+                            try {
+                                if (rand()) {
+                                    break;
+                                }
+                            } finally {
+                                echo "done";
+                            }
+                        } while (rand());
+
+                        echo $v;
+                    }
+                    PHP,
+                'error_message' => 'PossiblyUndefinedVariable - src' . DIRECTORY_SEPARATOR . 'somefile.php:19:10',
+                'error_levels' => [],
+                'php_version' => '8.1',
+            ],
             'doWhileConditionOnNarrowedPropertyIsRedundant' => [
                 'code' => '<?php
                     class Options {
