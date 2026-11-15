@@ -4,7 +4,9 @@ declare(strict_types=1);
 
 namespace Psalm\Internal\Analyzer\Statements\Expression\BinaryOp;
 
+use Error;
 use PhpParser;
+use Psalm\CodeLocation;
 use Psalm\Context;
 use Psalm\Internal\Analyzer\Statements\Expression\ExpressionIdentifier;
 use Psalm\Internal\Analyzer\Statements\ExpressionAnalyzer;
@@ -19,6 +21,9 @@ use Psalm\Type\Atomic\TMixed;
 use Psalm\Type\Reconciler;
 use Psalm\Type\Union;
 
+use function preg_replace;
+use function str_starts_with;
+use function strlen;
 use function substr;
 
 /**
@@ -26,6 +31,51 @@ use function substr;
  */
 final class CoalesceAnalyzer
 {
+    private const TEMPORARY_VAR_PREFIX = '$<tmp coalesce var>';
+
+    /**
+     * The code of the left operands of ?? that are not variables, by file and offset: the temporary variable of such
+     * an operand is `$<tmp coalesce var>` followed by the offset, issue messages show the code instead
+     *
+     * @var array<string, array<int, string>>
+     */
+    private static array $operand_names = [];
+
+    /**
+     * The code of the operand on one line; the pretty printer has no method for the nodes Psalm makes up (a partial
+     * application), which are named by the operand's position only
+     */
+    private static function printOperand(PhpParser\Node\Expr $operand): string
+    {
+        try {
+            return (string) preg_replace(
+                '/\s+/',
+                ' ',
+                (new PhpParser\PrettyPrinter\Standard())->prettyPrintExpr($operand),
+            );
+        } catch (Error) {
+            return 'left operand of ??';
+        }
+    }
+
+    /**
+     * The name of a variable as issue messages show it: the temporary variable of a left operand that is not a
+     * variable is shown as the code of the operand
+     *
+     * @return ($var_id is null ? null : string)
+     * @psalm-capabilities read-globals
+     */
+    public static function getDisplayName(?string $var_id, CodeLocation $code_location): ?string
+    {
+        if ($var_id === null || !str_starts_with($var_id, self::TEMPORARY_VAR_PREFIX)) {
+            return $var_id;
+        }
+
+        $offset = (int) substr($var_id, strlen(self::TEMPORARY_VAR_PREFIX));
+
+        return self::$operand_names[$code_location->file_path][$offset] ?? $var_id;
+    }
+
     public static function analyze(
         StatementsAnalyzer $statements_analyzer,
         PhpParser\Node\Expr\BinaryOp\Coalesce $stmt,
@@ -61,7 +111,10 @@ final class CoalesceAnalyzer
             ) === null;
 
         if ($has_call_root || $has_untracked_offset) {
-            $left_var_id = '$<tmp coalesce var>' . (int) $left_expr->getAttribute('startFilePos');
+            // the offset makes it unique; issue messages show the code of the operand ({@see self::getDisplayName()})
+            $left_offset = (int) $left_expr->getAttribute('startFilePos');
+            $left_var_id = self::TEMPORARY_VAR_PREFIX . $left_offset;
+            self::$operand_names[$statements_analyzer->getFilePath()][$left_offset] = self::printOperand($left_expr);
 
             // an untracked offset is evaluated unconditionally, so its assignments belong to the real context
             $cloned = $has_untracked_offset ? $context : clone $context;

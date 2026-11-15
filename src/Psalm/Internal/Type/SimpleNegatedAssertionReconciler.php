@@ -6,6 +6,7 @@ namespace Psalm\Internal\Type;
 
 use Psalm\CodeLocation;
 use Psalm\Codebase;
+use Psalm\Internal\Analyzer\Statements\Expression\BinaryOp\CoalesceAnalyzer;
 use Psalm\Internal\Codebase\InternalCallMapHandler;
 use Psalm\Internal\MethodIdentifier;
 use Psalm\Internal\Type\Comparator\CallableTypeComparator;
@@ -134,7 +135,9 @@ final class SimpleNegatedAssertionReconciler extends Reconciler
                     } elseif ($existing_var_type->from_docblock) {
                         IssueBuffer::maybeAdd(
                             new DocblockTypeContradiction(
-                                'Cannot resolve types for ' . $key . ' with docblock-defined type '
+                                'Cannot resolve types for '
+                                    . CoalesceAnalyzer::getDisplayName($key, $code_location)
+                                    . ' with docblock-defined type '
                                     . $existing_var_type . ' and !isset assertion',
                                 $code_location,
                                 'cannot resolve !isset '.$existing_var_type. ' ' . $key,
@@ -144,7 +147,8 @@ final class SimpleNegatedAssertionReconciler extends Reconciler
                     } else {
                         IssueBuffer::maybeAdd(
                             new TypeDoesNotContainType(
-                                'Cannot resolve types for ' . $key . ' with type '
+                                'Cannot resolve types for '
+                                    . CoalesceAnalyzer::getDisplayName($key, $code_location) . ' with type '
                                     . $existing_var_type . ' and !isset assertion',
                                 $code_location,
                                 'cannot resolve !isset '.$existing_var_type. ' ' . $key,
