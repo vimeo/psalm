@@ -198,7 +198,8 @@ final class AndAnalyzer
             return false;
         }
 
-        // an argument a call coerces to its parameter type is recorded at offset 0: its value doesn't change
+        // offset 0 records what no assignment of the condition writes (an argument a call coerces to its parameter
+        // type, a property the callee writes): the condition has no clause about its new value
         $right_assigned_var_ids = array_filter(
             array_diff_key($right_context->assigned_var_ids, $pre_right_assigned_var_ids),
             static fn(int $offset): bool => $offset !== 0,
