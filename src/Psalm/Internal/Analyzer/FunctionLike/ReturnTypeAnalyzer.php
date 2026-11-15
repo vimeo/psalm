@@ -85,7 +85,8 @@ final class ReturnTypeAnalyzer
             && $fq_class_name !== null
             && !$storage->final
             && $storage->visibility !== ClassLikeAnalyzer::VISIBILITY_PRIVATE
-            && !$codebase->classlike_storage_provider->get($fq_class_name)->final;
+            && !$codebase->classlike_storage_provider->get($fq_class_name)->final
+            && !$codebase->classlike_storage_provider->get($fq_class_name)->anonymous;
     }
 
     /**

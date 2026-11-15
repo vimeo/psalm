@@ -2468,6 +2468,22 @@ final class ReturnTypeTest extends TestCase
     public static function providerInvalidCodeParse(): iterable
     {
         return [
+            'methodOfAnAnonymousClassThatThrowsAfterAnotherStatementIsInvalid' => [
+                'code' => '<?php
+                    class Logger {
+                        public static function log(string $method): void {}
+                    }
+
+                    $o = new class {
+                        /** @return string */
+                        public function f() {
+                            Logger::log(__METHOD__);
+
+                            throw new Exception("x");
+                        }
+                    };',
+                'error_message' => 'InvalidReturnType',
+            ],
             'switchWithADefaultInTheMiddleThatFallsThroughIntoACaseThatDoesNotEnd' => [
                 'code' => '<?php
                     function classify(int $x): int {
