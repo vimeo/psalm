@@ -45,6 +45,32 @@ final class ForTest extends TestCase
                         return $x;
                     }',
             ],
+            'forIntRangeShiftedByThePostExpressionOfABodyEndingInAReturnIsWidened' => [
+                'code' => '<?php
+                    function f(): void {
+                        for ($i = 0; ; $i += rand(1, 3)) {
+                            if ($i > 10) {
+                                echo "reachable";
+                            }
+                            if (rand(0, 1)) {
+                                continue;
+                            }
+                            return;
+                        }
+                    }',
+            ],
+            'forIntRangeShiftedByThePostExpressionBeforeAReturnIsWidened' => [
+                'code' => '<?php
+                    function f(): int {
+                        for ($i = 0; ; $i += rand(1, 3)) {
+                            if ($i < 10) {
+                                continue;
+                            }
+                            /** @psalm-check-type-exact $i = int<10, max> */;
+                            return $i;
+                        }
+                    }',
+            ],
             'forEverVariableIsWhatTheBreaksLeave' => [
                 'code' => '<?php
                     function f(): void {

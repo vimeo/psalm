@@ -379,6 +379,40 @@ final class WhileTest extends TestCase
                         }
                     }',
             ],
+            'whileIntRangeSaturatingAtAComparedIntIsWidenedToIt' => [
+                'code' => '<?php
+                    /** @param int<0, 10> $n */
+                    function takesBounded(int $n): void {}
+
+                    function f(): int {
+                        $i = rand(0, 5);
+                        while (rand(0, 1)) {
+                            takesBounded($i);
+                            if ($i < 10) {
+                                $i++;
+                            }
+                        }
+                        /** @psalm-check-type-exact $i = int<0, 10> */;
+                        return $i;
+                    }',
+            ],
+            'whileIntRangeSaturatingPastAComparedIntIsWidenedPastIt' => [
+                'code' => '<?php
+                    /** @param int<0, 11> $n */
+                    function takesBounded(int $n): void {}
+
+                    function f(): int {
+                        $i = rand(0, 5);
+                        while (rand(0, 1)) {
+                            takesBounded($i);
+                            if ($i <= 10) {
+                                $i += 1;
+                            }
+                        }
+                        /** @psalm-check-type-exact $i = int<0, 11> */;
+                        return $i;
+                    }',
+            ],
             'whileTrueVariableIsNotWhatAContinueLeaves' => [
                 'code' => '<?php
                     interface T {
