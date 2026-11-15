@@ -442,6 +442,23 @@ final class ForTest extends TestCase
                     }',
                 'error_message' => 'PossiblyInvalidArrayOffset - src' . DIRECTORY_SEPARATOR . 'somefile.php:7:40 - Cannot access value on variable $attrs using a int<0, 3> offset',
             ],
+            'forBreakBeforeDefinitionAndBreakAfter' => [
+                'code' => '<?php
+                    for ($i = 0; $i < 4; $i++) {
+                        if (rand(0, 1)) {
+                            break;
+                        }
+
+                        $car = "Volvo";
+
+                        if (rand(0, 1)) {
+                            break;
+                        }
+                    }
+
+                    echo $car;',
+                'error_message' => 'PossiblyUndefinedGlobalVariable - src' . DIRECTORY_SEPARATOR . 'somefile.php:14:26',
+            ],
             'flagFalseInEveryBranchThatChangesItIsStillAlwaysFalsy' => [
                 'code' => '<?php
                     function check(bool $flag, int $i): void {
