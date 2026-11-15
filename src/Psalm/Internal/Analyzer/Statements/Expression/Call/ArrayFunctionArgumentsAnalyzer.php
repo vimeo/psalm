@@ -776,6 +776,7 @@ final class ArrayFunctionArgumentsAnalyzer
                 $array_type = TypeCombiner::combine($array_atomic_types, $statements_analyzer->getCodebase());
                 $context->removeDescendents($var_id, $array_type);
                 $context->vars_in_scope[$var_id] = $array_type;
+                $context->possibly_assigned_var_ids[$var_id] = true;
             }
         }
     }

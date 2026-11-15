@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Psalm\Internal\Analyzer\Statements\Block;
 
 use PhpParser;
+use PhpParser\NodeFinder;
 use Psalm\CodeLocation;
 use Psalm\Context;
 use Psalm\Exception\ComplicatedExpressionException;
@@ -19,17 +20,24 @@ use Psalm\Internal\PhpVisitor\AssignmentMapVisitor;
 use Psalm\Internal\PhpVisitor\NodeCleanerVisitor;
 use Psalm\Internal\Scope\LoopScope;
 use Psalm\IssueBuffer;
+use Psalm\Node\Expr\BinaryOp\VirtualBooleanAnd;
 use Psalm\Storage\Assertion;
 use Psalm\Type;
+use Psalm\Type\Atomic;
+use Psalm\Type\Atomic\TInt;
+use Psalm\Type\Atomic\TIntRange;
 use Psalm\Type\Reconciler;
 use Psalm\Type\Union;
 use UnexpectedValueException;
 
 use function array_diff_key;
 use function array_filter;
+use function array_flip;
+use function array_intersect_key;
 use function array_keys;
 use function array_map;
 use function array_merge;
+use function array_reverse;
 use function array_slice;
 use function array_unique;
 use function array_values;
@@ -37,8 +45,14 @@ use function count;
 use function in_array;
 use function is_numeric;
 use function is_string;
+use function max;
+use function min;
+use function sort;
 use function spl_object_id;
 use function str_contains;
+use function str_starts_with;
+
+use const PHP_INT_MAX;
 
 /**
  * @internal
@@ -62,6 +76,7 @@ final class LoopAnalyzer
         ?Context &$continue_context = null,
         bool $is_do = false,
         bool $always_enters_loop = false,
+        bool $only_last_condition_decides = false,
     ): ?bool {
         $traverser = new PhpParser\NodeTraverser;
 
@@ -90,8 +105,18 @@ final class LoopAnalyzer
 
         $inner_do_context = null;
 
+        // the variables evaluating the condition writes, with what they hold once it is evaluated
+        $condition_written_var_ids = [];
+
         if ($pre_conditions) {
             foreach ($pre_conditions as $i => $pre_condition) {
+                // only the last of the comma separated conditions of a for decides whether the loop goes on
+                if ($only_last_condition_decides && $i !== count($pre_conditions) - 1) {
+                    $pre_condition_clauses[$i] = [];
+
+                    continue;
+                }
+
                 $pre_condition_id = spl_object_id($pre_condition);
 
                 $pre_condition_clauses[$i] = FormulaGenerator::getFormula(
@@ -128,21 +153,47 @@ final class LoopAnalyzer
             $continue_context = clone $loop_context;
             $continue_context->loop_scope = $loop_scope;
 
-            foreach ($pre_conditions as $condition_offset => $pre_condition) {
-                self::applyPreConditionToLoopContext(
-                    $statements_analyzer,
-                    $pre_condition,
-                    $pre_condition_clauses[$condition_offset],
-                    $continue_context,
-                    $loop_parent_context,
-                    $is_do,
-                );
+            if (!$is_do) {
+                foreach ($pre_conditions as $condition_offset => $pre_condition) {
+                    self::applyPreConditionToLoopContext(
+                        $statements_analyzer,
+                        $pre_condition,
+                        $pre_condition_clauses[$condition_offset],
+                        $continue_context,
+                        $loop_parent_context,
+                        $is_do,
+                        written_var_ids: $condition_written_var_ids,
+                    );
+                }
             }
 
             $continue_context->protected_var_ids = $loop_scope->protected_var_ids;
 
+            $loop_scope->vars_at_breaks = null;
+
             $statements_analyzer->analyze($stmts, $continue_context);
             self::updateLoopScopeContexts($loop_scope, $loop_context, $continue_context, $loop_parent_context);
+
+            // a body that always breaks never gets to the condition
+            if ($is_do && !$does_always_break) {
+                $inner_do_context = clone $continue_context;
+
+                foreach ($pre_conditions as $condition_offset => $pre_condition) {
+                    $vars_after_condition = [];
+
+                    self::applyPreConditionToLoopContext(
+                        $statements_analyzer,
+                        $pre_condition,
+                        $pre_condition_clauses[$condition_offset],
+                        $continue_context,
+                        $loop_parent_context,
+                        $is_do,
+                        $vars_after_condition,
+                    );
+
+                    self::applyVarsAfterCondition($inner_do_context, $vars_after_condition, $condition_offset > 0);
+                }
+            }
 
             foreach ($post_expressions as $post_expression) {
                 if (ExpressionAnalyzer::analyze(
@@ -156,6 +207,8 @@ final class LoopAnalyzer
             }
 
             $loop_parent_context->vars_possibly_in_scope += $continue_context->vars_possibly_in_scope;
+
+            self::keepNullArrayOffsetsReadOnEveryPath($loop_parent_context, $continue_context, $loop_scope);
         } else {
             $original_parent_context = clone $loop_parent_context;
 
@@ -177,6 +230,7 @@ final class LoopAnalyzer
                         $loop_context,
                         $loop_parent_context,
                         $is_do,
+                        written_var_ids: $condition_written_var_ids,
                     );
                 }
             }
@@ -186,6 +240,8 @@ final class LoopAnalyzer
             $continue_context->loop_scope = $loop_scope;
 
             $continue_context->protected_var_ids = $loop_scope->protected_var_ids;
+
+            $loop_scope->vars_at_breaks = null;
 
             $statements_analyzer->analyze($stmts, $continue_context);
 
@@ -197,6 +253,8 @@ final class LoopAnalyzer
                 $inner_do_context = clone $continue_context;
 
                 foreach ($pre_conditions as $condition_offset => $pre_condition) {
+                    $vars_after_condition = [];
+
                     $always_assigned_before_loop_body_vars = [...self::applyPreConditionToLoopContext(
                         $statements_analyzer,
                         $pre_condition,
@@ -204,7 +262,10 @@ final class LoopAnalyzer
                         $continue_context,
                         $loop_parent_context,
                         $is_do,
+                        $vars_after_condition,
                     ), ...$always_assigned_before_loop_body_vars];
+
+                    self::applyVarsAfterCondition($inner_do_context, $vars_after_condition, $condition_offset > 0);
                 }
             }
 
@@ -226,6 +287,8 @@ final class LoopAnalyzer
             // the data flow of the last pass is linked to the reads of the first one by one more pass
             $max_passes = $assignment_depth;
             $data_flow_pass_added = false;
+            $widening_passes = 0;
+            $widening_bounds = null;
             $force_pass = false;
 
             for ($i = 0; $i < $max_passes; ++$i) {
@@ -277,11 +340,6 @@ final class LoopAnalyzer
                             $pre_loop_context->removeVarFromConflictingClauses($var_id);
                         }
                     } else {
-                        // give an opportunity to redeemed UndefinedVariable issues
-                        if ($recorded_issues) {
-                            $has_changes = true;
-                        }
-
                         // the next iteration starts with what this one left in the variable (see below)
                         if (self::isLoopVar($var_id)
                             && (!isset($loop_var_types_at_start[$var_id])
@@ -318,9 +376,31 @@ final class LoopAnalyzer
                     }
                 }
 
+                // the variables the loop defines are possibly defined where the next iteration starts, holding what
+                // an iteration left in them where it ended or continued: the other ones defined in the loop go
+                foreach ($loop_scope->possibly_defined_loop_vars as $var_id => $type) {
+                    if (!isset($continue_context->vars_in_scope[$var_id])
+                        && !isset($original_parent_context->vars_in_scope[$var_id])
+                        && !in_array($var_id, $always_assigned_before_loop_body_vars, true)
+                        && !$is_do
+                    ) {
+                        $vars_to_remove[] = $var_id;
+
+                        // only a `continue` defines it
+                        if (self::isLoopVar($var_id)
+                            && (!isset($loop_var_types_at_start[$var_id])
+                                || !$type->setPossiblyUndefined(false)->equals($loop_var_types_at_start[$var_id]))
+                        ) {
+                            $has_changes = true;
+                        }
+                    }
+                }
+
                 $continue_context->has_returned = false;
 
                 $loop_parent_context->vars_possibly_in_scope += $continue_context->vars_possibly_in_scope;
+
+                self::keepNullArrayOffsetsReadOnEveryPath($loop_parent_context, $continue_context, $loop_scope);
 
                 // if there are no changes to the types, no need to re-examine
                 if (!$has_changes && !$force_pass) {
@@ -328,18 +408,6 @@ final class LoopAnalyzer
                 }
 
                 $force_pass = false;
-
-                // the variables the loop defines are possibly defined where the next iteration starts, holding what
-                // an iteration left in them where it ended or continued: the other ones defined in the loop go
-                foreach ($loop_scope->possibly_defined_loop_vars as $var_id => $_) {
-                    if (!isset($continue_context->vars_in_scope[$var_id])
-                        && !isset($original_parent_context->vars_in_scope[$var_id])
-                        && !in_array($var_id, $always_assigned_before_loop_body_vars, true)
-                        && !$is_do
-                    ) {
-                        $vars_to_remove[] = $var_id;
-                    }
-                }
 
                 foreach ($vars_to_remove as $var_id) {
                     if (!self::isLoopVar($var_id) || isset($continue_context->references_in_scope[$var_id])) {
@@ -360,6 +428,8 @@ final class LoopAnalyzer
                 $continue_context->clauses = $pre_loop_context->clauses;
                 $continue_context->byref_constraints = $pre_loop_context->byref_constraints;
 
+                $vars_at_iteration_start = $continue_context->vars_in_scope;
+
                 $analyzer->setMixedCountsForFile($statements_analyzer->getFilePath(), $original_mixed_counts);
                 IssueBuffer::startRecording();
 
@@ -372,14 +442,17 @@ final class LoopAnalyzer
                             $continue_context,
                             $loop_parent_context,
                             false,
+                            written_var_ids: $condition_written_var_ids,
                         );
                     }
                 }
 
                 foreach ($always_assigned_before_loop_body_vars as $var_id) {
                     if ((!isset($continue_context->vars_in_scope[$var_id])
-                            || $continue_context->vars_in_scope[$var_id]->getId()
-                                !== $pre_loop_context->vars_in_scope[$var_id]->getId()
+                            || self::differ(
+                                $continue_context->vars_in_scope[$var_id],
+                                $pre_loop_context->vars_in_scope[$var_id],
+                            )
                             || $continue_context->vars_in_scope[$var_id]->from_docblock
                                 !== $pre_loop_context->vars_in_scope[$var_id]->from_docblock
                             // the value of an iteration is not the one the last one ended with
@@ -410,6 +483,8 @@ final class LoopAnalyzer
 
                 $vars_at_pass_start = $continue_context->vars_in_scope;
 
+                $loop_scope->vars_at_breaks = null;
+
                 $statements_analyzer->analyze($stmts, $continue_context);
 
                 self::updateLoopScopeContexts($loop_scope, $loop_context, $continue_context, $original_parent_context);
@@ -420,6 +495,8 @@ final class LoopAnalyzer
                     $inner_do_context = clone $continue_context;
 
                     foreach ($pre_conditions as $condition_offset => $pre_condition) {
+                        $vars_after_condition = [];
+
                         self::applyPreConditionToLoopContext(
                             $statements_analyzer,
                             $pre_condition,
@@ -427,6 +504,13 @@ final class LoopAnalyzer
                             $continue_context,
                             $loop_parent_context,
                             $is_do,
+                            $vars_after_condition,
+                        );
+
+                        self::applyVarsAfterCondition(
+                            $inner_do_context,
+                            $vars_after_condition,
+                            $condition_offset > 0,
                         );
                     }
                 }
@@ -444,6 +528,50 @@ final class LoopAnalyzer
                 $recorded_issues = IssueBuffer::clearRecordingLevel();
 
                 IssueBuffer::stopRecording();
+
+                // a range the passes keep shifting (`$i += rand(1, 3)`) would go further on the iterations not
+                // analysed: its bound is moved to the next int the loop compares it with (`if ($i < 10) $i++`) and
+                // the body analysed once more with it. The pass after that one starts with what the widened pass
+                // ended with, which gets back the bounds the body enforces (`$i = min(10, $i + 1)`). A range that
+                // still goes past that is widened again, and then unbounded.
+                if ($i + 1 === $max_passes && $widening_passes < 4) {
+                    $widened_var_types = [];
+
+                    if ($widening_passes !== 1) {
+                        $vars_at_start = array_diff_key(
+                            $vars_at_iteration_start,
+                            array_flip($always_assigned_before_loop_body_vars),
+                        );
+                        $vars_at_end = self::getVarsStartingNextIteration(
+                            $continue_context,
+                            $loop_scope,
+                            $post_expressions,
+                        );
+
+                        $widened_var_types = self::getWidenedIntRanges($vars_at_start, $vars_at_end, null);
+
+                        if ($widened_var_types && $widening_passes !== 3) {
+                            $widening_bounds ??= self::getWideningBounds(
+                                [...$pre_conditions, ...$stmts, ...$post_expressions],
+                            );
+
+                            $widened_var_types = self::getWidenedIntRanges(
+                                $vars_at_start,
+                                $vars_at_end,
+                                $widening_bounds,
+                            );
+                        }
+                    }
+
+                    if ($widened_var_types || $widening_passes === 1) {
+                        $continue_context->vars_in_scope = $widened_var_types + $continue_context->vars_in_scope;
+                        ++$max_passes;
+                        ++$widening_passes;
+                        $force_pass = true;
+                    } else {
+                        $widening_passes = 4;
+                    }
+                }
 
                 if ($i + 1 === $max_passes
                     && !$data_flow_pass_added
@@ -467,6 +595,13 @@ final class LoopAnalyzer
         $does_sometimes_break = in_array(ScopeAnalyzer::ACTION_BREAK, $loop_scope->final_actions, true);
         $does_always_break = $loop_scope->final_actions === [ScopeAnalyzer::ACTION_BREAK];
 
+        $loop_nodes = [...$pre_conditions, ...$stmts, ...$post_expressions];
+
+        // the body is analysed in the continue context: the loop context does not get what it rebinds
+        if (!$does_always_break) {
+            $loop_parent_context->detachReferencesReboundIn($continue_context, $statements_analyzer, $loop_nodes);
+        }
+
         if ($does_sometimes_break) {
             foreach ($loop_scope->possibly_redefined_loop_parent_vars as $var => $type) {
                 $loop_parent_context->vars_in_scope[$var] = Type::combineUnionTypes(
@@ -483,7 +618,7 @@ final class LoopAnalyzer
                 continue;
             }
 
-            if ($loop_context->vars_in_scope[$var_id]->getId() !== $type->getId()) {
+            if (self::differ($loop_context->vars_in_scope[$var_id], $type)) {
                 $loop_parent_context->vars_in_scope[$var_id] = Type::combineUnionTypes(
                     $loop_parent_context->vars_in_scope[$var_id],
                     $loop_context->vars_in_scope[$var_id],
@@ -513,14 +648,21 @@ final class LoopAnalyzer
                         )
                     ;
 
-                    $loop_parent_context->vars_in_scope[$var_id] =
-                        $continue_context->vars_in_scope[$var_id];
+                    // a mixed value the loop condition narrowed (`non-empty-mixed`) is not narrowed where the loop
+                    // is left, so it is combined with the type it had before the loop
+                    $loop_parent_context->vars_in_scope[$var_id] = $loop_parent_context->vars_in_scope[$var_id]
+                        ->hasMixed()
+                        ? Type::combineUnionTypes(
+                            $loop_parent_context->vars_in_scope[$var_id],
+                            $continue_context->vars_in_scope[$var_id],
+                        )
+                        : $continue_context->vars_in_scope[$var_id];
                     $loop_parent_context->removeVarFromConflictingClauses($var_id);
 
                     continue;
                 }
 
-                if ($continue_context->vars_in_scope[$var_id]->getId() !== $type->getId()) {
+                if (self::differ($continue_context->vars_in_scope[$var_id], $type)) {
                     $loop_parent_context->vars_in_scope[$var_id] = Type::combineUnionTypes(
                         $loop_parent_context->vars_in_scope[$var_id],
                         $continue_context->vars_in_scope[$var_id],
@@ -542,8 +684,27 @@ final class LoopAnalyzer
             // if the loop contains an assertion and there are no break statements, we can negate that assertion
             // and apply it to the current context
 
+            $deciding_condition = null;
+
+            foreach ($pre_conditions as $i => $pre_condition) {
+                if (!$only_last_condition_decides || $i === count($pre_conditions) - 1) {
+                    $deciding_condition = $deciding_condition
+                        ? new VirtualBooleanAnd($deciding_condition, $pre_condition, $pre_condition->getAttributes())
+                        : $pre_condition;
+                }
+            }
+
             try {
-                $negated_pre_condition_clauses = Algebra::negateFormula(array_merge(...$pre_condition_clauses));
+                $negated_pre_condition_clauses = $deciding_condition
+                    ? FormulaGenerator::getNegatedFormula(
+                        array_merge(...$pre_condition_clauses),
+                        $deciding_condition,
+                        spl_object_id($deciding_condition),
+                        $loop_context->self,
+                        $statements_analyzer,
+                        $codebase,
+                    )
+                    : [];
             } catch (ComplicatedExpressionException) {
                 $negated_pre_condition_clauses = [];
             }
@@ -554,11 +715,28 @@ final class LoopAnalyzer
             if ($negated_pre_condition_types) {
                 $changed_var_ids = [];
 
+                if ($is_do) {
+                    // a do-while is left after its body, where its condition is not yet assumed
+                    $exit_context = $inner_do_context ?? $continue_context;
+                    $exit_vars = $exit_context->vars_in_scope;
+                } else {
+                    // a while or for loop is also left before its body ever runs: the parent context holds the
+                    // types of both ways out, but what the condition writes holds what evaluating it left on either
+                    $exit_context = $loop_parent_context;
+                    $exit_vars = $exit_context->vars_in_scope;
+
+                    foreach ($condition_written_var_ids as $var_id => $type) {
+                        if (isset($exit_vars[$var_id])) {
+                            $exit_vars[$var_id] = $type;
+                        }
+                    }
+                }
+
                 [$vars_in_scope_reconciled, $_] = Reconciler::reconcileKeyedTypes(
                     $negated_pre_condition_types,
                     [],
-                    $continue_context->vars_in_scope,
-                    $continue_context->references_in_scope,
+                    $exit_vars,
+                    $exit_context->references_in_scope,
                     $changed_var_ids,
                     [],
                     $statements_analyzer,
@@ -597,7 +775,12 @@ final class LoopAnalyzer
             );
         }
 
+        $loop_parent_context->removeClausesOfVarsChangedIn($loop_context);
+        $loop_parent_context->removeClausesOfVarsChangedIn($continue_context);
+
         if ($inner_do_context) {
+            // what the condition throws is thrown by the loop too
+            $inner_do_context->mergeExceptions($continue_context);
             $continue_context = $inner_do_context;
         }
 
@@ -608,6 +791,27 @@ final class LoopAnalyzer
         );
 
         return null;
+    }
+
+    /**
+     * After the loop, an offset was read only if it was read where the loop isn't entered, at the end of the body and
+     * at every `break` and `continue`
+     *
+     * @psalm-capabilities read-props|write-props
+     */
+    private static function keepNullArrayOffsetsReadOnEveryPath(
+        Context $loop_parent_context,
+        Context $continue_context,
+        LoopScope $loop_scope,
+    ): void {
+        $loop_parent_context->intersectNullArrayOffsets($continue_context);
+
+        if ($loop_scope->null_array_offsets_read_at_jumps !== null) {
+            $loop_parent_context->null_array_offsets_read = array_intersect_key(
+                $loop_parent_context->null_array_offsets_read,
+                $loop_scope->null_array_offsets_read_at_jumps,
+            );
+        }
     }
 
     /**
@@ -677,6 +881,9 @@ final class LoopAnalyzer
             $post_expressions,
             $loop_scope,
             $inner_loop_context,
+            false,
+            false,
+            $stmt instanceof PhpParser\Node\Stmt\For_,
         ) === false) {
             return false;
         }
@@ -691,7 +898,7 @@ final class LoopAnalyzer
             || in_array(ScopeAnalyzer::ACTION_BREAK, $loop_scope->final_actions, true);
 
         if ($always_enters_loop && $can_leave_loop) {
-            self::setLoopVars($inner_loop_context, $context, $loop_scope);
+            self::setLoopVars($inner_loop_context, $context, $loop_scope, is_only_left_by_break: $while_true);
         }
 
         if ($can_leave_loop) {
@@ -703,6 +910,8 @@ final class LoopAnalyzer
 
             $defined_here = [];
 
+            $is_only_left_by_the_condition = !in_array(ScopeAnalyzer::ACTION_BREAK, $loop_scope->final_actions, true);
+
             foreach ($evaluated_conditions as $evaluated_condition) {
                 self::setVarsAssignedInCondition(
                     $statements_analyzer,
@@ -711,6 +920,7 @@ final class LoopAnalyzer
                     $inner_loop_context,
                     $loop_scope->exit_truths,
                     $defined_here,
+                    $is_only_left_by_the_condition,
                 );
             }
         }
@@ -741,6 +951,8 @@ final class LoopAnalyzer
      * @param array<string, list<list<Assertion>>> $exit_truths
      * @param array<string, true> $defined_here the variables an earlier assignment of the conditions defined: a later
      *                                           one overrides them
+     * @param bool $is_only_left_by_the_condition whether no break leaves the loop: a variable that existed before
+     *                                            the loop then holds what the condition assigned as well
      */
     private static function setVarsAssignedInCondition(
         StatementsAnalyzer $statements_analyzer,
@@ -749,6 +961,7 @@ final class LoopAnalyzer
         Context $inner_loop_context,
         array $exit_truths,
         array &$defined_here,
+        bool $is_only_left_by_the_condition,
     ): void {
         if ($expr instanceof PhpParser\Node\Expr\Assign) {
             // the value is evaluated before it is assigned
@@ -759,6 +972,7 @@ final class LoopAnalyzer
                 $inner_loop_context,
                 $exit_truths,
                 $defined_here,
+                $is_only_left_by_the_condition,
             );
 
             if ($expr->var instanceof PhpParser\Node\Expr\Variable && is_string($expr->var->name)) {
@@ -766,7 +980,17 @@ final class LoopAnalyzer
                 $assigned_type = $statements_analyzer->node_data->getType($expr->expr);
 
                 if ($assigned_type
-                    && (!isset($context->vars_in_scope[$var_id]) || isset($defined_here[$var_id]))
+                    && !$is_only_left_by_the_condition
+                    && isset($context->vars_in_scope[$var_id])
+                    && !isset($defined_here[$var_id])
+                    && isset($inner_loop_context->vars_in_scope[$var_id])
+                ) {
+                    // a break leaves the loop too: the variable holds what the break or the condition left
+                    $context->vars_in_scope[$var_id] = Type::combineUnionTypes(
+                        $context->vars_in_scope[$var_id],
+                        $assigned_type->setParentNodes($inner_loop_context->vars_in_scope[$var_id]->parent_nodes),
+                    );
+                } elseif ($assigned_type
                     && isset($inner_loop_context->vars_in_scope[$var_id])
                 ) {
                     // the loop was left because the condition is false: that is true of what was assigned
@@ -796,7 +1020,7 @@ final class LoopAnalyzer
                     $defined_here[$var_id] = true;
                 }
             }
-        } elseif ($expr instanceof PhpParser\Node\Expr\BooleanNot) {
+        } elseif ($expr instanceof PhpParser\Node\Expr\BooleanNot || $expr instanceof PhpParser\Node\Expr\Cast) {
             self::setVarsAssignedInCondition(
                 $statements_analyzer,
                 $expr->expr,
@@ -804,6 +1028,7 @@ final class LoopAnalyzer
                 $inner_loop_context,
                 $exit_truths,
                 $defined_here,
+                $is_only_left_by_the_condition,
             );
         } elseif ($expr instanceof PhpParser\Node\Expr\BinaryOp) {
             self::setVarsAssignedInCondition(
@@ -813,6 +1038,7 @@ final class LoopAnalyzer
                 $inner_loop_context,
                 $exit_truths,
                 $defined_here,
+                $is_only_left_by_the_condition,
             );
 
             // the right operand of a short-circuiting operator may not be evaluated
@@ -829,6 +1055,7 @@ final class LoopAnalyzer
                     $inner_loop_context,
                     $exit_truths,
                     $defined_here,
+                    $is_only_left_by_the_condition,
                 );
             }
         }
@@ -836,13 +1063,70 @@ final class LoopAnalyzer
 
     /**
      * @param list<string> $always_assigned_before_loop_body_vars
+     * @param bool $is_only_left_by_break whether the loop is only left by a break (`while (true)`): the variables then
+     *                                    hold what they held at the breaks, not what an iteration ended with
      */
     public static function setLoopVars(
         Context $inner_context,
         Context $context,
         LoopScope $loop_scope,
         array $always_assigned_before_loop_body_vars = [],
+        bool $is_only_left_by_break = false,
     ): void {
+        if ($is_only_left_by_break
+            && $loop_scope->vars_at_breaks !== null
+            && !$loop_scope->breaks_through_finally
+        ) {
+            foreach ($context->vars_in_scope as $var_id => $_) {
+                if (!isset($loop_scope->vars_at_breaks[$var_id]) && self::isLoopVar($var_id)) {
+                    // unset at every break
+                    $context->remove($var_id);
+                }
+            }
+
+            foreach ($loop_scope->vars_at_breaks as $var_id => $type) {
+                $defined_in_loop_type = $loop_scope->possibly_defined_loop_parent_vars[$var_id] ?? null;
+
+                if ($type->isNever()) {
+                    // the passes over the body found no value at the breaks: what an iteration ends with is kept
+                    if ($defined_in_loop_type && isset($inner_context->vars_in_scope[$var_id])) {
+                        $context->vars_in_scope[$var_id] = Type::combineUnionTypes(
+                            $inner_context->vars_in_scope[$var_id],
+                            $defined_in_loop_type,
+                        );
+                    }
+
+                    continue;
+                }
+
+                if ($defined_in_loop_type) {
+                    // possibly undefined after the loop if a break of any pass leaves it undefined
+                    if ($defined_in_loop_type->possibly_undefined) {
+                        $type = $type->setPossiblyUndefined(true);
+                    }
+                } elseif (!isset($context->vars_in_scope[$var_id])) {
+                    continue;
+                }
+
+                // a property or offset missing at a break is unknown there, not unset
+                if ($type->possibly_undefined && !self::isLoopVar($var_id)) {
+                    continue;
+                }
+
+                if (isset($inner_context->vars_in_scope[$var_id])) {
+                    $type = $type->addParentNodes($inner_context->vars_in_scope[$var_id]->parent_nodes);
+                }
+
+                if (isset($context->vars_in_scope[$var_id])) {
+                    $type = $type->addParentNodes($context->vars_in_scope[$var_id]->parent_nodes);
+                }
+
+                $context->vars_in_scope[$var_id] = $type;
+            }
+
+            return;
+        }
+
         foreach ($inner_context->vars_in_scope as $var_id => $type) {
             // if there are break statements in the loop it's not certain
             // that the loop has finished executing, so the assertions at the end
@@ -1020,7 +1304,36 @@ final class LoopAnalyzer
     }
 
     /**
+     * The variables a do-while condition changed belong to the context the loop is left with, with the type they
+     * were given. The operands of `&&` after the first are skipped when an earlier one is false, so their
+     * variables may keep the type they had at the end of the body.
+     *
+     * @param array<string, Union> $vars_after_condition
+     */
+    private static function applyVarsAfterCondition(
+        Context $inner_do_context,
+        array $vars_after_condition,
+        bool $may_be_skipped,
+    ): void {
+        foreach ($vars_after_condition as $var_id => $type) {
+            if (!$may_be_skipped) {
+                $inner_do_context->vars_in_scope[$var_id] = $type;
+            } elseif (isset($inner_do_context->vars_in_scope[$var_id])) {
+                $inner_do_context->vars_in_scope[$var_id] = Type::combineUnionTypes(
+                    $inner_do_context->vars_in_scope[$var_id],
+                    $type,
+                );
+            } else {
+                $inner_do_context->vars_in_scope[$var_id] = $type->setPossiblyUndefined(true);
+            }
+        }
+    }
+
+    /**
      * @param  list<Clause>  $pre_condition_clauses
+     * @param  array<string, Union> $vars_after_condition the variables the condition changes, for a do-while
+     * @param  array<string, Union> $written_var_ids gets the variables evaluating the condition writes, with what they
+     *                                               hold once it is evaluated
      * @return list<string>
      */
     private static function applyPreConditionToLoopContext(
@@ -1030,7 +1343,10 @@ final class LoopAnalyzer
         Context $loop_context,
         Context $outer_context,
         bool $is_do,
+        array &$vars_after_condition = [],
+        array &$written_var_ids = [],
     ): array {
+        $vars_before_condition = $loop_context->vars_in_scope;
         $pre_referenced_var_ids = $loop_context->cond_referenced_var_ids;
         $loop_context->cond_referenced_var_ids = [];
 
@@ -1045,6 +1361,33 @@ final class LoopAnalyzer
         }
 
         $loop_context->inside_conditional = $was_inside_conditional;
+
+        // the variables as the condition leaves them, before the truths of the condition narrow them
+        if ($is_do) {
+            foreach ($loop_context->vars_in_scope as $var_id => $type) {
+                if (!isset($vars_before_condition[$var_id]) || $vars_before_condition[$var_id] !== $type) {
+                    $vars_after_condition[$var_id] = $type;
+                }
+            }
+        }
+
+        // a variable is assigned at the position of the assignment; what it holds once the condition is evaluated,
+        // before the condition is assumed true, is what the loop is left with, whichever pass evaluated it
+        $condition_start = (int) $pre_condition->getAttribute('startFilePos');
+        $condition_end = (int) $pre_condition->getAttribute('endFilePos');
+
+        foreach ($loop_context->assigned_var_ids as $written_var_id => $assigned_offset) {
+            if ($assigned_offset >= $condition_start && $assigned_offset <= $condition_end) {
+                foreach ($loop_context->vars_in_scope as $var_id => $type) {
+                    if ($var_id === $written_var_id
+                        || str_starts_with($var_id, $written_var_id . '[')
+                        || str_starts_with($var_id, $written_var_id . '->')
+                    ) {
+                        $written_var_ids[$var_id] = Type::combineUnionTypes($written_var_ids[$var_id] ?? null, $type);
+                    }
+                }
+            }
+        }
 
         $new_referenced_var_ids = $loop_context->cond_referenced_var_ids;
         $loop_context->cond_referenced_var_ids = array_merge($pre_referenced_var_ids, $new_referenced_var_ids);
@@ -1121,5 +1464,221 @@ final class LoopAnalyzer
         }
 
         return $max_depth;
+    }
+
+    /**
+     * What the variables hold where an iteration goes on to the next one: the end of the body, or only its
+     * `continue`s when the body never gets to its end (`return`, `break`, `throw`), followed by the post
+     * expressions of a `for`
+     *
+     * @param array<PhpParser\Node\Expr> $post_expressions
+     * @return array<string, Union>
+     */
+    private static function getVarsStartingNextIteration(
+        Context $continue_context,
+        LoopScope $loop_scope,
+        array $post_expressions,
+    ): array {
+        if (!$continue_context->has_returned) {
+            return $continue_context->vars_in_scope;
+        }
+
+        if (!in_array(ScopeAnalyzer::ACTION_CONTINUE, $loop_scope->final_actions, true)) {
+            return [];
+        }
+
+        return array_intersect_key(
+            $continue_context->vars_in_scope,
+            self::getAssignedVarIds($post_expressions, $continue_context->self),
+        )
+            + $loop_scope->possibly_redefined_loop_vars
+            + $loop_scope->possibly_defined_loop_vars;
+    }
+
+    /**
+     * @param array<PhpParser\Node\Expr> $exprs
+     * @return array<string, true>
+     */
+    private static function getAssignedVarIds(array $exprs, ?string $this_class_name): array
+    {
+        if (!$exprs) {
+            return [];
+        }
+
+        $assignment_mapper = new AssignmentMapVisitor($this_class_name);
+        $traverser = new PhpParser\NodeTraverser;
+        $traverser->addVisitor($assignment_mapper);
+        $traverser->traverse($exprs);
+
+        return array_map(static fn(array $_): bool => true, $assignment_mapper->getAssignmentMap());
+    }
+
+    /**
+     * The ints a range shifted in a loop is widened to before it is unbounded: those the loop has as literals
+     * (what it compares with, clamps to…), each with its neighbours to cover `<` and `<=`
+     *
+     * @param array<PhpParser\Node> $nodes
+     * @return list<int>
+     */
+    private static function getWideningBounds(array $nodes): array
+    {
+        $bounds = [];
+
+        foreach ((new NodeFinder())->findInstanceOf($nodes, PhpParser\Node\Scalar\Int_::class) as $int) {
+            if ($int->value >= PHP_INT_MAX - 1) {
+                continue;
+            }
+
+            foreach ([$int->value, -$int->value] as $value) {
+                $bounds[$value - 1] = true;
+                $bounds[$value] = true;
+                $bounds[$value + 1] = true;
+            }
+        }
+
+        $bounds = array_keys($bounds);
+        sort($bounds);
+
+        return $bounds;
+    }
+
+    /**
+     * The variables whose int range at the end of an iteration goes past the ints they started it with, with that
+     * side moved to the next of the bounds, or unbounded. Literals are left alone: they come from assignments, so
+     * the passes reach all of them.
+     *
+     * @param array<string, Union> $vars_at_start
+     * @param array<string, Union> $vars_at_end
+     * @param ?list<int> $bounds sorted
+     * @return array<string, Union>
+     * @psalm-pure
+     */
+    private static function getWidenedIntRanges(array $vars_at_start, array $vars_at_end, ?array $bounds): array
+    {
+        $widened_var_types = [];
+
+        foreach ($vars_at_end as $var_id => $end_type) {
+            if (!isset($vars_at_start[$var_id])) {
+                continue;
+            }
+
+            $start_bounds = self::getIntBounds($vars_at_start[$var_id]);
+
+            if ($start_bounds === null) {
+                continue;
+            }
+
+            [$start_min, $start_max] = $start_bounds;
+
+            $widen_min = false;
+            $widen_max = false;
+
+            foreach ($end_type->getAtomicTypes() as $atomic) {
+                if (!$atomic instanceof TIntRange) {
+                    continue;
+                }
+
+                if ($start_min !== null && ($atomic->min_bound === null || $atomic->min_bound < $start_min)) {
+                    $widen_min = true;
+                }
+
+                if ($start_max !== null && ($atomic->max_bound === null || $atomic->max_bound > $start_max)) {
+                    $widen_max = true;
+                }
+            }
+
+            if (!$widen_min && !$widen_max) {
+                continue;
+            }
+
+            [$end_min, $end_max] = self::getIntBounds($end_type) ?? [null, null];
+
+            $types = array_filter(
+                $end_type->getAtomicTypes(),
+                static fn(Atomic $atomic): bool => !$atomic instanceof TInt,
+            );
+
+            $min = $start_min === null || $end_min === null ? null : min($start_min, $end_min);
+            $max = $start_max === null || $end_max === null ? null : max($start_max, $end_max);
+
+            if ($widen_min) {
+                $min = $min === null || $bounds === null ? null : self::getBoundBeyond($bounds, $min, false);
+            }
+
+            if ($widen_max) {
+                $max = $max === null || $bounds === null ? null : self::getBoundBeyond($bounds, $max, true);
+            }
+
+            $types[] = $min === null && $max === null ? new TInt() : new TIntRange($min, $max);
+
+            $widened_var_types[$var_id] = $end_type->setTypes($types);
+        }
+
+        return $widened_var_types;
+    }
+
+    /**
+     * The first of the sorted bounds at or past a value, upwards or downwards; null if there is none
+     *
+     * @param list<int> $bounds
+     * @psalm-pure
+     */
+    private static function getBoundBeyond(array $bounds, int $value, bool $upwards): ?int
+    {
+        if (!$upwards) {
+            $bounds = array_reverse($bounds);
+        }
+
+        foreach ($bounds as $bound) {
+            if ($upwards ? $bound >= $value : $bound <= $value) {
+                return $bound;
+            }
+        }
+
+        return null;
+    }
+
+    /**
+     * The lowest and highest of the ints a type holds, null for an unbounded side, or null if it holds no int
+     *
+     * @return ?array{?int, ?int}
+     * @psalm-pure
+     */
+    private static function getIntBounds(Union $type): ?array
+    {
+        $bounds = null;
+
+        foreach ($type->getAtomicTypes() as $atomic) {
+            if (!$atomic instanceof TInt) {
+                continue;
+            }
+
+            $range = TIntRange::convertToIntRange($atomic);
+
+            if ($bounds === null) {
+                $bounds = [$range->min_bound, $range->max_bound];
+
+                continue;
+            }
+
+            $bounds = [
+                $bounds[0] === null || $range->min_bound === null ? null : min($bounds[0], $range->min_bound),
+                $bounds[1] === null || $range->max_bound === null ? null : max($bounds[1], $range->max_bound),
+            ];
+        }
+
+        return $bounds;
+    }
+
+    /**
+     * Types that read the same may still differ: closures made from different functions or methods do
+     *
+     * @psalm-pure
+     */
+    private static function differ(Union $type, Union $other_type): bool
+    {
+        return $type->getId() !== $other_type->getId()
+            || array_diff_key($type->getAtomicTypes(), $other_type->getAtomicTypes()) !== []
+            || array_diff_key($other_type->getAtomicTypes(), $type->getAtomicTypes()) !== [];
     }
 }

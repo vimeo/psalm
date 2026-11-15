@@ -757,13 +757,14 @@ final class FunctionLikeDocblockScanner
 
                                 $param_type_mapping[$token_body] = $template_name;
 
+                                // a check of the param against its docblock type is still one against the docblock
                                 $param_storage->type = new Union([
                                     new TTemplateParam(
                                         $template_name,
                                         $template_as_type,
                                         $template_function_id,
                                     ),
-                                ]);
+                                ], ['from_docblock' => $template_as_type->from_docblock]);
                             }
                         }
 
@@ -848,17 +849,17 @@ final class FunctionLikeDocblockScanner
         $is_loose_equality = false;
         $is_strict_equality = false;
 
-        if ($assertion_type[0] === '!') {
+        if (str_starts_with($assertion_type, '!')) {
             $is_negation = true;
             $assertion_type = substr($assertion_type, 1);
         }
 
-        if ($assertion_type[0] === '~') {
+        if (str_starts_with($assertion_type, '~')) {
             $is_loose_equality = true;
             $assertion_type = substr($assertion_type, 1);
         }
 
-        if ($assertion_type[0] === '=') {
+        if (str_starts_with($assertion_type, '=')) {
             $is_strict_equality = true;
             $assertion_type = substr($assertion_type, 1);
         }
@@ -1319,8 +1320,10 @@ final class FunctionLikeDocblockScanner
                     && !$storage->return_type->hasConditional()
                 ) {
                     //don't add null to final type if signature type don't match the docblock type
-                    // however, we can't check for object types at this point (#6931), so we'll assume it's ok
-                    if ($storage->return_type->hasObjectType() ||
+                    // however, we can't check for object types or type aliases (whose class may not be scanned yet)
+                    // at this point (#6931), so we'll assume it's ok
+                    if ($storage->return_type->hasObjectType()
+                        || $storage->return_type->hasTypeAlias() ||
                         UnionTypeComparator::isContainedBy(
                             $codebase,
                             $storage->return_type,
