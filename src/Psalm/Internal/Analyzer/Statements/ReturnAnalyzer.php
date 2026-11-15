@@ -164,12 +164,7 @@ final class ReturnAnalyzer
         if ($closure instanceof ClosureAnalyzer) {
             foreach ($context->captured_by_ref as $var_id => $_) {
                 if (isset($context->vars_in_scope[$var_id])) {
-                    $closure->captured_by_ref_types_at_return[$var_id][] =
-                        $closure->getEnclosingTypeOfUnwrittenByRefCapture(
-                            $var_id,
-                            $context->vars_in_scope[$var_id],
-                            $stmt->getStartFilePos(),
-                        );
+                    $closure->captured_by_ref_types_at_return[$var_id][] = $context->vars_in_scope[$var_id];
                 }
             }
         }
@@ -730,9 +725,9 @@ final class ReturnAnalyzer
                     ) {
                         IssueBuffer::maybeAdd(
                             new FalsableReturnStatement(
-                                'The declared return type \'' . $local_return_type . '\' for '
+                                'The declared return type \'' . $local_return_type->getId() . '\' for '
                                     . $cased_method_id . ' does not allow false, but the function returns \''
-                                        . $inferred_type . '\'',
+                                        . $inferred_type->getId() . '\'',
                                 new CodeLocation($source, $stmt->expr),
                             ),
                             $statements_analyzer->getSuppressedIssues(),
