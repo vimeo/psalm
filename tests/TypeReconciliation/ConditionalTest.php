@@ -571,6 +571,44 @@ final class ConditionalTest extends TestCase
                 'ignored_issues' => [],
                 'php_version' => '8.2',
             ],
+            'identityOfANullsafeFetchSaysNothingOfTheReceiverWhereItIsFalse' => [
+                'code' => <<<'PHP'
+                    <?php
+                    final readonly class A {
+                        public function __construct(public int $a, public int $b) {}
+                    }
+
+                    function earlyReturn(A $a1, ?A $a2): void {
+                        if ($a1->a === $a2?->a) {
+                            return;
+                        }
+
+                        /** @psalm-check-type-exact $a2 = A|null */
+                        echo 1;
+                    }
+
+                    function variable(int $x, ?A $a2): void {
+                        if ($x === $a2?->a) {
+                            echo 1;
+                        } else {
+                            /** @psalm-check-type-exact $a2 = A|null */
+                            echo 2;
+                        }
+                    }
+
+                    function literal(?A $a2): void {
+                        if ($a2?->a === 1) {
+                            echo 1;
+                        } else {
+                            /** @psalm-check-type-exact $a2 = A|null */
+                            echo 2;
+                        }
+                    }
+                    PHP,
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.2',
+            ],
             'negatedInstanceofRemovesTheClassFromTheBoundOfATemplateParam' => [
                 'code' => '<?php
                     /**
