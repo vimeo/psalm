@@ -25,7 +25,12 @@ use Psalm\Storage\Assertion\Falsy;
 use Psalm\Storage\Assertion\IsNotType;
 use Psalm\Storage\Assertion\IsType;
 use Psalm\Storage\Assertion\Truthy;
+use Psalm\Type\Atomic\TConditional;
+use Psalm\Type\Atomic\TMixed;
+use Psalm\Type\Atomic\TNonEmptyMixed;
 use Psalm\Type\Atomic\TNull;
+use Psalm\Type\Atomic\TTemplateParam;
+use Psalm\Type\Union;
 
 use function array_diff_key;
 use function array_filter;
@@ -173,7 +178,7 @@ final class FormulaGenerator
                 return $bool_comparison_clauses;
             }
 
-            $nullsafe_expansion = self::expandNullsafePropertyNullComparison($conditional);
+            $nullsafe_expansion = self::expandNullsafePropertyNullComparison($conditional, $source);
 
             if ($nullsafe_expansion !== null) {
                 return self::getFormula(
@@ -571,19 +576,85 @@ final class FormulaGenerator
             }
         }
 
-        if ($clauses) {
-            return $clauses;
-        }
-
         $truthy = new Truthy();
 
-        return [
-            new Clause(
-                [$conditional_ref => [(string) $truthy => $truthy]],
+        if (!$clauses) {
+            $clauses = [
+                new Clause(
+                    [$conditional_ref => [(string) $truthy => $truthy]],
+                    $conditional_object_id,
+                    $creating_object_id,
+                ),
+            ];
+        }
+
+        // `$x === $a?->p` with an `$x` that can't be null holds only if `$a` isn't null, a clause of its own so that
+        // its negation says nothing about `$a`: `$x !== $a?->p` is also true for another value of `$a->p`
+        $nullsafe_receiver_id = self::getReceiverOfANullsafeFetchIdenticalToANonNull(
+            $conditional,
+            $this_class_name,
+            $source,
+        );
+
+        if ($nullsafe_receiver_id !== null) {
+            $not_null = new IsNotType(new TNull());
+            $clauses[] = new Clause(
+                [$nullsafe_receiver_id => [(string) $not_null => $not_null]],
                 $conditional_object_id,
                 $creating_object_id,
-            ),
-        ];
+            );
+        }
+
+        return $clauses;
+    }
+
+    private static function getReceiverOfANullsafeFetchIdenticalToANonNull(
+        PhpParser\Node\Expr $conditional,
+        ?string $this_class_name,
+        FileSource $source,
+    ): ?string {
+        if (!$conditional instanceof PhpParser\Node\Expr\BinaryOp\Identical
+            || !$source instanceof StatementsAnalyzer
+        ) {
+            return null;
+        }
+
+        foreach ([[$conditional->left, $conditional->right], [$conditional->right, $conditional->left]] as $operands) {
+            [$nullsafe_operand, $other_operand] = $operands;
+
+            if (!$nullsafe_operand instanceof PhpParser\Node\Expr\NullsafePropertyFetch) {
+                continue;
+            }
+
+            $other_operand_type = $source->node_data->getType($other_operand);
+
+            if ($other_operand_type && !self::canBeNull($other_operand_type)) {
+                return ExpressionIdentifier::getExtendedVarId($nullsafe_operand->var, $this_class_name, $source);
+            }
+        }
+
+        return null;
+    }
+
+    /**
+     * @psalm-pure
+     */
+    private static function canBeNull(Union $type): bool
+    {
+        if ($type->isNullable()) {
+            return true;
+        }
+
+        foreach ($type->getAtomicTypes() as $atomic_type) {
+            if (($atomic_type instanceof TMixed && !$atomic_type instanceof TNonEmptyMixed)
+                || ($atomic_type instanceof TTemplateParam && self::canBeNull($atomic_type->as))
+                || $atomic_type instanceof TConditional
+            ) {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     /**
@@ -871,6 +942,7 @@ final class FormulaGenerator
      */
     private static function expandNullsafePropertyNullComparison(
         PhpParser\Node\Expr\BinaryOp $conditional,
+        FileSource $source,
     ): ?PhpParser\Node\Expr {
         if ($conditional->left instanceof PhpParser\Node\Expr\NullsafePropertyFetch
             && self::isNullLiteral($conditional->right)
@@ -896,9 +968,27 @@ final class FormulaGenerator
         }
 
         $attributes = $conditional->getAttributes();
-        $property_fetch = new VirtualPropertyFetch($receiver, $nullsafe_fetch->name, $nullsafe_fetch->getAttributes());
-
         $receiver_comparison = self::createComparison($conditional, $receiver, $null_operand, $nullsafe_is_left);
+
+        // a property that can't be null (or loosely equal to null) says nothing: it is the receiver that was checked
+        $property_type = AssertionFinder::getNullsafePropertyType($nullsafe_fetch, $source);
+
+        if ($property_type !== null
+            && ($conditional instanceof PhpParser\Node\Expr\BinaryOp\Identical
+                || $conditional instanceof PhpParser\Node\Expr\BinaryOp\NotIdentical
+                    ? !$property_type->isNullable()
+                    : $property_type->isAlwaysTruthy())
+        ) {
+            return $receiver_comparison;
+        }
+
+        // the property is only compared where the receiver isn't null, so `$a?->b?->c` is `$a->b->c` there
+        $property_fetch = new VirtualPropertyFetch(
+            self::withoutNullsafeFetches($receiver),
+            $nullsafe_fetch->name,
+            $nullsafe_fetch->getAttributes(),
+        );
+
         $property_comparison = self::createComparison($conditional, $property_fetch, $null_operand, $nullsafe_is_left);
 
         return $conditional instanceof PhpParser\Node\Expr\BinaryOp\Identical
@@ -924,6 +1014,24 @@ final class FormulaGenerator
             $like instanceof PhpParser\Node\Expr\BinaryOp\Equal => new VirtualEqual($left, $right, $attributes),
             default => new VirtualNotEqual($left, $right, $attributes),
         };
+    }
+
+    /**
+     * A chain of properties with every `?->` replaced by `->`
+     */
+    private static function withoutNullsafeFetches(PhpParser\Node\Expr $expr): PhpParser\Node\Expr
+    {
+        if ($expr instanceof PhpParser\Node\Expr\NullsafePropertyFetch
+            || $expr instanceof PhpParser\Node\Expr\PropertyFetch
+        ) {
+            $var = self::withoutNullsafeFetches($expr->var);
+
+            if ($var !== $expr->var || $expr instanceof PhpParser\Node\Expr\NullsafePropertyFetch) {
+                return new VirtualPropertyFetch($var, $expr->name, $expr->getAttributes());
+            }
+        }
+
+        return $expr;
     }
 
     private static function isNullLiteral(PhpParser\Node\Expr $expr): bool
