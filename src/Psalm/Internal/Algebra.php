@@ -447,19 +447,9 @@ final class Algebra
                     }
                 }
 
-                /**
-                 * doesn't infer the "unset" correctly
-                 *
-                 * @psalm-suppress DocblockTypeContradiction
-                 */
                 if ($truths[$var][$key] === []) {
                     unset($truths[$var][$key]);
                 } else {
-                    /**
-                     * doesn't infer the "unset" correctly
-                     *
-                     * @psalm-suppress RedundantFunctionCallGivenDocblockType
-                     */
                     $truths[$var][$key] = array_values($truths[$var][$key]);
                 }
             }

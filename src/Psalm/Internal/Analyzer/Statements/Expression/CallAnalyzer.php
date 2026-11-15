@@ -68,6 +68,7 @@ use function count;
 use function implode;
 use function in_array;
 use function is_int;
+use function is_string;
 use function mt_rand;
 use function preg_match;
 use function preg_replace;
@@ -860,6 +861,89 @@ abstract class CallAnalyzer
     }
 
     /**
+     * An assertion on a static property of `self`, `parent` or `static` is about the property of the class they name
+     * in the called method, and also about that property named through `self::` of the caller or through the class
+     * the call names, when it is the same property. Those the caller cannot name are dropped.
+     *
+     * @param array<Possibilities> $assertions
+     * @param ?string $self_class the class `self` is in the called method, null for a function
+     * @param ?string $static_class the class `static` is in the called method, `static` when the call forwards the
+     *                              caller's, null when unknown
+     * @param ?string $called_class the class the call names, or the class of the object it is made on
+     * @return list<Possibilities>
+     * @psalm-capabilities read-props
+     */
+    public static function resolveStaticPropertyAssertionClasses(
+        array $assertions,
+        Codebase $codebase,
+        Context $context,
+        ?string $self_class,
+        ?string $static_class,
+        ?string $called_class = null,
+    ): array {
+        $resolved_assertions = [];
+
+        foreach ($assertions as $assertion) {
+            if (!is_string($assertion->var_id)
+                || !preg_match('/^(self|parent|static)::\$(\w+)(.*)$/is', $assertion->var_id, $matches)
+            ) {
+                $resolved_assertions[] = $assertion;
+
+                continue;
+            }
+
+            [, $class_keyword, $property_name, $rest] = $matches;
+
+            $class = match (strtolower($class_keyword)) {
+                'self' => $self_class,
+                'parent' => $self_class !== null
+                    ? $codebase->classlikes->getStorageFor($self_class)?->parent_class
+                    : null,
+                default => $static_class,
+            };
+
+            if ($class === null) {
+                continue;
+            }
+
+            if ($class === 'static') {
+                $resolved_assertions[] = new Possibilities('static::$' . $property_name . $rest, $assertion->rule);
+
+                continue;
+            }
+
+            $class_storage = $codebase->classlikes->getStorageFor($class);
+
+            if ($class_storage === null) {
+                continue;
+            }
+
+            $asserted_classes = [$class_storage->name => true];
+
+            foreach ([$context->self, $called_class] as $alias_class) {
+                $alias_storage = $alias_class !== null ? $codebase->classlikes->getStorageFor($alias_class) : null;
+
+                if ($alias_storage !== null
+                    && isset($class_storage->appearing_property_ids[$property_name])
+                    && ($alias_storage->appearing_property_ids[$property_name] ?? null)
+                        === $class_storage->appearing_property_ids[$property_name]
+                ) {
+                    $asserted_classes[$alias_storage->name] = true;
+                }
+            }
+
+            foreach ($asserted_classes as $asserted_class => $_) {
+                $resolved_assertions[] = new Possibilities(
+                    $asserted_class . '::$' . $property_name . $rest,
+                    $assertion->rule,
+                );
+            }
+        }
+
+        return $resolved_assertions;
+    }
+
+    /**
      * @param Identifier|Name $expr
      * @param  Possibilities[] $var_assertions
      * @param  list<PhpParser\Node\Arg> $args
@@ -900,8 +984,6 @@ abstract class CallAnalyzer
                 $assertion_var_id = $thisName;
             } elseif (str_starts_with($var_possibilities->var_id, '$this->') && $thisName !== null) {
                 $assertion_var_id = $thisName . str_replace('$this->', '->', $var_possibilities->var_id);
-            } elseif (str_starts_with($var_possibilities->var_id, 'self::') && $context->self) {
-                $assertion_var_id = $context->self . str_replace('self::', '::', $var_possibilities->var_id);
             } elseif (str_contains($var_possibilities->var_id, '::$')) {
                 // allow assertions to bring external static props into scope
                 $assertion_var_id = $var_possibilities->var_id;

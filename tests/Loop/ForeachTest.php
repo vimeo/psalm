@@ -222,6 +222,21 @@ final class ForeachTest extends TestCase
                         return $sum;
                     }',
             ],
+            'foreachIntRangeSummedInArrayValuesIsWidened' => [
+                'code' => '<?php
+                    /**
+                     * @param list<string> $words
+                     * @return array<string, int>
+                     */
+                    function f(array $words): array {
+                        $counts = [];
+                        foreach ($words as $word) {
+                            $counts[$word] = ($counts[$word] ?? 0) + rand(1, 2);
+                        }
+                        /** @psalm-check-type-exact $counts = array<string, int<1, max>> */;
+                        return $counts;
+                    }',
+            ],
             'mixedIteratedByForeachIsNonEmptyInTheBodyAndMixedAfterIt' => [
                 'code' => '<?php
                     function getMixed(): mixed {

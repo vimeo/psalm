@@ -40,6 +40,111 @@ final class DoTest extends TestCase
                 'ignored_issues' => [],
                 'php_version' => '8.1',
             ],
+            'counterOfDoWhileIsNotAZeroInItsFirstPassForTheIssues' => [
+                'code' => <<<'PHP'
+                    <?php
+                    /** @param list<string> $existing */
+                    function nextId(array $existing): string {
+                        $counter = 0;
+
+                        do {
+                            $id = rand(0, 1) . ($counter === 0 ? '' : '-' . (string) $counter);
+                            $counter++;
+                        } while (in_array($id, $existing, true));
+
+                        return $id;
+                    }
+                    PHP,
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
+            'castsOfDoWhileCounterAreNotNeverInItsFirstPass' => [
+                'code' => <<<'PHP'
+                    <?php
+                    function f(): void {
+                        $counter = 0;
+
+                        do {
+                            if ($counter !== 0) {
+                                echo (string) $counter, (int) $counter, (float) $counter;
+                            }
+                            $counter++;
+                        } while ($counter < 3);
+                    }
+                    PHP,
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
+            'usesOfAVariableOfDoWhileThatIsNeverInItsFirstPassAreNotReported' => [
+                'code' => <<<'PHP'
+                    <?php
+                    final class Foo {
+                        public int $foo = 1;
+
+                        public function m(): int {
+                            return 1;
+                        }
+                    }
+
+                    function fetch(): void {
+                        $o = 0;
+                        do {
+                            if ($o !== 0) {
+                                $fetched = $o->foo;
+                                echo $fetched, $o->m();
+                            }
+                            $o = new Foo();
+                        } while (rand(0, 1));
+                    }
+
+                    function arrayAccess(): void {
+                        $a = 0;
+                        do {
+                            if ($a !== 0) {
+                                echo $a[0];
+                            }
+                            $a = ['x'];
+                        } while (rand(0, 1));
+                    }
+
+                    function offset(): void {
+                        $values = ['x', 'y'];
+                        $i = 0;
+                        do {
+                            if ($i !== 0) {
+                                echo $values[$i];
+                            }
+                            $i = 1;
+                        } while (rand(0, 1));
+                    }
+
+                    function call(): void {
+                        $c = 0;
+                        do {
+                            if ($c !== 0) {
+                                echo $c();
+                            }
+                            $c = static fn(): int => 1;
+                        } while (rand(0, 1));
+                    }
+                    PHP,
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
+            'doWhileIntRangeShiftedInAnArrayOffsetIsWidened' => [
+                'code' => '<?php
+                    function f(): int {
+                        $a = ["n" => 0];
+                        do {
+                            $a["n"] += rand(1, 3);
+                        } while ($a["n"] <= 10);
+                        /** @psalm-check-type-exact $a = array{n: int<11, 13>} */;
+                        return $a["n"];
+                    }',
+            ],
             'doWhileIntRangeShiftedByEveryIterationIsWidened' => [
                 'code' => '<?php
                     function f(): int {
@@ -460,100 +565,6 @@ final class DoTest extends TestCase
                         echo "here";
                     } while ($code === 1);',
             ],
-            'counterOfDoWhileIsNotAZeroInItsFirstPassForTheIssues' => [
-                'code' => <<<'PHP'
-                    <?php
-                    /** @param list<string> $existing */
-                    function nextId(array $existing): string {
-                        $counter = 0;
-
-                        do {
-                            $id = rand(0, 1) . ($counter === 0 ? '' : '-' . (string) $counter);
-                            $counter++;
-                        } while (in_array($id, $existing, true));
-
-                        return $id;
-                    }
-                    PHP,
-                'assertions' => [],
-                'ignored_issues' => [],
-                'php_version' => '8.1',
-            ],
-            'castsOfDoWhileCounterAreNotNeverInItsFirstPass' => [
-                'code' => <<<'PHP'
-                    <?php
-                    function f(): void {
-                        $counter = 0;
-
-                        do {
-                            if ($counter !== 0) {
-                                echo (string) $counter, (int) $counter, (float) $counter;
-                            }
-                            $counter++;
-                        } while ($counter < 3);
-                    }
-                    PHP,
-                'assertions' => [],
-                'ignored_issues' => [],
-                'php_version' => '8.1',
-            ],
-            'usesOfAVariableOfDoWhileThatIsNeverInItsFirstPassAreNotReported' => [
-                'code' => <<<'PHP'
-                    <?php
-                    final class Foo {
-                        public int $foo = 1;
-
-                        public function m(): int {
-                            return 1;
-                        }
-                    }
-
-                    function fetch(): void {
-                        $o = 0;
-                        do {
-                            if ($o !== 0) {
-                                $fetched = $o->foo;
-                                echo $fetched, $o->m();
-                            }
-                            $o = new Foo();
-                        } while (rand(0, 1));
-                    }
-
-                    function arrayAccess(): void {
-                        $a = 0;
-                        do {
-                            if ($a !== 0) {
-                                echo $a[0];
-                            }
-                            $a = ['x'];
-                        } while (rand(0, 1));
-                    }
-
-                    function offset(): void {
-                        $values = ['x', 'y'];
-                        $i = 0;
-                        do {
-                            if ($i !== 0) {
-                                echo $values[$i];
-                            }
-                            $i = 1;
-                        } while (rand(0, 1));
-                    }
-
-                    function call(): void {
-                        $c = 0;
-                        do {
-                            if ($c !== 0) {
-                                echo $c();
-                            }
-                            $c = static fn(): int => 1;
-                        } while (rand(0, 1));
-                    }
-                    PHP,
-                'assertions' => [],
-                'ignored_issues' => [],
-                'php_version' => '8.1',
-            ],
             'doWhileConditionAssignmentKeepsTheAssignedTypeAfterTheLoop' => [
                 'code' => '<?php
                     function fetchError(): ?stdClass {
@@ -843,99 +854,6 @@ final class DoTest extends TestCase
                 'error_levels' => [],
                 'php_version' => '8.1',
             ],
-            'doWhileBreakBeforeDefinition' => [
-                'code' => <<<'PHP'
-                    <?php
-                    function f(): void {
-                        do {
-                            if (rand()) {
-                                break;
-                            }
-
-                            $v = 1;
-
-                            try {
-                                if (rand()) {
-                                    break;
-                                }
-                            } finally {
-                                echo "done";
-                            }
-                        } while (rand());
-
-                        echo $v;
-                    }
-                    PHP,
-                'error_message' => 'PossiblyUndefinedVariable - src' . DIRECTORY_SEPARATOR . 'somefile.php:19:10',
-                'error_levels' => [],
-                'php_version' => '8.1',
-            ],
-            'doWhileConditionOnNarrowedPropertyIsRedundant' => [
-                'code' => '<?php
-                    class Options {
-                        public bool $foo = false;
-                    }
-
-                    $options = new Options();
-                    $options->foo = true;
-
-                    $i = 0;
-                    do {
-                        $i++;
-                    } while ($options->foo && $i < 3);',
-                'error_message' => 'RedundantCondition',
-            ],
-            'doWhileVarWithPossibleBreakWithoutDefining' => [
-                'code' => '<?php
-                    do {
-                        if (rand(0, 1)) {
-                            break;
-                        }
-                        $worked = true;
-                    }
-                    while (rand(0,1));
-
-                    echo $worked;',
-                'error_message' => 'PossiblyUndefinedGlobalVariable',
-            ],
-            'doWhileVarWithPossibleBreakThatMaybeSetsToTrueWithoutDefining' => [
-                'code' => '<?php
-                    do {
-                        if (rand(0, 1)) {
-                            if (rand(0, 1)) {
-                                $a = true;
-                            }
-
-                            break;
-                        }
-                        $a = true;
-                    }
-                    while (rand(0,1));
-
-                    echo $a;',
-                'error_message' => 'PossiblyUndefinedGlobalVariable',
-            ],
-            'SKIPPED-doWhileVarWithPossibleContinueWithoutDefining' => [
-                'code' => '<?php
-                    do {
-                        if (rand(0, 1)) {
-                            continue;
-                        }
-                        $worked = true;
-                    }
-                    while (rand(0,1));
-
-                    echo $worked;',
-                'error_message' => 'PossiblyUndefinedGlobalVariable',
-            ],
-            'possiblyUndefinedArrayInDo' => [
-                'code' => '<?php
-                    do {
-                        $array[] = "hello";
-                    } while (rand(0, 1));',
-                'error_message' => 'PossiblyUndefinedGlobalVariable - src' . DIRECTORY_SEPARATOR . 'somefile.php:3:25 - Possibly undefined ' .
-                    'global variable $array, first seen on line 3',
-            ],
             'invalidCastInTheBodyOfDoWhileIsStillReported' => [
                 'code' => <<<'PHP'
                     <?php
@@ -1071,6 +989,99 @@ final class DoTest extends TestCase
                 'error_message' => 'UndefinedVariable',
                 'error_levels' => [],
                 'php_version' => '8.1',
+            ],
+            'doWhileBreakBeforeDefinition' => [
+                'code' => <<<'PHP'
+                    <?php
+                    function f(): void {
+                        do {
+                            if (rand()) {
+                                break;
+                            }
+
+                            $v = 1;
+
+                            try {
+                                if (rand()) {
+                                    break;
+                                }
+                            } finally {
+                                echo "done";
+                            }
+                        } while (rand());
+
+                        echo $v;
+                    }
+                    PHP,
+                'error_message' => 'PossiblyUndefinedVariable - src' . DIRECTORY_SEPARATOR . 'somefile.php:19:10',
+                'error_levels' => [],
+                'php_version' => '8.1',
+            ],
+            'doWhileConditionOnNarrowedPropertyIsRedundant' => [
+                'code' => '<?php
+                    class Options {
+                        public bool $foo = false;
+                    }
+
+                    $options = new Options();
+                    $options->foo = true;
+
+                    $i = 0;
+                    do {
+                        $i++;
+                    } while ($options->foo && $i < 3);',
+                'error_message' => 'RedundantCondition',
+            ],
+            'doWhileVarWithPossibleBreakWithoutDefining' => [
+                'code' => '<?php
+                    do {
+                        if (rand(0, 1)) {
+                            break;
+                        }
+                        $worked = true;
+                    }
+                    while (rand(0,1));
+
+                    echo $worked;',
+                'error_message' => 'PossiblyUndefinedGlobalVariable',
+            ],
+            'doWhileVarWithPossibleBreakThatMaybeSetsToTrueWithoutDefining' => [
+                'code' => '<?php
+                    do {
+                        if (rand(0, 1)) {
+                            if (rand(0, 1)) {
+                                $a = true;
+                            }
+
+                            break;
+                        }
+                        $a = true;
+                    }
+                    while (rand(0,1));
+
+                    echo $a;',
+                'error_message' => 'PossiblyUndefinedGlobalVariable',
+            ],
+            'SKIPPED-doWhileVarWithPossibleContinueWithoutDefining' => [
+                'code' => '<?php
+                    do {
+                        if (rand(0, 1)) {
+                            continue;
+                        }
+                        $worked = true;
+                    }
+                    while (rand(0,1));
+
+                    echo $worked;',
+                'error_message' => 'PossiblyUndefinedGlobalVariable',
+            ],
+            'possiblyUndefinedArrayInDo' => [
+                'code' => '<?php
+                    do {
+                        $array[] = "hello";
+                    } while (rand(0, 1));',
+                'error_message' => 'PossiblyUndefinedGlobalVariable - src' . DIRECTORY_SEPARATOR . 'somefile.php:3:25 - Possibly undefined ' .
+                    'global variable $array, first seen on line 3',
             ],
         ];
     }

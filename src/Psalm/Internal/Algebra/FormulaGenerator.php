@@ -14,6 +14,7 @@ use Psalm\Internal\Analyzer\Statements\Expression\AssertionFinder;
 use Psalm\Internal\Analyzer\Statements\Expression\ExpressionIdentifier;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
 use Psalm\Internal\Clause;
+use Psalm\Internal\Provider\NodeDataProvider;
 use Psalm\Node\Expr\BinaryOp\VirtualBooleanAnd;
 use Psalm\Node\Expr\BinaryOp\VirtualBooleanOr;
 use Psalm\Node\Expr\BinaryOp\VirtualEqual;
@@ -88,7 +89,11 @@ final class FormulaGenerator
             );
 
             // what the left side tested of a variable that the right side assigns is about its previous value
-            $right_assigned_var_ids = self::getAssignedVarIds($conditional->right, $this_class_name);
+            $right_assigned_var_ids = self::getAssignedVarIds(
+                $conditional->right,
+                $this_class_name,
+                self::getNodeData($source),
+            );
 
             if ($right_assigned_var_ids) {
                 $left_assertions = array_values(array_filter(
@@ -140,7 +145,11 @@ final class FormulaGenerator
 
             // the right side is only evaluated where the left one is false: a clause that says nothing of what it
             // assigns (see Algebra::combineOredClauses()) can't keep what the left one tested of the previous value
-            $right_assigned_var_ids = self::getAssignedVarIds($conditional->right, $this_class_name);
+            $right_assigned_var_ids = self::getAssignedVarIds(
+                $conditional->right,
+                $this_class_name,
+                self::getNodeData($source),
+            );
 
             if ($right_assigned_var_ids) {
                 $right_clauses = array_map(
@@ -680,8 +689,11 @@ final class FormulaGenerator
      *
      * @return array<string, true>
      */
-    public static function getVarsAssignedByOredRightSides(PhpParser\Node\Expr $expr, ?string $this_class_name): array
-    {
+    public static function getVarsAssignedByOredRightSides(
+        PhpParser\Node\Expr $expr,
+        ?string $this_class_name,
+        ?NodeDataProvider $node_data,
+    ): array {
         if (!$expr instanceof PhpParser\Node\Expr\BinaryOp\BooleanOr
             && !$expr instanceof PhpParser\Node\Expr\BinaryOp\LogicalOr
         ) {
@@ -689,10 +701,10 @@ final class FormulaGenerator
         }
 
         return [
-            ...self::getVarsAssignedByOredRightSides($expr->left, $this_class_name),
+            ...self::getVarsAssignedByOredRightSides($expr->left, $this_class_name, $node_data),
             ...array_diff_key(
-                self::getAssignedVarIds($expr->right, $this_class_name),
-                self::getAssignedVarIds($expr->left, $this_class_name),
+                self::getAssignedVarIds($expr->right, $this_class_name, $node_data),
+                self::getAssignedVarIds($expr->left, $this_class_name, $node_data),
             ),
         ];
     }
@@ -708,8 +720,9 @@ final class FormulaGenerator
         array $clauses,
         ?PhpParser\Node\Expr $expr,
         ?string $this_class_name,
+        ?NodeDataProvider $node_data,
     ): array {
-        $assigned_var_ids = $expr ? self::getAssignedVarIds($expr, $this_class_name) : [];
+        $assigned_var_ids = $expr ? self::getAssignedVarIds($expr, $this_class_name, $node_data) : [];
 
         if (!$assigned_var_ids) {
             return $clauses;
@@ -762,7 +775,7 @@ final class FormulaGenerator
         ?Codebase $codebase,
         bool $rebuild_when_too_complicated = false,
     ): array {
-        if (!self::hasAssigningRightSide($conditional, $this_class_name)) {
+        if (!self::hasAssigningRightSide($conditional, $this_class_name, self::getNodeData($source))) {
             try {
                 return Algebra::negateFormula($clauses);
             } catch (ComplicatedExpressionException $e) {
@@ -783,28 +796,35 @@ final class FormulaGenerator
         );
     }
 
-    private static function hasAssigningRightSide(PhpParser\Node\Expr $conditional, ?string $this_class_name): bool
-    {
+    private static function hasAssigningRightSide(
+        PhpParser\Node\Expr $conditional,
+        ?string $this_class_name,
+        ?NodeDataProvider $node_data,
+    ): bool {
         return (new PhpParser\NodeFinder())->findFirst(
             $conditional,
             static fn(PhpParser\Node $node): bool => ($node instanceof PhpParser\Node\Expr\BinaryOp\BooleanAnd
                     || $node instanceof PhpParser\Node\Expr\BinaryOp\LogicalAnd
                     || $node instanceof PhpParser\Node\Expr\BinaryOp\BooleanOr
                     || $node instanceof PhpParser\Node\Expr\BinaryOp\LogicalOr)
-                && self::getAssignedVarIds($node->right, $this_class_name) !== [],
+                && self::getAssignedVarIds($node->right, $this_class_name, $node_data) !== [],
         ) !== null;
     }
 
     /**
-     * The variables an expression assigns, or assigns an item or property of
+     * The variables an expression assigns, or assigns an item or property of, including those it passes to by-reference
+     * parameters once it was analysed with $node_data
      *
      * @return array<string, true>
      */
-    public static function getAssignedVarIds(PhpParser\Node\Expr $expr, ?string $this_class_name): array
-    {
+    public static function getAssignedVarIds(
+        PhpParser\Node\Expr $expr,
+        ?string $this_class_name,
+        ?NodeDataProvider $node_data,
+    ): array {
         $var_ids = [];
 
-        foreach (self::getWrittenExprs([$expr], false) as $target) {
+        foreach (self::getWrittenExprs([$expr], false, $node_data) as $target) {
             $var_id = ExpressionIdentifier::getRootVarId($target, $this_class_name);
 
             if ($var_id !== null) {
@@ -813,6 +833,14 @@ final class FormulaGenerator
         }
 
         return $var_ids;
+    }
+
+    /**
+     * @psalm-capabilities read-props
+     */
+    private static function getNodeData(FileSource $source): ?NodeDataProvider
+    {
+        return $source instanceof StatementsAnalyzer ? $source->node_data : null;
     }
 
     /**
@@ -948,20 +976,25 @@ final class FormulaGenerator
 
     /**
      * The expressions the nodes assign in the current scope, and with $with_arguments what they pass to calls, which
-     * may take them by reference. The body of a closure assigns its own variables: only what it uses by reference is
-     * the outer scope's.
+     * may take them by reference (with $node_data, only what they pass to by-reference parameters). The body of a
+     * closure assigns its own variables: only what it uses by reference is the outer scope's.
      *
      * @param array<PhpParser\Node> $nodes
      * @return list<PhpParser\Node\Expr>
      */
-    private static function getWrittenExprs(array $nodes, bool $with_arguments): array
-    {
-        $visitor = new class ($with_arguments) extends PhpParser\NodeVisitorAbstract {
+    private static function getWrittenExprs(
+        array $nodes,
+        bool $with_arguments,
+        ?NodeDataProvider $node_data = null,
+    ): array {
+        $visitor = new class ($with_arguments, $node_data) extends PhpParser\NodeVisitorAbstract {
             /** @var list<PhpParser\Node\Expr> */
             public array $targets = [];
 
-            public function __construct(private readonly bool $with_arguments)
-            {
+            public function __construct(
+                private readonly bool $with_arguments,
+                private readonly ?NodeDataProvider $node_data,
+            ) {
             }
 
             /** @psalm-capabilities read-props|write-this-props|write-refs */
@@ -985,7 +1018,9 @@ final class FormulaGenerator
                     return PhpParser\NodeVisitor::DONT_TRAVERSE_CHILDREN;
                 }
 
-                if ($this->with_arguments && $node instanceof PhpParser\Node\Arg) {
+                if ($node instanceof PhpParser\Node\Arg
+                    && ($this->with_arguments || $this->node_data?->isWrittenByReference($node->value))
+                ) {
                     $this->targets[] = $node->value;
                 }
 

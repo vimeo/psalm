@@ -1208,10 +1208,6 @@ final class AssertionFinder
                         }
                     } elseif (!$expr instanceof PhpParser\Node\Expr\FuncCall) {
                         $assertion_var_id = $assertion->var_id;
-
-                        if (str_starts_with($assertion_var_id, 'self::')) {
-                            $assertion_var_id = $this_class_name.'::'.substr($assertion_var_id, 6);
-                        }
                     } else {
                         IssueBuffer::maybeAdd(
                             new InvalidDocblock(
@@ -1296,11 +1292,7 @@ final class AssertionFinder
 
                         $if_types[$assertion_var_id] = self::getNegatedAlternatives($assertion->rule);
                     } elseif (!$expr instanceof PhpParser\Node\Expr\FuncCall) {
-                        $var_id = $assertion->var_id;
-                        if (str_starts_with($var_id, 'self::')) {
-                            $var_id = $this_class_name.'::'.substr($var_id, 6);
-                        }
-                        $if_types[$var_id] = self::getNegatedAlternatives($assertion->rule);
+                        $if_types[$assertion->var_id] = self::getNegatedAlternatives($assertion->rule);
                     } else {
                         IssueBuffer::maybeAdd(
                             new InvalidDocblock(
@@ -4204,7 +4196,7 @@ final class AssertionFinder
                     if ($first_arg->value instanceof PhpParser\Node\Scalar\String_) {
                         $string_to_int = ArrayAnalyzer::getLiteralArrayKeyInt($first_arg->value->value);
                         $first_var_name = $string_to_int === false
-                            ? '\'' . $first_arg->value->value . '\''
+                            ? ExpressionIdentifier::quoteOffset($first_arg->value->value)
                             : (string) $string_to_int;
                     } elseif ($first_arg->value instanceof PhpParser\Node\Scalar\LNumber) {
                         $first_var_name = (string)$first_arg->value->value;
@@ -4227,7 +4219,7 @@ final class AssertionFinder
                                 $const_type->getSingleStringLiteral()->value,
                             );
                             $first_var_name = $string_to_int === false
-                                ? '\'' . $const_type->getSingleStringLiteral()->value . '\''
+                                ? ExpressionIdentifier::quoteOffset($const_type->getSingleStringLiteral()->value)
                                 : (string) $string_to_int;
                         } elseif ($const_type->isSingleIntLiteral()) {
                             $first_var_name = (string)$const_type->getSingleIntLiteral()->value;
@@ -4249,7 +4241,7 @@ final class AssertionFinder
                         $array_literal_type = $first_var_type->getSingleStringLiteral();
                         $string_to_int = ArrayAnalyzer::getLiteralArrayKeyInt($array_literal_type->value);
                         $literal_key = $string_to_int === false
-                            ? "'" . $array_literal_type->value . "'"
+                            ? ExpressionIdentifier::quoteOffset($array_literal_type->value)
                             : $string_to_int;
                         $if_types[$array_root . "[" . $literal_key . "]"] = [[new ArrayKeyExists()]];
                     } elseif ($first_var_type->isSingleIntLiteral()) {
