@@ -29,6 +29,72 @@ final class UnusedVariableTest extends TestCase
     public static function providerValidCodeParse(): array
     {
         return [
+            'arrowFunctionParamNamedLikeAPossiblyUndefinedVariableDoesNotUseIt' => [
+                'code' => '<?php
+                    /** @param list<string> $names */
+                    function f(array $names, bool $b): int {
+                        if ($b) {
+                            $name = "x";
+                            echo $name;
+                        }
+
+                        $found = array_filter($names, static fn(string $name): bool => $name !== "");
+
+                        return count($found);
+                    }',
+            ],
+            'closureParamInAnArrowFunctionNamedLikeAPossiblyUndefinedVariableDoesNotUseIt' => [
+                'code' => '<?php
+                    function f(bool $b): Closure {
+                        if ($b) {
+                            $x = 1;
+                            echo $x;
+                        }
+
+                        return fn(): Closure => function (int $x): int {
+                            return $x + 1;
+                        };
+                    }',
+            ],
+            'possiblyUndefinedVariableReadInAnArrowFunctionIsUsed' => [
+                'code' => '<?php
+                    function f(bool $b): ?int {
+                        if ($b) {
+                            $x = 1;
+                        }
+
+                        /** @psalm-suppress PossiblyUndefinedVariable */
+                        $f = fn(): ?int => $x;
+
+                        return $f();
+                    }',
+            ],
+            'incrementInTheKeyOfAnArrayItemIsReadByTheValue' => [
+                'code' => '<?php
+                    function f(): array {
+                        $i = 0;
+                        $a = [];
+                        $a[$i++] = $i;
+
+                        return $a;
+                    }',
+            ],
+            'incrementInTheKeyOfAnArrayItemIsReadByTheNextIteration' => [
+                'code' => '<?php
+                    function fill(int $start, int $count): array {
+                        $result = [];
+                        if ($start < 0) {
+                            $result[$start] = "x";
+                            $start = 0;
+                            $count--;
+                        }
+                        while ($count > 0) {
+                            $result[$start++] = "x";
+                            $count--;
+                        }
+                        return $result;
+                    }',
+            ],
             'arrowFunctionParamNamedLikeAVariableOfAPreviousIterationDoesNotUseIt' => [
                 'code' => '<?php
                     /** @param list<string> $names */
@@ -1633,6 +1699,24 @@ final class UnusedVariableTest extends TestCase
                         echo $b;
                     }',
             ],
+            'referenceToAnItemReboundInALoopStillWritesToTheArrayAfterIt' => [
+                'code' => '<?php
+                    /**
+                     * @param array<string, mixed> $data
+                     * @param list<string> $path
+                     */
+                    function set(array &$data, array $path, string $value): void {
+                        $cursor = &$data["root"];
+
+                        foreach ($path as $key) {
+                            $cursor = &$cursor[$key];
+                        }
+
+                        $cursor = $value;
+                    }',
+                'assertions' => [],
+                'ignored_issues' => ['MixedArrayAccess', 'ReferenceReusedFromConfusingScope'],
+            ],
             'valueOverwrittenInATryAndReadInTheCatchStaysUsed' => [
                 'code' => '<?php
                     /** @param list<string> $lines */
@@ -2304,10 +2388,7 @@ final class UnusedVariableTest extends TestCase
                             $hue = "goodbye";
                         }
 
-                        /**
-                         * @psalm-suppress PossiblyUndefinedVariable
-                         * @psalm-suppress MixedArgument
-                         */
+                        /** @psalm-suppress PossiblyUndefinedVariable */
                         echo $hue;
                     }',
             ],
@@ -2382,7 +2463,6 @@ final class UnusedVariableTest extends TestCase
                         }
 
                         if (isset($j)) {
-                            /** @psalm-suppress MixedArgument */
                             echo $j;
                         }
                     }',
@@ -2588,7 +2668,6 @@ final class UnusedVariableTest extends TestCase
                             $maybe_undefined = $arr;
                         }
 
-                        /** @psalm-suppress MixedAssignment */
                         $maybe_undefined = $maybe_undefined ?? [0];
 
                         print_r($maybe_undefined);
@@ -3027,6 +3106,22 @@ final class UnusedVariableTest extends TestCase
                     $b = 3;
                     echo $a;
                 ',
+            ],
+            'referenceToAByRefParamReboundInAnIfIsUsedAfterIt' => [
+                'code' => '<?php
+                    /** @param array<string, mixed> $data */
+                    function set(array &$data, string $key, bool $nested): void {
+                        $cursor = &$data;
+
+                        if ($nested) {
+                            $cursor = &$cursor[$key];
+                        }
+
+                        $cursor = [];
+                    }
+                ',
+                'assertions' => [],
+                'ignored_issues' => ['ReferenceReusedFromConfusingScope'],
             ],
             'referenceUsedInForeach' => [
                 'code' => '<?php

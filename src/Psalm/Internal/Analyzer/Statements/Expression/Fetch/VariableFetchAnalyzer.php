@@ -444,31 +444,41 @@ final class VariableFetchAnalyzer
             self::addDataFlowToVariable($statements_analyzer, $stmt, $var_name, $stmt_type, $context);
 
             $context->vars_in_scope[$var_name] = $stmt_type;
-            // the value that is read is defined, whatever the variable is (an isset() asks about the variable)
+            // the value that is read is defined, whatever the variable is (an isset() asks about the variable), and
+            // reading an undefined variable gives null (an item assigned to one creates the array)
             $statements_analyzer->node_data->setType(
                 $stmt,
-                $context->inside_isset ? $stmt_type : $stmt_type->setPossiblyUndefined(false),
+                $context->inside_isset
+                    ? $stmt_type
+                    : ($stmt_type->possibly_undefined
+                        && !$stmt_type->possibly_undefined_from_try
+                        && !$array_assignment
+                        && !$stmt_type->isNullable()
+                        && !$stmt_type->hasMixed()
+                        ? $stmt_type->setPossiblyUndefined(false)->getBuilder()->addType(new TNull())->freeze()
+                        : $stmt_type->setPossiblyUndefined(false)),
             );
 
-            // a variable a loop defines, where an iteration starts (see LoopAnalyzer)
+            // a variable some branches or a loop's previous iterations define
             if ($stmt_type->possibly_undefined
                 && !$stmt_type->possibly_undefined_from_try
                 && !$context->inside_isset
                 && !$context->inside_unset
-                // passed by reference, which defines it
-                && (!$context->inside_assignment || $array_assignment)
-                && ($first_appearance = $statements_analyzer->getFirstAppearance($var_name))
+                // assigning it by reference defines it
+                && !$assigned_to_reference
             ) {
+                // extract() defines variables without a first appearance
+                $first_appearance = $statements_analyzer->getFirstAppearance($var_name);
+                $first_seen = $first_appearance ? ', first seen on line ' . $first_appearance->getLineNumber() : '';
+
                 $issue = $context->is_global
                     ? new PossiblyUndefinedGlobalVariable(
-                        'Possibly undefined global variable ' . $var_name . ', first seen on line '
-                            . $first_appearance->getLineNumber(),
+                        'Possibly undefined global variable ' . $var_name . $first_seen,
                         new CodeLocation($statements_analyzer->getSource(), $stmt),
                         $var_name,
                     )
                     : new PossiblyUndefinedVariable(
-                        'Possibly undefined variable ' . $var_name . ', first seen on line '
-                            . $first_appearance->getLineNumber(),
+                        'Possibly undefined variable ' . $var_name . $first_seen,
                         new CodeLocation($statements_analyzer->getSource(), $stmt),
                     );
 
@@ -489,7 +499,7 @@ final class VariableFetchAnalyzer
                 }
             }
 
-            if ($stmt_type->possibly_undefined_from_try && !$context->inside_isset) {
+            if ($stmt_type->possibly_undefined_from_try && !$context->inside_isset && !$assigned_to_reference) {
                 if ($context->is_global) {
                     IssueBuffer::maybeAdd(
                         new PossiblyUndefinedGlobalVariable(
