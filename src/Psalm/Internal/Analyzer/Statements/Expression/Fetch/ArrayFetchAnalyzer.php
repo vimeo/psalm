@@ -405,7 +405,15 @@ final class ArrayFetchAnalyzer
             && $context->hasVariable($keyed_array_var_id)
             && (!($stmt_type = $statements_analyzer->node_data->getType($stmt)) || $stmt_type->isVanillaMixed())
         ) {
-            $statements_analyzer->node_data->setType($stmt, $context->vars_in_scope[$keyed_array_var_id]);
+            $remembered_type = $context->vars_in_scope[$keyed_array_var_id];
+
+            // the remembered offset is possibly undefined when it was only set on some paths (e.g. in an isset()
+            // branch), which doesn't make the key any less likely to exist than the array type says
+            if ($stmt_type) {
+                $remembered_type = $remembered_type->setPossiblyUndefined($stmt_type->possibly_undefined);
+            }
+
+            $statements_analyzer->node_data->setType($stmt, $remembered_type);
         }
 
         if (!($stmt_type = $statements_analyzer->node_data->getType($stmt))) {

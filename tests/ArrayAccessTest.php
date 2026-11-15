@@ -1299,6 +1299,43 @@ final class ArrayAccessTest extends TestCase
     }
 
     /**
+     * With data flow tracked, the branches of the check redefine the list, and their merge gives its first item a
+     * type that is not from the docblock, unlike its other items.
+     */
+    public function testListOffsetAfterIssetCheckWithTaintAnalysis(): void
+    {
+        $this->project_analyzer->trackTaintedInputs();
+        $this->testValidCode(
+            '<?php
+                /**
+                 * @param list<mixed> $l
+                 * @return mixed
+                 */
+                function f(array $l) {
+                    if (isset($l[0])) {}
+                    return $l[0];
+                }',
+        );
+    }
+
+    public function testListOffsetFromVariableAfterIssetCheckWithTaintAnalysis(): void
+    {
+        $this->project_analyzer->trackTaintedInputs();
+        $this->testValidCode(
+            '<?php
+                /**
+                 * @param list<mixed> $l
+                 * @return mixed
+                 */
+                function g(array $l) {
+                    if (isset($l[0])) {}
+                    $i = 0;
+                    return $l[$i];
+                }',
+        );
+    }
+
+    /**
      * @psalm-pure
      */
     #[Override]
@@ -2376,6 +2413,41 @@ final class ArrayAccessTest extends TestCase
                         return $foo[bar($key)] ?? $default;
                     }',
             ],
+            'listOffsetAfterIssetCheck' => [
+                'code' => '<?php
+                    /**
+                     * @param list<mixed> $l
+                     * @return mixed
+                     */
+                    function f(array $l) {
+                        if (isset($l[0])) {}
+                        return $l[0];
+                    }',
+            ],
+            'listOffsetAfterCoalesce' => [
+                'code' => '<?php
+                    /**
+                     * @param list<mixed> $l
+                     * @return mixed
+                     */
+                    function f(array $l) {
+                        $x = $l[0] ?? false;
+                        return $l[0];
+                    }',
+                'assertions' => [],
+                'ignored_issues' => ['MixedAssignment'],
+            ],
+            'stringArrayOffsetAfterIssetCheck' => [
+                'code' => '<?php
+                    /**
+                     * @param array<string, mixed> $a
+                     * @return mixed
+                     */
+                    function f(array $a) {
+                        if (isset($a["x"])) {}
+                        return $a["x"];
+                    }',
+            ],
         ];
     }
 
@@ -2921,6 +2993,18 @@ final class ArrayAccessTest extends TestCase
                 }
                 PHP,
                 'error_message' => 'NamedArgumentNotAllowed',
+            ],
+            'possiblyUndefinedKeyedArrayOffsetAfterIssetCheck' => [
+                'code' => '<?php
+                    /**
+                     * @param array{a?: mixed} $a
+                     * @return mixed
+                     */
+                    function f(array $a) {
+                        if (isset($a["a"])) {}
+                        return $a["a"];
+                    }',
+                'error_message' => 'PossiblyUndefinedArrayOffset',
             ],
         ];
     }
