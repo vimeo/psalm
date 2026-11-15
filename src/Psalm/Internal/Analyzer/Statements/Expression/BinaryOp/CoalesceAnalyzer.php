@@ -116,20 +116,18 @@ final class CoalesceAnalyzer
             $left_var_id = self::TEMPORARY_VAR_PREFIX . $left_offset;
             self::$operand_names[$statements_analyzer->getFilePath()][$left_offset] = self::printOperand($left_expr);
 
-            // an untracked offset is evaluated unconditionally, so its assignments belong to the real context
-            $cloned = $has_untracked_offset ? $context : clone $context;
-            $was_inside_isset = $cloned->inside_isset;
-            $was_inside_general_use = $cloned->inside_general_use;
-            $cloned->inside_isset = true;
+            // the left operand is evaluated unconditionally, so what it assigns (and the clauses and the types of
+            // properties and offsets that an assignment drops) belongs to the real context
+            $was_inside_isset = $context->inside_isset;
+            $was_inside_general_use = $context->inside_general_use;
+            $context->inside_isset = true;
             // the value of the left operand decides which side is taken
-            $cloned->inside_general_use = true;
+            $context->inside_general_use = true;
 
-            ExpressionAnalyzer::analyze($statements_analyzer, $left_expr, $cloned);
+            ExpressionAnalyzer::analyze($statements_analyzer, $left_expr, $context);
 
-            if ($has_untracked_offset) {
-                $context->inside_isset = $was_inside_isset;
-                $context->inside_general_use = $was_inside_general_use;
-            }
+            $context->inside_isset = $was_inside_isset;
+            $context->inside_general_use = $was_inside_general_use;
 
             if ($root_expr !== $left_expr) {
                 $condition_type = $statements_analyzer->node_data->getType($left_expr);
