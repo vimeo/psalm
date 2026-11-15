@@ -1326,7 +1326,10 @@ class Reconciler
      */
     private static function hasOffsetThatIsAlwaysSet(Union $type, string $array_key): bool
     {
-        if ($type->isNullable()
+        // an array that may not be defined has no offset to be set
+        if ($type->possibly_undefined
+            || $type->possibly_undefined_from_try
+            || $type->isNullable()
             || $type->isFalsable()
             || $type->ignore_nullable_issues
             || $type->ignore_falsable_issues
