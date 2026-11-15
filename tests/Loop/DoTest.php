@@ -454,6 +454,63 @@ final class DoTest extends TestCase
                 'ignored_issues' => [],
                 'php_version' => '8.1',
             ],
+            'usesOfAVariableOfDoWhileThatIsNeverInItsFirstPassAreNotReported' => [
+                'code' => <<<'PHP'
+                    <?php
+                    final class Foo {
+                        public int $foo = 1;
+
+                        public function m(): int {
+                            return 1;
+                        }
+                    }
+
+                    function fetch(): void {
+                        $o = 0;
+                        do {
+                            if ($o !== 0) {
+                                $fetched = $o->foo;
+                                echo $fetched, $o->m();
+                            }
+                            $o = new Foo();
+                        } while (rand(0, 1));
+                    }
+
+                    function arrayAccess(): void {
+                        $a = 0;
+                        do {
+                            if ($a !== 0) {
+                                echo $a[0];
+                            }
+                            $a = ['x'];
+                        } while (rand(0, 1));
+                    }
+
+                    function offset(): void {
+                        $values = ['x', 'y'];
+                        $i = 0;
+                        do {
+                            if ($i !== 0) {
+                                echo $values[$i];
+                            }
+                            $i = 1;
+                        } while (rand(0, 1));
+                    }
+
+                    function call(): void {
+                        $c = 0;
+                        do {
+                            if ($c !== 0) {
+                                echo $c();
+                            }
+                            $c = static fn(): int => 1;
+                        } while (rand(0, 1));
+                    }
+                    PHP,
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
             'doWhileConditionAssignmentKeepsTheAssignedTypeAfterTheLoop' => [
                 'code' => '<?php
                     function fetchError(): ?stdClass {
@@ -726,6 +783,113 @@ final class DoTest extends TestCase
                     }
                     PHP,
                 'error_message' => 'InvalidCast',
+                'error_levels' => [],
+                'php_version' => '8.1',
+            ],
+            'mixedPropertyFetchInTheBodyOfDoWhileIsStillReported' => [
+                'code' => <<<'PHP'
+                    <?php
+                    function f(mixed $m): void {
+                        $i = 0;
+                        do {
+                            $m->foo;
+                            $i++;
+                        } while ($i < 3);
+                    }
+                    PHP,
+                'error_message' => 'MixedPropertyFetch',
+                'error_levels' => [],
+                'php_version' => '8.1',
+            ],
+            'mixedArrayAccessInTheBodyOfDoWhileIsStillReported' => [
+                'code' => <<<'PHP'
+                    <?php
+                    function f(mixed $m): void {
+                        $i = 0;
+                        do {
+                            $m[0];
+                            $i++;
+                        } while ($i < 3);
+                    }
+                    PHP,
+                'error_message' => 'MixedArrayAccess',
+                'error_levels' => [],
+                'php_version' => '8.1',
+            ],
+            'mixedMethodCallInTheBodyOfDoWhileIsStillReported' => [
+                'code' => <<<'PHP'
+                    <?php
+                    function f(mixed $m): void {
+                        $i = 0;
+                        do {
+                            $m->m();
+                            $i++;
+                        } while ($i < 3);
+                    }
+                    PHP,
+                'error_message' => 'MixedMethodCall',
+                'error_levels' => [],
+                'php_version' => '8.1',
+            ],
+            'mixedArgumentInTheBodyOfDoWhileIsStillReported' => [
+                'code' => <<<'PHP'
+                    <?php
+                    function f(mixed $m): void {
+                        $i = 0;
+                        do {
+                            echo $m;
+                            $i++;
+                        } while ($i < 3);
+                    }
+                    PHP,
+                'error_message' => 'MixedArgument',
+                'error_levels' => [],
+                'php_version' => '8.1',
+            ],
+            'mixedAssignmentInTheBodyOfDoWhileIsStillReported' => [
+                'code' => <<<'PHP'
+                    <?php
+                    function f(mixed $m): void {
+                        $i = 0;
+                        do {
+                            $x = $m;
+                            echo is_string($x) ? $x : "";
+                            $i++;
+                        } while ($i < 3);
+                    }
+                    PHP,
+                'error_message' => 'MixedAssignment',
+                'error_levels' => [],
+                'php_version' => '8.1',
+            ],
+            'invalidArrayOffsetInTheBodyOfDoWhileIsStillReported' => [
+                'code' => <<<'PHP'
+                    <?php
+                    function f(stdClass $o): void {
+                        $values = ['x'];
+                        $i = 0;
+                        do {
+                            echo $values[$o];
+                            $i++;
+                        } while ($i < 3);
+                    }
+                    PHP,
+                'error_message' => 'InvalidArrayOffset',
+                'error_levels' => [],
+                'php_version' => '8.1',
+            ],
+            'invalidFunctionCallInTheBodyOfDoWhileIsStillReported' => [
+                'code' => <<<'PHP'
+                    <?php
+                    function f(int $n): void {
+                        $i = 0;
+                        do {
+                            $n();
+                            $i++;
+                        } while ($i < 3);
+                    }
+                    PHP,
+                'error_message' => 'InvalidFunctionCall',
                 'error_levels' => [],
                 'php_version' => '8.1',
             ],

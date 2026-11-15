@@ -182,7 +182,8 @@ final class DoAnalyzer
         $suppressed_issues = $statements_analyzer->getSuppressedIssues();
 
         // the types of the first pass are provisional: `$counter = 0` is still `0` where the next passes see more,
-        // so a branch or an operand impossible in it is reachable (a `never` operand) in the next ones
+        // so a branch or an operand impossible in it is reachable (a `never` operand) in the next ones, which report
+        // what is wrong with the real types
         $naive_pass_suppressed_issues = array_values(array_filter(
             [
                 'RedundantCondition',
@@ -190,6 +191,13 @@ final class DoAnalyzer
                 'TypeDoesNotContainType',
                 'NoValue',
                 'InvalidCast',
+                'MixedArgument',
+                'MixedArrayAccess',
+                'MixedAssignment',
+                'MixedMethodCall',
+                'MixedPropertyFetch',
+                'InvalidArrayOffset',
+                'InvalidFunctionCall',
             ],
             static fn(string $issue_type): bool => !isset($suppressed_issues[$issue_type]),
         ));
