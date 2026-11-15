@@ -552,6 +552,10 @@ final class ExistingAtomicStaticCallAnalyzer
             }
         }
 
+        if ($return_type_candidate) {
+            $return_type_candidate = TypeVariableTracker::resolveTypeVariables($return_type_candidate, $codebase);
+        }
+
         if ($config->eventDispatcher->hasAfterMethodCallAnalysisHandlers()) {
             $file_manipulations = [];
 
@@ -579,10 +583,7 @@ final class ExistingAtomicStaticCallAnalyzer
             }
         }
 
-        $return_type_candidate = TypeVariableTracker::resolveTypeVariables(
-            $return_type_candidate ?? Type::getMixed(),
-            $codebase,
-        );
+        $return_type_candidate ??= Type::getMixed();
 
         $method_storage ??= $declaring_method_id ? $codebase->methods->getStorage($declaring_method_id) : null;
 

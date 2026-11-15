@@ -211,6 +211,8 @@ final class FunctionCallReturnTypeFetcher
                             true,
                         );
 
+                        $return_type = TypeVariableTracker::resolveTypeVariables($return_type, $codebase);
+
                         $return_type_location = $function_storage->return_type_location;
 
                         $event = new AfterFunctionCallAnalysisEvent(
