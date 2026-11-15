@@ -23,6 +23,191 @@ final class WhileTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'whileTrueVariableIsNotWhatAContinueLeaves' => [
+                'code' => '<?php
+                    interface T {
+                        public function supports(): bool;
+                    }
+
+                    function dead(T $_t): bool {
+                        return false;
+                    }
+
+                    function a(array $a): T {
+                        $i = 0;
+                        while (true) {
+                            $x = $a[$i];
+                            if (!$x->supports()) {
+                                $i++;
+                                continue;
+                            }
+                            if (!dead($x)) {
+                                break;
+                            }
+                            $i++;
+                        }
+                        /** @psalm-check-type-exact $x = T */;
+                        return $x;
+                    }',
+                'assertions' => [],
+                'ignored_issues' => ['MixedAssignment', 'MixedMethodCall', 'MixedArgument'],
+            ],
+            'whileTrueVariableIsWhatTheBreaksLeave' => [
+                'code' => '<?php
+                    function continued(): void {
+                        while (true) {
+                            $x = rand(0, 1) ? "s" : null;
+                            if ($x === null) {
+                                continue;
+                            }
+                            if (rand(0, 1)) {
+                                break;
+                            }
+                        }
+                        /** @psalm-check-type-exact $x = "s" */;
+                    }
+
+                    function endOfTheBody(): void {
+                        while (true) {
+                            $x = 1.5;
+                            if (rand(0, 1)) {
+                                $x = 1;
+                                break;
+                            }
+                            $x = "s";
+                        }
+                        /** @psalm-check-type-exact $x = 1 */;
+                    }
+
+                    function breakOutOfASwitch(): void {
+                        while (true) {
+                            $x = rand(0, 1) ? "a" : 5;
+                            switch ($x) {
+                                case "a":
+                                    break;
+                                default:
+                                    break 2;
+                            }
+                        }
+                        /** @psalm-check-type-exact $x = 5 */;
+                    }
+
+                    function breakTwoOutOfAnInnerLoop(): void {
+                        while (true) {
+                            $x = "outer";
+                            foreach ([1, 2] as $v) {
+                                if ($v === 2) {
+                                    $x = $v;
+                                    break 2;
+                                }
+                            }
+                            if (rand(0, 1)) {
+                                continue;
+                            }
+                            $x = null;
+                            break;
+                        }
+                        /** @psalm-check-type-exact $x = 2|null */;
+                    }',
+            ],
+            'whileTrueVariableDefinedBeforeTheLoopIsWhatTheBreaksLeave' => [
+                'code' => '<?php
+                    function continued(): void {
+                        $x = 1;
+                        while (true) {
+                            $x = rand(0, 1) ? "s" : null;
+                            if ($x === null) {
+                                continue;
+                            }
+                            if (rand(0, 1)) {
+                                break;
+                            }
+                        }
+                        /** @psalm-check-type-exact $x = "s" */;
+                    }
+
+                    function narrowedBeforeTheBreak(): void {
+                        $x = rand(0, 1) ? null : 1;
+                        while (true) {
+                            if ($x !== null) {
+                                break;
+                            }
+                            $x = rand(0, 1) ? null : 2;
+                        }
+                        /** @psalm-check-type-exact $x = 1|2 */;
+                    }
+
+                    function unsetAtABreak(): void {
+                        $x = 1;
+                        while (true) {
+                            if (rand(0, 1)) {
+                                unset($x);
+                                break;
+                            }
+                            $x = 2;
+                            break;
+                        }
+                        if (isset($x)) {
+                            /** @psalm-check-type-exact $x = 2 */;
+                        }
+                    }',
+            ],
+            'whileTrueVariableIsWhatTheBreaksOfEveryIterationLeave' => [
+                'code' => '<?php
+                    function f(): void {
+                        while (true) {
+                            $x = isset($x) ? "again" : 1;
+                            if (rand(0, 1)) {
+                                break;
+                            }
+                        }
+                        /** @psalm-check-type-exact $x = "again"|1 */;
+                    }',
+            ],
+            'whileTrueBreakThroughAFinallyKeepsWhatTheFinallyAssigns' => [
+                'code' => '<?php
+                    function finallyInTheLoop(): void {
+                        while (true) {
+                            try {
+                                $x = 1;
+                                break;
+                            } finally {
+                                $x = "f";
+                            }
+                        }
+                        /** @psalm-check-type-exact $x = "f"|1 */;
+                    }
+
+                    function finallyAroundTheLoop(): void {
+                        try {
+                            while (true) {
+                                $x = rand(0, 1) ? "s" : null;
+                                if ($x === null) {
+                                    continue;
+                                }
+                                break;
+                            }
+                            /** @psalm-check-type-exact $x = "s" */;
+                        } finally {
+                            echo "done";
+                        }
+                    }',
+            ],
+            'whileTrueVariableWithNoValueAtTheBreaks' => [
+                'code' => '<?php
+                    function f(): int {
+                        $i = 0;
+                        while (true) {
+                            $i += rand(1, 3);
+                            if ($i > 10) {
+                                break;
+                            }
+                        }
+                        return $i;
+                    }',
+                'assertions' => [],
+                'ignored_issues' => ['TypeDoesNotContainType'],
+            ],
             'mixedConditionVariableOfAWhileLoopIsNotNonEmptyAfterIt' => [
                 'code' => '<?php
                     function check(mixed $w): void {
@@ -1035,6 +1220,104 @@ final class WhileTest extends TestCase
                         }
                     }',
             ],
+            'whileLoopNeverEnteredKeepsThePreLoopValues' => [
+                'code' => '<?php
+                    $b = rand(0, 1) ? null : rand(0, 10);
+                    while ($b) {
+                        $b--;
+                    }',
+                'assertions' => [
+                    '$b===' => '0|null',
+                ],
+            ],
+            'whileLoopNeverEnteredKeepsThePreLoopFalsyStrings' => [
+                'code' => '<?php
+                    function getString(): ?string {
+                        return rand(0, 1) ? null : (string) rand();
+                    }
+
+                    $s = getString();
+                    while ($s) {
+                        $s = null;
+                    }',
+                'assertions' => [
+                    '$s===' => "''|'0'|null",
+                ],
+            ],
+            'whileLoopWithAndConditionNeverEnteredKeepsThePreLoopValues' => [
+                'code' => '<?php
+                    $a = rand(0, 1) ? null : rand(-10, 10);
+                    while ($a !== null && $a > 0) {
+                        $a = rand(0, 1) ? null : $a - 1;
+                    }',
+                'assertions' => [
+                    '$a===' => 'int<-10, 0>|null',
+                ],
+            ],
+            'whileLoopNeverEnteredStillHasWhatItsConditionWrites' => [
+                'code' => '<?php
+                    /** @param-out int<1, 10> $a */
+                    function nextValue(int &$a): bool {
+                        $a = rand(1, 10);
+                        return (bool) rand(0, 1);
+                    }
+
+                    $a = 0;
+                    while (nextValue($a) || $a > 5) {}
+                    $b = rand(0, 1) ? null : rand(0, 10);
+                    while ($b && abs($b) < 20) {
+                        $b--;
+                    }',
+                'assertions' => [
+                    '$a===' => 'int<1, 5>',
+                    '$b===' => 'int<0, 10>|null',
+                ],
+            ],
+            'loopLeftWithWhatItsConditionWroteNotWhatTheBodyLeft' => [
+                'code' => '<?php
+                    /** @param-out int<1, 10> $a */
+                    function nextValue(int &$a): bool {
+                        $a = rand(1, 10);
+                        return (bool) rand(0, 1);
+                    }
+
+                    /** @return int<0, 10> */
+                    function g(): int {
+                        return rand(0, 10);
+                    }
+
+                    final class K {
+                        public int $p = 0;
+
+                        /** @return int<0, 5> */
+                        public function f(): int {
+                            $this->p = 0;
+                            while (($this->p = g()) > 5) {}
+                            return $this->p;
+                        }
+                    }
+
+                    $a = 20;
+                    for (; nextValue($a), $a > 5;) {}
+                    $b = 20;
+                    while (nextValue($b) || $b > 5) {
+                        $b = 100;
+                    }',
+                'assertions' => [
+                    '$a===' => 'int<1, 5>',
+                    '$b===' => 'int<1, 5>',
+                ],
+            ],
+            'whileLoopAlwaysEnteredGetsTheNegatedCondition' => [
+                'code' => '<?php
+                    $a = null;
+                    while ($a === null) {
+                        $a = rand(0, 1) ? 1 : null;
+                    }',
+                'assertions' => [
+                    '$a===' => '1',
+                ],
+            ],
         ];
     }
 
@@ -1045,6 +1328,75 @@ final class WhileTest extends TestCase
     public static function providerInvalidCodeParse(): iterable
     {
         return [
+            'whileTrueVariableUndefinedAtABreakIsPossiblyUndefined' => [
+                'code' => '<?php
+                    function f(): void {
+                        while (true) {
+                            if (rand(0, 1)) {
+                                break;
+                            }
+                            $x = 1;
+                            if (rand(0, 1)) {
+                                break;
+                            }
+                        }
+                        echo $x;
+                    }',
+                'error_message' => 'PossiblyUndefinedVariable',
+            ],
+            'whileTrueVariableUnsetAtABreakIsPossiblyUndefined' => [
+                'code' => '<?php
+                    function f(): void {
+                        $x = 1;
+                        while (true) {
+                            if (rand(0, 1)) {
+                                unset($x);
+                                break;
+                            }
+                            if (rand(0, 1)) {
+                                break;
+                            }
+                        }
+                        echo $x;
+                    }',
+                'error_message' => 'PossiblyUndefinedVariable',
+            ],
+            'whileTrueVariableUnsetAtEveryBreakIsReported' => [
+                'code' => '<?php
+                    function f(): void {
+                        $x = 1;
+                        while (true) {
+                            unset($x);
+                            break;
+                        }
+                        echo $x;
+                    }',
+                'error_message' => 'PossiblyUndefinedVariable',
+            ],
+            'whileTrueKeepsAPropertyNarrowedAtOnlyOneBreakNullable' => [
+                'code' => '<?php
+                    final class Service {
+                        public function run(): void {}
+                    }
+
+                    final class Box {
+                        public ?Service $service = null;
+                    }
+
+                    function f(Box $box): void {
+                        while (true) {
+                            if (rand(0, 1)) {
+                                if ($box->service !== null) {
+                                    break;
+                                }
+                                continue;
+                            }
+                            break;
+                        }
+                        $box->service->run();
+                    }',
+                'error_message' => 'PossiblyNullReference',
+            ],
             'whileBreakBeforeDefinition' => [
                 'code' => <<<'PHP'
                     <?php

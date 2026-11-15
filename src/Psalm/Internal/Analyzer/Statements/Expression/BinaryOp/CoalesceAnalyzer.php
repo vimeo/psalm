@@ -143,7 +143,8 @@ final class CoalesceAnalyzer
                 );
 
                 foreach ($changed_var_ids as $changed_var_id => $_) {
-                    $context->removeVarFromConflictingClauses($changed_var_id);
+                    // narrowed, not written: the enclosing scopes keep their clauses about it
+                    $context->clauses = Context::filterClauses($changed_var_id, $context->clauses);
                 }
             }
         }

@@ -736,7 +736,7 @@ final class Scanner
                 if (!$this->codebase->tryExhumeClassLikeStorage($fq_classlike_name, $file_path)) {
                     // the cache has the storage of the file, but not that of a class-like it declares: scan again
                     foreach ($exhumed_classlike_names as $exhumed_classlike_name) {
-                        $this->codebase->classlike_storage_provider->remove($exhumed_classlike_name);
+                        $this->codebase->classlike_storage_provider->remove($exhumed_classlike_name, $file_path);
                     }
 
                     $from_cache = false;

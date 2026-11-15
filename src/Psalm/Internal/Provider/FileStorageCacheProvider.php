@@ -67,10 +67,23 @@ final class FileStorageCacheProvider
 
     /**
      * Makes the next writeToCache() of the file store its storage, even if the contents are the same.
+     *
+     * @psalm-capabilities read-props|write-props|write-refs
      */
     public function forget(string $file_path): void
     {
         $this->cache->forgetItem(strtolower($file_path));
+    }
+
+    /**
+     * Drops the storage that the cache holds in memory, which may have been populated in place since it was
+     * saved. The copy on disk is from before that.
+     *
+     * @psalm-capabilities read-props|write-props|write-refs
+     */
+    public function evict(string $file_path): void
+    {
+        $this->cache->evictItem(strtolower($file_path));
     }
 
     public function getLatestFromCache(string $file_path, string $file_contents): ?FileStorage

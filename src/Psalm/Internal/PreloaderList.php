@@ -678,6 +678,7 @@ final class PreloaderList {
         \Psalm\Internal\Analyzer\Statements\Expression\BinaryOp\ArithmeticOpAnalyzer::class,
         \Psalm\Internal\Analyzer\Statements\Expression\BinaryOp\CoalesceAnalyzer::class,
         \Psalm\Internal\Analyzer\Statements\Expression\BinaryOp\ConcatAnalyzer::class,
+        \Psalm\Internal\Analyzer\Statements\Expression\BinaryOp\GuardedClasses::class,
         \Psalm\Internal\Analyzer\Statements\Expression\BinaryOp\NonComparisonOpAnalyzer::class,
         \Psalm\Internal\Analyzer\Statements\Expression\BinaryOp\OrAnalyzer::class,
         \Psalm\Internal\Analyzer\Statements\Expression\BinaryOp\PipeAnalyzer::class,
