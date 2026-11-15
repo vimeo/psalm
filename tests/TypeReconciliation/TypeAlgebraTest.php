@@ -417,19 +417,16 @@ final class TypeAlgebraTest extends TestCase
                 'ignored_issues' => [],
                 'php_version' => '8.1',
             ],
-            'theNegationOfAFalseComparisonOfAClauseThatIsNotReconcilableIsNotACertainty' => [
+            'aStringThatIsNoClassAndNoTraitIsLeftByAnEarlyReturn' => [
                 'code' => '<?php
-                    function f(?int $a, string $s, string $t): void {
-                        if (($a === null || !($s === $t)) === false) {
-                            echo "if";
-                        } else {
-                            /** @psalm-check-type-exact $a = int|null */
-                            echo get_debug_type($a);
+                    function f(string $s): void {
+                        if (!class_exists($s, false) && !trait_exists($s, false)) {
+                            return;
                         }
+
+                        /** @psalm-check-type-exact $s = class-string|trait-string */
+                        echo $s;
                     }',
-                'assertions' => [],
-                'ignored_issues' => [],
-                'php_version' => '8.1',
             ],
             'aCaseOfASwitchTrueAssigningAVariableHasNoClausesOfItsOldValue' => [
                 'code' => '<?php

@@ -2130,30 +2130,9 @@ final class AssertionFinder
         return 0;
     }
 
-    /**
-     * @return  0|1|2
-     */
-    private static function hasTraitExistsCheck(PhpParser\Node\Expr\FuncCall $stmt): int
+    private static function hasTraitExistsCheck(PhpParser\Node\Expr\FuncCall $stmt): bool
     {
-        if ($stmt->name instanceof PhpParser\Node\Name
-            && strtolower($stmt->name->getFirst()) === 'trait_exists'
-        ) {
-            if (!isset($stmt->getArgs()[1])) {
-                return 2;
-            }
-
-            $second_arg = $stmt->getArgs()[1]->value;
-
-            if ($second_arg instanceof PhpParser\Node\Expr\ConstFetch
-                && strtolower($second_arg->name->getFirst()) === 'true'
-            ) {
-                return 2;
-            }
-
-            return 1;
-        }
-
-        return 0;
+        return $stmt->name instanceof PhpParser\Node\Name && strtolower($stmt->name->getFirst()) === 'trait_exists';
     }
 
     private static function hasEnumExistsCheck(PhpParser\Node\Expr\FuncCall $stmt): bool
