@@ -58,6 +58,341 @@ final class TypeAlgebraTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'theElseOfAnAndWithAnOperandThatAssertsNothingWhenFalseDoesNotNarrowTheOtherOperand' => [
+                'code' => '<?php
+                    function f(?int $userId, ?string $filter, string $name): void {
+                        if ($userId !== null && ($filter === null || !str_contains($name, $filter))) {
+                            echo "if";
+                        } else {
+                            /** @psalm-check-type-exact $userId = int|null */
+                            if ($userId !== null) {
+                                /** @psalm-check-type-exact $filter = string */
+                                echo "reached";
+                            }
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'anEarlyReturnOnAnOrWithAnOperandThatAssertsNothingWhenFalseStillNarrows' => [
+                'code' => '<?php
+                    function f(?string $filter, string $name): void {
+                        if ($filter === null || !str_contains($name, $filter)) {
+                            return;
+                        }
+                        /** @psalm-check-type-exact $filter = string */
+                        echo $filter;
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'theElseOfAConditionComparedToFalseDoesNotAssertWhatItsNegationLeftOut' => [
+                'code' => '<?php
+                    function f(?int $a, string $s, string $t): void {
+                        if (($a === null || !($s === $t)) === false) {
+                            echo "if";
+                        } else {
+                            /** @psalm-check-type-exact $a = int|null */
+                            echo "else";
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'pastAnEarlyReturnOnAnOrComparedToFalseItsNonLiteralEqualityIsKept' => [
+                'code' => '<?php
+                    function f(?int $a, string $b, string $c): void {
+                        if (($a === null || $b === $c) === false) {
+                            return;
+                        }
+                        /** @psalm-check-type-exact $a = int|null */
+                        echo "past";
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'theElseOfAnOrWithANonLiteralEqualityStillNarrowsTheOtherOperand' => [
+                'code' => '<?php
+                    function f(?int $a, string $b, string $c): void {
+                        if ($a === null || $b === $c) {
+                            /** @psalm-check-type-exact $a = int|null */
+                            echo "if";
+                        } else {
+                            /** @psalm-check-type-exact $a = int */
+                            echo "else";
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'theNegationOfAConjunctionDoesNotDependOnTheOrderOfItsOperands' => [
+                'code' => '<?php
+                    function f(int|string|null $a, bool $x): void {
+                        if ((is_int($a) || is_string($a)) && (!is_int($a) || $x)) {
+                            echo "if";
+                        } else {
+                            /** @psalm-check-type-exact $a = int|null */
+                            echo "else";
+                        }
+                    }
+
+                    function swapped(int|string|null $a, bool $x): void {
+                        if ((!is_int($a) || $x) && (is_int($a) || is_string($a))) {
+                            echo "if";
+                        } else {
+                            /** @psalm-check-type-exact $a = int|null */
+                            echo "else";
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'anOrAssigningAVariableOnTheRightDoesNotAssertItsNewValueWhereTheLeftIsTrue' => [
+                'code' => '<?php
+                    function load(?int $x): ?int {
+                        return $x;
+                    }
+
+                    function f(?int $a, ?int $p): void {
+                        if ($a === null || ($a = load($p)) !== null) {
+                            /** @psalm-check-type-exact $a = int|null */
+                            echo "if";
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'pastAnEarlyReturnOnAnOrAssigningAVariableOnTheRightItsNewValueIsNarrowed' => [
+                'code' => '<?php
+                    function load(?int $x): ?int {
+                        return $x;
+                    }
+
+                    function f(?int $a, ?int $p): void {
+                        if ($a === null || ($a = load($p)) === null) {
+                            return;
+                        }
+                        /** @psalm-check-type-exact $a = int */
+                        echo $a;
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'theElseOfAnAndWithAnOrTooComplexToCombineDoesNotNarrowTheOtherOperand' => [
+                'code' => '<?php
+                    function g(): bool {
+                        return rand(0, 1) === 1;
+                    }
+
+                    function f(?int $y): void {
+                        if ($y !== null
+                            && (
+                                (g() && g() && g() && g() && g() && g() && g() && g() && g() && g() && g() && g() && g() && g() && g() && g())
+                                || (g() && g() && g() && g() && g() && g() && g() && g() && g() && g() && g() && g() && g() && g() && g() && g())
+                                || (g() && g() && g() && g() && g() && g() && g() && g() && g() && g() && g() && g() && g() && g() && g() && g())
+                                || (g() && g() && g() && g() && g() && g() && g() && g() && g() && g() && g() && g() && g() && g() && g() && g())
+                                || g()
+                            )
+                        ) {
+                            /** @psalm-check-type-exact $y = int */
+                            echo "if";
+                        } else {
+                            /** @psalm-check-type-exact $y = int|null */
+                            echo "else";
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'aConditionWithAnAlternativeThatCanNotBeNegatedIsNoParadox' => [
+                'code' => '<?php
+                    final class A {}
+
+                    function f(?A $a, ?A $b, string $s, string $t): void {
+                        if ($a && $b) {
+                            return;
+                        }
+                        if (($s !== $t || $a) && ($s !== $t || $b)) {
+                            echo "reached";
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'aDoWhileConditionWithTooManyPartlyNegatableClausesIsAnalyzed' => [
+                'code' => '<?php
+                    function f(
+                        ?int $q,
+                        bool $a,
+                        bool $b,
+                        bool $c,
+                        bool $d,
+                        bool $e,
+                        bool $f,
+                        bool $g,
+                        bool $h,
+                        string $name
+                    ): void {
+                        do {
+                            echo "body";
+                        } while ($q !== null
+                            && (($a && $b && $c && $d) || ($e && $f && $g && $h) || !trait_exists($name, false))
+                        );
+                        /** @psalm-check-type-exact $q = int|null */
+                        echo "after";
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'aDoWhileConditionTooComplexToNegateIsAnalyzed' => [
+                'code' => '<?php
+                    function f(?int $q, bool $a, bool $b, bool $c, bool $d, bool $e, bool $f, bool $g, bool $h): void {
+                        do {
+                            echo "body";
+                        } while ($q !== null
+                            && (($a && $b && $c && $d)
+                                || ($e && $f && $g && $h)
+                                || ($a && $c && $e && $g)
+                                || ($b && $d && $f && $h))
+                        );
+                        echo "after";
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'aFalsyAssertionOnAConditionTooComplexToNegateIsAnalyzed' => [
+                'code' => '<?php
+                    /** @psalm-assert falsy $value */
+                    function assertFalsy(mixed $value): void {
+                        if ($value) {
+                            throw new Exception();
+                        }
+                    }
+
+                    function f(bool $a, bool $b, bool $c, bool $d, bool $e, bool $f, bool $g, bool $h): void {
+                        assertFalsy(($a && $b && $c && $d)
+                            || ($e && $f && $g && $h)
+                            || ($a && $c && $e && $g)
+                            || ($b && $d && $f && $h));
+                        echo "after";
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'anIfConditionAssigningAnAndKeepsTheNarrowingOfItsOperands' => [
+                'code' => '<?php
+                    function takesInt(int $x): void {}
+
+                    function f(?int $min, int $w): bool {
+                        if ($wrapped = $min && $w > 3) {
+                            takesInt($min);
+                        }
+
+                        return $wrapped;
+                    }',
+                'assertions' => [],
+                'ignored_issues' => ['RiskyTruthyFalsyComparison'],
+            ],
+            'anIfConditionAssigningAComparisonKeepsTheNarrowingOfItsOperand' => [
+                'code' => '<?php
+                    function f(?float $a): void {
+                        if ($r = $a !== null && $a > 1.0) {
+                            /** @psalm-check-type-exact $a = float */
+                            echo $a - 1.0;
+                        }
+                    }',
+            ],
+            'anIfConditionReassigningAVariableKeepsOnlyTheClausesOfItsNewValue' => [
+                'code' => '<?php
+                    function f(?int $min, ?int $other): void {
+                        $r = $other !== null;
+
+                        if ($r = $min !== null) {
+                            /** @psalm-check-type-exact $min = int */
+                            echo $min;
+                            /** @psalm-check-type-exact $other = int|null */
+                            echo (int) $other;
+                        }
+                    }',
+            ],
+            'anElseifConditionAssigningAnAndKeepsTheNarrowingOfItsOperands' => [
+                'code' => '<?php
+                    function f(?int $min, int $w, bool $b): void {
+                        if ($b) {
+                            echo 1;
+                        } elseif ($r = $min !== null && $w > 3) {
+                            /** @psalm-check-type-exact $min = int */
+                            echo $min;
+                        }
+                    }',
+            ],
+            'anElseifConditionReassigningAVariableKeepsOnlyTheClausesOfItsNewValue' => [
+                'code' => '<?php
+                    function f(?int $min, ?int $other, bool $b): void {
+                        $r = $other !== null;
+
+                        if ($b) {
+                            echo 1;
+                        } elseif ($r = $min !== null) {
+                            /** @psalm-check-type-exact $min = int */
+                            echo $min;
+                            /** @psalm-check-type-exact $other = int|null */
+                            echo (int) $other;
+                        }
+                    }',
+            ],
+            'anIfConditionRepeatingAnAssignedConditionKeepsTheNarrowingOfItsOperands' => [
+                'code' => '<?php
+                    function f(?int $min, int $w): void {
+                        if ($wrapped = $min !== null && $w > 3) {
+                            echo $min;
+                        }
+
+                        if ($wrapped = $min !== null && $w > 3) {
+                            /** @psalm-check-type-exact $min = int */
+                            echo $min;
+                        }
+                    }',
+            ],
+            'anElseifConditionRepeatingAnAssignedConditionKeepsTheNarrowingOfItsOperands' => [
+                'code' => '<?php
+                    function f(?int $min, int $w, bool $b): void {
+                        if ($wrapped = $min !== null && $w > 3) {
+                            echo $min;
+                        }
+
+                        if ($b) {
+                            echo 1;
+                        } elseif ($wrapped = $min !== null && $w > 3) {
+                            /** @psalm-check-type-exact $min = int */
+                            echo $min;
+                        }
+                    }',
+            ],
+            'anIfConditionAssigningAVariableOnTheRightOfAnAndKeepsOnlyTheClausesOfItsNewValue' => [
+                'code' => '<?php
+                    function f(?int $min, ?int $other): void {
+                        $r = $other !== null;
+
+                        if (rand(0, 1) && ($r = $min !== null)) {
+                            /** @psalm-check-type-exact $other = int|null */
+                            echo (int) $other;
+                        }
+                    }',
+            ],
             'aStringThatIsNoTraitOrAnyOtherLoadedSymbolIsLeftByAConditionWithAnUnknownCall' => [
                 'code' => '<?php
                     final class Registry {
@@ -77,20 +412,6 @@ final class TypeAlgebraTest extends TestCase
                         }
 
                         new ReflectionClass($name);
-                    }',
-                'assertions' => [],
-                'ignored_issues' => [],
-                'php_version' => '8.1',
-            ],
-            'theElseOfAConditionWithAClauseThatIsNotReconcilableDoesNotNarrowTheOtherOperand' => [
-                'code' => '<?php
-                    function f(?int $userId, ?string $filter, string $name): void {
-                        if ($userId !== null && ($filter === null || !str_contains($name, $filter))) {
-                            echo "if";
-                        } else {
-                            /** @psalm-check-type-exact $userId = int|null */
-                            echo get_debug_type($userId);
-                        }
                     }',
                 'assertions' => [],
                 'ignored_issues' => [],
@@ -2235,6 +2556,22 @@ final class TypeAlgebraTest extends TestCase
     public static function providerInvalidCodeParse(): iterable
     {
         return [
+            'onlyTheOperandOfAnOrContradictedByAnEarlierConditionIsAParadox' => [
+                'code' => '<?php
+                    final class A {}
+
+                    function f(?A $a, ?A $b, string $s, string $t): void {
+                        if ($a && $b) {
+                            return;
+                        }
+                        if ($s === $t || ($a && $b)) {
+                            echo "reached";
+                        }
+                    }',
+                'error_message' => 'ParadoxicalCondition - src' . DIRECTORY_SEPARATOR . 'somefile.php:8:43',
+                'error_levels' => ['TypeDoesNotContainType'],
+                'php_version' => '8.0',
+            ],
             'aConditionThatContradictsItselfIsReported' => [
                 'code' => '<?php
                     function f(?int $a, bool $b): void {
