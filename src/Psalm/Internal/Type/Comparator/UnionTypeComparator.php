@@ -508,14 +508,6 @@ final class UnionTypeComparator
         }
 
         if ($failed_parts && $union_comparison_result) {
-            // a part that is only a coercion from mixed makes the verdict of the first unaccepted part the final one
-            foreach ($failed_parts as $failed_part) {
-                if ($failed_part['coerced_from_mixed']) {
-                    $failed_parts = [$failed_parts[0]];
-                    break;
-                }
-            }
-
             $all_coerced = true;
             $any_to_string_cast = false;
             $all_coerced_from_mixed = true;
