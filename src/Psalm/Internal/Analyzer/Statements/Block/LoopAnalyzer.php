@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Psalm\Internal\Analyzer\Statements\Block;
 
 use PhpParser;
+use PhpParser\NodeFinder;
 use Psalm\CodeLocation;
 use Psalm\Context;
 use Psalm\Exception\ComplicatedExpressionException;
@@ -19,18 +20,24 @@ use Psalm\Internal\PhpVisitor\AssignmentMapVisitor;
 use Psalm\Internal\PhpVisitor\NodeCleanerVisitor;
 use Psalm\Internal\Scope\LoopScope;
 use Psalm\IssueBuffer;
+use Psalm\Node\Expr\BinaryOp\VirtualBooleanAnd;
 use Psalm\Storage\Assertion;
 use Psalm\Type;
+use Psalm\Type\Atomic;
+use Psalm\Type\Atomic\TInt;
+use Psalm\Type\Atomic\TIntRange;
 use Psalm\Type\Reconciler;
 use Psalm\Type\Union;
 use UnexpectedValueException;
 
 use function array_diff_key;
 use function array_filter;
+use function array_flip;
 use function array_intersect_key;
 use function array_keys;
 use function array_map;
 use function array_merge;
+use function array_reverse;
 use function array_slice;
 use function array_unique;
 use function array_values;
@@ -38,9 +45,14 @@ use function count;
 use function in_array;
 use function is_numeric;
 use function is_string;
+use function max;
+use function min;
+use function sort;
 use function spl_object_id;
 use function str_contains;
 use function str_starts_with;
+
+use const PHP_INT_MAX;
 
 /**
  * @internal
@@ -275,6 +287,8 @@ final class LoopAnalyzer
             // the data flow of the last pass is linked to the reads of the first one by one more pass
             $max_passes = $assignment_depth;
             $data_flow_pass_added = false;
+            $widening_passes = 0;
+            $widening_bounds = null;
             $force_pass = false;
 
             for ($i = 0; $i < $max_passes; ++$i) {
@@ -414,6 +428,8 @@ final class LoopAnalyzer
                 $continue_context->clauses = $pre_loop_context->clauses;
                 $continue_context->byref_constraints = $pre_loop_context->byref_constraints;
 
+                $vars_at_iteration_start = $continue_context->vars_in_scope;
+
                 $analyzer->setMixedCountsForFile($statements_analyzer->getFilePath(), $original_mixed_counts);
                 IssueBuffer::startRecording();
 
@@ -512,6 +528,50 @@ final class LoopAnalyzer
                 $recorded_issues = IssueBuffer::clearRecordingLevel();
 
                 IssueBuffer::stopRecording();
+
+                // a range the passes keep shifting (`$i += rand(1, 3)`) would go further on the iterations not
+                // analysed: its bound is moved to the next int the loop compares it with (`if ($i < 10) $i++`) and
+                // the body analysed once more with it. The pass after that one starts with what the widened pass
+                // ended with, which gets back the bounds the body enforces (`$i = min(10, $i + 1)`). A range that
+                // still goes past that is widened again, and then unbounded.
+                if ($i + 1 === $max_passes && $widening_passes < 4) {
+                    $widened_var_types = [];
+
+                    if ($widening_passes !== 1) {
+                        $vars_at_start = array_diff_key(
+                            $vars_at_iteration_start,
+                            array_flip($always_assigned_before_loop_body_vars),
+                        );
+                        $vars_at_end = self::getVarsStartingNextIteration(
+                            $continue_context,
+                            $loop_scope,
+                            $post_expressions,
+                        );
+
+                        $widened_var_types = self::getWidenedIntRanges($vars_at_start, $vars_at_end, null);
+
+                        if ($widened_var_types && $widening_passes !== 3) {
+                            $widening_bounds ??= self::getWideningBounds(
+                                [...$pre_conditions, ...$stmts, ...$post_expressions],
+                            );
+
+                            $widened_var_types = self::getWidenedIntRanges(
+                                $vars_at_start,
+                                $vars_at_end,
+                                $widening_bounds,
+                            );
+                        }
+                    }
+
+                    if ($widened_var_types || $widening_passes === 1) {
+                        $continue_context->vars_in_scope = $widened_var_types + $continue_context->vars_in_scope;
+                        ++$max_passes;
+                        ++$widening_passes;
+                        $force_pass = true;
+                    } else {
+                        $widening_passes = 4;
+                    }
+                }
 
                 if ($i + 1 === $max_passes
                     && !$data_flow_pass_added
@@ -624,8 +684,27 @@ final class LoopAnalyzer
             // if the loop contains an assertion and there are no break statements, we can negate that assertion
             // and apply it to the current context
 
+            $deciding_condition = null;
+
+            foreach ($pre_conditions as $i => $pre_condition) {
+                if (!$only_last_condition_decides || $i === count($pre_conditions) - 1) {
+                    $deciding_condition = $deciding_condition
+                        ? new VirtualBooleanAnd($deciding_condition, $pre_condition, $pre_condition->getAttributes())
+                        : $pre_condition;
+                }
+            }
+
             try {
-                $negated_pre_condition_clauses = Algebra::negateFormula(array_merge(...$pre_condition_clauses));
+                $negated_pre_condition_clauses = $deciding_condition
+                    ? FormulaGenerator::getNegatedFormula(
+                        array_merge(...$pre_condition_clauses),
+                        $deciding_condition,
+                        spl_object_id($deciding_condition),
+                        $loop_context->self,
+                        $statements_analyzer,
+                        $codebase,
+                    )
+                    : [];
             } catch (ComplicatedExpressionException) {
                 $negated_pre_condition_clauses = [];
             }
@@ -1385,6 +1464,210 @@ final class LoopAnalyzer
         }
 
         return $max_depth;
+    }
+
+    /**
+     * What the variables hold where an iteration goes on to the next one: the end of the body, or only its
+     * `continue`s when the body never gets to its end (`return`, `break`, `throw`), followed by the post
+     * expressions of a `for`
+     *
+     * @param array<PhpParser\Node\Expr> $post_expressions
+     * @return array<string, Union>
+     */
+    private static function getVarsStartingNextIteration(
+        Context $continue_context,
+        LoopScope $loop_scope,
+        array $post_expressions,
+    ): array {
+        if (!$continue_context->has_returned) {
+            return $continue_context->vars_in_scope;
+        }
+
+        if (!in_array(ScopeAnalyzer::ACTION_CONTINUE, $loop_scope->final_actions, true)) {
+            return [];
+        }
+
+        return array_intersect_key(
+            $continue_context->vars_in_scope,
+            self::getAssignedVarIds($post_expressions, $continue_context->self),
+        )
+            + $loop_scope->possibly_redefined_loop_vars
+            + $loop_scope->possibly_defined_loop_vars;
+    }
+
+    /**
+     * @param array<PhpParser\Node\Expr> $exprs
+     * @return array<string, true>
+     */
+    private static function getAssignedVarIds(array $exprs, ?string $this_class_name): array
+    {
+        if (!$exprs) {
+            return [];
+        }
+
+        $assignment_mapper = new AssignmentMapVisitor($this_class_name);
+        $traverser = new PhpParser\NodeTraverser;
+        $traverser->addVisitor($assignment_mapper);
+        $traverser->traverse($exprs);
+
+        return array_map(static fn(array $_): bool => true, $assignment_mapper->getAssignmentMap());
+    }
+
+    /**
+     * The ints a range shifted in a loop is widened to before it is unbounded: those the loop has as literals
+     * (what it compares with, clamps to…), each with its neighbours to cover `<` and `<=`
+     *
+     * @param array<PhpParser\Node> $nodes
+     * @return list<int>
+     */
+    private static function getWideningBounds(array $nodes): array
+    {
+        $bounds = [];
+
+        foreach ((new NodeFinder())->findInstanceOf($nodes, PhpParser\Node\Scalar\Int_::class) as $int) {
+            if ($int->value >= PHP_INT_MAX - 1) {
+                continue;
+            }
+
+            foreach ([$int->value, -$int->value] as $value) {
+                $bounds[$value - 1] = true;
+                $bounds[$value] = true;
+                $bounds[$value + 1] = true;
+            }
+        }
+
+        $bounds = array_keys($bounds);
+        sort($bounds);
+
+        return $bounds;
+    }
+
+    /**
+     * The variables whose int range at the end of an iteration goes past the ints they started it with, with that
+     * side moved to the next of the bounds, or unbounded. Literals are left alone: they come from assignments, so
+     * the passes reach all of them.
+     *
+     * @param array<string, Union> $vars_at_start
+     * @param array<string, Union> $vars_at_end
+     * @param ?list<int> $bounds sorted
+     * @return array<string, Union>
+     * @psalm-pure
+     */
+    private static function getWidenedIntRanges(array $vars_at_start, array $vars_at_end, ?array $bounds): array
+    {
+        $widened_var_types = [];
+
+        foreach ($vars_at_end as $var_id => $end_type) {
+            if (!isset($vars_at_start[$var_id])) {
+                continue;
+            }
+
+            $start_bounds = self::getIntBounds($vars_at_start[$var_id]);
+
+            if ($start_bounds === null) {
+                continue;
+            }
+
+            [$start_min, $start_max] = $start_bounds;
+
+            $widen_min = false;
+            $widen_max = false;
+
+            foreach ($end_type->getAtomicTypes() as $atomic) {
+                if (!$atomic instanceof TIntRange) {
+                    continue;
+                }
+
+                if ($start_min !== null && ($atomic->min_bound === null || $atomic->min_bound < $start_min)) {
+                    $widen_min = true;
+                }
+
+                if ($start_max !== null && ($atomic->max_bound === null || $atomic->max_bound > $start_max)) {
+                    $widen_max = true;
+                }
+            }
+
+            if (!$widen_min && !$widen_max) {
+                continue;
+            }
+
+            [$end_min, $end_max] = self::getIntBounds($end_type) ?? [null, null];
+
+            $types = array_filter(
+                $end_type->getAtomicTypes(),
+                static fn(Atomic $atomic): bool => !$atomic instanceof TInt,
+            );
+
+            $min = $start_min === null || $end_min === null ? null : min($start_min, $end_min);
+            $max = $start_max === null || $end_max === null ? null : max($start_max, $end_max);
+
+            if ($widen_min) {
+                $min = $min === null || $bounds === null ? null : self::getBoundBeyond($bounds, $min, false);
+            }
+
+            if ($widen_max) {
+                $max = $max === null || $bounds === null ? null : self::getBoundBeyond($bounds, $max, true);
+            }
+
+            $types[] = $min === null && $max === null ? new TInt() : new TIntRange($min, $max);
+
+            $widened_var_types[$var_id] = $end_type->setTypes($types);
+        }
+
+        return $widened_var_types;
+    }
+
+    /**
+     * The first of the sorted bounds at or past a value, upwards or downwards; null if there is none
+     *
+     * @param list<int> $bounds
+     * @psalm-pure
+     */
+    private static function getBoundBeyond(array $bounds, int $value, bool $upwards): ?int
+    {
+        if (!$upwards) {
+            $bounds = array_reverse($bounds);
+        }
+
+        foreach ($bounds as $bound) {
+            if ($upwards ? $bound >= $value : $bound <= $value) {
+                return $bound;
+            }
+        }
+
+        return null;
+    }
+
+    /**
+     * The lowest and highest of the ints a type holds, null for an unbounded side, or null if it holds no int
+     *
+     * @return ?array{?int, ?int}
+     * @psalm-pure
+     */
+    private static function getIntBounds(Union $type): ?array
+    {
+        $bounds = null;
+
+        foreach ($type->getAtomicTypes() as $atomic) {
+            if (!$atomic instanceof TInt) {
+                continue;
+            }
+
+            $range = TIntRange::convertToIntRange($atomic);
+
+            if ($bounds === null) {
+                $bounds = [$range->min_bound, $range->max_bound];
+
+                continue;
+            }
+
+            $bounds = [
+                $bounds[0] === null || $range->min_bound === null ? null : min($bounds[0], $range->min_bound),
+                $bounds[1] === null || $range->max_bound === null ? null : max($bounds[1], $range->max_bound),
+            ];
+        }
+
+        return $bounds;
     }
 
     /**
