@@ -92,7 +92,7 @@ final class LoopAnalyzer
 
         $inner_do_context = null;
 
-        // the variables evaluating the condition writes, when the loop is entered
+        // the variables evaluating the condition writes, with what they hold once it is evaluated
         $condition_written_var_ids = [];
 
         if ($pre_conditions) {
@@ -404,6 +404,7 @@ final class LoopAnalyzer
                             $continue_context,
                             $loop_parent_context,
                             false,
+                            $condition_written_var_ids,
                         );
                     }
                 }
@@ -599,19 +600,13 @@ final class LoopAnalyzer
                     $exit_vars = $exit_context->vars_in_scope;
                 } else {
                     // a while or for loop is also left before its body ever runs: the parent context holds the
-                    // types of both ways out, but what the condition writes is overwritten on either
+                    // types of both ways out, but what the condition writes holds what evaluating it left on either
                     $exit_context = $loop_parent_context;
                     $exit_vars = $exit_context->vars_in_scope;
 
-                    foreach ($condition_written_var_ids as $written_var_id => $_) {
-                        foreach ($continue_context->vars_in_scope as $var_id => $type) {
-                            if (isset($exit_vars[$var_id])
-                                && ($var_id === $written_var_id
-                                    || str_starts_with($var_id, $written_var_id . '[')
-                                    || str_starts_with($var_id, $written_var_id . '->'))
-                            ) {
-                                $exit_vars[$var_id] = $type;
-                            }
+                    foreach ($condition_written_var_ids as $var_id => $type) {
+                        if (isset($exit_vars[$var_id])) {
+                            $exit_vars[$var_id] = $type;
                         }
                     }
                 }
@@ -1108,7 +1103,8 @@ final class LoopAnalyzer
 
     /**
      * @param  list<Clause>  $pre_condition_clauses
-     * @param  array<string, true>  $written_var_ids  gets the variables evaluating the condition writes
+     * @param  array<string, Union>  $written_var_ids  gets the variables evaluating the condition writes, with what
+     *                                                 they hold once it is evaluated
      * @return list<string>
      */
     private static function applyPreConditionToLoopContext(
@@ -1135,13 +1131,21 @@ final class LoopAnalyzer
 
         $loop_context->inside_conditional = $was_inside_conditional;
 
-        // a variable is assigned at the position of the assignment
+        // a variable is assigned at the position of the assignment; what it holds once the condition is evaluated,
+        // before the condition is assumed true, is what the loop is left with, whichever pass evaluated it
         $condition_start = (int) $pre_condition->getAttribute('startFilePos');
         $condition_end = (int) $pre_condition->getAttribute('endFilePos');
 
-        foreach ($loop_context->assigned_var_ids as $var_id => $assigned_offset) {
+        foreach ($loop_context->assigned_var_ids as $written_var_id => $assigned_offset) {
             if ($assigned_offset >= $condition_start && $assigned_offset <= $condition_end) {
-                $written_var_ids[$var_id] = true;
+                foreach ($loop_context->vars_in_scope as $var_id => $type) {
+                    if ($var_id === $written_var_id
+                        || str_starts_with($var_id, $written_var_id . '[')
+                        || str_starts_with($var_id, $written_var_id . '->')
+                    ) {
+                        $written_var_ids[$var_id] = Type::combineUnionTypes($written_var_ids[$var_id] ?? null, $type);
+                    }
+                }
             }
         }
 

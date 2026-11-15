@@ -1073,6 +1073,41 @@ final class WhileTest extends TestCase
                     '$b===' => 'int<0, 10>|null',
                 ],
             ],
+            'loopLeftWithWhatItsConditionWroteNotWhatTheBodyLeft' => [
+                'code' => '<?php
+                    /** @param-out int<1, 10> $a */
+                    function nextValue(int &$a): bool {
+                        $a = rand(1, 10);
+                        return (bool) rand(0, 1);
+                    }
+
+                    /** @return int<0, 10> */
+                    function g(): int {
+                        return rand(0, 10);
+                    }
+
+                    final class K {
+                        public int $p = 0;
+
+                        /** @return int<0, 5> */
+                        public function f(): int {
+                            $this->p = 0;
+                            while (($this->p = g()) > 5) {}
+                            return $this->p;
+                        }
+                    }
+
+                    $a = 20;
+                    for (; nextValue($a), $a > 5;) {}
+                    $b = 20;
+                    while (nextValue($b) || $b > 5) {
+                        $b = 100;
+                    }',
+                'assertions' => [
+                    '$a===' => 'int<1, 5>',
+                    '$b===' => 'int<1, 5>',
+                ],
+            ],
             'whileLoopAlwaysEnteredGetsTheNegatedCondition' => [
                 'code' => '<?php
                     $a = null;
