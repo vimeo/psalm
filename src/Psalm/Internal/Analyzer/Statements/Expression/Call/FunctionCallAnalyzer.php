@@ -37,6 +37,7 @@ use Psalm\Internal\Type\TemplateStandinTypeReplacer;
 use Psalm\Internal\Type\TypeCombiner;
 use Psalm\Internal\Type\TypeExpander;
 use Psalm\Internal\Type\TypeVariableTracker;
+use Psalm\Internal\TypeVisitor\AmbiguousTemplateFinder;
 use Psalm\Internal\TypeVisitor\TypeVariableResolver;
 use Psalm\Issue\DeprecatedFunction;
 use Psalm\Issue\ImpureFunctionCall;
@@ -1216,6 +1217,13 @@ final class FunctionCallAnalyzer extends CallAnalyzer
         }
 
         if ($class_template_types === []) {
+            return null;
+        }
+
+        $ambiguous_template_finder = new AmbiguousTemplateFinder($class_template_types);
+        $ambiguous_template_finder->traverse($erased);
+
+        if ($ambiguous_template_finder->matches()) {
             return null;
         }
 

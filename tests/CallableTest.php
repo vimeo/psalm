@@ -549,6 +549,28 @@ final class CallableTest extends TestCase
                 'ignored_issues' => [],
                 'php_version' => '8.1',
             ],
+            'invokeFirstClassCallableOfGenericMethodWithOverlappingBounds' => [
+                'code' => '<?php
+                    /** @template T */
+                    final class Box {
+                        /**
+                         * @template U of int
+                         * @param U $u
+                         * @return T|U
+                         */
+                        public function either(int $u): mixed { return $u; }
+                    }
+                    /** @var Box<int|string> $box */;
+                    $either = $box->either(...);
+                    $result = $either(5);
+                    $direct = $box->either(5);',
+                'assertions' => [
+                    '$result===' => 'int|string',
+                    '$direct===' => 'int|string',
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
             'invokeFirstClassCallableOfGenericMethodOfExtendedClass' => [
                 'code' => '<?php
                     /** @template T */
