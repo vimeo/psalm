@@ -16983,6 +16983,45 @@ final class TaintTest extends TestCase
                     echo B::id((string) $_GET["a"]);',
                 'error_message' => 'TaintedHtml',
             ],
+            'staticCallThroughSubclassOfTraitMethodAlias' => [
+                'code' => '<?php
+                    trait T {
+                        public static function id(string $s): string { return $s; }
+                    }
+                    class A {
+                        use T {
+                            id as foo;
+                        }
+                    }
+                    final class B extends A {}
+
+                    echo B::foo((string) $_GET["a"]);',
+                'error_message' => 'TaintedHtml',
+            ],
+            'staticCallThroughSubclassOfInheritedMethodEscapingAnotherKind' => [
+                'code' => '<?php
+                    class A {
+                        /** @psalm-taint-escape html */
+                        public static function esc(string $s): string { return $s; }
+                    }
+                    final class B extends A {}
+
+                    shell_exec(B::esc((string) $_GET["a"]));',
+                'error_message' => 'TaintedShell',
+            ],
+            'staticCallThroughSubclassOfInheritedMethodCallingAnAbstractMethod' => [
+                'code' => '<?php
+                    abstract class A {
+                        abstract public static function make(): string;
+                        public static function go(): string { return static::make(); }
+                    }
+                    final class B extends A {
+                        public static function make(): string { return (string) $_GET["a"]; }
+                    }
+
+                    echo B::go();',
+                'error_message' => 'TaintedHtml',
+            ],
             'staticCallThroughSubclassOfInheritedTaintSource' => [
                 'code' => '<?php
                     class A {
