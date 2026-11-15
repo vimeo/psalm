@@ -49,6 +49,7 @@ final class ElseAnalyzer
             $if_scope->new_vars = [];
             $if_scope->redefined_vars = [];
             $if_scope->reasonable_clauses = [];
+            $if_scope->addBranchReachingTheEnd($else_context);
 
             return null;
         }

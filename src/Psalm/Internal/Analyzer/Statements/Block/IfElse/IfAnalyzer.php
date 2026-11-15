@@ -448,6 +448,8 @@ final class IfAnalyzer
     ): void {
         $codebase = $statements_analyzer->getCodebase();
 
+        $if_scope->addBranchReachingTheEnd($if_context);
+
         if ($branch_nodes) {
             $outer_context->detachReferencesReboundIn(
                 $if_context->references_in_scope,

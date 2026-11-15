@@ -7,6 +7,8 @@ namespace Psalm\Internal\Scope;
 use Psalm\Context;
 use Psalm\Type\Union;
 
+use function array_intersect_key;
+
 /**
  * @internal
  */
@@ -23,6 +25,23 @@ final class CaseScope
      * @var list<array<string, string>>
      */
     public array $references_in_scope_at_breaks = [];
+
+    /**
+     * The offsets of nullable arrays read on every `break` out of the switch in the case, null before there is one
+     *
+     * @var array<string, true>|null
+     */
+    public ?array $null_array_offsets_read_at_breaks = null;
+
+    /**
+     * @psalm-external-mutation-free
+     */
+    public function addBreak(Context $context): void
+    {
+        $this->null_array_offsets_read_at_breaks = $this->null_array_offsets_read_at_breaks === null
+            ? $context->null_array_offsets_read
+            : array_intersect_key($this->null_array_offsets_read_at_breaks, $context->null_array_offsets_read);
+    }
 
     /**
      * @psalm-mutation-free
