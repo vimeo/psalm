@@ -384,6 +384,7 @@ class SoapClient  {
 class SoapFault extends Exception {
     /**
      * @param array|string|null $code
+     * @psalm-flow ($string) -> $this->message
      */
     public function __construct(
         $code,

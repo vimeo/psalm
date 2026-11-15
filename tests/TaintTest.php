@@ -4320,6 +4320,40 @@ final class TaintTest extends TestCase
                         }
                     }',
             ],
+            'dontTaintConstantExceptionMessage' => [
+                'code' => '<?php
+                    function f(): void {
+                        try {
+                            throw new RuntimeException("Invalid config value");
+                        } catch (RuntimeException $e) {
+                            echo $e->getMessage();
+                        }
+                    }',
+            ],
+            'dontTaintExceptionMessageBuiltFromSafeValues' => [
+                'code' => '<?php
+                    final class OutOfStock extends RuntimeException {
+                        public function __construct(int $count) {
+                            parent::__construct("Out of stock: " . $count);
+                        }
+                    }
+                    try {
+                        throw new OutOfStock((int) $_GET["count"]);
+                    } catch (Throwable $e) {
+                        echo $e->getMessage();
+                    }',
+            ],
+            'dontTaintMessageOfExceptionsOfOtherClasses' => [
+                'code' => '<?php
+                    function a(): void {
+                        throw new LogicException((string) $_GET["x"]);
+                    }
+                    try {
+                        a();
+                    } catch (RuntimeException $e) {
+                        echo $e->getMessage();
+                    }',
+            ],
             'dontTaintSpecializedInstanceStoredInAnotherWithOtherInstances' => [
                 'code' => '<?php
                     /** @psalm-taint-specialize */
@@ -15602,7 +15636,9 @@ final class TaintTest extends TestCase
             ],
             'taintCaughtExceptionMessage' => [
                 'code' => '<?php
-                    function foo(): void {}
+                    function foo(): void {
+                        throw new RuntimeException((string) $_GET["x"]);
+                    }
                     try {
                         foo();
                     } catch (Throwable $e) {
@@ -15610,23 +15646,53 @@ final class TaintTest extends TestCase
                     }',
                 'error_message' => 'TaintedHtml',
             ],
-            'taintCaughtExceptionDump' => [
+            'taintCaughtExceptionMessageGivenToParentConstructor' => [
                 'code' => '<?php
-                    function foo(): void {}
+                    final class NotFound extends RuntimeException {
+                        public function __construct(string $id) {
+                            parent::__construct("Not found: " . $id);
+                        }
+                    }
                     try {
-                        foo();
-                    } catch (RuntimeException $e) {
-                        echo print_r($e, true);
+                        throw new NotFound((string) $_GET["id"]);
+                    } catch (Exception $e) {
+                        echo $e->getMessage();
                     }',
                 'error_message' => 'TaintedHtml',
             ],
-            'taintTheMessageOfTheExceptionAnObjectIdThrowsOnInvalidInput' => [
+            'taintCaughtExceptionMessageSetBySubclass' => [
                 'code' => '<?php
+                    final class Invalid extends InvalidArgumentException {
+                        public function __construct(string $value) {
+                            parent::__construct();
+                            $this->message = $value;
+                        }
+                    }
                     try {
-                        new MongoDB\BSON\ObjectId((string) $_GET["id"]);
-                    } catch (MongoDB\Driver\Exception\InvalidArgumentException $e) {
-                        // it repeats the input
+                        throw new Invalid((string) $_GET["x"]);
+                    } catch (LogicException $e) {
                         echo $e->getMessage();
+                    }',
+                'error_message' => 'TaintedHtml',
+            ],
+            'taintErrorExceptionMessage' => [
+                'code' => '<?php
+                    $e = new ErrorException((string) $_GET["x"], 0, E_WARNING);
+                    echo $e->getMessage();',
+                'error_message' => 'TaintedHtml',
+            ],
+            'taintExceptionMessageGivenByName' => [
+                'code' => '<?php
+                    $e = new DomainException(code: 1, message: (string) $_GET["x"]);
+                    echo $e->getMessage();',
+                'error_message' => 'TaintedHtml',
+            ],
+            'taintMessageOfPreviousException' => [
+                'code' => '<?php
+                    $e = new LengthException("safe", 0, new TypeError((string) $_GET["x"]));
+                    $previous = $e->getPrevious();
+                    if ($previous) {
+                        echo $previous->getMessage();
                     }',
                 'error_message' => 'TaintedHtml',
             ],

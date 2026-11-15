@@ -136,7 +136,7 @@ interface Throwable
 {
     /**
      * @psalm-mutation-free
-     * @psalm-taint-source input
+     * @psalm-flow $this->message -> return
      */
     public function getMessage() : string;
 
@@ -209,12 +209,13 @@ class Exception implements Throwable
      * @param int $code
      * @param Throwable $previous
      * @psalm-external-mutation-free
+     * @psalm-flow ($message) -> $this->message
      */
     public function __construct($message = "", $code = 0, Throwable $previous = null) {}
 
     /**
      * @psalm-mutation-free
-     * @psalm-taint-source input
+     * @psalm-flow $this->message -> return
      */
     public final function getMessage() : string {}
 
@@ -259,6 +260,38 @@ class Exception implements Throwable
     public function __toString() {}
 }
 
+class ErrorException extends Exception
+{
+    /**
+     * @var int
+     */
+    protected $severity = E_ERROR;
+
+    /**
+     * @psalm-external-mutation-free
+     * @param string $message
+     * @param int $code
+     * @param int $severity
+     * @param ?string $filename
+     * @param ?int $line
+     * @param ?Throwable $previous
+     * @psalm-flow ($message) -> $this->message
+     */
+    public function __construct(
+        $message = "",
+        $code = 0,
+        $severity = E_ERROR,
+        $filename = null,
+        $line = null,
+        $previous = null
+    ) {}
+
+    /**
+     * @psalm-mutation-free
+     */
+    public final function getSeverity() : int {}
+}
+
 class Error implements Throwable
 {
     /**
@@ -287,12 +320,13 @@ class Error implements Throwable
      * @param int $code
      * @param Throwable $previous
      * @psalm-external-mutation-free
+     * @psalm-flow ($message) -> $this->message
      */
     public function __construct($message = "", $code = 0, Throwable $previous = null) {}
 
     /**
      * @psalm-mutation-free
-     * @psalm-taint-source input
+     * @psalm-flow $this->message -> return
      */
     public final function getMessage() : string {}
 

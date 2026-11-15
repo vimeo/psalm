@@ -109,6 +109,7 @@ final class Reflection
 
             $storage->constants = $parent_storage->constants;
 
+            $storage->parent_class = $parent_class_name;
             $storage->parent_classes = array_merge(
                 [$parent_class_name_lc => $parent_class_name],
                 $parent_storage->parent_classes,
