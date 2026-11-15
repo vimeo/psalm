@@ -251,6 +251,97 @@ final class AssertAnnotationTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'selfOfATraitAssertionIsTheClassUsingTheTraitEverywhere' => [
+                'code' => '<?php
+                    trait Comparable {
+                        /** @psalm-assert-if-true self $other */
+                        public function equals(object $other): bool {
+                            return $other instanceof self;
+                        }
+
+                        /** @psalm-assert-if-true list<self> $others */
+                        public function allEqual(array $others): bool {
+                            return true;
+                        }
+
+                        /** @psalm-assert-if-true self $other */
+                        public static function isOne(object $other): bool {
+                            return $other instanceof self;
+                        }
+
+                        /** @psalm-assert self $other */
+                        public function mustBe(object $other): void {}
+                    }
+
+                    class Foo {
+                        use Comparable;
+                    }
+
+                    class Bar extends Foo {}
+
+                    /** @param list<object> $xs */
+                    function check(Bar $bar, object $a, array $xs, object $b, object $c, object $d): void {
+                        if ($bar->equals($a)) {
+                            /** @psalm-check-type-exact $a = Foo */
+                            echo 1;
+                        }
+
+                        if ($bar->allEqual($xs)) {
+                            /** @psalm-check-type-exact $xs = list<Foo> */
+                            echo 2;
+                        }
+
+                        if (Bar::isOne($b)) {
+                            /** @psalm-check-type-exact $b = Foo */
+                            echo 3;
+                        }
+
+                        $bar->mustBe($c);
+                        /** @psalm-check-type-exact $c = Foo */
+                        echo 4;
+                    }',
+                'assertions' => [],
+                'ignored_issues' => ['ClassMustBeFinal', 'UnusedParam'],
+                'php_version' => '8.1',
+            ],
+            'assertObjectShapeOnObject' => [
+                'code' => '<?php
+                    /** @psalm-assert object{a: int} $obj */
+                    function assertShape(mixed $obj): void {}
+
+                    function getObject(): object {
+                        return new stdClass;
+                    }
+
+                    $b = getObject();
+                    assertShape($b);',
+                'assertions' => [
+                    '$b===' => 'object{a:int}',
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'assertObjectShapeOnObjectKeepsEarlierShape' => [
+                'code' => '<?php
+                    /** @psalm-assert object{a: int} $obj */
+                    function assertA(mixed $obj): void {}
+
+                    /** @psalm-assert object{b: string} $obj */
+                    function assertB(mixed $obj): void {}
+
+                    function getObject(): object {
+                        return new stdClass;
+                    }
+
+                    $b = getObject();
+                    assertA($b);
+                    assertB($b);',
+                'assertions' => [
+                    '$b===' => 'object{a:int}&object{b:string}',
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
             'negatedArrayAssertionKeepsTheExistingArrayType' => [
                 'code' => '<?php
                     /**
@@ -400,7 +491,6 @@ final class AssertAnnotationTest extends TestCase
                         }
                     }',
                 'assertions' => [],
-                'ignored_issues' => ['MissingOverrideAttribute'],
             ],
             'assertIfTrueAndFalseKeepEveryAlternativeOfAUnionOnAProperty' => [
                 'code' => '<?php
@@ -453,6 +543,36 @@ final class AssertAnnotationTest extends TestCase
                 'assertions' => [
                     '$name===' => "'parent'|'self'|'static'|class-string|null",
                 ],
+            ],
+            'assertIfTrueSelfInATraitMeansTheClassUsingIt' => [
+                'code' => '<?php
+                    interface Comparable {
+                        public function equals(Comparable $object): bool;
+                    }
+
+                    trait ComparableTrait {
+                        /** @psalm-assert-if-true self $object */
+                        public function equals(Comparable $object): bool {
+                            return get_class($this) === get_class($object);
+                        }
+                    }
+
+                    class Foo implements Comparable {
+                        use ComparableTrait;
+
+                        public ?string $baz = null;
+
+                        public function update(Comparable $object): void {
+                            if (!$this->equals($object)) {
+                                throw new LogicException();
+                            }
+
+                            $this->baz = $object->baz;
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => ['MissingOverrideAttribute'],
+                'php_version' => '8.0',
             ],
             'assertArrayKeyExistsWithNamedArgumentsNarrowsTheArrayOfItsParameter' => [
                 'code' => '<?php
@@ -755,6 +875,23 @@ final class AssertAnnotationTest extends TestCase
                 'assertions' => [],
                 'ignored_issues' => [],
                 'php_version' => '8.1',
+            ],
+            'assertionAboutAPropertyOfAnObjectShapeArgument' => [
+                'code' => '<?php
+                    /**
+                     * @param object{hasFoo: bool} $obj
+                     * @psalm-assert-if-true true $obj->hasFoo
+                     */
+                    function validate(object $obj): bool {
+                        return $obj->hasFoo;
+                    }
+
+                    /** @var object{hasFoo: bool} $shape */
+                    $shape = (object) ["hasFoo" => true];
+
+                    if (validate($shape)) {
+                        echo "valid";
+                    }',
             ],
             'assertKeyOfAClassConstantNarrowsToItsKeys' => [
                 'code' => '<?php
@@ -2309,7 +2446,7 @@ final class AssertAnnotationTest extends TestCase
                         }
                     }',
                 'assertions' => [],
-                'ignored_issues' => ['ClassMustBeFinal'],
+                'ignored_issues' => [],
                 'php_version' => '8.0',
             ],
             'withHasTypeCall' => [
@@ -4093,6 +4230,71 @@ final class AssertAnnotationTest extends TestCase
                     '$arr===' => 'non-empty-array<int, string>',
                 ],
             ],
+            'assertUnionWithAnAlternativeThatCannotBeTheValue' => [
+                'code' => '<?php
+                    /**
+                     * @param mixed $subject
+                     * @psalm-assert object|class-string|trait-string|interface-string $subject
+                     */
+                    function assertCanHaveMethods($subject): void
+                    {
+                        if (is_object($subject)
+                            || (is_string($subject)
+                                && (class_exists($subject) || trait_exists($subject) || interface_exists($subject)))
+                        ) {
+                            return;
+                        }
+
+                        throw new InvalidArgumentException("Invalid argument");
+                    }
+
+                    function consume(string $class): void
+                    {
+                        assertCanHaveMethods($class);
+                        /** @psalm-check-type-exact $class = class-string|trait-string */
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.2',
+            ],
+            'assertedPropertyNamedLikeTheArgumentIndexIsKept' => [
+                'code' => '<?php
+                    final class A {
+                        public function __construct(public readonly ?int $p0, public readonly ?int $p1) {}
+                    }
+
+                    /** @psalm-assert-if-true int $a->p0 */
+                    function ifTrue(A $a): bool { return $a->p0 !== null; }
+
+                    /** @psalm-assert-if-false int $a->p0 */
+                    function ifFalse(A $a): bool { return $a->p0 === null; }
+
+                    /** @psalm-assert-if-true int $b->p1 */
+                    function second(int $x, A $b): bool { return $b->p1 !== null; }
+
+                    function g(A $x): int { if (ifTrue($x)) { return $x->p0; } return 0; }
+
+                    function h(A $x): int { if (!ifFalse($x)) { return $x->p0; } return 0; }
+
+                    function j(A $y): int { if (second(1, $y)) { return $y->p1; } return 0; }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
+            'assertedPropertyNamedLikeTheArgumentIndexIsKeptByAssert' => [
+                'code' => '<?php
+                    final class A {
+                        public function __construct(public readonly ?int $p0) {}
+                    }
+
+                    /** @psalm-assert int $a->p0 */
+                    function always(A $a): void { assert($a->p0 !== null); }
+
+                    function i(A $x): int { always($x); return $x->p0; }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
         ];
     }
 
@@ -4146,18 +4348,18 @@ final class AssertAnnotationTest extends TestCase
                 'code' => '<?php
                     interface Comparable {
                         /** @psalm-assert-if-true static $object */
-                        public function equals(Comparable $object): bool;
+                        public function equals(object $object): bool;
                     }
 
                     final class Money implements Comparable {
                         public int $amount = 0;
 
-                        public function equals(Comparable $object): bool {
+                        public function equals(object $object): bool {
                             return true;
                         }
                     }
 
-                    function total(Comparable $left, Comparable $right): int {
+                    function total(Comparable $left, object $right): int {
                         if ($left->equals($right)) {
                             return $right->amount;
                         }
@@ -4165,6 +4367,22 @@ final class AssertAnnotationTest extends TestCase
                         return 0;
                     }',
                 'error_message' => 'NoInterfaceProperties - src' . DIRECTORY_SEPARATOR . 'somefile.php:17:36',
+            ],
+            'assertionAboutAPropertyAnObjectShapeDoesNotHave' => [
+                'code' => '<?php
+                    /**
+                     * @param object{hasFoo: bool} $obj
+                     * @psalm-assert-if-true true $obj->missing
+                     */
+                    function validate(object $obj): bool {
+                        return $obj->hasFoo;
+                    }
+
+                    /** @var object{hasFoo: bool} $shape */
+                    $shape = (object) ["hasFoo" => true];
+
+                    validate($shape);',
+                'error_message' => 'InvalidDocblock - src' . DIRECTORY_SEPARATOR . 'somefile.php:13:21 - Property missing is not defined on variable shape so the assertion cannot be applied',
             ],
             'assertInstanceOfMultipleInterfaces' => [
                 'code' => '<?php
@@ -4606,6 +4824,18 @@ final class AssertAnnotationTest extends TestCase
 
                     if (hasP(Holder::$sh)) {}',
                 'error_message' => 'Variable Holder::$sh is not an object so the assertion cannot be applied',
+            ],
+            'assertUnionOfTypesThatCannotBeTheValue' => [
+                'code' => '<?php
+                    /** @psalm-assert int|float $x */
+                    function assertNumber(mixed $x): void {}
+
+                    function consume(string $s): void {
+                        assertNumber($s);
+                    }',
+                'error_message' => 'TypeDoesNotContainType',
+                'error_levels' => [],
+                'php_version' => '8.2',
             ],
         ];
     }
