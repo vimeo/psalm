@@ -65,6 +65,28 @@ final class NativeUnionsTest extends TestCase
                 'ignored_issues' => [],
                 'php_version' => '8.4',
             ],
+            'classNameAndSelfInAClosureUnionAreNotDuplicates' => [
+                'code' => <<<'PHP'
+                    <?php
+                    final class A {
+                        public function m(): void {
+                            $f = function (): A|self {
+                                return $this;
+                            };
+                            $g = fn(): A|self => $this;
+                            $h = function (A|self $a): void {
+                                echo get_class($a);
+                            };
+
+                            echo get_class($f()), get_class($g());
+                            $h($this);
+                        }
+                    }
+                    PHP,
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.5',
+            ],
             'classNameAndSelfInATraitUnionAreNotDuplicates' => [
                 'code' => <<<'PHP'
                     <?php

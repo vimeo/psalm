@@ -33,7 +33,7 @@ final class TypeHintResolver
     /**
      * The keys by which a member of a native union duplicates another one, each with the name PHP reports. PHP never
      * resolves `static`, and resolves `self` and `parent` to the class name only from PHP 8.5 on, in a class that is
-     * neither a trait nor anonymous.
+     * neither a trait nor anonymous, outside of closures (they can be bound to another class).
      *
      * @return array<string, string>
      */
@@ -83,6 +83,7 @@ final class TypeHintResolver
         ?ClassLikeStorage $classlike_storage,
         Aliases $aliases,
         int $analysis_php_version_id,
+        bool $is_closure = false,
     ): Union {
         if ($hint instanceof PhpParser\Node\UnionType) {
             $type = null;
@@ -109,12 +110,13 @@ final class TypeHintResolver
                     $classlike_storage,
                     $aliases,
                     $analysis_php_version_id,
+                    $is_closure,
                 );
 
                 $member_keys = self::getDuplicateKeysOfAUnionMember(
                     $atomic_typehint,
                     $resolved_type,
-                    $classlike_storage,
+                    $is_closure ? null : $classlike_storage,
                     $analysis_php_version_id,
                 );
 
@@ -163,6 +165,7 @@ final class TypeHintResolver
                     $classlike_storage,
                     $aliases,
                     $analysis_php_version_id,
+                    $is_closure,
                 );
 
                 foreach ($resolved_type->getAtomicTypes() as $atomic_type) {
