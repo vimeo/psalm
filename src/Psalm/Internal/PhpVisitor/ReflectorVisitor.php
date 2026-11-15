@@ -259,8 +259,10 @@ final class ReflectorVisitor extends PhpParser\NodeVisitorAbstract implements Fi
             if ($node instanceof PhpParser\Node\Stmt\ClassMethod
                 && $functionlike_node_scanner->storage instanceof MethodStorage
             ) {
-                // until a statement of the body says otherwise, see recordExternalEffects()
-                $functionlike_node_scanner->storage->writes_only_this_properties = $node->stmts !== null;
+                // until a statement of the body says otherwise, see recordExternalEffects(); the body of a
+                // stub is not what runs
+                $functionlike_node_scanner->storage->writes_only_this_properties = $node->stmts !== null
+                    && !$functionlike_node_scanner->storage->stubbed;
             }
 
             if ($classlike_storage

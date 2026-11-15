@@ -799,6 +799,69 @@ final class CapabilitiesTest extends TestCase
                 'assertions' => [],
                 'ignored_issues' => [],
             ],
+            'callsWritingNothingKeepGetterResults' => [
+                'code' => <<<'PHP'
+                    <?php
+                    final class Value {
+                        /** @var mixed */
+                        private $value;
+                        /** @param mixed $value */
+                        public function __construct($value) { $this->value = $value; }
+                        /** @return mixed */
+                        public function getValue() { return $this->value; }
+                        public function noop(): void {}
+                    }
+                    final class Checker {
+                        public function check(string $s): bool { return $s !== ''; }
+                    }
+                    final class Dumper {
+                        private function canBe(string $s): bool { return $s !== ''; }
+                        private function nothing(): void {}
+                        private function ind(string $s): string { return $s; }
+
+                        public function inCondition(Value $value): string {
+                            if (is_string($value->getValue()) && $this->canBe($value->getValue())) {
+                                return $this->ind($value->getValue());
+                            }
+                            return '';
+                        }
+                        public function inStatement(Value $value): string {
+                            if (is_string($value->getValue())) {
+                                $this->nothing();
+                                return $this->ind($value->getValue());
+                            }
+                            return '';
+                        }
+                        public function onTheGetterReceiver(Value $value): string {
+                            if (is_string($value->getValue())) {
+                                $value->noop();
+                                return $this->ind($value->getValue());
+                            }
+                            return '';
+                        }
+                        public function onAnotherReceiver(Value $value, Checker $checker): string {
+                            if (is_string($value->getValue()) && $checker->check($value->getValue())) {
+                                return $this->ind($value->getValue());
+                            }
+                            return '';
+                        }
+                    }
+                    PHP,
+            ],
+            'stubWithAnEmptyBodyMayWriteItsReceiver' => [
+                'code' => <<<'PHP'
+                    <?php
+                    /** @param ArrayObject<int, int> $ao */
+                    function resetFlags(ArrayObject $ao): void {
+                        if ($ao->getFlags() === ArrayObject::ARRAY_AS_PROPS) {
+                            $ao->setFlags(0);
+                            if ($ao->getFlags() === 0) {
+                                echo 'reset';
+                            }
+                        }
+                    }
+                    PHP,
+            ],
             'mutatingAnotherObjectKeepsWhatPureClassMethodsReturned' => [
                 'code' => '<?php
                     /** @psalm-pure */
@@ -3432,6 +3495,29 @@ final class CapabilitiesTest extends TestCase
                         }
                         $counter->touch();
                         return $owner->getChild();
+                    }',
+                'error_message' => 'NullableReturnStatement',
+            ],
+            'overriddenMethodWritingNothingMustNotKeepGetter' => [
+                'code' => '<?php
+                    final class Child {}
+                    final class Owner {
+                        public ?Child $child = null;
+                        /** @psalm-mutation-free */
+                        public function getChild(): ?Child { return $this->child; }
+                    }
+                    class Base {
+                        protected function hook(Owner $owner): void {}
+                        public function afterHook(Owner $owner): Child {
+                            if ($owner->getChild() === null) {
+                                return new Child();
+                            }
+                            $this->hook($owner);
+                            return $owner->getChild();
+                        }
+                    }
+                    final class Clearing extends Base {
+                        protected function hook(Owner $owner): void { $owner->child = null; }
                     }',
                 'error_message' => 'NullableReturnStatement',
             ],
