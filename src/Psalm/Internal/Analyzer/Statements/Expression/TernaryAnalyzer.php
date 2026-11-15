@@ -306,6 +306,8 @@ final class TernaryAnalyzer
                 ...$completing_context->vars_possibly_in_scope,
             ];
 
+            $context->null_array_offsets_read = $completing_context->null_array_offsets_read;
+
             $context->cond_referenced_var_ids = [
                 ...$context->cond_referenced_var_ids,
                 ...$completing_context->cond_referenced_var_ids,
@@ -313,6 +315,9 @@ final class TernaryAnalyzer
 
             return self::setResultType($statements_analyzer, $stmt, $context);
         }
+
+        $context->detachReferencesReboundIn($if_context, $statements_analyzer, $stmt->if ? [$stmt->if] : []);
+        $context->detachReferencesReboundIn($t_else_context, $statements_analyzer, [$stmt->else]);
 
         $assign_var_ifs = $if_context->assigned_var_ids;
         $assign_var_else = $t_else_context->assigned_var_ids;
@@ -382,6 +387,12 @@ final class TernaryAnalyzer
             ...$if_context->vars_possibly_in_scope,
             ...$t_else_context->vars_possibly_in_scope,
         ];
+
+        // every way past the ternary goes through one of its branches
+        $context->null_array_offsets_read = array_intersect_key(
+            $if_context->null_array_offsets_read,
+            $t_else_context->null_array_offsets_read,
+        );
 
         $context->cond_referenced_var_ids = [
             ...$context->cond_referenced_var_ids,
