@@ -23,6 +23,19 @@ final class ForTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'mixedConditionVariableOfAForLoopIsNotNonEmptyAfterIt' => [
+                'code' => '<?php
+                    function check(mixed $m): void {
+                        for ($i = 0; $i < 3 && $m; $i++) {
+                        }
+
+                        $after = $m;
+                        /** @psalm-check-type-exact $after = mixed */
+                    }',
+                'assertions' => [],
+                'ignored_issues' => ['MixedAssignment'],
+                'php_version' => '8.0',
+            ],
             'variableNarrowedAndReassignedByAnIfKeepsTheTypesOfBothBranches' => [
                 'code' => '<?php
                     function normalize(array|string|int $raw): array {

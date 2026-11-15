@@ -27,6 +27,7 @@ use Psalm\Internal\FileManipulation\FileManipulationBuffer;
 use Psalm\Internal\FileManipulation\PropertyDocblockManipulator;
 use Psalm\Internal\MethodIdentifier;
 use Psalm\Internal\Provider\NodeDataProvider;
+use Psalm\Internal\Scanner\UnresolvedConstantComponent;
 use Psalm\Internal\Type\Comparator\GenericTypeComparator;
 use Psalm\Internal\Type\Comparator\TypeComparisonResult;
 use Psalm\Internal\Type\Comparator\UnionTypeComparator;
@@ -751,6 +752,22 @@ final class ClassAnalyzer extends ClassLikeAnalyzer
                                     . $guide_class_name . '::$' . $property_name . ' ('
                                     . PropertyStorage::getVisibilityText($guide_property_storage->set_visibility)
                                     . '(set))',
+                                $property_storage->location,
+                            ),
+                        );
+                    } elseif ($guide_property_storage->readonly_public_set
+                        && $property_storage->native_readonly
+                        && !$property_storage->readonly_public_set
+                        // where Populator cleared it, the redeclaration may still be public(set)
+                        && !$property_class_storage->isMutationFree()
+                        && !$property_class_storage->taint_specialize
+                        && $property_storage->location
+                    ) {
+                        IssueBuffer::maybeAdd(
+                            new OverriddenPropertyAccess(
+                                'Property ' . $fq_class_name . '::$' . $property_name
+                                    . ' is readonly, so implicitly protected(set), a more restrictive set visibility'
+                                    . ' than ' . $guide_class_name . '::$' . $property_name . ' (public(set))',
                                 $property_storage->location,
                             ),
                         );
@@ -2752,7 +2769,9 @@ final class ClassAnalyzer extends ClassLikeAnalyzer
             } elseif ($case_value === null && $storage->enum_type !== null) {
                 IssueBuffer::maybeAdd(
                     new InvalidEnumCaseValue(
-                        'Case of a backed enum should have a value',
+                        $case_storage->value instanceof UnresolvedConstantComponent
+                            ? 'Case of a backed enum should have either string or int value'
+                            : 'Case of a backed enum should have a value',
                         $case_storage->stmt_location,
                         $storage->name,
                     ),

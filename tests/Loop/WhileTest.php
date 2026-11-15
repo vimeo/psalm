@@ -144,6 +144,21 @@ final class WhileTest extends TestCase
                         return $i;
                     }',
             ],
+            'mixedConditionVariableOfAWhileLoopIsNotNonEmptyAfterIt' => [
+                'code' => '<?php
+                    function check(mixed $w): void {
+                        $j = 0;
+                        while ($j < 3 && $w) {
+                            $j++;
+                        }
+
+                        $after = $w;
+                        /** @psalm-check-type-exact $after = mixed */
+                    }',
+                'assertions' => [],
+                'ignored_issues' => ['MixedAssignment'],
+                'php_version' => '8.0',
+            ],
             'variableDefinedBeforeAPlainBreakIsDefinedAfterTheInnerLoopOfABreakTwo' => [
                 'code' => '<?php
                     while (true) {
