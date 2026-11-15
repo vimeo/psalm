@@ -147,40 +147,6 @@ final class AtomicMethodCallAnalyzer extends CallAnalyzer
             $result->has_mixed_method_call = true;
         }
 
-        // `object{a: int}&Foo` has the methods of Foo, which the shape knows nothing about
-        if ($lhs_type_part instanceof TObjectWithProperties && !$is_intersection) {
-            foreach ($lhs_type_part->extra_types as $key => $extra_type) {
-                if (!$extra_type instanceof TNamedObject) {
-                    continue;
-                }
-
-                $other_types = $lhs_type_part->extra_types;
-                unset($other_types[$key]);
-                $shape = $lhs_type_part->setIntersectionTypes([]);
-                $named = $extra_type->setIntersectionTypes([
-                    ...$extra_type->getIntersectionTypes(),
-                    ...$other_types,
-                    $shape->getKey() => $shape,
-                ]);
-
-                self::analyze(
-                    $statements_analyzer,
-                    $stmt,
-                    $codebase,
-                    $context,
-                    $lhs_type,
-                    $named,
-                    $static_type ?? $named,
-                    false,
-                    $lhs_var_id,
-                    $result,
-                    $inferred_template_result,
-                );
-
-                return;
-            }
-        }
-
         $source = $statements_analyzer->getSource();
 
         if ($lhs_type_part instanceof TCallableObject) {

@@ -20,6 +20,7 @@ use Psalm\Internal\FileManipulation\FileManipulationBuffer;
 use Psalm\Internal\MethodIdentifier;
 use Psalm\Internal\Type\Comparator\UnionTypeComparator;
 use Psalm\Internal\Type\LiteralCast;
+use Psalm\Internal\Type\ObjectShapeIntersection;
 use Psalm\Internal\Type\TypeCombiner;
 use Psalm\Internal\Type\TypeVariableTracker;
 use Psalm\Internal\TypeVisitor\TypeVariableResolver;
@@ -1309,9 +1310,13 @@ final class CastAnalyzer
 
         foreach ($operand_type->getAtomicTypes() as $type) {
             if ($type instanceof Scalar) {
-                $object_types[] = new TObjectWithProperties(['scalar' => new Union([$type])], [], $std_class);
+                $object_types[] = ObjectShapeIntersection::classFirst(
+                    new TObjectWithProperties(['scalar' => new Union([$type])], [], $std_class),
+                );
             } elseif ($type instanceof TKeyedArray) {
-                $object_types[] = new TObjectWithProperties($type->properties, [], $std_class);
+                $object_types[] = ObjectShapeIntersection::classFirst(
+                    new TObjectWithProperties($type->properties, [], $std_class),
+                );
             } elseif ($type instanceof TArray || $type instanceof TNull) {
                 $object_types[] = new TNamedObject('stdClass');
             } else {

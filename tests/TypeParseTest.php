@@ -811,6 +811,12 @@ final class TypeParseTest extends TestCase
         $this->assertSame('object{a:int, $b:string}', (string) Type::parseString('object{a:int, $b:string}'));
     }
 
+    public function testObjectWithPropertiesIntersectedWithClassesIsWrittenClassFirst(): void
+    {
+        $this->assertSame('Foo&Bar&object{a:int}', (string) Type::parseString('object{a:int}&Foo&Bar'));
+        $this->assertSame('Foo&object{a:int}', (string) Type::parseString('Foo&object{a:int}'));
+    }
+
     public function testTKeyedArrayWithUnionArgs(): void
     {
         $this->assertSame(

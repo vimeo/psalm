@@ -12,6 +12,7 @@ use Psalm\Internal\Type\Comparator\AtomicTypeComparator;
 use Psalm\Internal\Type\Comparator\TypeComparisonResult;
 use Psalm\Internal\Type\Comparator\UnionTypeComparator;
 use Psalm\Internal\Type\IntMask;
+use Psalm\Internal\Type\ObjectShapeIntersection;
 use Psalm\Internal\Type\StringRefinement;
 use Psalm\Internal\Type\TypeCombiner;
 use Psalm\Internal\Type\TypeParser;
@@ -1181,7 +1182,9 @@ abstract class Type
                     = $wider_type_intersection_type;
             }
 
-            return $intersection_atomic->setIntersectionTypes($final_intersection);
+            return ObjectShapeIntersection::classFirst(
+                $intersection_atomic->setIntersectionTypes($final_intersection),
+            );
         }
 
         return $intersection_atomic;

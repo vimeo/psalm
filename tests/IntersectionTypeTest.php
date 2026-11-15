@@ -247,6 +247,141 @@ final class IntersectionTypeTest extends TestCase
                 'ignored_issues' => [],
                 'php_version' => '8.0',
             ],
+            'propertyOfTheClassOfAnObjectShapeIntersection' => [
+                'code' => '<?php
+                    final class Card {
+                        public int $expiryYear = 2030;
+                    }
+
+                    /** @param object{last4: string}&Card $card */
+                    function test(object $card): int {
+                        return $card->expiryYear;
+                    }',
+            ],
+            'propertyOfTheClassAnObjectShapeIsNarrowedTo' => [
+                'code' => '<?php
+                    class Entity {
+                        public int $livemode = 0;
+                    }
+
+                    /**
+                     * @property null|(object{brand: string}&Entity) $card
+                     */
+                    final class PaymentMethod extends Entity {
+                        public function __get(string $name): mixed {
+                            return null;
+                        }
+                    }
+
+                    function test(PaymentMethod $paymentMethod): int {
+                        $card = $paymentMethod->card;
+                        if (!$card instanceof Entity) {
+                            return 0;
+                        }
+
+                        return $card->livemode;
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'propertyOfTheShapeOfAnObjectShapeIntersection' => [
+                'code' => '<?php
+                    class Card {
+                        public int $expiryYear = 2030;
+                    }
+
+                    /** @param object{last4: string}&Card $card */
+                    function test(object $card): string {
+                        return $card->last4;
+                    }',
+            ],
+            'propertyAssignmentOfTheClassOfAnObjectShapeIntersection' => [
+                'code' => '<?php
+                    final class Card {
+                        public int $expiryYear = 2030;
+                    }
+
+                    /** @param object{last4: string}&Card $card */
+                    function test(object $card): void {
+                        $card->expiryYear = 2031;
+                    }',
+            ],
+            'staticMethodOfTheClassOfAnObjectShapeIntersection' => [
+                'code' => '<?php
+                    class Card {
+                        public static function network(): string {
+                            return "visa";
+                        }
+                    }
+
+                    /** @param object{last4: string}&Card $card */
+                    function test(object $card): string {
+                        return $card::network();
+                    }',
+            ],
+            'methodOfATemplateAnObjectShapeIsIntersectedWith' => [
+                'code' => '<?php
+                    class Card {
+                        public function brand(): string {
+                            return "visa";
+                        }
+                    }
+
+                    /**
+                     * @template T of Card
+                     * @param object{last4: string}&T $card
+                     */
+                    function test(object $card): string {
+                        return $card->brand();
+                    }',
+            ],
+            'objectShapeIntersectionIsAnArgumentOfItsObjectShape' => [
+                'code' => '<?php
+                    class Card {}
+
+                    /** @param object{last4: string} $shape */
+                    function takesShape(object $shape): void {}
+
+                    /** @param object{last4: string}&Card $card */
+                    function test(object $card): void {
+                        takesShape($card);
+                    }',
+            ],
+            'objectShapeIntersectionIsWrittenClassFirst' => [
+                'code' => '<?php
+                    interface Expirable {}
+                    interface Card {}
+
+                    /** @var object{last4: string}&Card&Expirable $card */
+                    $type = $card;',
+                'assertions' => [
+                    '$type===' => 'Card&Expirable&object{last4:string}',
+                ],
+            ],
+            'objectShapeIntersectionInferredFromATemplateIsWrittenClassFirst' => [
+                'code' => '<?php
+                    class Card {}
+
+                    /** @template T */
+                    final class Box {
+                        /** @param T $value */
+                        public function __construct(private mixed $value) {}
+
+                        /** @return T&Card */
+                        public function get(): mixed {
+                            return $this->value;
+                        }
+                    }
+
+                    /** @var object{last4: string} $shape */
+                    $type = (new Box($shape))->get();',
+                'assertions' => [
+                    '$type===' => 'Card&object{last4:string}',
+                ],
+                'ignored_issues' => ['MixedReturnTypeCoercion'],
+                'php_version' => '8.0',
+            ],
             'intersectionElementOfAnArrayKeepsItsInterfacesInAnArrayMapClosure' => [
                 'code' => '<?php
                     interface A {}
@@ -764,6 +899,66 @@ final class IntersectionTypeTest extends TestCase
                     /** @var Row&object{id: int} $row */
                     $id = $row->id;',
                 'error_message' => 'UndefinedPropertyFetch',
+                'error_levels' => [],
+                'php_version' => '8.0',
+            ],
+            'objectShapeIntersectionOfATemplateParamIsWrittenClassFirst' => [
+                'code' => '<?php
+                    class Card {}
+                    interface Other {}
+
+                    /**
+                     * @template T of object{last4: string}
+                     * @param T&Card $card
+                     * @return T
+                     */
+                    function identity(object $card): object {
+                        return $card;
+                    }
+
+                    function test(Other $other): void {
+                        identity($other);
+                    }',
+                'error_message' => 'Argument 1 of identity expects Card&object{last4:string}, but Other',
+            ],
+            'objectShapeIntersectionIsNotAnArgumentOfAnotherObjectShape' => [
+                'code' => '<?php
+                    class Card {}
+
+                    /** @param object{expiry: int} $shape */
+                    function takesShape(object $shape): void {}
+
+                    /** @param object{last4: string}&Card $card */
+                    function test(object $card): void {
+                        takesShape($card);
+                    }',
+                'error_message' => 'InvalidArgument',
+            ],
+            'undefinedPropertyOfAnObjectShapeIntersection' => [
+                'code' => '<?php
+                    final class Card {
+                        public int $expiryYear = 2030;
+                    }
+
+                    /** @param object{last4: string}&Card $card */
+                    function test(object $card): int {
+                        return $card->missing;
+                    }',
+                'error_message' => 'UndefinedPropertyFetch',
+                'error_levels' => [],
+                'php_version' => '8.0',
+            ],
+            'invalidPropertyAssignmentOfAnObjectShapeIntersection' => [
+                'code' => '<?php
+                    final class Card {
+                        public int $expiryYear = 2030;
+                    }
+
+                    /** @param object{last4: string}&Card $card */
+                    function test(object $card): void {
+                        $card->expiryYear = "2031";
+                    }',
+                'error_message' => 'InvalidPropertyAssignmentValue',
                 'error_levels' => [],
                 'php_version' => '8.0',
             ],

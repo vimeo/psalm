@@ -328,10 +328,12 @@ final class TemplateInferredTypeReplacer
                         || $atomic_template_type instanceof TIterable
                         || $atomic_template_type instanceof TObjectWithProperties
                     ) {
-                        $types []= $atomic_template_type->setIntersectionTypes(array_merge(
-                            $atomic_type->extra_types,
-                            $atomic_template_type->extra_types,
-                        ));
+                        $types []= ObjectShapeIntersection::classFirst(
+                            $atomic_template_type->setIntersectionTypes(array_merge(
+                                $atomic_type->extra_types,
+                                $atomic_template_type->extra_types,
+                            )),
+                        );
                     } elseif ($atomic_template_type instanceof TObject) {
                         $first_atomic_type = array_shift($atomic_type->extra_types);
                         assert($first_atomic_type !== null);

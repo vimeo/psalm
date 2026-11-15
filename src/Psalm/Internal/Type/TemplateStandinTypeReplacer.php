@@ -1042,7 +1042,9 @@ final class TemplateStandinTypeReplacer
                     || $t instanceof TObjectWithProperties
                 ) {
                     if ($extra_types) {
-                        $t = $t->setIntersectionTypes([...$t->getIntersectionTypes(), ...$extra_types]);
+                        $t = ObjectShapeIntersection::classFirst(
+                            $t->setIntersectionTypes([...$t->getIntersectionTypes(), ...$extra_types]),
+                        );
                     }
                 } elseif ($t instanceof TObject && $extra_types) {
                     $t = reset($extra_types)->setIntersectionTypes(array_slice($extra_types, 1));

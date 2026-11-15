@@ -872,6 +872,37 @@ final class AtomicTypeComparator
         if ($container_type_part instanceof TObject
             && $input_type_part instanceof TNamedObject
         ) {
+            // `Foo&object{a: int}` is the shape too
+            $input_shapes = [];
+
+            if ($container_type_part instanceof TObjectWithProperties) {
+                foreach ($input_type_part->extra_types as $extra_type) {
+                    if ($extra_type instanceof TObjectWithProperties) {
+                        $input_shapes[] = $extra_type;
+                    }
+                }
+            }
+
+            foreach ($input_shapes as $input_shape) {
+                if (self::isContainedBy(
+                    $codebase,
+                    $input_shape,
+                    $container_type_part,
+                    $allow_interface_equality,
+                    $allow_float_int_equality,
+                    $atomic_comparison_result,
+                )) {
+                    return true;
+                }
+            }
+
+            if ($container_type_part instanceof TObjectWithProperties
+                && $input_type_part->value === 'stdClass'
+                && $input_shapes !== []
+            ) {
+                return false;
+            }
+
             if ($container_type_part instanceof TObjectWithProperties
                 && $input_type_part->value !== 'stdClass'
             ) {

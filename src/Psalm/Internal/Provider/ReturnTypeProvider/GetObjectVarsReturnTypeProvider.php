@@ -86,6 +86,12 @@ final class GetObjectVarsReturnTypeProvider implements FunctionReturnTypeProvide
                 // the properties of a `stdClass` come from a cast or dynamic assignments and can have int keys
                 // (`(object) [1 => 'a']`), unlike what no class is known to declare
                 if (strtolower($object_type->value) === strtolower(stdClass::class)) {
+                    foreach ($object_type->extra_types as $extra_type) {
+                        if ($extra_type instanceof TObjectWithProperties && $extra_type->properties !== []) {
+                            return TKeyedArray::make($extra_type->properties);
+                        }
+                    }
+
                     return new TArray([Type::getArrayKey(), Type::getMixed()]);
                 }
                 $codebase = $statements_source->getCodebase();
