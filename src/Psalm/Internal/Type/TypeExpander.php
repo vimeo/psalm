@@ -231,6 +231,7 @@ final class TypeExpander
                         $parent_class,
                         $evaluate_class_constants,
                         $evaluate_conditional_types,
+                        $final,
                         $expand_generic,
                         $expand_templates,
                         $throw_on_unresolvable_constant,
