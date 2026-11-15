@@ -37,14 +37,14 @@ final class ArrayMergeReturnTypeProvider implements FunctionReturnTypeProviderIn
     #[Override]
     public static function getFunctionIds(): array
     {
-        return ['array_merge', 'array_replace'];
+        return ['array_merge', 'array_merge_recursive', 'array_replace'];
     }
 
     /**
      * @psalm-capabilities read-props|write-this-props|write-refs
      */
     #[Override]
-    public static function getFunctionReturnType(FunctionReturnTypeProviderEvent $event): Union
+    public static function getFunctionReturnType(FunctionReturnTypeProviderEvent $event): ?Union
     {
         $statements_source = $event->getStatementsSource();
         $call_args = $event->getCallArgs();
@@ -55,6 +55,30 @@ final class ArrayMergeReturnTypeProvider implements FunctionReturnTypeProviderIn
         }
 
         $is_replace = $event->getFunctionId() === 'array_replace';
+
+        // merging recursively only equals merging for arrays that share no key: their keys are known
+        if ($event->getFunctionId() === 'array_merge_recursive') {
+            $seen_keys = [];
+
+            foreach ($call_args as $call_arg) {
+                $call_arg_type = $statements_source->node_data->getType($call_arg->value);
+                $keyed_array = $call_arg_type && !$call_arg->unpack && $call_arg_type->isSingle()
+                    ? $call_arg_type->getSingleAtomic()
+                    : null;
+
+                if (!$keyed_array instanceof TKeyedArray || $keyed_array->fallback_params !== null) {
+                    return null;
+                }
+
+                foreach ($keyed_array->properties as $key => $_) {
+                    if (!is_string($key) || isset($seen_keys[$key])) {
+                        return null;
+                    }
+
+                    $seen_keys[$key] = true;
+                }
+            }
+        }
 
         $inner_value_types = [];
         $inner_key_types = [];

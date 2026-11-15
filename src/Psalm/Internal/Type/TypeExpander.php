@@ -12,6 +12,7 @@ use Psalm\Internal\Analyzer\Statements\Expression\ArrayAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\Fetch\AtomicPropertyFetchAnalyzer;
 use Psalm\Internal\Analyzer\Statements\Expression\Fetch\ConstFetchAnalyzer;
 use Psalm\Internal\TypeVisitor\ContainsStaticVisitor;
+use Psalm\Internal\TypeVisitor\TemplateBoundNarrower;
 use Psalm\Storage\Assertion\IsType;
 use Psalm\Storage\Capabilities;
 use Psalm\Type;
@@ -390,7 +391,12 @@ final class TypeExpander
                 return [$return_type];
             }
 
-            $class_storage = $codebase->classlike_storage_provider->get($declaring_fq_classlike_name);
+            $class_storage = $codebase->classlikes->getStorageFor($declaring_fq_classlike_name);
+
+            // a class that exists but is not scanned yet
+            if ($class_storage === null) {
+                return [$return_type];
+            }
 
             $type_alias_name = $return_type->alias_name;
 
@@ -456,6 +462,8 @@ final class TypeExpander
             $potential_ints = [];
 
             foreach ($return_type->values as $value_type) {
+                $is_global_constant = $value_type instanceof TGlobalConstant;
+
                 $new_value_type = self::expandAtomic(
                     $codebase,
                     $value_type,
@@ -473,7 +481,9 @@ final class TypeExpander
                 $new_value_type = reset($new_value_type);
 
                 if (!$new_value_type instanceof TLiteralInt) {
-                    return [new TInt()];
+                    // a global constant that is not defined or not an int stays in the type, for the checker to
+                    // report it
+                    return $is_global_constant && !$new_value_type instanceof TInt ? [$return_type] : [new TInt()];
                 }
 
                 $potential_ints[] = $new_value_type->value;
@@ -705,6 +715,22 @@ final class TypeExpander
                         $param = $param->setType(self::expandUnion(
                             $codebase,
                             $param->type,
+                            $self_class,
+                            $static_class_type,
+                            $parent_class,
+                            $evaluate_class_constants,
+                            $evaluate_conditional_types,
+                            $final,
+                            $expand_generic,
+                            $expand_templates,
+                            $throw_on_unresolvable_constant,
+                        ));
+                    }
+
+                    if ($param->out_type) {
+                        $param = $param->setOutType(self::expandUnion(
+                            $codebase,
+                            $param->out_type,
                             $self_class,
                             $static_class_type,
                             $parent_class,
@@ -1031,9 +1057,21 @@ final class TypeExpander
                 }
             }
 
+            $if_type = $return_type->if_type;
+
+            // in the true branch the template is what the condition says
+            if ($return_type->subject_type === null) {
+                (new TemplateBoundNarrower(
+                    $return_type->param_name,
+                    $return_type->defining_class,
+                    $return_type->conditional_type,
+                    $codebase,
+                ))->traverse($if_type);
+            }
+
             $if_conditional_return_types = [];
 
-            foreach ($return_type->if_type->getAtomicTypes() as $if_atomic_type) {
+            foreach ($if_type->getAtomicTypes() as $if_atomic_type) {
                 $candidate_types = self::expandAtomic(
                     $codebase,
                     $if_atomic_type,
@@ -1375,9 +1413,9 @@ final class TypeExpander
             ) {
                 if ($throw_on_unresolvable_constant) {
                     throw new UnresolvableConstantException($type_param->fq_classlike_name, $type_param->const_name);
-                } else {
-                    return [$return_type];
                 }
+
+                return [$return_type];
             }
 
             $type_atomics = array_merge(

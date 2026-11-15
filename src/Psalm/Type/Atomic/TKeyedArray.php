@@ -613,7 +613,7 @@ final class TKeyedArray extends Atomic
             }
             $cloned = clone $this;
             $cloned->properties = [$replaced_list_type];
-            $cloned->fallback_params = [$this->fallback_params[1], $replaced_list_type];
+            $cloned->fallback_params = [$this->fallback_params[0], $replaced_list_type];
 
             return $cloned;
         }

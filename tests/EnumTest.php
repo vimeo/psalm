@@ -86,6 +86,35 @@ final class EnumTest extends TestCase
         );
     }
 
+    public function testEnumCaseValueOfANamespacedConstantBeatsTheGlobalOneOfAnotherFile(): void
+    {
+        $this->testConfig->throw_exception = false;
+        $this->project_analyzer->setPhpVersion('8.1', 'tests');
+        $global_file = self::$src_dir_path . 'a_global.php';
+        $namespaced_file = self::$src_dir_path . 'z_namespaced.php';
+
+        $this->addFile($global_file, '<?php const OTHER = "global";');
+        $this->addFile(
+            $namespaced_file,
+            '<?php
+                namespace A;
+
+                const OTHER = "namespaced";
+
+                enum Letter: string {
+                    case X = OTHER;
+                }
+
+                /** @psalm-check-type-exact $value = "namespaced" */
+                $value = Letter::X->value;',
+        );
+
+        $this->project_analyzer->getCodebase()->scanFiles();
+        $this->analyzeFile($namespaced_file, new Context());
+
+        self::assertSame([], IssueBuffer::getIssuesDataForFile($namespaced_file));
+    }
+
     /**
      * @psalm-pure
      */
@@ -93,6 +122,17 @@ final class EnumTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'casesOfAnEnumString' => [
+                'code' => '<?php
+                    /** @param enum-string $string */
+                    function listCases(string $string): void {
+                        $cases = $string::cases();
+                        /** @psalm-check-type-exact $cases = list<UnitEnum> */
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
             'inheritedMethodReturningBinaryEnumValue' => [
                 'code' => self::BINARY_ENUM_CODE,
                 'assertions' => [],
@@ -1006,6 +1046,102 @@ final class EnumTest extends TestCase
                 'ignored_issues' => [],
                 'php_version' => '8.1',
             ],
+            'enumCaseValueFromDefinedConstant' => [
+                'code' => <<<'PHP'
+                    <?php
+                    define('SOME', 1);
+                    enum Foo: int {
+                        case ONE = SOME;
+                    }
+                    $a = Foo::ONE->value;
+                PHP,
+                'assertions' => [
+                    '$a===' => "1",
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
+            'enumCaseValueFromDeclaredConstant' => [
+                'code' => <<<'PHP'
+                    <?php
+                    const SOME = 'some';
+                    enum Foo: string {
+                        case ONE = SOME;
+                    }
+                    $a = Foo::ONE->value;
+                PHP,
+                'assertions' => [
+                    '$a===' => "'some'",
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
+            'enumCaseValueFromConstantDeclaredAfterTheEnum' => [
+                'code' => <<<'PHP'
+                    <?php
+                    enum Foo: int {
+                        case ONE = \SOME;
+                    }
+                    const SOME = 2;
+                    $a = Foo::ONE->value;
+                PHP,
+                'assertions' => [
+                    '$a===' => "2",
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
+            'enumCaseValueFromConstantReferencingAnotherConstant' => [
+                'code' => <<<'PHP'
+                    <?php
+                    const BASE = 3;
+                    const SOME = BASE + 1;
+                    enum Foo: int {
+                        case ONE = SOME;
+                    }
+                    $a = Foo::ONE->value;
+                PHP,
+                'assertions' => [
+                    '$a===' => "4",
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
+            'enumCaseValueFromNamespacedConstant' => [
+                'code' => <<<'PHP'
+                    <?php
+                    namespace A;
+                    const SOME = 5;
+                    enum Foo: int {
+                        case ONE = SOME;
+                    }
+                    $a = Foo::ONE->value;
+                    PHP,
+                'assertions' => [
+                    '$a===' => '5',
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
+            'enumCaseValueFromGlobalConstantInNamespace' => [
+                'code' => <<<'PHP'
+                    <?php
+                    namespace {
+                        const SOME = 6;
+                    }
+                    namespace A {
+                        enum Foo: int {
+                            case ONE = SOME;
+                        }
+                        $a = Foo::ONE->value;
+                    }
+                    PHP,
+                'assertions' => [
+                    '$a===' => '6',
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
             'enumWithCasesReferencingAnotherEnumCase' => [
                 'code' => <<<'PHP'
                     <?php
@@ -1034,6 +1170,39 @@ final class EnumTest extends TestCase
                 'ignored_issues' => [],
                 'php_version' => '8.6',
             ],
+            'enumCaseValueFromAnnotatedIntConstant' => [
+                'code' => '<?php
+                    enum EnumValue: int
+                    {
+                        /** @var int */
+                        public const V_1 = 1;
+                        public const V_2 = 2;
+
+                        case FIRST_VALUE = self::V_1;
+                        case SECOND_VALUE = self::V_2;
+                    }
+
+                    $a = EnumValue::FIRST_VALUE->value;',
+                'assertions' => [
+                    '$a' => 'int',
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
+            'enumCaseValueFromAnnotatedStringConstant' => [
+                'code' => '<?php
+                    enum EnumValue: string
+                    {
+                        /** @var string */
+                        public const V_1 = "a";
+
+                        case FIRST_VALUE = self::V_1;
+                        case SECOND_VALUE = "b";
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
         ];
     }
 
@@ -1044,6 +1213,55 @@ final class EnumTest extends TestCase
     public static function providerInvalidCodeParse(): iterable
     {
         return [
+            'enumCaseValueFromABoolConstantIsInvalid' => [
+                'code' => <<<'PHP'
+                    <?php
+                    const IS_ON = true;
+
+                    enum Flag: string {
+                        case On = IS_ON;
+                    }
+                    PHP,
+                'error_message' => 'InvalidEnumCaseValue - src' . DIRECTORY_SEPARATOR . 'somefile.php:5:5 - Case of a backed enum should have either string or int value',
+                'error_levels' => [],
+                'php_version' => '8.1',
+            ],
+            'enumCaseValueFromAFloatConstantIsInvalid' => [
+                'code' => <<<'PHP'
+                    <?php
+                    const RATIO = 1.5;
+
+                    enum Flag: string {
+                        case On = RATIO;
+                    }
+                    PHP,
+                'error_message' => 'InvalidEnumCaseValue - src' . DIRECTORY_SEPARATOR . 'somefile.php:5:5 - Case of a backed enum should have either string or int value',
+                'error_levels' => [],
+                'php_version' => '8.1',
+            ],
+            'enumCaseValueFromAnUndefinedConstantIsInvalid' => [
+                'code' => <<<'PHP'
+                    <?php
+                    
+
+                    enum Flag: string {
+                        case On = NOT_DEFINED;
+                    }
+                    PHP,
+                'error_message' => 'InvalidEnumCaseValue - src' . DIRECTORY_SEPARATOR . 'somefile.php:5:5 - Case of a backed enum should have either string or int value',
+                'error_levels' => [],
+                'php_version' => '8.1',
+            ],
+            'methodOfABackedEnumIsUnknownOnAnEnumString' => [
+                'code' => '<?php
+                    /** @param enum-string $string */
+                    function fromValue(string $string): void {
+                        $string::from(1);
+                    }',
+                'error_message' => 'MixedMethodCall',
+                'error_levels' => [],
+                'php_version' => '8.1',
+            ],
             'tryFromWithValueOfTemplate' => [
                 'code' => '<?php
                     enum Suit: string {
@@ -1626,6 +1844,33 @@ final class EnumTest extends TestCase
                     }
                 ',
                 'error_message' => 'InvalidEnumCaseValue',
+                'error_levels' => [],
+                'php_version' => '8.1',
+            ],
+            'enumCaseValueFromAFloatConstantAnnotatedAsFloat' => [
+                'code' => '<?php
+                    enum EnumValue: int
+                    {
+                        /** @var float */
+                        public const V_1 = 1.5;
+
+                        case FIRST_VALUE = self::V_1;
+                    }',
+                'error_message' => 'InvalidEnumCaseValue',
+                'error_levels' => [],
+                'php_version' => '8.1',
+            ],
+            'enumCaseValueFromAnAnnotatedConstantOfAnotherType' => [
+                'code' => '<?php
+                    enum EnumValue: int
+                    {
+                        /** @var string */
+                        public const V_1 = "a";
+
+                        case FIRST_VALUE = self::V_1;
+                    }',
+                'error_message' => 'InvalidEnumCaseValue - src' . DIRECTORY_SEPARATOR
+                    . 'somefile.php:7:25 - Enum case value type should be int',
                 'error_levels' => [],
                 'php_version' => '8.1',
             ],

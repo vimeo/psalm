@@ -9,6 +9,8 @@ use Psalm\Tests\TestCase;
 use Psalm\Tests\Traits\InvalidCodeAnalysisTestTrait;
 use Psalm\Tests\Traits\ValidCodeAnalysisTestTrait;
 
+use const DIRECTORY_SEPARATOR;
+
 final class WhileTest extends TestCase
 {
     use InvalidCodeAnalysisTestTrait;
@@ -21,6 +23,174 @@ final class WhileTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'mixedConditionVariableOfAWhileLoopIsNotNonEmptyAfterIt' => [
+                'code' => '<?php
+                    function check(mixed $w): void {
+                        $j = 0;
+                        while ($j < 3 && $w) {
+                            $j++;
+                        }
+
+                        $after = $w;
+                        /** @psalm-check-type-exact $after = mixed */
+                    }',
+                'assertions' => [],
+                'ignored_issues' => ['MixedAssignment'],
+                'php_version' => '8.0',
+            ],
+            'variableDefinedBeforeAPlainBreakIsDefinedAfterTheInnerLoopOfABreakTwo' => [
+                'code' => '<?php
+                    while (true) {
+                        while (true) {
+                            if (rand(0, 1)) {
+                                break 2;
+                            }
+
+                            $x = 1;
+                            break;
+                        }
+
+                        echo $x;
+                        break;
+                    }
+
+                    function f(): void {
+                        while (true) {
+                            while (true) {
+                                if (rand(0, 1)) {
+                                    break 2;
+                                }
+
+                                $y = 1;
+                                break;
+                            }
+
+                            echo $y;
+                            break;
+                        }
+                    }',
+            ],
+            'variableDefinedBeforeTheLoopAndAssignedInTheConditionHasWhatTheConditionLeaves' => [
+                'code' => '<?php
+                    $result = 1;
+                    while ($result = random_int(0, 6)) {
+                        echo "again";
+                    }',
+                'assertions' => [
+                    '$result===' => '0',
+                ],
+            ],
+            'variableDefinedBeforeALoopThatAlsoBreaksKeepsWhatTheBreakLeaves' => [
+                'code' => '<?php
+                    $result = 1;
+                    while ($result = random_int(0, 6)) {
+                        if (random_int(0, 1)) {
+                            break;
+                        }
+                    }',
+                'assertions' => [
+                    '$result===' => 'int<0, 6>',
+                ],
+            ],
+            'variableAssignedInACastConditionIsDefinedAfterTheLoop' => [
+                'code' => '<?php
+                    $a = 1;
+                    while ((bool) ($a = random_int(0, 6))) {
+                        echo "again";
+                    }
+
+                    while ((bool) ($b = random_int(0, 6))) {
+                        echo "again";
+                    }',
+                'assertions' => [
+                    '$a===' => '0',
+                    '$b===' => '0',
+                ],
+            ],
+            'variableAssignedInANegatedWhileConditionIsWhatTheConditionLeavesOfItAfterTheLoop' => [
+                'code' => '<?php
+                    /** @return Slot|false */
+                    function acquire() {
+                        return rand(0, 1) ? new Slot() : false;
+                    }
+
+                    final class Slot {
+                        public function use(): void {}
+                    }
+
+                    function nextLine(): string|false {
+                        return false;
+                    }
+
+                    while (!($slot = acquire())) {
+                        usleep(10);
+                    }
+
+                    $slot->use();
+
+                    while (($line = nextLine()) !== false) {
+                        echo $line;
+                    }
+
+                    while (!($other = acquire())) {
+                        if (rand(0, 1)) {
+                            break;
+                        }
+                    }',
+                'assertions' => [
+                    '$slot===' => 'Slot',
+                    '$line===' => 'false',
+                    '$other===' => 'Slot|false',
+                ],
+                'ignored_issues' => ['RedundantCondition', 'MixedAssignment'],
+                'php_version' => '8.2',
+            ],
+            'variableAssignedInTheWhileConditionIsDefinedAfterTheLoop' => [
+                'code' => '<?php
+                    function next_int(): int {
+                        return 1;
+                    }
+
+                    function f(): int {
+                        while ($value = next_int()) {
+                            echo $value;
+                        }
+
+                        return $value;
+                    }',
+            ],
+            'variableAssignedInAComparisonInTheWhileConditionIsDefinedAfterTheLoop' => [
+                'code' => '<?php
+                    function next_int(): int {
+                        return 1;
+                    }
+
+                    function f(): ?int {
+                        while (0 < $written = next_int()) {
+                            if ($written > 5) {
+                                return null;
+                            }
+                        }
+
+                        return $written;
+                    }',
+            ],
+            'variableAssignedInTheWhileConditionIsDefinedAfterABreak' => [
+                'code' => '<?php
+                    function next_int(): int {
+                        return 1;
+                    }
+
+                    function f(): int {
+                        while ($value = next_int()) {
+                            if (rand(0, 1)) {
+                                break;
+                            }
+                        }
+
+                        return $value;
+                    }',
+            ],
             'variableAssignedInTheConditionOfAnIfThatBreaks' => [
                 'code' => '<?php
                     final class Link {
@@ -875,6 +1045,63 @@ final class WhileTest extends TestCase
     public static function providerInvalidCodeParse(): iterable
     {
         return [
+            'whileBreakBeforeDefinition' => [
+                'code' => <<<'PHP'
+                    <?php
+                    function f(): void {
+                        while (rand()) {
+                            if (rand()) {
+                                $y = 1;
+                                break;
+                            }
+
+                            if (rand()) {
+                                break;
+                            }
+                        }
+
+                        echo $y;
+                    }
+                    PHP,
+                'error_message' => 'PossiblyUndefinedVariable - src' . DIRECTORY_SEPARATOR . 'somefile.php:14:10',
+                'error_levels' => [],
+                'php_version' => '8.1',
+            ],
+            'variableAssignedOnlyInTheSkippableOperandOfTheConditionIsPossiblyUndefined' => [
+                'code' => '<?php
+                    while (rand(0, 1) && ($value = rand())) {
+                        echo "again";
+                    }
+
+                    echo $value;',
+                'error_message' => 'PossiblyUndefinedGlobalVariable',
+            ],
+            'variableAssignedInTheRightOperandOfAnAndInTheWhileConditionIsPossiblyUndefined' => [
+                'code' => '<?php
+                    function next_int(): int {
+                        return 1;
+                    }
+
+                    function f(): int {
+                        while (rand(0, 1) && $value = next_int()) {
+                            echo 1;
+                        }
+
+                        return $value;
+                    }',
+                'error_message' => 'PossiblyUndefinedVariable',
+            ],
+            'variableAssignedOnlyInTheWhileBodyIsPossiblyUndefined' => [
+                'code' => '<?php
+                    function f(): int {
+                        while (rand(0, 1)) {
+                            $value = 1;
+                        }
+
+                        return $value;
+                    }',
+                'error_message' => 'PossiblyUndefinedVariable',
+            ],
             'variableAssignedInALoopThatPostIncrementsAnInitialLiteralIsPossiblyUndefined' => [
                 'code' => '<?php
                     $try = 0;

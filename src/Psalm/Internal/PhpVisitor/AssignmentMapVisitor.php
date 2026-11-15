@@ -56,6 +56,16 @@ final class AssignmentMapVisitor extends PhpParser\NodeVisitorAbstract
                 }
             }
 
+            // what the sides change themselves (`$x = $counts['one']++`, `$a[$i++] = 1`) is in the map too
+            $inner_visitor = new self($this->this_class_name);
+            $inner_traverser = new PhpParser\NodeTraverser;
+            $inner_traverser->addVisitor($inner_visitor);
+            $inner_traverser->traverse([$node->expr, $node->var]);
+
+            foreach ($inner_visitor->assignment_map as $inner_var_id => $inner_depends_on) {
+                $this->assignment_map[$inner_var_id] = ($this->assignment_map[$inner_var_id] ?? []) + $inner_depends_on;
+            }
+
             return PhpParser\NodeVisitor::DONT_TRAVERSE_CHILDREN;
         }
 
