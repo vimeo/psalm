@@ -37,7 +37,7 @@ use Psalm\Internal\Type\TemplateStandinTypeReplacer;
 use Psalm\Internal\Type\TypeCombiner;
 use Psalm\Internal\Type\TypeExpander;
 use Psalm\Internal\Type\TypeVariableTracker;
-use Psalm\Internal\TypeVisitor\AmbiguousTemplateFinder;
+use Psalm\Internal\TypeVisitor\AmbiguousTemplateRemover;
 use Psalm\Internal\TypeVisitor\TypeVariableResolver;
 use Psalm\Issue\DeprecatedFunction;
 use Psalm\Issue\ImpureFunctionCall;
@@ -1123,7 +1123,13 @@ final class FunctionCallAnalyzer extends CallAnalyzer
                     $expand_generic,
                 )->getSingleAtomic();
 
-                if ($generic instanceof TClosure) {
+                // a template of the class the closure lost to mixed isn't bound by the call
+                if ($generic instanceof TClosure
+                    && self::hasTemplateTypes(
+                        self::getClassTemplateTypes(new Union([$erased]), $method_template_types),
+                        self::getClassTemplateTypes(new Union([$generic]), $method_template_types),
+                    )
+                ) {
                     $signatures[] = [$erased, $generic, $template_types];
                 }
 
@@ -1196,6 +1202,47 @@ final class FunctionCallAnalyzer extends CallAnalyzer
     }
 
     /**
+     * The templates in a closure of a method other than the method's
+     *
+     * @param array<string, non-empty-array<string, Union>> $method_template_types
+     * @return array<string, array<string, Union>>
+     * @psalm-pure
+     */
+    private static function getClassTemplateTypes(Union $closure_type, array $method_template_types): array
+    {
+        $class_template_types = [];
+
+        foreach ($closure_type->getTemplateTypes() as $template_type) {
+            if (!isset($method_template_types[$template_type->param_name][$template_type->defining_class])) {
+                $class_template_types[$template_type->param_name][$template_type->defining_class]
+                    = $template_type->as;
+            }
+        }
+
+        return $class_template_types;
+    }
+
+    /**
+     * Whether every template in $other_template_types is in $template_types
+     *
+     * @param array<string, array<string, Union>> $template_types
+     * @param array<string, array<string, Union>> $other_template_types
+     * @psalm-pure
+     */
+    private static function hasTemplateTypes(array $template_types, array $other_template_types): bool
+    {
+        foreach ($other_template_types as $template_name => $bounds) {
+            foreach ($bounds as $defining_class => $_) {
+                if (!isset($template_types[$template_name][$defining_class])) {
+                    return false;
+                }
+            }
+        }
+
+        return true;
+    }
+
+    /**
      * The bounds of the templates other than the method's in a closure of the method, read from the closure the
      * object it was called on made
      *
@@ -1207,35 +1254,36 @@ final class FunctionCallAnalyzer extends CallAnalyzer
         TClosure $callee,
         array $method_template_types,
     ): ?TemplateResult {
-        $class_template_types = [];
-
-        foreach ((new Union([$erased]))->getTemplateTypes() as $template_type) {
-            if (!isset($method_template_types[$template_type->param_name][$template_type->defining_class])) {
-                $class_template_types[$template_type->param_name][$template_type->defining_class]
-                    = $template_type->as;
-            }
-        }
+        $class_template_types = self::getClassTemplateTypes(new Union([$erased]), $method_template_types);
 
         if ($class_template_types === []) {
             return null;
         }
 
-        $ambiguous_template_finder = new AmbiguousTemplateFinder($class_template_types);
-        $ambiguous_template_finder->traverse($erased);
+        // a template is read only from the types it stands alone in
+        $readable = new Union([$erased]);
+        (new AmbiguousTemplateRemover($class_template_types))->traverse($readable);
 
-        if ($ambiguous_template_finder->matches()) {
+        if (!self::hasTemplateTypes(
+            self::getClassTemplateTypes($readable, $method_template_types),
+            $class_template_types,
+        )) {
             return null;
         }
 
         $inferred = new TemplateResult($class_template_types, []);
 
-        TemplateStandinTypeReplacer::fillTemplateResult(
-            new Union([$erased]),
-            $inferred,
-            $statements_analyzer->getCodebase(),
-            $statements_analyzer,
-            new Union([$callee]),
-        );
+        // a template in a param is only read without replacing it
+        foreach ([true, false] as $replace) {
+            TemplateStandinTypeReplacer::fillTemplateResult(
+                $readable,
+                $inferred,
+                $statements_analyzer->getCodebase(),
+                $statements_analyzer,
+                new Union([$callee]),
+                replace: $replace,
+            );
+        }
 
         $class_bounds = new TemplateResult([], []);
 

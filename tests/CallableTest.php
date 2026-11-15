@@ -571,6 +571,99 @@ final class CallableTest extends TestCase
                 'ignored_issues' => [],
                 'php_version' => '8.1',
             ],
+            'invokeFirstClassCallableOfGenericMethodWithNullableClassTemplateParam' => [
+                'code' => '<?php
+                    /** @template T */
+                    final class Box {
+                        /**
+                         * @template U
+                         * @param ?T $t
+                         * @param U $u
+                         * @return array{T, U}
+                         */
+                        public function pair(mixed $t, mixed $u): array { throw new Exception(); }
+                    }
+                    /** @var Box<int|string> $box */;
+                    $p = $box->pair(...);
+                    $pair = $p(1, "x");
+                    $direct = $box->pair(1, "x");',
+                'assertions' => [
+                    '$pair===' => "list{int|string, 'x'}",
+                    '$direct===' => "list{int|string, 'x'}",
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
+            'invokeFirstClassCallableOfGenericMethodWithClassTemplateOnlyInParams' => [
+                'code' => '<?php
+                    /** @template T */
+                    final class Box {
+                        /**
+                         * @template U
+                         * @param T $t
+                         * @param U $u
+                         * @return U
+                         */
+                        public function second(mixed $t, mixed $u): mixed { return $u; }
+                    }
+                    /** @var Box<int> $box */;
+                    $second = $box->second(...);
+                    $result = $second(1, "x");
+                    $direct = $box->second(1, "x");',
+                'assertions' => [
+                    '$second===' => 'Closure[impure](int, mixed):mixed',
+                    '$result===' => "'x'",
+                    '$direct===' => "'x'",
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
+            'invokeFirstClassCallableOfGenericMethodWithNullableClassTemplateOnly' => [
+                'code' => '<?php
+                    /** @template T */
+                    final class Box {
+                        /**
+                         * @template U
+                         * @param U $u
+                         * @return array{T|null, U}
+                         */
+                        public function pair(mixed $u): array { throw new Exception(); }
+                    }
+                    /** @var Box<int|string> $box */;
+                    $p = $box->pair(...);
+                    $pair = $p("x");
+                    $direct = $box->pair("x");',
+                'assertions' => [
+                    // T and U can't be told apart in the closure: its own types stay
+                    '$pair===' => 'list{int|null|string, mixed}',
+                    '$direct===' => "list{int|null|string, 'x'}",
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
+            'invokeFirstClassCallableOfGenericMethodWithClassTemplateAbsorbedInMixed' => [
+                'code' => '<?php
+                    /** @template T */
+                    final class Box {
+                        /**
+                         * @template U
+                         * @param U $u
+                         * @return list<T>|list<int>|U
+                         */
+                        public function listUnion(mixed $u): mixed { throw new Exception(); }
+                    }
+                    /** @var Box<int|string> $box */;
+                    $p = $box->listUnion(...);
+                    $result = $p("x");
+                    $direct = $box->listUnion("x");',
+                'assertions' => [
+                    '$p===' => 'Closure[impure](mixed):mixed',
+                    '$result===' => 'mixed',
+                    '$direct===' => "'x'|list<int|string>",
+                ],
+                'ignored_issues' => ['MixedAssignment'],
+                'php_version' => '8.1',
+            ],
             'invokeFirstClassCallableOfGenericMethodOfExtendedClass' => [
                 'code' => '<?php
                     /** @template T */
