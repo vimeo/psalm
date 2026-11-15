@@ -2979,11 +2979,6 @@
       <code><![CDATA[#[Override]]]></code>
     </ImmutableDependency>
   </file>
-  <file src="src/Psalm/Storage/Assertion/NotInArray.php">
-    <ImplicitToStringCast>
-      <code><![CDATA[$this->type]]></code>
-    </ImplicitToStringCast>
-  </file>
   <file src="src/Psalm/Storage/ClassConstantStorage.php">
     <MutableDependency>
       <code><![CDATA[CustomMetadataTrait]]></code>

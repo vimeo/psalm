@@ -300,6 +300,11 @@ class Reconciler
                 $recorded_issues = [];
                 $any_alternative_possible = false;
 
+                // of several alternatives, the nested assertions each one holds are joined, not applied in turn
+                $types_before_alternatives = $existing_types;
+                $nested_alternatives = [];
+                $has_unnested_alternative = false;
+
                 foreach ($new_type_part_parts as $new_type_part_part) {
                     if ($new_type_part_part instanceof NestedAssertions
                         || $new_type_part_part instanceof NotNestedAssertions
@@ -314,10 +319,10 @@ class Reconciler
                             $data = self::negateNestedAssertions($data);
                         }
 
-                        [$existing_types, $_] = self::reconcileKeyedTypes(
+                        [$nested_types, $_] = self::reconcileKeyedTypes(
                             $data,
                             $data,
-                            $existing_types,
+                            $types_before_alternatives,
                             $existing_references,
                             $changed_var_ids,
                             $referenced_var_ids,
@@ -328,7 +333,15 @@ class Reconciler
                             $negated,
                         );
 
+                        if (count($new_type_part_parts) === 1) {
+                            $existing_types = $nested_types;
+                        } else {
+                            $nested_alternatives[] = $nested_types;
+                        }
+
                         $new_type_part_part = $nested_negated ? new Falsy() : new Truthy();
+                    } else {
+                        $has_unnested_alternative = true;
                     }
 
                     if ($record_alternatives) {
@@ -375,6 +388,16 @@ class Reconciler
                     $orred_type = Type::combineUnionTypes(
                         $result_type_candidate,
                         $orred_type,
+                        $codebase,
+                    );
+                }
+
+                if ($nested_alternatives && !$has_unnested_alternative) {
+                    $existing_types = self::joinNestedAlternatives(
+                        $nested_alternatives,
+                        $types_before_alternatives,
+                        $existing_types,
+                        $key,
                         $codebase,
                     );
                 }
@@ -671,6 +694,46 @@ class Reconciler
         }
 
         return null;
+    }
+
+    /**
+     * The types of the variables the nested assertions of every alternative narrowed: their union, where each
+     * alternative narrowed the variable (another one may hold anything)
+     *
+     * @param non-empty-list<array<string, Union>> $nested_alternatives
+     * @param array<string, Union> $types_before_alternatives
+     * @param array<string, Union> $existing_types
+     * @return array<string, Union>
+     * @psalm-capabilities read-props|write-this-props|write-refs
+     */
+    private static function joinNestedAlternatives(
+        array $nested_alternatives,
+        array $types_before_alternatives,
+        array $existing_types,
+        string $key,
+        Codebase $codebase,
+    ): array {
+        foreach ($nested_alternatives[0] as $var_id => $first_type) {
+            if ($var_id === $key || $first_type === ($types_before_alternatives[$var_id] ?? null)) {
+                continue;
+            }
+
+            $joined_type = $first_type;
+
+            foreach ($nested_alternatives as $alternative_types) {
+                if (!isset($alternative_types[$var_id])
+                    || $alternative_types[$var_id] === ($types_before_alternatives[$var_id] ?? null)
+                ) {
+                    continue 2;
+                }
+
+                $joined_type = Type::combineUnionTypes($joined_type, $alternative_types[$var_id], $codebase);
+            }
+
+            $existing_types[$var_id] = $joined_type;
+        }
+
+        return $existing_types;
     }
 
     /**

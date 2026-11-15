@@ -58,6 +58,286 @@ final class TypeAlgebraTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'isAAndItsNegationAreDifferentConditions' => [
+                'code' => '<?php
+                    final class A {}
+                    function f(object $a, ?int $b): void {
+                        if (!is_a($a, A::class) && $b === null) {
+                            return;
+                        }
+                        if (is_a($a, A::class)) {
+                            /** @psalm-check-type-exact $b = int|null */
+                            echo "is_a";
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'isAIsStillTheNegationOfNotIsA' => [
+                'code' => '<?php
+                    final class A {}
+                    function f(object $a, ?int $b): void {
+                        if (is_a($a, A::class) && $b === null) {
+                            return;
+                        }
+                        if (is_a($a, A::class)) {
+                            /** @psalm-check-type-exact $b = int */
+                            echo "is_a";
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'definedAndItsNegationAreDifferentConditions' => [
+                'code' => '<?php
+                    function f(?int $b): void {
+                        if (!defined("FOO") && $b === null) {
+                            return;
+                        }
+                        if (defined("FOO")) {
+                            /** @psalm-check-type-exact $b = int|null */
+                            echo "defined";
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'definedIsStillTheNegationOfNotDefined' => [
+                'code' => '<?php
+                    function f(?int $b): void {
+                        if (defined("FOO") && $b === null) {
+                            return;
+                        }
+                        if (defined("FOO")) {
+                            /** @psalm-check-type-exact $b = int */
+                            echo "defined";
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'notIssetIsNotItsOwnNegation' => [
+                'code' => '<?php
+                    /** @param array<string, int> $arr */
+                    function f(array $arr, bool $x, bool $y): void {
+                        if ((!isset($arr["k"]) || $x) && (!isset($arr["k"]) || $y) && ($x || $y)) {
+                            echo "if";
+                        } else {
+                            /** @psalm-check-type-exact $arr = array<string, int> */
+                            echo "else";
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'notIssetIsTheNegationOfIsset' => [
+                'code' => '<?php
+                    /** @param array<string, int> $arr */
+                    function f(array $arr, bool $x): void {
+                        if ((isset($arr["k"]) || $x) && (!isset($arr["k"]) || $x)) {
+                            /** @psalm-check-type-exact $x = true */
+                            echo "if";
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'inArrayOfAnotherArrayOfTheSameTypeIsADifferentCondition' => [
+                'code' => '<?php
+                    /**
+                     * @param list<string> $allowed
+                     * @param list<string> $other
+                     */
+                    function f(string $a, array $allowed, array $other, ?int $b): void {
+                        if (in_array($a, $allowed, true) && $b === null) {
+                            return;
+                        }
+                        if (in_array($a, $other, true)) {
+                            /** @psalm-check-type-exact $b = int|null */
+                            echo "in";
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'inArrayOfTwoCallsIsADifferentCondition' => [
+                'code' => '<?php
+                    /** @return list<string> */
+                    function getList(): array {
+                        return [];
+                    }
+                    function f(string $a, ?int $b): void {
+                        if (in_array($a, getList(), true) && $b === null) {
+                            return;
+                        }
+                        if (in_array($a, getList(), true)) {
+                            /** @psalm-check-type-exact $b = int|null */
+                            echo "in";
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'inArrayOfTheSameArrayIsTheSameCondition' => [
+                'code' => '<?php
+                    /** @param list<string> $allowed */
+                    function f(string $a, array $allowed, ?int $b): void {
+                        if (in_array($a, $allowed, true) && $b === null) {
+                            return;
+                        }
+                        if (in_array($a, $allowed, true)) {
+                            /** @psalm-check-type-exact $b = int */
+                            echo "in";
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'identicalToOneOfTwoArraysOfDifferentShapesKeepsBoth' => [
+                'code' => '<?php
+                    /**
+                     * @param array{id: int} $row
+                     * @param array{error: string} $failure
+                     */
+                    function f(array $x, array $row, array $failure): void {
+                        if ($x === $row || $x === $failure) {
+                            /** @psalm-check-type-exact $x = array{error?: string, id?: int} */
+                            echo "identical";
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'notIdenticalToAnotherStringIsNotTheNegationOfIdentical' => [
+                'code' => '<?php
+                    function f(string $a, string $b, string $c, ?int $n): void {
+                        if ($a === $b && ($a !== $c || $n !== null)) {
+                            /** @psalm-check-type-exact $n = int|null */
+                            echo "identical";
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'notIdenticalToAnotherCallIsNotTheNegationOfIdentical' => [
+                'code' => '<?php
+                    function getString(): string {
+                        return "";
+                    }
+                    function f(string $a, ?int $n): void {
+                        if ($a === getString() && ($a !== getString() || $n !== null)) {
+                            /** @psalm-check-type-exact $n = int|null */
+                            echo "identical";
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'notLooselyEqualToAnotherObjectIsNotTheNegationOfLooselyEqual' => [
+                'code' => '<?php
+                    final class A {}
+                    function f(A $a, A $b, A $c, ?int $n): void {
+                        if ($a == $b && ($a != $c || $n !== null)) {
+                            /** @psalm-check-type-exact $n = int|null */
+                            echo "equal";
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'notIdenticalToTheSameStringIsTheNegationOfIdentical' => [
+                'code' => '<?php
+                    function f(string $a, string $b, ?int $n): void {
+                        if ($a === $b && ($a !== $b || $n !== null)) {
+                            /** @psalm-check-type-exact $n = int */
+                            echo "identical";
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'notLooselyEqualToTheSameObjectIsTheNegationOfLooselyEqual' => [
+                'code' => '<?php
+                    final class A {}
+                    function f(A $a, A $b, ?int $n): void {
+                        if ($a == $b && ($a != $b || $n !== null)) {
+                            /** @psalm-check-type-exact $n = int */
+                            echo "equal";
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'longStringLiteralsSharingTheirStartAreNotEachOthersNegation' => [
+                'code' => '<?php
+                    const ONE = "https://example.org/api/v2/organisations/acme/projects/psalm/reports/2026/quarterly/summary-one";
+                    const TWO = "https://example.org/api/v2/organisations/acme/projects/psalm/reports/2026/quarterly/summary-two";
+                    function f(string $x, bool $y): void {
+                        if (($x === ONE || $x !== TWO) && $y) {
+                            echo "if";
+                        } else {
+                            /** @psalm-check-type-exact $y = bool */
+                            echo "else";
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'aLongStringLiteralIsTheNegationOfItself' => [
+                'code' => '<?php
+                    const ONE = "https://example.org/api/v2/organisations/acme/projects/psalm/reports/2026/quarterly/summary-one";
+                    function f(string $x, bool $y): void {
+                        if (($x === ONE || $x !== ONE) && $y) {
+                            echo "if";
+                        } else {
+                            /** @psalm-check-type-exact $y = false */
+                            echo "else";
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'assignedTypeChecksOfAnOrNarrowToEitherType' => [
+                'code' => '<?php
+                    function f(mixed $x): void {
+                        if (($ok = is_int($x)) || ($ok = is_string($x))) {
+                            /** @psalm-check-type-exact $x = int|string */
+                            echo "yes";
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
+            'anAssignedTypeCheckOrAnotherConditionDoesNotNarrow' => [
+                'code' => '<?php
+                    function f(mixed $x, bool $y): void {
+                        if (($ok = is_int($x)) || $y) {
+                            /** @psalm-check-type-exact $x = mixed */
+                            echo $ok ? "yes" : "no";
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
             'theElseOfAnAndWithAnOperandThatAssertsNothingWhenFalseDoesNotNarrowTheOtherOperand' => [
                 'code' => '<?php
                     function f(?int $userId, ?string $filter, string $name): void {
