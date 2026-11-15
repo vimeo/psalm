@@ -175,6 +175,36 @@ final class ConditionalTest extends TestCase
                 'ignored_issues' => [],
                 'php_version' => '8.1',
             ],
+            'classComparedToAClassStringOfANonFinalClassNarrowsOnlyWhereItIsTrue' => [
+                'code' => <<<'PHP'
+                    <?php
+                    class Bar {}
+                    final class Sub extends Bar {}
+                    final class Foo {}
+
+                    /** @param class-string<Bar> $cs */
+                    function f(Bar $x, string $cs): void {
+                        if ($x::class === $cs) {
+                            /** @psalm-check-type-exact $x = Bar */
+                            echo 1;
+                        }
+                    }
+
+                    /** @param class-string<Bar> $cs */
+                    function g(Bar|Foo $x, string $cs): void {
+                        if ($x::class === $cs) {
+                            /** @psalm-check-type-exact $x = Bar */
+                            echo 1;
+                        } else {
+                            /** @psalm-check-type-exact $x = Bar|Foo */
+                            echo 2;
+                        }
+                    }
+                    PHP,
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
             'classNotEqualToALiteralClassStringConstantNarrowsAfterAnEarlyReturn' => [
                 'code' => <<<'PHP'
                     <?php

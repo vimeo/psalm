@@ -3616,8 +3616,10 @@ final class AssertionFinder
                     } elseif ($type->isSingle() && $type_part instanceof TLiteralClassString) {
                         $if_types[$var_name] = [[new IsClassEqual($type_part->value)]];
                     } elseif ($type->isSingle() && $type_part instanceof TClassString && $type_part->as_type) {
-                        // the class of the object is the class-string, so the object is one of its bound
-                        $if_types[$var_name] = [[new IsType($type_part->as_type)]];
+                        // the class of the object is the class-string, so the object is one of its bound; as for
+                        // `instanceof $cs`, the check isn't redundant and its negation tells nothing: the object
+                        // may be of another subclass of the bound
+                        $if_types[$var_name] = [[new IsIdentical($type_part->as_type)]];
                     }
                 }
             }
