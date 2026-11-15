@@ -58,8 +58,8 @@ final class FileStorageProvider
     {
         unset(self::$storage[strtolower($file_path)]);
 
-        // the cached storage was populated in place, a rescan of the file must not get it back
-        $this->cache?->forget($file_path);
+        // the copy in the cache's memory was populated in place, a rescan of the file must not get it back
+        $this->cache?->evict($file_path);
     }
 
     public function has(string $file_path, ?string $file_contents = null): bool
