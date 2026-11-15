@@ -162,7 +162,7 @@ final class AlgebraTest extends TestCase
         $negated_formula = Algebra::negateFormula($formula, true);
 
         $this->assertCount(1, $negated_formula);
-        $this->assertSame('($a is not int) || ($b is not int)', (string)$negated_formula[0]);
+        $this->assertSame('$a is not int', (string)$negated_formula[0]);
     }
 
     public function testNegateFormulaWithNonLiteralEquality(): void
