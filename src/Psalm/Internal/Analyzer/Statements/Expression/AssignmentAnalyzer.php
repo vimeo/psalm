@@ -1594,6 +1594,9 @@ final class AssignmentAnalyzer
         bool $prevent_null = false,
         bool $out_type_holds_value = false,
     ): void {
+        // a condition holding the call is then known to assign the argument (see FormulaGenerator::getAssignedVarIds())
+        $statements_analyzer->node_data->markWrittenByReference($stmt);
+
         if ($stmt instanceof PhpParser\Node\Expr\PropertyFetch
             && ($prop_name = InstancePropertyFetchAnalyzer::getPropertyName($statements_analyzer, $stmt)) !== null
         ) {

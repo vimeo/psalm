@@ -929,6 +929,167 @@ final class TypeAlgebraTest extends TestCase
                 'assertions' => [],
                 'ignored_issues' => ['RiskyTruthyFalsyComparison'],
             ],
+            'aVariablePassedByReferenceOnTheRightOfAnAndLosesWhatTheLeftSideTestedOfIt' => [
+                'code' => '<?php
+                    function clear(?int &$v): bool {
+                        $v = null;
+                        return true;
+                    }
+
+                    final class A {
+                        public function clear(?int &$v): bool {
+                            $v = null;
+                            return true;
+                        }
+
+                        public static function staticClear(?int &$v): bool {
+                            $v = null;
+                            return true;
+                        }
+                    }
+
+                    function f(?int $x, A $a): void {
+                        if ($x !== null && clear($x) && $x === null) {
+                            echo 1;
+                        }
+
+                        if ($x !== null && $a->clear($x) && $x === null) {
+                            echo 1;
+                        }
+
+                        if ($x !== null && A::staticClear($x) && $x === null) {
+                            echo 1;
+                        }
+                    }',
+            ],
+            'aPropertyOrItemPassedByReferenceOnTheRightOfAnAndLosesWhatTheLeftSideTestedOfIt' => [
+                'code' => '<?php
+                    function clear(?int &$v): bool {
+                        $v = null;
+                        return true;
+                    }
+
+                    final class A {
+                        public ?int $p = null;
+
+                        public function f(): void {
+                            if ($this->p !== null && clear($this->p) && $this->p === null) {
+                                echo 1;
+                            }
+                        }
+                    }
+
+                    /** @param array{k: ?int} $a */
+                    function f(array $a): void {
+                        if ($a["k"] !== null && clear($a["k"]) && $a["k"] === null) {
+                            echo 1;
+                        }
+                    }',
+            ],
+            'anArgumentPassedByValueOnTheRightOfAnAndKeepsWhatTheLeftSideTestedOfIt' => [
+                'code' => '<?php
+                    function positive(int $v): bool {
+                        return $v > 0;
+                    }
+
+                    function f(?int $x, array $a): void {
+                        if ($x !== null && positive($x)) {
+                            /** @psalm-check-type-exact $x = int */
+                            echo 1;
+                        }
+
+                        if ($a !== [] && count($a) > 1) {
+                            /** @psalm-check-type-exact $a = non-empty-array<array-key, mixed> */
+                            echo 1;
+                        }
+                    }',
+            ],
+            'aBuiltinTakingAnArgumentByReferenceOnTheRightOfAnAndLosesWhatTheLeftSideTestedOfIt' => [
+                'code' => '<?php
+                    /**
+                     * @param list<int> $a
+                     * @param mixed $x
+                     */
+                    function f(array $a, array $b, int $v, $x): void {
+                        if ($a !== [] && array_pop($a) > 0 && $a === []) {
+                            echo 1;
+                        }
+
+                        if ($a !== [] && array_shift($a) > 0 && $a === []) {
+                            echo 1;
+                        }
+
+                        if ($b === [] && array_push($b, $v) && $b[0] > 0) {
+                            echo 1;
+                        }
+
+                        if (is_int($x) && settype($x, "string") && is_string($x)) {
+                            echo 1;
+                        }
+                    }',
+            ],
+            'theNegationOfAConditionPoppingAnArrayOnTheRightKeepsBothValues' => [
+                'code' => '<?php
+                    /** @param list<int> $a */
+                    function f(array $a): void {
+                        if ($a === [] || array_pop($a) === 0) {
+                            return;
+                        }
+
+                        /** @psalm-check-type-exact $a = list<int> */
+                        echo 1;
+                    }',
+            ],
+            'theNegationOfAConditionPassingAVariableByReferenceOnTheRightKeepsBothValues' => [
+                'code' => '<?php
+                    function refill(?int &$v): bool {
+                        $v = rand(0, 1) ? null : 1;
+                        return (bool) rand(0, 1);
+                    }
+
+                    function loop(?int $x): void {
+                        do {
+                            echo 1;
+                        } while ($x === null || refill($x));
+
+                        /** @psalm-check-type-exact $x = int|null */
+                        echo 1;
+                    }
+
+                    function negatedAnd(?int $x): void {
+                        if (!($x !== null && refill($x))) {
+                            return;
+                        }
+
+                        /** @psalm-check-type-exact $x = int|null */
+                        echo 1;
+                    }
+
+                    function ternary(?int $x): void {
+                        $r = ($x === null || refill($x)) ? 1 : $x;
+
+                        /** @psalm-check-type-exact $r = int|null */
+                        echo 1;
+                    }',
+            ],
+            'aSwitchCasePassingAVariableByReferenceHasNoNegatedClausesOfItsOldValue' => [
+                'code' => '<?php
+                    function refill(?int &$v): bool {
+                        $v = rand(0, 1) ? null : 1;
+                        return true;
+                    }
+
+                    function f(?int $x): int {
+                        switch (true) {
+                            case $x === null:
+                                return 0;
+                            case refill($x) && $x === null:
+                                return 1;
+                        }
+
+                        return 2;
+                    }',
+            ],
             'anAssertFunctionReassigningAParameterAssertsNothingOfItsArgumentFromThere' => [
                 'code' => '<?php
                     function load(?int $x): ?int {

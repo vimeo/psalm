@@ -2465,6 +2465,164 @@ final class ArrayAccessTest extends TestCase
                 'assertions' => [],
                 'ignored_issues' => ['PossiblyNullPropertyFetch'],
             ],
+            'nestedUnsetUpdatesRootArray' => [
+                'code' => '<?php
+                    /** @param array{a: int, b: array{c: int}} $a */
+                    function f(array $a): void {
+                        unset($a["b"]["c"]);
+                        /** @psalm-check-type-exact $a = array{a: int, b: array<never, never>} */;
+                    }',
+            ],
+            'nestedUnsetInLoopReachesLoopCondition' => [
+                'code' => '<?php
+                    /** @param array{a: int, b: array{c: int}} $a */
+                    function f(array $a): void {
+                        while ($a["b"]) {
+                            if (rand(0, 1)) {
+                                unset($a["b"]["c"]);
+                            }
+                        }
+                    }',
+            ],
+            'nestedUnsetInBranchUpdatesRootArray' => [
+                'code' => '<?php
+                    /** @param array{a: int, b: array{c: int}} $a */
+                    function f(array $a): void {
+                        if (rand(0, 1)) {
+                            unset($a["b"]["c"]);
+                        }
+                        /** @psalm-check-type-exact $a = array{a: int, b: array{c?: int}} */;
+                    }',
+            ],
+            'deeplyNestedUnsetUpdatesEveryHoldingArray' => [
+                'code' => '<?php
+                    /** @param array{x: array{y: array{z: int, w: int}}} $a */
+                    function f(array $a): void {
+                        unset($a["x"]["y"]["z"]);
+                        /** @psalm-check-type-exact $a = array{x: array{y: array{w: int}}} */;
+                        /** @psalm-check-type-exact $a[\'x\'] = array{y: array{w: int}} */;
+                    }',
+            ],
+            'nestedUnsetUnderPossiblyUndefinedKeyKeepsItPossiblyUndefined' => [
+                'code' => '<?php
+                    /** @param array{a: int, b?: array{c: int, d: string}} $a */
+                    function f(array $a): void {
+                        unset($a["b"]["c"]);
+                        /** @psalm-check-type-exact $a = array{a: int, b?: array{d: string}} */;
+                    }',
+            ],
+            'nestedUnsetFromNullableArray' => [
+                'code' => '<?php
+                    /** @param array{b: array{c: int}}|null $a */
+                    function f(?array $a): void {
+                        unset($a["b"]["c"]);
+                        /** @psalm-check-type-exact $a = array{b: array<never, never>}|null */;
+                    }',
+            ],
+            'nestedUnsetUnderNonLiteralKeyOfGenericArray' => [
+                'code' => '<?php
+                    /** @param array<string, array{c: int, d: int}> $a */
+                    function f(array $a, string $k): void {
+                        unset($a[$k]["c"]);
+                        /** @psalm-check-type-exact $a = array<string, array{c?: int, d: int}> */;
+                    }',
+            ],
+            'nestedUnsetUnderOneOfSeveralLiteralKeys' => [
+                'code' => '<?php
+                    /**
+                     * @param array{x: array{c: int, d: int}, y: array{c: int, d: int}, z: array{c: int}} $a
+                     * @param "x"|"y" $k
+                     */
+                    function f(array $a, string $k): void {
+                        unset($a[$k]["c"]);
+                        /** @psalm-check-type-exact $a = array{x: array{c?: int, d: int}, y: array{c?: int, d: int}, z: array{c: int}} */;
+                    }',
+            ],
+            'nestedUnsetUnderSeveralKeysKeepsTheShapeOfEachElement' => [
+                'code' => '<?php
+                    /**
+                     * @param array{x: array{c: int, d: int}, y: array{c: int, e: string}} $a
+                     * @param "x"|"y" $k
+                     */
+                    function f(array $a, string $k): int {
+                        unset($a[$k]["c"]);
+                        /** @psalm-check-type-exact $a = array{x: array{c?: int, d: int}, y: array{c?: int, e: string}} */;
+                        return $a["x"]["d"];
+                    }',
+            ],
+            'nestedUnsetUnderNonLiteralKeyKeepsTheShapeOfEachElement' => [
+                'code' => '<?php
+                    /** @param array{x: array{c: int, d: int}, z: array{c: int}} $a */
+                    function f(array $a, string $k): void {
+                        unset($a[$k]["c"]);
+                        /** @psalm-check-type-exact $a = array{x: array{c?: int, d: int}, z: array{c?: int}} */;
+                    }',
+            ],
+            'deeplyNestedUnsetUnderSeveralKeysKeepsTheShapeOfEachElement' => [
+                'code' => '<?php
+                    /**
+                     * @param array{x: array{m: array{c: int, d: int}}, y: array{m: array{c: int, e: string}}} $a
+                     * @param "x"|"y" $k
+                     */
+                    function f(array $a, string $k): void {
+                        unset($a[$k]["m"]["c"]);
+                        /** @psalm-check-type-exact $a = array{x: array{m: array{c?: int, d: int}}, y: array{m: array{c?: int, e: string}}} */;
+                    }',
+            ],
+            'nestedUnsetKeepsACallableArrayCallable' => [
+                'code' => '<?php
+                    /** @param callable-list{ArrayAccess<string, int>, "run"} $cb */
+                    function f(array $cb): callable {
+                        unset($cb[0]["x"]);
+                        return $cb;
+                    }',
+            ],
+            'nestedUnsetUnderUndeclaredKeyOfUnsealedArray' => [
+                'code' => '<?php
+                    /** @param array{a: array{c: int, d: int}, ...<string, array{c: int, d: int}>} $a */
+                    function f(array $a): void {
+                        unset($a["other"]["c"]);
+                        /** @psalm-check-type-exact $a = array{a: array{c: int, d: int}, ...<string, array{c?: int, d: int}>} */;
+                    }',
+            ],
+            'nestedUnsetInListKeepsItAList' => [
+                'code' => '<?php
+                    /** @param list{array{c: int, d: int}, array{c: int}} $a */
+                    function f(array $a): void {
+                        unset($a[0]["c"]);
+                        /** @psalm-check-type-exact $a = list{array{d: int}, array{c: int}} */;
+                    }',
+            ],
+            'nestedUnsetUpdatesArrayProperty' => [
+                'code' => '<?php
+                    final class O {
+                        /** @var array{b: array{c: int, d: int}} */
+                        public array $p = ["b" => ["c" => 1, "d" => 2]];
+
+                        public function m(): void {
+                            unset($this->p["b"]["c"]);
+                            /** @psalm-check-type-exact $this->p = array{b: array{d: int}} */;
+                        }
+                    }',
+            ],
+            'nestedUnsetOfAnOptionalKeyKeepsTheShapeOfAByRefParam' => [
+                'code' => '<?php
+                    /** @param array{b: array{c?: int}} $a */
+                    function f(array &$a): void {
+                        unset($a["b"]["c"]);
+                    }',
+            ],
+            'nestedUnsetThroughArrayAccessKeepsTheObject' => [
+                'code' => '<?php
+                    /** @param ArrayAccess<string, array{c: int}>|array{b: array{c: int}} $a */
+                    function f(ArrayAccess|array $a): void {
+                        unset($a["b"]["c"]);
+                        /** @psalm-check-type-exact $a = ArrayAccess<string, array{c: int}>|array{b: array<never, never>} */;
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.0',
+            ],
             'arrayAssertionShouldNotBeNull' => [
                 'code' => '<?php
                     function foo(?array $arr, string $s) : void {
@@ -2746,6 +2904,14 @@ final class ArrayAccessTest extends TestCase
                         echo $items[$key];
                     }',
                 'error_message' => 'PossiblyInvalidArrayOffset - src' . DIRECTORY_SEPARATOR . 'somefile.php:5:30 - Cannot access value on variable $items using possibly false offset array-key|false, which is 0',
+            ],
+            'nestedUnsetBreaksTheShapeOfAByRefParam' => [
+                'code' => '<?php
+                    /** @param array{b: array{c: int}} $a */
+                    function f(array &$a): void {
+                        unset($a["b"]["c"]);
+                    }',
+                'error_message' => 'ReferenceConstraintViolation',
             ],
             'offsetOfANullableArrayAfterAnIssetGuardIsPossiblyNull' => [
                 'code' => '<?php

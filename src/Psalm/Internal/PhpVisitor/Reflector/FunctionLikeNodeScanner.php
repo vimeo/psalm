@@ -228,6 +228,7 @@ final class FunctionLikeNodeScanner
                         $assigned_var_ids += FormulaGenerator::getAssignedVarIds(
                             $function_stmt->cond,
                             $this->classlike_storage->name ?? null,
+                            null,
                         );
 
                         try {
@@ -365,6 +366,7 @@ final class FunctionLikeNodeScanner
                 $this->classlike_storage,
                 $this->aliases,
                 $this->codebase->analysis_php_version_id,
+                $stmt instanceof PhpParser\Node\Expr\Closure || $stmt instanceof PhpParser\Node\Expr\ArrowFunction,
             );
 
             $storage->return_type_location = new CodeLocation(
@@ -1022,6 +1024,7 @@ final class FunctionLikeNodeScanner
                 $this->classlike_storage,
                 $this->aliases,
                 $this->codebase->analysis_php_version_id,
+                $stmt instanceof PhpParser\Node\Expr\Closure || $stmt instanceof PhpParser\Node\Expr\ArrowFunction,
             );
 
             if ($param_type->isMixed()) {
