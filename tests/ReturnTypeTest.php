@@ -867,6 +867,50 @@ final class ReturnTypeTest extends TestCase
                         }
                     }',
             ],
+            'switchWhoseCasesFallThroughIntoADefaultThatEnds' => [
+                'code' => '<?php
+                    function toEnd(int $value): int {
+                        switch ($value) {
+                            case 0:
+                                echo "zero";
+                            default:
+                                return 2;
+                        }
+                    }
+
+                    function toThrow(int $value): int {
+                        switch ($value) {
+                            case 0:
+                                return 1;
+                            case 1:
+                                echo "one";
+                            default:
+                                throw new Exception();
+                        }
+                    }',
+            ],
+            'switchWithADefaultInTheMiddleThatFallsThroughIntoAnEndingCase' => [
+                'code' => '<?php
+                    function defaultFirst(int $x): int {
+                        switch ($x) {
+                            default:
+                                echo "x";
+                            case 1:
+                                return 1;
+                        }
+                    }
+
+                    function defaultBetween(int $x): int {
+                        switch ($x) {
+                            case 0:
+                                return 0;
+                            default:
+                                echo "x";
+                            case 1:
+                                throw new Exception();
+                        }
+                    }',
+            ],
             'extendsStaticCallReturnType' => [
                 'code' => '<?php
                     /**
@@ -2295,6 +2339,59 @@ final class ReturnTypeTest extends TestCase
                     }',
                 'assertions' => [],
             ],
+            'overridableMethodThatThrowsAfterAnotherStatementKeepsItsDeclaredReturnType' => [
+                'code' => '<?php
+                    class Logger {
+                        public static function log(string $method): void {}
+                    }
+
+                    abstract class Base {
+                        /** @return string */
+                        public function doSomething() {
+                            Logger::log(__METHOD__);
+
+                            throw new Exception("Not supported.");
+                        }
+                    }',
+            ],
+            'overridableStaticMethodThatThrowsAfterAnotherStatementKeepsItsDeclaredReturnType' => [
+                'code' => '<?php
+                    class Logger {
+                        public static function log(string $method): void {}
+                    }
+
+                    abstract class Base {
+                        /** @return string */
+                        public static function doSomething() {
+                            Logger::log(__METHOD__);
+
+                            throw new Exception("Not supported.");
+                        }
+                    }',
+            ],
+            'traitMethodOfAnOverridableClassThatThrowsAfterAnotherStatementKeepsTheReturnTypeOfTheInterface' => [
+                'code' => '<?php
+                    final class Logger {
+                        public static function log(string $method): void {}
+                    }
+
+                    interface I {
+                        /** @return string */
+                        public function doSomething();
+                    }
+
+                    trait T {
+                        public function doSomething() {
+                            Logger::log(__METHOD__);
+
+                            throw new Exception("Not supported.");
+                        }
+                    }
+
+                    class C implements I {
+                        use T;
+                    }',
+            ],
             'finalClassOverridesAGenericStaticReturnType' => [
                 'code' => <<<'PHP'
                     <?php
@@ -2371,6 +2468,86 @@ final class ReturnTypeTest extends TestCase
     public static function providerInvalidCodeParse(): iterable
     {
         return [
+            'methodOfAnAnonymousClassThatThrowsAfterAnotherStatementIsInvalid' => [
+                'code' => '<?php
+                    class Logger {
+                        public static function log(string $method): void {}
+                    }
+
+                    $o = new class {
+                        /** @return string */
+                        public function f() {
+                            Logger::log(__METHOD__);
+
+                            throw new Exception("x");
+                        }
+                    };',
+                'error_message' => 'InvalidReturnType',
+            ],
+            'switchWithADefaultInTheMiddleThatFallsThroughIntoACaseThatDoesNotEnd' => [
+                'code' => '<?php
+                    function classify(int $x): int {
+                        switch ($x) {
+                            default:
+                                echo "x";
+                            case 1:
+                                echo "one";
+                        }
+                    }',
+                'error_message' => 'InvalidReturnType',
+            ],
+            'switchWithADefaultInTheMiddleFollowedByABreak' => [
+                'code' => '<?php
+                    function classify(int $x): int {
+                        switch ($x) {
+                            default:
+                                echo "x";
+                            case 1:
+                                return 1;
+                            case 2:
+                                break;
+                        }
+                    }',
+                'error_message' => 'InvalidReturnType',
+            ],
+            'switchDefaultThatFallsThroughWithoutReturning' => [
+                'code' => '<?php
+                    function classify(int $value): int {
+                        switch ($value) {
+                            case 0:
+                                return 1;
+                            default:
+                                echo "Other value";
+                        }
+                    }',
+                'error_message' => 'InvalidReturnType',
+            ],
+            'switchCaseThatFallsThroughIntoADefaultWithoutReturning' => [
+                'code' => '<?php
+                    function classify(int $value): int {
+                        switch ($value) {
+                            case 0:
+                                return 1;
+                            case 1:
+                                echo "one";
+                            default:
+                                echo "other";
+                        }
+                    }',
+                'error_message' => 'InvalidReturnType',
+            ],
+            'switchDefaultThatBreaksWithoutReturning' => [
+                'code' => '<?php
+                    function classify(int $value): int {
+                        switch ($value) {
+                            case 0:
+                                return 1;
+                            default:
+                                break;
+                        }
+                    }',
+                'error_message' => 'InvalidReturnType',
+            ],
             'finalMethodOfASubclassableClassKeepsItsStaticReturnType' => [
                 'code' => <<<'PHP'
                     <?php
@@ -3176,6 +3353,88 @@ final class ReturnTypeTest extends TestCase
                     PHP,
                 'error_message' => 'InvalidReturnStatement',
             ],
+            'finalMethodThatAlwaysThrowsAfterAnotherStatementIsNever' => [
+                'code' => '<?php
+                    class Logger {
+                        public static function log(string $method): void {}
+                    }
+
+                    class Base {
+                        /** @return string */
+                        final public function doSomething() {
+                            Logger::log(__METHOD__);
+
+                            throw new Exception("Not supported.");
+                        }
+                    }',
+                'error_message' => 'InvalidReturnType',
+            ],
+            'finalStaticMethodThatAlwaysThrowsAfterAnotherStatementIsNever' => [
+                'code' => '<?php
+                    class Logger {
+                        public static function log(string $method): void {}
+                    }
+
+                    class Base {
+                        /** @return string */
+                        final public static function doSomething() {
+                            Logger::log(__METHOD__);
+
+                            throw new Exception("Not supported.");
+                        }
+                    }',
+                'error_message' => 'InvalidReturnType',
+            ],
+            'traitMethodOfAFinalClassThatAlwaysThrowsIsNeverForTheReturnTypeOfTheInterface' => [
+                'code' => '<?php
+                    final class Logger {
+                        public static function log(string $method): void {}
+                    }
+
+                    interface I {
+                        /** @return string */
+                        public function doSomething();
+                    }
+
+                    trait T {
+                        public function doSomething() {
+                            Logger::log(__METHOD__);
+
+                            throw new Exception("Not supported.");
+                        }
+                    }
+
+                    final class C implements I {
+                        use T;
+                    }',
+                'error_message' => 'InvalidReturnType',
+            ],
+            'traitMethodOfAFinalClassThatAlwaysThrowsIsNeverForTheReturnTypeOfTheParent' => [
+                'code' => '<?php
+                    final class Logger {
+                        public static function log(string $method): void {}
+                    }
+
+                    class P {
+                        /** @return string */
+                        public function doSomething() {
+                            return "a";
+                        }
+                    }
+
+                    trait T {
+                        public function doSomething() {
+                            Logger::log(__METHOD__);
+
+                            throw new Exception("Not supported.");
+                        }
+                    }
+
+                    final class C extends P {
+                        use T;
+                    }',
+                'error_message' => 'InvalidReturnType',
+            ],
             'finalClassOverridesAGenericStaticReturnTypeWithAnotherType' => [
                 'code' => <<<'PHP'
                     <?php
@@ -3210,6 +3469,69 @@ final class ReturnTypeTest extends TestCase
                 'error_message' => 'ImplementedReturnTypeMismatch',
                 'error_levels' => [],
                 'php_version' => '8.3',
+            ],
+            'notAllCodePathsReturnShowsExactDocblockType' => [
+                'code' => '<?php
+                    /** @return non-empty-string */
+                    function r1(): string {}',
+                'error_message' => 'Not all code paths of r1 end in a return statement, return type'
+                    . ' non-empty-string expected',
+            ],
+            'noReturnStatementsShowsExactDocblockType' => [
+                'code' => '<?php
+                    abstract class T2 {
+                        /** @return numeric-string */
+                        public function m(): string {
+                            /** nothing */
+                        }
+                    }',
+                'error_message' => "No return statements were found for method T2::m but return type"
+                    . " 'numeric-string' was expected",
+            ],
+            'invalidNullableReturnTypeShowsExactDocblockType' => [
+                'code' => '<?php
+                    /**
+                     * @psalm-suppress NullableReturnStatement
+                     * @return non-empty-string
+                     */
+                    function r4(): string {
+                        return rand(0, 1) ? "1" : null;
+                    }',
+                'error_message' => "The declared return type 'non-empty-string' for r4 is not nullable,"
+                    . " but ''1'|null' contains null",
+            ],
+            'invalidFalsableReturnTypeShowsExactDocblockType' => [
+                'code' => '<?php
+                    /**
+                     * @psalm-suppress FalsableReturnStatement
+                     * @return numeric-string
+                     */
+                    function r3(): string {
+                        return rand(0, 1) ? "1" : false;
+                    }',
+                'error_message' => "The declared return type 'numeric-string' for r3 does not allow false,"
+                    . " but ''1'|false' contains false",
+            ],
+            'falsableReturnStatementShowsExactDocblockType' => [
+                'code' => '<?php
+                    /**
+                     * @psalm-suppress InvalidFalsableReturnType
+                     * @return numeric-string
+                     */
+                    function r3(): string {
+                        return rand(0, 1) ? "1" : false;
+                    }',
+                'error_message' => "The declared return type 'numeric-string' for r3 does not allow false,"
+                    . " but the function returns ''1'|false",
+            ],
+            'invalidToStringShowsExactInferredType' => [
+                'code' => '<?php
+                    class S1 {
+                        public function __toString() {
+                            return 5;
+                        }
+                    }',
+                'error_message' => '__toString methods must return a string, 5 returned',
             ],
         ];
     }
