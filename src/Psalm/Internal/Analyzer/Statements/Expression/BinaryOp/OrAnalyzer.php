@@ -131,6 +131,8 @@ final class OrAnalyzer
                 }
             }
 
+            $context->null_array_offsets_read = $left_context->null_array_offsets_read;
+
             $left_referenced_var_ids = $left_context->cond_referenced_var_ids;
             $left_context->cond_referenced_var_ids = [
                 ...$pre_referenced_var_ids,
@@ -374,6 +376,8 @@ final class OrAnalyzer
             $context->updateChecks($right_context);
         }
 
+        $context->intersectNullArrayOffsets($right_context);
+
         $context->cond_referenced_var_ids = [
             ...$right_context->cond_referenced_var_ids,
             ...$context->cond_referenced_var_ids,
@@ -406,6 +410,12 @@ final class OrAnalyzer
                     );
                 }
             }
+
+            // the body runs where the left side held, or where the right one ran and held
+            $if_body_context->null_array_offsets_read = array_intersect_key(
+                $left_context->null_array_offsets_read,
+                $right_context->null_array_offsets_read,
+            );
 
             $if_body_context->cond_referenced_var_ids = [
                 ...$context->cond_referenced_var_ids,

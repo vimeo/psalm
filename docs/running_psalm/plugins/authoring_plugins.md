@@ -1,5 +1,7 @@
 # Authoring Plugins
 
+Maintaining a library rather than a standalone plugin? [Helping Psalm understand your library](../../annotating_code/library_authors.md) covers annotations, stubs and shipping a plugin inside your package.
+
 ## Quick start
 
 ### Using a template repository
@@ -61,11 +63,12 @@ Follow instructions on packagist.org under 'Publishing Packages' section.
 
 ### Starting from scratch
 
-Composer-based plugin is a composer package which conforms to these requirements:
+A Composer-based plugin is a composer package with:
 
-1. Its `type` field is set to `psalm-plugin`
-2. It has `extra.psalm.pluginClass` subkey in its `composer.json` that reference an entry-point class that will be invoked to register the plugin into Psalm runtime.
-3. Entry-point class implements `Psalm\Plugin\PluginEntryPointInterface`
+1. An `extra.psalm.pluginClass` subkey in its `composer.json` that references an entry-point class, which Psalm invokes to register the plugin into its runtime.
+2. An entry-point class that implements `Psalm\Plugin\PluginEntryPointInterface`.
+
+Standalone plugin packages also set `type` to `psalm-plugin`, so that they appear in the [list of plugins on Packagist](https://packagist.org/?type=psalm-plugin). Psalm does not check the `type`: a library can ship its own plugin with `type` left as `library`, see [Helping Psalm understand your library](../../annotating_code/library_authors.md#3-a-plugin-in-your-package).
 
 ### Psalm API
 

@@ -16,7 +16,9 @@ use function array_filter;
 use function array_keys;
 use function array_merge;
 use function array_values;
+use function explode;
 use function ksort;
+use function sort;
 use function str_contains;
 
 use const DIRECTORY_SEPARATOR;
@@ -612,6 +614,690 @@ final class ArrayAccessTest extends TestCase
         );
     }
 
+    public function testOffsetOfANullableArrayIsReportedWhereItIsFirstRead(): void
+    {
+        $this->project_analyzer->getConfig()->throw_exception = false;
+        $this->project_analyzer->setPhpVersion('8.1', 'tests');
+        $file_path = self::$src_dir_path . 'somefile.php';
+
+        $this->addFile(
+            $file_path,
+            '<?php
+                /** @param array<string, string>|null $a */
+                function truthy(?array $a): void {
+                    if ($a["k"] && strlen($a["k"]) > 1) { echo 1; }
+                }
+
+                /** @param array<string, string|null>|null $a */
+                function notNull(?array $a): void {
+                    if ($a["k"] !== null && strlen($a["k"]) > 1) { echo 1; }
+                }
+
+                /** @param array<string, list<string>|int>|null $a */
+                function isArr(?array $a): void {
+                    if (is_array($a["k"]) && count($a["k"]) > 0) { echo 1; }
+                }
+
+                /** @param array<string, list<string>>|null $lists */
+                function unguarded(?array $lists): void {
+                    if (isset($lists["codes"]) && is_array($lists["codes"])) { echo 1; }
+                    if (is_array($lists["codes"])) { echo 2; }
+                }',
+        );
+        $this->analyzeFile($file_path, new Context());
+
+        $lines = [];
+        foreach (IssueBuffer::getIssuesDataForFile($file_path) as $issue) {
+            if ($issue->type === 'PossiblyNullArrayAccess') {
+                $lines[] = $issue->line_from;
+            }
+        }
+
+        $this->assertSame([4, 9, 14, 20], $lines);
+    }
+
+    public function testRepeatedReadOfAnOffsetOfANullableArrayIsReportedOnce(): void
+    {
+        $this->project_analyzer->getConfig()->throw_exception = false;
+        $this->project_analyzer->setPhpVersion('8.1', 'tests');
+        $file_path = self::$src_dir_path . 'somefile.php';
+
+        $this->addFile(
+            $file_path,
+            '<?php
+                /** @param list<string>|null $m */
+                function repeated(?array $m): void {
+                    echo $m[0];
+                    echo $m[0];
+                }',
+        );
+        $this->analyzeFile($file_path, new Context());
+
+        $lines = [];
+        foreach (IssueBuffer::getIssuesDataForFile($file_path) as $issue) {
+            if ($issue->type === 'PossiblyNullArrayAccess') {
+                $lines[] = $issue->line_from;
+            }
+        }
+
+        $this->assertSame([4], $lines);
+    }
+
+    public function testALoopThatDoesNotAssignTheArrayKeepsTheDeduplicationOfItsNull(): void
+    {
+        $this->assertPossiblyNullArrayAccessLines(
+            '<?php
+                /** @return list<int>|null */
+                function get(): ?array {
+                    return null;
+                }
+
+                /** @param list<int> $xs */
+                function loopWithoutAssignment(array $xs): void {
+                    $m = get();
+                    echo $m[0]; // issue
+                    foreach ($xs as $x) {
+                        echo $x;
+                    }
+                    echo $m[0];
+                }
+
+                /** @param list<int> $xs */
+                function loopAssigningAnotherVariable(array $xs): void {
+                    $m = get();
+                    echo $m[0]; // issue
+                    while ($xs) {
+                        $other = array_pop($xs);
+                    }
+                    echo $m[0];
+                }
+
+                /** @param list<int> $xs */
+                function loopAssigningTheArray(array $xs): void {
+                    $m = get();
+                    echo $m[0]; // issue
+                    foreach ($xs as $x) {
+                        $m = get();
+                    }
+                    echo $m[0]; // issue
+                }',
+        );
+    }
+
+    public function testAnAssignmentOfTheArrayInASwitchCaseEndsTheDeduplicationOfItsNull(): void
+    {
+        $this->assertPossiblyNullArrayAccessLines(
+            '<?php
+                /**
+                 * @param list<string>|null $m
+                 * @param list<string>|null $n
+                 */
+                function assignedInACase(?array $m, ?array $n, int $k): void {
+                    echo $m[0]; // issue
+                    switch ($k) {
+                        case 1:
+                            $m = $n;
+                            break;
+                        default:
+                    }
+                    echo $m[0]; // issue
+                }
+
+                /**
+                 * @param list<string>|null $m
+                 * @param list<string>|null $n
+                 */
+                function assignedInTheDefaultOnly(?array $m, ?array $n, int $k): void {
+                    echo $m[0]; // issue
+                    switch ($k) {
+                        case 1:
+                            echo 1;
+                            break;
+                        default:
+                            $m = $n;
+                    }
+                    echo $m[0]; // issue
+                }
+
+                /** @param list<string>|null $m */
+                function notAssignedInTheSwitch(?array $m, int $k): void {
+                    echo $m[0]; // issue
+                    switch ($k) {
+                        case 1:
+                            echo 1;
+                            break;
+                        default:
+                    }
+                    echo $m[0];
+                }',
+        );
+    }
+
+    public function testAnAssignmentOfTheArrayInACatchEndsTheDeduplicationOfItsNull(): void
+    {
+        $this->assertPossiblyNullArrayAccessLines(
+            '<?php
+                /**
+                 * @param list<string>|null $m
+                 * @param list<string>|null $n
+                 */
+                function assignedInACatch(?array $m, ?array $n): void {
+                    echo $m[0]; // issue
+                    try {
+                        echo 1;
+                    } catch (Exception $e) {
+                        $m = $n;
+                    }
+                    echo $m[0]; // issue
+                }
+
+                /** @param list<string>|null $m */
+                function notAssignedInTheCatch(?array $m): void {
+                    echo $m[0]; // issue
+                    try {
+                        echo 1;
+                    } catch (Exception $e) {
+                        echo 2;
+                    }
+                    echo $m[0];
+                }',
+        );
+    }
+
+    public function testAnAssignmentOfTheArrayInATernaryOrMatchEndsTheDeduplicationOfItsNull(): void
+    {
+        $this->assertPossiblyNullArrayAccessLines(
+            '<?php
+                /**
+                 * @param list<string>|null $m
+                 * @param list<string>|null $n
+                 */
+                function assignedInATernary(?array $m, ?array $n): void {
+                    echo $m[0]; // issue
+                    $x = rand(0, 1) ? ($m = $n) : null;
+                    echo $m[0]; // issue
+                }
+
+                /**
+                 * @param list<string>|null $m
+                 * @param list<string>|null $n
+                 */
+                function assignedInAMatchArm(?array $m, ?array $n, int $k): void {
+                    echo $m[0]; // issue
+                    $x = match ($k) {
+                        1 => ($m = $n),
+                        default => null,
+                    };
+                    echo $m[0]; // issue
+                }
+
+                /** @param list<string>|null $m */
+                function notAssignedInTheTernary(?array $m): void {
+                    echo $m[0]; // issue
+                    $x = rand(0, 1) ? 1 : 2;
+                    echo $m[0];
+                }',
+            '8.1',
+        );
+    }
+
+    public function testAnAssignmentNestedInABranchOfAnIfOrALoopEndsTheDeduplicationOfItsNull(): void
+    {
+        $this->assertPossiblyNullArrayAccessLines(
+            '<?php
+                /**
+                 * @param list<string>|null $m
+                 * @param list<string>|null $n
+                 * @param list<int> $xs
+                 */
+                function switchInALoop(?array $m, ?array $n, array $xs): void {
+                    echo $m[0]; // issue
+                    foreach ($xs as $k) { switch ($k) { case 1: $m = $n; break; default: } }
+                    if (isset($m[0]) && is_string($m[0])) { echo 1; }
+                    echo $m[0]; // issue
+                }
+
+                /**
+                 * @param list<string>|null $m
+                 * @param list<string>|null $n
+                 */
+                function switchInAnIf(?array $m, ?array $n, int $k): void {
+                    echo $m[0]; // issue
+                    if (rand(0, 1)) { switch ($k) { case 1: $m = $n; break; default: } }
+                    echo $m[0]; // issue
+                }
+
+                /**
+                 * @param list<string>|null $m
+                 * @param list<string>|null $n
+                 */
+                function ternaryInAnIf(?array $m, ?array $n): void {
+                    echo $m[0]; // issue
+                    if (rand(0, 1)) { $x = rand(0, 1) ? ($m = $n) : null; }
+                    echo $m[0]; // issue
+                }
+
+                /**
+                 * @param list<string>|null $m
+                 * @param list<string>|null $n
+                 * @param list<int> $xs
+                 */
+                function loopInAnIf(?array $m, ?array $n, array $xs): void {
+                    echo $m[0]; // issue
+                    if (rand(0, 1)) { foreach ($xs as $_) { $m = $n; } }
+                    echo $m[0]; // issue
+                }
+
+                /**
+                 * @param list<string>|null $m
+                 * @param list<string>|null $n
+                 * @param list<int> $xs
+                 */
+                function catchInALoop(?array $m, ?array $n, array $xs): void {
+                    echo $m[0]; // issue
+                    foreach ($xs as $_) { try { echo 1; } catch (Exception $e) { $m = $n; } }
+                    echo $m[0]; // issue
+                }
+
+                /**
+                 * @param list<string>|null $m
+                 * @param list<string>|null $n
+                 * @param list<int> $xs
+                 */
+                function assignedBeforeABreak(?array $m, ?array $n, array $xs): void {
+                    echo $m[0]; // issue
+                    foreach ($xs as $_) { if (rand(0, 1)) { $m = $n; break; } }
+                    echo $m[0]; // issue
+                }
+
+                /**
+                 * @param list<string>|null $m
+                 * @param list<string>|null $n
+                 */
+                function ifInAFinally(?array $m, ?array $n): void {
+                    echo $m[0]; // issue
+                    try { echo 1; } finally { if (rand(0, 1)) { $m = $n; } }
+                    echo $m[0]; // issue
+                }
+
+                /**
+                 * @param list<string>|null $m
+                 * @param list<int> $xs
+                 */
+                function notAssignedInTheNestedBranches(?array $m, array $xs, int $k): void {
+                    echo $m[0]; // issue
+                    foreach ($xs as $_) { switch ($k) { case 1: echo 1; break; default: } }
+                    if (rand(0, 1)) { $x = rand(0, 1) ? 1 : 2; }
+                    echo $m[0];
+                }',
+        );
+    }
+
+    public function testAReadInTheAndConditionOfATernaryIsKeptAfterTheTernary(): void
+    {
+        $this->assertPossiblyNullArrayAccessLines(
+            '<?php
+                /** @param array{generation: array{expression: string|null, type: string}|null}|null $column */
+                function g(?array $column): void {
+                    $a = ! is_null($column["generation"]) && $column["generation"]["type"] === "v" ? 1 : null; // issue
+                    $b = ! is_null($column["generation"]) ? 1 : null;
+                    echo $a, $b;
+                }',
+        );
+    }
+
+    public function testABreakThatOnlyLeavesASwitchKeepsTheReadAtTheEndOfTheLoopBody(): void
+    {
+        $this->assertPossiblyNullArrayAccessLines(
+            '<?php
+                /**
+                 * @param list<string>|null $m
+                 * @param list<string>|null $n
+                 * @param list<int> $xs
+                 */
+                function f(?array $m, ?array $n, array $xs, int $k): void {
+                    echo $m[0]; // issue
+                    foreach ($xs as $_) {
+                        switch ($k) { case 1: $m = $n; break; default: }
+                        echo $m[0]; // issue
+                    }
+                    echo $m[0];
+                }
+
+                /**
+                 * @param list<string>|null $m
+                 * @param list<int> $xs
+                 */
+                function continueInASwitch(?array $m, array $xs, int $k): void {
+                    foreach ($xs as $_) {
+                        switch ($k) { case 1: continue; default: }
+                        echo $m[0]; // issue
+                    }
+                    echo $m[0]; // issue
+                }',
+        );
+    }
+
+    public function testAReadInTheOrConditionOfAnIfOrATernaryIsKeptAfterIt(): void
+    {
+        $this->assertPossiblyNullArrayAccessLines(
+            '<?php
+                /** @param array{g: array{t: string}|null}|null $c */
+                function inAnIf(?array $c): void {
+                    if (is_null($c["g"]) || $c["g"]["t"] === "v") { echo 1; } // issue
+                    echo $c["g"] === null ? 1 : 2;
+                }
+
+                /** @param array{g: array{t: string}|null}|null $c */
+                function inATernary(?array $c): void {
+                    $a = is_null($c["g"]) || $c["g"]["t"] === "v" ? 1 : null; // issue
+                    echo $c["g"] === null ? 1 : 2;
+                    echo $a;
+                }
+
+                /** @param array{g: array{t: string}|null}|null $c */
+                function withFiveOperands(?array $c, bool $a, bool $b, bool $d): void {
+                    if (is_null($c["g"]) || $a || $b || $d || $c["g"]["t"] === "v") { echo 1; } // issue
+                    echo $c["g"] === null ? 1 : 2;
+                }
+
+                /** @param array{g: array{t: string}|null}|null $c */
+                function onTheRight(?array $c, bool $b): void {
+                    if ($b || $c["g"] === null) { echo 1; } // issue
+                    echo $c["g"] === null ? 1 : 2; // issue
+                }',
+        );
+    }
+
+    public function testAnOffsetReadInEveryBranchIsReadAfterTheMerge(): void
+    {
+        $this->assertPossiblyNullArrayAccessLines(
+            '<?php
+                /** @param list<string>|null $m */
+                function ifElse(?array $m, int $k): void {
+                    if ($k > 0) {
+                        echo $m[0]; // issue
+                    } else {
+                        echo $m[0]; // issue
+                    }
+                    echo $m[0];
+                }
+
+                /** @param list<string>|null $m */
+                function ifElseifElse(?array $m, int $k): void {
+                    if ($k > 0) {
+                        echo $m[0]; // issue
+                    } elseif ($k < 0) {
+                        echo $m[0]; // issue
+                    } else {
+                        echo $m[0]; // issue
+                    }
+                    echo $m[0];
+                }
+
+                /** @param list<string>|null $m */
+                function ifWithoutElse(?array $m, int $k): void {
+                    if ($k > 0) { echo $m[0]; } // issue
+                    echo $m[0]; // issue
+                }
+
+                /** @param list<string>|null $m */
+                function switchWithADefault(?array $m, int $k): void {
+                    switch ($k) {
+                        case 1: echo $m[0]; break; // issue
+                        default: echo $m[0]; // issue
+                    }
+                    echo $m[0];
+                }
+
+                /** @param list<string>|null $m */
+                function switchWithoutADefault(?array $m, int $k): void {
+                    switch ($k) {
+                        case 1: echo $m[0]; break; // issue
+                        case 2: echo $m[0]; break; // issue
+                    }
+                    echo $m[0]; // issue
+                }
+
+                /** @param list<string>|null $m */
+                function breakBeforeTheRead(?array $m, int $k): void {
+                    switch ($k) {
+                        case 1:
+                            if (rand(0, 1)) { break; }
+                            echo $m[0]; // issue
+                            break;
+                        default: echo $m[0]; // issue
+                    }
+                    echo $m[0]; // issue
+                }',
+        );
+    }
+
+    public function testALoopThatChangesTheTypeOfTheArrayKeepsTheReadItDoesAfterTheAssignment(): void
+    {
+        $this->assertPossiblyNullArrayAccessLines(
+            '<?php
+                /**
+                 * @param list<string>|null $m
+                 * @param list<int> $xs
+                 */
+                function switchInTheBody(?array $m, array $xs, int $k): void {
+                    echo $m[0]; // issue
+                    foreach ($xs as $_) {
+                        switch ($k) {
+                            case 1:
+                                $m = ["x"];
+                                break;
+                            default:
+                        }
+                        echo $m[0]; // issue
+                    }
+                    echo $m[0];
+                }
+
+                /**
+                 * @param list<string>|null $m
+                 * @param list<int> $xs
+                 */
+                function assignedAtTheEndOfTheBody(?array $m, array $xs): void {
+                    echo $m[0]; // issue
+                    foreach ($xs as $_) {
+                        $m = ["x"];
+                    }
+                    echo $m[0]; // issue
+                }',
+            '8.1',
+        );
+    }
+
+    /**
+     * Asserts that PossiblyNullArrayAccess is reported on the lines of the code marked `// issue`, and nowhere else
+     */
+    private function assertPossiblyNullArrayAccessLines(string $code, string $php_version = '8.1'): void
+    {
+        $this->project_analyzer->getConfig()->throw_exception = false;
+        $this->project_analyzer->setPhpVersion($php_version, 'tests');
+        $file_path = self::$src_dir_path . 'somefile.php';
+
+        $this->addFile($file_path, $code);
+        $this->analyzeFile($file_path, new Context());
+
+        $expected = [];
+        foreach (explode("\n", $code) as $index => $line) {
+            if (str_contains($line, '// issue')) {
+                $expected[] = $index + 1;
+            }
+        }
+
+        $lines = [];
+        foreach (IssueBuffer::getIssuesDataForFile($file_path) as $issue) {
+            if ($issue->type === 'PossiblyNullArrayAccess') {
+                $lines[] = $issue->line_from;
+            }
+        }
+
+        $this->assertSame($expected, $lines);
+    }
+
+    public function testOffsetOfANullableArrayIsReportedAgainAfterTheArrayChanged(): void
+    {
+        $this->project_analyzer->getConfig()->throw_exception = false;
+        $this->project_analyzer->setPhpVersion('8.1', 'tests');
+        $file_path = self::$src_dir_path . 'somefile.php';
+
+        $this->addFile(
+            $file_path,
+            '<?php
+                /**
+                 * @param list<string>|null $m
+                 * @param list<string>|null $n
+                 */
+                function branch(?array $m, ?array $n): void {
+                    echo $m[0];
+                    if (rand(0, 1)) { $m = $n; }
+                    if (isset($m[0]) && is_string($m[0])) { echo 1; }
+                    echo $m[0];
+                }
+
+                final class P {
+                    /** @var list<string>|null */
+                    public ?array $d = null;
+                    public function mutate(): void { $this->d = null; }
+                    public function f(): void {
+                        echo $this->d[0];
+                        $this->mutate();
+                        if (isset($this->d[0]) && is_string($this->d[0])) { echo 1; }
+                        echo $this->d[0];
+                    }
+                }
+
+                /** @param list<string>|null $m */
+                function loop(?array $m): void {
+                    echo $m[0];
+                    foreach ([1, 2] as $_) {
+                        if (rand(0, 1)) { $m = null; }
+                    }
+                    if (isset($m[0]) && is_string($m[0])) { echo 1; }
+                    echo $m[0];
+                }
+
+                /** @param list<string>|null $m */
+                function unchangedByTheBranch(?array $m): void {
+                    echo $m[0];
+                    if (rand(0, 1)) { echo 2; }
+                    echo $m[0];
+                }',
+        );
+        $this->analyzeFile($file_path, new Context());
+
+        $lines = [];
+        foreach (IssueBuffer::getIssuesDataForFile($file_path) as $issue) {
+            if ($issue->type === 'PossiblyNullArrayAccess') {
+                $lines[] = $issue->line_from;
+            }
+        }
+
+        sort($lines);
+
+        $this->assertSame([7, 10, 18, 21, 27, 32, 37], $lines);
+    }
+
+    public function testTheFlagOfAReadOffsetFollowsTheFlowOfTheBranches(): void
+    {
+        $this->project_analyzer->getConfig()->throw_exception = false;
+        $this->project_analyzer->setPhpVersion('8.1', 'tests');
+        $file_path = self::$src_dir_path . 'somefile.php';
+
+        $this->addFile(
+            $file_path,
+            '<?php
+                /**
+                 * @param list<string>|null $m
+                 * @param list<string>|null $n
+                 */
+                function f(?array $m, ?array $n): void {
+                    echo $m[0];
+                    if (rand(0, 1)) { $m = $n; } else { echo $m[0]; }
+                }
+
+                /**
+                 * @param list<string>|null $m
+                 * @param list<string>|null $n
+                 */
+                function g(?array $m, ?array $n): void {
+                    echo $m[0];
+                    if (rand(0, 1)) { $m = $n; return; }
+                    echo $m[0];
+                }
+
+                final class G {
+                    /** @var list<string>|null */
+                    public ?array $p = null;
+                    public int $n = 0;
+                    public function wrap(): void { $this->n++; }
+                    public function f(): void {
+                        echo $this->p[0];
+                        $this->wrap();
+                        echo $this->p[0];
+                    }
+                }',
+        );
+        $this->analyzeFile($file_path, new Context());
+
+        $lines = [];
+        foreach (IssueBuffer::getIssuesDataForFile($file_path) as $issue) {
+            if ($issue->type === 'PossiblyNullArrayAccess') {
+                $lines[] = $issue->line_from;
+            }
+        }
+
+        sort($lines);
+
+        // each offset is reported where it is first read: the branch that assigns `$m` and returns does not end the
+        // flag after the if, a call that only writes `$this->n` does not end it for `$this->p`
+        $this->assertSame([7, 16, 27], $lines);
+    }
+
+    public function testAnAssertionDoesNotEndTheDeduplicationOfTheNullOfAnArray(): void
+    {
+        $this->project_analyzer->getConfig()->throw_exception = false;
+        $this->project_analyzer->setPhpVersion('8.1', 'tests');
+        $file_path = self::$src_dir_path . 'somefile.php';
+
+        $this->addFile(
+            $file_path,
+            '<?php
+                /** @param array<string, string|int>|null $b */
+                function asserted(?array $b): void {
+                    echo $b["a"];
+                    if (is_string($b["c"])) { echo 1; }
+                    echo $b["a"];
+                }
+
+                final class S {
+                    /** @var list<string>|null */
+                    public static ?array $d = null;
+                    public function f(): void {
+                        echo self::$d[0];
+                        echo self::$d[0];
+                    }
+                }',
+        );
+        $this->analyzeFile($file_path, new Context());
+
+        $lines = [];
+        foreach (IssueBuffer::getIssuesDataForFile($file_path) as $issue) {
+            if ($issue->type === 'PossiblyNullArrayAccess') {
+                $lines[] = $issue->line_from;
+            }
+        }
+
+        sort($lines);
+
+        // `$b["a"]` and `self::$d[0]` are reported where they are first read, `$b["c"]` where it is read
+        $this->assertSame([4, 5, 13], $lines);
+    }
+
     /**
      * @psalm-pure
      */
@@ -619,6 +1305,24 @@ final class ArrayAccessTest extends TestCase
     public static function providerValidCodeParse(): iterable
     {
         return [
+            'offsetOfANullableArrayIsReadInsideTheGuardsThatNarrowIt' => [
+                'code' => '<?php
+                    /** @param array<string, list<string>>|null $lists */
+                    function guarded(?array $lists): int {
+                        if (isset($lists["codes"]) && is_array($lists["codes"])) {
+                            return count($lists["codes"]);
+                        }
+
+                        if ($lists !== null && is_array($lists["codes"] ?? null)) {
+                            return 1;
+                        }
+
+                        return 0;
+                    }',
+                'assertions' => [],
+                'ignored_issues' => ['RedundantConditionGivenDocblockType', 'DocblockTypeContradiction'],
+                'php_version' => '8.1',
+            ],
             'coalesceOnAnIntKeyThatMayBeMissingKeepsTheFoundType' => [
                 'code' => '<?php
                     $a = [1 => "Hello"];
@@ -1682,6 +2386,24 @@ final class ArrayAccessTest extends TestCase
     public static function providerInvalidCodeParse(): iterable
     {
         return [
+            'offsetOfANullableArrayAfterAnIssetGuardIsPossiblyNull' => [
+                'code' => '<?php
+                    /** @param array<string, list<string>>|null $lists */
+                    function unguarded(?array $lists): int {
+                        if (isset($lists["codes"]) && is_array($lists["codes"])) {
+                            echo count($lists["codes"]);
+                        }
+
+                        if (is_array($lists["codes"])) {
+                            return 1;
+                        }
+
+                        return 0;
+                    }',
+                'error_message' => 'PossiblyNullArrayAccess',
+                'error_levels' => ['RedundantConditionGivenDocblockType'],
+                'php_version' => '8.1',
+            ],
             'intRangeOffsetPartlyInsideTheKeysOfAList' => [
                 'code' => '<?php
                     function f(int $i): void {
