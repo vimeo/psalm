@@ -3390,6 +3390,30 @@ final class FunctionCallTest extends TestCase
                 'error_levels' => [],
                 'php_version' => '8.1',
             ],
+            'floatAndIntUnionIsAnInvalidOffsetOfAConstantArray' => [
+                'code' => '<?php
+                    final class A {
+                        const S = [1 => "a", 1024 => "b"];
+
+                        /** @param float|int $x */
+                        public static function f($x): string {
+                            return self::S[$x];
+                        }
+                    }',
+                'error_message' => 'InvalidArrayOffset - src' . DIRECTORY_SEPARATOR . 'somefile.php:7:36',
+            ],
+            'intAndFloatUnionIsAnInvalidOffsetOfAConstantArray' => [
+                'code' => '<?php
+                    final class A {
+                        const S = [1 => "a", 1024 => "b"];
+
+                        /** @param int|float $x */
+                        public static function f($x): string {
+                            return self::S[$x];
+                        }
+                    }',
+                'error_message' => 'InvalidArrayOffset - src' . DIRECTORY_SEPARATOR . 'somefile.php:7:36',
+            ],
             'emptyStringIsNotANonEmptyLowercaseString' => [
                 'code' => '<?php
                     /** @param non-empty-lowercase-string $s */

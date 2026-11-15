@@ -190,6 +190,7 @@ final class TypeComparatorTest extends TestCase
         yield 'array of mixed and null into array of int' => ['array<int>', 'array<mixed>', 'null'];
         yield 'array of mixed and int into array of string' => ['array<string>', 'array<mixed>', 'int'];
         yield 'int and float into string' => ['string', 'int', 'float'];
+        yield 'float and int into int literals' => ['1|1024', 'float', 'int'];
         yield 'array of mixed and int into string' => ['string', 'array<mixed>', 'int'];
         yield 'int and array of mixed into string' => ['string', 'int', 'array<mixed>'];
         yield 'matching and coercible member' => ['non-empty-string', 'non-empty-string', 'string'];

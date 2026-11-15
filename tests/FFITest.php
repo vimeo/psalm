@@ -8,6 +8,8 @@ use Override;
 use Psalm\Tests\Traits\InvalidCodeAnalysisTestTrait;
 use Psalm\Tests\Traits\ValidCodeAnalysisTestTrait;
 
+use const DIRECTORY_SEPARATOR;
+
 /**
  * tests for the handling of code using the PHP FFI extension
  *
@@ -108,10 +110,10 @@ final class FFITest extends TestCase
                         "int errno;", // this is a regular C declaration
                         "libc.so.6"
                     );
-                    echo $ffi->errno;
+                    $errno = $ffi->errno;
                 ',
                 'assertions' => [],
-                'ignored_issues' => ['PossiblyInvalidArgument'],
+                'ignored_issues' => [],
                 'php_version' => '7.4',
             ],
             'Example #5 Working with C arrays' => [
@@ -144,12 +146,12 @@ final class FFITest extends TestCase
                             ZEND_FFI_SYM_FUNC
                         } zend_ffi_symbol_kind;"
                     );
-                    echo $a->ZEND_FFI_SYM_TYPE;
-                    echo $a->ZEND_FFI_SYM_CONST;
-                    echo $a->ZEND_FFI_SYM_VAR;
+                    $type = $a->ZEND_FFI_SYM_TYPE;
+                    $const = $a->ZEND_FFI_SYM_CONST;
+                    $var = $a->ZEND_FFI_SYM_VAR;
                 ',
                 'assertions' => [],
-                'ignored_issues' => ['PossiblyInvalidArgument'],
+                'ignored_issues' => [],
                 'php_version' => '7.4',
             ],
         ];
@@ -162,6 +164,18 @@ final class FFITest extends TestCase
     public static function providerInvalidCodeParse(): iterable
     {
         return [
+            'echoOfAnUntypedFfiVariableIsPossiblyInvalid' => [
+                'code' => '<?php
+                    $ffi = FFI::cdef(
+                        "int errno;",
+                        "libc.so.6"
+                    );
+                    echo $ffi->errno;
+                ',
+                'error_message' => 'PossiblyInvalidArgument - src' . DIRECTORY_SEPARATOR . 'somefile.php:6:26',
+                'error_levels' => [],
+                'php_version' => '7.4',
+            ],
             'memcmpRejectsAnIntVariable' => [
                 'code' => '<?php
                     function cmp(int $number): int {
