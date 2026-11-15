@@ -51,6 +51,29 @@ final class TypeAlgebraTest extends TestCase
         );
     }
 
+    public function testIssuesShowAComparisonWithoutWhatItComparesWith(): void
+    {
+        $this->testConfig->throw_exception = false;
+        $file_path = self::$src_dir_path . 'somefile.php';
+        $this->addFile(
+            $file_path,
+            '<?php
+                /** @param list<int> $ids */
+                function f(?string $id, array $ids): void {
+                    if (!in_array($id, $ids, true)) {
+                        echo "not in";
+                    }
+                }',
+        );
+
+        $this->analyzeFile($file_path, new Context(), false);
+
+        self::assertSame(
+            ['Operand of type true is always truthy', 'Type null|string for $id is never in-array-int'],
+            array_column(IssueBuffer::getIssuesDataForFile($file_path), 'message'),
+        );
+    }
+
     /**
      * @psalm-pure
      */

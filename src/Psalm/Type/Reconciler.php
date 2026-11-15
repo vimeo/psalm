@@ -14,6 +14,7 @@ use Psalm\Internal\Analyzer\Statements\Expression\Call\ClassTemplateParamCollect
 use Psalm\Internal\Analyzer\Statements\Expression\Call\Method\MethodCallReturnTypeFetcher;
 use Psalm\Internal\Analyzer\Statements\Expression\Fetch\ConstFetchAnalyzer;
 use Psalm\Internal\Analyzer\StatementsAnalyzer;
+use Psalm\Internal\Clause;
 use Psalm\Internal\DataFlow\DataFlowNode;
 use Psalm\Internal\MethodIdentifier;
 use Psalm\Internal\Type\AssertionReconciler;
@@ -1483,7 +1484,7 @@ class Reconciler
         CodeLocation $code_location,
         array $suppressed_issues,
     ): void {
-        $assertion_string = (string)$assertion;
+        $assertion_string = Clause::getAssertionDisplayString($assertion);
         $not = $assertion_string[0] === '!';
 
         if ($not) {
