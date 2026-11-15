@@ -1275,7 +1275,7 @@ final class TypeVariableTest extends TestCase
                 'ignored_issues' => [],
                 'php_version' => '8.0',
             ],
-            'firstClassCallableOfMethodResolvesTypeVariableInReturn' => [
+            'closureCallResolvesTypeVariableInReturn' => [
                 'code' => '<?php
                     /** @template T */
                     final class Box {
@@ -1285,19 +1285,19 @@ final class TypeVariableTest extends TestCase
                         /** @return T */
                         public function get(): mixed { return $this->v; }
 
-                        /** @return T */
-                        public function map(int $_i): mixed { return $this->v; }
+                        /** @return Closure():T */
+                        public function getter(): Closure { return fn() => $this->v; }
                     }
 
                     $b = new Box(1);
                     $g = $b->get(...);
                     $r = $g();
                     $dynamic = $b->{"get"}(...)();
-                    $mapped = array_map($b->map(...), [5]);',
+                    $fromGetter = $b->getter()();',
                 'assertions' => [
                     '$r===' => '1',
                     '$dynamic===' => '1',
-                    '$mapped===' => 'list{1}',
+                    '$fromGetter===' => '1',
                 ],
                 'ignored_issues' => [],
                 'php_version' => '8.1',
@@ -1339,10 +1339,50 @@ final class TypeVariableTest extends TestCase
                     }
 
                     $b = new Box(1);
+                    $g = $b->get(...);
                     $b->set("two");
-                    $r = $b->get(...)();',
+                    $r = $g();',
                 'assertions' => [
                     '$r===' => "'two'|1",
+                ],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
+            'functionAndStaticCallResolveTypeVariableInReturn' => [
+                'code' => '<?php
+                    /** @template T */
+                    final class Box {
+                        /** @param T $v */
+                        public function __construct(public mixed $v) {}
+
+                        /** @return list<T> */
+                        public function all(): array { return [$this->v]; }
+                    }
+
+                    final class Util {
+                        /**
+                         * @template R
+                         * @param list<R> $l
+                         * @return R
+                         */
+                        public static function first(array $l): mixed { return $l[0]; }
+                    }
+
+                    /**
+                     * @template R
+                     * @param list<R> $l
+                     * @return R
+                     */
+                    function first(array $l): mixed { return $l[0]; }
+
+                    $b = new Box(1);
+                    $fromFunction = first($b->all());
+                    $fromStatic = Util::first($b->all());
+                    $fromCallMap = current($b->all());',
+                'assertions' => [
+                    '$fromFunction===' => '1',
+                    '$fromStatic===' => '1',
+                    '$fromCallMap===' => '1|false',
                 ],
                 'ignored_issues' => [],
                 'php_version' => '8.1',
@@ -1816,7 +1856,62 @@ final class TypeVariableTest extends TestCase
                 'error_levels' => [],
                 'php_version' => '8.1',
             ],
-            'firstClassCallableOfMethodResultIsCheckedAgainstResolvedTypeVariable' => [
+            'closureCallResultIsCheckedAgainstLaterBounds' => [
+                'code' => '<?php
+                    /** @template T of int|string */
+                    final class Box {
+                        /** @param T $v */
+                        public function __construct(public int|string $v) {}
+
+                        /** @param T $v */
+                        public function set(int|string $v): void { $this->v = $v; }
+
+                        /** @return T */
+                        public function get(): int|string { return $this->v; }
+                    }
+
+                    function takesInt(int $_i): void {}
+
+                    function f(): void {
+                        $b = new Box(1);
+                        $g = $b->get(...);
+                        $b->set("two");
+                        takesInt($g());
+                    }',
+                'error_message' => "InvalidScalarArgument - src" . DIRECTORY_SEPARATOR
+                    . "somefile.php:20:34 - Argument 1 of takesInt expects int, but 'two'|1 provided",
+                'error_levels' => [],
+                'php_version' => '8.1',
+            ],
+            'functionCallResultIsCheckedAgainstResolvedTypeVariable' => [
+                'code' => '<?php
+                    /** @template T */
+                    final class Box {
+                        /** @param T $v */
+                        public function __construct(public mixed $v) {}
+
+                        /** @return list<T> */
+                        public function all(): array { return [$this->v]; }
+                    }
+
+                    /**
+                     * @template R
+                     * @param list<R> $l
+                     * @return R
+                     */
+                    function first(array $l): mixed { return $l[0]; }
+
+                    function takesString(string $_s): void {}
+
+                    function f(): void {
+                        $b = new Box(1);
+                        takesString(first($b->all()));
+                    }',
+                'error_message' => 'InvalidScalarArgument',
+                'error_levels' => [],
+                'php_version' => '8.1',
+            ],
+            'closureCallResultIsCheckedAgainstResolvedTypeVariable' => [
                 'code' => '<?php
                     /** @template T */
                     final class Box {

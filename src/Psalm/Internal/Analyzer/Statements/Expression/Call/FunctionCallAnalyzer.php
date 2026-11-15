@@ -31,6 +31,7 @@ use Psalm\Internal\Type\Comparator\CallableTypeComparator;
 use Psalm\Internal\Type\PurityWildcardPaths;
 use Psalm\Internal\Type\TemplateResult;
 use Psalm\Internal\Type\TypeCombiner;
+use Psalm\Internal\Type\TypeVariableTracker;
 use Psalm\Issue\DeprecatedFunction;
 use Psalm\Issue\ImpureFunctionCall;
 use Psalm\Issue\ImpureMethodCall;
@@ -1041,20 +1042,25 @@ final class FunctionCallAnalyzer extends CallAnalyzer
 
                     $function_call_info->function_params = $var_type_part->params;
 
+                    // the type variables the closure returns resolve as those a method call returns
+                    $closure_return_type = $var_type_part->return_type
+                        ? TypeVariableTracker::resolveTypeVariables($var_type_part->return_type, $codebase)
+                        : null;
+
                     if (($stmt_type = $statements_analyzer->node_data->getType($real_stmt))
-                        && $var_type_part->return_type
+                        && $closure_return_type
                     ) {
                         $statements_analyzer->node_data->setType(
                             $real_stmt,
                             Type::combineUnionTypes(
                                 $stmt_type,
-                                $var_type_part->return_type,
+                                $closure_return_type,
                             ),
                         );
                     } else {
                         $statements_analyzer->node_data->setType(
                             $real_stmt,
-                            $var_type_part->return_type ?? Type::getMixed(),
+                            $closure_return_type ?? Type::getMixed(),
                         );
                     }
 

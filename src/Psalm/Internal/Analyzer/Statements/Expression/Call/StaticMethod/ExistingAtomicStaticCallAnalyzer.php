@@ -32,6 +32,7 @@ use Psalm\Internal\Type\TemplateBound;
 use Psalm\Internal\Type\TemplateInferredTypeReplacer;
 use Psalm\Internal\Type\TemplateResult;
 use Psalm\Internal\Type\TypeExpander;
+use Psalm\Internal\Type\TypeVariableTracker;
 use Psalm\Internal\TypeVisitor\ContainsStaticVisitor;
 use Psalm\Issue\AbstractMethodCall;
 use Psalm\Issue\ImpureMethodCall;
@@ -578,7 +579,10 @@ final class ExistingAtomicStaticCallAnalyzer
             }
         }
 
-        $return_type_candidate ??= Type::getMixed();
+        $return_type_candidate = TypeVariableTracker::resolveTypeVariables(
+            $return_type_candidate ?? Type::getMixed(),
+            $codebase,
+        );
 
         $method_storage ??= $declaring_method_id ? $codebase->methods->getStorage($declaring_method_id) : null;
 

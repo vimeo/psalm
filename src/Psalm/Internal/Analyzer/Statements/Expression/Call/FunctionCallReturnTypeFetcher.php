@@ -31,6 +31,7 @@ use Psalm\Internal\Type\TemplateBound;
 use Psalm\Internal\Type\TemplateInferredTypeReplacer;
 use Psalm\Internal\Type\TemplateResult;
 use Psalm\Internal\Type\TypeExpander;
+use Psalm\Internal\Type\TypeVariableTracker;
 use Psalm\IssueBuffer;
 use Psalm\Plugin\EventHandler\Event\AddRemoveTaintsEvent;
 use Psalm\Plugin\EventHandler\Event\AfterFunctionCallAnalysisEvent;
@@ -283,6 +284,8 @@ final class FunctionCallReturnTypeFetcher
         if (!$stmt_type) {
             $stmt_type = Type::getMixed();
         }
+
+        $stmt_type = TypeVariableTracker::resolveTypeVariables($stmt_type, $codebase);
 
         if (!$stmt->isFirstClassCallable()) {
             self::taintPhpInputSource(
