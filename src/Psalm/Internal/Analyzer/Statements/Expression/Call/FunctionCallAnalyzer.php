@@ -33,9 +33,12 @@ use Psalm\Internal\Type\PurityWildcardPaths;
 use Psalm\Internal\Type\TemplateBound;
 use Psalm\Internal\Type\TemplateInferredTypeReplacer;
 use Psalm\Internal\Type\TemplateResult;
+use Psalm\Internal\Type\TemplateStandinTypeReplacer;
 use Psalm\Internal\Type\TypeCombiner;
 use Psalm\Internal\Type\TypeExpander;
 use Psalm\Internal\Type\TypeVariableTracker;
+use Psalm\Internal\TypeVisitor\AmbiguousTemplateRemover;
+use Psalm\Internal\TypeVisitor\TypeVariableResolver;
 use Psalm\Issue\DeprecatedFunction;
 use Psalm\Issue\ImpureFunctionCall;
 use Psalm\Issue\ImpureMethodCall;
@@ -945,8 +948,8 @@ final class FunctionCallAnalyzer extends CallAnalyzer
     /**
      * The signature of the generic function or method a first-class callable was made from, when the closure called
      * is that callable as it was made, with the templates of the function or method standing for their bounds: the
-     * call infers them from its arguments, as a call of the function or method does. A closure whose templates were
-     * bound (by the object a method is called on) or whose type changed since it was made has no such signature.
+     * call infers them from its arguments, as a call of the function or method does. A closure whose type changed
+     * since it was made has no such signature.
      *
      * @return array{list<FunctionLikeParameter>, Union, array<string, non-empty-array<string, Union>>}|null
      */
@@ -966,11 +969,13 @@ final class FunctionCallAnalyzer extends CallAnalyzer
         }
 
         $signatures = str_contains($closure->callable_id, '::')
-            ? self::getMethodCallableSignatures($statements_analyzer, $closure->callable_id)
+            ? self::getMethodCallableSignatures($statements_analyzer, $closure->callable_id, $closure)
             : self::getFunctionCallableSignatures($statements_analyzer, $context, $closure->callable_id);
 
+        $closure_id = self::getConstructionSiteId($statements_analyzer->getCodebase(), $closure);
+
         foreach ($signatures as [$erased, $generic, $template_types]) {
-            if ($erased->getId() === $closure->getId()
+            if (self::getConstructionSiteId($statements_analyzer->getCodebase(), $erased) === $closure_id
                 && $generic->params !== null
                 && $generic->return_type !== null
             ) {
@@ -1060,6 +1065,7 @@ final class FunctionCallAnalyzer extends CallAnalyzer
     private static function getMethodCallableSignatures(
         StatementsAnalyzer $statements_analyzer,
         string $callable_id,
+        TClosure $callee,
     ): array {
         $codebase = $statements_analyzer->getCodebase();
         $method_id = MethodIdentifier::wrap($callable_id);
@@ -1083,6 +1089,7 @@ final class FunctionCallAnalyzer extends CallAnalyzer
 
         $class_storage = $codebase->classlike_storage_provider->get($method_id->fq_class_name);
         $signatures = [];
+        $callee_id = self::getConstructionSiteId($codebase, $callee);
 
         // the first-class callable of an instance method expands generic types, that of a static method doesn't
         foreach ([true, false] as $expand_generic) {
@@ -1099,24 +1106,205 @@ final class FunctionCallAnalyzer extends CallAnalyzer
                 $expand_generic,
             )->getSingleAtomic();
 
-            $generic = TypeExpander::expandUnion(
-                $codebase,
-                TypeExpander::expandUnion($codebase, new Union([$closure]), null, null, null),
-                $class_storage->name,
-                $class_storage->name,
-                $class_storage->parent_class,
-                true,
-                false,
-                $class_storage->final,
-                $expand_generic,
-            )->getSingleAtomic();
+            if (!$erased instanceof TClosure) {
+                continue;
+            }
 
-            if ($erased instanceof TClosure && $generic instanceof TClosure) {
-                $signatures[] = [$erased, $generic, $template_types];
+            if (self::getConstructionSiteId($codebase, $erased) === $callee_id) {
+                $generic = TypeExpander::expandUnion(
+                    $codebase,
+                    TypeExpander::expandUnion($codebase, new Union([$closure]), null, null, null),
+                    $class_storage->name,
+                    $class_storage->name,
+                    $class_storage->parent_class,
+                    true,
+                    false,
+                    $class_storage->final,
+                    $expand_generic,
+                )->getSingleAtomic();
+
+                // a template of the class the closure lost to mixed isn't bound by the call
+                if ($generic instanceof TClosure
+                    && self::hasTemplateTypes(
+                        self::getClassTemplateTypes(new Union([$erased]), $method_template_types),
+                        self::getClassTemplateTypes(new Union([$generic]), $method_template_types),
+                    )
+                ) {
+                    $signatures[] = [$erased, $generic, $template_types];
+                }
+
+                continue;
+            }
+
+            // the templates of the class, bound by the object the method was called on, are read back from the
+            // closure, and kept only when they make it again
+            $class_bounds = self::inferClassTemplateBounds(
+                $statements_analyzer,
+                $erased,
+                $callee,
+                $method_template_types,
+            );
+
+            if ($class_bounds === null) {
+                continue;
+            }
+
+            $get_bound_closure = static fn(bool $keep_method_templates): Atomic
+                => MethodCallReturnTypeFetcher::getFirstClassCallableType(
+                    $codebase,
+                    null,
+                    $closure,
+                    $class_bounds,
+                    $method_template_types,
+                    $class_storage->name,
+                    $class_storage->name,
+                    $class_storage->parent_class,
+                    $class_storage->final,
+                    $expand_generic,
+                    $keep_method_templates,
+                )->getSingleAtomic();
+
+            $bound_erased = $get_bound_closure(false);
+            $bound_generic = $get_bound_closure(true);
+
+            if ($bound_erased instanceof TClosure && $bound_generic instanceof TClosure) {
+                $signatures[] = [
+                    $bound_erased,
+                    $bound_generic,
+                    array_map(
+                        static fn(array $bounds): array => array_map(
+                            static fn(Union $bound): Union => TemplateInferredTypeReplacer::replace(
+                                $bound,
+                                $class_bounds,
+                                $codebase,
+                            ),
+                            $bounds,
+                        ),
+                        $template_types,
+                    ),
+                ];
             }
         }
 
         return $signatures;
+    }
+
+    /**
+     * The id of a closure with its type variables resolved as they were made: the id of one that was made earlier
+     * holds the bounds its variables had then
+     */
+    private static function getConstructionSiteId(Codebase $codebase, TClosure $closure): string
+    {
+        $type = new Union([$closure]);
+        (new TypeVariableResolver($codebase))->traverse($type);
+
+        return $type->getId();
+    }
+
+    /**
+     * The templates in a closure of a method other than the method's
+     *
+     * @param array<string, non-empty-array<string, Union>> $method_template_types
+     * @return array<string, array<string, Union>>
+     * @psalm-pure
+     */
+    private static function getClassTemplateTypes(Union $closure_type, array $method_template_types): array
+    {
+        $class_template_types = [];
+
+        foreach ($closure_type->getTemplateTypes() as $template_type) {
+            if (!isset($method_template_types[$template_type->param_name][$template_type->defining_class])) {
+                $class_template_types[$template_type->param_name][$template_type->defining_class]
+                    = $template_type->as;
+            }
+        }
+
+        return $class_template_types;
+    }
+
+    /**
+     * Whether every template in $other_template_types is in $template_types
+     *
+     * @param array<string, array<string, Union>> $template_types
+     * @param array<string, array<string, Union>> $other_template_types
+     * @psalm-pure
+     */
+    private static function hasTemplateTypes(array $template_types, array $other_template_types): bool
+    {
+        foreach ($other_template_types as $template_name => $bounds) {
+            foreach ($bounds as $defining_class => $_) {
+                if (!isset($template_types[$template_name][$defining_class])) {
+                    return false;
+                }
+            }
+        }
+
+        return true;
+    }
+
+    /**
+     * The bounds of the templates other than the method's in a closure of the method, read from the closure the
+     * object it was called on made
+     *
+     * @param array<string, non-empty-array<string, Union>> $method_template_types
+     */
+    private static function inferClassTemplateBounds(
+        StatementsAnalyzer $statements_analyzer,
+        TClosure $erased,
+        TClosure $callee,
+        array $method_template_types,
+    ): ?TemplateResult {
+        $class_template_types = self::getClassTemplateTypes(new Union([$erased]), $method_template_types);
+
+        if ($class_template_types === []) {
+            return null;
+        }
+
+        // a template is read only from the types it stands alone in
+        $readable = new Union([$erased]);
+        (new AmbiguousTemplateRemover($class_template_types))->traverse($readable);
+
+        if (!self::hasTemplateTypes(
+            self::getClassTemplateTypes($readable, $method_template_types),
+            $class_template_types,
+        )) {
+            return null;
+        }
+
+        $inferred = new TemplateResult($class_template_types, []);
+
+        // a template in a param is only read without replacing it
+        foreach ([true, false] as $replace) {
+            TemplateStandinTypeReplacer::fillTemplateResult(
+                $readable,
+                $inferred,
+                $statements_analyzer->getCodebase(),
+                $statements_analyzer,
+                new Union([$callee]),
+                replace: $replace,
+            );
+        }
+
+        $class_bounds = new TemplateResult([], []);
+
+        foreach ($class_template_types as $template_name => $bounds) {
+            foreach ($bounds as $defining_class => $_) {
+                $bound = isset($inferred->lower_bounds[$template_name][$defining_class])
+                    ? TemplateStandinTypeReplacer::getMostSpecificTypeFromBounds(
+                        $inferred->lower_bounds[$template_name][$defining_class],
+                        $statements_analyzer->getCodebase(),
+                    )
+                    : ($inferred->upper_bounds[$template_name][$defining_class] ?? null)?->type;
+
+                if ($bound === null) {
+                    return null;
+                }
+
+                $class_bounds->lower_bounds[$template_name][$defining_class] = [new TemplateBound($bound)];
+            }
+        }
+
+        return $class_bounds;
     }
 
     /**
