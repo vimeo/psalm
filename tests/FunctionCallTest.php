@@ -60,6 +60,32 @@ final class FunctionCallTest extends TestCase
                     '$c===' => 'int<1, max>',
                 ],
             ],
+            'classExistsComparedWithTrueGuardsTheRightOperandOfAnd' => [
+                'code' => '<?php
+                    function check(): bool {
+                        return class_exists(Optional::class) === true && Optional::available();
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
+            'classExistsComparedWithFalseGuardsTheOperandsOfAndAndOr' => [
+                'code' => '<?php
+                    function check(): bool {
+                        return false !== class_exists(Optional::class) && Optional::available();
+                    }
+
+                    function checkOr(): bool {
+                        return class_exists(Optional::class) === false || Optional::available();
+                    }
+
+                    function checkLoose(): bool {
+                        return class_exists(Optional::class) == true && Optional::available();
+                    }',
+                'assertions' => [],
+                'ignored_issues' => [],
+                'php_version' => '8.1',
+            ],
             'lvaluesCanBePassedToByRefParams' => [
                 'code' => '<?php
                     class A {
@@ -77,6 +103,80 @@ final class FunctionCallTest extends TestCase
                 'assertions' => [],
                 'ignored_issues' => [],
                 'php_version' => '8.1',
+            ],
+            'classExistsInAFormTheOperandsDoNotFollowGuardsTheRightOperandAsBefore' => [
+                'code' => '<?php
+                    function check(): bool {
+                        return (bool) class_exists(Optional::class) && Optional::available();
+                    }
+
+                    function checkOr(): bool {
+                        return !(bool) class_exists(Optional::class) || Optional::available();
+                    }',
+                'assertions' => [],
+                'ignored_issues' => ['RedundantCast'],
+                'php_version' => '8.1',
+            ],
+            'negatedClassExistsInAFormTheOperandsDoNotFollowGuardsTheRightOperandOfOrInAnIf' => [
+                'code' => '<?php
+                    function check(bool $a, bool $b, bool $c, bool $d): void {
+                        if (!(bool) class_exists(Optional::class) || Optional::available()) {
+                            echo "short";
+                        }
+
+                        if ($a || $b || $c || !(bool) class_exists(Optional::class) || Optional::available()) {
+                            echo "deep";
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => ['RedundantCast'],
+                'php_version' => '8.1',
+            ],
+            'classExistsAfterUnrelatedAndOperand' => [
+                'code' => <<<'PHP'
+                    <?php
+                    if (rand(0, 1) && class_exists(Foo::class)) {
+                        new Foo();
+                    }
+                    PHP,
+            ],
+            'classExistsBeforeUnrelatedAndOperand' => [
+                'code' => <<<'PHP'
+                    <?php
+                    if (class_exists(Foo::class) && rand(0, 1)) {
+                        new Foo();
+                    }
+                    PHP,
+            ],
+            'classExistsBetweenUnrelatedAndOperands' => [
+                'code' => <<<'PHP'
+                    <?php
+                    if (rand(0, 1) && class_exists(Foo::class) && rand(0, 1)) {
+                        new Foo();
+                    }
+                    PHP,
+            ],
+            'classExistsInElseifAnd' => [
+                'code' => <<<'PHP'
+                    <?php
+                    if (rand(0, 1)) {
+                        echo 1;
+                    } elseif (rand(0, 1) && class_exists(Foo::class)) {
+                        new Foo();
+                    }
+                    PHP,
+            ],
+            'classExistsInAndChainExpression' => [
+                'code' => <<<'PHP'
+                    <?php
+                    echo rand(0, 1) && class_exists(Foo::class) && new Foo();
+                    PHP,
+            ],
+            'classExistsInAndTernary' => [
+                'code' => <<<'PHP'
+                    <?php
+                    echo rand(0, 1) && class_exists(Foo::class) ? json_encode(new Foo()) : '';
+                    PHP,
             ],
             'internalFunctionsPreferringRefsAcceptAnAssignment' => [
                 'code' => '<?php
@@ -3522,6 +3622,24 @@ final class FunctionCallTest extends TestCase
                     echo STRLEN("foo");',
                 'error_message' => 'WrongCaseFunction - src' . DIRECTORY_SEPARATOR . 'somefile.php:2:26 - '
                     . 'Function STRLEN is declared as strlen and has wrong casing',
+            ],
+            'classExistsIdenticalToFalseDoesNotGuardTheRightOperandOfAnd' => [
+                'code' => '<?php
+                    function check(): bool {
+                        return class_exists(Optional::class) === false && Optional::available();
+                    }',
+                'error_message' => 'UndefinedClass',
+                'error_levels' => [],
+                'php_version' => '8.1',
+            ],
+            'classExistsInAndDoesNotLeakAfterTheCondition' => [
+                'code' => <<<'PHP'
+                    <?php
+                    if (rand(0, 1) && class_exists(Foo::class)) {
+                    }
+                    new Foo();
+                    PHP,
+                'error_message' => 'UndefinedClass',
             ],
             'pregReplaceCallbackWithOffsetCaptureGivesPairsNotStrings' => [
                 'code' => '<?php
