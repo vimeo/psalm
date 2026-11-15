@@ -521,14 +521,34 @@ final class IntersectionTypeTest extends TestCase
                     $x->fill($filled);
                     echo $filled;',
             ],
-            'loneObjectShapeReceiverStaysMixed' => [
+            'callableObjectPartOfAnIntersectionWithAShapeKeepsInvoke' => [
                 'code' => '<?php
-                    /** @var object{a: int} $x */
-                    $result = $x->anything();',
-                'assertions' => [
-                    '$result' => 'mixed',
-                ],
-                'ignored_issues' => ['MixedAssignment', 'MixedMethodCall'],
+                    interface Marker {}
+
+                    /** @psalm-assert callable-object $value */
+                    function requireCallable(object $value): void {
+                        if (!is_callable($value)) {
+                            throw new InvalidArgumentException();
+                        }
+                    }
+
+                    /** @param Marker&object{a: int} $value */
+                    function invoke(object $value): void {
+                        requireCallable($value);
+                        $value->__invoke();
+                    }',
+            ],
+            'methodOfAnObjectShapeDeclaredByMethodExistsIsCaseInsensitive' => [
+                'code' => '<?php
+                    final class Card {}
+
+                    function charge(Card $card): void {
+                        if (method_exists($card, "Charge")) {
+                            $card->charge();
+                        }
+                    }',
+                'assertions' => [],
+                'ignored_issues' => ['MixedMethodCall'],
             ],
         ];
     }
@@ -770,6 +790,25 @@ final class IntersectionTypeTest extends TestCase
                     /** @var Card&object{a: int} $x */
                     $x->nope();',
                 'error_message' => 'UndefinedMethod',
+            ],
+            'loneObjectShapeReceiverIsAMixedMethodCall' => [
+                'code' => '<?php
+                    /** @param object{a: int} $x */
+                    function test(object $x): void {
+                        $x->anything();
+                    }',
+                'error_message' => 'MixedMethodCall',
+            ],
+            'objectShapePartDeclaringMagicCallKeepsAnUndeclaredMethodPossible' => [
+                'code' => '<?php
+                    class Card {}
+
+                    function charge(Card $card): void {
+                        if (method_exists($card, "__call")) {
+                            $card->charge();
+                        }
+                    }',
+                'error_message' => 'PossiblyUndefinedMethod',
             ],
         ];
     }

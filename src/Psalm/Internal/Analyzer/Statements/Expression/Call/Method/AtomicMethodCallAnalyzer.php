@@ -732,10 +732,11 @@ final class AtomicMethodCallAnalyzer extends CallAnalyzer
     ): void {
         if ($is_intersection
             && $lhs_type_part instanceof TObjectWithProperties
+            && !isset($lhs_type_part->methods['__call'])
             && !($stmt->name instanceof PhpParser\Node\Identifier
                 && isset($lhs_type_part->methods[strtolower($stmt->name->name)]))
         ) {
-            // a shape that does not declare the method says nothing about it; the other parts decide
+            // a shape that declares neither the method nor __call() says nothing about it; the other parts decide
             return;
         }
 
